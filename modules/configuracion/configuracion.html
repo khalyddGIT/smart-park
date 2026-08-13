@@ -1,0 +1,24 @@
+<!-- CONFIGURACIÓN (Local) — RF12, RF18 -->
+<div class="page-header">
+  <h1><span class="material-symbols-outlined">settings</span> Configuración del Local</h1>
+  <button class="btn btn-primary" onclick="saveLocalConfig()"><span class="material-symbols-outlined">save</span> Guardar Cambios</button>
+</div>
+<div class="grid-2">
+  <div class="card"><div class="card-header"><h3>Parámetros Generales</h3></div><div class="card-body">
+    <div class="form-group"><label class="form-label">Nombre del Local</label><input type="text" class="form-control" id="cfg-name"></div>
+    <div class="form-group"><label class="form-label">Dirección</label><input type="text" class="form-control" id="cfg-address"></div>
+    <div class="form-group"><label class="form-label">Horario de Atención</label><input type="text" class="form-control" id="cfg-schedule" placeholder="HH:MM - HH:MM o 24 horas"></div>
+    <div class="form-group"><label class="form-label">Tiempo de Tolerancia (Minutos)</label><input type="number" class="form-control" id="cfg-tolerance" min="0" max="60"></div>
+  </div></div>
+  <div class="card"><div class="card-header"><h3>Políticas de Pago y Tecnología</h3></div><div class="card-body">
+    <label class="form-switch mb-md"><input type="checkbox" id="cfg-payRequired"><div class="switch-track"></div><span class="text-sm">Requerir pago de confirmación para reservas</span></label>
+    <div class="form-group"><label class="form-label">Monto de confirmación (S/)</label><input type="number" class="form-control" id="cfg-payAmount" step="0.5" min="0"></div>
+    <hr style="border:0;border-top:1px solid var(--color-border-light);margin:16px 0">
+    <label class="form-switch mb-md"><input type="checkbox" id="cfg-cameraIA"><div class="switch-track"></div><span class="text-sm">Habilitar Cámaras IA (ANPR)</span></label>
+    <label class="form-switch mb-md"><input type="checkbox" id="cfg-camera"><div class="switch-track"></div><span class="text-sm">Cámaras de vigilancia</span></label>
+    <label class="form-switch"><input type="checkbox" id="cfg-paymentGateway"><div class="switch-track"></div><span class="text-sm">Integración con pasarela de pago</span></label>
+  </div></div>
+</div>
+<div class="card mt-lg"><div class="card-header"><h3>Tarifas por Tipo de Vehículo (S/ por Hora)</h3></div><div class="card-body">
+  <div id="cfg-tarifas"></div>
+</div></div>

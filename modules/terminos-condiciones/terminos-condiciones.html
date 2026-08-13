@@ -1,0 +1,25 @@
+<!-- TÉRMINOS Y CONDICIONES — RF125–RF129 -->
+<div class="page-header"><h1><span class="material-symbols-outlined">gavel</span> Términos y Condiciones</h1></div>
+<div class="card mb-lg"><div class="card-header"><h3>Políticas de Uso Smart-Park</h3></div><div class="card-body">
+  <div style="height:300px;overflow-y:auto;padding:16px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius);font-size:.85rem;line-height:1.6">
+    <h4>1. Aceptación de los Términos</h4>
+    <p>Al utilizar Smart-Park, aceptas estos términos y condiciones en su totalidad...</p>
+    <h4>2. Reservas y Tolerancia</h4>
+    <p>El usuario tiene una tolerancia máxima definida por cada local. Si no llega a tiempo, la reserva se cancelará automáticamente sin derecho a reembolso del adelanto.</p>
+    <h4>3. Responsabilidad</h4>
+    <p>Smart-Park actúa como intermediario. Los estacionamientos afiliados son responsables por la seguridad del vehículo.</p>
+    <h4>4. Privacidad y Datos</h4>
+    <p>Los datos ingresados, incluyendo el registro de placas, son confidenciales y utilizados únicamente para la gestión de acceso.</p>
+  </div>
+  <div class="mt-md form-check" id="tc-accept-area">
+    <input type="checkbox" id="tc-accept">
+    <label for="tc-accept">He leído y acepto los términos y condiciones de la plataforma</label>
+  </div>
+  <div class="mt-md" id="tc-actions">
+    <button class="btn btn-primary" onclick="acceptTC()">Aceptar y Continuar</button>
+  </div>
+</div></div>
+<div class="card" id="tc-admin-view" style="display:none"><div class="card-header"><h3>Actualización de Políticas (Admin)</h3></div><div class="card-body">
+  <textarea class="form-control mb-sm" rows="4" placeholder="Nuevos términos..."></textarea>
+  <button class="btn btn-secondary" onclick="SP_Components.showToast('success','Actualizado','Términos actualizados, los usuarios deberán aceptar la nueva versión.')">Publicar Nueva Versión</button>
+</div></div>

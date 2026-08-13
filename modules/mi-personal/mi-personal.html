@@ -1,0 +1,57 @@
+<!-- MI PERSONAL — Gestión de Trabajadores del Local -->
+<div class="page-header"><h1><span class="material-symbols-outlined">group</span> Mi Personal</h1>
+  <div class="page-header-actions">
+    <button class="btn btn-secondary btn-sm" onclick="SP_Components.exportCSV(getStaff(), 'Personal')"><span class="material-symbols-outlined">download</span> Exportar</button>
+    <button class="btn btn-primary btn-sm" onclick="openAddStaff()"><span class="material-symbols-outlined">person_add</span> Agregar Trabajador</button>
+  </div>
+</div>
+
+<div class="dash-stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--sp-md);margin-bottom:var(--sp-lg)">
+  <div class="stat-card"><span class="material-symbols-outlined" style="font-size:1.6rem;color:var(--c3)">group</span><div style="color:var(--color-text-muted);font-size:.8rem">Total Trabajadores</div><div style="font-size:1.6rem;font-weight:800" id="mp-total">0</div></div>
+  <div class="stat-card"><span class="material-symbols-outlined" style="font-size:1.6rem;color:var(--color-success)">verified_user</span><div style="color:var(--color-text-muted);font-size:.8rem">Activos</div><div style="font-size:1.6rem;font-weight:800;color:var(--color-success)" id="mp-activos">0</div></div>
+  <div class="stat-card"><span class="material-symbols-outlined" style="font-size:1.6rem;color:var(--color-warning)">schedule</span><div style="color:var(--color-text-muted);font-size:.8rem">Guardias</div><div style="font-size:1.6rem;font-weight:800" id="mp-guardias">0</div></div>
+  <div class="stat-card"><span class="material-symbols-outlined" style="font-size:1.6rem;color:var(--color-danger)">person_off</span><div style="color:var(--color-text-muted);font-size:.8rem">Inactivos</div><div style="font-size:1.6rem;font-weight:800;color:var(--color-danger)" id="mp-inactivos">0</div></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Lista de Trabajadores</h3></div>
+  <div class="card-body">
+    <div class="filter-bar" style="margin-bottom:var(--sp-md);padding:8px;background:var(--color-surface-hover);border:none">
+      <input type="text" class="form-control" id="mp-search" placeholder="Buscar por nombre, DNI o cargo..." oninput="renderMiPersonal()" style="width:220px;font-size:.8rem;padding:6px 12px">
+      <select class="form-control" id="mp-shift" onchange="renderMiPersonal()" style="width:150px;font-size:.8rem;padding:6px 12px">
+        <option value="">Todos los turnos</option>
+        <option>Mañana</option>
+        <option>Tarde</option>
+        <option>Noche</option>
+      </select>
+      <select class="form-control" id="mp-status" onchange="renderMiPersonal()" style="width:150px;font-size:.8rem;padding:6px 12px">
+        <option value="">Todos los estados</option>
+        <option value="activo">Activo</option>
+        <option value="inactivo">Inactivo</option>
+      </select>
+    </div>
+    <div class="sp-table-responsive"><table class="sp-table table-cards">
+      <thead><tr><th>Trabajador</th><th>Rol</th><th>DNI</th><th>Turno</th><th>Contacto</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody id="mp-tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- Modal Agregar / Editar Trabajador -->
+<div class="modal-overlay" id="modal-add-staff"><div class="modal"><div class="modal-header"><h2 id="mp-modal-title">Agregar Trabajador</h2><button class="modal-close" onclick="SP_Components.closeModal('modal-add-staff')"><span class="material-symbols-outlined">close</span></button></div><div class="modal-body">
+  <input type="hidden" id="mp-edit-id">
+  <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" class="form-control" id="mp-name" placeholder="Ej: Juan Pérez"></div>
+  <div class="form-group"><label class="form-label">Rol / Cargo</label><select class="form-control" id="mp-role"><option>Guardia de Seguridad</option><option>Supervisor</option><option>Cajero</option><option>Valet / Acomodador</option></select></div>
+  <div class="grid-2">
+    <div class="form-group"><label class="form-label">DNI</label><input type="text" class="form-control" id="mp-dni" placeholder="8 dígitos" maxlength="8"></div>
+    <div class="form-group"><label class="form-label">Teléfono</label><input type="text" class="form-control" id="mp-phone" placeholder="9 dígitos" maxlength="9"></div>
+  </div>
+  <div class="form-group"><label class="form-label">Correo</label><input type="email" class="form-control" id="mp-email" placeholder="correo@local.pe"></div>
+  <div class="grid-2">
+    <div class="form-group"><label class="form-label">Turno</label><select class="form-control" id="mp-shift-ed"><option>Mañana</option><option>Tarde</option><option>Noche</option></select></div>
+    <div class="form-group"><label class="form-label">Estado</label><select class="form-control" id="mp-status-ed"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
+  </div>
+</div><div class="modal-footer">
+  <button class="btn btn-ghost" onclick="SP_Components.closeModal('modal-add-staff')">Cancelar</button>
+  <button class="btn btn-primary" onclick="saveStaff()"><span class="material-symbols-outlined">save</span> Guardar</button>
+</div></div></div>

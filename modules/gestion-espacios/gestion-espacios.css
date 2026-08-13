@@ -1,0 +1,3 @@
+/* Gestión de Espacios — CSS */
+#ge-space-grid { min-height: 200px; }
+@media(max-width:767px){ .grid-2#ge-grid{grid-template-columns:1fr} }

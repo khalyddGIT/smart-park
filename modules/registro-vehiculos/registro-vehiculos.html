@@ -1,0 +1,18 @@
+<!-- REGISTRO DE VEHÍCULOS (Admin) — RF86–RF90 -->
+<div class="page-header"><h1><span class="material-symbols-outlined">directions_car</span> Registro de Vehículos en Local</h1></div>
+<div class="card mb-lg"><div class="card-header">
+  <h3>Vehículos Actuales</h3>
+  <div class="d-flex gap-sm">
+    <button class="btn btn-sm btn-secondary" onclick="SP_Components.exportCSV(getRegisteredVehicles(), 'Vehículos_Registrados')"><span class="material-symbols-outlined">download</span> Exportar Lista</button>
+  </div>
+</div><div class="card-body">
+  <div class="filter-bar" style="margin-bottom:var(--sp-md);padding:8px;background:var(--color-surface-hover);border:none">
+    <input type="text" class="form-control" id="rv-search" placeholder="Buscar placa..." style="width:200px;font-size:.8rem;padding:6px 12px" oninput="renderRegistroVehiculos()">
+    <select class="form-control" id="rv-state" style="width:150px;font-size:.8rem;padding:6px 12px" onchange="renderRegistroVehiculos()">
+      <option value="">Todos los estados</option>
+      <option value="authorized">Autorizado</option>
+      <option value="no-reservation">Sin reserva</option>
+    </select>
+  </div>
+  <div class="sp-table-responsive"><table class="sp-table table-cards"><thead><tr><th>Placa</th><th>Tipo / Color</th><th>Espacio</th><th>Hora Ingreso</th><th>Estado</th><th>Reserva Asociada</th><th>Acciones</th></tr></thead><tbody id="rv-tbody"></tbody></table></div>
+</div></div>

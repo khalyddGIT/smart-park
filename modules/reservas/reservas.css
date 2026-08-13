@@ -1,0 +1,70 @@
+/* Reservas CSS */
+#rsv-space-grid .space-cell.selected{border-color:var(--c3);box-shadow:0 0 0 3px rgba(var(--c3-rgb),.25);transform:scale(1.1)}
+
+/* ── Resumen del paso 2 ───────────────────────────────────── */
+.rsv-summary-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--sp-md);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+  padding: var(--sp-md);
+  margin-bottom: var(--sp-lg);
+}
+.rsv-summary-row { display: flex; align-items: center; gap: 10px; }
+.rsv-summary-icon {
+  width: 38px; height: 38px;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--c3-rgb), .12);
+  color: var(--c3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+/* ── Confirmación (paso 3) ────────────────────────────────── */
+.rsv-confirm-card {
+  display: flex;
+  gap: var(--sp-lg);
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: var(--sp-lg) auto 0;
+  max-width: 560px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  padding: var(--sp-lg);
+  box-shadow: var(--shadow);
+}
+.rsv-confirm-left { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rsv-confirm-right { flex: 1; min-width: 220px; text-align: left; }
+.rsv-confirm-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--color-border-light);
+  font-size: .85rem;
+}
+.rsv-confirm-row span { color: var(--color-text-muted); }
+.rsv-confirm-code strong { font-size: 1.15rem; color: var(--c4); letter-spacing: 1px; }
+
+.qr-mock {
+  width: 128px; height: 128px;
+  background: #fff;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(12, 1fr);
+  gap: 1px;
+}
+.qr-mock span { display: block; }
+
+@keyframes moveCarGeo {
+  0% { offset-distance: 0%; }
+  100% { offset-distance: 100%; }
+}

@@ -1,0 +1,20 @@
+<!-- REPORTES Y ESTADÍSTICAS — RF96–RF110 -->
+<div class="page-header">
+  <h1><span class="material-symbols-outlined">bar_chart</span> Reportes y Estadísticas</h1>
+  <div class="page-header-actions">
+    <select class="form-control" style="width:160px"><option>Últimos 7 días</option><option>Último mes</option><option>Este año</option></select>
+    <button class="btn btn-secondary btn-sm" onclick="SP_Components.showToast('info','Exportar','Generando PDF...')"><span class="material-symbols-outlined">picture_as_pdf</span> PDF</button>
+    <button class="btn btn-primary btn-sm" onclick="SP_Components.exportJSON(window.mockData.stats, 'Reportes_Stats')"><span class="material-symbols-outlined">download</span> Excel/CSV</button>
+  </div>
+</div>
+<div class="grid-2">
+  <div class="card"><div class="card-header"><h3>Ingresos Totales (Mes a Mes)</h3></div><div class="card-body">
+    <div class="chart-container" style="display:flex;align-items:flex-end;gap:16px;height:250px;padding-top:20px" id="re-chart-revenue"></div>
+  </div></div>
+  <div class="card"><div class="card-header"><h3>Ocupación Promedio (Por Día)</h3></div><div class="card-body">
+    <div class="chart-container" style="display:flex;align-items:flex-end;gap:16px;height:250px;padding-top:20px" id="re-chart-occupancy"></div>
+  </div></div>
+</div>
+<div class="card mt-lg"><div class="card-header"><h3>Mapa de Calor de Demanda (Horas vs Días)</h3></div><div class="card-body">
+  <div id="re-heatmap" style="width:100%;overflow-x:auto"></div>
+</div></div>

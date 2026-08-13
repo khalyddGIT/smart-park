@@ -1,0 +1,313 @@
+<!-- ============================================================
+     AUTH MODULE — auth.html
+     RF01–RF10: Registro, Login, Verificación, Biometría, Mi Cuenta
+     ============================================================ -->
+<div class="page-header">
+  <h1><span class="material-symbols-outlined">person</span> <span id="auth-title">Mi Cuenta</span></h1>
+</div>
+
+<!-- ── TABS ── -->
+<div id="auth-tabs">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="cuenta">Mi Cuenta</button>
+    <button class="tab-btn" data-tab="seguridad">Seguridad</button>
+    <button class="tab-btn" data-tab="login-admin" id="tab-login-admin" style="display:none">Acceso Admin</button>
+    <button class="tab-btn" data-tab="roles" id="tab-roles" style="display:none">Gestión de Roles</button>
+  </div>
+
+  <!-- ═══ TAB: MI CUENTA (RF10, RF137) ═══ -->
+  <div class="tab-content active" data-tab-content="cuenta">
+    <div class="grid-2">
+      <!-- Datos personales -->
+      <div class="card">
+        <div class="card-header"><h3>Datos Personales</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Nombre completo</label>
+            <input type="text" class="form-control" id="auth-name" placeholder="Tu nombre">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Correo electrónico</label>
+            <input type="email" class="form-control" id="auth-email" placeholder="correo@ejemplo.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input type="tel" class="form-control" id="auth-phone" placeholder="999 999 999">
+          </div>
+          <button class="btn btn-primary" onclick="saveProfile()">
+            <span class="material-symbols-outlined">save</span> Guardar Cambios
+          </button>
+        </div>
+      </div>
+
+      <!-- Mis Vehículos (RF10) -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Mis Vehículos</h3>
+          <button class="btn btn-sm btn-secondary" onclick="SP_Components.openModal('modal-add-vehicle')">
+            <span class="material-symbols-outlined">add</span> Agregar
+          </button>
+        </div>
+        <div class="card-body" id="auth-vehicles-list">
+          <!-- JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Mis Reservas & Mis Pagos tabs (RF137) -->
+    <div class="mt-lg" id="auth-subtabs">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="mis-vehiculos-tab">Mis Vehículos</button>
+        <button class="tab-btn" data-tab="mis-reservas-tab">Mis Reservas</button>
+        <button class="tab-btn" data-tab="mis-pagos-tab">Mis Pagos</button>
+      </div>
+      <div class="tab-content active" data-tab-content="mis-vehiculos-tab">
+        <div id="auth-vehicles-table"></div>
+      </div>
+      <div class="tab-content" data-tab-content="mis-reservas-tab">
+        <div id="auth-reservas-table"></div>
+      </div>
+      <div class="tab-content" data-tab-content="mis-pagos-tab">
+        <div id="auth-pagos-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: SEGURIDAD (RF05, RF09) ═══ -->
+  <div class="tab-content" data-tab-content="seguridad">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>Cambiar Contraseña</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Contraseña actual</label>
+            <input type="password" class="form-control" placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nueva contraseña</label>
+            <input type="password" class="form-control" placeholder="Mínimo 8 caracteres">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirmar nueva contraseña</label>
+            <input type="password" class="form-control" placeholder="Repite la contraseña">
+          </div>
+          <button class="btn btn-primary" onclick="SP_Components.showToast('success','Contraseña','Contraseña actualizada correctamente')">
+            <span class="material-symbols-outlined">lock</span> Actualizar Contraseña
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Sesiones Activas</h3></div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--color-bg);border-radius:var(--radius);margin-bottom:12px">
+            <span class="material-symbols-outlined" style="color:var(--color-success)">computer</span>
+            <div style="flex:1">
+              <div class="text-sm fw-600">Este dispositivo</div>
+              <div class="text-xs text-muted">Windows · Chrome · Huamanga, PE</div>
+            </div>
+            <span class="badge badge-success">Activa</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--color-bg);border-radius:var(--radius);margin-bottom:16px">
+            <span class="material-symbols-outlined" style="color:var(--color-text-muted)">phone_android</span>
+            <div style="flex:1">
+              <div class="text-sm fw-600">Samsung Galaxy S23</div>
+              <div class="text-xs text-muted">Android · Chrome · Hace 2 días</div>
+            </div>
+            <span class="badge badge-neutral">Inactiva</span>
+          </div>
+          <!-- RF09 -->
+          <button class="btn btn-danger btn-block" onclick="SP_Components.showToast('warning','Sesiones','Se cerró sesión en todos los dispositivos')">
+            <span class="material-symbols-outlined">logout</span> Cerrar sesión en todos los dispositivos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial de accesos (RF07) — solo admins -->
+    <div class="card mt-lg" id="auth-access-log" style="display:none">
+      <div class="card-header"><h3>Historial de Accesos</h3></div>
+      <div class="card-body">
+        <div class="sp-table-responsive">
+          <table class="sp-table table-cards">
+            <thead><tr><th>Fecha</th><th>Hora</th><th>Método</th><th>Resultado</th></tr></thead>
+            <tbody id="auth-access-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: ACCESO ADMIN (RF03, RF04, RF06) ═══ -->
+  <div class="tab-content" data-tab-content="login-admin">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>Validación Biométrica</h3></div>
+        <div class="card-body" style="text-align:center">
+          <div id="biometric-scanner" style="width:180px;height:180px;margin:0 auto 20px;border-radius:50%;border:4px solid var(--color-border-light);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+            <span class="material-symbols-outlined" style="font-size:3rem;color:var(--color-text-muted)" id="biometric-icon">fingerprint</span>
+            <div id="biometric-scan-line" style="display:none;position:absolute;top:0;left:0;right:0;height:3px;background:var(--c2);animation:scanLine 2s ease-in-out infinite"></div>
+          </div>
+          <p class="text-sm text-muted mb-md" id="biometric-status">Selecciona un método de autenticación</p>
+          <div style="display:flex;gap:12px;justify-content:center">
+            <button class="btn btn-primary" onclick="simulateBiometric('facial')">
+              <span class="material-symbols-outlined">face</span> Reconocimiento Facial
+            </button>
+            <button class="btn btn-secondary" onclick="simulateBiometric('huella')">
+              <span class="material-symbols-outlined">fingerprint</span> Huella Dactilar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RF04: Gestión de plantilla biométrica -->
+      <div class="card">
+        <div class="card-header"><h3>Plantilla Biométrica</h3></div>
+        <div class="card-body">
+          <div style="padding:16px;background:var(--color-bg);border-radius:var(--radius);margin-bottom:12px">
+            <div class="d-flex align-center justify-between mb-sm">
+              <span class="text-sm fw-600">Reconocimiento Facial</span>
+              <span class="badge badge-success">Registrado</span>
+            </div>
+            <div class="text-xs text-muted">Última actualización: 15 Jul 2026</div>
+          </div>
+          <div style="padding:16px;background:var(--color-bg);border-radius:var(--radius);margin-bottom:16px">
+            <div class="d-flex align-center justify-between mb-sm">
+              <span class="text-sm fw-600">Huella Dactilar</span>
+              <span class="badge badge-success">Registrado</span>
+            </div>
+            <div class="text-xs text-muted">Última actualización: 10 Jul 2026</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-secondary" onclick="SP_Components.showToast('info','Biométrico','Registro de plantilla iniciado')">Registrar Nueva</button>
+            <button class="btn btn-sm btn-ghost" onclick="SP_Components.showToast('info','Biométrico','Plantilla actualizada')">Actualizar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: GESTIÓN DE ROLES (RF08) — solo admin plataforma ═══ -->
+  <div class="tab-content" data-tab-content="roles">
+    <div class="card">
+      <div class="card-header">
+        <h3>Gestión de Perfiles y Roles</h3>
+        <button class="btn btn-sm btn-primary" onclick="SP_Components.openModal('modal-add-user')">
+          <span class="material-symbols-outlined">person_add</span> Agregar Usuario
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="sp-table-responsive">
+          <table class="sp-table table-cards">
+            <thead><tr><th>Usuario</th><th>Email</th><th>Rol Actual</th><th>Registrado</th><th>Acciones</th></tr></thead>
+            <tbody id="auth-roles-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: AGREGAR VEHÍCULO ═══ -->
+<div class="modal-overlay" id="modal-add-vehicle">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Agregar Vehículo</h2>
+      <button class="modal-close" onclick="SP_Components.closeModal('modal-add-vehicle')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Placa</label>
+        <input type="text" class="form-control" id="new-vehicle-plate" placeholder="ABC-123" maxlength="7" style="text-transform:uppercase">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo de vehículo</label>
+        <select class="form-control" id="new-vehicle-type">
+          <option>Automóvil</option><option>Camioneta</option><option>Motocicleta</option><option>Bicicleta</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Marca</label>
+        <input type="text" class="form-control" id="new-vehicle-brand" placeholder="Toyota, Hyundai...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Modelo</label>
+        <input type="text" class="form-control" id="new-vehicle-model" placeholder="Corolla, Accent...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color</label>
+        <input type="text" class="form-control" id="new-vehicle-color" placeholder="Blanco, Negro...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="SP_Components.closeModal('modal-add-vehicle')">Cancelar</button>
+      <button class="btn btn-primary" onclick="addVehicle()">
+        <span class="material-symbols-outlined">add</span> Agregar Vehículo
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: CAMBIAR ROL ═══ -->
+<div class="modal-overlay" id="modal-change-role">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Cambiar Rol</h2>
+      <button class="modal-close" onclick="SP_Components.closeModal('modal-change-role')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nuevo Rol</label>
+        <select class="form-control" id="select-new-role">
+          <option value="user">Usuario Final</option>
+          <option value="local">Admin Local</option>
+          <option value="platform">Admin Plataforma</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="SP_Components.closeModal('modal-change-role')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmRoleChange()">Guardar Cambio</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: AGREGAR USUARIO ═══ -->
+<div class="modal-overlay" id="modal-add-user">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Agregar Nuevo Usuario</h2>
+      <button class="modal-close" onclick="SP_Components.closeModal('modal-add-user')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre del Usuario</label>
+        <input type="text" class="form-control" id="add-user-name" placeholder="Ej: Carlos Rojas">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Correo Electrónico</label>
+        <input type="email" class="form-control" id="add-user-email" placeholder="carlos@correo.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Rol del Usuario</label>
+        <select class="form-control" id="add-user-role">
+          <option value="user">Usuario Final</option>
+          <option value="local">Administrador Local</option>
+          <option value="platform">Administrador de Plataforma</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="SP_Components.closeModal('modal-add-user')">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitNewUser()">Guardar Usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- Biometric scan animation -->
+<style>
+  @keyframes scanLine {
+    0%, 100% { top: 0; }
+    50% { top: calc(100% - 3px); }
+  }
+</style>

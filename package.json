@@ -1,0 +1,13 @@
+{
+  "name": "smart-park-ws",
+  "version": "1.0.0",
+  "description": "Servidor WebSocket de solo demo para Smart-Park (emite eventos en vivo)",
+  "type": "commonjs",
+  "main": "server/ws-server.js",
+  "scripts": {
+    "ws": "node server/ws-server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

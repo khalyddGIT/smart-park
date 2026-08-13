@@ -1,0 +1,6 @@
+/* Reportes CSS */
+.bar-chart-item { flex: 1; background: var(--c3); border-radius: 4px 4px 0 0; min-width: 30px; position: relative; transition: height var(--transition-slow); }
+.bar-chart-item:hover { background: var(--c2); }
+.bar-chart-item span { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: .7rem; color: var(--color-text-muted); }
+.bar-chart-val { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: .75rem; font-weight: 700; }
+.hm-cell { height: 40px; display: flex; align-items: center; justify-content: center; font-size: .7rem; color: #fff; border-radius: 2px; }

@@ -1,0 +1,63 @@
+<!-- ============================================================
+     BÚSQUEDA Y GEOLOCALIZACIÓN — busqueda-geolocalizacion.html
+     RF20–RF26: Mapa, búsqueda, filtros, listado por cercanía
+     ============================================================ -->
+<div class="page-header">
+  <h1><span class="material-symbols-outlined">search</span> Buscar Estacionamiento</h1>
+  <div class="page-header-actions">
+    <!-- RF20 -->
+    <button class="btn btn-secondary btn-sm" onclick="useMyLocation()">
+      <span class="material-symbols-outlined">my_location</span> Mi ubicación
+    </button>
+  </div>
+</div>
+
+<!-- RF25: Barra de filtros -->
+<div class="filter-bar" id="search-filters">
+  <!-- RF21 -->
+  <input type="text" class="form-control" id="search-address" placeholder="Ingresar dirección manualmente..." style="min-width:220px">
+  <select class="form-control" id="filter-vehicle-type">
+    <option value="">Tipo de vehículo</option>
+    <option>Automóvil</option><option>Camioneta</option><option>Motocicleta</option><option>Bicicleta</option>
+  </select>
+  <select class="form-control" id="filter-tariff">
+    <option value="">Tarifa máxima</option>
+    <option value="2">Hasta S/ 2.00/h</option><option value="3">Hasta S/ 3.00/h</option><option value="5">Hasta S/ 5.00/h</option>
+  </select>
+  <select class="form-control" id="filter-radius">
+    <option value="">Cualquier distancia</option>
+    <option value="0.5">Hasta 500m</option>
+    <option value="1">Hasta 1 km</option>
+    <option value="2">Hasta 2 km</option>
+    <option value="5">Hasta 5 km</option>
+  </select>
+  <label class="form-check" style="white-space:nowrap">
+    <input type="checkbox" id="filter-available" checked> Solo disponibles
+  </label>
+  <select class="form-control" id="filter-rating">
+    <option value="">Calificación mín.</option>
+    <option value="3">3+ ★</option><option value="4">4+ ★</option><option value="4.5">4.5+ ★</option>
+  </select>
+  <button class="btn btn-primary btn-sm" onclick="applySearchFilters()">
+    <span class="material-symbols-outlined">filter_list</span> Filtrar
+  </button>
+</div>
+
+<!-- Map + List layout -->
+<div class="search-layout">
+  <!-- RF20-RF22: Mapa Leaflet de Huamanga, Ayacucho -->
+  <div class="search-map-wrap">
+    <div id="search-map" class="map-container" style="height:500px"></div>
+  </div>
+
+  <!-- RF23-RF24: Panel lateral con listado -->
+  <div class="search-list-panel" id="search-list-panel">
+    <h3 class="mb-md" style="font-size:.95rem">
+      <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:middle;color:var(--c3)">sort</span>
+      Resultados <span id="search-count" class="text-muted text-xs">(0)</span>
+    </h3>
+    <div id="search-results">
+      <!-- JS populated -->
+    </div>
+  </div>
+</div>

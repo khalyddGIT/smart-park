@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Smart-Park Enterprise - Plataforma Integral de Gestión de Estacionamientos con LPR, CAD y FastAPI",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build && node -e \"const fs=require('fs'); fs.cpSync('frontend/dist','public',{recursive:true});\"",
     "ws": "node server/ws-server.js"
   },
   "dependencies": {

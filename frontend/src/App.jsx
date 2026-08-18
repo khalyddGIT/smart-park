@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
+import { useEstablishments } from './context/EstablishmentContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
-import { FloorPlanEditor } from './components/FloorPlanEditor';
+import { LocalEstablishmentManager } from './components/LocalEstablishmentManager';
 import { ANPRMonitor } from './components/ANPRMonitor';
 import { PaymentsModule } from './components/PaymentsModule';
 import { VehiclesModule } from './components/VehiclesModule';
@@ -10,77 +12,124 @@ import { HistoryModule } from './components/HistoryModule';
 import { ReviewsModule } from './components/ReviewsModule';
 import { AffiliatedParkingsModule } from './components/AffiliatedParkingsModule';
 import { UserRolesModule } from './components/UserRolesModule';
+import { StaffModule } from './components/StaffModule';
 import { AnalyticsGlobalModule } from './components/AnalyticsGlobalModule';
+import { IncidentsModule } from './components/IncidentsModule';
+import { LoyaltyClubModule } from './components/LoyaltyClubModule';
+import { AuditLogsModule } from './components/AuditLogsModule';
 import { ResiliencySimModule } from './components/ResiliencySimModule';
 import { AyacuchoMap } from './components/AyacuchoMap';
-import { ProfessionalTerrainEditor } from './components/ProfessionalTerrainEditor';
-import { Search, MapPin, QrCode, Car, ChevronRight, Sparkles } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './components/ui/card';
+import { CustomerInteractivePlanBooking } from './components/CustomerInteractivePlanBooking';
+import { DigitalAccessPassModal } from './components/DigitalAccessPassModal';
+import { 
+  Search, 
+  MapPin, 
+  QrCode, 
+  Car, 
+  ChevronRight, 
+  Award, 
+  AlertTriangle, 
+  ShieldCheck,
+  Building2,
+  Sparkles,
+  Filter,
+  CheckCircle2,
+  Accessibility,
+  Umbrella,
+  Crown,
+  Bike
+} from 'lucide-react';
+
+import { Card, CardDescription } from './components/ui/card';
 import { Button } from './components/ui/button';
 import { Badge } from './components/ui/badge';
 import { Input } from './components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './components/ui/dialog';
 
 export const App = () => {
   const { role } = useAuth();
+  const { establishments, occupySlot } = useEstablishments();
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // Estados de Usuario
-  const [selectedParking, setSelectedParking] = useState(null);
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  // Filtros de Búsqueda para Conductor
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('todos'); // 'todos' | 'centro' | 'techados' | 'economicos'
+
+  // Estados de Reserva de Usuario
+  const [selectedParkingId, setSelectedParkingId] = useState(null);
   const [showQRModal, setShowQRModal] = useState(false);
-  const [activeReservation, setActiveReservation] = useState(null);
+  const [activeReservation, setActiveReservation] = useState({
+    code: 'RSV-8912',
+    token: 'SPK-AYC891-7B2F9A',
+    parking: 'Smart Park Plaza Mayor - Planta Baja',
+    slot: 'A-01',
+    plate: 'ABC-123',
+    cost: 10.00,
+    hours: 2,
+    startTime: new Date(),
+    expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000)
+  });
 
-  // Datos de Estacionamientos en Ayacucho (Huamanga)
-  const parkings = [
-    {
-      id: 1,
-      name: 'Smart Park Plaza Mayor Ayacucho',
-      address: 'Portal Unión 42, Centro Histórico',
-      city: 'Ayacucho - Huamanga',
-      rate: 5.00,
-      available: 14,
-      total: 25,
-      image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'
-    },
-    {
-      id: 2,
-      name: 'Smart Park Jr. 28 de Julio',
-      address: 'Jr. 28 de Julio 350',
-      city: 'Ayacucho - Huamanga',
-      rate: 4.50,
-      available: 8,
-      total: 20,
-      image: 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800'
-    },
-    {
-      id: 3,
-      name: 'Smart Park Av. Independencia',
-      address: 'Av. Independencia 520',
-      city: 'Ayacucho - Huamanga',
-      rate: 6.00,
-      available: 20,
-      total: 40,
-      image: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800'
-    }
-  ];
+  // Obtener el establecimiento actualmente seleccionado en tiempo real desde el context
+  const selectedParking = establishments.find(e => e.id === selectedParkingId) || null;
 
-  const handleReserveSlot = (slotCode) => {
-    setSelectedSlot(slotCode);
-    const newRes = {
-      code: `RSV-${Math.floor(1000 + Math.random() * 9000)}`,
-      parking: selectedParking.name,
-      slot: slotCode,
-      plate: 'ABC-123',
-      cost: selectedParking.rate * 2,
-      qr: `SMARTPARK-${slotCode}-ABC123`
-    };
-    setActiveReservation(newRes);
+  // Reserva de Plaza por Conductor sobre el Plano Topográfico
+  const handleCustomerBooking = (bookingData) => {
+    if (!selectedParking) return;
+
+    // 1. Ocupar el cajón de manera persistente en el context / localStorage
+    occupySlot(selectedParking.id, bookingData.slotCode, bookingData.plate);
+
+    // 2. Establecer la reserva activa y abrir el modal con el QR y token ANPR
+    setActiveReservation({
+      code: bookingData.code,
+      token: bookingData.token,
+      parking: bookingData.parkingName,
+      slot: bookingData.slotCode,
+      plate: bookingData.plate,
+      cost: bookingData.totalCost,
+      hours: bookingData.hours,
+      startTime: bookingData.startTime,
+      expiresAt: bookingData.expiresAt
+    });
+
     setShowQRModal(true);
   };
 
+  // Filtrado de establecimientos para la vista Conductor
+  const filteredParkings = establishments.filter(p => {
+    const matchesSearch = 
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.level && p.level.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (p.city && p.city.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    if (!matchesSearch) return false;
+
+    if (categoryFilter === 'centro') {
+      return p.address.toLowerCase().includes('centro') || p.name.toLowerCase().includes('plaza mayor');
+    }
+    if (categoryFilter === 'techados') {
+      const hasShaded = (p.elements || []).some(e => e.type === 'slot' && e.shaded);
+      return hasShaded || (p.level && (p.level.toLowerCase().includes('techado') || p.level.toLowerCase().includes('sótano')));
+    }
+    if (categoryFilter === 'economicos') {
+      return Number(p.rate) <= 4.50;
+    }
+    return true;
+  });
+
+  // Métricas Consolidadas
+  const totalNetworkSlots = establishments.reduce((acc, curr) => {
+    return acc + (curr.elements || []).filter(e => e.type === 'slot').length;
+  }, 0);
+
+  const totalFreeSlots = establishments.reduce((acc, curr) => {
+    return acc + (curr.elements || []).filter(e => e.type === 'slot' && e.status === 'free').length;
+  }, 0);
+
   return (
     <div className="min-h-screen bg-slate-50/60 text-slate-800 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+      <Toaster position="top-right" toastOptions={{ duration: 3500, style: { borderRadius: '14px', background: '#0f172a', color: '#fff', fontSize: '13px' } }} />
       <Navbar />
 
       <div className="flex flex-1">
@@ -89,121 +138,221 @@ export const App = () => {
 
         {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto pb-24 md:pb-6">
-          {/* VISTA ROL USUARIO CONDUCTOR */}
+          
+          {/* VISTA ROL CONDUCTOR (BUSCAR Y RESERVAR PLAZAS) */}
           {role === 'user' && (
-            <div className="max-w-7xl mx-auto space-y-8">
+            <div className="space-y-6">
               {activeTab === 'dashboard' && (
                 <>
-                  {/* Banner de Búsqueda */}
-                  <Card className="p-8 border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/40 shadow-sm relative overflow-hidden">
-                    <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Badge variant="success" className="gap-1">
-                        <Sparkles className="w-3 h-3 text-emerald-600" /> Sistema en Vivo
-                      </Badge>
-                    </div>
-                    <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Encuentra tu Estacionamiento Ideal</h1>
-                    <p className="text-xs text-slate-500 mb-6 max-w-2xl">Búsqueda en tiempo real, reserva directa sobre plano 2D interactivo y acceso automatizado mediante QR o lectura ANPR.</p>
-                    
-                    <div className="flex flex-col md:flex-row gap-3 relative z-10">
-                      <div className="flex-1 relative">
-                        <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-                        <Input
-                          type="text"
-                          placeholder="Buscar por distrito, avenida o nombre del local..."
-                          className="pl-10 h-10 border-slate-200"
-                        />
+                  {/* Banner de Búsqueda Inteligente */}
+                  <Card className="p-6 sm:p-8 border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/40 shadow-sm relative overflow-hidden">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1.5">
+                          <Badge variant="success" className="font-mono text-[10px] font-bold">
+                            RED HUAMANGA ACTIVA
+                          </Badge>
+                          <span className="text-xs font-mono text-slate-500">
+                            {totalFreeSlots} Plazas Libres en Vivo de {totalNetworkSlots} Totales ({establishments.length} Sedes)
+                          </span>
+                        </div>
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                          Encuentra tu Estacionamiento en Ayacucho
+                        </h1>
+                        <p className="text-xs text-slate-500 max-w-2xl mt-1">
+                          Selecciona cualquier sede oficial de la red, visualiza su plano topográfico 2D interactivo y reserva tu cajón al instante con pase ANPR.
+                        </p>
                       </div>
-                      <Button size="lg" className="px-6 font-black shadow-emerald-600/20">
-                        Buscar Disponibles
-                      </Button>
+                    </div>
+                    
+                    {/* Barra de Búsqueda y Filtros de Categoría */}
+                    <div className="space-y-3 relative z-10 pt-2">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1 relative">
+                          <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                          <Input
+                            type="text"
+                            placeholder="Buscar por sede, dirección (ej. Portal Unión, Jr. 28 de Julio, Independencia)..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 h-10 border-slate-200 bg-white shadow-xs"
+                          />
+                        </div>
+                        {searchQuery && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setSearchQuery('')}
+                            className="text-xs font-bold text-slate-600"
+                          >
+                            Limpiar
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Filtros Rápidos */}
+                      <div className="flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
+                        <span className="text-slate-400 font-bold uppercase text-[10px] pr-1 flex items-center gap-1">
+                          <Filter className="w-3 h-3" /> Filtro:
+                        </span>
+                        <button
+                          onClick={() => setCategoryFilter('todos')}
+                          className={`px-3 py-1 rounded-xl font-bold transition ${
+                            categoryFilter === 'todos' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          Todas las Sedes ({establishments.length})
+                        </button>
+                        <button
+                          onClick={() => setCategoryFilter('centro')}
+                          className={`px-3 py-1 rounded-xl font-bold transition ${
+                            categoryFilter === 'centro' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          Centro Histórico
+                        </button>
+                        <button
+                          onClick={() => setCategoryFilter('techados')}
+                          className={`px-3 py-1 rounded-xl font-bold transition ${
+                            categoryFilter === 'techados' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          Cubiertas & Sótano
+                        </button>
+                        <button
+                          onClick={() => setCategoryFilter('economicos')}
+                          className={`px-3 py-1 rounded-xl font-bold transition ${
+                            categoryFilter === 'economicos' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          Económicos (≤ S/ 4.50/h)
+                        </button>
+                      </div>
                     </div>
                   </Card>
 
-                  {/* Mapa Interactivo de Ayacucho (Huamanga) */}
-                  {!selectedParking && (
-                    <AyacuchoMap parkings={parkings} onSelectParking={(p) => setSelectedParking(p)} />
-                  )}
+                  {/* MAPA INTERACTIVO DE AYACUCHO */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-emerald-600" />
+                        <span>Mapa Satelital de Cobertura — Huamanga</span>
+                      </h2>
+                      <span className="text-xs text-slate-500 font-mono">
+                        {filteredParkings.length} Sedes encontradas
+                      </span>
+                    </div>
+                    <AyacuchoMap 
+                      parkings={establishments}
+                      onSelectParking={(parking) => setSelectedParkingId(parking.id)} 
+                      selectedParkingId={selectedParkingId} 
+                    />
+                  </div>
 
-                  {/* Listado de Parqueos */}
-                  {!selectedParking ? (
-                    <div>
-                      <h2 className="text-xl font-extrabold text-slate-900 mb-4">Estacionamientos Destacados Cercanos</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {parkings.map(p => (
-                          <Card key={p.id} className="overflow-hidden border-slate-200/80 hover:border-emerald-500/50 hover:shadow-lg transition group">
-                            <div className="h-48 overflow-hidden relative">
-                              <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                              <Badge className="absolute top-3 right-3 bg-emerald-600 text-white font-black px-3 py-1 shadow-md text-xs">
-                                S/ {p.rate.toFixed(2)} / hr
-                              </Badge>
-                            </div>
-                            <CardHeader className="p-6 pb-2">
-                              <CardTitle className="text-lg font-extrabold">{p.name}</CardTitle>
-                              <CardDescription className="flex items-center text-slate-500 mt-1">
-                                <MapPin className="w-3.5 h-3.5 text-emerald-600 mr-1" /> {p.address}, {p.city}
-                              </CardDescription>
-                            </CardHeader>
-                            <CardFooter className="p-6 pt-4 flex justify-between items-center border-t border-slate-100">
-                              <Badge variant="success" className="font-bold">
-                                {p.available} plazas libres
-                              </Badge>
-                              <Button
-                                onClick={() => setSelectedParking(p)}
-                                variant="default"
-                                className="font-bold gap-1"
-                              >
-                                <span>Ver Plano & Reservar</span>
-                                <ChevronRight className="w-4 h-4" />
-                              </Button>
-                            </CardFooter>
-                          </Card>
-                        ))}
+                  {/* VISTA DEL PLANO O LISTADO DE TARJETAS DE SEDES */}
+                  {selectedParking ? (
+                    /* Vista del Plano Topográfico Interactivo para el Conductor */
+                    <div className="space-y-4 animate-in fade-in">
+                      <div className="flex justify-between items-center bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setSelectedParkingId(null)}
+                          className="text-xs font-bold text-slate-600 hover:text-slate-900 gap-1.5"
+                        >
+                          ← Volver al Listado de Todas las Sedes
+                        </Button>
+                        <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
+                          Sede Activa: {selectedParking.name}
+                        </span>
                       </div>
+
+                      <CustomerInteractivePlanBooking 
+                        parking={selectedParking} 
+                        planElements={selectedParking.elements || []}
+                        onReserveSlot={handleCustomerBooking}
+                      />
                     </div>
                   ) : (
-                    /* Vista de Selección de Plano 2D para Cliente */
-                    <div className="space-y-4">
-                      <Button
-                        variant="link"
-                        onClick={() => setSelectedParking(null)}
-                        className="p-0 font-bold text-emerald-700"
-                      >
-                        ← Volver a lista de estacionamientos
-                      </Button>
-                      <Card className="p-6">
-                        <CardHeader className="p-0 mb-4">
-                          <CardTitle>{selectedParking.name}</CardTitle>
-                          <CardDescription>Haz clic sobre un cajón verde libre para reservarlo inmediatamente.</CardDescription>
-                        </CardHeader>
+                    /* Grid de Tarjetas de Estacionamientos Disponibles */
+                    <div className="space-y-3">
+                      <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                        <Building2 className="w-5 h-5 text-emerald-600" />
+                        <span>Sedes de Estacionamiento Registradas ({filteredParkings.length})</span>
+                      </h2>
 
-                        <div className="bg-slate-100/70 border border-slate-200 rounded-3xl p-8 min-h-[300px] flex items-center justify-center relative shadow-inner">
-                          <div className="grid grid-cols-4 gap-4">
-                            {['A-01', 'A-02', 'A-03', 'A-04', 'B-01', 'B-02', 'B-03', 'B-04'].map((code, idx) => {
-                              const isFree = idx % 2 === 0;
-                              return (
-                                <Button
-                                  key={code}
-                                  disabled={!isFree}
-                                  variant={isFree ? "outline" : "secondary"}
-                                  onClick={() => handleReserveSlot(code)}
-                                  className={`w-20 h-28 rounded-2xl border-2 font-bold text-xs flex flex-col items-center justify-center space-y-2 transition shadow-sm ${
-                                    isFree
-                                      ? 'bg-emerald-50 border-emerald-500 text-emerald-800 hover:bg-emerald-100 hover:scale-105'
-                                      : 'bg-rose-50 border-rose-200 text-rose-500 cursor-not-allowed opacity-60'
-                                  }`}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredParkings.map((p) => {
+                          const elements = p.elements || [];
+                          const totalSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
+                          const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
+                          const pmrSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'pmr').length;
+                          const shadedSlots = elements.filter(e => e.type === 'slot' && e.shaded).length;
+                          const vipSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'vip').length;
+
+                          return (
+                            <Card key={p.id} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                              <div>
+                                <div className="h-44 relative overflow-hidden bg-slate-100">
+                                  <img 
+                                    src={p.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
+                                    alt={p.name} 
+                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                                  />
+                                  <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-emerald-800 shadow-sm border border-slate-200">
+                                    S/ {Number(p.rate).toFixed(2)}/h
+                                  </div>
+                                  <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
+                                    {freeSlots} Libres de {totalSlots}
+                                  </div>
+                                  <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
+                                    {p.level}
+                                  </div>
+                                </div>
+
+                                <div className="p-5 space-y-3">
+                                  <div>
+                                    <h3 className="font-extrabold text-slate-900 text-base leading-tight">{p.name}</h3>
+                                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                                      <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" /> 
+                                      <span>{p.address} • {p.city || 'Huamanga'}</span>
+                                    </p>
+                                  </div>
+
+                                  {/* Distintivos de Servicios */}
+                                  <div className="flex flex-wrap gap-1.5 text-[10px] font-mono pt-1">
+                                    {pmrSlots > 0 && (
+                                      <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-200 font-bold flex items-center gap-0.5">
+                                        <Accessibility className="w-3 h-3" /> {pmrSlots} PMR
+                                      </span>
+                                    )}
+                                    {shadedSlots > 0 && (
+                                      <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200 font-bold flex items-center gap-0.5">
+                                        <Umbrella className="w-3 h-3" /> {shadedSlots} Techados
+                                      </span>
+                                    )}
+                                    {vipSlots > 0 && (
+                                      <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md border border-amber-300 font-bold flex items-center gap-0.5">
+                                        <Crown className="w-3 h-3" /> VIP
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="p-5 pt-0">
+                                <Button 
+                                  onClick={() => setSelectedParkingId(p.id)} 
+                                  className="w-full font-black gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
                                 >
-                                  <span>{code}</span>
-                                  <Car className="w-5 h-5" />
-                                  <Badge variant={isFree ? "success" : "destructive"} className="text-[8px] px-1.5 py-0">
-                                    {isFree ? 'Libre' : 'Ocupado'}
-                                  </Badge>
+                                  <span>Ver Plano Topográfico & Elegir Cajón</span>
+                                  <ChevronRight className="w-4 h-4 text-emerald-400" />
                                 </Button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </Card>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </>
@@ -212,35 +361,35 @@ export const App = () => {
               {activeTab === 'reservations' && (
                 <div className="space-y-6">
                   <h1 className="text-2xl font-black text-slate-900">Mis Reservas & Pases Digitales</h1>
-                  <Card className="p-6 border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <Badge variant="success">Reserva Activa</Badge>
-                        <span className="text-xs font-mono text-slate-400">RSV-8912</span>
+                  {activeReservation ? (
+                    <Card className="p-6 border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <Badge variant="success">Reserva Activa</Badge>
+                          <span className="text-xs font-mono text-slate-400">{activeReservation.code}</span>
+                        </div>
+                        <h3 className="font-extrabold text-lg text-slate-900">{activeReservation.parking}</h3>
+                        <p className="text-xs text-slate-500">
+                          Cajón Asignado: <span className="font-bold text-emerald-700 font-mono">{activeReservation.slot}</span> | Placa: <span className="font-bold text-slate-700 font-mono">{activeReservation.plate}</span>
+                        </p>
                       </div>
-                      <h3 className="font-extrabold text-lg text-slate-900">Smart Park Central San Isidro</h3>
-                      <p className="text-xs text-slate-500">Cajón Asignado: <span className="font-bold text-emerald-700 font-mono">A-01</span> | Placa: <span className="font-bold text-slate-700 font-mono">ABC-123</span></p>
-                    </div>
-                    <Button onClick={() => {
-                      setActiveReservation({
-                        code: 'RSV-8912',
-                        parking: 'Smart Park Central San Isidro',
-                        slot: 'A-01',
-                        plate: 'ABC-123',
-                        cost: 17.00,
-                        qr: 'SMARTPARK-A-01-ABC123'
-                      });
-                      setShowQRModal(true);
-                    }} className="font-bold gap-2">
-                      <QrCode className="w-4 h-4" />
-                      <span>Ver Código QR</span>
-                    </Button>
-                  </Card>
+                      <Button onClick={() => setShowQRModal(true)} className="font-bold gap-2">
+                        <QrCode className="w-4 h-4" />
+                        <span>Ver Código QR</span>
+                      </Button>
+                    </Card>
+                  ) : (
+                    <Card className="p-8 text-center text-slate-400">
+                      <p>No tienes reservas activas en este momento.</p>
+                    </Card>
+                  )}
                 </div>
               )}
 
+              {activeTab === 'loyalty' && <LoyaltyClubModule />}
               {activeTab === 'vehicles' && <VehiclesModule />}
               {activeTab === 'payments' && <PaymentsModule />}
+              {activeTab === 'incidents' && <IncidentsModule />}
               {activeTab === 'history' && <HistoryModule />}
               {activeTab === 'reviews' && <ReviewsModule />}
             </div>
@@ -249,36 +398,16 @@ export const App = () => {
           {/* VISTA ROL ADMIN LOCAL */}
           {role === 'local' && (
             <div className="space-y-6">
-              {activeTab === 'dashboard' && <FloorPlanEditor />}
-              {activeTab === 'editor' && <ProfessionalTerrainEditor />}
+              {(activeTab === 'dashboard' || activeTab === 'editor') && (
+                <LocalEstablishmentManager />
+              )}
               {(activeTab === 'anpr' || activeTab === 'garita') && <ANPRMonitor />}
-              {activeTab === 'staff' && (
-                <div className="max-w-7xl mx-auto space-y-6">
-                  <h1 className="text-2xl font-black text-slate-900">Gestión de Personal de Garita</h1>
-                  <Card className="p-6 flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-base">Juan Pérez (Operador Garita)</h3>
-                      <p className="text-xs text-slate-500">Turno: Mañana | DNI: 44556677</p>
-                    </div>
-                    <Badge variant="success">Activo</Badge>
-                  </Card>
-                </div>
-              )}
-              {activeTab === 'reports' && (
-                <div className="max-w-7xl mx-auto space-y-6">
-                  <h1 className="text-2xl font-black text-slate-900">Reportes de Afluencia del Local</h1>
-                  <div className="grid grid-cols-2 gap-6">
-                    <Card className="p-6">
-                      <p className="text-xs font-bold text-slate-400 uppercase">Vehículos Ingresados Hoy</p>
-                      <p className="text-3xl font-black text-emerald-600 mt-1">142 Vehículos</p>
-                    </Card>
-                    <Card className="p-6">
-                      <p className="text-xs font-bold text-slate-400 uppercase">Recaudación Garita</p>
-                      <p className="text-3xl font-black text-teal-600 mt-1">S/ 1,840.00</p>
-                    </Card>
-                  </div>
-                </div>
-              )}
+              {activeTab === 'incidents' && <IncidentsModule />}
+              {activeTab === 'staff' && <StaffModule />}
+              {activeTab === 'audit' && <AuditLogsModule />}
+              {activeTab === 'reviews' && <ReviewsModule />}
+              {activeTab === 'resiliency' && <ResiliencySimModule />}
+              {activeTab === 'reports' && <AnalyticsGlobalModule />}
             </div>
           )}
 
@@ -295,60 +424,38 @@ export const App = () => {
                     </Card>
                     <Card className="p-6">
                       <CardDescription className="uppercase font-extrabold text-[10px] text-slate-400">Locales Afiliados Activos</CardDescription>
-                      <p className="text-3xl font-black text-teal-600 mt-2">42 Locales</p>
+                      <p className="text-3xl font-black text-teal-600 mt-2">{establishments.length} Locales</p>
                     </Card>
                     <Card className="p-6">
                       <CardDescription className="uppercase font-extrabold text-[10px] text-slate-400">Ocupación Media Red</CardDescription>
-                      <p className="text-3xl font-black text-amber-600 mt-2">78.5%</p>
+                      <p className="text-3xl font-black text-amber-600 mt-2">
+                        {totalNetworkSlots > 0 ? Math.round(((totalNetworkSlots - totalFreeSlots) / totalNetworkSlots) * 100) : 0}%
+                      </p>
                     </Card>
                   </div>
                 </div>
               )}
 
               {activeTab === 'affiliates' && <AffiliatedParkingsModule />}
-              {activeTab === 'users' && <UserRolesModule />}
               {activeTab === 'analytics' && <AnalyticsGlobalModule />}
+              {activeTab === 'incidents' && <IncidentsModule />}
+              {activeTab === 'audit' && <AuditLogsModule />}
+              {activeTab === 'users' && <UserRolesModule />}
+              {activeTab === 'staff' && <StaffModule />}
+              {activeTab === 'reviews' && <ReviewsModule />}
               {activeTab === 'resiliency' && <ResiliencySimModule />}
             </div>
           )}
+
         </main>
       </div>
 
       {/* Modal de Pase Digital QR */}
-      {showQRModal && activeReservation && (
-        <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
-          <DialogContent className="max-w-sm rounded-3xl p-6 text-center">
-            <DialogHeader>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 shadow-inner">
-                <QrCode className="w-6 h-6" />
-              </div>
-              <DialogTitle className="text-xl font-black text-center">¡Reserva Confirmada!</DialogTitle>
-              <DialogDescription className="text-center text-xs">
-                Muestra este código QR en el tótem de entrada o utiliza la barrera ANPR.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="bg-slate-900 p-4 rounded-2xl inline-block my-2 shadow-md mx-auto">
-              <div className="w-40 h-40 bg-white rounded-xl flex items-center justify-center text-slate-900 font-mono text-xs font-bold p-2 text-center border-4 border-emerald-500">
-                [QR CODE SMART PARK]
-                <br />
-                {activeReservation.code}
-              </div>
-            </div>
-
-            <div className="text-xs space-y-1 text-slate-700 font-mono my-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-              <p>Código: <span className="font-bold text-slate-900">{activeReservation.code}</span></p>
-              <p>Cajón: <span className="text-emerald-700 font-bold">{activeReservation.slot}</span></p>
-              <p>Placa: <span className="text-teal-700 font-bold">{activeReservation.plate}</span></p>
-              <p>Monto Estimado: <span className="text-amber-700 font-bold">S/ {activeReservation.cost.toFixed(2)}</span></p>
-            </div>
-
-            <Button onClick={() => setShowQRModal(false)} className="w-full font-black">
-              Cerrar y Ver Mis Reservas
-            </Button>
-          </DialogContent>
-        </Dialog>
-      )}
+      <DigitalAccessPassModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        reservation={activeReservation}
+      />
     </div>
   );
 };

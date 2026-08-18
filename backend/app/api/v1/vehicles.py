@@ -1,0 +1,85 @@
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from app.db.session import get_db
+from app.models.models import Vehicle
+from app.schemas.schemas import VehicleCreate, VehicleUpdate, VehicleResponse
+
+router = APIRouter(prefix="/vehicles", tags=["Vehículos & Matrículas ANPR"])
+
+@router.get("", response_model=List[VehicleResponse])
+async def list_vehicles(
+    user_id: Optional[int] = None,
+    plate: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(Vehicle)
+    if user_id:
+        stmt = stmt.where(Vehicle.user_id == user_id)
+    if plate:
+        stmt = stmt.where(Vehicle.license_plate.ilike(f"%{plate}%"))
+    
+    result = await db.execute(stmt)
+    vehicles = result.scalars().all()
+    return [VehicleResponse.model_validate(v) for v in vehicles]
+
+@router.get("/{vehicle_id}", response_model=VehicleResponse)
+async def get_vehicle(vehicle_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
+    vehicle = result.scalars().first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehículo no encontrado")
+    return VehicleResponse.model_validate(vehicle)
+
+@router.post("", response_model=VehicleResponse, status_code=status.HTTP_201_CREATED)
+async def create_vehicle(vehicle_in: VehicleCreate, db: AsyncSession = Depends(get_db)):
+    # Normalizar placa
+    plate = vehicle_in.license_plate.strip().upper()
+    
+    # Verificar duplicidad de placa
+    res = await db.execute(select(Vehicle).where(Vehicle.license_plate == plate))
+    if res.scalars().first():
+        raise HTTPException(status_code=400, detail="Esta placa ya se encuentra registrada")
+    
+    db_vehicle = Vehicle(
+        user_id=vehicle_in.user_id or 1,
+        license_plate=plate,
+        vehicle_type=vehicle_in.vehicle_type,
+        brand=vehicle_in.brand,
+        model=vehicle_in.model,
+        color=vehicle_in.color
+    )
+    db.add(db_vehicle)
+    await db.commit()
+    await db.refresh(db_vehicle)
+    return VehicleResponse.model_validate(db_vehicle)
+
+@router.put("/{vehicle_id}", response_model=VehicleResponse)
+async def update_vehicle(vehicle_id: int, vehicle_in: VehicleUpdate, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
+    vehicle = result.scalars().first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehículo no encontrado")
+    
+    update_data = vehicle_in.model_dump(exclude_unset=True)
+    if "license_plate" in update_data and update_data["license_plate"]:
+        update_data["license_plate"] = update_data["license_plate"].strip().upper()
+        
+    for key, value in update_data.items():
+        setattr(vehicle, key, value)
+    
+    await db.commit()
+    await db.refresh(vehicle)
+    return VehicleResponse.model_validate(vehicle)
+
+@router.delete("/{vehicle_id}", status_code=status.HTTP_200_OK)
+async def delete_vehicle(vehicle_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
+    vehicle = result.scalars().first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehículo no encontrado")
+    
+    await db.delete(vehicle)
+    await db.commit()
+    return {"status": "success", "message": f"Vehículo con ID {vehicle_id} eliminado exitosamente"}

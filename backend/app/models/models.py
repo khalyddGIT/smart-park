@@ -138,3 +138,17 @@ class Staff(Base):
     position = Column(String(50), nullable=False)
     shift = Column(String(30), default="Mañana")
     status = Column(String(20), default="active")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Review(Base):
+    __tablename__ = "reviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    parking_id = Column(Integer, ForeignKey("parkings.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_name = Column(String(150), nullable=False)
+    rating = Column(Integer, nullable=False, default=5) # 1 a 5 estrellas
+    comment = Column(Text, nullable=False)
+    response = Column(Text, nullable=True) # Respuesta del administrador local
+    created_at = Column(DateTime, default=datetime.utcnow)
+

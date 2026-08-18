@@ -1,0 +1,104 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Smart-Park REST API",
+    "version": "1.0.0",
+    "description": "API RESTful para la gestión integral de estacionamientos inteligentes, diseño de planos CAD, reservas en vivo y eventos ANPR."
+  },
+  "servers": [
+    { "url": "http://127.0.0.1:8000/api/v1", "description": "Servidor de Desarrollo Local" }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Autenticación de usuario",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "example": "conductor1@gmail.com" },
+                  "password": { "type": "string", "example": "secreto123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token JWT generado exitosamente" }
+        }
+      }
+    },
+    "/parkings": {
+      "get": {
+        "summary": "Listado de estacionamientos afiliados con disponibilidad en tiempo real",
+        "responses": {
+          "200": { "description": "Lista de estacionamientos" }
+        }
+      }
+    },
+    "/parkings/{parking_id}/layout": {
+      "get": {
+        "summary": "Obtener el plano arquitectónico CAD y elementos diseñados",
+        "parameters": [{ "name": "parking_id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Elementos del plano en formato JSON" } }
+      },
+      "put": {
+        "summary": "Guardar y sincronizar plano arquitectónico CAD",
+        "parameters": [{ "name": "parking_id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } }
+        },
+        "responses": { "200": { "description": "Plano guardado exitosamente" } }
+      }
+    },
+    "/reservations": {
+      "post": {
+        "summary": "Crear reserva sobre plano interactivo y generar pase QR",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "parking_id": { "type": "integer" },
+                  "slot_code": { "type": "string", "example": "A-02" },
+                  "plate": { "type": "string", "example": "ABC-123" },
+                  "duration_hours": { "type": "integer", "example": 2 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Reserva creada con código QR" }
+        }
+      }
+    },
+    "/anpr/detect": {
+      "post": {
+        "summary": "Evento de detección de placa desde cámara ANPR",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "parking_id": { "type": "integer" },
+                  "plate": { "type": "string", "example": "ABC-123" },
+                  "gate_id": { "type": "string", "example": "GARITA-1" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Validación de acceso y comando de apertura de barrera" } }
+      }
+    }
+  }
+}

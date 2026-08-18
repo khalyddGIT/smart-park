@@ -2,7 +2,9 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
 
-# Schemas de Usuario
+# ==========================================
+# 1. SCHEMAS DE USUARIOS & ROLES
+# ==========================================
 class UserBase(BaseModel):
     full_name: str
     email: EmailStr
@@ -11,6 +13,18 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class UserRoleUpdate(BaseModel):
+    role: str
+
+class UserPinUpdate(BaseModel):
+    pin: str
 
 class UserResponse(UserBase):
     id: int
@@ -27,21 +41,71 @@ class Token(BaseModel):
 class PinVerify(BaseModel):
     pin: str
 
-# Schemas de Vehículos
-class VehicleCreate(BaseModel):
+# ==========================================
+# 2. SCHEMAS DE VEHÍCULOS
+# ==========================================
+class VehicleBase(BaseModel):
     license_plate: str
     vehicle_type: str = "auto"
     brand: Optional[str] = None
     model: Optional[str] = None
     color: Optional[str] = None
 
-class VehicleResponse(VehicleCreate):
+class VehicleCreate(VehicleBase):
+    user_id: Optional[int] = 1
+
+class VehicleUpdate(BaseModel):
+    license_plate: Optional[str] = None
+    vehicle_type: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    color: Optional[str] = None
+
+class VehicleResponse(VehicleBase):
     id: int
     user_id: int
     class Config:
         from_attributes = True
 
-# Schemas de Estacionamientos y Cajones
+# ==========================================
+# 3. SCHEMAS DE ESTACIONAMIENTOS
+# ==========================================
+class ParkingBase(BaseModel):
+    name: str
+    address: str
+    city: str
+    latitude: float = -12.089
+    longitude: float = -77.032
+    hourly_rate: float = 8.50
+    tolerance_minutes: int = 15
+    status: Optional[str] = "active"
+    total_capacity: int = 30
+    image_url: Optional[str] = None
+
+class ParkingCreate(ParkingBase):
+    pass
+
+class ParkingUpdate(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    hourly_rate: Optional[float] = None
+    tolerance_minutes: Optional[int] = None
+    status: Optional[str] = None
+    total_capacity: Optional[int] = None
+    image_url: Optional[str] = None
+
+class ParkingResponse(ParkingBase):
+    id: int
+    available_slots: Optional[int] = 0
+    class Config:
+        from_attributes = True
+
+# ==========================================
+# 4. SCHEMAS DE CAJONES (SLOTS) & PLANO CAD
+# ==========================================
 class SlotBase(BaseModel):
     code: str
     floor_level: Optional[str] = "Piso 1"
@@ -52,6 +116,20 @@ class SlotBase(BaseModel):
     width: int = 60
     height: int = 100
     rotation: int = 0
+
+class SlotCreate(SlotBase):
+    parking_id: int
+
+class SlotUpdate(BaseModel):
+    code: Optional[str] = None
+    floor_level: Optional[str] = None
+    slot_type: Optional[str] = None
+    status: Optional[str] = None
+    pos_x: Optional[int] = None
+    pos_y: Optional[int] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+    rotation: Optional[int] = None
 
 class SlotResponse(SlotBase):
     id: int
@@ -69,35 +147,63 @@ class FloorPlanElementBase(BaseModel):
     z_index: int = 1
     properties_json: Optional[str] = None
 
+class FloorPlanElementCreate(FloorPlanElementBase):
+    parking_id: int
+
 class FloorPlanElementResponse(FloorPlanElementBase):
     id: int
     parking_id: int
     class Config:
         from_attributes = True
 
-class ParkingResponse(BaseModel):
+class FloorPlanSyncRequest(BaseModel):
+    parking_id: int
+    slots: List[SlotBase]
+    elements: List[FloorPlanElementBase]
+
+# ==========================================
+# 5. SCHEMAS DE PERSONAL / STAFF
+# ==========================================
+class StaffBase(BaseModel):
+    full_name: str
+    dni: str
+    position: str
+    shift: Optional[str] = "Mañana"
+    status: Optional[str] = "active"
+
+class StaffCreate(StaffBase):
+    parking_id: int
+
+class StaffUpdate(BaseModel):
+    full_name: Optional[str] = None
+    dni: Optional[str] = None
+    position: Optional[str] = None
+    shift: Optional[str] = None
+    status: Optional[str] = None
+
+class StaffResponse(StaffBase):
     id: int
-    name: str
-    address: str
-    city: str
-    latitude: float
-    longitude: float
-    hourly_rate: float
-    tolerance_minutes: int
-    status: str
-    total_capacity: int
-    available_slots: Optional[int] = 0
-    image_url: Optional[str] = None
+    parking_id: int
+    created_at: datetime
     class Config:
         from_attributes = True
 
-# Schemas de Reservas
+# ==========================================
+# 6. SCHEMAS DE RESERVAS
+# ==========================================
 class ReservationCreate(BaseModel):
     parking_id: int
     slot_id: int
     license_plate: str
     start_time: datetime
     end_time: datetime
+
+class ReservationUpdate(BaseModel):
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    status: Optional[str] = None
+    actual_entry: Optional[datetime] = None
+    actual_exit: Optional[datetime] = None
 
 class ReservationResponse(BaseModel):
     id: int
@@ -108,12 +214,40 @@ class ReservationResponse(BaseModel):
     license_plate: str
     start_time: datetime
     end_time: datetime
+    actual_entry: Optional[datetime] = None
+    actual_exit: Optional[datetime] = None
     total_cost: float
     status: str
     qr_code: str
     class Config:
         from_attributes = True
 
+# ==========================================
+# 7. SCHEMAS DE RESEÑAS & CALIFICACIONES
+# ==========================================
+class ReviewCreate(BaseModel):
+    parking_id: int
+    rating: int = 5
+    comment: str
+
+class ReviewReply(BaseModel):
+    response: str
+
+class ReviewResponse(BaseModel):
+    id: int
+    parking_id: int
+    user_id: int
+    user_name: str
+    rating: int
+    comment: str
+    response: Optional[str] = None
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+# ==========================================
+# 8. SCHEMAS DE ANPR
+# ==========================================
 class ANPRScanRequest(BaseModel):
     parking_id: int
     license_plate: str

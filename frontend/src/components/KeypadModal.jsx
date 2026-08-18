@@ -40,7 +40,7 @@ export const KeypadModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
           <DialogTitle className="text-xl font-black text-center">Autenticación por PIN</DialogTitle>
           <DialogDescription className="text-center text-slate-500 text-xs">
-            Ingresa tu código PIN de seguridad para acceder al panel administrativo (PIN Demo: <span className="text-emerald-700 font-mono font-bold">1234</span>)
+            Ingresa el código PIN de 4 a 6 dígitos asignado para operaciones administrativas y control de barrera.
           </DialogDescription>
         </DialogHeader>
 

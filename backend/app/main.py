@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.session import engine, Base
 from app.models.models import User, Parking, Slot, FloorPlanElement, Vehicle
-from app.api.v1 import auth, parkings, reservations, anpr
+from app.api.v1 import auth, parkings, reservations, anpr, vehicles, staff, users, reviews
 from app.core.security import get_password_hash
 
 app = FastAPI(
@@ -87,13 +87,25 @@ async def startup_db():
             )
             session.add(demo_user)
             await session.commit()
+            await session.refresh(demo_user)
 
-# Conectar routers v1
+            # Sembrar Vehículos demo
+            v1 = Vehicle(user_id=demo_user.id, license_plate="ABC-123", vehicle_type="suv", brand="Toyota", model="RAV4", color="Gris")
+            v2 = Vehicle(user_id=demo_user.id, license_plate="XYZ-987", vehicle_type="auto", brand="Honda", model="Civic", color="Negro")
+            session.add_all([v1, v2])
+            await session.commit()
+
+# Conectar todos los routers v1
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(parkings.router, prefix=settings.API_V1_STR)
 app.include_router(reservations.router, prefix=settings.API_V1_STR)
 app.include_router(anpr.router, prefix=settings.API_V1_STR)
+app.include_router(vehicles.router, prefix=settings.API_V1_STR)
+app.include_router(staff.router, prefix=settings.API_V1_STR)
+app.include_router(users.router, prefix=settings.API_V1_STR)
+app.include_router(reviews.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():
     return {"message": "Bienvenido a la API RESTful de Smart Park", "status": "online", "docs": "/docs"}
+

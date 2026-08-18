@@ -105,7 +105,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 180, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
       { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 265, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
       { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 350, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 14, type: 'slot', code: 'A-05', slotType: 'vip', x: 435, y: 70, w: 80, h: 140, rot: 0, status: 'free' },
+      { id: 14, type: 'slot', code: 'A-05', slotType: 'auto', x: 435, y: 70, w: 80, h: 140, rot: 0, status: 'free' },
       { id: 15, type: 'slot', code: 'A-06', slotType: 'moto', x: 525, y: 70, w: 50, h: 140, rot: 0, status: 'free' },
       { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
       { id: 21, type: 'slot', code: 'B-02', slotType: 'auto', shaded: true, x: 165, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
@@ -401,8 +401,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 <span>Volver al Padrón</span>
               </Button>
               <div>
-                <h2 className="text-lg font-black text-slate-900 leading-tight">Editor Topográfico CAD — {selectedEstablishment.name}</h2>
-                <p className="text-xs text-slate-500">Diseña, añade cajones y define la circulación vial de esta sede.</p>
+                <h2 className="text-lg font-bold text-slate-900 leading-tight">Editor de Plano — {selectedEstablishment.name}</h2>
+                <p className="text-xs text-slate-500 font-medium">Diseña, distribuye espacios y define la circulación vial de esta sede.</p>
               </div>
             </div>
           </div>

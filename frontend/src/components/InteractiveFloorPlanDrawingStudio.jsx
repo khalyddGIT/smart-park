@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   MousePointer, 
-  Grid, 
   Square, 
-  Plus, 
   Trash2, 
   Copy, 
   RotateCw, 
@@ -14,32 +12,36 @@ import {
   Layers, 
   Car, 
   ShieldCheck, 
-  Upload, 
-  Download,
   Undo, 
   Redo, 
-  Type, 
   Navigation, 
   Sparkles,
   Move,
   CheckCircle2,
   Sliders,
   Compass,
-  Building,
-  Shapes,
   Trees as TreeIcon,
   Umbrella,
   Accessibility,
   Bike,
   DoorClosed,
-  Crown,
-  AlignLeft,
-  AlignRight,
-  AlignCenter,
   Footprints,
   Check,
   RefreshCw,
-  Palette
+  Magnet,
+  ArrowLeft,
+  ChevronRight,
+  Eye,
+  SlidersHorizontal,
+  Plus,
+  Minus,
+  Maximize,
+  Minimize,
+  RefreshCcw,
+  Scaling,
+  Expand,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 
 import { Button } from './ui/button';
@@ -56,30 +58,35 @@ const RECTANGULAR_PRESET = [
   { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
   { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
   { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
-  { id: 5, type: 'road', x: 60, y: 280, w: 980, h: 120, rot: 0, label: 'CARRIL VIAL CENTRAL (6.00 m)' },
-  { id: 6, type: 'crosswalk', x: 520, y: 280, w: 80, h: 120, rot: 0 },
-  { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'ACCESO GARITA ANPR' },
+  { id: 5, type: 'road', x: 60, y: 260, w: 980, h: 140, rot: 0, label: 'CARRIL VIAL CENTRAL' },
+  { id: 6, type: 'crosswalk', x: 520, y: 260, w: 70, h: 140, rot: 0 },
+  { id: 7, type: 'gate', gateType: 'entry', x: 40, y: 260, w: 40, h: 70, rot: 0, label: 'ENTRADA' },
+  { id: 8, type: 'gate', gateType: 'exit', x: 40, y: 330, w: 40, h: 70, rot: 0, label: 'SALIDA' },
   
-  // Fila Norte
-  { id: 10, type: 'slot', code: 'A-01', slotType: 'pmr', x: 80, y: 70, w: 90, h: 140, rot: 0, status: 'free' },
-  { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 180, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-  { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', shaded: true, x: 265, y: 70, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'ABC-123', color: '#ef4444' },
-  { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 350, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-  { id: 14, type: 'slot', code: 'A-05', slotType: 'auto', x: 435, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-  { id: 15, type: 'slot', code: 'A-06', slotType: 'auto', x: 610, y: 70, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'XYZ-789', color: '#3b82f6' },
-  { id: 16, type: 'slot', code: 'A-07', slotType: 'vip', x: 695, y: 70, w: 80, h: 140, rot: 0, status: 'free' },
-  { id: 17, type: 'slot', code: 'A-08', slotType: 'moto', x: 785, y: 70, w: 50, h: 140, rot: 0, status: 'free' },
-  { id: 18, type: 'slot', code: 'A-09', slotType: 'moto', x: 845, y: 70, w: 50, h: 140, rot: 0, status: 'free' },
+  // Fila Norte (Compacta)
+  { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', shaded: true, x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'ABC-123', color: '#ef4444' },
+  { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 14, type: 'slot', code: 'A-05', slotType: 'auto', x: 350, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 15, type: 'slot', code: 'A-06', slotType: 'auto', x: 415, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'XYZ-789', color: '#3b82f6' },
+  { id: 16, type: 'slot', code: 'A-07', slotType: 'auto', x: 610, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 17, type: 'slot', code: 'A-08', slotType: 'auto', x: 675, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 18, type: 'slot', code: 'A-09', slotType: 'moto', x: 740, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
+  { id: 19, type: 'slot', code: 'A-10', slotType: 'moto', x: 785, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
+  { id: 20, type: 'slot', code: 'A-11', slotType: 'moto', x: 830, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
 
-  // Fila Sur
-  { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 470, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'AYC-501', color: '#10b981' },
-  { id: 21, type: 'slot', code: 'B-02', slotType: 'auto', shaded: true, x: 165, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
-  { id: 22, type: 'slot', code: 'B-03', slotType: 'auto', x: 250, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
-  { id: 23, type: 'slot', code: 'B-04', slotType: 'auto', x: 335, y: 470, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#6366f1' },
-  { id: 24, type: 'slot', code: 'B-05', slotType: 'auto', x: 420, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
-  { id: 25, type: 'slot', code: 'B-06', slotType: 'auto', x: 610, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
-  { id: 26, type: 'slot', code: 'B-07', slotType: 'auto', x: 695, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
-  { id: 27, type: 'slot', code: 'B-08', slotType: 'auto', x: 780, y: 470, w: 75, h: 140, rot: 0, status: 'free' }
+  // Fila Sur (Compacta)
+  { id: 30, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'AYC-501', color: '#10b981' },
+  { id: 31, type: 'slot', code: 'B-02', slotType: 'auto', shaded: true, x: 145, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 32, type: 'slot', code: 'B-03', slotType: 'auto', x: 210, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 33, type: 'slot', code: 'B-04', slotType: 'auto', x: 275, y: 480, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#6366f1' },
+  { id: 34, type: 'slot', code: 'B-05', slotType: 'auto', x: 340, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 35, type: 'slot', code: 'B-06', slotType: 'auto', x: 405, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 36, type: 'slot', code: 'B-07', slotType: 'auto', x: 610, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 37, type: 'slot', code: 'B-08', slotType: 'auto', x: 675, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 38, type: 'slot', code: 'B-09', slotType: 'auto', x: 740, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 39, type: 'slot', code: 'B-10', slotType: 'auto', x: 805, y: 480, w: 56, h: 96, rot: 0, status: 'free' }
 ];
 
 // 2. Terreno en 'L'
@@ -90,52 +97,51 @@ const L_SHAPE_PRESET = [
   { id: 4, type: 'wall', x: 548, y: 340, w: 12, h: 320, rot: 0 },
   { id: 5, type: 'wall', x: 548, y: 340, w: 512, h: 12, rot: 0 },
   { id: 6, type: 'wall', x: 1048, y: 40, w: 12, h: 312, rot: 0 },
-  { id: 7, type: 'building', x: 560, y: 352, w: 488, h: 296, rot: 0, label: 'EDIFICIO COLINDANTE (ÁREA PRIVADA)' },
+  { id: 7, type: 'building', x: 560, y: 352, w: 488, h: 296, rot: 0, label: 'ÁREA EXTERNA' },
   { id: 8, type: 'road', x: 60, y: 220, w: 980, h: 90, rot: 0, label: 'CARRIL NORTE' },
-  { id: 9, type: 'road', x: 230, y: 230, w: 90, h: 410, rot: 0, label: 'CARRIL OESTE' },
-  { id: 10, type: 'gate', x: 40, y: 220, w: 30, h: 90, rot: 0, label: 'GARITA' },
+  { id: 9, type: 'road', x: 220, y: 230, w: 90, h: 410, rot: 0, label: 'CARRIL OESTE' },
+  { id: 10, type: 'gate', gateType: 'entry', x: 40, y: 220, w: 40, h: 45, rot: 0, label: 'ENTRADA' },
+  { id: 11, type: 'gate', gateType: 'exit', x: 40, y: 265, w: 40, h: 45, rot: 0, label: 'SALIDA' },
 
-  { id: 11, type: 'slot', code: 'N-01', slotType: 'pmr', x: 80, y: 65, w: 85, h: 135, rot: 0, status: 'free' },
-  { id: 12, type: 'slot', code: 'N-02', slotType: 'auto', shaded: true, x: 170, y: 65, w: 75, h: 135, rot: 0, status: 'free' },
-  { id: 13, type: 'slot', code: 'N-03', slotType: 'auto', shaded: true, x: 250, y: 65, w: 75, h: 135, rot: 0, status: 'occupied', plate: 'ABC-123' },
-  { id: 14, type: 'slot', code: 'N-04', slotType: 'auto', x: 330, y: 65, w: 75, h: 135, rot: 0, status: 'free' },
-  { id: 15, type: 'slot', code: 'N-05', slotType: 'auto', x: 415, y: 65, w: 75, h: 135, rot: 0, status: 'free' },
-  { id: 16, type: 'slot', code: 'N-06', slotType: 'auto', x: 580, y: 65, w: 75, h: 135, rot: 0, status: 'free' },
-  { id: 17, type: 'slot', code: 'N-07', slotType: 'moto', x: 660, y: 65, w: 50, h: 135, rot: 0, status: 'free' },
+  // Fila Norte
+  { id: 12, type: 'slot', code: 'N-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 13, type: 'slot', code: 'N-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 14, type: 'slot', code: 'N-03', slotType: 'auto', shaded: true, x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'ABC-123' },
+  { id: 15, type: 'slot', code: 'N-04', slotType: 'auto', x: 330, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 16, type: 'slot', code: 'N-05', slotType: 'auto', x: 395, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'XYZ-789' },
+  { id: 17, type: 'slot', code: 'N-06', slotType: 'auto', x: 600, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 18, type: 'slot', code: 'N-07', slotType: 'moto', x: 665, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
 
-  { id: 20, type: 'slot', code: 'O-01', slotType: 'auto', shaded: true, x: 75, y: 350, w: 135, h: 70, rot: 0, status: 'free' },
-  { id: 21, type: 'slot', code: 'O-02', slotType: 'auto', shaded: true, x: 75, y: 425, w: 135, h: 70, rot: 0, status: 'occupied', plate: 'XYZ-789' },
-  { id: 22, type: 'slot', code: 'O-03', slotType: 'auto', x: 75, y: 500, w: 135, h: 70, rot: 0, status: 'free' },
-  { id: 23, type: 'slot', code: 'O-04', slotType: 'auto', x: 75, y: 570, w: 135, h: 70, rot: 0, status: 'free' },
-  { id: 24, type: 'slot', code: 'O-05', slotType: 'auto', x: 340, y: 350, w: 135, h: 70, rot: 0, status: 'free' },
-  { id: 25, type: 'slot', code: 'O-06', slotType: 'auto', x: 340, y: 425, w: 135, h: 70, rot: 0, status: 'free' },
-  { id: 26, type: 'slot', code: 'O-07', slotType: 'auto', x: 340, y: 500, w: 135, h: 70, rot: 0, status: 'free' }
+  // Columna Oeste
+  { id: 25, type: 'slot', code: 'O-01', slotType: 'auto', x: 80, y: 340, w: 96, h: 56, rot: 0, status: 'free' },
+  { id: 26, type: 'slot', code: 'O-02', slotType: 'auto', shaded: true, x: 80, y: 410, w: 96, h: 56, rot: 0, status: 'free' },
+  { id: 27, type: 'slot', code: 'O-03', slotType: 'auto', x: 80, y: 480, w: 96, h: 56, rot: 0, status: 'free' },
+  { id: 28, type: 'slot', code: 'O-04', slotType: 'auto', x: 80, y: 550, w: 96, h: 56, rot: 0, status: 'free' }
 ];
 
-// 3. Terreno Diagonal / Espina de Pez
+// 3. Terreno Diagonal (Espina de Pescado 45°)
 const DIAGONAL_PRESET = [
   { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
   { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
   { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
-  { id: 4, type: 'wall', x: 800, y: 150, w: 340, h: 12, rot: 45 },
-  { id: 5, type: 'garden', x: 880, y: 370, w: 165, h: 270, rot: 0, label: 'ÁREA VERDE / RETIRO' },
-  { id: 6, type: 'road', x: 60, y: 280, w: 820, h: 110, rot: 0, label: 'CARRIL DIAGONAL' },
-  { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 110, rot: 0, label: 'GARITA' },
+  { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
+  { id: 5, type: 'road', x: 60, y: 270, w: 980, h: 130, rot: 0, label: 'CARRIL VIAL DIAGONAL 45°' },
+  { id: 6, type: 'gate', gateType: 'entry', x: 40, y: 270, w: 40, h: 65, rot: 0, label: 'ENTRADA' },
+  { id: 7, type: 'gate', gateType: 'exit', x: 40, y: 335, w: 40, h: 65, rot: 0, label: 'SALIDA' },
 
-  { id: 10, type: 'slot', code: 'D-01', slotType: 'pmr', x: 90, y: 90, w: 75, h: 135, rot: 30, status: 'free' },
-  { id: 11, type: 'slot', code: 'D-02', slotType: 'auto', shaded: true, x: 180, y: 90, w: 75, h: 135, rot: 30, status: 'free' },
-  { id: 12, type: 'slot', code: 'D-03', slotType: 'auto', shaded: true, x: 270, y: 90, w: 75, h: 135, rot: 30, status: 'occupied', plate: 'AYC-101' },
-  { id: 13, type: 'slot', code: 'D-04', slotType: 'auto', x: 360, y: 90, w: 75, h: 135, rot: 30, status: 'free' },
-  { id: 14, type: 'slot', code: 'D-05', slotType: 'auto', x: 450, y: 90, w: 75, h: 135, rot: 30, status: 'free' },
-  { id: 15, type: 'slot', code: 'D-06', slotType: 'auto', x: 540, y: 90, w: 75, h: 135, rot: 30, status: 'free' },
-  { id: 16, type: 'slot', code: 'D-07', slotType: 'auto', x: 630, y: 90, w: 75, h: 135, rot: 30, status: 'free' },
+  { id: 10, type: 'slot', code: 'D-01', slotType: 'auto', x: 90, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
+  { id: 11, type: 'slot', code: 'D-02', slotType: 'auto', shaded: true, x: 165, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
+  { id: 12, type: 'slot', code: 'D-03', slotType: 'auto', shaded: true, x: 235, y: 90, w: 56, h: 96, rot: 30, status: 'occupied', plate: 'ABC-123' },
+  { id: 13, type: 'slot', code: 'D-04', slotType: 'auto', x: 305, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
+  { id: 14, type: 'slot', code: 'D-05', slotType: 'auto', x: 375, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
+  { id: 15, type: 'slot', code: 'D-06', slotType: 'auto', x: 445, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
+  { id: 16, type: 'slot', code: 'D-07', slotType: 'moto', x: 515, y: 90, w: 38, h: 65, rot: 30, status: 'free' },
 
-  { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 90, y: 460, w: 75, h: 135, rot: -30, status: 'free' },
-  { id: 21, type: 'slot', code: 'B-02', slotType: 'auto', shaded: true, x: 180, y: 460, w: 75, h: 135, rot: -30, status: 'free' },
-  { id: 22, type: 'slot', code: 'B-03', slotType: 'auto', x: 270, y: 460, w: 75, h: 135, rot: -30, status: 'occupied', plate: 'ABC-777' },
-  { id: 23, type: 'slot', code: 'B-04', slotType: 'auto', x: 360, y: 460, w: 75, h: 135, rot: -30, status: 'free' },
-  { id: 24, type: 'slot', code: 'B-05', slotType: 'auto', x: 450, y: 460, w: 75, h: 135, rot: -30, status: 'free' },
-  { id: 25, type: 'slot', code: 'B-06', slotType: 'moto', x: 540, y: 460, w: 50, h: 135, rot: -30, status: 'free' }
+  { id: 20, type: 'slot', code: 'D-08', slotType: 'auto', x: 90, y: 470, w: 56, h: 96, rot: -30, status: 'free' },
+  { id: 21, type: 'slot', code: 'D-09', slotType: 'auto', shaded: true, x: 165, y: 470, w: 56, h: 96, rot: -30, status: 'free' },
+  { id: 22, type: 'slot', code: 'D-10', slotType: 'auto', x: 235, y: 470, w: 56, h: 96, rot: -30, status: 'occupied', plate: 'XYZ-999' },
+  { id: 23, type: 'slot', code: 'D-11', slotType: 'auto', x: 305, y: 470, w: 56, h: 96, rot: -30, status: 'free' },
+  { id: 24, type: 'slot', code: 'D-12', slotType: 'auto', x: 375, y: 470, w: 56, h: 96, rot: -30, status: 'free' }
 ];
 
 // 4. Terreno en 'U'
@@ -144,18 +150,18 @@ const U_SHAPE_PRESET = [
   { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
   { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
   { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
-  { id: 5, type: 'building', x: 360, y: 200, w: 380, h: 300, rot: 0, label: 'PATIO / LOCAL COMERCIAL CENTRAL' },
-  { id: 6, type: 'road', x: 60, y: 220, w: 280, h: 80, rot: 0, label: 'ACCESO' },
-  { id: 7, type: 'road', x: 60, y: 420, w: 280, h: 80, rot: 0, label: 'SALIDA' },
-  { id: 8, type: 'gate', x: 40, y: 220, w: 30, h: 80, rot: 0, label: 'ENTRADA' },
-  { id: 9, type: 'gate', x: 40, y: 420, w: 30, h: 80, rot: 0, label: 'SALIDA' },
+  { id: 5, type: 'building', x: 350, y: 220, w: 400, h: 260, rot: 0, label: 'ISLA CENTRAL / NÚCLEO EDIFICIO' },
+  { id: 6, type: 'road', x: 60, y: 210, w: 980, h: 80, rot: 0, label: 'ANILLO DE CIRCULACIÓN NORTE' },
+  { id: 7, type: 'road', x: 60, y: 420, w: 980, h: 80, rot: 0, label: 'ANILLO DE CIRCULACIÓN SUR' },
+  { id: 8, type: 'gate', gateType: 'entry', x: 40, y: 210, w: 40, h: 80, rot: 0, label: 'ENTRADA' },
+  { id: 9, type: 'gate', gateType: 'exit', x: 40, y: 420, w: 40, h: 80, rot: 0, label: 'SALIDA' },
 
-  { id: 10, type: 'slot', code: 'U-01', slotType: 'pmr', x: 80, y: 60, w: 85, h: 130, rot: 0, status: 'free' },
-  { id: 11, type: 'slot', code: 'U-02', slotType: 'auto', shaded: true, x: 170, y: 60, w: 75, h: 130, rot: 0, status: 'free' },
-  { id: 12, type: 'slot', code: 'U-03', slotType: 'auto', shaded: true, x: 250, y: 60, w: 75, h: 130, rot: 0, status: 'occupied', plate: 'P3X-998' },
-  { id: 13, type: 'slot', code: 'U-04', slotType: 'auto', x: 330, y: 60, w: 75, h: 130, rot: 0, status: 'free' },
-  { id: 14, type: 'slot', code: 'U-05', slotType: 'auto', x: 410, y: 60, w: 75, h: 130, rot: 0, status: 'free' },
-  { id: 15, type: 'slot', code: 'U-06', slotType: 'auto', x: 495, y: 60, w: 75, h: 130, rot: 0, status: 'free' }
+  { id: 10, type: 'slot', code: 'U-01', slotType: 'auto', x: 80, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 11, type: 'slot', code: 'U-02', slotType: 'auto', shaded: true, x: 155, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 12, type: 'slot', code: 'U-03', slotType: 'auto', shaded: true, x: 220, y: 75, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'P3X-998' },
+  { id: 13, type: 'slot', code: 'U-04', slotType: 'auto', x: 285, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 14, type: 'slot', code: 'U-05', slotType: 'auto', x: 350, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 15, type: 'slot', code: 'U-06', slotType: 'auto', x: 415, y: 75, w: 56, h: 96, rot: 0, status: 'free' }
 ];
 
 export const InteractiveFloorPlanDrawingStudio = ({ 
@@ -171,29 +177,46 @@ export const InteractiveFloorPlanDrawingStudio = ({
   const [lotShape, setLotShape] = useState('rectangular');
   const [canvasWidth, setCanvasWidth] = useState(1100);
   const [canvasHeight, setCanvasHeight] = useState(700);
-  const [zoom, setZoom] = useState(75);
+  const [zoom, setZoom] = useState(100);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [gridSize, setGridSize] = useState(20);
 
   const containerRef = useRef(null);
 
-  // Auto-ajuste de escala para visualización 100% completa
-  const handleFitToScreen = () => {
+  // Auto-ajuste de escala para visualización 100% óptima y limpia
+  const handleFitToScreen = useCallback(() => {
     if (containerRef.current) {
       const availableWidth = containerRef.current.clientWidth - 48;
-      const fitZoom = Math.min(100, Math.max(40, Math.round((availableWidth / canvasWidth) * 100)));
+      const fitZoom = Math.min(120, Math.max(40, Math.round((availableWidth / canvasWidth) * 100)));
       setZoom(fitZoom);
     }
-  };
+  }, [canvasWidth]);
 
   useEffect(() => {
     handleFitToScreen();
-  }, [canvasWidth]);
+  }, [handleFitToScreen]);
+
+  // Soporte de Zoom con Rueda del Ratón (Ctrl + Scroll)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 5 : -5;
+        setZoom(prev => Math.min(200, Math.max(40, prev + delta)));
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
 
   // Elementos en el plano
   const [elements, setElements] = useState(initialElements || RECTANGULAR_PRESET);
   const [selectedId, setSelectedId] = useState(null);
-  const [history, setHistory] = useState([elements]);
+  const [history, setHistory] = useState([initialElements || RECTANGULAR_PRESET]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [message, setMessage] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -216,7 +239,6 @@ export const InteractiveFloorPlanDrawingStudio = ({
   const [dragState, setDragState] = useState(null);
 
   const canvasRef = useRef(null);
-  const jsonInputRef = useRef(null);
 
   const selectedElement = elements.find(e => e.id === selectedId);
 
@@ -226,6 +248,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
   const occupiedSlots = elements.filter(e => e.type === 'slot' && e.status === 'occupied').length;
   const pmrSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'pmr').length;
   const shadedSlots = elements.filter(e => e.type === 'slot' && e.shaded).length;
+  const motoSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'moto').length;
 
   const pushHistory = (newElements) => {
     const nextHistory = history.slice(0, historyIndex + 1);
@@ -254,62 +277,135 @@ export const InteractiveFloorPlanDrawingStudio = ({
     }
   };
 
-  // Cargar plantilla de forma de lote
-  const handleApplyLotPreset = (shapeKey) => {
-    setLotShape(shapeKey);
+  // Guardar plano
+  const handleSave = () => {
+    if (onSavePlan) {
+      onSavePlan(elements);
+      setHasUnsavedChanges(false);
+      setMessage('¡Plano y distribución guardados con éxito!');
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  // Cambio de plantilla de terreno
+  const handlePresetChange = (shape) => {
+    setLotShape(shape);
     let newElems = [];
-    if (shapeKey === 'rectangular') newElems = RECTANGULAR_PRESET;
-    else if (shapeKey === 'l_shape') newElems = L_SHAPE_PRESET;
-    else if (shapeKey === 'diagonal') newElems = DIAGONAL_PRESET;
-    else if (shapeKey === 'u_shape') newElems = U_SHAPE_PRESET;
-    else if (shapeKey === 'blank') newElems = [
-      { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
-      { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
-      { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
-      { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 }
-    ];
+    if (shape === 'rectangular') newElems = RECTANGULAR_PRESET;
+    else if (shape === 'l_shape') newElems = L_SHAPE_PRESET;
+    else if (shape === 'diagonal') newElems = DIAGONAL_PRESET;
+    else if (shape === 'u_shape') newElems = U_SHAPE_PRESET;
+    else if (shape === 'free') newElems = [];
 
     setElements(newElems);
     pushHistory(newElems);
     setSelectedId(null);
-    setMessage(`Plantilla de terreno "${shapeKey.toUpperCase()}" aplicada.`);
+    setMessage(`Plantilla "${shape.toUpperCase()}" aplicada.`);
     setTimeout(() => setMessage(''), 3000);
   };
 
-  // Auto-Numeración Inteligente de Plazas
-  const handleAutoRenumber = () => {
+  // Duplicar elemento seleccionado
+  const handleDuplicateSelected = useCallback(() => {
+    if (!selectedElement) return;
+    const newId = Date.now();
+    const isSlot = selectedElement.type === 'slot';
+    const offset = 80;
+
+    let newCode = selectedElement.code;
+    if (isSlot) {
+      const parts = (selectedElement.code || 'A-01').split('-');
+      if (parts.length === 2 && !isNaN(parseInt(parts[1]))) {
+        const nextNum = parseInt(parts[1]) + 1;
+        newCode = `${parts[0]}-${String(nextNum).padStart(2, '0')}`;
+      } else {
+        newCode = `${selectedElement.code}-COPY`;
+      }
+    }
+
+    const duplicated = {
+      ...selectedElement,
+      id: newId,
+      code: newCode,
+      x: Math.min(canvasWidth - selectedElement.w, selectedElement.x + offset),
+      y: selectedElement.y,
+      status: 'free',
+      plate: undefined
+    };
+
+    const updated = [...elements, duplicated];
+    setElements(updated);
+    pushHistory(updated);
+    setSelectedId(newId);
+    setMessage(`Elemento ${isSlot ? newCode : ''} duplicado con éxito.`);
+    setTimeout(() => setMessage(''), 2000);
+  }, [selectedElement, elements, canvasWidth]);
+
+  // Eliminar elemento seleccionado
+  const handleDeleteSelected = useCallback(() => {
+    if (!selectedId) return;
+    const updated = elements.filter(el => el.id !== selectedId);
+    setElements(updated);
+    pushHistory(updated);
+    setSelectedId(null);
+    setMessage('Elemento eliminado.');
+    setTimeout(() => setMessage(''), 2000);
+  }, [selectedId, elements]);
+
+  // Rotar rápido
+  const handleRotateStep = (degToAdd = 45) => {
+    if (!selectedElement) return;
+    const nextRot = ((selectedElement.rot || 0) + degToAdd) % 360;
+    const updated = elements.map(el => el.id === selectedId ? { ...el, rot: nextRot } : el);
+    setElements(updated);
+    pushHistory(updated);
+  };
+
+  // Agrandar / Redimensionar rápido (+/- px)
+  const handleQuickResize = (dw, dh) => {
+    if (!selectedElement) return;
+    const newW = Math.max(20, (selectedElement.w || 75) + dw);
+    const newH = Math.max(20, (selectedElement.h || 140) + dh);
+    const updated = elements.map(el => el.id === selectedId ? { ...el, w: newW, h: newH } : el);
+    setElements(updated);
+    pushHistory(updated);
+    setMessage(`Dimensiones: ${newW} × ${newH} px`);
+    setTimeout(() => setMessage(''), 1500);
+  };
+
+  // Preset de dimensiones
+  const handleSetExactSize = (w, h) => {
+    if (!selectedElement) return;
+    const updated = elements.map(el => el.id === selectedId ? { ...el, w, h } : el);
+    setElements(updated);
+    pushHistory(updated);
+    setMessage(`Ajustado a ${w} × ${h} px`);
+    setTimeout(() => setMessage(''), 1500);
+  };
+
+  // Auto-Renumerar todos los cajones ordenadamente
+  const handleAutoNumber = () => {
     const slots = elements.filter(e => e.type === 'slot');
     const others = elements.filter(e => e.type !== 'slot');
 
     if (slots.length === 0) {
-      setMessage('No hay plazas para renumerar.');
+      setMessage('No hay plazas para numerar.');
+      setTimeout(() => setMessage(''), 2000);
       return;
     }
 
-    // Ordenar de arriba hacia abajo y de izquierda a derecha
     const sortedSlots = [...slots].sort((a, b) => {
-      const rowA = Math.floor(a.y / 100);
-      const rowB = Math.floor(b.y / 100);
-      if (rowA !== rowB) return rowA - rowB;
+      if (Math.abs(a.y - b.y) > 60) return a.y - b.y;
       return a.x - b.x;
     });
 
     let autoCount = 0;
-    let pmrCount = 0;
     let motoCount = 0;
-    let vipCount = 0;
 
     const renumberedSlots = sortedSlots.map(slot => {
       let code = '';
-      if (slot.slotType === 'pmr') {
-        pmrCount++;
-        code = `PMR-${String(pmrCount).padStart(2, '0')}`;
-      } else if (slot.slotType === 'moto') {
+      if (slot.slotType === 'moto') {
         motoCount++;
         code = `M-${String(motoCount).padStart(2, '0')}`;
-      } else if (slot.slotType === 'vip') {
-        vipCount++;
-        code = `VIP-${String(vipCount).padStart(2, '0')}`;
       } else {
         autoCount++;
         const sector = slot.y < 280 ? 'A' : slot.y < 460 ? 'B' : 'C';
@@ -321,8 +417,8 @@ export const InteractiveFloorPlanDrawingStudio = ({
     const updated = [...others, ...renumberedSlots];
     setElements(updated);
     pushHistory(updated);
-    setMessage(`¡${slots.length} plazas auto-renumeradas ordenadamente!`);
-    setTimeout(() => setMessage(''), 3500);
+    setMessage(`¡${slots.length} plazas ordenadas y renumeradas!`);
+    setTimeout(() => setMessage(''), 3000);
   };
 
   // Alineación Rápida
@@ -343,15 +439,53 @@ export const InteractiveFloorPlanDrawingStudio = ({
     pushHistory(updated);
   };
 
-  // Rotar 90° rápido
-  const handleRotate90 = () => {
-    if (!selectedElement) return;
-    const nextRot = ((selectedElement.rot || 0) + 90) % 360;
-    const updated = elements.map(el => el.id === selectedId ? { ...el, rot: nextRot } : el);
-    setElements(updated);
-    pushHistory(updated);
-  };
+  // Atajos de teclado globales
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (readOnly) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
 
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+        e.preventDefault();
+        handleDeleteSelected();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        handleDuplicateSelected();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) handleRedo();
+        else handleUndo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        handleRedo();
+      } else if (e.key.toLowerCase() === 'r' && selectedId) {
+        e.preventDefault();
+        handleRotateStep(90);
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        handleQuickResize(10, 10);
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        handleQuickResize(-10, -10);
+      } else if (e.key === 'Escape') {
+        setActiveTool('select');
+        setSelectedId(null);
+      } else if (e.key.toLowerCase() === 'v') {
+        setActiveTool('select');
+      } else if (e.key.toLowerCase() === 'a') {
+        setActiveTool('slot_auto');
+      } else if (e.key.toLowerCase() === 't') {
+        setActiveTool('slot_shaded');
+      } else if (e.key.toLowerCase() === 'm') {
+        setActiveTool('slot_moto');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedId, selectedElement, elements, readOnly, handleDeleteSelected, handleDuplicateSelected]);
+
+  // Conversión de coordenadas con snapping
   const getCanvasCoords = (e) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
@@ -370,6 +504,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
     return { x: Math.max(0, Math.min(canvasWidth, x)), y: Math.max(0, Math.min(canvasHeight, y)) };
   };
 
+  // Crear elemento en clic simple o arrastre
   const handleCanvasMouseDown = (e) => {
     if (readOnly) {
       setSelectedId(null);
@@ -422,14 +557,14 @@ export const InteractiveFloorPlanDrawingStudio = ({
     }
   };
 
-  // Inicio de Redimensionamiento por Agarre
-  const handleResizeStart = (e, handle) => {
+  // Inicio de Redimensionamiento por Agarre en Esquinas / Bordes
+  const handleResizeHandleDown = (e, handle) => {
     e.stopPropagation();
     if (!selectedElement || readOnly) return;
     const coords = getCanvasCoords(e);
     setDragState({
       mode: 'resize',
-      handle,
+      handle, // 'br', 'bl', 'tr', 'tl', 'r', 'b', 't', 'l'
       startX: coords.x,
       startY: coords.y,
       origX: selectedElement.x,
@@ -439,101 +574,112 @@ export const InteractiveFloorPlanDrawingStudio = ({
     });
   };
 
-  // Inicio de Rotación por Agarre
-  const handleRotateStart = (e) => {
+  // Inicio de Rotación por Agarre Circular
+  const handleRotateKnobDown = (e) => {
     e.stopPropagation();
     if (!selectedElement || readOnly) return;
     const coords = getCanvasCoords(e);
+    const centerX = selectedElement.x + selectedElement.w / 2;
+    const centerY = selectedElement.y + selectedElement.h / 2;
     setDragState({
       mode: 'rotate',
-      startX: coords.x,
-      startY: coords.y,
-      origX: selectedElement.x,
-      origY: selectedElement.y,
-      origW: selectedElement.w,
-      origH: selectedElement.h,
-      origRot: selectedElement.rot || 0
+      centerX,
+      centerY,
+      origRot: selectedElement.rot || 0,
+      startAngle: Math.atan2(coords.y - centerY, coords.x - centerX) * (180 / Math.PI)
     });
   };
 
-  const handleGlobalMouseMove = useCallback((e) => {
+  const handleMouseMove = (e) => {
+    if (readOnly) return;
     const coords = getCanvasCoords(e);
 
-    // Mover / Redimensionar / Rotar
-    if (dragState && selectedElement) {
-      if (dragState.mode === 'move') {
-        const dx = coords.x - dragState.startX;
-        const dy = coords.y - dragState.startY;
-        const updated = elements.map(el => el.id === selectedId ? {
-          ...el,
-          x: Math.max(0, Math.min(canvasWidth - el.w, dragState.origX + dx)),
-          y: Math.max(0, Math.min(canvasHeight - el.h, dragState.origY + dy))
-        } : el);
-        setElements(updated);
-      } else if (dragState.mode === 'resize') {
-        const dx = coords.x - dragState.startX;
-        const dy = coords.y - dragState.startY;
-        let newW = dragState.origW;
-        let newH = dragState.origH;
-        let newX = dragState.origX;
-        let newY = dragState.origY;
+    // 1. Mover elemento
+    if (dragState && dragState.mode === 'move' && selectedElement) {
+      const dx = coords.x - dragState.startX;
+      const dy = coords.y - dragState.startY;
+      let newX = dragState.origX + dx;
+      let newY = dragState.origY + dy;
 
-        if (dragState.handle.includes('e')) newW = Math.max(20, dragState.origW + dx);
-        if (dragState.handle.includes('s')) newH = Math.max(20, dragState.origH + dy);
-        if (dragState.handle.includes('w')) {
-          const possibleW = dragState.origW - dx;
-          if (possibleW >= 20) {
-            newW = possibleW;
-            newX = dragState.origX + dx;
-          }
-        }
-        if (dragState.handle.includes('n')) {
-          const possibleH = dragState.origH - dy;
-          if (possibleH >= 20) {
-            newH = possibleH;
-            newY = dragState.origY + dy;
-          }
-        }
-
-        const updated = elements.map(el => el.id === selectedId ? {
-          ...el,
-          x: newX,
-          y: newY,
-          w: newW,
-          h: newH
-        } : el);
-        setElements(updated);
-      } else if (dragState.mode === 'rotate') {
-        const centerX = dragState.origX + dragState.origW / 2;
-        const centerY = dragState.origY + dragState.origH / 2;
-        const rad = Math.atan2(coords.y - centerY, coords.x - centerX);
-        let deg = Math.round(rad * (180 / Math.PI)) + 90;
-        if (deg < 0) deg += 360;
-        if (snapToGrid) deg = Math.round(deg / 15) * 15;
-
-        const updated = elements.map(el => el.id === selectedId ? {
-          ...el,
-          rot: deg % 360
-        } : el);
-        setElements(updated);
+      if (snapToGrid) {
+        newX = Math.round(newX / gridSize) * gridSize;
+        newY = Math.round(newY / gridSize) * gridSize;
       }
+
+      newX = Math.max(0, Math.min(canvasWidth - selectedElement.w, newX));
+      newY = Math.max(0, Math.min(canvasHeight - selectedElement.h, newY));
+
+      setElements(prev => prev.map(el => el.id === selectedId ? { ...el, x: newX, y: newY } : el));
       return;
     }
 
-    // Dibujo activo
-    if (isDrawing && drawStart) {
-      const w = coords.x - drawStart.x;
-      const h = coords.y - drawStart.y;
-      setCurrentDraw({
-        x: w >= 0 ? drawStart.x : coords.x,
-        y: h >= 0 ? drawStart.y : coords.y,
-        w: Math.abs(w),
-        h: Math.abs(h)
-      });
-    }
-  }, [dragState, isDrawing, drawStart, selectedElement, selectedId, zoom, snapToGrid, gridSize, canvasWidth, canvasHeight, elements]);
+    // 2. Redimensionar / Agrandar elemento por agarres
+    if (dragState && dragState.mode === 'resize' && selectedElement) {
+      const dx = coords.x - dragState.startX;
+      const dy = coords.y - dragState.startY;
+      const { origX, origY, origW, origH, handle } = dragState;
 
-  const handleGlobalMouseUp = useCallback(() => {
+      let newX = origX;
+      let newY = origY;
+      let newW = origW;
+      let newH = origH;
+
+      if (handle.includes('r')) newW = Math.max(20, origW + dx);
+      if (handle.includes('b')) newH = Math.max(20, origH + dy);
+      if (handle.includes('l')) {
+        const diff = Math.min(dx, origW - 20);
+        newX = origX + diff;
+        newW = origW - diff;
+      }
+      if (handle.includes('t')) {
+        const diff = Math.min(dy, origH - 20);
+        newY = origY + diff;
+        newH = origH - diff;
+      }
+
+      if (snapToGrid) {
+        newW = Math.round(newW / gridSize) * gridSize;
+        newH = Math.round(newH / gridSize) * gridSize;
+        newX = Math.round(newX / gridSize) * gridSize;
+        newY = Math.round(newY / gridSize) * gridSize;
+      }
+
+      setElements(prev => prev.map(el => el.id === selectedId ? { 
+        ...el, 
+        x: newX, 
+        y: newY, 
+        w: Math.max(15, newW), 
+        h: Math.max(15, newH) 
+      } : el));
+      return;
+    }
+
+    // 3. Rotar elemento por agarre
+    if (dragState && dragState.mode === 'rotate' && selectedElement) {
+      const currentAngle = Math.atan2(coords.y - dragState.centerY, coords.x - dragState.centerX) * (180 / Math.PI);
+      const delta = currentAngle - dragState.startAngle;
+      let newRot = Math.round((dragState.origRot + delta) % 360);
+      if (newRot < 0) newRot += 360;
+      if (snapToGrid) {
+        newRot = Math.round(newRot / 15) * 15;
+      }
+      setElements(prev => prev.map(el => el.id === selectedId ? { ...el, rot: newRot } : el));
+      return;
+    }
+
+    // 4. Dibujar nuevo elemento
+    if (isDrawing && drawStart) {
+      const x = Math.min(drawStart.x, coords.x);
+      const y = Math.min(drawStart.y, coords.y);
+      const w = Math.abs(coords.x - drawStart.x);
+      const h = Math.abs(coords.y - drawStart.y);
+      setCurrentDraw({ x, y, w, h });
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (readOnly) return;
+
     if (dragState) {
       setDragState(null);
       pushHistory(elements);
@@ -542,24 +688,25 @@ export const InteractiveFloorPlanDrawingStudio = ({
     if (isDrawing && currentDraw) {
       setIsDrawing(false);
       const newId = Date.now();
-      let newElements = [...elements];
+      const newElements = [...elements];
+      let newlyCreatedId = newId;
 
-      // Fila de cajones arrastrada
+      // 1. Trazar fila múltiple (Compacta)
       if (activeTool === 'draw_row') {
-        const slotWidth = 75;
-        const slotHeight = Math.max(120, currentDraw.h);
-        const count = Math.max(2, Math.floor(currentDraw.w / slotWidth));
+        const rowCount = currentDraw.w > 100 ? Math.max(2, Math.floor(currentDraw.w / 58)) : 5;
+        const slotWidth = 56;
+        const slotHeight = 96;
+        const prefix = currentDraw.y < 300 ? 'N' : 'S';
         const existingCount = elements.filter(e => e.type === 'slot').length;
-        const prefix = String.fromCharCode(65 + (Math.floor(existingCount / 10) % 26));
 
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < rowCount; i++) {
           newElements.push({
             id: newId + i,
             type: 'slot',
             code: `${prefix}-0${(existingCount % 10) + i + 1}`,
             slotType: i === 0 ? 'pmr' : 'auto',
             shaded: i === 1,
-            x: currentDraw.x + i * slotWidth,
+            x: currentDraw.x + i * (slotWidth + 8),
             y: currentDraw.y,
             w: slotWidth,
             h: slotHeight,
@@ -567,21 +714,23 @@ export const InteractiveFloorPlanDrawingStudio = ({
             status: 'free'
           });
         }
-        setMessage(`Fila de ${count} cajones trazada.`);
+        setMessage(`Batería de ${rowCount} plazas compactas colocada.`);
       }
-      // Cajón individual
+      // 2. Plaza Individual Compacta (Auto, Techado, PMR, Moto)
       else if (activeTool.startsWith('slot_')) {
         const rawType = activeTool.replace('slot_', '');
         const isShaded = rawType === 'shaded';
-        const isVIP = rawType === 'vip';
         const isPMR = rawType === 'pmr';
         const isMoto = rawType === 'moto';
         const slotType = isShaded ? 'auto' : rawType;
         
         const count = elements.filter(e => e.type === 'slot').length + 1;
-        const code = isShaded ? `S-0${count}` : isVIP ? `VIP-0${count}` : isPMR ? `PMR-0${count}` : isMoto ? `M-0${count}` : `A-0${count}`;
-        const defaultW = isMoto ? 50 : isPMR || isVIP ? 85 : 75;
-        const defaultH = isMoto ? 80 : 140;
+        const code = isShaded ? `S-0${count}` : isPMR ? `PMR-0${count}` : isMoto ? `M-0${count}` : `A-0${count}`;
+        const defaultW = isMoto ? 38 : isPMR ? 66 : 56;
+        const defaultH = isMoto ? 65 : 96;
+
+        const finalW = currentDraw.w > 30 ? currentDraw.w : defaultW;
+        const finalH = currentDraw.h > 30 ? currentDraw.h : defaultH;
 
         newElements.push({
           id: newId,
@@ -591,627 +740,519 @@ export const InteractiveFloorPlanDrawingStudio = ({
           shaded: isShaded,
           x: currentDraw.x,
           y: currentDraw.y,
-          w: currentDraw.w > 40 ? currentDraw.w : defaultW,
-          h: currentDraw.h > 40 ? currentDraw.h : defaultH,
+          w: finalW,
+          h: finalH,
           rot: 0,
           status: 'free'
         });
-        setMessage(`Cajón ${code} colocado.`);
+        setMessage(`Plaza ${code} colocada.`);
       }
-      // Muro
-      else if (activeTool === 'draw_wall' || activeTool === 'add_wall') {
+      // 3. Muro Estructural
+      else if (activeTool === 'add_wall') {
         newElements.push({
           id: newId,
           type: 'wall',
           x: currentDraw.x,
           y: currentDraw.y,
-          w: Math.max(12, currentDraw.w),
-          h: Math.max(12, currentDraw.h),
+          w: currentDraw.w > 20 ? currentDraw.w : 200,
+          h: currentDraw.h > 20 ? currentDraw.h : 12,
           rot: 0
         });
         setMessage(`Muro estructural colocado.`);
       }
-      // Calle / Carril
-      else if (activeTool === 'draw_road' || activeTool === 'add_road') {
+      // 4. Carril Vial
+      else if (activeTool === 'add_road') {
         newElements.push({
           id: newId,
           type: 'road',
           x: currentDraw.x,
           y: currentDraw.y,
-          w: Math.max(60, currentDraw.w),
-          h: Math.max(60, currentDraw.h),
+          w: currentDraw.w > 40 ? currentDraw.w : 400,
+          h: currentDraw.h > 40 ? currentDraw.h : 120,
           rot: 0,
           label: 'CARRIL DE CIRCULACIÓN'
         });
         setMessage(`Vía de circulación colocada.`);
       }
-      // Cruce peatonal
+      // 5. Cruce Peatonal
       else if (activeTool === 'add_crosswalk') {
         newElements.push({
           id: newId,
           type: 'crosswalk',
           x: currentDraw.x,
           y: currentDraw.y,
-          w: Math.max(60, currentDraw.w > 30 ? currentDraw.w : 80),
-          h: Math.max(60, currentDraw.h > 30 ? currentDraw.h : 80),
+          w: currentDraw.w > 30 ? currentDraw.w : 80,
+          h: currentDraw.h > 30 ? currentDraw.h : 100,
           rot: 0
         });
-        setMessage(`Cruce peatonal añadido.`);
+        setMessage(`Paso peatonal añadido.`);
       }
-      // Garita
+      // 6. Garita de Entrada
+      else if (activeTool === 'add_entry') {
+        newElements.push({
+          id: newId,
+          type: 'gate',
+          gateType: 'entry',
+          x: currentDraw.x,
+          y: currentDraw.y,
+          w: 50,
+          h: 90,
+          rot: 0,
+          label: 'ENTRADA LPR'
+        });
+        setMessage(`Punto de ENTRADA vehicular colocado.`);
+      }
+      // 7. Garita de Salida
+      else if (activeTool === 'add_exit') {
+        newElements.push({
+          id: newId,
+          type: 'gate',
+          gateType: 'exit',
+          x: currentDraw.x,
+          y: currentDraw.y,
+          w: 50,
+          h: 90,
+          rot: 0,
+          label: 'SALIDA CONTROL'
+        });
+        setMessage(`Punto de SALIDA vehicular colocado.`);
+      }
+      // 8. Garita estándar
       else if (activeTool === 'add_gate') {
         newElements.push({
           id: newId,
           type: 'gate',
+          gateType: 'entry',
           x: currentDraw.x,
           y: currentDraw.y,
-          w: 35,
+          w: 50,
           h: 90,
           rot: 0,
-          label: 'GARITA LPR'
+          label: 'GARITA ANPR'
         });
-        setMessage(`Garita de control ANPR colocada.`);
+        setMessage(`Garita ANPR colocada.`);
       }
-      // Área verde / Jardín
+      // 9. Jardín / Área verde
       else if (activeTool === 'add_garden') {
         newElements.push({
           id: newId,
           type: 'garden',
           x: currentDraw.x,
           y: currentDraw.y,
-          w: Math.max(60, currentDraw.w),
-          h: Math.max(60, currentDraw.h),
+          w: currentDraw.w > 40 ? currentDraw.w : 140,
+          h: currentDraw.h > 40 ? currentDraw.h : 140,
           rot: 0,
           label: 'ÁREA VERDE'
         });
-        setMessage(`Jardinería y retiro añadido.`);
+        setMessage(`Área verde añadida.`);
       }
 
       setElements(newElements);
       pushHistory(newElements);
+      setSelectedId(newlyCreatedId);
       setCurrentDraw(null);
       setTimeout(() => setMessage(''), 2500);
     }
-  }, [dragState, isDrawing, currentDraw, activeTool, elements]);
-
-  useEffect(() => {
-    window.addEventListener('mousemove', handleGlobalMouseMove);
-    window.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleGlobalMouseMove);
-      window.removeEventListener('mouseup', handleGlobalMouseUp);
-    };
-  }, [handleGlobalMouseMove, handleGlobalMouseUp]);
-
-  // Atajos de Teclado
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (['input', 'textarea', 'select'].includes(document.activeElement?.tagName?.toLowerCase())) return;
-
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
-        e.preventDefault();
-        const updated = elements.filter(el => el.id !== selectedId);
-        setElements(updated);
-        pushHistory(updated);
-        setSelectedId(null);
-      }
-      if (e.ctrlKey && e.key === 'z') {
-        e.preventDefault();
-        handleUndo();
-      }
-      if (e.ctrlKey && e.key === 'y') {
-        e.preventDefault();
-        handleRedo();
-      }
-      if (e.ctrlKey && e.key === 'd' && selectedId) {
-        e.preventDefault();
-        handleDuplicateSelected();
-      }
-      if (e.key === 'Escape') {
-        setActiveTool('select');
-        setSelectedId(null);
-      }
-      // Nudge con flechas
-      if (selectedId) {
-        const step = e.shiftKey ? 10 : 1;
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          setElements(prev => prev.map(el => el.id === selectedId ? { ...el, y: Math.max(0, el.y - step) } : el));
-          setHasUnsavedChanges(true);
-        } else if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          setElements(prev => prev.map(el => el.id === selectedId ? { ...el, y: Math.min(canvasHeight - el.h, el.y + step) } : el));
-          setHasUnsavedChanges(true);
-        } else if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          setElements(prev => prev.map(el => el.id === selectedId ? { ...el, x: Math.max(0, el.x - step) } : el));
-          setHasUnsavedChanges(true);
-        } else if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          setElements(prev => prev.map(el => el.id === selectedId ? { ...el, x: Math.min(canvasWidth - el.w, el.x + step) } : el));
-          setHasUnsavedChanges(true);
-        } else if (e.key.toLowerCase() === 'r') {
-          e.preventDefault();
-          handleRotate90();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedId, historyIndex, history, elements]);
-
-  const handleDuplicateSelected = () => {
-    if (!selectedElement) return;
-    const count = elements.filter(e => e.type === 'slot').length + 1;
-    const newObj = {
-      ...selectedElement,
-      id: Date.now(),
-      x: selectedElement.x + 30,
-      y: selectedElement.y + 30,
-      code: selectedElement.code ? `${selectedElement.code.split('-')[0]}-0${count}` : undefined
-    };
-    const updated = [...elements, newObj];
-    setElements(updated);
-    pushHistory(updated);
-    setSelectedId(newObj.id);
-  };
-
-  const handleSetAngle = (angleDeg) => {
-    if (!selectedElement) return;
-    const updated = elements.map(el => el.id === selectedId ? { ...el, rot: angleDeg } : el);
-    setElements(updated);
-    pushHistory(updated);
-  };
-
-  const handleExportJSON = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(elements, null, 2));
-    const dl = document.createElement('a');
-    dl.setAttribute("href", dataStr);
-    dl.setAttribute("download", `plano_${parkingName.toLowerCase().replace(/\s+/g, '_')}.json`);
-    dl.click();
-    setMessage(`Plano exportado exitosamente.`);
-    setTimeout(() => setMessage(''), 3000);
-  };
-
-  const handleImportJSON = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const imported = JSON.parse(ev.target.result);
-        if (Array.isArray(imported)) {
-          setElements(imported);
-          pushHistory(imported);
-          setMessage(`Plano cargado correctamente (${imported.length} elementos).`);
-          setTimeout(() => setMessage(''), 3000);
-        }
-      } catch {
-        setMessage(`Error al leer el archivo JSON.`);
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleSave = () => {
-    if (onSavePlan) onSavePlan(elements);
-    setHasUnsavedChanges(false);
-    setMessage(`¡Plano y distribución topográfica guardados exitosamente!`);
-    setTimeout(() => setMessage(''), 4000);
   };
 
   return (
     <div className="space-y-4">
-      {/* BARRA SUPERIOR SEGÚN MODO */}
-      {readOnly ? (
-        <div className="bg-slate-900 text-white p-4 rounded-3xl border border-slate-800 shadow-xl flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center space-x-3 flex-wrap gap-y-2">
-            <Badge className="bg-emerald-500 text-slate-950 font-black text-xs">
-              VISTA EN VIVO (SOLO LECTURA)
-            </Badge>
-            <div className="flex items-center space-x-3 text-xs font-mono">
-              <span className="text-slate-300">Total: <strong className="text-white">{totalSlots} plazas</strong></span>
-              <span className="text-emerald-400">Libres: <strong>{freeSlots}</strong></span>
-              <span className="text-rose-400">Ocupados: <strong>{occupiedSlots}</strong></span>
-              <span className="text-blue-400">PMR: <strong>{pmrSlots}</strong></span>
-              <span className="text-amber-400">Techados: <strong>{shadedSlots}</strong></span>
-            </div>
+      {/* ============================================================
+          BARRA DE CONTROL SUPERIOR — PRESETS, VISTA Y GUARDADO
+          ============================================================ */}
+      <div className="bg-slate-900 text-white p-4 rounded-3xl border border-slate-800 shadow-xl flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+        
+        {/* Presets de Terreno */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center space-x-1.5 bg-slate-800/80 px-3 py-1.5 rounded-2xl border border-slate-700">
+            <Layers className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-bold font-tech uppercase text-slate-300">Lote:</span>
           </div>
 
-          <div className="flex items-center space-x-2">
-            {/* Zoom Controls */}
-            <div className="flex items-center bg-slate-800 rounded-xl px-2 py-1 border border-slate-700 space-x-1">
-              <button onClick={() => setZoom(prev => Math.max(prev - 10, 40))} className="p-1 hover:text-white text-slate-400">
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-              <span className="text-[10px] font-mono font-bold px-1.5 text-emerald-400">{zoom}%</span>
-              <button onClick={() => setZoom(prev => Math.min(prev + 10, 150))} className="p-1 hover:text-white text-slate-400">
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-              <button 
-                onClick={handleFitToScreen} 
-                className="p-1 text-cyan-400 hover:text-cyan-200 border-l border-slate-700 pl-1.5 flex items-center gap-1 text-[10px] font-bold"
-                title="Ajustar al 100% visible"
+          <div className="flex flex-wrap items-center bg-slate-950/70 p-1 rounded-2xl border border-slate-800 gap-1">
+            {[
+              { id: 'rectangular', label: 'Rectangular' },
+              { id: 'l_shape', label: "Forma en 'L'" },
+              { id: 'diagonal', label: 'Diagonal 45°' },
+              { id: 'u_shape', label: "Forma en 'U'" },
+              { id: 'free', label: 'Lienzo Libre' }
+            ].map(p => (
+              <button
+                key={p.id}
+                onClick={() => handlePresetChange(p.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  lotShape === p.id 
+                    ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                }`}
               >
-                <Maximize2 className="w-3 h-3" />
-                <span>Ajustar</span>
+                {p.label}
               </button>
-            </div>
-
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleExportJSON}
-              className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs gap-1"
-            >
-              <Download className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">Exportar JSON</span>
-            </Button>
+            ))}
           </div>
+
+          <Button 
+            onClick={handleAutoNumber}
+            variant="outline" 
+            size="sm"
+            className="rounded-2xl border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-bold gap-1.5 h-8"
+            title="Renumera automáticamente todas las plazas en orden espacial"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Auto-Numerar</span>
+          </Button>
         </div>
-      ) : (
-        /* BARRA SUPERIOR: FORMAS DE TERRENO Y CONTROL DE LIENZO CAD */
-        <div className="bg-slate-900 text-white p-4 rounded-3xl border border-slate-800 shadow-xl flex flex-wrap items-center justify-between gap-4">
-          {/* Selector de Forma de Terreno Real */}
-          <div className="flex items-center space-x-3 flex-wrap gap-y-2">
-            <div className="flex items-center space-x-1.5 text-xs font-black text-amber-400">
-              <Shapes className="w-4 h-4" />
-              <span>FORMA DE TERRENO:</span>
-            </div>
 
-            <div className="flex items-center bg-slate-800 p-1 rounded-2xl border border-slate-700 space-x-1 flex-wrap gap-y-1">
-              <button
-                onClick={() => handleApplyLotPreset('rectangular')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  lotShape === 'rectangular' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                Rectangular
-              </button>
-              <button
-                onClick={() => handleApplyLotPreset('l_shape')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  lotShape === 'l_shape' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                Lote en 'L'
-              </button>
-              <button
-                onClick={() => handleApplyLotPreset('diagonal')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  lotShape === 'diagonal' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                Diagonal 45°
-              </button>
-              <button
-                onClick={() => handleApplyLotPreset('u_shape')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  lotShape === 'u_shape' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                Lote en 'U'
-              </button>
-              <button
-                onClick={() => handleApplyLotPreset('blank')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  lotShape === 'blank' ? 'bg-amber-600 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                Lienzo Libre
-              </button>
-            </div>
-
-            {/* Auto-Numeración */}
-            <Button
-              onClick={handleAutoRenumber}
-              size="sm"
-              variant="outline"
-              className="bg-slate-800 border-slate-700 text-amber-300 hover:bg-slate-700 hover:text-amber-200 text-xs font-black gap-1.5 shadow-sm"
-              title="Re-ordena y re-numera todas las plazas correlativamente (A-01, A-02, B-01...)"
+        {/* Controles de Zoom, Snapping y Guardar */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Deshacer / Rehacer */}
+          <div className="flex items-center bg-slate-950/70 p-1 rounded-2xl border border-slate-800">
+            <button
+              onClick={handleUndo}
+              disabled={historyIndex <= 0}
+              className="p-1.5 hover:bg-slate-800 rounded-xl disabled:opacity-30 text-slate-300 transition"
+              title="Deshacer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Auto-Numerar</span>
-            </Button>
+              <Undo className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={historyIndex >= history.length - 1}
+              className="p-1.5 hover:bg-slate-800 rounded-xl disabled:opacity-30 text-slate-300 transition"
+              title="Rehacer"
+            >
+              <Redo className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Dimensiones, Deshacer/Rehacer, Zoom y Guardar */}
-          <div className="flex items-center space-x-2 flex-wrap gap-y-2">
-            {/* Deshacer / Rehacer */}
-            <div className="flex items-center bg-slate-800 rounded-xl px-1 py-1 border border-slate-700 space-x-1">
-              <button 
-                onClick={handleUndo} 
-                disabled={historyIndex <= 0}
-                className="p-1.5 hover:text-white text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Deshacer (Ctrl+Z)"
-              >
-                <Undo className="w-3.5 h-3.5" />
-              </button>
-              <button 
-                onClick={handleRedo} 
-                disabled={historyIndex >= history.length - 1}
-                className="p-1.5 hover:text-white text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Rehacer (Ctrl+Y)"
-              >
-                <Redo className="w-3.5 h-3.5" />
-              </button>
+          {/* Toggle de Imantación (Snap to Grid) */}
+          <button
+            onClick={() => setSnapToGrid(!snapToGrid)}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold border transition ${
+              snapToGrid 
+                ? 'bg-emerald-950/70 text-emerald-400 border-emerald-700 shadow-sm' 
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+            }`}
+            title="Activar o desactivar imantación a cuadrícula (20px)"
+          >
+            <Magnet className="w-3.5 h-3.5" />
+            <span>Snap Rejilla</span>
+          </button>
+
+          {/* Controles Profesionales de Zoom */}
+          <div className="flex items-center bg-slate-950/80 px-2 py-1 rounded-2xl border border-slate-800 text-xs font-tech text-slate-300 space-x-1 shadow-inner">
+            <button 
+              onClick={() => setZoom(Math.max(40, zoom - 10))} 
+              className="p-1 hover:bg-slate-800 rounded-lg text-slate-300 transition hover:text-white"
+              title="Alejar Zoom (Ctrl + Scroll Abajo)"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Presets Rápidos de Zoom */}
+            <div className="flex items-center space-x-0.5 px-1 font-mono font-bold">
+              {[50, 75, 100, 125].map((z) => (
+                <button
+                  key={z}
+                  onClick={() => setZoom(z)}
+                  className={`px-1.5 py-0.5 rounded text-[10px] transition ${
+                    zoom === z 
+                      ? 'bg-emerald-500 text-slate-950 font-black' 
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {z}%
+                </button>
+              ))}
             </div>
 
-            {/* Zoom */}
-            <div className="flex items-center bg-slate-800 rounded-xl px-2 py-1 border border-slate-700 space-x-1">
-              <button onClick={() => setZoom(prev => Math.max(prev - 10, 40))} className="p-1 hover:text-white text-slate-400">
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-              <span className="text-[10px] font-mono font-bold px-1.5 text-emerald-400">{zoom}%</span>
-              <button onClick={() => setZoom(prev => Math.min(prev + 10, 150))} className="p-1 hover:text-white text-slate-400">
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-              <button 
-                onClick={handleFitToScreen} 
-                className="p-1 text-cyan-400 hover:text-cyan-200 border-l border-slate-700 pl-1.5 flex items-center gap-1 text-[10px] font-bold"
-                title="Ajustar al 100% visible"
-              >
-                <Maximize2 className="w-3 h-3" />
-                <span>Ajustar</span>
-              </button>
-            </div>
+            <button 
+              onClick={() => setZoom(Math.min(200, zoom + 10))} 
+              className="p-1 hover:bg-slate-800 rounded-lg text-slate-300 transition hover:text-white"
+              title="Acercar Zoom (Ctrl + Scroll Arriba)"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
 
-            {/* Estado de guardado */}
-            {hasUnsavedChanges ? (
-              <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1 bg-amber-950/60 px-2 py-1 rounded-xl border border-amber-800">
-                ● Cambios sin guardar
-              </span>
-            ) : (
-              <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 bg-emerald-950/60 px-2 py-1 rounded-xl border border-emerald-800">
-                ✓ Sincronizado
-              </span>
-            )}
+            <button 
+              onClick={handleFitToScreen} 
+              className="px-2 py-1 bg-slate-800/90 hover:bg-emerald-950 hover:text-emerald-300 rounded-xl text-emerald-400 font-bold text-[10px] flex items-center space-x-1 border border-slate-700 transition ml-1"
+              title="Ajustar plano a la pantalla"
+            >
+              <Maximize2 className="w-3 h-3" />
+              <span>Ajustar</span>
+            </button>
+          </div>
 
+          {/* Estado de sincronización */}
+          {hasUnsavedChanges ? (
+            <span className="text-[11px] font-tech font-bold text-amber-400 flex items-center gap-1.5 bg-amber-950/50 px-2.5 py-1.5 rounded-2xl border border-amber-800/80">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              <span>Pendiente</span>
+            </span>
+          ) : (
+            <span className="text-[11px] font-tech font-bold text-emerald-400 flex items-center gap-1.5 bg-emerald-950/50 px-2.5 py-1.5 rounded-2xl border border-emerald-800/80">
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Sincronizado</span>
+            </span>
+          )}
+
+          {/* Guardar Cambios */}
+          {!readOnly && (
             <Button 
               onClick={handleSave} 
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs gap-1.5 shadow-lg shadow-emerald-600/30"
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs gap-1.5 px-4 h-9 rounded-2xl shadow-lg shadow-emerald-500/20"
             >
-              <Save className="w-3.5 h-3.5" />
+              <Save className="w-4 h-4" />
               <span>Guardar Cambios</span>
             </Button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* PALETA DE HERRAMIENTAS DE DIBUJO RÁPIDO (SOLO EN MODO EDICIÓN) */}
+      {/* ============================================================
+          PALETA DE HERRAMIENTAS DE DIBUJO RÁPIDO (CATEGORIZADA Y FLUIDA)
+          ============================================================ */}
       {!readOnly && (
-        <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] font-black uppercase text-slate-400 px-2">Herramienta:</span>
+        <div className="bg-slate-900/95 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border border-slate-800 shadow-xl flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            
+            {/* Modo Selección */}
+            <button
+              onClick={() => setActiveTool('select')}
+              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTool === 'select' 
+                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black ring-2 ring-cyan-400' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'
+              }`}
+              title="Seleccionar y mover elementos"
+            >
+              <MousePointer className="w-4 h-4" />
+              <span>Seleccionar</span>
+            </button>
 
-          {/* 1. Selección / Mover */}
-          <button
-            onClick={() => setActiveTool('select')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'select' ? 'bg-slate-950 text-white shadow-sm ring-2 ring-slate-900' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <MousePointer className="w-3.5 h-3.5" />
-            <span>Seleccionar / Mover</span>
-          </button>
+            <div className="h-6 w-px bg-slate-800 mx-1 hidden md:block" />
 
-          <div className="h-5 w-px bg-slate-200 mx-1" />
+            {/* Grupo Plazas de Estacionamiento */}
+            <div className="flex items-center bg-slate-950/60 p-1 rounded-xl border border-slate-800/80 gap-1">
+              <span className="text-[10px] font-bold uppercase text-slate-400 px-1.5 font-tech hidden lg:inline">Plazas:</span>
 
-          {/* 2. Trazar Batería de Cajones (Arrastrar) */}
-          <button
-            onClick={() => setActiveTool('draw_row')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition ${
-              activeTool === 'draw_row' ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-600' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Trazar Fila de Cajones</span>
-          </button>
+              <button
+                onClick={() => setActiveTool('slot_auto')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeTool === 'slot_auto' 
+                    ? 'bg-emerald-500 text-slate-950 shadow-md font-black ring-2 ring-emerald-400' 
+                    : 'bg-emerald-950/50 text-emerald-300 hover:bg-emerald-900/70 border border-emerald-800/60'
+                }`}
+                title="Añadir plaza estándar de auto"
+              >
+                <Car className="w-3.5 h-3.5" />
+                <span>+ Auto</span>
+              </button>
 
-          <div className="h-5 w-px bg-slate-200 mx-1" />
+              <button
+                onClick={() => setActiveTool('slot_shaded')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeTool === 'slot_shaded' 
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-2 ring-amber-400' 
+                    : 'bg-amber-950/50 text-amber-300 hover:bg-amber-900/70 border border-amber-800/60'
+                }`}
+                title="Añadir plaza con cubierta tensada"
+              >
+                <Umbrella className="w-3.5 h-3.5" />
+                <span>+ Techado</span>
+              </button>
 
-          {/* 3. Cajones individuales */}
-          <button
-            onClick={() => setActiveTool('slot_auto')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'slot_auto' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Car className="w-3.5 h-3.5 text-emerald-600" />
-            <span>+ Auto</span>
-          </button>
+              <button
+                onClick={() => setActiveTool('slot_moto')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeTool === 'slot_moto' 
+                    ? 'bg-orange-500 text-slate-950 shadow-md font-black ring-2 ring-orange-400' 
+                    : 'bg-orange-950/50 text-orange-300 hover:bg-orange-900/70 border border-orange-800/60'
+                }`}
+                title="Añadir plaza de moto"
+              >
+                <Bike className="w-3.5 h-3.5" />
+                <span>+ Moto</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTool('slot_shaded')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'slot_shaded' ? 'bg-amber-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-            title="Colocar plaza con cubierta tensada"
-          >
-            <Umbrella className="w-3.5 h-3.5" />
-            <span>+ Techado</span>
-          </button>
+              <button
+                onClick={() => setActiveTool('draw_row')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeTool === 'draw_row' 
+                    ? 'bg-cyan-500 text-slate-950 shadow-md font-black ring-2 ring-cyan-400' 
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                }`}
+                title="Trazar batería de 5 plazas en fila con un clic"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>+ Fila Rápida</span>
+              </button>
+            </div>
 
-          <button
-            onClick={() => setActiveTool('slot_pmr')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'slot_pmr' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Accessibility className="w-3.5 h-3.5 text-blue-500" />
-            <span>+ PMR</span>
-          </button>
+            <div className="h-6 w-px bg-slate-800 mx-1 hidden md:block" />
 
-          <button
-            onClick={() => setActiveTool('slot_vip')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'slot_vip' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Crown className="w-3.5 h-3.5 text-amber-500" />
-            <span>+ VIP</span>
-          </button>
+            {/* Grupo Accesos & Vías */}
+            <div className="flex items-center bg-slate-950/60 p-1 rounded-xl border border-slate-800/80 gap-1">
+              <span className="text-[10px] font-bold uppercase text-slate-400 px-1.5 font-tech hidden lg:inline">Accesos & Vías:</span>
 
-          <button
-            onClick={() => setActiveTool('slot_moto')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'slot_moto' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Bike className="w-3.5 h-3.5 text-amber-500" />
-            <span>+ Moto</span>
-          </button>
+              <button
+                onClick={() => setActiveTool('add_entry')}
+                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeTool === 'add_entry' 
+                    ? 'bg-emerald-500 text-slate-950 shadow-md font-black ring-2 ring-emerald-400' 
+                    : 'bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/60 border border-emerald-800/50'
+                }`}
+                title="Añadir punto de ENTRADA con cámara LPR"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>+ Entrada</span>
+              </button>
 
-          <div className="h-5 w-px bg-slate-200 mx-1" />
+              <button
+                onClick={() => setActiveTool('add_exit')}
+                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeTool === 'add_exit' 
+                    ? 'bg-rose-500 text-slate-950 shadow-md font-black ring-2 ring-rose-400' 
+                    : 'bg-rose-950/40 text-rose-400 hover:bg-rose-900/60 border border-rose-800/50'
+                }`}
+                title="Añadir punto de SALIDA con validación POS"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>+ Salida</span>
+              </button>
 
-          {/* 4. Elementos Arquitectónicos */}
-          <button
-            onClick={() => setActiveTool('add_wall')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'add_wall' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Square className="w-3.5 h-3.5 text-slate-400" />
-            <span>+ Muro</span>
-          </button>
+              <button
+                onClick={() => setActiveTool('add_road')}
+                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeTool === 'add_road' 
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-black' 
+                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                }`}
+                title="Añadir carril vial de circulación"
+              >
+                <Navigation className="w-3.5 h-3.5 text-amber-400" />
+                <span>Carril</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTool('add_road')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'add_road' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Navigation className="w-3.5 h-3.5 text-amber-400" />
-            <span>+ Carril Vial</span>
-          </button>
+              <button
+                onClick={() => setActiveTool('add_wall')}
+                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeTool === 'add_wall' 
+                    ? 'bg-slate-300 text-slate-950 shadow-md font-black' 
+                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                }`}
+                title="Añadir muro perimétrico de hormigón"
+              >
+                <Square className="w-3.5 h-3.5 text-slate-400" />
+                <span>Muro</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTool('add_crosswalk')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'add_crosswalk' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Footprints className="w-3.5 h-3.5 text-slate-400" />
-            <span>+ Cruce Peatonal</span>
-          </button>
+              <button
+                onClick={() => setActiveTool('add_crosswalk')}
+                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeTool === 'add_crosswalk' 
+                    ? 'bg-slate-200 text-slate-950 shadow-md font-black' 
+                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                }`}
+                title="Añadir paso de cebra peatonal"
+              >
+                <Footprints className="w-3.5 h-3.5 text-slate-400" />
+                <span>Cruce</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTool('add_garden')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'add_garden' ? 'bg-emerald-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <TreeIcon className="w-3.5 h-3.5 text-emerald-500" />
-            <span>+ Jardín</span>
-          </button>
+              <button
+                onClick={() => setActiveTool('add_garden')}
+                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeTool === 'add_garden' 
+                    ? 'bg-emerald-500 text-slate-950 shadow-md font-black' 
+                    : 'bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60 border border-emerald-800/50'
+                }`}
+                title="Añadir área verde o jardín ornamental"
+              >
+                <TreeIcon className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Jardín</span>
+              </button>
+            </div>
+          </div>
 
-          <button
-            onClick={() => setActiveTool('add_gate')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'add_gate' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <DoorClosed className="w-3.5 h-3.5 text-slate-400" />
-            <span>+ Garita</span>
-          </button>
-
+          {/* Borrador */}
           <button
             onClick={() => setActiveTool('eraser')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTool === 'eraser' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+            className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold transition ${
+              activeTool === 'eraser' 
+                ? 'bg-rose-500 text-slate-950 shadow-md font-black ring-2 ring-rose-400' 
+                : 'bg-rose-950/50 text-rose-300 hover:bg-rose-900/70 border border-rose-800/60'
             }`}
+            title="Borrar elementos al hacer clic sobre ellos"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4 text-rose-400" />
             <span>Borrador</span>
           </button>
         </div>
       )}
 
+      {/* Mensaje de Feedback */}
       {message && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold shadow-sm animate-in fade-in flex items-center justify-between">
-          <span>{message}</span>
-          <button onClick={() => setMessage('')} className="text-emerald-600 hover:text-emerald-900 font-black">×</button>
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-xl text-xs font-semibold flex items-center justify-between animate-fade-in">
+          <div className="flex items-center space-x-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>{message}</span>
+          </div>
+          <button onClick={() => setMessage('')} className="text-slate-400 hover:text-slate-600">✕</button>
         </div>
       )}
 
-      {/* LIENZO DE DIBUJO Y PANEL DE CONTROL */}
-      <div className={`grid grid-cols-1 ${readOnly ? 'w-full' : 'lg:grid-cols-4'} gap-4`}>
-
-        {/* LIENZO DE TRABAJO */}
-        <div 
-          ref={containerRef}
-          className={`${readOnly ? 'w-full' : 'lg:col-span-3'} bg-slate-900 rounded-3xl p-4 sm:p-6 border-2 border-slate-800 shadow-2xl min-h-[600px] flex flex-col items-center justify-start overflow-auto relative`}
-        >
-          <div
-            ref={canvasRef}
-            onMouseDown={handleCanvasMouseDown}
-            style={{
-              width: `${canvasWidth}px`,
-              height: `${canvasHeight}px`,
-              transform: `scale(${zoom / 100})`,
-              transformOrigin: 'top center',
-              marginBottom: `-${canvasHeight * (1 - zoom / 100)}px`,
-              cursor: activeTool === 'select' ? 'default' : activeTool === 'eraser' ? 'not-allowed' : 'crosshair'
-            }}
-            className="relative bg-[#161b24] rounded-2xl border-4 border-slate-700 shadow-inner overflow-hidden flex-shrink-0"
+      {/* ============================================================
+          ÁREA PRINCIPAL: LIENZO CAD + INSPECTOR DE PROPIEDADES
+          ============================================================ */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
+        
+        {/* COLUMNA DEL LIENZO CAD + BARRA DE ESTADO */}
+        <div className="lg:col-span-3 flex flex-col space-y-2.5">
+          <div 
+            ref={containerRef}
+            className="bg-[#0d1117] rounded-3xl p-4 sm:p-6 border border-slate-800 shadow-2xl overflow-auto custom-scrollbar flex min-h-[580px] max-h-[750px]"
           >
-            {/* Cuadrícula de Ajuste */}
+            {/* Viewport Contenedor Escalado */}
+            <div
+              className="m-auto relative flex-shrink-0"
+              style={{
+                width: `${canvasWidth * (zoom / 100)}px`,
+                height: `${canvasHeight * (zoom / 100)}px`,
+              }}
+            >
+            {/* Lienzo Escalado */}
+            <div
+              ref={canvasRef}
+              onMouseDown={handleCanvasMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              style={{
+                width: `${canvasWidth}px`,
+                height: `${canvasHeight}px`,
+                transform: `scale(${zoom / 100})`,
+                transformOrigin: 'top left',
+                position: 'absolute',
+                top: 0,
+                left: 0
+              }}
+              className="canvas-bg relative bg-[#131924] rounded-2xl border-2 border-slate-700 shadow-inner overflow-hidden select-none cursor-crosshair transition-transform duration-75"
+            >
+            {/* Rejilla métrica */}
             <div 
-              style={{ backgroundSize: `${gridSize}px ${gridSize}px` }}
-              className="absolute inset-0 bg-[linear-gradient(to_right,#242b38_1px,transparent_1px),linear-gradient(to_bottom,#242b38_1px,transparent_1px)] opacity-40 pointer-events-none"
+              className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:20px_20px] opacity-40 pointer-events-none" 
             />
 
-            {/* FLOATING MINI-TOOLBAR SOBRE EL ELEMENTO SELECCIONADO */}
-            {selectedElement && !readOnly && activeTool === 'select' && (
-              <div
-                style={{
-                  left: `${Math.max(10, Math.min(canvasWidth - 280, selectedElement.x))}px`,
-                  top: `${Math.max(10, selectedElement.y - 48)}px`
-                }}
-                className="absolute z-50 bg-slate-900/95 backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-cyan-400 shadow-2xl flex items-center space-x-2 animate-in fade-in zoom-in-95 pointer-events-auto"
-              >
-                <span className="text-[11px] font-mono font-black text-cyan-300 pr-1.5 border-r border-slate-700">
-                  {selectedElement.code || selectedElement.type.toUpperCase()}
-                </span>
-                <button 
-                  onClick={handleRotate90} 
-                  className="p-1 hover:bg-slate-800 rounded text-slate-300 hover:text-white" 
-                  title="Rotar 90° (Tecla R)"
-                >
-                  <RotateCw className="w-3.5 h-3.5" />
-                </button>
-                <button 
-                  onClick={handleDuplicateSelected} 
-                  className="p-1 hover:bg-slate-800 rounded text-slate-300 hover:text-white" 
-                  title="Duplicar (Ctrl+D)"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-                <button 
-                  onClick={() => {
-                    const updated = elements.filter(el => el.id !== selectedId);
-                    setElements(updated);
-                    pushHistory(updated);
-                    setSelectedId(null);
-                  }} 
-                  className="p-1 hover:bg-rose-950/60 rounded text-rose-400 hover:text-rose-200" 
-                  title="Eliminar (Supr)"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-
-            {/* RENDERIZADO DE ELEMENTOS DEL PLANO */}
+            {/* Renderizado de todos los elementos con Estilo Arquitectónico Realista */}
             {elements.map((el) => {
-              const isSelected = el.id === selectedId;
+              const isSelected = selectedId === el.id;
 
-              // 1. Cajón de Estacionamiento
+              // 1. Plazas de Estacionamiento de Alta Definición
               if (el.type === 'slot') {
                 const isFree = el.status === 'free';
                 const isPMR = el.slotType === 'pmr';
-                const isVIP = el.slotType === 'vip';
                 const isMoto = el.slotType === 'moto';
                 const isShaded = !!el.shaded;
 
@@ -1226,79 +1267,90 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute rounded-xl border-2 cursor-pointer transition-shadow flex flex-col justify-between p-2 select-none overflow-hidden ${
-                      isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30 shadow-[0_0_20px_rgba(6,182,212,0.6)]' : 'z-10'
+                    className={`absolute rounded-xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between p-1.5 select-none overflow-hidden shadow-md ${
+                      isSelected 
+                        ? 'ring-4 ring-cyan-400 border-cyan-300 z-30 shadow-[0_0_30px_rgba(6,182,212,0.9)] scale-[1.02]' 
+                        : 'z-10'
                     } ${
                       isPMR 
-                        ? 'border-blue-500 bg-blue-950/75 text-blue-200' 
-                        : isVIP
-                        ? 'border-amber-400 bg-amber-950/75 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                        ? 'border-blue-500/90 bg-gradient-to-b from-blue-950/90 via-slate-900/95 to-blue-950/90 text-blue-200 hover:border-blue-400' 
                         : isShaded
-                        ? 'border-amber-400/90 bg-amber-950/35 text-amber-100'
+                        ? 'border-amber-400/90 bg-gradient-to-b from-amber-950/70 via-slate-900/95 to-amber-950/80 text-amber-100 hover:border-amber-300'
                         : isMoto
-                        ? 'border-amber-500 bg-amber-950/70 text-amber-200'
+                        ? 'border-orange-500/90 bg-gradient-to-b from-orange-950/80 via-slate-900/95 to-orange-950/90 text-orange-200 hover:border-orange-400'
                         : isFree
-                        ? 'border-emerald-400/80 bg-emerald-950/40 text-emerald-100 hover:bg-emerald-900/50'
-                        : 'border-rose-500/80 bg-rose-950/60 text-rose-200'
+                        ? 'border-emerald-500/80 bg-gradient-to-b from-emerald-950/60 via-slate-900/95 to-slate-950 text-emerald-100 hover:border-emerald-400'
+                        : 'border-rose-500/90 bg-gradient-to-b from-rose-950/80 via-slate-900/95 to-rose-950/90 text-rose-200'
                     }`}
                   >
-                    {/* Textura de Techado / Sombra si está techado */}
+                    {/* Textura de Techado con Vigas y Sombra */}
                     {isShaded && (
-                      <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(245,158,11,0.12),rgba(245,158,11,0.12)_6px,transparent_6px,transparent_12px)] pointer-events-none rounded-xl" />
+                      <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(245,158,11,0.18),rgba(245,158,11,0.18)_8px,transparent_8px,transparent_16px)] pointer-events-none rounded-xl">
+                        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent pointer-events-none" />
+                      </div>
                     )}
 
-                    <div className="flex items-center justify-between text-[11px] font-mono font-black z-10">
-                      <span>{el.code}</span>
-                      {isPMR && <span className="text-blue-400 font-bold text-[10px]">PMR</span>}
-                      {isVIP && <span className="text-amber-300 font-bold text-[10px] flex items-center gap-0.5">⭐ VIP</span>}
-                      {isShaded && <span className="text-amber-300 text-[10px] font-bold" title="Plaza con Cubierta">CUBIERTA</span>}
-                      {isMoto && <span className="text-amber-300 font-bold text-[10px]">MOTO</span>}
+                    {/* Sensor LED Cenital Inteligente */}
+                    <div className="absolute top-1 right-1.5 flex items-center space-x-1 z-20 pointer-events-none">
+                      <div className={`w-2 h-2 rounded-full shadow-sm ${
+                        isFree 
+                          ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse' 
+                          : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.9)]'
+                      }`} />
                     </div>
 
-                    {/* Tope de llanta */}
-                    <div className="w-full h-2.5 bg-amber-400/90 border border-black rounded-xs flex items-center justify-around px-1">
-                      <div className="w-2 h-full bg-black" />
-                      <div className="w-2 h-full bg-black" />
-                      <div className="w-2 h-full bg-black" />
+                    {/* Encabezado: Código y Distintivo */}
+                    <div className="flex items-center justify-between text-[10px] font-mono font-black z-10 leading-none pr-3">
+                      <span className="text-white drop-shadow-sm tracking-tight">{el.code}</span>
+                      {isPMR && <span className="text-blue-400 font-bold text-[8px] bg-blue-950/80 px-1 py-0.5 rounded border border-blue-700">♿ PMR</span>}
+                      {isShaded && <span className="text-amber-300 text-[8px] font-bold bg-amber-950/80 px-1 py-0.5 rounded border border-amber-700">⛱️ TECH</span>}
+                      {isMoto && <span className="text-orange-300 font-bold text-[8px] bg-orange-950/80 px-1 py-0.5 rounded border border-orange-700">🏍️ MOTO</span>}
                     </div>
 
-                    <div className="text-center text-[10px] font-mono font-black">
-                      {el.plate ? (
-                        <span 
-                          style={{ backgroundColor: el.color ? `${el.color}30` : 'rgba(0,0,0,0.8)' }}
-                          className="px-1.5 py-0.5 rounded-xs border border-white/20 text-white"
-                        >
-                          {el.plate}
-                        </span>
+                    {/* Silueta / Stencil Central en Asfalto */}
+                    <div className="flex flex-col items-center justify-center my-auto py-0.5 z-10 pointer-events-none">
+                      {isFree ? (
+                        isPMR ? (
+                          <Accessibility className="w-5 h-5 text-blue-400/40" />
+                        ) : isMoto ? (
+                          <Bike className="w-4 h-4 text-orange-400/40" />
+                        ) : (
+                          <div className="w-6 h-9 rounded-lg border border-dashed border-emerald-400/30 flex flex-col items-center justify-around py-1">
+                            <div className="w-4 h-1 bg-emerald-400/30 rounded-xs" />
+                            <Car className="w-3.5 h-3.5 text-emerald-400/40" />
+                            <div className="w-4 h-1 bg-emerald-400/30 rounded-xs" />
+                          </div>
+                        )
                       ) : (
-                        <span className={isFree ? 'text-emerald-400 font-bold' : 'text-rose-400'}>
-                          {isFree ? 'LIBRE' : 'OCUPADO'}
-                        </span>
+                        <div className="w-full flex flex-col items-center bg-slate-950/90 p-1 rounded-lg border border-slate-700 shadow-inner">
+                          <Car className="w-4 h-4 text-rose-400 mb-0.5 animate-pulse" />
+                          <span className="text-[8px] font-mono font-black text-white uppercase tracking-wider bg-slate-800 px-1 rounded">
+                            {el.plate || 'OCUPADO'}
+                          </span>
+                        </div>
                       )}
                     </div>
 
-                    {/* Dial de Rotación y Agarres Figma/Canva */}
-                    {isSelected && !readOnly && activeTool === 'select' && (
-                      <>
-                        <div 
-                          onMouseDown={handleRotateStart}
-                          className="absolute -top-7 left-1/2 -translate-x-1/2 w-4 h-4 bg-cyan-400 border-2 border-white rounded-full cursor-grab shadow-lg flex items-center justify-center hover:scale-125 transition"
-                          title="Arrastra para rotar el elemento"
-                        >
-                          <div className="w-1 h-1 bg-black rounded-full" />
-                        </div>
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-cyan-400 pointer-events-none" />
-                        <div onMouseDown={(e) => handleResizeStart(e, 'nw')} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-cyan-500 rounded-xs cursor-nwse-resize shadow" />
-                        <div onMouseDown={(e) => handleResizeStart(e, 'ne')} className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-cyan-500 rounded-xs cursor-nesw-resize shadow" />
-                        <div onMouseDown={(e) => handleResizeStart(e, 'sw')} className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-cyan-500 rounded-xs cursor-nesw-resize shadow" />
-                        <div onMouseDown={(e) => handleResizeStart(e, 'se')} className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-cyan-500 rounded-xs cursor-nwse-resize shadow" />
-                      </>
-                    )}
+                    {/* Tope de Llanta 3D con Franjas de Seguridad */}
+                    <div className="w-full h-2 rounded bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border border-amber-300/60 shadow-sm flex items-center justify-around px-0.5 z-10 my-0.5 overflow-hidden">
+                      <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
+                      <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
+                      <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
+                    </div>
+
+                    {/* Estado inferior */}
+                    <div className="text-center text-[8px] font-mono font-bold leading-none z-10">
+                      {isFree ? (
+                        <span className="text-emerald-400 tracking-wider font-extrabold">LIBRE</span>
+                      ) : (
+                        <span className="text-rose-400 tracking-wider">OCUPADO</span>
+                      )}
+                    </div>
                   </div>
                 );
               }
 
-              // 2. Muro
+              // 2. Muros Perimétricos de Hormigón Armado
               if (el.type === 'wall') {
                 return (
                   <div
@@ -1311,24 +1363,16 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute bg-gradient-to-r from-slate-600 via-slate-700 to-slate-800 border border-slate-500 rounded-xs shadow-md z-15 cursor-pointer ${
-                      isSelected ? 'ring-4 ring-cyan-400' : ''
+                    className={`absolute rounded-xs cursor-pointer z-5 shadow-[0_4px_12px_rgba(0,0,0,0.8)] border border-slate-500/80 bg-gradient-to-r from-slate-700 via-slate-600 to-slate-800 ${
+                      isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 bg-cyan-600 z-30' : ''
                     }`}
                   >
-                    {isSelected && !readOnly && activeTool === 'select' && (
-                      <>
-                        <div 
-                          onMouseDown={handleRotateStart}
-                          className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 bg-cyan-400 border border-white rounded-full cursor-grab shadow-lg"
-                        />
-                        <div onMouseDown={(e) => handleResizeStart(e, 'se')} className="absolute -bottom-1 -right-1 w-3 h-3 bg-white border-2 border-cyan-500 rounded-xs cursor-nwse-resize shadow" />
-                      </>
-                    )}
+                    <div className="w-full h-full bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.06),rgba(255,255,255,0.06)_4px,transparent_4px,transparent_8px)]" />
                   </div>
                 );
               }
 
-              // 3. Calle / Carril
+              // 3. Vías y Carriles con Señalética y Tachas Reflectivas
               if (el.type === 'road') {
                 return (
                   <div
@@ -1341,21 +1385,30 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute bg-[#1e2533] border-y-2 border-dashed border-amber-400/40 flex items-center justify-around px-4 z-2 cursor-pointer ${
-                      isSelected ? 'ring-4 ring-cyan-400' : ''
+                    className={`absolute bg-[#151c28] border-y-2 border-dashed border-amber-400/70 flex flex-col items-center justify-center cursor-pointer z-2 overflow-hidden shadow-inner ${
+                      isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30' : ''
                     }`}
                   >
-                    <span className="text-[10px] font-mono font-black text-white/30 tracking-widest pointer-events-none select-none">
-                      ━► {el.label || 'CARRIL DE CIRCULACIÓN'} ━►
-                    </span>
-                    {isSelected && !readOnly && activeTool === 'select' && (
-                      <div onMouseDown={(e) => handleResizeStart(e, 'se')} className="absolute -bottom-1 -right-1 w-3 h-3 bg-white border-2 border-cyan-500 rounded-xs cursor-nwse-resize shadow" />
-                    )}
+                    {/* Línea Divisoria Central con Flechas Direccionales */}
+                    <div className="w-full flex items-center justify-around px-4 pointer-events-none opacity-80">
+                      <span className="text-[10px] font-mono font-black text-amber-400/70 tracking-widest flex items-center space-x-2">
+                        <span>━►</span>
+                        <span>{el.label || 'CARRIL VIAL DE CIRCULACIÓN'}</span>
+                        <span>━►</span>
+                      </span>
+                    </div>
+
+                    {/* Tachas / Cat's Eyes Reflectivos en el Pavimento */}
+                    <div className="w-full flex items-center justify-between px-6 pointer-events-none mt-1">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
+                      ))}
+                    </div>
                   </div>
                 );
               }
 
-              // 4. Cruce Peatonal
+              // 4. Cruces Peatonales (Paso de Cebra de Alto Contraste)
               if (el.type === 'crosswalk') {
                 return (
                   <div
@@ -1368,19 +1421,22 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute bg-[repeating-linear-gradient(90deg,#ffffff,#ffffff_12px,#1e2533_12px,#1e2533_24px)] opacity-60 rounded-xs z-3 cursor-pointer ${
-                      isSelected ? 'ring-4 ring-cyan-400' : ''
+                    className={`absolute bg-[#1a2230] border-x-2 border-amber-400/80 rounded flex flex-col justify-around py-1.5 px-1 cursor-pointer z-4 shadow-lg ${
+                      isSelected ? 'ring-4 ring-cyan-400 opacity-95 z-30' : ''
                     }`}
                   >
-                    {isSelected && !readOnly && activeTool === 'select' && (
-                      <div onMouseDown={(e) => handleResizeStart(e, 'se')} className="absolute -bottom-1 -right-1 w-3 h-3 bg-white border-2 border-cyan-500 rounded-xs cursor-nwse-resize shadow" />
-                    )}
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="w-full h-2 bg-slate-100 rounded-xs shadow-sm" />
+                    ))}
                   </div>
                 );
               }
 
-              // 5. Edificio / Límite Privado
-              if (el.type === 'building') {
+              // 5. Garitas / Accesos Tecnológicos (Entrada LPR & Salida Control)
+              if (el.type === 'gate') {
+                const isEntry = el.gateType === 'entry' || (el.label && el.label.toUpperCase().includes('ENTRADA'));
+                const isExit = el.gateType === 'exit' || (el.label && el.label.toUpperCase().includes('SALIDA'));
+
                 return (
                   <div
                     key={el.id}
@@ -1392,24 +1448,45 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute bg-[#0f131a] border-2 border-slate-600 rounded-xl shadow-2xl p-3 flex flex-col justify-between z-12 cursor-pointer ${
-                      isSelected ? 'ring-4 ring-cyan-400 border-cyan-400' : ''
+                    className={`absolute rounded-2xl flex flex-col items-center justify-between p-2 shadow-2xl cursor-pointer z-20 border-2 select-none backdrop-blur-md ${
+                      isSelected ? 'ring-4 ring-cyan-400 z-30 scale-105 shadow-[0_0_25px_rgba(6,182,212,0.9)]' : ''
+                    } ${
+                      isEntry
+                        ? 'bg-gradient-to-b from-slate-950 via-emerald-950/80 to-slate-950 border-emerald-400 text-emerald-300 shadow-emerald-500/30'
+                        : isExit
+                        ? 'bg-gradient-to-b from-slate-950 via-rose-950/80 to-slate-950 border-rose-400 text-rose-300 shadow-rose-500/30'
+                        : 'bg-slate-950 border-cyan-400 text-cyan-300 shadow-cyan-500/30'
                     }`}
                   >
-                    <div className="flex items-center space-x-1 text-slate-400 text-[10px] font-black uppercase">
-                      <Building className="w-3.5 h-3.5" />
-                      <span>{el.label || 'EDIFICIO'}</span>
+                    {/* Indicador LED y Sensor ANPR */}
+                    <div className="flex items-center space-x-1.5 w-full justify-center">
+                      <div className={`w-2.5 h-2.5 rounded-full animate-ping ${
+                        isEntry ? 'bg-emerald-400 shadow-[0_0_10px_#34d399]' : 'bg-rose-400 shadow-[0_0_10px_#f43f5e]'
+                      }`} />
+                      <span className="text-[9px] font-mono font-black tracking-widest text-white drop-shadow">
+                        {isEntry ? 'ENTRADA' : isExit ? 'SALIDA' : 'ACCESO'}
+                      </span>
                     </div>
-                    <div className="w-full h-px bg-slate-700" />
-                    <span className="text-[9px] font-mono text-slate-500 text-center">ÁREA PRIVADA NO TRANSITABLE</span>
-                    {isSelected && !readOnly && activeTool === 'select' && (
-                      <div onMouseDown={(e) => handleResizeStart(e, 'se')} className="absolute -bottom-1 -right-1 w-3 h-3 bg-white border-2 border-cyan-500 rounded-xs cursor-nwse-resize shadow" />
-                    )}
+
+                    {/* Talanquera Motorizada con Rayas Reflectivas */}
+                    <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-600 shadow-inner flex items-center my-1">
+                      <div className={`h-full w-full bg-[repeating-linear-gradient(45deg,#ffffff,#ffffff_6px,${isEntry ? '#10b981' : '#f43f5e'}_6px,${isEntry ? '#10b981' : '#f43f5e'}_12px)]`} />
+                    </div>
+
+                    {/* Sensor / Cámara LPR */}
+                    <div className="w-full flex items-center justify-between text-[7px] font-mono font-bold text-slate-300 bg-slate-900/80 px-1 py-0.5 rounded border border-slate-800">
+                      <span>{isEntry ? '📷 ANPR' : '💳 POS'}</span>
+                      <span className="text-amber-300">AUTO</span>
+                    </div>
+
+                    <div className="text-[8px] font-mono font-black uppercase text-center text-white truncate max-w-full tracking-tight">
+                      {el.label || (isEntry ? 'GARITA LPR' : 'CONTROL COBRO')}
+                    </div>
                   </div>
                 );
               }
 
-              // 6. Jardín / Área Verde
+              // 6. Jardín y Paisajismo
               if (el.type === 'garden') {
                 return (
                   <div
@@ -1422,25 +1499,22 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute bg-emerald-950/80 border-2 border-emerald-600/70 rounded-xl shadow-lg p-3 flex flex-col justify-between z-10 cursor-pointer ${
-                      isSelected ? 'ring-4 ring-cyan-400' : ''
+                    className={`absolute bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-950 border-2 border-emerald-500/80 rounded-3xl flex flex-col items-center justify-center p-2 text-emerald-200 cursor-pointer z-3 shadow-xl overflow-hidden ${
+                      isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30 scale-[1.01]' : ''
                     }`}
                   >
-                    <div className="flex items-center space-x-1 text-emerald-400 text-[10px] font-black uppercase">
-                      <TreeIcon className="w-3.5 h-3.5" />
-                      <span>{el.label || 'ÁREA VERDE'}</span>
+                    <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,rgba(52,211,153,0.15),transparent_70%)] flex flex-col items-center justify-center">
+                      <TreeIcon className="w-7 h-7 text-emerald-400 drop-shadow-md mb-1 animate-bounce" style={{ animationDuration: '3s' }} />
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-200 drop-shadow">
+                        {el.label || 'ÁREA VERDE'}
+                      </span>
                     </div>
-                    <span className="text-[8px] font-mono text-emerald-300/60 text-center">RETIRO ECOLÓGICO</span>
-
-                    {isSelected && !readOnly && activeTool === 'select' && (
-                      <div onMouseDown={(e) => handleResizeStart(e, 'se')} className="absolute -bottom-1 -right-1 w-3 h-3 bg-white border-2 border-cyan-500 rounded-xs cursor-nwse-resize shadow" />
-                    )}
                   </div>
                 );
               }
 
-              // 7. Garita LPR
-              if (el.type === 'gate') {
+              // 7. Área externa o edificio
+              if (el.type === 'building') {
                 return (
                   <div
                     key={el.id}
@@ -1452,13 +1526,15 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute bg-slate-900 border-2 border-emerald-400 rounded-lg shadow-2xl p-1 flex flex-col items-center justify-between text-[8px] font-mono font-black text-emerald-300 z-25 cursor-pointer ${
-                      isSelected ? 'ring-4 ring-cyan-400' : ''
+                    className={`absolute bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-2 border-slate-700 rounded-2xl flex items-center justify-center p-3 text-slate-400 cursor-pointer z-2 shadow-2xl ${
+                      isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30' : ''
                     }`}
                   >
-                    <span>ANPR</span>
-                    <div className="w-full h-2 bg-amber-400 rounded-xs" />
-                    <span>GARITA</span>
+                    <div className="w-full h-full border border-dashed border-slate-700 rounded-xl flex items-center justify-center bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.02),rgba(255,255,255,0.02)_6px,transparent_6px,transparent_12px)]">
+                      <span className="text-xs font-mono font-black text-center text-slate-300 uppercase tracking-wider">
+                        {el.label}
+                      </span>
+                    </div>
                   </div>
                 );
               }
@@ -1466,7 +1542,121 @@ export const InteractiveFloorPlanDrawingStudio = ({
               return null;
             })}
 
-            {/* PREVISUALIZACIÓN DE DIBUJO */}
+            {/* ============================================================
+                TIRADORES DE REDIMENSIONAMIENTO Y ROTACIÓN (INTERACTIVOS)
+                ============================================================ */}
+            {selectedElement && !readOnly && (
+              <div
+                style={{
+                  left: `${selectedElement.x}px`,
+                  top: `${selectedElement.y}px`,
+                  width: `${selectedElement.w}px`,
+                  height: `${selectedElement.h}px`,
+                  transform: `rotate(${selectedElement.rot || 0}deg)`,
+                  transformOrigin: 'center center'
+                }}
+                className="absolute pointer-events-none z-40 border-2 border-dashed border-cyan-400 rounded-xl"
+              >
+                {/* Micro-Barra Flotante sobre el elemento seleccionado */}
+                <div 
+                  className="absolute -top-11 left-1/2 -translate-x-1/2 bg-slate-950/95 backdrop-blur-md border border-slate-700 text-white px-2 py-1 rounded-xl shadow-xl flex items-center space-x-1 pointer-events-auto select-none"
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <button 
+                    onClick={() => handleQuickResize(10, 10)} 
+                    className="p-1 hover:bg-slate-800 rounded text-emerald-400 text-xs font-bold flex items-center" 
+                    title="Agrandar (+10px)"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                  <button 
+                    onClick={() => handleQuickResize(-10, -10)} 
+                    className="p-1 hover:bg-slate-800 rounded text-amber-400 text-xs font-bold flex items-center" 
+                    title="Reducir (-10px)"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="w-px h-3.5 bg-slate-700 mx-0.5" />
+                  <button 
+                    onClick={() => handleRotateStep(90)} 
+                    className="p-1 hover:bg-slate-800 rounded text-slate-300 text-xs" 
+                    title="Girar 90° (R)"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                  </button>
+                  <button 
+                    onClick={handleDuplicateSelected} 
+                    className="p-1 hover:bg-slate-800 rounded text-slate-300 text-xs" 
+                    title="Duplicar (Ctrl+D)"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                  <button 
+                    onClick={handleDeleteSelected} 
+                    className="p-1 hover:bg-rose-900/60 text-rose-400 rounded text-xs" 
+                    title="Eliminar (Supr)"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Tirador de Rotación Superior */}
+                <div 
+                  className="absolute -top-7 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-auto cursor-grab active:cursor-grabbing"
+                  onMouseDown={handleRotateKnobDown}
+                  title="Arrastra para rotar libremente"
+                >
+                  <div className="w-3.5 h-3.5 rounded-full bg-cyan-400 border-2 border-white shadow-lg" />
+                  <div className="w-0.5 h-3.5 bg-cyan-400" />
+                </div>
+
+                {/* Tiradores de Esquinas (Resize) */}
+                <div 
+                  onMouseDown={(e) => handleResizeHandleDown(e, 'tl')}
+                  className="absolute -top-2 -left-2 w-4 h-4 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nwse-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  title="Agrandar / Reducir esquina"
+                />
+                <div 
+                  onMouseDown={(e) => handleResizeHandleDown(e, 'tr')}
+                  className="absolute -top-2 -right-2 w-4 h-4 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nesw-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  title="Agrandar / Reducir esquina"
+                />
+                <div 
+                  onMouseDown={(e) => handleResizeHandleDown(e, 'bl')}
+                  className="absolute -bottom-2 -left-2 w-4 h-4 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nesw-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  title="Agrandar / Reducir esquina"
+                />
+                <div 
+                  onMouseDown={(e) => handleResizeHandleDown(e, 'br')}
+                  className="absolute -bottom-2 -right-2 w-4 h-4 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nwse-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  title="Agrandar / Reducir esquina"
+                />
+
+                {/* Tiradores Laterales de Bordes */}
+                <div 
+                  onMouseDown={(e) => handleResizeHandleDown(e, 'r')}
+                  className="absolute top-1/2 -right-2 -translate-y-1/2 w-3.5 h-6 bg-cyan-400 border border-white rounded-xs shadow-md cursor-ew-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  title="Agrandar ancho"
+                />
+                <div 
+                  onMouseDown={(e) => handleResizeHandleDown(e, 'b')}
+                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-3.5 bg-cyan-400 border border-white rounded-xs shadow-md cursor-ns-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  title="Agrandar alto"
+                />
+                <div 
+                  onMouseDown={(e) => handleResizeHandleDown(e, 'l')}
+                  className="absolute top-1/2 -left-2 -translate-y-1/2 w-3.5 h-6 bg-cyan-400 border border-white rounded-xs shadow-md cursor-ew-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  title="Ajustar ancho izquierdo"
+                />
+                <div 
+                  onMouseDown={(e) => handleResizeHandleDown(e, 't')}
+                  className="absolute -top-2 left-1/2 -translate-x-1/2 w-6 h-3.5 bg-cyan-400 border border-white rounded-xs shadow-md cursor-ns-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  title="Ajustar alto superior"
+                />
+              </div>
+            )}
+
+            {/* Vista previa de arrastre mientras se dibuja */}
             {isDrawing && currentDraw && (
               <div
                 style={{
@@ -1475,331 +1665,425 @@ export const InteractiveFloorPlanDrawingStudio = ({
                   width: `${currentDraw.w}px`,
                   height: `${currentDraw.h}px`
                 }}
-                className="absolute border-2 border-dashed border-emerald-400 bg-emerald-500/20 rounded-lg pointer-events-none z-50 flex items-center justify-center"
-              >
-                {activeTool === 'draw_row' && (
-                  <span className="text-xs font-mono font-black bg-black/80 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-400">
-                    Fila: ~{Math.max(1, Math.floor(currentDraw.w / 75))} Cajones
-                  </span>
-                )}
-              </div>
+                className="absolute border-2 border-dashed border-cyan-400 bg-cyan-400/20 rounded-xl pointer-events-none z-40"
+              />
             )}
           </div>
         </div>
+      </div>
 
-        {/* PANEL LATERAL DE PROPIEDADES (SOLO EN MODO EDICIÓN) */}
-        {!readOnly && (
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 className="font-black text-slate-900 text-sm flex items-center gap-1.5">
-                  <Sliders className="w-4 h-4 text-emerald-600" />
-                  <span>Inspector de Propiedades CAD</span>
-                </h3>
-                {selectedElement && (
-                  <Badge variant="outline" className="text-[10px] font-mono uppercase bg-slate-100">
-                    {selectedElement.type}
-                  </Badge>
-                )}
-              </div>
+      {/* Barra de Estado CAD Inferior */}
+      <div className="px-4 py-2 bg-slate-950/90 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2 shadow-md">
+        <div className="flex items-center space-x-3">
+          <span className="flex items-center space-x-1.5 text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-bold text-white">HERRAMIENTA:</span>
+            <span className="uppercase text-cyan-400 font-bold">{activeTool.replace('_', ' ')}</span>
+          </span>
+          <span className="hidden sm:inline text-slate-600">|</span>
+          <span className="hidden sm:inline">
+            Plano: <strong className="text-white">{canvasWidth}×{canvasHeight}px</strong>
+          </span>
+          <span className="hidden md:inline text-slate-600">|</span>
+          <span className="hidden md:inline">
+            Snap: <strong className={snapToGrid ? "text-emerald-400" : "text-slate-500"}>{snapToGrid ? "Activo (20px)" : "Inactivo"}</strong>
+          </span>
+        </div>
 
-              {selectedElement ? (
-                <div className="space-y-4 pt-3">
-                  {/* Código */}
-                  {selectedElement.type === 'slot' && (
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Código del Cajón</label>
-                      <Input
-                        type="text"
-                        value={selectedElement.code || ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setElements(prev => prev.map(el => el.id === selectedId ? { ...el, code: val } : el));
-                          setHasUnsavedChanges(true);
-                        }}
-                        className="font-mono font-black"
-                      />
-                    </div>
-                  )}
+        <div className="flex items-center space-x-3 text-[10px] text-slate-400">
+          <span>Zoom: <strong className="text-emerald-400">{zoom}%</strong></span>
+        </div>
+      </div>
+    </div>
 
-                  {/* Tipo de Vehículo y Sombra */}
-                  {selectedElement.type === 'slot' && (
-                    <div className="space-y-2.5">
-                      <div>
-                        <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Tipo de Plaza</label>
-                        <select
-                          value={selectedElement.slotType || 'auto'}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setElements(prev => prev.map(el => el.id === selectedId ? { ...el, slotType: val } : el));
-                            setHasUnsavedChanges(true);
-                          }}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-                        >
-                          <option value="auto">🚗 Automóvil / Sedán</option>
-                          <option value="pmr">♿ PMR Inclusivo</option>
-                          <option value="vip">⭐ Zona VIP / Reservada</option>
-                          <option value="moto">🏍️ Motocicleta</option>
-                        </select>
-                      </div>
+    {/* ============================================================
+        INSPECTOR DE PROPIEDADES LATERAL (UX PRO)
+        ============================================================ */}
+    <div className="lg:col-span-1 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xl space-y-4 max-h-[800px] overflow-y-auto custom-scrollbar">
+          
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center space-x-2">
+              <Sliders className="w-5 h-5 text-emerald-600" />
+              <h3 className="font-bold text-slate-900 text-sm">Propiedades</h3>
+            </div>
+            {selectedElement && (
+              <Badge variant="secondary" className="font-mono text-[10px] uppercase bg-slate-100 text-slate-800 border-slate-200">
+                {selectedElement.type}
+              </Badge>
+            )}
+          </div>
 
-                      <div className="flex items-center space-x-2 p-2.5 bg-amber-50/80 border border-amber-200 rounded-xl">
-                        <input 
-                          type="checkbox" 
-                          id="shaded-toggle"
-                          checked={!!selectedElement.shaded}
-                          onChange={(e) => {
-                            const val = e.target.checked;
-                            setElements(prev => prev.map(el => el.id === selectedId ? { ...el, shaded: val } : el));
-                            setHasUnsavedChanges(true);
-                          }}
-                          className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer"
-                        />
-                        <label htmlFor="shaded-toggle" className="text-xs font-bold text-amber-900 cursor-pointer select-none">
-                          Plaza con Cubierta Tensada (Sombra)
-                        </label>
-                      </div>
-
-                      {/* Estado de Simulación */}
-                      <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[10px] font-black uppercase text-slate-500">Estado de Ocupación</label>
-                          <button
-                            onClick={() => {
-                              const newStatus = selectedElement.status === 'free' ? 'occupied' : 'free';
-                              setElements(prev => prev.map(el => el.id === selectedId ? { 
-                                ...el, 
-                                status: newStatus,
-                                plate: newStatus === 'occupied' ? (el.plate || 'ABC-123') : undefined
-                              } : el));
-                              setHasUnsavedChanges(true);
-                            }}
-                            className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition ${
-                              selectedElement.status === 'free' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                            }`}
-                          >
-                            {selectedElement.status === 'free' ? 'LIBRE' : 'OCUPADO'}
-                          </button>
-                        </div>
-
-                        {selectedElement.status === 'occupied' && (
-                          <div>
-                            <label className="text-[9px] font-bold text-slate-400 block mb-0.5">Placa del Vehículo</label>
-                            <Input
-                              type="text"
-                              value={selectedElement.plate || ''}
-                              onChange={(e) => {
-                                const val = e.target.value.toUpperCase();
-                                setElements(prev => prev.map(el => el.id === selectedId ? { ...el, plate: val } : el));
-                                setHasUnsavedChanges(true);
-                              }}
-                              className="font-mono font-bold text-xs h-7"
-                              placeholder="ABC-123"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Etiquetas para otros elementos */}
-                  {['road', 'building', 'garden', 'gate'].includes(selectedElement.type) && (
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Etiqueta del Plano</label>
-                      <Input
-                        type="text"
-                        value={selectedElement.label || ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setElements(prev => prev.map(el => el.id === selectedId ? { ...el, label: val } : el));
-                          setHasUnsavedChanges(true);
-                        }}
-                        className="font-bold text-xs"
-                      />
-                    </div>
-                  )}
-
-                  {/* Posición y Dimensiones Exactas */}
-                  <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                    <label className="text-[10px] font-black uppercase text-slate-400 block">Posición & Dimensiones (px)</label>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-[9px] text-slate-400 block">X (Horizontal)</span>
-                        <Input
-                          type="number"
-                          value={selectedElement.x || 0}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value) || 0;
-                            setElements(prev => prev.map(el => el.id === selectedId ? { ...el, x: val } : el));
-                            setHasUnsavedChanges(true);
-                          }}
-                          className="font-mono h-7 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-[9px] text-slate-400 block">Y (Vertical)</span>
-                        <Input
-                          type="number"
-                          value={selectedElement.y || 0}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value) || 0;
-                            setElements(prev => prev.map(el => el.id === selectedId ? { ...el, y: val } : el));
-                            setHasUnsavedChanges(true);
-                          }}
-                          className="font-mono h-7 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-[9px] text-slate-400 block">Ancho</span>
-                        <Input
-                          type="number"
-                          value={selectedElement.w || 20}
-                          onChange={(e) => {
-                            const val = Math.max(10, parseInt(e.target.value) || 20);
-                            setElements(prev => prev.map(el => el.id === selectedId ? { ...el, w: val } : el));
-                            setHasUnsavedChanges(true);
-                          }}
-                          className="font-mono h-7 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-[9px] text-slate-400 block">Alto</span>
-                        <Input
-                          type="number"
-                          value={selectedElement.h || 20}
-                          onChange={(e) => {
-                            const val = Math.max(10, parseInt(e.target.value) || 20);
-                            setElements(prev => prev.map(el => el.id === selectedId ? { ...el, h: val } : el));
-                            setHasUnsavedChanges(true);
-                          }}
-                          className="font-mono h-7 text-xs"
-                        />
-                      </div>
+          {selectedElement ? (
+            <div className="space-y-4">
+              
+              {/* Código y Acciones Rápidas */}
+              {selectedElement.type === 'slot' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold uppercase text-slate-400 font-tech">Código de Plaza</label>
+                    <div className="flex items-center space-x-1">
+                      <button 
+                        onClick={handleDuplicateSelected} 
+                        className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg text-xs" 
+                        title="Duplicar (Ctrl+D)"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={handleDeleteSelected} 
+                        className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg text-xs" 
+                        title="Eliminar (Supr)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-
-                  {/* Alineación Rápida */}
-                  <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                    <label className="text-[10px] font-black uppercase text-slate-400 block">Alinear en el Lote</label>
-                    <div className="grid grid-cols-3 gap-1">
-                      <Button onClick={() => handleAlignSelected('top')} variant="outline" size="sm" className="text-[10px] h-7 px-1">
-                        ⬆️ Arriba
-                      </Button>
-                      <Button onClick={() => handleAlignSelected('center-v')} variant="outline" size="sm" className="text-[10px] h-7 px-1">
-                        ↕️ Centro
-                      </Button>
-                      <Button onClick={() => handleAlignSelected('bottom')} variant="outline" size="sm" className="text-[10px] h-7 px-1">
-                        ⬇️ Abajo
-                      </Button>
-                      <Button onClick={() => handleAlignSelected('left')} variant="outline" size="sm" className="text-[10px] h-7 px-1">
-                        ⬅️ Izq.
-                      </Button>
-                      <Button onClick={() => handleAlignSelected('center-h')} variant="outline" size="sm" className="text-[10px] h-7 px-1">
-                        ↔️ Centro
-                      </Button>
-                      <Button onClick={() => handleAlignSelected('right')} variant="outline" size="sm" className="text-[10px] h-7 px-1">
-                        ➡️ Der.
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Ajuste de Ángulo de Inclinación */}
-                  <div className="space-y-2 pt-2 border-t border-slate-100">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                      <span className="flex items-center gap-1 text-[10px] font-black uppercase text-slate-400">
-                        <Compass className="w-3.5 h-3.5" />
-                        Inclinación
-                      </span>
-                      <span className="font-mono text-emerald-600 font-black">{selectedElement.rot || 0}°</span>
-                    </div>
-
-                    <div className="grid grid-cols-5 gap-1">
-                      {[0, 30, 45, 60, 90].map(deg => (
-                        <button
-                          key={deg}
-                          onClick={() => handleSetAngle(deg)}
-                          className={`py-1 rounded-lg text-[10px] font-mono font-bold transition ${
-                            (selectedElement.rot || 0) === deg ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                          }`}
-                        >
-                          {deg}°
-                        </button>
-                      ))}
-                    </div>
-
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="360" 
-                      value={selectedElement.rot || 0} 
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value) || 0;
-                        setElements(prev => prev.map(el => el.id === selectedId ? { ...el, rot: val } : el));
-                        setHasUnsavedChanges(true);
-                      }}
-                      className="w-full accent-emerald-600"
-                    />
-                  </div>
-
-                  {/* Acciones de Objeto */}
-                  <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                    <Button onClick={handleDuplicateSelected} variant="outline" size="sm" className="w-full text-xs font-bold gap-1.5">
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Duplicar (Ctrl+D)</span>
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        const updated = elements.filter(el => el.id !== selectedId);
-                        setElements(updated);
-                        pushHistory(updated);
-                        setSelectedId(null);
-                      }} 
-                      variant="destructive" 
-                      size="sm" 
-                      className="w-full text-xs font-bold gap-1.5"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Eliminar (Supr)</span>
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-400 text-xs space-y-2">
-                  <MousePointer className="w-8 h-8 mx-auto opacity-30" />
-                  <p className="font-bold text-slate-600">Ningún elemento seleccionado</p>
-                  <p className="text-[11px]">Haz clic sobre cualquier cajón, muro o vía para modificar sus propiedades, código o inclinación.</p>
+                  <Input
+                    type="text"
+                    value={selectedElement.code || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setElements(prev => prev.map(el => el.id === selectedId ? { ...el, code: val } : el));
+                      setHasUnsavedChanges(true);
+                    }}
+                    className="font-mono font-bold text-sm bg-slate-50 border-slate-300 text-slate-900"
+                  />
                 </div>
               )}
-            </div>
 
-            {/* Estadísticas de Aforo */}
-            <div className="pt-3 border-t border-slate-100 space-y-1.5">
-              <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Aforo en el Lote</h4>
-              <div className="bg-slate-50 p-3 rounded-2xl space-y-1 text-xs font-mono">
-                <div className="flex justify-between">
-                  <span>Total Plazas:</span>
-                  <span className="font-black text-slate-900">{totalSlots}</span>
+              {/* Botones Rápidos para Agrandar / Redimensionar */}
+              <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase text-slate-500 font-tech flex items-center gap-1">
+                    <Scaling className="w-3.5 h-3.5 text-emerald-600" /> Tamaño del Elemento
+                  </span>
+                  <span className="font-mono font-bold text-xs text-slate-800">
+                    {selectedElement.w} × {selectedElement.h} px
+                  </span>
                 </div>
-                <div className="flex justify-between text-emerald-700">
-                  <span>Libres:</span>
-                  <span className="font-bold">{freeSlots}</span>
+
+                <div className="grid grid-cols-2 gap-1.5">
+                  <Button 
+                    onClick={() => handleQuickResize(10, 10)} 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 text-xs font-bold gap-1 bg-white hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Agrandar (+10px)</span>
+                  </Button>
+                  <Button 
+                    onClick={() => handleQuickResize(-10, -10)} 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 text-xs font-bold gap-1 bg-white hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300"
+                  >
+                    <Minus className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Reducir (-10px)</span>
+                  </Button>
                 </div>
-                <div className="flex justify-between text-rose-700">
-                  <span>Ocupadas:</span>
-                  <span className="font-bold">{occupiedSlots}</span>
-                </div>
-                <div className="flex justify-between text-blue-700">
-                  <span>PMR Inclusivo:</span>
-                  <span className="font-bold">{pmrSlots}</span>
-                </div>
-                <div className="flex justify-between text-amber-700">
-                  <span>Con Cubierta Tensada:</span>
-                  <span className="font-bold">{shadedSlots}</span>
+
+                {/* Presets Rápidos de Dimensiones Compactas */}
+                <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px] font-mono font-bold">
+                  <button
+                    onClick={() => handleSetExactSize(56, 96)}
+                    className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs"
+                    title="Tamaño estándar auto (56x96)"
+                  >
+                    56×96 (Auto)
+                  </button>
+                  <button
+                    onClick={() => handleSetExactSize(38, 65)}
+                    className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs"
+                    title="Plaza moto (38x65)"
+                  >
+                    38×65 (Moto)
+                  </button>
                 </div>
               </div>
+
+              {/* Selector de Tipo de Plaza con 1 Clic */}
+              {selectedElement.type === 'slot' && (
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase text-slate-400 font-tech">Tipo de Plaza</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'auto', label: 'Auto', icon: Car },
+                      { id: 'moto', label: 'Moto', icon: Bike }
+                    ].map(t => {
+                      const Icon = t.icon;
+                      const isCurrent = (selectedElement.slotType || 'auto') === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => {
+                            setElements(prev => prev.map(el => el.id === selectedId ? { ...el, slotType: t.id } : el));
+                            setHasUnsavedChanges(true);
+                          }}
+                          className={`flex flex-col items-center justify-center p-2.5 rounded-xl text-xs font-bold border transition ${
+                            isCurrent
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-emerald-400'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Icon className={`w-4 h-4 mb-1 ${isCurrent ? 'text-emerald-400' : 'text-slate-500'}`} />
+                          <span>{t.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Switch de Techado */}
+                  <label className="flex items-center space-x-2 p-2.5 bg-amber-50/80 border border-amber-200/80 rounded-xl cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={!!selectedElement.shaded}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setElements(prev => prev.map(el => el.id === selectedId ? { ...el, shaded: val } : el));
+                        setHasUnsavedChanges(true);
+                      }}
+                      className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-amber-950">Plaza con Cubierta (Techada)</span>
+                  </label>
+                </div>
+              )}
+
+              {/* Estado de Ocupación y Simulación */}
+              {selectedElement.type === 'slot' && (
+                <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <label className="text-[11px] font-bold uppercase text-slate-500 font-tech block">Estado de la Plaza</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      onClick={() => {
+                        setElements(prev => prev.map(el => el.id === selectedId ? { ...el, status: 'free', plate: undefined } : el));
+                        setHasUnsavedChanges(true);
+                      }}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                        selectedElement.status === 'free' 
+                          ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300' 
+                          : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-emerald-300" />
+                      <span>LIBRE</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setElements(prev => prev.map(el => el.id === selectedId ? { ...el, status: 'occupied', plate: el.plate || 'ABC-123' } : el));
+                        setHasUnsavedChanges(true);
+                      }}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                        selectedElement.status === 'occupied' 
+                          ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-300' 
+                          : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-rose-300" />
+                      <span>OCUPADO</span>
+                    </button>
+                  </div>
+
+                  {selectedElement.status === 'occupied' && (
+                    <div className="pt-2">
+                      <label className="text-[10px] font-bold text-slate-400 block mb-1">Matrícula / Placa</label>
+                      <Input
+                        type="text"
+                        value={selectedElement.plate || ''}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setElements(prev => prev.map(el => el.id === selectedId ? { ...el, plate: val } : el));
+                          setHasUnsavedChanges(true);
+                        }}
+                        className="font-mono font-bold text-xs bg-white uppercase"
+                        placeholder="ABC-123"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Control específico para Garitas y Accesos (Entrada / Salida) */}
+              {selectedElement.type === 'gate' && (
+                <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <label className="text-[11px] font-bold uppercase text-slate-500 font-tech block">Tipo de Acceso</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      onClick={() => {
+                        setElements(prev => prev.map(el => el.id === selectedId ? { ...el, gateType: 'entry', label: 'ENTRADA LPR' } : el));
+                        setHasUnsavedChanges(true);
+                      }}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                        (selectedElement.gateType === 'entry' || (selectedElement.label && selectedElement.label.toUpperCase().includes('ENTRADA')))
+                          ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300'
+                          : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>ENTRADA</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setElements(prev => prev.map(el => el.id === selectedId ? { ...el, gateType: 'exit', label: 'SALIDA CONTROL' } : el));
+                        setHasUnsavedChanges(true);
+                      }}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                        (selectedElement.gateType === 'exit' || (selectedElement.label && selectedElement.label.toUpperCase().includes('SALIDA')))
+                          ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-300'
+                          : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <LogOut className="w-3.5 h-3.5 text-rose-300" />
+                      <span>SALIDA</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Etiqueta para Vías, Garitas o Jardines */}
+              {['road', 'building', 'garden', 'gate'].includes(selectedElement.type) && (
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-slate-400 font-tech block mb-1">Etiqueta del Plano</label>
+                  <Input
+                    type="text"
+                    value={selectedElement.label || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setElements(prev => prev.map(el => el.id === selectedId ? { ...el, label: val } : el));
+                      setHasUnsavedChanges(true);
+                    }}
+                    className="font-bold text-xs"
+                  />
+                </div>
+              )}
+
+              {/* Ajuste Rápido de Inclinación */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-[11px] font-bold uppercase text-slate-400 font-tech flex items-center gap-1">
+                    <Compass className="w-3.5 h-3.5" /> Giro / Ángulo
+                  </span>
+                  <span className="font-mono text-emerald-600 font-bold">{selectedElement.rot || 0}°</span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-1 text-[10px] font-mono font-bold">
+                  {[0, 30, 45, 90, 180].map(deg => (
+                    <button
+                      key={deg}
+                      onClick={() => {
+                        setElements(prev => prev.map(el => el.id === selectedId ? { ...el, rot: deg } : el));
+                        setHasUnsavedChanges(true);
+                      }}
+                      className={`py-1.5 rounded-lg transition ${
+                        (selectedElement.rot || 0) === deg 
+                          ? 'bg-slate-900 text-white font-black' 
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {deg}°
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Alineación Rápida */}
+              <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                <label className="text-[11px] font-bold uppercase text-slate-400 font-tech block">Alinear en el Lote</label>
+                <div className="grid grid-cols-3 gap-1 text-[10px] font-bold">
+                  <Button onClick={() => handleAlignSelected('top')} variant="outline" size="sm" className="h-7 text-[10px]">
+                    ⬆️ Arriba
+                  </Button>
+                  <Button onClick={() => handleAlignSelected('center-v')} variant="outline" size="sm" className="h-7 text-[10px]">
+                    ↕️ Centro
+                  </Button>
+                  <Button onClick={() => handleAlignSelected('bottom')} variant="outline" size="sm" className="h-7 text-[10px]">
+                    ⬇️ Abajo
+                  </Button>
+                  <Button onClick={() => handleAlignSelected('left')} variant="outline" size="sm" className="h-7 text-[10px]">
+                    ⬅️ Izq.
+                  </Button>
+                  <Button onClick={() => handleAlignSelected('center-h')} variant="outline" size="sm" className="h-7 text-[10px]">
+                    ↔️ Centro
+                  </Button>
+                  <Button onClick={() => handleAlignSelected('right')} variant="outline" size="sm" className="h-7 text-[10px]">
+                    ➡️ Der.
+                  </Button>
+                </div>
+              </div>
+
+              {/* Botones de Acción */}
+              <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                <Button 
+                  onClick={handleDuplicateSelected} 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full text-xs font-bold gap-1.5 rounded-xl border-slate-300 hover:bg-slate-100"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Duplicar Elemento (Ctrl+D)</span>
+                </Button>
+                <Button 
+                  onClick={handleDeleteSelected} 
+                  variant="destructive" 
+                  size="sm" 
+                  className="w-full text-xs font-bold gap-1.5 rounded-xl"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Eliminar Elemento (Supr)</span>
+                </Button>
+              </div>
+
             </div>
-          </div>
-        )}
+          ) : (
+            /* Estado cuando no hay elemento seleccionado: Dashboard Estadístico */
+            <div className="space-y-4">
+              <div className="text-center py-4 text-slate-400 space-y-1.5 border-b border-slate-100">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+                  <MousePointer className="w-6 h-6" />
+                </div>
+                <p className="text-xs font-bold text-slate-800">Selecciona un elemento para editar</p>
+                <p className="text-[11px] text-slate-400">Haz clic sobre cualquier cajón, muro o vía en el plano.</p>
+              </div>
+
+              {/* Resumen del Lote en Tiempo Real */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold uppercase text-slate-400 font-tech block">Métricas del Plano</span>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <span className="text-[10px] text-slate-400 font-bold block uppercase">Total Plazas</span>
+                    <span className="text-xl font-bold font-mono text-slate-900">{totalSlots}</span>
+                  </div>
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                    <span className="text-[10px] text-emerald-700 font-bold block uppercase">Libres</span>
+                    <span className="text-xl font-bold font-mono text-emerald-800">{freeSlots}</span>
+                  </div>
+                  <div className="p-3 bg-orange-50 border border-orange-200 rounded-2xl">
+                    <span className="text-[10px] text-orange-700 font-bold block uppercase">Motos</span>
+                    <span className="text-xl font-bold font-mono text-orange-800">{motoSlots}</span>
+                  </div>
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl">
+                    <span className="text-[10px] text-amber-700 font-bold block uppercase">Techadas</span>
+                    <span className="text-xl font-bold font-mono text-amber-800">{shadedSlots}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Consejos de Edición */}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-[11px] text-slate-600">
+                <span className="font-bold text-slate-800 block text-xs">💡 Ayuda de Edición</span>
+                <ul className="space-y-1 text-slate-500 list-disc list-inside">
+                  <li>Haz clic en cualquier elemento para editarlo o cambiar su tamaño.</li>
+                  <li>Arrastra libremente para moverlo por el plano.</li>
+                  <li>Usa los controles del panel para girar y alinear.</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );

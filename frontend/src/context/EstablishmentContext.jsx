@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const STORAGE_KEY = 'smart_park_unified_establishments_v2';
+const RESERVATIONS_STORAGE_KEY = 'smart_park_unified_reservations_v2';
 
 export const INITIAL_ESTABLISHMENTS = [
   {
@@ -23,25 +24,25 @@ export const INITIAL_ESTABLISHMENTS = [
       { id: 6, type: 'crosswalk', x: 500, y: 300, w: 80, h: 100, rot: 0 },
       { id: 7, type: 'gate', x: 40, y: 300, w: 30, h: 100, rot: 0, label: 'ACCESO GARITA ANPR' },
       
-      // Fila Norte
-      { id: 10, type: 'slot', code: 'A-01', slotType: 'pmr', x: 80, y: 70, w: 90, h: 140, rot: 0, status: 'free' },
-      { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 180, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', shaded: true, x: 265, y: 70, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'ABC-123', color: '#ef4444' },
-      { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 350, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 14, type: 'slot', code: 'A-05', slotType: 'auto', x: 435, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 15, type: 'slot', code: 'A-06', slotType: 'auto', x: 600, y: 70, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'XYZ-789', color: '#3b82f6' },
-      { id: 16, type: 'slot', code: 'A-07', slotType: 'vip', x: 685, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 17, type: 'slot', code: 'A-08', slotType: 'moto', x: 770, y: 70, w: 50, h: 140, rot: 0, status: 'free' },
-      { id: 18, type: 'slot', code: 'A-09', slotType: 'moto', x: 830, y: 70, w: 50, h: 140, rot: 0, status: 'free' },
+      // Fila Norte (Compacta)
+      { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', shaded: true, x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'ABC-123', color: '#ef4444' },
+      { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 14, type: 'slot', code: 'A-05', slotType: 'auto', x: 350, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 15, type: 'slot', code: 'A-06', slotType: 'auto', x: 600, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'XYZ-789', color: '#3b82f6' },
+      { id: 16, type: 'slot', code: 'A-07', slotType: 'auto', x: 665, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 17, type: 'slot', code: 'A-08', slotType: 'moto', x: 730, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
+      { id: 18, type: 'slot', code: 'A-09', slotType: 'moto', x: 775, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
 
-      // Fila Sur
-      { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 490, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'AYC-501', color: '#10b981' },
-      { id: 21, type: 'slot', code: 'B-02', slotType: 'auto', x: 165, y: 490, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 22, type: 'slot', code: 'B-03', slotType: 'auto', x: 250, y: 490, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 23, type: 'slot', code: 'B-04', slotType: 'auto', x: 335, y: 490, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#6366f1' },
-      { id: 24, type: 'slot', code: 'B-05', slotType: 'auto', x: 600, y: 490, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 25, type: 'slot', code: 'B-06', slotType: 'auto', x: 685, y: 490, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 26, type: 'slot', code: 'B-07', slotType: 'auto', x: 770, y: 490, w: 75, h: 140, rot: 0, status: 'free' }
+      // Fila Sur (Compacta)
+      { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'AYC-501', color: '#10b981' },
+      { id: 21, type: 'slot', code: 'B-02', slotType: 'auto', x: 145, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 22, type: 'slot', code: 'B-03', slotType: 'auto', x: 210, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 23, type: 'slot', code: 'B-04', slotType: 'auto', x: 275, y: 480, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#6366f1' },
+      { id: 24, type: 'slot', code: 'B-05', slotType: 'auto', x: 600, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 25, type: 'slot', code: 'B-06', slotType: 'auto', x: 665, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 26, type: 'slot', code: 'B-07', slotType: 'auto', x: 730, y: 480, w: 56, h: 96, rot: 0, status: 'free' }
     ]
   },
   {
@@ -49,85 +50,118 @@ export const INITIAL_ESTABLISHMENTS = [
     name: 'Smart Park Plaza Mayor - Sótano 1',
     address: 'Portal Unión 42, Centro Histórico',
     city: 'Ayacucho - Huamanga',
-    level: 'Nivel -1 - Subterráneo',
-    rate: 4.50,
+    level: 'Sótano -1',
+    rate: 4.00,
     status: 'Operativo',
     owner: 'Inversiones Plaza Mayor Huamanga',
     commission: '10%',
-    image: 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800',
+    image: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800',
     elements: [
       { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
       { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
       { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
       { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
       { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
-      { id: 6, type: 'gate', x: 40, y: 300, w: 30, h: 100, rot: 0, label: 'ACCESO SÓTANO' },
-      { id: 10, type: 'slot', code: 'S1-01', slotType: 'pmr', x: 80, y: 70, w: 90, h: 140, rot: 0, status: 'free' },
-      { id: 11, type: 'slot', code: 'S1-02', slotType: 'auto', shaded: true, x: 180, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 12, type: 'slot', code: 'S1-03', slotType: 'auto', shaded: true, x: 265, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 13, type: 'slot', code: 'S1-04', slotType: 'auto', x: 350, y: 70, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'P3X-998' },
-      { id: 14, type: 'slot', code: 'S1-05', slotType: 'auto', x: 435, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 15, type: 'slot', code: 'S1-06', slotType: 'vip', x: 600, y: 70, w: 80, h: 140, rot: 0, status: 'free' },
-      { id: 20, type: 'slot', code: 'S1-07', slotType: 'auto', x: 80, y: 490, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 21, type: 'slot', code: 'S1-08', slotType: 'auto', x: 165, y: 490, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 22, type: 'slot', code: 'S1-09', slotType: 'moto', x: 250, y: 490, w: 50, h: 140, rot: 0, status: 'free' }
+      { id: 6, type: 'slot', code: 'S1-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 7, type: 'slot', code: 'S1-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 8, type: 'slot', code: 'S1-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#6366f1' },
+      { id: 9, type: 'slot', code: 'S1-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' }
     ]
   },
   {
     id: 'EST-03',
-    name: 'Smart Park Jr. 28 de Julio (Zona Comercial)',
-    address: 'Jr. 28 de Julio 350',
+    name: 'Smart Park Mercado Mariscal Cáceres',
+    address: 'Av. Mariscal Cáceres 450',
     city: 'Ayacucho - Huamanga',
-    level: 'Zona Abierta',
-    rate: 4.00,
+    level: 'Playa Abierta',
+    rate: 3.50,
     status: 'Operativo',
-    owner: 'Comercial 28 de Julio S.A.C.',
-    commission: '12%',
-    image: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800',
+    owner: 'Comercial Cáceres SAC',
+    commission: '8%',
+    image: 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800',
     elements: [
       { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
-      { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
-      { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
-      { id: 4, type: 'garden', x: 860, y: 350, w: 180, h: 290, rot: 0, label: 'ÁREA VERDE' },
-      { id: 5, type: 'road', x: 60, y: 280, w: 800, h: 120, rot: 0, label: 'CARRIL VIAL' },
-      { id: 6, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'GARITA LPR' },
-      { id: 10, type: 'slot', code: 'C-01', slotType: 'pmr', x: 90, y: 90, w: 75, h: 135, rot: 30, status: 'free' },
-      { id: 11, type: 'slot', code: 'C-02', slotType: 'auto', shaded: true, x: 180, y: 90, w: 75, h: 135, rot: 30, status: 'free' },
-      { id: 12, type: 'slot', code: 'C-03', slotType: 'auto', x: 270, y: 90, w: 75, h: 135, rot: 30, status: 'occupied', plate: 'ABC-777' },
-      { id: 13, type: 'slot', code: 'C-04', slotType: 'auto', x: 360, y: 90, w: 75, h: 135, rot: 30, status: 'free' },
-      { id: 14, type: 'slot', code: 'C-05', slotType: 'vip', x: 450, y: 90, w: 75, h: 135, rot: 30, status: 'free' },
-      { id: 20, type: 'slot', code: 'C-06', slotType: 'auto', x: 90, y: 460, w: 75, h: 135, rot: -30, status: 'free' },
-      { id: 21, type: 'slot', code: 'C-07', slotType: 'auto', x: 180, y: 460, w: 75, h: 135, rot: -30, status: 'free' },
-      { id: 22, type: 'slot', code: 'C-08', slotType: 'moto', x: 270, y: 460, w: 50, h: 135, rot: -30, status: 'free' }
+      { id: 2, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
+      { id: 3, type: 'slot', code: 'M-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 4, type: 'slot', code: 'M-02', slotType: 'auto', x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 5, type: 'slot', code: 'M-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 6, type: 'slot', code: 'M-04', slotType: 'moto', x: 285, y: 80, w: 38, h: 65, rot: 0, status: 'free' }
     ]
   },
   {
     id: 'EST-04',
-    name: 'Smart Park Av. Independencia (Gran Sede)',
-    address: 'Av. Independencia 520',
+    name: 'Smart Park Terminal Terrestre',
+    address: 'Av. Pérez de Cuéllar s/n',
     city: 'Ayacucho - Huamanga',
-    level: 'Nivel 1 - Techado',
-    rate: 6.00,
-    status: 'Operativo',
-    owner: 'Inversiones Independencia Huamanga',
-    commission: '15%',
-    image: 'https://images.unsplash.com/photo-1621929747188-0b4dc28498d2?w=800',
+    level: 'Nivel 1 - Exterior',
+    rate: 4.50,
+    status: 'Mantenimiento',
+    owner: 'Consorcio Vial Ayacucho',
+    commission: '12%',
+    image: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800',
     elements: [
       { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
-      { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
-      { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
-      { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
-      { id: 5, type: 'road', x: 60, y: 280, w: 980, h: 120, rot: 0, label: 'AVENIDA CENTRAL DE DISTRIBUCIÓN' },
-      { id: 6, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'CONTROL ANPR' },
-      { id: 10, type: 'slot', code: 'IND-01', slotType: 'pmr', x: 80, y: 70, w: 90, h: 140, rot: 0, status: 'free' },
-      { id: 11, type: 'slot', code: 'IND-02', slotType: 'auto', shaded: true, x: 180, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 12, type: 'slot', code: 'IND-03', slotType: 'auto', shaded: true, x: 265, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 13, type: 'slot', code: 'IND-04', slotType: 'vip', x: 350, y: 70, w: 80, h: 140, rot: 0, status: 'free' },
-      { id: 14, type: 'slot', code: 'IND-05', slotType: 'auto', x: 440, y: 70, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'IND-101' },
-      { id: 20, type: 'slot', code: 'IND-06', slotType: 'auto', x: 80, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 21, type: 'slot', code: 'IND-07', slotType: 'auto', shaded: true, x: 165, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
-      { id: 22, type: 'slot', code: 'IND-08', slotType: 'moto', x: 250, y: 470, w: 50, h: 140, rot: 0, status: 'free' }
+      { id: 2, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
+      { id: 3, type: 'slot', code: 'T-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 4, type: 'slot', code: 'T-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' }
     ]
+  }
+];
+
+export const INITIAL_RESERVATIONS = [
+  {
+    id: 1,
+    code: 'RSV-8912',
+    token: 'SPK-AYC891-7B2F9A',
+    parkingId: 'EST-01',
+    parking: 'Smart Park Plaza Mayor - Planta Baja',
+    slot: 'A-01',
+    customerName: 'Carlos Mendoza Ramos',
+    customerPhone: '+51 966 123 456',
+    plate: 'ABC-123',
+    cost: 10.00,
+    hours: 2,
+    ratePerHour: 5.00,
+    status: 'SCHEDULED', // 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
+    startTime: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+    expiresAt: new Date(Date.now() + 100 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString()
+  },
+  {
+    id: 2,
+    code: 'RSV-5421',
+    token: 'SPK-AYC542-9D1E3F',
+    parkingId: 'EST-01',
+    parking: 'Smart Park Plaza Mayor - Planta Baja',
+    slot: 'A-06',
+    customerName: 'Valeria Quispe Castro',
+    customerPhone: '+51 984 765 432',
+    plate: 'XYZ-789',
+    cost: 15.00,
+    hours: 3,
+    ratePerHour: 5.00,
+    status: 'ACTIVE',
+    startTime: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    expiresAt: new Date(Date.now() + 135 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 3,
+    code: 'RSV-3319',
+    token: 'SPK-AYC331-4A8C2B',
+    parkingId: 'EST-02',
+    parking: 'Smart Park Plaza Mayor - Sótano 1',
+    slot: 'S1-03',
+    customerName: 'Jorge Alarcón Díaz',
+    customerPhone: '+51 999 888 777',
+    plate: 'W1P-404',
+    cost: 8.00,
+    hours: 2,
+    ratePerHour: 4.00,
+    status: 'ACTIVE',
+    startTime: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
+    expiresAt: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 90 * 60 * 1000).toISOString()
   }
 ];
 
@@ -149,6 +183,19 @@ export const EstablishmentProvider = ({ children }) => {
     return INITIAL_ESTABLISHMENTS;
   });
 
+  const [reservations, setReservations] = useState(() => {
+    try {
+      const saved = localStorage.getItem(RESERVATIONS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return INITIAL_RESERVATIONS;
+  });
+
   // Guardar en localStorage siempre que cambie
   useEffect(() => {
     try {
@@ -157,6 +204,14 @@ export const EstablishmentProvider = ({ children }) => {
       console.error('Error saving establishments to storage:', e);
     }
   }, [establishments]);
+
+  // Guardar reservaciones en localStorage
+  const saveReservations = (newReservations) => {
+    setReservations(newReservations);
+    try {
+      localStorage.setItem(RESERVATIONS_STORAGE_KEY, JSON.stringify(newReservations));
+    } catch (e) {}
+  };
 
   // Agregar nuevo establecimiento
   const addEstablishment = (newEst) => {
@@ -180,22 +235,10 @@ export const EstablishmentProvider = ({ children }) => {
     });
   };
 
-  // Actualizar plano CAD de un establecimiento
-  const updateEstablishmentPlan = (id, newElements) => {
+  // Actualizar plano topográfico
+  const updateEstablishmentPlan = (id, elements) => {
     setEstablishments(prev => {
-      const updated = prev.map(est => {
-        if (est.id === id) {
-          const slotsCount = newElements.filter(e => e.type === 'slot').length;
-          const pmrCount = newElements.filter(e => e.type === 'slot' && e.slotType === 'pmr').length;
-          return {
-            ...est,
-            elements: newElements,
-            totalSlots: slotsCount,
-            pmrSlots: pmrCount
-          };
-        }
-        return est;
-      });
+      const updated = prev.map(est => est.id === id ? { ...est, elements } : est);
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       } catch (e) {}
@@ -241,11 +284,98 @@ export const EstablishmentProvider = ({ children }) => {
     });
   };
 
+  // Liberar un cajón específico
+  const freeSlot = (establishmentId, slotCode) => {
+    setEstablishments(prev => {
+      const updated = prev.map(est => {
+        if (est.id === establishmentId || est.name === establishmentId) {
+          const updatedElements = (est.elements || []).map(el => {
+            if (el.type === 'slot' && el.code === slotCode) {
+              return {
+                ...el,
+                status: 'free',
+                plate: undefined,
+                color: undefined
+              };
+            }
+            return el;
+          });
+          return { ...est, elements: updatedElements };
+        }
+        return est;
+      });
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  // Crear nueva reserva unificada
+  const createReservation = (bookingData) => {
+    const code = bookingData.code || `RSV-${Math.floor(1000 + Math.random() * 9000)}`;
+    const token = bookingData.token || `SPK-AYC${code.replace('RSV-', '')}-7B2F9A`;
+    
+    const newReservation = {
+      id: Date.now(),
+      code,
+      token,
+      parkingId: bookingData.parkingId || 'EST-01',
+      parking: bookingData.parkingName || bookingData.parking || 'Smart Park Plaza Mayor',
+      slot: bookingData.slotCode || bookingData.slot || 'A-01',
+      customerName: bookingData.customerName || 'Conductor Registrado',
+      customerPhone: bookingData.customerPhone || '+51 966 000 000',
+      plate: (bookingData.plate || 'ABC-123').toUpperCase(),
+      cost: Number(bookingData.totalCost || bookingData.cost || 10.0),
+      hours: Number(bookingData.hours || 2),
+      ratePerHour: Number(bookingData.rate || 5.0),
+      status: 'SCHEDULED',
+      startTime: bookingData.startTime || new Date().toISOString(),
+      expiresAt: bookingData.expiresAt || new Date(Date.now() + (Number(bookingData.hours || 2)) * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date().toISOString()
+    };
+
+    // Ocupar cajón en el plano
+    occupySlot(newReservation.parkingId, newReservation.slot, newReservation.plate);
+
+    const updated = [newReservation, ...reservations];
+    saveReservations(updated);
+    return newReservation;
+  };
+
+  // Actualizar estado de reserva (Check-In / Check-Out / Cancelar)
+  const updateReservationStatus = (code, newStatus) => {
+    const target = reservations.find(r => r.code === code);
+    if (!target) return;
+
+    if (newStatus === 'COMPLETED' || newStatus === 'CANCELLED') {
+      // Liberar cajón en el plano
+      freeSlot(target.parkingId, target.slot);
+    } else if (newStatus === 'ACTIVE') {
+      occupySlot(target.parkingId, target.slot, target.plate);
+    }
+
+    const updated = reservations.map(r => r.code === code ? { ...r, status: newStatus } : r);
+    saveReservations(updated);
+  };
+
+  // Cancelar reserva
+  const cancelReservation = (code) => {
+    updateReservationStatus(code, 'CANCELLED');
+  };
+
+  // Completar / Check-Out de reserva
+  const completeReservation = (code) => {
+    updateReservationStatus(code, 'COMPLETED');
+  };
+
   // Restablecer valores por defecto
   const resetToDefaults = () => {
     setEstablishments(INITIAL_ESTABLISHMENTS);
+    setReservations(INITIAL_RESERVATIONS);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ESTABLISHMENTS));
+      localStorage.setItem(RESERVATIONS_STORAGE_KEY, JSON.stringify(INITIAL_RESERVATIONS));
     } catch (e) {}
   };
 
@@ -253,11 +383,18 @@ export const EstablishmentProvider = ({ children }) => {
     <EstablishmentContext.Provider value={{
       establishments,
       setEstablishments,
+      reservations,
+      setReservations,
       addEstablishment,
       updateEstablishment,
       updateEstablishmentPlan,
       deleteEstablishment,
       occupySlot,
+      freeSlot,
+      createReservation,
+      updateReservationStatus,
+      cancelReservation,
+      completeReservation,
       resetToDefaults
     }}>
       {children}

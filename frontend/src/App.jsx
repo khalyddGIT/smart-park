@@ -21,6 +21,8 @@ import { ResiliencySimModule } from './components/ResiliencySimModule';
 import { AyacuchoMap } from './components/AyacuchoMap';
 import { CustomerInteractivePlanBooking } from './components/CustomerInteractivePlanBooking';
 import { DigitalAccessPassModal } from './components/DigitalAccessPassModal';
+import { ReservationsModule } from './components/ReservationsModule';
+import { LoginAuthScreen } from './components/LoginAuthScreen';
 import { 
   Search, 
   MapPin, 
@@ -46,8 +48,8 @@ import { Badge } from './components/ui/badge';
 import { Input } from './components/ui/input';
 
 export const App = () => {
-  const { role } = useAuth();
-  const { establishments, occupySlot } = useEstablishments();
+  const { role, user } = useAuth();
+  const { establishments, occupySlot, createReservation } = useEstablishments();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Filtros de Búsqueda para Conductor
@@ -76,22 +78,23 @@ export const App = () => {
   const handleCustomerBooking = (bookingData) => {
     if (!selectedParking) return;
 
-    // 1. Ocupar el cajón de manera persistente en el context / localStorage
-    occupySlot(selectedParking.id, bookingData.slotCode, bookingData.plate);
-
-    // 2. Establecer la reserva activa y abrir el modal con el QR y token ANPR
-    setActiveReservation({
-      code: bookingData.code,
-      token: bookingData.token,
-      parking: bookingData.parkingName,
-      slot: bookingData.slotCode,
+    // 1. Crear la reserva en el contexto global persistente
+    const newRes = createReservation({
+      parkingId: selectedParking.id,
+      parkingName: bookingData.parkingName || selectedParking.name,
+      slotCode: bookingData.slotCode,
       plate: bookingData.plate,
-      cost: bookingData.totalCost,
+      customerName: 'Conductor Registrado',
+      customerPhone: '+51 966 123 456',
+      totalCost: bookingData.totalCost,
       hours: bookingData.hours,
+      rate: selectedParking.rate,
       startTime: bookingData.startTime,
       expiresAt: bookingData.expiresAt
     });
 
+    // 2. Establecer la reserva activa y abrir el modal con el QR y token ANPR
+    setActiveReservation(newRes);
     setShowQRModal(true);
   };
 
@@ -118,7 +121,7 @@ export const App = () => {
     return true;
   });
 
-  // Métricas Consolidadas
+  // Cálculos consolidados para el Administrador de Plataforma
   const totalNetworkSlots = establishments.reduce((acc, curr) => {
     return acc + (curr.elements || []).filter(e => e.type === 'slot').length;
   }, 0);
@@ -126,6 +129,11 @@ export const App = () => {
   const totalFreeSlots = establishments.reduce((acc, curr) => {
     return acc + (curr.elements || []).filter(e => e.type === 'slot' && e.status === 'free').length;
   }, 0);
+
+  // Si no hay sesión activa, renderizar la pantalla de Login y Registro
+  if (!user) {
+    return <LoginAuthScreen />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/60 text-slate-800 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
@@ -288,7 +296,6 @@ export const App = () => {
                           const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
                           const pmrSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'pmr').length;
                           const shadedSlots = elements.filter(e => e.type === 'slot' && e.shaded).length;
-                          const vipSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'vip').length;
 
                           return (
                             <Card key={p.id} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between">
@@ -331,11 +338,6 @@ export const App = () => {
                                         <Umbrella className="w-3 h-3" /> {shadedSlots} Techados
                                       </span>
                                     )}
-                                    {vipSlots > 0 && (
-                                      <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md border border-amber-300 font-bold flex items-center gap-0.5">
-                                        <Crown className="w-3 h-3" /> VIP
-                                      </span>
-                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -343,9 +345,9 @@ export const App = () => {
                               <div className="p-5 pt-0">
                                 <Button 
                                   onClick={() => setSelectedParkingId(p.id)} 
-                                  className="w-full font-black gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
+                                  className="w-full font-bold gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
                                 >
-                                  <span>Ver Plano Topográfico & Elegir Cajón</span>
+                                  <span>Ver Estacionamiento & Reservar</span>
                                   <ChevronRight className="w-4 h-4 text-emerald-400" />
                                 </Button>
                               </div>
@@ -359,31 +361,12 @@ export const App = () => {
               )}
 
               {activeTab === 'reservations' && (
-                <div className="space-y-6">
-                  <h1 className="text-2xl font-black text-slate-900">Mis Reservas & Pases Digitales</h1>
-                  {activeReservation ? (
-                    <Card className="p-6 border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <Badge variant="success">Reserva Activa</Badge>
-                          <span className="text-xs font-mono text-slate-400">{activeReservation.code}</span>
-                        </div>
-                        <h3 className="font-extrabold text-lg text-slate-900">{activeReservation.parking}</h3>
-                        <p className="text-xs text-slate-500">
-                          Cajón Asignado: <span className="font-bold text-emerald-700 font-mono">{activeReservation.slot}</span> | Placa: <span className="font-bold text-slate-700 font-mono">{activeReservation.plate}</span>
-                        </p>
-                      </div>
-                      <Button onClick={() => setShowQRModal(true)} className="font-bold gap-2">
-                        <QrCode className="w-4 h-4" />
-                        <span>Ver Código QR</span>
-                      </Button>
-                    </Card>
-                  ) : (
-                    <Card className="p-8 text-center text-slate-400">
-                      <p>No tienes reservas activas en este momento.</p>
-                    </Card>
-                  )}
-                </div>
+                <ReservationsModule 
+                  onNavigateToBooking={() => {
+                    setSelectedParkingId(null);
+                    setActiveTab('dashboard');
+                  }} 
+                />
               )}
 
               {activeTab === 'loyalty' && <LoyaltyClubModule />}
@@ -401,6 +384,7 @@ export const App = () => {
               {(activeTab === 'dashboard' || activeTab === 'editor') && (
                 <LocalEstablishmentManager />
               )}
+              {activeTab === 'reservations' && <ReservationsModule />}
               {(activeTab === 'anpr' || activeTab === 'garita') && <ANPRMonitor />}
               {activeTab === 'incidents' && <IncidentsModule />}
               {activeTab === 'staff' && <StaffModule />}
@@ -437,6 +421,7 @@ export const App = () => {
               )}
 
               {activeTab === 'affiliates' && <AffiliatedParkingsModule />}
+              {activeTab === 'reservations' && <ReservationsModule />}
               {activeTab === 'analytics' && <AnalyticsGlobalModule />}
               {activeTab === 'incidents' && <IncidentsModule />}
               {activeTab === 'audit' && <AuditLogsModule />}

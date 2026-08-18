@@ -110,7 +110,7 @@ export const LoyaltyClubModule = () => {
               {points.toLocaleString()} <span className="text-emerald-400 text-xl md:text-2xl font-bold">Smart Points</span>
             </h2>
             <p className="text-xs text-slate-400">
-              Estás a <span className="text-white font-bold">650 puntos</span> de alcanzar el nivel <span className="text-emerald-300 font-bold">Platino VIP</span>.
+              Estás a <span className="text-white font-bold">650 puntos</span> de alcanzar el nivel <span className="text-emerald-300 font-bold">Nivel Platino</span>.
             </p>
           </div>
 

@@ -35,7 +35,7 @@ const DEFAULT_FALLBACK_ELEMENTS = [
   { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 350, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
   { id: 14, type: 'slot', code: 'A-05', slotType: 'auto', x: 435, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
   { id: 15, type: 'slot', code: 'A-06', slotType: 'auto', x: 600, y: 70, w: 75, h: 140, rot: 0, status: 'occupied', plate: 'XYZ-789', color: '#3b82f6' },
-  { id: 16, type: 'slot', code: 'A-07', slotType: 'vip', x: 685, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
+  { id: 16, type: 'slot', code: 'A-07', slotType: 'auto', x: 685, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
   { id: 17, type: 'slot', code: 'A-08', slotType: 'moto', x: 770, y: 70, w: 50, h: 140, rot: 0, status: 'free' },
   { id: 18, type: 'slot', code: 'A-09', slotType: 'moto', x: 830, y: 70, w: 50, h: 140, rot: 0, status: 'free' },
 
@@ -171,10 +171,6 @@ export const CustomerInteractivePlanBooking = ({
             <span>PMR</span>
           </div>
           <div className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded-md bg-amber-400" />
-            <span>VIP</span>
-          </div>
-          <div className="flex items-center space-x-1.5">
             <span className="w-3 h-3 rounded-md bg-amber-600" />
             <span>Techado</span>
           </div>
@@ -220,7 +216,6 @@ export const CustomerInteractivePlanBooking = ({
                 const isFree = el.status === 'free';
                 const isSelected = selectedSlot?.id === el.id;
                 const isPMR = el.slotType === 'pmr';
-                const isVIP = el.slotType === 'vip';
                 const isMoto = el.slotType === 'moto';
                 const isShaded = !!el.shaded;
 
@@ -239,9 +234,7 @@ export const CustomerInteractivePlanBooking = ({
                       isSelected
                         ? 'ring-4 ring-cyan-400 border-cyan-400 bg-cyan-950/90 shadow-[0_0_25px_rgba(6,182,212,0.8)] scale-105 z-30'
                         : isFree
-                        ? isVIP
-                          ? 'border-amber-400 bg-amber-950/40 text-amber-200 hover:bg-amber-800/60 hover:scale-105 z-10'
-                          : isShaded 
+                        ? isShaded 
                           ? 'border-amber-400/90 bg-amber-950/40 text-amber-200 hover:bg-amber-800/60 hover:scale-105 z-10'
                           : 'border-emerald-400/80 bg-emerald-950/40 text-emerald-200 hover:bg-emerald-800/60 hover:scale-105 hover:border-emerald-300 z-10'
                         : 'border-rose-500/60 bg-rose-950/40 text-rose-300 cursor-not-allowed opacity-75 z-5'
@@ -249,26 +242,43 @@ export const CustomerInteractivePlanBooking = ({
                   >
                     {/* Textura de Techado con Sombra */}
                     {isShaded && (
-                      <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(245,158,11,0.14),rgba(245,158,11,0.14)_6px,transparent_6px,transparent_12px)] pointer-events-none rounded-xl" />
+                      <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(245,158,11,0.18),rgba(245,158,11,0.18)_6px,transparent_6px,transparent_12px)] pointer-events-none rounded-xl" />
                     )}
 
-                    <div className="flex items-center justify-between text-[11px] font-mono font-black z-10">
-                      <span>{el.code}</span>
-                      {isPMR && <span className="text-blue-400 font-bold text-[10px]">PMR</span>}
-                      {isVIP && <span className="text-amber-300 font-bold text-[10px]">VIP</span>}
-                      {isShaded && <span className="text-amber-300 text-[10px] font-bold" title="Plaza con Cubierta">CUBIERTA</span>}
-                      {isMoto && <span className="text-amber-300 font-bold text-[10px]">MOTO</span>}
+                    {/* Sensor LED Cenital */}
+                    <div className="absolute top-1 right-1 flex items-center z-20 pointer-events-none">
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        isFree ? 'bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse' : 'bg-rose-500'
+                      }`} />
                     </div>
 
-                    {/* Tope de llanta */}
-                    <div className="w-full h-2 bg-amber-400/80 border border-black rounded-xs flex items-center justify-around px-0.5">
-                      <div className="w-1.5 h-full bg-black" />
-                      <div className="w-1.5 h-full bg-black" />
+                    <div className="flex items-center justify-between text-[10px] font-mono font-black z-10 leading-none pr-2">
+                      <span className="text-white drop-shadow-sm">{el.code}</span>
+                      {isPMR && <span className="text-blue-400 font-bold text-[7px] bg-blue-950 px-1 rounded border border-blue-800">♿ PMR</span>}
+                      {isShaded && <span className="text-amber-300 text-[7px] font-bold bg-amber-950 px-1 rounded border border-amber-800">⛱️ TECH</span>}
+                      {isMoto && <span className="text-orange-300 font-bold text-[7px] bg-orange-950 px-1 rounded border border-orange-800">🏍️ MOTO</span>}
                     </div>
 
-                    <div className="text-center text-[10px] font-mono font-black">
+                    {/* Stencil Icono */}
+                    <div className="flex items-center justify-center my-auto py-0.5 pointer-events-none z-10">
+                      {isPMR ? (
+                        <Accessibility className="w-4 h-4 text-blue-400/40" />
+                      ) : isMoto ? (
+                        <Bike className="w-3.5 h-3.5 text-orange-400/40" />
+                      ) : (
+                        <Car className="w-3.5 h-3.5 text-emerald-400/30" />
+                      )}
+                    </div>
+
+                    {/* Tope de Llanta 3D */}
+                    <div className="w-full h-1.5 rounded bg-gradient-to-b from-amber-400 to-amber-600 border border-amber-300/60 shadow-xs flex items-center justify-around px-0.5 z-10 my-0.5 overflow-hidden">
+                      <div className="w-1 h-full bg-black transform -skew-x-12" />
+                      <div className="w-1 h-full bg-black transform -skew-x-12" />
+                    </div>
+
+                    <div className="text-center text-[9px] font-mono font-bold leading-none z-10">
                       {isSelected ? (
-                        <span className="text-cyan-300 font-extrabold animate-pulse">SELECCIONADO</span>
+                        <span className="text-cyan-300 font-extrabold animate-pulse">LISTO</span>
                       ) : isFree ? (
                         <span className="text-emerald-400 font-bold">RESERVAR</span>
                       ) : (
@@ -291,7 +301,7 @@ export const CustomerInteractivePlanBooking = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className="absolute bg-gradient-to-r from-slate-600 to-slate-800 border border-slate-500 rounded-xs shadow-md pointer-events-none z-15"
+                    className="absolute bg-gradient-to-r from-slate-700 via-slate-600 to-slate-800 border border-slate-500/80 rounded-xs shadow-md pointer-events-none z-15"
                   />
                 );
               }
@@ -308,10 +318,12 @@ export const CustomerInteractivePlanBooking = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className="absolute bg-[#202734] border-y-2 border-dashed border-amber-400/40 flex items-center justify-around px-4 pointer-events-none z-2"
+                    className="absolute bg-[#151c28] border-y-2 border-dashed border-amber-400/60 flex items-center justify-around px-4 pointer-events-none z-2 overflow-hidden shadow-inner"
                   >
-                    <span className="text-[10px] font-mono font-black text-white/30 tracking-widest">
-                      ━► {el.label || 'CARRIL DE CIRCULACIÓN'} ━►
+                    <span className="text-[10px] font-mono font-black text-amber-400/60 tracking-widest flex items-center space-x-2">
+                      <span>━►</span>
+                      <span>{el.label || 'CARRIL DE CIRCULACIÓN'}</span>
+                      <span>━►</span>
                     </span>
                   </div>
                 );
@@ -329,17 +341,20 @@ export const CustomerInteractivePlanBooking = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className="absolute bg-[#262d3a] border-x-2 border-slate-500 flex flex-col justify-around py-1 px-1 pointer-events-none z-8"
+                    className="absolute bg-[#1a2230] border-x-2 border-amber-400/80 flex flex-col justify-around py-1 px-1 pointer-events-none z-8"
                   >
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="w-full h-2 bg-white/90 shadow-sm" />
+                      <div key={i} className="w-full h-2 bg-slate-100 rounded-xs shadow-sm" />
                     ))}
                   </div>
                 );
               }
 
-              // 5. Garita
+              // 5. Garitas / Accesos (Entrada & Salida)
               if (el.type === 'gate') {
+                const isEntry = el.gateType === 'entry' || (el.label && el.label.toUpperCase().includes('ENTRADA'));
+                const isExit = el.gateType === 'exit' || (el.label && el.label.toUpperCase().includes('SALIDA'));
+
                 return (
                   <div
                     key={el.id}
@@ -350,11 +365,24 @@ export const CustomerInteractivePlanBooking = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className="absolute bg-slate-900 border-2 border-emerald-400 rounded-lg p-1 flex flex-col items-center justify-between text-[8px] font-mono font-black text-emerald-300 shadow-xl pointer-events-none z-20"
+                    className={`absolute rounded-xl p-1.5 flex flex-col items-center justify-between text-[8px] font-mono font-black shadow-2xl pointer-events-none z-20 border-2 select-none ${
+                      isEntry
+                        ? 'bg-slate-950 border-emerald-400 text-emerald-300 shadow-emerald-500/20'
+                        : isExit
+                        ? 'bg-slate-950 border-rose-400 text-rose-300 shadow-rose-500/20'
+                        : 'bg-slate-900 border-cyan-400 text-cyan-300'
+                    }`}
                   >
-                    <span>ANPR</span>
-                    <div className="w-full h-1.5 bg-amber-400 rounded-xs" />
-                    <span>GARITA</span>
+                    <div className="flex items-center space-x-1">
+                      <div className={`w-1.5 h-1.5 rounded-full animate-ping ${isEntry ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-rose-400 shadow-[0_0_8px_#f43f5e]'}`} />
+                      <span className="text-[8px] tracking-wider text-white">
+                        {isEntry ? 'ENTRADA' : isExit ? 'SALIDA' : 'ACCESO'}
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-600 shadow-inner">
+                      <div className={`h-full w-full bg-[repeating-linear-gradient(45deg,#ffffff,#ffffff_4px,${isEntry ? '#10b981' : '#f43f5e'}_4px,${isEntry ? '#10b981' : '#f43f5e'}_8px)]`} />
+                    </div>
+                    <span className="text-[7px] text-slate-300 uppercase truncate max-w-full font-bold">{el.label || (isEntry ? '📷 LPR' : '💳 POS')}</span>
                   </div>
                 );
               }
@@ -441,7 +469,7 @@ export const CustomerInteractivePlanBooking = ({
                     <span className="text-2xl font-mono font-black text-emerald-950">{selectedSlot.code}</span>
                   </div>
                   <Badge variant="success" className="text-xs font-bold font-mono">
-                    {selectedSlot.slotType === 'pmr' ? 'PMR Inclusivo' : selectedSlot.slotType === 'vip' ? 'VIP Reservado' : selectedSlot.shaded ? 'Con Cubierta Tensada' : 'Estándar'}
+                    {selectedSlot.slotType === 'pmr' ? 'PMR Inclusivo' : selectedSlot.shaded ? 'Con Cubierta Tensada' : 'Estándar'}
                   </Badge>
                 </div>
 

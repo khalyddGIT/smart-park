@@ -87,17 +87,29 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Login tradicional con Correo
-  const loginWithEmail = (email, password, selectedRole = 'user') => {
+  const loginWithEmail = (email, password, explicitRole = null) => {
+    let userRole = explicitRole;
+    if (!userRole) {
+      const lower = email.toLowerCase();
+      if (lower.includes('admin@') || lower.includes('superadmin')) {
+        userRole = 'platform';
+      } else if (lower.includes('operador') || lower.includes('cochera') || lower.includes('local')) {
+        userRole = 'local';
+      } else {
+        userRole = 'user';
+      }
+    }
+
     const loggedUser = {
       id: Date.now(),
-      name: email.split('@')[0],
+      name: email.split('@')[0].replace('.', ' '),
       email: email,
       avatar: null,
-      role: selectedRole,
+      role: userRole,
       isGoogleAuth: false
     };
     setUser(loggedUser);
-    setRole(selectedRole);
+    setRole(userRole);
     return loggedUser;
   };
 

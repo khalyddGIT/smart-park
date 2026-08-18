@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   LayoutDashboard, 
@@ -19,11 +19,14 @@ import {
   Award,
   AlertTriangle,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Menu,
+  X
 } from 'lucide-react';
 
 export const Sidebar = ({ activeTab, setActiveTab }) => {
   const { role } = useAuth();
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const menuSections = {
     user: [
@@ -77,10 +80,17 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
   };
 
   const currentSections = menuSections[role] || menuSections.user;
+  const allItems = currentSections.flatMap(s => s.items);
+
+  const handleSelectTab = (tabId) => {
+    setActiveTab(tabId);
+    setMobileDrawerOpen(false);
+  };
 
   return (
     <>
-      <aside className="hidden md:flex w-72 bg-white border-r border-slate-200/90 flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] shadow-sm z-30 select-none">
+      {/* Sidebar Desktop */}
+      <aside className="hidden md:flex w-64 lg:w-72 bg-white border-r border-slate-200/90 flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] shadow-sm z-30 select-none flex-shrink-0">
         <div className="p-4 space-y-6 overflow-y-auto">
           {currentSections.map((sec, idx) => (
             <div key={idx} className="space-y-1.5">
@@ -94,7 +104,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                   return (
                     <button
                       key={item.id}
-                      onClick={() => setActiveTab(item.id)}
+                      onClick={() => handleSelectTab(item.id)}
                       className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-150 ${
                         isActive
                           ? 'bg-slate-900 text-white shadow-sm border border-slate-800'
@@ -112,36 +122,102 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
         </div>
 
         <div className="p-4 border-t border-slate-100 space-y-1 bg-slate-50/50">
-          <button className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
-            <div className="flex items-center space-x-3">
-              <Settings className="w-4 h-4 text-slate-400" />
-              <span>Configuración</span>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          </button>
+          <div className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-slate-500 font-medium">
+            <span>Rol: <strong className="text-slate-800 font-bold capitalize">{role}</strong></span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
         </div>
       </aside>
 
-      {/* Mobile Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-50 px-2 py-2 flex justify-around shadow-lg">
-        {currentSections[0]?.items.slice(0, 5).map((item) => {
+      {/* Mobile Bottom Navigation Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 px-2 py-1.5 flex justify-around items-center shadow-lg safe-area-pb">
+        {allItems.slice(0, 4).map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center py-1 px-2 rounded-xl text-[11px] font-semibold ${
-                isActive ? 'text-emerald-600 font-bold' : 'text-slate-500'
+              onClick={() => handleSelectTab(item.id)}
+              className={`flex flex-col items-center py-1 px-2 rounded-xl text-[10px] font-semibold transition ${
+                isActive ? 'text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <Icon className="w-4 h-4 mb-0.5" />
-              <span>{item.label.split(' ')[0]}</span>
+              <div className={`p-1 rounded-lg ${isActive ? 'bg-emerald-50 text-emerald-600' : ''}`}>
+                <Icon className="w-4 h-4" />
+              </div>
+              <span className="truncate max-w-[64px]">{item.label.split(' ')[0]}</span>
             </button>
           );
         })}
+
+        {/* Botón "+ Más" para desplegar el drawer con todas las opciones */}
+        <button
+          onClick={() => setMobileDrawerOpen(true)}
+          className={`flex flex-col items-center py-1 px-2 rounded-xl text-[10px] font-semibold transition ${
+            mobileDrawerOpen || allItems.slice(4).some(i => i.id === activeTab)
+              ? 'text-emerald-600 font-bold'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <div className="p-1 rounded-lg">
+            <Menu className="w-4 h-4" />
+          </div>
+          <span>Más</span>
+        </button>
       </div>
+
+      {/* Drawer Móvil Desplegable (Slide-Up Sheet) */}
+      {mobileDrawerOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end animate-fade-in">
+          {/* Backdrop */}
+          <div 
+            onClick={() => setMobileDrawerOpen(false)}
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" 
+          />
+
+          {/* Panel */}
+          <div className="relative bg-white rounded-t-3xl p-5 shadow-2xl max-h-[80vh] overflow-y-auto space-y-4 border-t border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 rounded-lg bg-slate-900 text-emerald-400 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight">Todos los Módulos</h3>
+                  <p className="text-[10px] text-slate-500 font-medium">Perfil: <span className="capitalize font-bold text-emerald-600">{role}</span></p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setMobileDrawerOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {allItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleSelectTab(item.id)}
+                    className={`flex items-center space-x-2.5 p-3 rounded-2xl border text-left transition ${
+                      isActive 
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-md font-bold' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200/80 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+                    <span className="text-xs tracking-tight line-clamp-1">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
-

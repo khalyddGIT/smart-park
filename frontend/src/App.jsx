@@ -199,13 +199,13 @@ export const App = () => {
                       </div>
 
                       {/* Filtros Rápidos */}
-                      <div className="flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
-                        <span className="text-slate-400 font-bold uppercase text-[10px] pr-1 flex items-center gap-1">
+                      <div className="flex items-center space-x-2 overflow-x-auto pb-1 text-xs scrollbar-none flex-nowrap shrink-0">
+                        <span className="text-slate-400 font-bold uppercase text-[10px] pr-1 flex items-center gap-1 shrink-0">
                           <Filter className="w-3 h-3" /> Filtro:
                         </span>
                         <button
                           onClick={() => setCategoryFilter('todos')}
-                          className={`px-3 py-1 rounded-xl font-bold transition ${
+                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap ${
                             categoryFilter === 'todos' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
@@ -213,7 +213,7 @@ export const App = () => {
                         </button>
                         <button
                           onClick={() => setCategoryFilter('centro')}
-                          className={`px-3 py-1 rounded-xl font-bold transition ${
+                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap ${
                             categoryFilter === 'centro' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
@@ -221,7 +221,7 @@ export const App = () => {
                         </button>
                         <button
                           onClick={() => setCategoryFilter('techados')}
-                          className={`px-3 py-1 rounded-xl font-bold transition ${
+                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap ${
                             categoryFilter === 'techados' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
@@ -229,7 +229,7 @@ export const App = () => {
                         </button>
                         <button
                           onClick={() => setCategoryFilter('economicos')}
-                          className={`px-3 py-1 rounded-xl font-bold transition ${
+                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap ${
                             categoryFilter === 'economicos' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >

@@ -250,9 +250,9 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto justify-start md:justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
           {/* Filtro por Estado */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-2xl text-[11px] font-bold">
+          <div className="flex items-center bg-slate-100 p-1 rounded-2xl text-[11px] font-bold overflow-x-auto max-w-full scrollbar-none flex-nowrap shrink-0">
             {[
               { id: 'ALL', label: 'Todas' },
               { id: 'ACTIVE', label: 'En Curso' },
@@ -263,7 +263,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
               <button
                 key={tab.id}
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1 rounded-xl transition ${
+                className={`px-3 py-1 rounded-xl transition whitespace-nowrap shrink-0 ${
                   statusFilter === tab.id 
                     ? 'bg-white text-slate-900 shadow-xs font-black' 
                     : 'text-slate-500 hover:text-slate-800'
@@ -278,7 +278,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           <select
             value={parkingFilter}
             onChange={(e) => setParkingFilter(e.target.value)}
-            className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 outline-none"
+            className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 outline-none max-w-full"
           >
             <option value="ALL">Todos los Locales</option>
             {establishments.map(e => (

@@ -63,7 +63,8 @@ export const AuthProvider = ({ children }) => {
 
       // Sincronizar con backend FastAPI si está disponible
       try {
-        await fetch('http://localhost:8000/api/v1/auth/google', {
+        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
+        await fetch(`${apiBase}/api/v1/auth/google`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

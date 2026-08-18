@@ -53,7 +53,7 @@ export const HistoryModule = () => {
             </div>
             <div className="flex items-center space-x-4 justify-between md:justify-end">
               <span className="text-lg font-black text-emerald-700">{h.cost}</span>
-              <Badge variant="success" className="font-bold">{h.status}</Badge>
+              <span className="text-xs font-bold text-emerald-600">● {h.status}</span>
             </div>
           </Card>
         ))}

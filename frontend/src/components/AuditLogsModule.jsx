@@ -249,12 +249,11 @@ export const AuditLogsModule = () => {
                   <td className="p-3.5 text-xs text-slate-700">{row.action}</td>
                   <td className="p-3.5 font-mono text-xs font-semibold text-emerald-800">{row.target}</td>
                   <td className="p-3.5">
-                    <Badge
-                      variant={row.severity === 'Crítico' ? 'destructive' : row.severity === 'Advertencia' ? 'warning' : 'outline'}
-                      className="text-[10px] font-bold"
-                    >
-                      {row.severity}
-                    </Badge>
+                    <span className={`text-[10px] font-bold ${
+                      row.severity === 'Crítico' ? 'text-rose-600' : row.severity === 'Advertencia' ? 'text-amber-600' : 'text-slate-500'
+                    }`}>
+                      ● {row.severity}
+                    </span>
                   </td>
                   <td className="p-3.5 font-mono text-[11px] text-slate-400">{row.ip}</td>
                 </tr>

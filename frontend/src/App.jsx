@@ -154,20 +154,10 @@ export const App = () => {
                 <>
                   {/* Banner de Búsqueda Inteligente */}
                   <Card className="p-5 sm:p-6 border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/40 shadow-sm relative overflow-hidden">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <Badge variant="success" className="font-mono text-[10px] font-bold">
-                            🟢 {totalFreeSlots} Plazas Libres
-                          </Badge>
-                          <span className="text-xs font-mono text-slate-500">
-                            {establishments.length} Sedes en Huamanga
-                          </span>
-                        </div>
-                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                          Estacionamientos en Ayacucho
-                        </h1>
-                      </div>
+                    <div className="mb-3">
+                      <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                        Estacionamientos en Ayacucho
+                      </h1>
                     </div>
                     
                     {/* Barra de Búsqueda y Filtros de Categoría */}

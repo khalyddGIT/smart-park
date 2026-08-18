@@ -212,9 +212,9 @@ export const StaffModule = () => {
                 <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black shadow-inner">
                   {s.full_name.charAt(0)}
                 </div>
-                <Badge variant={s.status === 'Activo' ? 'success' : 'outline'} className="font-bold">
-                  {s.status}
-                </Badge>
+                <span className={`text-xs font-bold ${s.status === 'Activo' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  ● {s.status}
+                </span>
               </div>
 
               <h3 className="font-extrabold text-slate-900 text-base mb-1">{s.full_name}</h3>

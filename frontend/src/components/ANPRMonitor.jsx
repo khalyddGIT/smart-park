@@ -396,9 +396,9 @@ export const ANPRMonitor = () => {
           <Card className="p-5 border-slate-200 shadow-sm bg-white space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-xs font-black uppercase text-slate-400">Control de Barrera</span>
-              <Badge variant={barrierOpen ? 'success' : 'outline'} className="font-mono text-xs">
-                {barrierOpen ? 'ABIERTA' : 'CERRADA'}
-              </Badge>
+              <span className={`font-mono text-xs font-bold ${barrierOpen ? 'text-emerald-600' : 'text-slate-500'}`}>
+                ● {barrierOpen ? 'ABIERTA' : 'CERRADA'}
+              </span>
             </div>
 
             {/* Simulación Gráfica de Barrera */}

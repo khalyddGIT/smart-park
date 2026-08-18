@@ -118,9 +118,9 @@ export const PaymentsModule = () => {
                     </div>
                   </div>
                   {card.isDefault ? (
-                    <Badge variant="success" className="gap-1 font-mono text-[10px] font-bold">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Principal
-                    </Badge>
+                    <span className="text-[10px] font-bold text-emerald-600 font-mono">
+                      Principal
+                    </span>
                   ) : (
                     <Button variant="ghost" size="sm" onClick={() => setCards(cards.filter(c => c.id !== card.id))} className="text-rose-500 hover:bg-rose-50">
                       <Trash2 className="w-4 h-4" />
@@ -186,7 +186,7 @@ export const PaymentsModule = () => {
                 <div>
                   <div className="flex items-center space-x-2">
                     <h3 className="font-extrabold text-slate-900 text-base">{t.parking}</h3>
-                    <Badge variant="success" className="text-[10px] font-bold">{t.status}</Badge>
+                    <span className="text-[10px] font-bold text-emerald-600">● {t.status}</span>
                   </div>
                   <p className="text-xs text-slate-500 font-mono mt-0.5">
                     {t.date} • Placa: <span className="font-bold text-slate-800">{t.plate}</span> • Comprobante: <span className="font-bold text-teal-700">{t.invoice}</span>

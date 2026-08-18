@@ -1,18 +1,14 @@
 import React from 'react';
-import { MapPin, Navigation } from 'lucide-react';
-import { Badge } from './ui/badge';
+import { MapPin } from 'lucide-react';
 
 export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId }) => {
   return (
-    <div className="space-y-2.5">
-      <div className="flex items-center justify-between gap-2">
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <MapPin className="w-4 h-4 text-emerald-600" />
           <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">Mapa de Cobertura</h3>
         </div>
-        <Badge variant="success" className="font-mono text-[10px] gap-1 py-0.5">
-          <Navigation className="w-2.5 h-2.5 text-emerald-600" /> Ayacucho Centro
-        </Badge>
       </div>
 
       <div className="relative w-full h-[260px] sm:h-[320px] rounded-3xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">

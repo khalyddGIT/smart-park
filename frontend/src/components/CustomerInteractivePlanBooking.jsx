@@ -127,14 +127,6 @@ export const CustomerInteractivePlanBooking = ({
       {/* Resumen del Estacionamiento Seleccionado */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
-          <div className="flex items-center space-x-2 mb-1">
-            <Badge variant="outline" className="text-[10px] font-mono font-bold">
-              {freeSlots.length} de {totalSlots} Plazas Libres
-            </Badge>
-            <Badge variant="success" className="text-[10px] font-bold">
-              Abierto 24/7
-            </Badge>
-          </div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">{parking?.name || 'Smart Park Central'}</h2>
           <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
             <MapPin className="w-3.5 h-3.5 text-emerald-600" /> {parking?.address || 'Portal Unión 42, Centro Histórico'}, {parking?.city || 'Ayacucho - Huamanga'}
@@ -179,9 +171,9 @@ export const CustomerInteractivePlanBooking = ({
         {/* Indicador de Selección de Cajón */}
         <div className="flex items-center space-x-2">
           {selectedSlot ? (
-            <Badge className="bg-emerald-500 text-slate-950 font-black text-xs">
-              Cajón Seleccionado: {selectedSlot.code}
-            </Badge>
+            <span className="text-emerald-400 font-bold text-xs">
+              Cajón: {selectedSlot.code}
+            </span>
           ) : (
             <span className="text-slate-400 text-xs italic">Haz clic en un cajón verde para reservar</span>
           )}
@@ -468,9 +460,9 @@ export const CustomerInteractivePlanBooking = ({
                     <span className="text-[10px] uppercase font-bold text-emerald-700 block">Cajón Seleccionado</span>
                     <span className="text-2xl font-mono font-black text-emerald-950">{selectedSlot.code}</span>
                   </div>
-                  <Badge variant="success" className="text-xs font-bold font-mono">
-                    {selectedSlot.slotType === 'pmr' ? 'PMR Inclusivo' : selectedSlot.shaded ? 'Con Cubierta Tensada' : 'Estándar'}
-                  </Badge>
+                  <span className="text-xs font-bold text-emerald-800">
+                    {selectedSlot.slotType === 'pmr' ? 'PMR Inclusivo' : selectedSlot.shaded ? 'Techado' : 'Estándar'}
+                  </span>
                 </div>
 
                 {/* Selección de Vehículo */}

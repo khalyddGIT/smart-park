@@ -193,9 +193,11 @@ export const IncidentsModule = () => {
             <div>
               <div className="flex justify-between items-start mb-3">
                 <span className="font-mono text-xs font-black text-slate-400">{inc.id}</span>
-                <Badge variant={inc.status === 'Resuelto' ? 'success' : inc.status === 'Pendiente' ? 'destructive' : 'warning'} className="text-[10px] font-bold">
-                  {inc.status}
-                </Badge>
+                <span className={`text-[11px] font-bold ${
+                  inc.status === 'Resuelto' ? 'text-emerald-600' : inc.status === 'Pendiente' ? 'text-rose-600' : 'text-amber-600'
+                }`}>
+                  ● {inc.status}
+                </span>
               </div>
 
               <h3 className="font-extrabold text-slate-900 text-base mb-1">{inc.type}</h3>

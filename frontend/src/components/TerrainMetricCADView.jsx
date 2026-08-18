@@ -349,13 +349,13 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
           <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Normativa PMR (Accesibilidad)</p>
           <div className="flex items-center space-x-2 mt-1">
             {pmrCompliant ? (
-              <Badge variant="success" className="gap-1 font-bold text-xs">
+              <span className="flex items-center gap-1 font-bold text-xs text-emerald-600">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Cumple ({pmrCount} plazas)
-              </Badge>
+              </span>
             ) : (
-              <Badge variant="destructive" className="gap-1 font-bold text-xs">
+              <span className="flex items-center gap-1 font-bold text-xs text-rose-600">
                 <AlertTriangle className="w-3.5 h-3.5" /> Requiere {Math.max(1, Math.ceil(totalStalls * 0.04))} PMR
-              </Badge>
+              </span>
             )}
           </div>
           <p className="text-[10px] text-slate-500 mt-1 font-mono">Mínimo 4% de capacidad para PMR</p>

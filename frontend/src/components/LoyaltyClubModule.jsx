@@ -100,11 +100,8 @@ export const LoyaltyClubModule = () => {
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <span className="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase">
-                Membresía Activa
+                Membresía Activa • Nivel Oro
               </span>
-              <Badge className="bg-emerald-500 text-slate-950 font-black text-[10px]">
-                NIVEL ORO
-              </Badge>
             </div>
             <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">
               {points.toLocaleString()} <span className="text-emerald-400 text-xl md:text-2xl font-bold">Smart Points</span>
@@ -142,9 +139,9 @@ export const LoyaltyClubModule = () => {
               <Card key={rew.id} className="p-5 border-slate-200 shadow-sm bg-white flex flex-col justify-between hover:shadow-md transition">
                 <div>
                   <div className="flex justify-between items-start mb-2">
-                    <Badge variant="outline" className="text-[10px] font-bold text-slate-600">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase font-mono">
                       {rew.tag}
-                    </Badge>
+                    </span>
                     <span className="font-mono font-black text-sm text-emerald-600">
                       {rew.pointsCost} pts
                     </span>

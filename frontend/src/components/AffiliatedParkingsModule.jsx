@@ -207,9 +207,9 @@ export const AffiliatedParkingsModule = () => {
                   <div className="w-10 h-10 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center font-black shadow-inner">
                     <Building2 className="w-5 h-5" />
                   </div>
-                  <Badge variant={p.status === 'Operativo' ? 'success' : 'warning'} className="font-bold">
-                    {p.status}
-                  </Badge>
+                  <span className={`text-xs font-bold ${p.status === 'Operativo' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    ● {p.status}
+                  </span>
                 </div>
 
                 <h3 className="font-extrabold text-slate-900 text-base mb-1">{p.name}</h3>

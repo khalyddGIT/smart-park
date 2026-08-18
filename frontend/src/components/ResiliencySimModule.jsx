@@ -64,9 +64,9 @@ export const ResiliencySimModule = () => {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <Badge variant={circuitStatus === 'ONLINE' ? 'success' : 'destructive'} className="text-xs font-bold py-1 px-3">
-            {circuitStatus === 'ONLINE' ? 'Servicio En Línea' : 'Modo Desconectado'}
-          </Badge>
+          <span className={`text-xs font-bold ${circuitStatus === 'ONLINE' ? 'text-emerald-600' : 'text-rose-600'}`}>
+            ● {circuitStatus === 'ONLINE' ? 'Servicio En Línea' : 'Modo Desconectado'}
+          </span>
         </div>
       </div>
 

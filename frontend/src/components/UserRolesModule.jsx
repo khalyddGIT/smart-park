@@ -243,9 +243,9 @@ export const UserRolesModule = () => {
               <div>
                 <div className="flex items-center space-x-2">
                   <h3 className="font-extrabold text-slate-900 text-base">{u.full_name}</h3>
-                  <Badge variant={u.role === 'platform' ? 'default' : u.role === 'local' ? 'warning' : 'success'} className="text-[10px] font-bold">
-                    {u.role.toUpperCase()}
-                  </Badge>
+                  <span className="text-[10px] font-bold text-slate-500 font-mono uppercase">
+                    ({u.role})
+                  </span>
                 </div>
                 <p className="text-xs text-slate-500 font-mono mt-0.5">
                   {u.email} • Tel: {u.phone} • <span className="text-slate-400">{u.lastAccess}</span>

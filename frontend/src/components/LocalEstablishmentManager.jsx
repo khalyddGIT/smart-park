@@ -259,9 +259,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           <MapPin className="w-3.5 h-3.5 text-slate-400" /> {est.address}
                         </p>
                       </div>
-                      <Badge variant={est.status === 'Operativo' ? 'success' : 'outline'} className="text-[10px] font-bold">
-                        {est.status}
-                      </Badge>
+                      <span className={`text-[11px] font-bold ${est.status === 'Operativo' ? 'text-emerald-600' : 'text-slate-500'}`}>
+                        ● {est.status}
+                      </span>
                     </div>
 
                     {/* Datos de Capacidad & Tarifas */}

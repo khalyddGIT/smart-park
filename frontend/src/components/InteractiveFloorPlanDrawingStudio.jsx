@@ -1707,9 +1707,9 @@ export const InteractiveFloorPlanDrawingStudio = ({
               <h3 className="font-bold text-slate-900 text-sm">Propiedades</h3>
             </div>
             {selectedElement && (
-              <Badge variant="secondary" className="font-mono text-[10px] uppercase bg-slate-100 text-slate-800 border-slate-200">
+              <span className="font-mono text-[10px] uppercase font-bold text-slate-500">
                 {selectedElement.type}
-              </Badge>
+              </span>
             )}
           </div>
 

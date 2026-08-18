@@ -212,9 +212,9 @@ export const LoginAuthScreen = () => {
                 </span>
                 <span className="text-xs font-black uppercase tracking-wider text-slate-300 font-tech">Garita ANPR en Línea</span>
               </div>
-              <Badge variant="outline" className="text-[10px] font-mono text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
-                0.28s LPR Speed
-              </Badge>
+              <span className="text-[10px] font-mono text-emerald-400">
+                0.28s LPR
+              </span>
             </div>
 
             {/* Simulación de lectura de placa */}

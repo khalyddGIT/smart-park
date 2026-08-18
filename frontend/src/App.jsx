@@ -153,37 +153,34 @@ export const App = () => {
               {activeTab === 'dashboard' && (
                 <>
                   {/* Banner de Búsqueda Inteligente */}
-                  <Card className="p-6 sm:p-8 border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/40 shadow-sm relative overflow-hidden">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                  <Card className="p-5 sm:p-6 border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/40 shadow-sm relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                       <div>
-                        <div className="flex items-center space-x-2 mb-1.5">
+                        <div className="flex items-center space-x-2 mb-1">
                           <Badge variant="success" className="font-mono text-[10px] font-bold">
-                            RED HUAMANGA ACTIVA
+                            🟢 {totalFreeSlots} Plazas Libres
                           </Badge>
                           <span className="text-xs font-mono text-slate-500">
-                            {totalFreeSlots} Plazas Libres en Vivo de {totalNetworkSlots} Totales ({establishments.length} Sedes)
+                            {establishments.length} Sedes en Huamanga
                           </span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                          Encuentra tu Estacionamiento en Ayacucho
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                          Estacionamientos en Ayacucho
                         </h1>
-                        <p className="text-xs text-slate-500 max-w-2xl mt-1">
-                          Selecciona cualquier sede oficial de la red, visualiza su plano topográfico 2D interactivo y reserva tu cajón al instante con pase ANPR.
-                        </p>
                       </div>
                     </div>
                     
                     {/* Barra de Búsqueda y Filtros de Categoría */}
-                    <div className="space-y-3 relative z-10 pt-2">
-                      <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="space-y-3 relative z-10 pt-1">
+                      <div className="flex flex-col sm:flex-row gap-2.5">
                         <div className="flex-1 relative">
                           <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
                           <Input
                             type="text"
-                            placeholder="Buscar por sede, dirección (ej. Portal Unión, Jr. 28 de Julio, Independencia)..."
+                            placeholder="Buscar cochera, jirón o avenida..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 h-10 border-slate-200 bg-white shadow-xs"
+                            className="pl-10 h-10 border-slate-200 bg-white shadow-xs text-xs"
                           />
                         </div>
                         {searchQuery && (
@@ -191,7 +188,7 @@ export const App = () => {
                             variant="outline" 
                             size="sm" 
                             onClick={() => setSearchQuery('')}
-                            className="text-xs font-bold text-slate-600"
+                            className="text-xs font-bold text-slate-600 h-10"
                           >
                             Limpiar
                           </Button>
@@ -209,7 +206,7 @@ export const App = () => {
                             categoryFilter === 'todos' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
-                          Todas las Sedes ({establishments.length})
+                          Todas ({establishments.length})
                         </button>
                         <button
                           onClick={() => setCategoryFilter('centro')}
@@ -225,7 +222,7 @@ export const App = () => {
                             categoryFilter === 'techados' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
-                          Cubiertas & Sótano
+                          Techadas
                         </button>
                         <button
                           onClick={() => setCategoryFilter('economicos')}
@@ -233,29 +230,18 @@ export const App = () => {
                             categoryFilter === 'economicos' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
-                          Económicos (≤ S/ 4.50/h)
+                          Económicas (≤ S/ 4.50)
                         </button>
                       </div>
                     </div>
                   </Card>
 
                   {/* MAPA INTERACTIVO DE AYACUCHO */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                        <MapPin className="w-5 h-5 text-emerald-600" />
-                        <span>Mapa Satelital de Cobertura — Huamanga</span>
-                      </h2>
-                      <span className="text-xs text-slate-500 font-mono">
-                        {filteredParkings.length} Sedes encontradas
-                      </span>
-                    </div>
-                    <AyacuchoMap 
-                      parkings={establishments}
-                      onSelectParking={(parking) => setSelectedParkingId(parking.id)} 
-                      selectedParkingId={selectedParkingId} 
-                    />
-                  </div>
+                  <AyacuchoMap 
+                    parkings={establishments}
+                    onSelectParking={(parking) => setSelectedParkingId(parking.id)} 
+                    selectedParkingId={selectedParkingId} 
+                  />
 
                   {/* VISTA DEL PLANO O LISTADO DE TARJETAS DE SEDES */}
                   {selectedParking ? (

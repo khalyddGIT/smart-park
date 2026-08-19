@@ -26,34 +26,43 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { AyacuchoMap } from './AyacuchoMap';
 
-// Curva de desaceleración orgánica
+// Curva de desaceleración fluida
 const FLUID_EASE = [0.16, 1, 0.3, 1];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.09,
-      delayChildren: 0.1
-    }
-  }
+// Componente Contenedor con Animación de Entrada y Salida basada en Scroll (Scroll Interpolated Section)
+const ScrollSection = ({ children, className = '', id = '' }) => {
+  const sectionRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start end', 'end start']
+  });
+
+  // Interpolación de entrada al scroll (0 -> 0.35) y salida al scroll (0.65 -> 1)
+  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.35, 1, 1, 0.4]);
+  const scale = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [0.94, 1, 1, 0.96]);
+  const y = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [50, 0, 0, -40]);
+
+  const smoothScale = useSpring(scale, { stiffness: 120, damping: 24 });
+  const smoothY = useSpring(y, { stiffness: 120, damping: 24 });
+
+  return (
+    <motion.section
+      ref={sectionRef}
+      id={id}
+      style={{
+        opacity,
+        scale: smoothScale,
+        y: smoothY
+      }}
+      className={className}
+    >
+      {children}
+    </motion.section>
+  );
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.7,
-      ease: FLUID_EASE
-    }
-  }
-};
-
-// Componente de Tarjeta con Inercia 3D y Efecto Parallax de Cursor
-const TiltCard = ({ children, className = '' }) => {
+// Tarjeta con Inercia 3D y Parallax de Cursor
+const TiltCard = ({ children, className = '', parallaxOffset = 0 }) => {
   const cardRef = useRef(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -109,7 +118,7 @@ export const LandingPage = ({
   const heroRef = useRef(null);
   const mockupSectionRef = useRef(null);
 
-  // Scroll general de la página
+  // Barra elástica de progreso de lectura superior
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 140,
@@ -117,15 +126,16 @@ export const LandingPage = ({
     restDelta: 0.001
   });
 
-  // Parallax del Hero
+  // Parallax Multi-Capa en la Hero Section
   const { scrollYProgress: heroScrollProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start']
   });
 
-  const heroHeadlineY = useTransform(heroScrollProgress, [0, 1], [0, 80]);
-  const heroOpacity = useTransform(heroScrollProgress, [0, 0.8], [1, 0.2]);
-  const heroMetricsY = useTransform(heroScrollProgress, [0, 1], [0, 40]);
+  const heroHeadlineY = useTransform(heroScrollProgress, [0, 1], [0, 110]);
+  const heroOpacity = useTransform(heroScrollProgress, [0, 0.75], [1, 0.15]);
+  const heroScale = useTransform(heroScrollProgress, [0, 1], [1, 0.94]);
+  const heroMetricsY = useTransform(heroScrollProgress, [0, 1], [0, 50]);
 
   // Transformación 3D del Mockup Faux-OS basada en el Scroll
   const { scrollYProgress: mockupScrollProgress } = useScroll({
@@ -133,9 +143,9 @@ export const LandingPage = ({
     offset: ['start end', 'center center']
   });
 
-  const mockupRotateX = useTransform(mockupScrollProgress, [0, 1], [14, 0]);
-  const mockupScale = useTransform(mockupScrollProgress, [0, 1], [0.93, 1]);
-  const mockupOpacity = useTransform(mockupScrollProgress, [0, 0.6], [0.4, 1]);
+  const mockupRotateX = useTransform(mockupScrollProgress, [0, 1], [16, 0]);
+  const mockupScale = useTransform(mockupScrollProgress, [0, 1], [0.91, 1]);
+  const mockupOpacity = useTransform(mockupScrollProgress, [0, 0.5], [0.3, 1]);
   const smoothMockupRotateX = useSpring(mockupRotateX, { stiffness: 100, damping: 20 });
   const smoothMockupScale = useSpring(mockupScale, { stiffness: 100, damping: 20 });
 
@@ -199,7 +209,7 @@ export const LandingPage = ({
       />
 
       {/* =========================================================================
-          1. HEADER EDITORIAL MINIMALISTA CON SOMBRA SUAVE
+          1. HEADER EDITORIAL MINIMALISTA
           ========================================================================= */}
       <header className="sticky top-0 z-50 bg-[#FBFBFA]/90 backdrop-blur-md border-b border-[#E5E5E5] px-6 lg:px-12 py-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.03)] transition-colors duration-300">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -253,40 +263,36 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION CENTRADO CON SOMBRAS Y BORDES PULIDOS
+          2. HERO SECTION CON PARALLAX DE ENTRADA Y SALIDA DINÁMICA
           ========================================================================= */}
       <section ref={heroRef} className="pt-24 pb-20 px-6 lg:px-12 max-w-5xl mx-auto space-y-12 overflow-hidden text-center">
         
         <motion.div 
-          style={{ y: heroHeadlineY, opacity: heroOpacity }}
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
+          style={{ 
+            y: heroHeadlineY, 
+            opacity: heroOpacity,
+            scale: heroScale
+          }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: FLUID_EASE }}
           className="space-y-6 flex flex-col items-center"
         >
           
-          {/* Titular Principal Centrado Directo */}
-          <motion.h1 
-            variants={itemVariants}
-            className="text-4xl sm:text-6xl lg:text-7xl font-display text-[#111111] tracking-tight max-w-4xl mx-auto"
-          >
+          {/* Titular Principal Centrado */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display text-[#111111] tracking-tight max-w-4xl mx-auto leading-[1.06]">
             La infraestructura de estacionamiento para <span className="font-editorial italic font-normal text-[#2A2A2A]">Ayacucho</span>.
-          </motion.h1>
+          </h1>
 
           {/* Subtítulo Centrado */}
-          <motion.p 
-            variants={itemVariants}
-            className="text-base sm:text-lg text-[#555555] max-w-2xl mx-auto font-normal leading-relaxed text-center"
-          >
+          <p className="text-base sm:text-lg text-[#555555] max-w-2xl mx-auto font-normal leading-relaxed text-center">
             Consulte la disponibilidad en tiempo real, seleccione su plaza en el plano topográfico 2D del estacionamiento y acceda mediante reconocimiento de placa ANPR.
-          </motion.p>
+          </p>
 
-          {/* Botones Centrados */}
-          <motion.div 
-            variants={itemVariants}
-            className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full"
-          >
+          {/* Botones Centrados con Micro-Interacción */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
             <motion.a
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               href="#mapa"
               className="w-full sm:w-auto px-7 py-3 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded-md transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
@@ -295,22 +301,24 @@ export const LandingPage = ({
               <ArrowRight className="w-3.5 h-3.5" />
             </motion.a>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
               className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#F0F0EF] text-[#111111] text-xs font-medium rounded-md border border-[#E5E5E5] shadow-xs transition-colors duration-200 cursor-pointer"
             >
               Afiliar Establecimiento
-            </button>
-          </motion.div>
+            </motion.button>
+          </div>
 
         </motion.div>
 
-        {/* Métricas de Precisión Centradas con Sombra Sutil */}
+        {/* Métricas de Precisión con Parallax Propio */}
         <motion.div 
           style={{ y: heroMetricsY }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.3, ease: FLUID_EASE }}
+          transition={{ duration: 0.7, delay: 0.25, ease: FLUID_EASE }}
           className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#E5E5E5] text-center"
         >
           <div className="space-y-1">
@@ -345,11 +353,11 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          3. MOCKUP DE VENTANA FAUX-OS CON BORDES PULIDOS Y SOMBRA ELEVADA
+          3. MOCKUP DE VENTANA FAUX-OS CON 3D SCROLL INTERPOLADO
           ========================================================================= */}
-      <section ref={mockupSectionRef} id="sistema" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
+      <ScrollSection id="sistema" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
         
-        {/* Encabezado de Sección Centrado */}
+        {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2">
           <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
             ARQUITECTURA DE ACCESO
@@ -362,8 +370,8 @@ export const LandingPage = ({
           </p>
         </div>
 
-        {/* Contenedor Faux-OS Window Chrome con Inclinación 3D y Sombra Refinada */}
-        <div style={{ perspective: 1200 }}>
+        {/* Contenedor Faux-OS Window Chrome con Inclinación 3D y Sombra */}
+        <div ref={mockupSectionRef} style={{ perspective: 1200 }}>
           <motion.div 
             style={{ 
               rotateX: smoothMockupRotateX,
@@ -453,12 +461,12 @@ export const LandingPage = ({
           </motion.div>
         </div>
 
-      </section>
+      </ScrollSection>
 
       {/* =========================================================================
-          4. DIRECTORIO Y MAPA CON BORDES PULIDOS Y SOMBRA ELEVADA
+          4. DIRECTORIO Y MAPA CON SCROLL REVEAL Y PARALLAX DE TARJETAS
           ========================================================================= */}
-      <section id="mapa" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
+      <ScrollSection id="mapa" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
         {/* Encabezado y Filtros Centrados */}
         <div className="max-w-3xl mx-auto text-center space-y-4">
@@ -474,7 +482,7 @@ export const LandingPage = ({
             </p>
           </div>
 
-          {/* Filtros Centrados con Bordes y Sombra */}
+          {/* Filtros Centrados */}
           <div className="flex items-center justify-center space-x-2 overflow-x-auto pb-1 text-xs flex-wrap gap-y-2">
             <button
               onClick={() => setCategoryFilter('todos')}
@@ -519,8 +527,8 @@ export const LandingPage = ({
           </div>
         </div>
 
-        {/* Mapa Leaflet con Borde Pulido y Sombra */}
-        <div className="rounded-xl border border-[#E5E5E5] overflow-hidden shadow-[0_6px_24px_-4px_rgba(0,0,0,0.06)] bg-white transition-shadow duration-300 hover:shadow-md">
+        {/* Mapa Leaflet con Aislamiento Estricto y Sombra */}
+        <div className="relative isolate z-0 rounded-xl border border-[#E5E5E5] overflow-hidden shadow-[0_6px_24px_-4px_rgba(0,0,0,0.06)] bg-white transition-shadow duration-300 hover:shadow-md">
           <AyacuchoMap
             parkings={filteredParkings}
             onSelectParking={(p) => {
@@ -529,21 +537,21 @@ export const LandingPage = ({
           />
         </div>
 
-        {/* Grilla de Cocheras con Sombra y Bordes */}
-        <motion.div 
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-40px' }}
-          variants={containerVariants}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4"
-        >
-          {filteredParkings.map((p) => {
+        {/* Grilla de Cocheras con Parallax Escalonado */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+          {filteredParkings.map((p, idx) => {
             const elements = p.elements || [];
             const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
             const totalCount = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
 
             return (
-              <motion.div key={p.id} variants={itemVariants}>
+              <motion.div 
+                key={p.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-50px' }}
+                transition={{ duration: 0.6, delay: (idx % 3) * 0.1, ease: FLUID_EASE }}
+              >
                 <TiltCard className="h-full bg-white rounded-xl border border-[#E5E5E5] p-5 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.08)] transition-all duration-300">
                   <div className="space-y-3">
                     <div className="h-36 rounded-lg overflow-hidden relative bg-[#F7F6F3]">
@@ -606,14 +614,14 @@ export const LandingPage = ({
               </motion.div>
             );
           })}
-        </motion.div>
+        </div>
 
-      </section>
+      </ScrollSection>
 
       {/* =========================================================================
-          5. BENTO GRID DE ESPECIFICACIONES TÉCNICAS CON SOMBRAS SUAVES
+          5. BENTO GRID DE ESPECIFICACIONES CON SCROLL PROGRESS
           ========================================================================= */}
-      <section id="infraestructura" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
+      <ScrollSection id="infraestructura" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
         
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2">
@@ -628,10 +636,16 @@ export const LandingPage = ({
           </p>
         </div>
 
-        {/* Bento Grid Editorial con Sombras y Bordes */}
+        {/* Bento Grid Editorial con Scroll Parallax */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          <div className="md:col-span-2 bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, ease: FLUID_EASE }}
+            className="md:col-span-2 bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300"
+          >
             <div className="space-y-2">
               <div className="w-8 h-8 rounded bg-[#EDF3EC] text-[#346538] flex items-center justify-center font-bold text-xs">
                 <Camera className="w-4 h-4" />
@@ -647,9 +661,15 @@ export const LandingPage = ({
               <span>Tiempo de detección:</span>
               <strong className="text-[#111111]">&lt; 180 ms</strong>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, delay: 0.1, ease: FLUID_EASE }}
+            className="bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300"
+          >
             <div className="space-y-2">
               <div className="w-8 h-8 rounded bg-[#E1F3FE] text-[#1F6C9F] flex items-center justify-center font-bold text-xs">
                 <QrCode className="w-4 h-4" />
@@ -664,9 +684,15 @@ export const LandingPage = ({
             <div className="p-3 bg-[#FBFBFA] rounded border border-[#E5E5E5] font-mono text-xs text-[#787774] text-center shadow-2xs">
               Protocolo Zero-Paper
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, delay: 0.15, ease: FLUID_EASE }}
+            className="bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300"
+          >
             <div className="space-y-2">
               <div className="w-8 h-8 rounded bg-[#FBF3DB] text-[#956400] flex items-center justify-center font-bold text-xs">
                 <CreditCard className="w-4 h-4" />
@@ -681,9 +707,15 @@ export const LandingPage = ({
             <div className="p-3 bg-[#FBFBFA] rounded border border-[#E5E5E5] font-mono text-xs text-[#787774] text-center shadow-2xs">
               Yape • Plin • Culqi
             </div>
-          </div>
+          </motion.div>
 
-          <div className="md:col-span-2 bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, delay: 0.2, ease: FLUID_EASE }}
+            className="md:col-span-2 bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300"
+          >
             <div className="space-y-2 max-w-md">
               <div className="w-8 h-8 rounded bg-[#EDF3EC] text-[#346538] flex items-center justify-center font-bold text-xs">
                 <ShieldCheck className="w-4 h-4" />
@@ -703,18 +735,18 @@ export const LandingPage = ({
                 Registro de eventos en vivo
               </div>
             </div>
-          </div>
+          </motion.div>
 
         </div>
 
-      </section>
+      </ScrollSection>
 
       {/* =========================================================================
-          6. SECCIÓN PROPIETARIOS DE ESTACIONAMIENTOS CENTRADA CON SOMBRA
+          6. SECCIÓN PROPIETARIOS DE ESTACIONAMIENTOS CON SCROLL REVEAL
           ========================================================================= */}
-      <section id="afiliacion" className="py-16 px-6 lg:px-12 max-w-5xl mx-auto">
+      <ScrollSection id="afiliacion" className="py-16 px-6 lg:px-12 max-w-5xl mx-auto">
         <motion.div 
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.7, ease: FLUID_EASE }}
@@ -735,29 +767,32 @@ export const LandingPage = ({
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto pt-2">
             <motion.button
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
               className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#EAEAEA] text-[#111111] text-xs font-medium rounded transition-all duration-200 cursor-pointer shadow-[0_4px_12px_rgba(255,255,255,0.15)]"
             >
               Solicitar Afiliación
             </motion.button>
-            <a
+            <motion.a
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               href="https://wa.me/51966000000?text=Hola,%20deseo%20afiliar%20mi%20cochera%20en%20Ayacucho"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-6 py-3 bg-[#222222] hover:bg-[#333333] text-white text-xs font-medium rounded border border-[#333333] transition-colors duration-200 text-center"
             >
               Contacto Directo
-            </a>
+            </motion.a>
           </div>
 
         </motion.div>
-      </section>
+      </ScrollSection>
 
       {/* =========================================================================
-          7. PREGUNTAS FRECUENTES (FAQ) CON BORDES PULIDOS
+          7. PREGUNTAS FRECUENTES (FAQ) CON SCROLL REVEAL
           ========================================================================= */}
-      <section className="py-16 px-6 lg:px-12 max-w-4xl mx-auto space-y-10">
+      <ScrollSection className="py-16 px-6 lg:px-12 max-w-4xl mx-auto space-y-10">
         
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2">
@@ -774,7 +809,14 @@ export const LandingPage = ({
 
         <div className="divide-y divide-[#E5E5E5] border-y border-[#E5E5E5]">
           {faqs.map((faq, idx) => (
-            <div key={idx} className="py-4.5">
+            <motion.div 
+              key={idx} 
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-20px' }}
+              transition={{ duration: 0.4, delay: idx * 0.05, ease: FLUID_EASE }}
+              className="py-4.5"
+            >
               <button
                 onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
                 className="w-full text-left font-medium text-xs sm:text-sm text-[#111111] flex items-center justify-between hover:text-[#555555] transition-colors duration-200 cursor-pointer"
@@ -799,11 +841,11 @@ export const LandingPage = ({
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
           ))}
         </div>
 
-      </section>
+      </ScrollSection>
 
       {/* =========================================================================
           8. FOOTER DOCUMENTAL

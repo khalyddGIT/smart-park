@@ -26,6 +26,7 @@ import { LoginAuthScreen } from './components/LoginAuthScreen';
 import { PlatformFinancesModule } from './components/PlatformFinancesModule';
 import { PlatformSettingsModule } from './components/PlatformSettingsModule';
 import { PlatformGlobalDashboard } from './components/PlatformGlobalDashboard';
+import { TermsAndConditionsModal } from './components/TermsAndConditionsModal';
 import { 
   Search, 
   MapPin, 
@@ -77,6 +78,7 @@ export const App = () => {
   // Estados de Reserva de Usuario
   const [selectedParkingId, setSelectedParkingId] = useState(null);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [activeReservation, setActiveReservation] = useState({
     code: 'RSV-8912',
     token: 'SPK-AYC891-7B2F9A',
@@ -160,7 +162,11 @@ export const App = () => {
 
       <div className="flex flex-1">
         {/* BARRA LATERAL (SIDEBAR) */}
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          onOpenTerms={() => setShowTermsModal(true)} 
+        />
 
         {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto pb-24 md:pb-6">
@@ -426,6 +432,12 @@ export const App = () => {
         isOpen={showQRModal}
         onClose={() => setShowQRModal(false)}
         reservation={activeReservation}
+      />
+
+      {/* Modal de Términos y Condiciones */}
+      <TermsAndConditionsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
       />
     </div>
   );

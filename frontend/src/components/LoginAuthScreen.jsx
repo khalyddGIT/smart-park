@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { TermsAndConditionsModal } from './TermsAndConditionsModal';
 
 export const LoginAuthScreen = () => {
   const { loginWithGoogle, loginWithEmail, registerUser } = useAuth();
@@ -32,6 +33,7 @@ export const LoginAuthScreen = () => {
   // 'login' | 'register' | 'forgot_password'
   const [authMode, setAuthMode] = useState('login');
   const [showAffiliationModal, setShowAffiliationModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -355,11 +357,23 @@ export const LoginAuthScreen = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm mt-2"
+                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm mt-2 cursor-pointer"
                 >
                   <span>Registrarme como Conductor</span>
                   <ArrowRight className="w-4 h-4 ml-1.5 text-emerald-400" />
                 </Button>
+
+                <p className="text-[10px] text-slate-500 text-center leading-relaxed pt-1">
+                  Al registrarte, aceptas nuestros{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsModal(true)}
+                    className="text-emerald-700 font-bold underline hover:text-emerald-800 cursor-pointer"
+                  >
+                    Términos y Condiciones
+                  </button>{' '}
+                  y Política de Privacidad (Ley N° 29733).
+                </p>
               </form>
             </div>
           )}
@@ -370,21 +384,17 @@ export const LoginAuthScreen = () => {
           {authMode === 'forgot_password' && (
             <div className="space-y-4">
               <div className="text-center space-y-1">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 mx-auto mb-2">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto mb-2">
                   <KeyRound className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-black text-slate-900">Recuperar Contraseña</h3>
-                <p className="text-xs text-slate-500">Te enviaremos un enlace de restablecimiento</p>
+                <p className="text-xs text-slate-500">Ingresa tu correo para recibir un PIN temporal</p>
               </div>
 
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
-                  setSuccessMsg('Enlace enviado a tu correo.');
-                  setTimeout(() => {
-                    setAuthMode('login');
-                    setSuccessMsg('');
-                  }, 2000);
+                  setSuccessMsg('Código enviado a tu correo.');
                 }} 
                 className="space-y-3"
               >
@@ -393,14 +403,16 @@ export const LoginAuthScreen = () => {
                   <Input
                     type="email"
                     required
-                    placeholder="nombre@ejemplo.com"
+                    placeholder="ejemplo@correo.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
                     className="bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10.5"
                   />
                 </div>
 
                 <Button
                   type="submit"
-                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm"
+                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
                 >
                   <span>Enviar Enlace</span>
                 </Button>
@@ -409,7 +421,7 @@ export const LoginAuthScreen = () => {
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
-                className="w-full text-center text-xs text-slate-500 hover:text-slate-900 flex items-center justify-center gap-1.5 pt-1 transition"
+                className="w-full text-center text-xs text-slate-500 hover:text-slate-900 flex items-center justify-center gap-1.5 pt-1 transition cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Volver a Iniciar Sesión</span>
@@ -427,7 +439,7 @@ export const LoginAuthScreen = () => {
             <button
               type="button"
               onClick={() => setShowAffiliationModal(true)}
-              className="w-full py-2.5 px-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold transition flex items-center justify-center space-x-2 group shadow-2xs"
+              className="w-full py-2.5 px-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold transition flex items-center justify-center space-x-2 group shadow-2xs cursor-pointer"
             >
               <Building2 className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
               <span>Solicitar Afiliación de Estacionamiento</span>
@@ -446,21 +458,21 @@ export const LoginAuthScreen = () => {
               <button
                 type="button"
                 onClick={() => loginWithEmail('conductor@smartpark.com', '1234', 'user')}
-                className="py-1 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 hover:text-slate-900 text-[10px] font-semibold transition text-center"
+                className="py-1 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 hover:text-slate-900 text-[10px] font-semibold transition text-center cursor-pointer"
               >
                 🚗 Conductor
               </button>
               <button
                 type="button"
                 onClick={() => loginWithEmail('operador@smartpark.com', '1234', 'local')}
-                className="py-1 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 hover:text-slate-900 text-[10px] font-semibold transition text-center"
+                className="py-1 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 hover:text-slate-900 text-[10px] font-semibold transition text-center cursor-pointer"
               >
                 🏢 Cochera
               </button>
               <button
                 type="button"
                 onClick={() => loginWithEmail('admin@smartpark.com', '1234', 'platform')}
-                className="py-1 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 hover:text-slate-900 text-[10px] font-semibold transition text-center"
+                className="py-1 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 hover:text-slate-900 text-[10px] font-semibold transition text-center cursor-pointer"
               >
                 🌐 Admin
               </button>
@@ -470,9 +482,17 @@ export const LoginAuthScreen = () => {
         </div>
       </main>
 
-      {/* Footer minimalista */}
-      <footer className="relative z-10 py-2 text-center text-[11px] text-slate-400">
+      {/* Footer minimalista con enlace a Términos y Condiciones */}
+      <footer className="relative z-10 py-3 text-center text-[11px] text-slate-500 space-x-2">
         <span>Smart-Park Enterprise &copy; 2026 &bull; Ayacucho, Perú</span>
+        <span>&bull;</span>
+        <button
+          type="button"
+          onClick={() => setShowTermsModal(true)}
+          className="text-slate-600 hover:text-emerald-700 font-bold underline cursor-pointer"
+        >
+          Términos y Condiciones
+        </button>
       </footer>
 
       {/* =========================================================================
@@ -623,18 +643,29 @@ export const LoginAuthScreen = () => {
                   />
                 </div>
 
+                <p className="text-[10px] text-slate-500 text-center leading-relaxed">
+                  Al enviar la solicitud, declaras ser titular o representante facultado del inmueble y aceptas los{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsModal(true)}
+                    className="text-emerald-700 font-bold underline hover:text-emerald-800 cursor-pointer"
+                  >
+                    Términos y Condiciones para Cocheras
+                  </button>.
+                </p>
+
                 <div className="flex gap-2.5 pt-2">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setShowAffiliationModal(false)}
-                    className="flex-1 border-slate-200 text-slate-600 hover:bg-slate-100 text-xs h-10.5 rounded-xl"
+                    className="flex-1 border-slate-200 text-slate-600 hover:bg-slate-100 text-xs h-10.5 rounded-xl cursor-pointer"
                   >
                     Cancelar
                   </Button>
                   <Button
                     type="submit"
-                    className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs h-10.5 rounded-xl shadow-sm"
+                    className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs h-10.5 rounded-xl shadow-sm cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
                     <span>Enviar Solicitud</span>
@@ -646,6 +677,12 @@ export const LoginAuthScreen = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Términos y Condiciones */}
+      <TermsAndConditionsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+      />
 
     </div>
   );

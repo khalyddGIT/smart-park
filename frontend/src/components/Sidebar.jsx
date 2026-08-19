@@ -24,65 +24,65 @@ import {
   X
 } from 'lucide-react';
 
-export const Sidebar = ({ activeTab, setActiveTab }) => {
+const SECTIONS_BY_ROLE = {
+  user: [
+    {
+      section: 'CONDUCTOR',
+      items: [
+        { id: 'dashboard', label: 'Búsqueda & Mapa', shortLabel: 'Mapa', icon: Search },
+        { id: 'reservations', label: 'Mis Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
+        { id: 'loyalty', label: 'Smart Club', shortLabel: 'Club', icon: Award },
+        { id: 'vehicles', label: 'Mis Vehículos', shortLabel: 'Vehículos', icon: Car },
+        { id: 'payments', label: 'Métodos de Pago', shortLabel: 'Pagos', icon: CreditCard },
+        { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
+        { id: 'history', label: 'Historial', shortLabel: 'Historial', icon: History },
+        { id: 'reviews', label: 'Reseñas', shortLabel: 'Reseñas', icon: Star },
+      ]
+    }
+  ],
+  local: [
+    {
+      section: 'GARITA & SEDE',
+      items: [
+        { id: 'dashboard', label: 'Espacios & Plano', shortLabel: 'Espacios', icon: Building2 },
+        { id: 'reservations', label: 'Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
+        { id: 'anpr', label: 'Control LPR', shortLabel: 'Garita', icon: Camera },
+        { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
+        { id: 'staff', label: 'Personal', shortLabel: 'Personal', icon: Users },
+        { id: 'reports', label: 'Reportes', shortLabel: 'Reportes', icon: BarChart3 },
+        { id: 'audit', label: 'Accesos', shortLabel: 'Accesos', icon: ShieldCheck },
+        { id: 'reviews', label: 'Reseñas', shortLabel: 'Reseñas', icon: Star },
+        { id: 'resiliency', label: 'Diagnóstico', shortLabel: 'Servidor', icon: Radio },
+      ]
+    }
+  ],
+  platform: [
+    {
+      section: 'ADMINISTRACIÓN & FINANZAS',
+      items: [
+        { id: 'dashboard', label: 'Panel Global', shortLabel: 'Panel', icon: LayoutDashboard },
+        { id: 'finances', label: 'Finanzas & Pagos', shortLabel: 'Finanzas', icon: CreditCard },
+        { id: 'affiliates', label: 'Sedes & Afiliación', shortLabel: 'Sedes', icon: Building2 },
+        { id: 'settings', label: 'Ajustes Maestros', shortLabel: 'Ajustes', icon: Settings },
+        { id: 'reservations', label: 'Padrón Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
+        { id: 'analytics', label: 'Analítica Global', shortLabel: 'Métricas', icon: BarChart3 },
+        { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
+        { id: 'users', label: 'Usuarios & RBAC', shortLabel: 'Usuarios', icon: Shield },
+        { id: 'staff', label: 'Directorio Personal', shortLabel: 'Personal', icon: Users },
+        { id: 'audit', label: 'Auditoría', shortLabel: 'Auditoría', icon: ShieldCheck },
+        { id: 'reviews', label: 'Supervisión', shortLabel: 'Calidad', icon: Star },
+        { id: 'resiliency', label: 'Servicios Backend', shortLabel: 'Servicios', icon: Radio },
+      ]
+    }
+  ]
+};
+
+export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
   const { role } = useAuth();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  const menuSections = {
-    user: [
-      {
-        section: 'CONDUCTOR',
-        items: [
-          { id: 'dashboard', label: 'Búsqueda & Mapa', shortLabel: 'Mapa', icon: Search },
-          { id: 'reservations', label: 'Mis Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
-          { id: 'loyalty', label: 'Smart Club', shortLabel: 'Club', icon: Award },
-          { id: 'vehicles', label: 'Mis Vehículos', shortLabel: 'Vehículos', icon: Car },
-          { id: 'payments', label: 'Métodos de Pago', shortLabel: 'Pagos', icon: CreditCard },
-          { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
-          { id: 'history', label: 'Historial', shortLabel: 'Historial', icon: History },
-          { id: 'reviews', label: 'Reseñas', shortLabel: 'Reseñas', icon: Star },
-        ]
-      }
-    ],
-    local: [
-      {
-        section: 'GARITA & SEDE',
-        items: [
-          { id: 'dashboard', label: 'Espacios & Plano', shortLabel: 'Espacios', icon: Building2 },
-          { id: 'reservations', label: 'Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
-          { id: 'anpr', label: 'Control LPR', shortLabel: 'Garita', icon: Camera },
-          { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
-          { id: 'staff', label: 'Personal', shortLabel: 'Personal', icon: Users },
-          { id: 'reports', label: 'Reportes', shortLabel: 'Reportes', icon: BarChart3 },
-          { id: 'audit', label: 'Accesos', shortLabel: 'Accesos', icon: ShieldCheck },
-          { id: 'reviews', label: 'Reseñas', shortLabel: 'Reseñas', icon: Star },
-          { id: 'resiliency', label: 'Diagnóstico', shortLabel: 'Servidor', icon: Radio },
-        ]
-      }
-    ],
-    platform: [
-      {
-        section: 'ADMINISTRACIÓN & FINANZAS',
-        items: [
-          { id: 'dashboard', label: 'Panel Global', shortLabel: 'Panel', icon: LayoutDashboard },
-          { id: 'finances', label: 'Finanzas & Pagos', shortLabel: 'Finanzas', icon: CreditCard },
-          { id: 'affiliates', label: 'Sedes & Afiliación', shortLabel: 'Sedes', icon: Building2 },
-          { id: 'settings', label: 'Ajustes Maestros', shortLabel: 'Ajustes', icon: Settings },
-          { id: 'reservations', label: 'Padrón Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
-          { id: 'analytics', label: 'Analítica Global', shortLabel: 'Métricas', icon: BarChart3 },
-          { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
-          { id: 'users', label: 'Usuarios & RBAC', shortLabel: 'Usuarios', icon: Shield },
-          { id: 'staff', label: 'Directorio Personal', shortLabel: 'Personal', icon: Users },
-          { id: 'audit', label: 'Auditoría', shortLabel: 'Auditoría', icon: ShieldCheck },
-          { id: 'reviews', label: 'Supervisión', shortLabel: 'Calidad', icon: Star },
-          { id: 'resiliency', label: 'Servicios Backend', shortLabel: 'Servicios', icon: Server },
-        ]
-      }
-    ]
-  };
-
-  const currentSections = menuSections[role] || menuSections.user;
-  const allItems = currentSections.flatMap(s => s.items);
+  const currentSections = SECTIONS_BY_ROLE[role] || SECTIONS_BY_ROLE.user;
+  const allItems = currentSections.flatMap(sec => sec.items);
 
   const handleSelectTab = (tabId) => {
     setActiveTab(tabId);
@@ -107,7 +107,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                     <button
                       key={item.id}
                       onClick={() => handleSelectTab(item.id)}
-                      className={`w-full flex items-center space-x-2 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                      className={`w-full flex items-center space-x-2 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
                         isActive
                           ? 'bg-slate-900 text-white shadow-xs border border-slate-800 font-bold'
                           : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -123,8 +123,16 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
           ))}
         </div>
 
-        <div className="p-2 border-t border-slate-100 bg-slate-50/60">
-          <div className="flex items-center justify-between px-2 py-1 text-[11px] text-slate-500 font-medium">
+        <div className="p-2 border-t border-slate-100 bg-slate-50/60 space-y-1">
+          <button
+            type="button"
+            onClick={onOpenTerms}
+            className="w-full flex items-center justify-between px-2 py-1 text-[10px] text-slate-500 hover:text-emerald-700 font-bold rounded-lg hover:bg-slate-100 transition cursor-pointer"
+          >
+            <span>⚖️ Términos & Legal</span>
+            <span className="text-[9px] font-mono text-slate-400">v2.4</span>
+          </button>
+          <div className="flex items-center justify-between px-2 py-0.5 text-[11px] text-slate-500 font-medium">
             <span>Rol: <strong className="text-slate-800 font-bold capitalize">{role}</strong></span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
@@ -179,28 +187,16 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
 
       {/* Drawer Móvil Desplegable (Slide-Up Sheet) */}
       {mobileDrawerOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end animate-fade-in">
-          {/* Backdrop */}
-          <div 
-            onClick={() => setMobileDrawerOpen(false)}
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" 
-          />
-
-          {/* Panel */}
-          <div className="relative bg-white rounded-t-3xl p-5 shadow-2xl max-h-[80vh] overflow-y-auto space-y-4 border-t border-slate-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-t-3xl p-5 max-h-[80vh] overflow-y-auto space-y-4 shadow-2xl animate-in slide-in-from-bottom">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-900 tracking-tight">Módulos del Sistema</h3>
-                  <p className="text-[11px] text-slate-500 font-medium">Perfil: <span className="capitalize font-bold text-emerald-600">{role}</span></p>
-                </div>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <h3 className="font-black text-slate-900 text-sm">Menú de Navegación ({role.toUpperCase()})</h3>
               </div>
               <button 
                 onClick={() => setMobileDrawerOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200"
+                className="p-1.5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -214,7 +210,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                   <button
                     key={item.id}
                     onClick={() => handleSelectTab(item.id)}
-                    className={`flex items-center space-x-3 p-3.5 rounded-2xl border text-left transition ${
+                    className={`flex items-center space-x-3 p-3.5 rounded-2xl border text-left transition cursor-pointer ${
                       isActive 
                         ? 'bg-slate-900 text-white border-slate-900 shadow-md font-bold' 
                         : 'bg-slate-50 text-slate-700 border-slate-200/80 hover:bg-slate-100'
@@ -225,6 +221,20 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Acceso a Términos desde el móvil */}
+            <div className="pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileDrawerOpen(false);
+                  if (onOpenTerms) onOpenTerms();
+                }}
+                className="w-full py-2 px-3 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-slate-100 rounded-xl flex items-center justify-center gap-2"
+              >
+                <span>⚖️ Ver Términos y Condiciones Legales</span>
+              </button>
             </div>
           </div>
         </div>

@@ -28,6 +28,7 @@ import { PlatformSettingsModule } from './components/PlatformSettingsModule';
 import { PlatformGlobalDashboard } from './components/PlatformGlobalDashboard';
 import { TermsAndConditionsModal } from './components/TermsAndConditionsModal';
 import { UserProfileModule } from './components/UserProfileModule';
+import { LandingPage } from './components/LandingPage';
 import { 
   Search, 
   MapPin, 
@@ -195,6 +196,40 @@ export const App = () => {
     }
     setActiveTab(tab);
   };
+
+  // Si el usuario no ha iniciado sesión, mostrar la Landing Page de última generación
+  if (!user && !selectedParkingId) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-500 selection:text-white">
+        <Toaster position="top-right" toastOptions={{ duration: 3500, style: { borderRadius: '14px', background: '#0f172a', color: '#fff', fontSize: '13px' } }} />
+        
+        <LandingPage
+          establishments={establishments}
+          onOpenAuth={(mode) => {
+            setAuthModalMode(mode || 'login');
+            setShowAuthModal(true);
+          }}
+          onSelectParking={handleSelectParking}
+          onOpenTerms={() => setShowTermsModal(true)}
+        />
+
+        {/* Modal de Autenticación Rápida Bajo Demanda */}
+        {showAuthModal && (
+          <LoginAuthScreen
+            isModal={true}
+            onClose={() => setShowAuthModal(false)}
+            defaultAuthMode={authModalMode}
+          />
+        )}
+
+        {/* Modal de Términos y Condiciones */}
+        <TermsAndConditionsModal
+          isOpen={showTermsModal}
+          onClose={() => setShowTermsModal(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/60 text-slate-800 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">

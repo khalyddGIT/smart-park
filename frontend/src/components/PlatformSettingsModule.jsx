@@ -36,11 +36,14 @@ export const PlatformSettingsModule = () => {
     maintenanceMode: false,
     maintenanceMessage: 'Smart-Park está realizando una breve actualización programada de servidores. Volvemos en unos minutos.',
     paymentGateways: {
+      culqi: true,
+      culqiPublicKey: 'pk_test_W5ShN8WanbYh5Ru8',
+      culqiSecretKey: 'sk_test_DqGi7c8DVwDLAkrt',
       yape: true,
       plin: true,
       cards: true,
       smartWallet: true,
-      environment: 'production' // 'production' | 'sandbox'
+      environment: 'sandbox' // 'production' | 'sandbox'
     },
     security: {
       qrExpirationMinutes: 30,
@@ -228,6 +231,25 @@ export const PlatformSettingsModule = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-300">
+              <div>
+                <div className="flex items-center space-x-1.5">
+                  <strong className="text-xs text-slate-900 block font-black">Culqi Perú</strong>
+                  <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded font-mono">Activo</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-mono">pk_test_W5Sh...</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.paymentGateways.culqi}
+                onChange={(e) => setSettings({
+                  ...settings,
+                  paymentGateways: { ...settings.paymentGateways, culqi: e.target.checked }
+                })}
+                className="w-4 h-4 accent-emerald-600 cursor-pointer"
+              />
+            </div>
+
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
               <div>
                 <strong className="text-xs text-slate-900 block font-extrabold">Yape QR & Plin</strong>
@@ -246,8 +268,8 @@ export const PlatformSettingsModule = () => {
 
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
               <div>
-                <strong className="text-xs text-slate-900 block font-extrabold">Tarjetas Visa/Mastercard</strong>
-                <span className="text-[10px] text-slate-500">Pasarela Niubiz / Stripe</span>
+                <strong className="text-xs text-slate-900 block font-extrabold">Tarjetas Visa/MC</strong>
+                <span className="text-[10px] text-slate-500">Tokenización PCI-DSS</span>
               </div>
               <input
                 type="checkbox"
@@ -255,22 +277,6 @@ export const PlatformSettingsModule = () => {
                 onChange={(e) => setSettings({
                   ...settings,
                   paymentGateways: { ...settings.paymentGateways, cards: e.target.checked }
-                })}
-                className="w-4 h-4 accent-emerald-600 cursor-pointer"
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
-              <div>
-                <strong className="text-xs text-slate-900 block font-extrabold">Smart Wallet</strong>
-                <span className="text-[10px] text-slate-500">Billetera de la app</span>
-              </div>
-              <input
-                type="checkbox"
-                checked={settings.paymentGateways.smartWallet}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  paymentGateways: { ...settings.paymentGateways, smartWallet: e.target.checked }
                 })}
                 className="w-4 h-4 accent-emerald-600 cursor-pointer"
               />
@@ -287,10 +293,10 @@ export const PlatformSettingsModule = () => {
                   ...settings,
                   paymentGateways: { ...settings.paymentGateways, environment: e.target.value }
                 })}
-                className="bg-white border border-slate-300 rounded-lg text-xs font-bold px-2 py-1"
+                className="bg-white border border-slate-300 rounded-lg text-xs font-bold px-2 py-1 cursor-pointer"
               >
-                <option value="production">Producción</option>
-                <option value="sandbox">Sandbox / Demo</option>
+                <option value="sandbox">Sandbox (Test Mode)</option>
+                <option value="production">Producción Oficial</option>
               </select>
             </div>
           </div>

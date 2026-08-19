@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { CulqiPaymentModal } from './CulqiPaymentModal';
 
 const DEFAULT_FALLBACK_ELEMENTS = [
   { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
@@ -102,7 +103,7 @@ export const CustomerInteractivePlanBooking = ({
     }
   };
 
-  const handleConfirmReservation = () => {
+  const handleCulqiSuccess = (chargeData) => {
     if (!selectedSlot) return;
     const now = new Date();
     const reservationData = {
@@ -115,7 +116,9 @@ export const CustomerInteractivePlanBooking = ({
       code: `RSV-${Date.now().toString().slice(-6)}`,
       token: `SPK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
       startTime: now,
-      expiresAt: new Date(now.getTime() + hours * 60 * 60 * 1000)
+      expiresAt: new Date(now.getTime() + hours * 60 * 60 * 1000),
+      paymentMethod: chargeData ? chargeData.method : 'Culqi Pasarela',
+      chargeId: chargeData ? chargeData.chargeId : `chr_test_${Date.now()}`
     };
     if (onReserveSlot) {
       onReserveSlot(reservationData);
@@ -526,15 +529,33 @@ export const CustomerInteractivePlanBooking = ({
           </div>
 
           <Button
-            onClick={handleConfirmReservation}
+            onClick={() => setShowCulqiModal(true)}
             disabled={!selectedSlot}
-            className="w-full py-4 text-sm font-black gap-2 shadow-lg shadow-emerald-600/30"
+            className="w-full py-4 text-xs sm:text-sm font-black gap-2 shadow-lg shadow-emerald-600/30 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl cursor-pointer"
           >
-            <span>Confirmar Reserva & Generar Pase QR</span>
-            <ChevronRight className="w-4 h-4" />
+            <span>💳 Pagar con Culqi (S/ {((parking?.rate || 5.0) * hours).toFixed(2)}) & Generar Pase</span>
+            <ChevronRight className="w-4 h-4 text-emerald-200" />
           </Button>
         </div>
       </div>
+
+      {/* Modal de Pasarela Culqi */}
+      {selectedSlot && (
+        <CulqiPaymentModal
+          isOpen={showCulqiModal}
+          onClose={() => setShowCulqiModal(false)}
+          amount={(parking?.rate || 5.0) * hours}
+          concept={`Estancia de ${hours}h en ${parking?.name || 'Smart Park'}`}
+          parkingName={parking?.name || 'Smart Park Central'}
+          slotCode={selectedSlot.code}
+          customerEmail="conductor@smartpark.com"
+          onPaymentSuccess={(charge) => {
+            handleCulqiSuccess(charge);
+            setShowCulqiModal(false);
+          }}
+        />
+      )}
+
     </div>
   );
 };

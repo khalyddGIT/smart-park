@@ -253,7 +253,7 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION CENTRADO CON TIPOGRAFÍA DE PRECISIÓN Y PARALLAX
+          2. HERO SECTION CENTRADO - SIN BADGES NI PILLS
           ========================================================================= */}
       <section ref={heroRef} className="pt-24 pb-20 px-6 lg:px-12 max-w-5xl mx-auto space-y-12 overflow-hidden text-center">
         
@@ -265,16 +265,7 @@ export const LandingPage = ({
           className="space-y-6 flex flex-col items-center"
         >
           
-          {/* Badge Indicador Centrado */}
-          <motion.div 
-            variants={itemVariants}
-            className="inline-flex items-center space-x-2 px-3 py-1 bg-[#EDF3EC] text-[#346538] rounded-md text-xs font-mono font-medium border border-[#DCE8DB] transition-shadow duration-300 hover:shadow-xs"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#346538] animate-radar" />
-            <span>{totalFreeSlots} plazas disponibles en tiempo real en Huamanga</span>
-          </motion.div>
-
-          {/* Titular Principal Centrado */}
+          {/* Titular Principal Centrado Directo */}
           <motion.h1 
             variants={itemVariants}
             className="text-4xl sm:text-6xl lg:text-7xl font-display text-[#111111] tracking-tight max-w-4xl mx-auto"
@@ -354,7 +345,7 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          3. MOCKUP DE VENTANA FAUX-OS CON TÍTULOS CENTRADOS
+          3. MOCKUP DE VENTANA FAUX-OS - SIN BADGES
           ========================================================================= */}
       <section ref={mockupSectionRef} id="sistema" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
         
@@ -430,7 +421,7 @@ export const LandingPage = ({
                     <h4 className="font-bold text-sm text-[#111111]">Smart Park Plaza Mayor</h4>
                     <p className="text-xs text-[#787774] font-mono">Jr. 28 de Julio 142 • Huamanga</p>
                   </div>
-                  <span className="px-2.5 py-1 rounded bg-[#EDF3EC] text-[#346538] font-mono text-xs font-semibold">
+                  <span className="font-mono text-xs font-bold text-[#346538]">
                     AUTORIZADO
                   </span>
                 </div>

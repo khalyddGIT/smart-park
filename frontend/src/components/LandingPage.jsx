@@ -134,7 +134,35 @@ export const LandingPage = ({
     restDelta: 0.001
   });
 
-  // Parallax Exagerado en la Hero Section (con blur de salida y escala)
+  // =========================================================================
+  // FONDO GRADIENTE 3D ESPACIAL DINÁMICO INTERPOLADO POR SCROLL
+  // (Tonos suaves y elegantes que mutan sin saturación excesiva)
+  // =========================================================================
+  const bgPageColor = useTransform(
+    scrollYProgress,
+    [0, 0.25, 0.5, 0.75, 1],
+    ['#FBFBFA', '#F4F7F4', '#F0F5F9', '#FAF6EE', '#FBFBFA']
+  );
+
+  const orb1X = useTransform(scrollYProgress, [0, 0.5, 1], ['-8%', '35%', '-2%']);
+  const orb1Y = useTransform(scrollYProgress, [0, 0.5, 1], ['4%', '38%', '76%']);
+  const orb1Scale = useTransform(scrollYProgress, [0, 0.5, 1], [1, 1.25, 0.95]);
+  const orb1Color = useTransform(
+    scrollYProgress,
+    [0, 0.33, 0.66, 1],
+    ['rgba(215, 237, 218, 0.7)', 'rgba(214, 235, 252, 0.65)', 'rgba(252, 238, 210, 0.6)', 'rgba(215, 237, 218, 0.7)']
+  );
+
+  const orb2X = useTransform(scrollYProgress, [0, 0.5, 1], ['75%', '50%', '15%']);
+  const orb2Y = useTransform(scrollYProgress, [0, 0.5, 1], ['12%', '65%', '28%']);
+  const orb2Scale = useTransform(scrollYProgress, [0, 0.5, 1], [1.15, 0.9, 1.2]);
+  const orb2Color = useTransform(
+    scrollYProgress,
+    [0, 0.33, 0.66, 1],
+    ['rgba(214, 235, 252, 0.65)', 'rgba(252, 238, 210, 0.6)', 'rgba(215, 237, 218, 0.7)', 'rgba(214, 235, 252, 0.65)']
+  );
+
+  // Parallax Exagerado en la Hero Section
   const { scrollYProgress: heroScrollProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start']
@@ -213,8 +241,38 @@ export const LandingPage = ({
   ];
 
   return (
-    <div className="min-h-screen bg-[#FBFBFA] text-[#191919] font-sans antialiased selection:bg-[#EAEAEA] selection:text-black overflow-x-hidden">
+    <motion.div 
+      style={{ backgroundColor: bgPageColor }}
+      className="min-h-screen text-[#191919] font-sans antialiased selection:bg-[#EAEAEA] selection:text-black overflow-x-hidden relative transition-colors duration-500"
+    >
       
+      {/* =========================================================================
+          ORBES GRADIENTES 3D FLOTANTES DINÁMICOS DE FONDO
+          ========================================================================= */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        {/* Orbe 3D Primario */}
+        <motion.div
+          style={{
+            left: orb1X,
+            top: orb1Y,
+            scale: orb1Scale,
+            backgroundColor: orb1Color,
+          }}
+          className="absolute w-[500px] h-[500px] sm:w-[650px] sm:h-[650px] rounded-full blur-[130px] opacity-70 transition-colors duration-700"
+        />
+
+        {/* Orbe 3D Secundario */}
+        <motion.div
+          style={{
+            left: orb2X,
+            top: orb2Y,
+            scale: orb2Scale,
+            backgroundColor: orb2Color,
+          }}
+          className="absolute w-[450px] h-[450px] sm:w-[600px] sm:h-[600px] rounded-full blur-[140px] opacity-65 transition-colors duration-700"
+        />
+      </div>
+
       {/* Indicador elástico superior de scroll */}
       <motion.div 
         className="fixed top-0 left-0 right-0 h-[3px] bg-[#111111] z-[100] origin-left"
@@ -224,7 +282,7 @@ export const LandingPage = ({
       {/* =========================================================================
           1. HEADER EDITORIAL MINIMALISTA
           ========================================================================= */}
-      <header className="sticky top-0 z-50 bg-[#FBFBFA]/90 backdrop-blur-md border-b border-[#E5E5E5] px-6 lg:px-12 py-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.03)] transition-colors duration-300">
+      <header className="sticky top-0 z-50 bg-[#FBFBFA]/85 backdrop-blur-md border-b border-[#E5E5E5] px-6 lg:px-12 py-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.03)] transition-colors duration-300">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           
           {/* Logo y Denominación */}
@@ -322,7 +380,7 @@ export const LandingPage = ({
                 whileHover={{ scale: 1.04, y: -2 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#F0F0EF] text-[#111111] text-xs font-medium rounded-md border border-[#E5E5E5] shadow-xs transition-colors duration-200 cursor-pointer"
+                className="w-full sm:w-auto px-6 py-3 bg-white/90 hover:bg-[#F0F0EF] text-[#111111] text-xs font-medium rounded-md border border-[#E5E5E5] shadow-xs transition-colors duration-200 cursor-pointer backdrop-blur-xs"
               >
                 Afiliar Establecimiento
               </motion.button>
@@ -397,11 +455,11 @@ export const LandingPage = ({
               opacity: mockupOpacity,
               transformStyle: 'preserve-3d'
             }}
-            className="rounded-xl border border-[#E5E5E5] bg-white shadow-[0_16px_48px_-6px_rgba(0,0,0,0.1),0_4px_16px_rgba(0,0,0,0.03)] overflow-hidden transition-shadow duration-300"
+            className="rounded-xl border border-[#E5E5E5] bg-white/95 backdrop-blur-md shadow-[0_16px_48px_-6px_rgba(0,0,0,0.1),0_4px_16px_rgba(0,0,0,0.03)] overflow-hidden transition-shadow duration-300"
           >
             
             {/* Barra superior de ventana */}
-            <div className="px-4 py-3 bg-[#F7F6F3] border-b border-[#E5E5E5] flex items-center justify-between">
+            <div className="px-4 py-3 bg-[#F7F6F3]/90 border-b border-[#E5E5E5] flex items-center justify-between">
               <div className="flex items-center space-x-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
                 <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
@@ -414,7 +472,7 @@ export const LandingPage = ({
             </div>
 
             {/* Cuerpo del Mockup */}
-            <div className="p-6 sm:p-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-white">
+            <div className="p-6 sm:p-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-white/90">
               
               <div className="space-y-6 md:col-span-1 border-r border-[#E5E5E5] md:pr-6">
                 <div className="space-y-1">
@@ -440,7 +498,7 @@ export const LandingPage = ({
               </div>
 
               {/* Ficha de Pase Digital */}
-              <div className="md:col-span-2 bg-[#FBFBFA] p-6 rounded-lg border border-[#E5E5E5] shadow-xs space-y-4">
+              <div className="md:col-span-2 bg-[#FBFBFA]/90 p-6 rounded-lg border border-[#E5E5E5] shadow-xs space-y-4">
                 
                 <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
                   <div>
@@ -507,7 +565,7 @@ export const LandingPage = ({
               className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border shadow-2xs ${
                 categoryFilter === 'todos'
                   ? 'bg-[#111111] text-white border-[#111111]'
-                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#E5E5E5]'
+                  : 'bg-white/90 text-[#787774] hover:text-[#111111] border-[#E5E5E5] backdrop-blur-xs'
               }`}
             >
               Todos ({establishments.length})
@@ -517,7 +575,7 @@ export const LandingPage = ({
               className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border shadow-2xs ${
                 categoryFilter === 'centro'
                   ? 'bg-[#111111] text-white border-[#111111]'
-                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#E5E5E5]'
+                  : 'bg-white/90 text-[#787774] hover:text-[#111111] border-[#E5E5E5] backdrop-blur-xs'
               }`}
             >
               Centro Histórico
@@ -527,7 +585,7 @@ export const LandingPage = ({
               className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border shadow-2xs ${
                 categoryFilter === 'techados'
                   ? 'bg-[#111111] text-white border-[#111111]'
-                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#E5E5E5]'
+                  : 'bg-white/90 text-[#787774] hover:text-[#111111] border-[#E5E5E5] backdrop-blur-xs'
               }`}
             >
               Techados
@@ -537,7 +595,7 @@ export const LandingPage = ({
               className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border shadow-2xs ${
                 categoryFilter === 'economicos'
                   ? 'bg-[#111111] text-white border-[#111111]'
-                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#E5E5E5]'
+                  : 'bg-white/90 text-[#787774] hover:text-[#111111] border-[#E5E5E5] backdrop-blur-xs'
               }`}
             >
               Económicos (≤ S/ 4.50)
@@ -570,7 +628,7 @@ export const LandingPage = ({
                 viewport={{ once: false, margin: '-40px' }}
                 transition={{ duration: 0.6, delay: (idx % 3) * 0.08, ease: FLUID_EASE }}
               >
-                <DynamicTiltCard className="h-full bg-white rounded-xl border border-[#E5E5E5] p-5 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.1)] transition-all duration-300">
+                <DynamicTiltCard className="h-full bg-white/95 backdrop-blur-sm rounded-xl border border-[#E5E5E5] p-5 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.1)] transition-all duration-300">
                   <div className="space-y-3">
                     <div className="h-36 rounded-lg overflow-hidden relative bg-[#F7F6F3]">
                       <img 
@@ -663,7 +721,7 @@ export const LandingPage = ({
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: false, margin: '-40px' }}
             transition={{ duration: 0.7, ease: FLUID_EASE }}
-            className="md:col-span-2 bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
+            className="md:col-span-2 bg-white/95 backdrop-blur-sm p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
           >
             <div className="space-y-2">
               <div className="w-8 h-8 rounded bg-[#EDF3EC] text-[#346538] flex items-center justify-center font-bold text-xs">
@@ -687,7 +745,7 @@ export const LandingPage = ({
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: false, margin: '-40px' }}
             transition={{ duration: 0.7, delay: 0.1, ease: FLUID_EASE }}
-            className="bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
+            className="bg-white/95 backdrop-blur-sm p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
           >
             <div className="space-y-2">
               <div className="w-8 h-8 rounded bg-[#E1F3FE] text-[#1F6C9F] flex items-center justify-center font-bold text-xs">
@@ -710,7 +768,7 @@ export const LandingPage = ({
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: false, margin: '-40px' }}
             transition={{ duration: 0.7, delay: 0.15, ease: FLUID_EASE }}
-            className="bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
+            className="bg-white/95 backdrop-blur-sm p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
           >
             <div className="space-y-2">
               <div className="w-8 h-8 rounded bg-[#FBF3DB] text-[#956400] flex items-center justify-center font-bold text-xs">
@@ -733,7 +791,7 @@ export const LandingPage = ({
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: false, margin: '-40px' }}
             transition={{ duration: 0.7, delay: 0.2, ease: FLUID_EASE }}
-            className="md:col-span-2 bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
+            className="md:col-span-2 bg-white/95 backdrop-blur-sm p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
           >
             <div className="space-y-2 max-w-md">
               <div className="w-8 h-8 rounded bg-[#EDF3EC] text-[#346538] flex items-center justify-center font-bold text-xs">
@@ -869,7 +927,7 @@ export const LandingPage = ({
       {/* =========================================================================
           8. FOOTER DOCUMENTAL
           ========================================================================= */}
-      <footer className="bg-white border-t border-[#E5E5E5] py-12 px-6 lg:px-12 text-xs text-[#787774] shadow-[0_-2px_10px_-2px_rgba(0,0,0,0.02)]">
+      <footer className="bg-white/95 backdrop-blur-md border-t border-[#E5E5E5] py-12 px-6 lg:px-12 text-xs text-[#787774] shadow-[0_-2px_10px_-2px_rgba(0,0,0,0.02)]">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center space-x-3">
             <div className="w-6 h-6 rounded bg-[#111111] text-white flex items-center justify-center font-bold text-[10px] shadow-xs">
@@ -901,6 +959,6 @@ export const LandingPage = ({
         </div>
       </footer>
 
-    </div>
+    </motion.div>
   );
 };

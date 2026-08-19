@@ -185,7 +185,7 @@ export const App = () => {
         />
 
         {/* CONTENIDO PRINCIPAL */}
-        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto pb-24 md:pb-6 w-full max-w-full overflow-x-hidden min-w-0">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto pb-28 md:pb-6 w-full max-w-full overflow-x-hidden min-w-0">
           
           {/* VISTA ROL CONDUCTOR (BUSCAR Y RESERVAR PLAZAS) */}
           {role === 'user' && (

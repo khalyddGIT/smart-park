@@ -178,11 +178,11 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
       </aside>
 
       {/* =========================================================================
-          NAVBAR MÓVIL FLOTANTE CURVO CON BOTÓN ELEVADO CENTRAL & DOT INDICATOR
+          NAVBAR MÓVIL FLOTANTE CURVO CON BOTÓN ELEVADO CENTRAL & LABELS
           ========================================================================= */}
       <nav 
         aria-label="Navegación Móvil Flotante"
-        className="md:hidden fixed bottom-3 left-3 right-3 max-w-sm sm:max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/90 px-3 py-1.5 flex items-center justify-between select-none"
+        className="md:hidden fixed bottom-3 left-3 right-3 max-w-sm sm:max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/90 px-2 sm:px-3 py-1.5 flex items-center justify-between select-none"
       >
         {/* 1. Botón Izquierdo 1 */}
         {navConfig.left1 && (() => {
@@ -191,12 +191,15 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           return (
             <button
               onClick={() => handleSelectTab(navConfig.left1.id)}
-              className="flex-1 flex flex-col items-center justify-center py-1 transition group cursor-pointer"
+              className="flex-1 flex flex-col items-center justify-center py-0.5 transition group cursor-pointer active:scale-95"
             >
               <div className={`p-1 transition-colors ${isActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
-                <Icon className="w-5 h-5 stroke-[2.2]" />
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
               </div>
-              <span className={`w-1.5 h-1.5 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+              <span className={`text-[9px] font-extrabold tracking-tight transition-colors ${isActive ? 'text-emerald-700 font-black' : 'text-slate-400'}`}>
+                {navConfig.left1.shortLabel}
+              </span>
+              <span className={`w-1 h-1 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
             </button>
           );
         })()}
@@ -208,12 +211,15 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           return (
             <button
               onClick={() => handleSelectTab(navConfig.left2.id)}
-              className="flex-1 flex flex-col items-center justify-center py-1 transition group cursor-pointer"
+              className="flex-1 flex flex-col items-center justify-center py-0.5 transition group cursor-pointer active:scale-95"
             >
               <div className={`p-1 transition-colors ${isActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
-                <Icon className="w-5 h-5 stroke-[2.2]" />
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
               </div>
-              <span className={`w-1.5 h-1.5 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+              <span className={`text-[9px] font-extrabold tracking-tight transition-colors ${isActive ? 'text-emerald-700 font-black' : 'text-slate-400'}`}>
+                {navConfig.left2.shortLabel}
+              </span>
+              <span className={`w-1 h-1 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
             </button>
           );
         })()}
@@ -227,15 +233,18 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
               <button
                 onClick={() => handleSelectTab(navConfig.center.id)}
                 title={navConfig.center.label}
-                className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer border-4 border-slate-50 active:scale-95 ${
+                className={`w-11 h-11 -mt-6 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl cursor-pointer border-4 border-white active:scale-90 ${
                   isActive 
-                    ? 'bg-emerald-600 text-white shadow-emerald-600/40 ring-4 ring-emerald-500/20 scale-105' 
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
+                    ? 'bg-emerald-600 text-white shadow-emerald-600/50 ring-4 ring-emerald-500/25 scale-105' 
+                    : 'bg-slate-900 hover:bg-slate-800 text-emerald-400 shadow-slate-900/30'
                 }`}
               >
-                <Icon className="w-6 h-6 stroke-[2.4]" />
+                <Icon className="w-5 h-5 stroke-[2.4]" />
               </button>
-              <span className={`w-1.5 h-1.5 rounded-full mt-1.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+              <span className={`text-[9px] font-black tracking-tight mt-0.5 transition-colors ${isActive ? 'text-emerald-700 font-black' : 'text-slate-600'}`}>
+                {navConfig.center.shortLabel}
+              </span>
+              <span className={`w-1 h-1 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
             </div>
           );
         })()}
@@ -247,12 +256,15 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           return (
             <button
               onClick={() => handleSelectTab(navConfig.right1.id)}
-              className="flex-1 flex flex-col items-center justify-center py-1 transition group cursor-pointer"
+              className="flex-1 flex flex-col items-center justify-center py-0.5 transition group cursor-pointer active:scale-95"
             >
               <div className={`p-1 transition-colors ${isActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
-                <Icon className="w-5 h-5 stroke-[2.2]" />
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
               </div>
-              <span className={`w-1.5 h-1.5 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+              <span className={`text-[9px] font-extrabold tracking-tight transition-colors ${isActive ? 'text-emerald-700 font-black' : 'text-slate-400'}`}>
+                {navConfig.right1.shortLabel}
+              </span>
+              <span className={`w-1 h-1 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
             </button>
           );
         })()}
@@ -260,12 +272,15 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
         {/* 5. Botón Derecho 2: Menú "+ Más" */}
         <button
           onClick={() => setMobileDrawerOpen(true)}
-          className="flex-1 flex flex-col items-center justify-center py-1 transition group cursor-pointer"
+          className="flex-1 flex flex-col items-center justify-center py-0.5 transition group cursor-pointer active:scale-95"
         >
           <div className={`p-1 transition-colors ${mobileDrawerOpen || isDrawerActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
-            <Menu className="w-5 h-5 stroke-[2.2]" />
+            <Menu className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
           </div>
-          <span className={`w-1.5 h-1.5 rounded-full mt-0.5 transition-all duration-200 ${mobileDrawerOpen || isDrawerActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+          <span className={`text-[9px] font-extrabold tracking-tight transition-colors ${mobileDrawerOpen || isDrawerActive ? 'text-emerald-700 font-black' : 'text-slate-400'}`}>
+            Más
+          </span>
+          <span className={`w-1 h-1 rounded-full mt-0.5 transition-all duration-200 ${mobileDrawerOpen || isDrawerActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
         </button>
       </nav>
 

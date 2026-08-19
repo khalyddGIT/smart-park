@@ -17,6 +17,32 @@ import {
 } from 'lucide-react';
 import { KeypadModal } from './KeypadModal';
 
+const getIconForType = (type) => {
+  switch (type) {
+    case 'success':
+      return CheckCircle2;
+    case 'warning':
+      return AlertTriangle;
+    case 'alert':
+      return AlertTriangle;
+    default:
+      return Info;
+  }
+};
+
+const getColorForType = (type) => {
+  switch (type) {
+    case 'success':
+      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    case 'warning':
+      return 'bg-amber-100 text-amber-800 border-amber-200';
+    case 'alert':
+      return 'bg-rose-100 text-rose-700 border-rose-200';
+    default:
+      return 'bg-blue-100 text-blue-700 border-blue-200';
+  }
+};
+
 export const Navbar = ({ onNavigateProfile, onNavigateTab }) => {
   const { role, setRole, user, pinVerified, logout } = useAuth();
   const { 

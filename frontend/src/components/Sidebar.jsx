@@ -21,7 +21,8 @@ import {
   ShieldCheck,
   ChevronRight,
   Menu,
-  X
+  X,
+  Scale
 } from 'lucide-react';
 
 const SECTIONS_BY_ROLE = {
@@ -123,18 +124,24 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           ))}
         </div>
 
-        <div className="p-2 border-t border-slate-100 bg-slate-50/60 space-y-1">
+        {/* Footer del Sidebar Desktop Profesional y Limpio */}
+        <div className="p-2 border-t border-slate-100 bg-slate-50/70 space-y-1.5">
           <button
             type="button"
             onClick={onOpenTerms}
-            className="w-full flex items-center justify-between px-2 py-1 text-[10px] text-slate-500 hover:text-emerald-700 font-bold rounded-lg hover:bg-slate-100 transition cursor-pointer"
+            className="w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium rounded-xl hover:bg-white hover:shadow-xs transition cursor-pointer group"
           >
-            <span>⚖️ Términos & Legal</span>
-            <span className="text-[9px] font-mono text-slate-400">v2.4</span>
+            <Scale className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
+            <span className="text-[11px] font-medium tracking-tight truncate">Términos Legales</span>
           </button>
-          <div className="flex items-center justify-between px-2 py-0.5 text-[11px] text-slate-500 font-medium">
-            <span>Rol: <strong className="text-slate-800 font-bold capitalize">{role}</strong></span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+
+          <div className="flex items-center justify-between px-2 py-1 bg-white/80 rounded-xl border border-slate-200/60 text-[11px]">
+            <div className="flex items-center space-x-1.5 min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-slate-500 text-[10px]">Rol:</span>
+              <strong className="text-slate-800 font-bold capitalize text-[10px] truncate">{role}</strong>
+            </div>
+            <span className="text-[9px] font-mono text-slate-400 font-medium shrink-0">v2.4</span>
           </div>
         </div>
       </aside>
@@ -196,7 +203,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
               </div>
               <button 
                 onClick={() => setMobileDrawerOpen(false)}
-                className="p-1.5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+                className="p-1.5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -231,9 +238,10 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
                   setMobileDrawerOpen(false);
                   if (onOpenTerms) onOpenTerms();
                 }}
-                className="w-full py-2 px-3 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-slate-100 rounded-xl flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-3 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>⚖️ Ver Términos y Condiciones Legales</span>
+                <Scale className="w-4 h-4 text-slate-500" />
+                <span>Términos y Condiciones Legales</span>
               </button>
             </div>
           </div>

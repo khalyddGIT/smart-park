@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
 import { useEstablishments } from './context/EstablishmentContext';
@@ -56,6 +56,18 @@ export const App = () => {
   const { role, user } = useAuth();
   const { establishments, occupySlot, createReservation } = useEstablishments();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Redirección segura entre vistas al cambiar de rol
+  useEffect(() => {
+    const validTabsByRole = {
+      user: ['dashboard', 'reservations', 'profile', 'loyalty', 'vehicles', 'payments', 'incidents', 'history', 'reviews'],
+      local: ['dashboard', 'editor', 'reservations', 'profile', 'anpr', 'garita', 'incidents', 'staff', 'reports', 'audit', 'reviews', 'resiliency'],
+      platform: ['dashboard', 'profile', 'finances', 'settings', 'affiliates', 'reservations', 'analytics', 'incidents', 'audit', 'users', 'staff', 'reviews', 'resiliency']
+    };
+    if (!validTabsByRole[role]?.includes(activeTab)) {
+      setActiveTab('dashboard');
+    }
+  }, [role]);
 
   // Filtros de Búsqueda para Conductor
   const [searchQuery, setSearchQuery] = useState('');
@@ -116,6 +128,7 @@ export const App = () => {
     // 2. Establecer la reserva activa y abrir el modal con el QR y token ANPR
     setActiveReservation(newRes);
     setShowQRModal(true);
+    setSelectedParkingId(null);
   };
 
   // Filtrado de establecimientos para la vista Conductor

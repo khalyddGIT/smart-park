@@ -4,6 +4,7 @@
   :root {
     --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --ease-fluid: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   * {
@@ -14,8 +15,8 @@
 
   body {
     margin: 0;
-    background-color: #F8FAFC;
-    color: #0F172A;
+    background-color: #FBFBFA;
+    color: #191919;
     font-family: var(--font-sans);
     letter-spacing: -0.011em;
     overflow-x: hidden;
@@ -26,13 +27,13 @@
   }
 }
 
-/* Glassmorphism en Tema Claro */
+/* Glassmorphism Editorial */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.85);
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(234, 234, 234, 0.9);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
 }
 
 /* Tipografía técnica */
@@ -46,32 +47,61 @@
   font-feature-settings: "tnum", "zero", "ss01";
 }
 
-/* Custom Leaflet Popups and Controls */
-.leaflet-popup-content-wrapper {
-  border-radius: 20px !important;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15) !important;
-  border: 1px solid #e2e8f0 !important;
-  padding: 4px !important;
+/* =========================================================================
+   ANIMACIONES CSS & KEYFRAMES DE ALTO RENDIMIENTO (Tailwind Transitions)
+   ========================================================================= */
+
+/* 1. Flotación Suave (Float) */
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
-.leaflet-popup-tip {
-  background: white !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+.animate-float {
+  animation: float-gentle 4.5s ease-in-out infinite;
 }
 
-.custom-map-pin {
-  background: transparent !important;
-  border: none !important;
+/* 2. Brillo / Destello Especular (Shimmer Effect) */
+@keyframes shimmer-sweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
-.leaflet-control-zoom a {
-  border-radius: 12px !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #0f172a !important;
-  margin-bottom: 4px !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer-sweep 3s infinite;
 }
 
+/* 3. Expansión Radar / Pulso Háptico */
+@keyframes radar-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(52, 101, 56, 0.4);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(52, 101, 56, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(52, 101, 56, 0);
+  }
+}
+
+.animate-radar {
+  animation: radar-pulse 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* 4. Pulso Sutil */
 @keyframes pulse-subtle {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.02); }
@@ -81,6 +111,18 @@
   animation: pulse-subtle 3s ease-in-out infinite;
 }
 
+/* 5. Transiciones Hápticas de Tarjetas */
+.hover-card-elevate {
+  transition: transform 0.25s var(--ease-fluid), border-color 0.25s var(--ease-fluid), box-shadow 0.25s var(--ease-fluid);
+}
+
+.hover-card-elevate:hover {
+  transform: translateY(-3px);
+  border-color: #D4D4D4;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+/* 6. Marquee Infinito */
 @keyframes marquee-scroll {
   0% {
     transform: translateX(0);
@@ -100,18 +142,28 @@
   animation-play-state: paused;
 }
 
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+/* Custom Leaflet Popups and Controls */
+.leaflet-popup-content-wrapper {
+  border-radius: 16px !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1) !important;
+  border: 1px solid #EAEAEA !important;
+  padding: 4px !important;
 }
 
-.skeleton-shimmer {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+.leaflet-popup-tip {
+  background: white !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08) !important;
 }
 
+.custom-map-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-control-zoom a {
+  border-radius: 8px !important;
+  border: 1px solid #EAEAEA !important;
+  color: #111111 !important;
+  margin-bottom: 4px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03) !important;
+}

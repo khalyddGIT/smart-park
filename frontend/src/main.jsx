@@ -4,6 +4,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { App } from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { EstablishmentProvider } from './context/EstablishmentContext.jsx'
+import { NotificationProvider } from './context/NotificationContext.jsx'
 import './index.css'
 
 // Leer Google Client ID desde variables de entorno de Vite o fallback
@@ -14,7 +15,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AuthProvider>
         <EstablishmentProvider>
-          <App />
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
         </EstablishmentProvider>
       </AuthProvider>
     </GoogleOAuthProvider>

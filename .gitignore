@@ -75,7 +75,10 @@ Thumbs.db
 *.sublime-workspace
 *.sublime-project
 
-# --- Deployment Platforms ---
+# --- Deployment Platforms & Caches ---
 .vercel
 .serverless/
 .npm-cache/
+.turbo/
+.next/
+*.log

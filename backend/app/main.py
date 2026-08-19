@@ -1,21 +1,36 @@
-from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.db.session import engine, Base, AsyncSessionLocal
+from app.db.session import engine, Base
 from app.models.models import User, Parking, Slot, FloorPlanElement, Vehicle
 from app.api.v1 import auth, parkings, reservations, anpr, vehicles, staff, users, reviews
 from app.core.security import get_password_hash
-from sqlalchemy.future import select
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Inicialización de tablas y datos semilla al arrancar
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+)
+
+# Configuración CORS para Frontend React
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Inicialización de tablas y datos semilla
+@app.on_event("startup")
+async def startup_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
     # Sembrar datos iniciales si no existen
+    from app.db.session import AsyncSessionLocal
     async with AsyncSessionLocal() as session:
+        from sqlalchemy.future import select
         res = await session.execute(select(Parking))
         if not res.scalars().first():
             # Crear Parqueos Semilla
@@ -80,24 +95,6 @@ async def lifespan(app: FastAPI):
             session.add_all([v1, v2])
             await session.commit()
 
-    yield
-
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    lifespan=lifespan
-)
-
-# Configuración CORS para Frontend React
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Conectar todos los routers v1
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(parkings.router, prefix=settings.API_V1_STR)
@@ -111,3 +108,4 @@ app.include_router(reviews.router, prefix=settings.API_V1_STR)
 @app.get("/")
 def root():
     return {"message": "Bienvenido a la API RESTful de Smart Park", "status": "online", "docs": "/docs"}
+

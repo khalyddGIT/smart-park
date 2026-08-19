@@ -148,22 +148,49 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       const marker = L.marker(coords, { icon: customIcon }).addTo(map);
 
       const popupHtml = `
-        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 220px; padding: 2px;">
-          <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${p.name}</div>
-          <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">📍 ${p.address}</div>
-          <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 6px 10px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-            <span style="font-size: 11px; color: #475569; font-weight: 600;">Plazas libres:</span>
-            <span style="font-size: 12px; font-weight: 800; color: ${freeSlots > 0 ? '#059669' : '#e11d48'};">${freeSlots} de ${totalSlots}</span>
+        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 240px; max-width: 280px; padding: 2px;">
+          ${p.image ? `
+            <div style="width: 100%; height: 110px; border-radius: 12px; overflow: hidden; margin-bottom: 8px; position: relative;">
+              <img src="${p.image}" alt="${p.name}" style="width: 100%; height: 100%; object-fit: cover;" />
+              <div style="position: absolute; top: 6px; right: 6px; background: rgba(15,23,42,0.85); color: #34d399; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 800;">
+                S/ ${Number(p.rate || 5).toFixed(2)}/h
+              </div>
+            </div>
+          ` : ''}
+          <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 2px; line-height: 1.2;">${p.name}</div>
+          <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">📍 ${p.address}${p.reference ? ` (${p.reference})` : ''}</div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 6px 10px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 8px;">
+            <span style="font-size: 10px; color: #475569; font-weight: 700;">Disponibilidad:</span>
+            <span style="font-size: 11px; font-weight: 800; color: ${freeSlots > 0 ? '#059669' : '#e11d48'};">${freeSlots} de ${totalSlots} libres</span>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px;">
-            <span style="color: #64748b;">Tarifa por hora:</span>
-            <strong style="color: #047857; font-size: 12px;">S/ ${Number(p.rate || 5).toFixed(2)}</strong>
+
+          <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+            ${p.whatsapp ? `
+              <a 
+                href="https://wa.me/${p.whatsapp.replace(/\D/g, '')}?text=Hola,%20solicito%20informaci%C3%B3n%20sobre%20el%20estacionamiento%20${encodeURIComponent(p.name)}" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                style="flex: 1; text-decoration: none; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 5px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px;"
+              >
+                <span>💬 WhatsApp</span>
+              </a>
+            ` : ''}
+            <a 
+              href="https://www.google.com/maps/dir/?api=1&destination=${coords[0]},${coords[1]}" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              style="flex: 1; text-decoration: none; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 5px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px;"
+            >
+              <span>🗺️ Cómo llegar</span>
+            </a>
           </div>
+
           <button 
             id="btn-select-${p.id}"
-            style="width: 100%; background: #0f172a; color: #ffffff; border: none; padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;"
+            style="width: 100%; background: #0f172a; color: #ffffff; border: none; padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
           >
-            <span>🚗 Ver Plano y Reservar</span>
+            <span>🚗 Ver Plano Topográfico & Reservar</span>
           </button>
         </div>
       `;

@@ -27,6 +27,7 @@ import { PlatformFinancesModule } from './components/PlatformFinancesModule';
 import { PlatformSettingsModule } from './components/PlatformSettingsModule';
 import { PlatformGlobalDashboard } from './components/PlatformGlobalDashboard';
 import { TermsAndConditionsModal } from './components/TermsAndConditionsModal';
+import { UserProfileModule } from './components/UserProfileModule';
 import { 
   Search, 
   MapPin, 
@@ -157,7 +158,10 @@ export const App = () => {
   return (
     <div className="min-h-screen bg-slate-50/60 text-slate-800 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
       <Toaster position="top-right" toastOptions={{ duration: 3500, style: { borderRadius: '14px', background: '#0f172a', color: '#fff', fontSize: '13px' } }} />
-      <Navbar />
+      <Navbar 
+        onNavigateProfile={() => setActiveTab('profile')} 
+        onNavigateTab={(tab) => setActiveTab(tab)} 
+      />
 
       <div className="flex flex-1">
         {/* BARRA LATERAL (SIDEBAR) */}
@@ -168,7 +172,7 @@ export const App = () => {
         />
 
         {/* CONTENIDO PRINCIPAL */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto pb-24 md:pb-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto pb-24 md:pb-6 w-full max-w-full overflow-x-hidden min-w-0">
           
           {/* VISTA ROL CONDUCTOR (BUSCAR Y RESERVAR PLAZAS) */}
           {role === 'user' && (
@@ -327,24 +331,32 @@ export const App = () => {
                                     <div>
                                       <h3 className="font-extrabold text-slate-900 text-base leading-tight">{p.name}</h3>
                                       <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                                        <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" /> 
-                                        <span>{p.address} • {p.city || 'Huamanga'}</span>
+                                        <MapPin className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" /> 
+                                        <span className="truncate">{p.address} {p.reference ? `(${p.reference})` : ''}</span>
                                       </p>
                                     </div>
 
-                                    {/* Distintivos de Servicios */}
-                                    <div className="flex flex-wrap gap-1.5 text-[10px] font-mono pt-1">
-                                      {pmrSlots > 0 && (
-                                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-200 font-bold flex items-center gap-0.5">
-                                          <Accessibility className="w-3 h-3" /> {pmrSlots} PMR
-                                        </span>
-                                      )}
-                                      {shadedSlots > 0 && (
-                                        <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200 font-bold flex items-center gap-0.5">
-                                          <Umbrella className="w-3 h-3" /> {shadedSlots} Techados
-                                        </span>
-                                      )}
-                                    </div>
+                                    {/* Contacto & WhatsApp */}
+                                    {(p.whatsapp || p.phone) && (
+                                      <div className="flex items-center space-x-2 text-xs pt-0.5">
+                                        {p.whatsapp && (
+                                          <a
+                                            href={`https://wa.me/${p.whatsapp.replace(/\D/g, '')}?text=Hola,%20solicito%20informaci%C3%B3n%20sobre%20el%20estacionamiento%20${encodeURIComponent(p.name)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200"
+                                          >
+                                            <span>💬 WhatsApp</span>
+                                          </a>
+                                        )}
+                                        {p.phone && (
+                                          <span className="text-[11px] text-slate-500 font-mono">
+                                            📞 {p.phone}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
 
@@ -376,6 +388,7 @@ export const App = () => {
                 />
               )}
 
+              {activeTab === 'profile' && <UserProfileModule />}
               {activeTab === 'loyalty' && <LoyaltyClubModule />}
               {activeTab === 'vehicles' && <VehiclesModule />}
               {activeTab === 'payments' && <PaymentsModule />}
@@ -392,6 +405,7 @@ export const App = () => {
                 <LocalEstablishmentManager />
               )}
               {activeTab === 'reservations' && <ReservationsModule />}
+              {activeTab === 'profile' && <UserProfileModule />}
               {(activeTab === 'anpr' || activeTab === 'garita') && <ANPRMonitor />}
               {activeTab === 'incidents' && <IncidentsModule />}
               {activeTab === 'staff' && <StaffModule />}
@@ -409,6 +423,7 @@ export const App = () => {
                 <PlatformGlobalDashboard onNavigateTab={(tab) => setActiveTab(tab)} />
               )}
 
+              {activeTab === 'profile' && <UserProfileModule />}
               {activeTab === 'finances' && <PlatformFinancesModule />}
               {activeTab === 'settings' && <PlatformSettingsModule />}
               {activeTab === 'affiliates' && <AffiliatedParkingsModule />}

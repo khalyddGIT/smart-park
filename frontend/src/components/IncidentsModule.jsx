@@ -18,7 +18,9 @@ import {
   ShieldCheck,
   RefreshCw,
   Sparkles,
-  Smartphone
+  Smartphone,
+  Check,
+  MapPin
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useAuth } from '../context/AuthContext';
@@ -28,11 +30,11 @@ const INCIDENTS_STORAGE_KEY = 'smart_park_incidents_v2';
 const INITIAL_INCIDENTS = [
   {
     id: 'INC-2026-001',
-    type: 'Bloqueo de Rampa PMR',
+    type: 'Bloqueo de Rampa de Acceso',
     plate: 'XYZ-789',
-    slot: 'A-01 (PMR)',
-    parking: 'Smart Park Plaza Mayor',
-    description: 'Vehículo sedán estacionado bloqueando la rampa peatonal de acceso inclusivo.',
+    slot: 'A-01',
+    parking: 'Smart Park Plaza Mayor - Planta Baja',
+    description: 'Vehículo sedán estacionado bloqueando la rampa peatonal de acceso principal.',
     severity: 'Alta',
     status: 'Pendiente',
     date: '2026-08-18 14:10',
@@ -46,7 +48,7 @@ const INITIAL_INCIDENTS = [
     type: 'Estacionamiento Fuera de Línea',
     plate: 'W1P-404',
     slot: 'B-04',
-    parking: 'Smart Park Jr. 28 de Julio',
+    parking: 'Smart Park Plaza Mayor - Sótano 1',
     description: 'Vehículo ocupando dos cajones simultáneamente impidiendo ingreso de otro auto.',
     severity: 'Media',
     status: 'En Revisión',
@@ -61,7 +63,7 @@ const INITIAL_INCIDENTS = [
     type: 'Diferencia en Tarifa de Cobro',
     plate: 'DEF-456',
     slot: 'A-05',
-    parking: 'Smart Park Av. Independencia',
+    parking: 'Smart Park Mercado Mariscal Cáceres',
     description: 'Conductor reportó discrepancia de 15 minutos en el cálculo de salida.',
     severity: 'Baja',
     status: 'Resuelto',
@@ -95,28 +97,31 @@ export const IncidentsModule = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchPlate, setSearchPlate] = useState('');
+  const [notification, setNotification] = useState(null);
+
+  const showToast = (msg) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 3500);
+  };
 
   // Form State
   const [formData, setFormData] = useState({
     type: role === 'user' ? 'Cajón Ocupado Indebidamente' : 'Estacionamiento Fuera de Línea',
     plate: '',
     slot: '',
-    parking: 'Smart Park Plaza Mayor',
+    parking: 'Smart Park Plaza Mayor - Planta Baja',
     severity: 'Media',
     description: ''
   });
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
-  // =========================================================================
-  // ESTADOS Y REFERENCIAS PARA LA CÁMARA / TOMAR FOTO EN VIVO
-  // =========================================================================
+  // Cámara
   const [photoMode, setPhotoMode] = useState('upload'); // 'upload' | 'camera'
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  // Iniciar la cámara
   const startCamera = async () => {
     setCameraError(null);
     try {
@@ -141,13 +146,11 @@ export const IncidentsModule = () => {
       }
       setIsCameraActive(true);
     } catch (err) {
-      console.error('Error al abrir la cámara:', err);
-      setCameraError('No se pudo acceder a la cámara. Revisa los permisos de tu navegador.');
+      setCameraError('No se pudo acceder a la cámara. Revisa los permisos del navegador.');
       setIsCameraActive(false);
     }
   };
 
-  // Detener la cámara
   const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -156,7 +159,6 @@ export const IncidentsModule = () => {
     setIsCameraActive(false);
   };
 
-  // Capturar foto desde el stream de video
   const capturePhoto = () => {
     if (!videoRef.current) return;
 
@@ -178,7 +180,6 @@ export const IncidentsModule = () => {
 
     setUploadedFiles(prev => [newPhoto, ...prev]);
 
-    // Efecto de feedback auditivo/visual sutil
     const shutter = document.getElementById('camera-shutter-flash');
     if (shutter) {
       shutter.style.opacity = '1';
@@ -188,7 +189,6 @@ export const IncidentsModule = () => {
     }
   };
 
-  // Apagar cámara al cerrar modal o cambiar modo
   useEffect(() => {
     if (!showModal || photoMode !== 'camera') {
       stopCamera();
@@ -200,7 +200,7 @@ export const IncidentsModule = () => {
     };
   }, [showModal, photoMode]);
 
-  // React Dropzone
+  // Dropzone
   const onDrop = useCallback((acceptedFiles) => {
     const mapped = acceptedFiles.map(file => Object.assign(file, {
       preview: URL.createObjectURL(file)
@@ -211,7 +211,7 @@ export const IncidentsModule = () => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp'] },
-    maxSize: 5 * 1024 * 1024
+    maxSize: 6 * 1024 * 1024
   });
 
   const removeFile = (index) => {
@@ -243,11 +243,12 @@ export const IncidentsModule = () => {
       type: role === 'user' ? 'Cajón Ocupado Indebidamente' : 'Estacionamiento Fuera de Línea',
       plate: '',
       slot: '',
-      parking: 'Smart Park Plaza Mayor',
+      parking: 'Smart Park Plaza Mayor - Planta Baja',
       severity: 'Media',
       description: ''
     });
     setUploadedFiles([]);
+    showToast(`✓ Incidencia ${newInc.id} registrada exitosamente.`);
   };
 
   const handleResolveIncident = (id) => {
@@ -257,33 +258,49 @@ export const IncidentsModule = () => {
       }
       return inc;
     }));
+    showToast(`Incidencia ${id} marcada como resuelta.`);
   };
 
   const filteredIncidents = incidents.filter(inc => {
     const matchStatus = filterStatus === 'all' || inc.status === filterStatus;
-    const matchPlate = !searchPlate || inc.plate.toLowerCase().includes(searchPlate.toLowerCase()) || inc.id.toLowerCase().includes(searchPlate.toLowerCase());
+    const matchPlate = !searchPlate || 
+      inc.plate.toLowerCase().includes(searchPlate.toLowerCase()) || 
+      inc.id.toLowerCase().includes(searchPlate.toLowerCase()) ||
+      inc.parking.toLowerCase().includes(searchPlate.toLowerCase());
     return matchStatus && matchPlate;
   });
 
+  // Métricas
+  const totalIncidents = incidents.length;
+  const pendingCount = incidents.filter(i => i.status === 'Pendiente').length;
+  const inReviewCount = incidents.filter(i => i.status === 'En Revisión').length;
+  const resolvedCount = incidents.filter(i => i.status === 'Resuelto').length;
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in">
       
-      {/* Header Diferenciado */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-6 h-6 text-amber-500" />
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {role === 'user' && 'Reportar Incidencias & Asistencia'}
-              {role === 'local' && 'Gestión de Incidencias en Garita'}
-              {role === 'platform' && 'Control Central de Incidencias de la Red'}
-            </h1>
+      {/* Toast Alert */}
+      {notification && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold animate-bounce">
+          <Check className="w-4 h-4 text-emerald-400" />
+          <span>{notification}</span>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex items-center space-x-3.5">
+          <div className="p-3 bg-amber-50 text-amber-700 rounded-2xl border border-amber-200 shadow-xs">
+            <AlertTriangle className="w-6 h-6" />
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            {role === 'user' && 'Notifica cualquier anomalía en tu plaza, dificultad con la barrera o cobro indebido.'}
-            {role === 'local' && 'Monitorea y resuelve reportes de conductores e infracciones vehiculares en tu local.'}
-            {role === 'platform' && 'Supervisión y resolución de incidencias en toda la red de estacionamientos.'}
-          </p>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              {role === 'user' ? 'Reportar Incidencias & Asistencia' : 'Gestión de Incidencias & Infracciones'}
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Bitácora de atención operativa con captura fotográfica en vivo y seguimiento de anomalías.
+            </p>
+          </div>
         </div>
 
         <Button
@@ -291,81 +308,146 @@ export const IncidentsModule = () => {
             setShowModal(true);
             setPhotoMode('upload');
           }}
-          className="bg-amber-500 hover:bg-amber-600 text-white font-bold gap-2 rounded-2xl shadow-md cursor-pointer"
+          className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-2 rounded-xl shadow-md shadow-amber-600/20 h-10 px-4 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>{role === 'user' ? 'Reportar Problema' : 'Registrar Infracción'}</span>
         </Button>
       </div>
 
-      {/* Controles de Búsqueda y Filtros */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+      {/* Tarjetas KPI */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Reportes</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-slate-900">{totalIncidents}</span>
+            <span className="text-xs text-slate-500">Histórico</span>
+          </div>
+        </Card>
+
+        <Card className="p-4 rounded-3xl border-rose-200 shadow-xs bg-rose-50/40 flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700">Pendientes</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-rose-700">{pendingCount}</span>
+            <span className="text-xs text-rose-600 font-bold">Por atender</span>
+          </div>
+        </Card>
+
+        <Card className="p-4 rounded-3xl border-amber-200 shadow-xs bg-amber-50/40 flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800">En Revisión</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-amber-800">{inReviewCount}</span>
+            <span className="text-xs text-amber-700 font-bold">En proceso</span>
+          </div>
+        </Card>
+
+        <Card className="p-4 rounded-3xl border-emerald-200 shadow-xs bg-emerald-50/40 flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Resueltos</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-emerald-700">{resolvedCount}</span>
+            <span className="text-xs text-emerald-700 font-bold">Concluidos</span>
+          </div>
+        </Card>
+      </div>
+
+      {/* Buscador y Filtros */}
+      <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             type="text"
-            placeholder="Buscar por placa o código INC..."
+            placeholder="Buscar por placa, cochera o código INC..."
             value={searchPlate}
             onChange={(e) => setSearchPlate(e.target.value)}
-            className="pl-10 h-10 text-xs bg-white border-slate-200 shadow-2xs"
+            className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-xs font-semibold"
           />
+          {searchPlate && (
+            <button onClick={() => setSearchPlate('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">✕</button>
+          )}
         </div>
 
-        <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto">
-          {['all', 'Pendiente', 'En Revisión', 'Resuelto'].map(st => (
+        <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none">
+          {[
+            { id: 'all', label: 'Todos', count: totalIncidents },
+            { id: 'Pendiente', label: 'Pendientes', count: pendingCount, color: 'text-rose-700 bg-rose-100' },
+            { id: 'En Revisión', label: 'En Revisión', count: inReviewCount, color: 'text-amber-800 bg-amber-100' },
+            { id: 'Resuelto', label: 'Resueltos', count: resolvedCount, color: 'text-emerald-700 bg-emerald-100' }
+          ].map(st => (
             <button
-              key={st}
-              onClick={() => setFilterStatus(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-                filterStatus === st 
-                  ? 'bg-slate-900 text-white shadow-xs' 
+              key={st.id}
+              onClick={() => setFilterStatus(st.id)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                filterStatus === st.id 
+                  ? 'bg-slate-900 text-white shadow-xs font-black' 
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {st === 'all' ? 'Todos los Reportes' : st}
+              <span>{st.label}</span>
+              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
+                filterStatus === st.id ? 'bg-white/20 text-white' : st.color || 'bg-slate-200 text-slate-700'
+              }`}>
+                {st.count}
+              </span>
             </button>
           ))}
         </div>
-      </div>
+      </Card>
 
-      {/* Lista de Incidencias */}
+      {/* Grid de Incidencias */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredIncidents.map((inc) => (
-          <Card key={inc.id} className="p-5 border-slate-200 shadow-xs bg-white flex flex-col justify-between hover:shadow-md transition rounded-3xl">
+          <Card key={inc.id} className="p-5 border-slate-200 shadow-xs bg-white flex flex-col justify-between hover:shadow-md transition rounded-3xl group">
             <div>
               <div className="flex justify-between items-start mb-3">
                 <span className="font-mono text-xs font-black text-slate-400">{inc.id}</span>
-                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg ${
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border ${
                   inc.status === 'Resuelto' 
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                     : inc.status === 'Pendiente' 
-                    ? 'bg-rose-50 text-rose-700 border border-rose-200' 
-                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
                 }`}>
                   ● {inc.status}
                 </span>
               </div>
 
               <h3 className="font-extrabold text-slate-900 text-base mb-1">{inc.type}</h3>
-              <p className="text-xs text-slate-500 mb-3">{inc.parking}</p>
+              <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="truncate">{inc.parking}</span>
+              </p>
 
-              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-1 text-xs font-mono mb-3">
-                <p>Placa: <span className="font-black text-slate-900">{inc.plate}</span></p>
-                <p>Cajón: <span className="font-bold text-emerald-700">{inc.slot}</span></p>
-                <p>Severidad: <span className={`font-bold ${inc.severity === 'Alta' ? 'text-rose-600' : inc.severity === 'Media' ? 'text-amber-600' : 'text-blue-600'}`}>{inc.severity}</span></p>
-                <p className="text-[10px] text-slate-400">{inc.date}</p>
+              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-1.5 text-xs font-mono mb-3">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Placa:</span>
+                  <span className="font-black text-slate-900 bg-white px-2 py-0.2 rounded border border-slate-200">🇵🇪 {inc.plate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Plaza:</span>
+                  <span className="font-bold text-emerald-700">{inc.slot}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Severidad:</span>
+                  <span className={`font-bold ${inc.severity === 'Alta' ? 'text-rose-600' : inc.severity === 'Media' ? 'text-amber-600' : 'text-blue-600'}`}>
+                    {inc.severity}
+                  </span>
+                </div>
+                <div className="flex justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-200">
+                  <span>Fecha:</span>
+                  <span>{inc.date}</span>
+                </div>
               </div>
 
               <p className="text-xs text-slate-600 leading-relaxed mb-4">{inc.description}</p>
 
               {/* Miniaturas de Fotos Adjuntas */}
               {inc.images && inc.images.length > 0 && (
-                <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+                <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none">
                   {inc.images.map((img, i) => (
                     <button
                       key={i}
                       onClick={() => setSelectedImage(img)}
-                      className="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0 relative group cursor-pointer"
+                      className="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shrink-0 relative group cursor-pointer"
                     >
                       <img src={img} alt="Evidencia" className="w-full h-full object-cover group-hover:scale-110 transition" />
                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
@@ -384,8 +466,7 @@ export const IncidentsModule = () => {
                   <Button
                     onClick={() => handleResolveIncident(inc.id)}
                     size="sm"
-                    variant="outline"
-                    className="w-full text-xs font-bold gap-1 text-emerald-700 hover:bg-emerald-50 border-emerald-300 rounded-xl cursor-pointer"
+                    className="w-full text-xs font-bold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Marcar como Resuelto</span>
@@ -408,29 +489,25 @@ export const IncidentsModule = () => {
         ))}
       </div>
 
-      {/* =========================================================================
-          MODAL PARA REPORTAR INCIDENCIA CON OPCIÓN DE CÁMARA O SUBIR FOTO
-          ========================================================================= */}
+      {/* Modal Reportar Incidencia */}
       <Dialog open={showModal} onOpenChange={(open) => {
         if (!open) stopCamera();
         setShowModal(open);
       }}>
-        <DialogContent className="max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto bg-white shadow-2xl border-slate-200">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black flex items-center gap-2">
+            <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900">
               <AlertTriangle className="w-5 h-5 text-amber-600" />
               <span>{role === 'user' ? 'Reportar Problema con mi Estancia' : 'Registrar Infracción Operativa'}</span>
             </DialogTitle>
-            <DialogDescription className="text-xs">
-              {role === 'user' 
-                ? 'Detalla el problema ocurrido y adjunta fotos tomadas al instante con tu cámara o galería.' 
-                : 'Registra la anomalía con placa y fotos de evidencia para la bitácora.'}
+            <DialogDescription className="text-xs text-slate-500">
+              Detalla lo sucedido y adjunta evidencia fotográfica tomada al instante o desde tu galería.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateIncident} className="space-y-4 my-2">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Tipo de Anomalía / Reclamo *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Tipo de Anomalía / Reporte *</label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
@@ -446,7 +523,7 @@ export const IncidentsModule = () => {
                   </>
                 ) : (
                   <>
-                    <option value="Bloqueo de Rampa PMR">Bloqueo de Rampa PMR</option>
+                    <option value="Bloqueo de Rampa de Acceso">Bloqueo de Rampa de Acceso</option>
                     <option value="Estacionamiento Fuera de Línea">Estacionamiento Fuera de Línea</option>
                     <option value="Estancia Vencida sin Liquidar">Estancia Vencida sin Liquidar</option>
                     <option value="Vehículo con Alarma Activa">Vehículo con Alarma Activa</option>
@@ -464,18 +541,18 @@ export const IncidentsModule = () => {
                   placeholder="ABC-123"
                   value={formData.plate}
                   onChange={(e) => setFormData({ ...formData, plate: e.target.value.toUpperCase() })}
-                  className="font-mono font-bold text-xs uppercase"
+                  className="font-mono font-bold text-xs uppercase h-10"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Cajón / Zona *</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Cajón / Plaza *</label>
                 <Input
                   type="text"
                   placeholder="A-01"
                   value={formData.slot}
                   onChange={(e) => setFormData({ ...formData, slot: e.target.value.toUpperCase() })}
-                  className="font-mono font-bold text-xs uppercase"
+                  className="font-mono font-bold text-xs uppercase h-10"
                   required
                 />
               </div>
@@ -488,10 +565,10 @@ export const IncidentsModule = () => {
                 onChange={(e) => setFormData({ ...formData, parking: e.target.value })}
                 className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
               >
-                <option value="Smart Park Plaza Mayor">Smart Park Plaza Mayor</option>
-                <option value="Smart Park Jr. 28 de Julio">Smart Park Jr. 28 de Julio</option>
-                <option value="Smart Park Av. Independencia">Smart Park Av. Independencia</option>
+                <option value="Smart Park Plaza Mayor - Planta Baja">Smart Park Plaza Mayor - Planta Baja</option>
+                <option value="Smart Park Plaza Mayor - Sótano 1">Smart Park Plaza Mayor - Sótano 1</option>
                 <option value="Smart Park Mercado Mariscal Cáceres">Smart Park Mercado Mariscal Cáceres</option>
+                <option value="Smart Park Terminal Terrestre">Smart Park Terminal Terrestre</option>
               </select>
             </div>
 
@@ -507,12 +584,11 @@ export const IncidentsModule = () => {
               />
             </div>
 
-            {/* SECCIÓN DE EVIDENCIA: SUBIR O TOMAR FOTO DIRECTA */}
+            {/* SECCIÓN DE EVIDENCIA */}
             <div className="space-y-3 pt-1">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold text-slate-700">Fotos de Evidencia</label>
                 
-                {/* Selector de Modo: Subir vs Cámara */}
                 <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 text-xs">
                   <button
                     type="button"
@@ -536,7 +612,6 @@ export const IncidentsModule = () => {
                 </div>
               </div>
 
-              {/* MODO 1: SUBIR DESDE ARCHIVO */}
               {photoMode === 'upload' && (
                 <div
                   {...getRootProps()}
@@ -547,15 +622,12 @@ export const IncidentsModule = () => {
                   <input {...getInputProps()} />
                   <UploadCloud className="w-7 h-7 text-slate-400 mx-auto mb-1" />
                   <p className="text-xs font-bold text-slate-700">Arrastra fotos aquí o haz clic para subir</p>
-                  <p className="text-[10px] text-slate-400">JPG, PNG o WebP hasta 5MB</p>
+                  <p className="text-[10px] text-slate-400">JPG, PNG o WebP hasta 6MB</p>
                 </div>
               )}
 
-              {/* MODO 2: TOMAR FOTO CON LA CÁMARA / WEBCAM EN VIVO */}
               {photoMode === 'camera' && (
                 <div className="space-y-2.5 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-white relative overflow-hidden">
-                  
-                  {/* Flash visual de obturador */}
                   <div 
                     id="camera-shutter-flash" 
                     className="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-150 z-30" 
@@ -576,7 +648,6 @@ export const IncidentsModule = () => {
                     </div>
                   ) : (
                     <>
-                      {/* Visor de Video en Vivo */}
                       <div className="relative w-full h-56 bg-slate-900 rounded-xl overflow-hidden border border-slate-700/60 flex items-center justify-center">
                         <video
                           ref={videoRef}
@@ -586,17 +657,15 @@ export const IncidentsModule = () => {
                           className="w-full h-full object-cover"
                         />
 
-                        {/* Retícula de Enfoque */}
                         <div className="absolute inset-4 border border-white/20 rounded-xl pointer-events-none flex items-center justify-center">
                           <div className="w-8 h-8 border-t-2 border-l-2 border-emerald-400 absolute top-0 left-0" />
                           <div className="w-8 h-8 border-t-2 border-r-2 border-emerald-400 absolute top-0 right-0" />
                           <div className="w-8 h-8 border-b-2 border-l-2 border-emerald-400 absolute bottom-0 left-0" />
                           <div className="w-8 h-8 border-b-2 border-r-2 border-emerald-400 absolute bottom-0 right-0" />
-                          <span className="text-[10px] text-white/60 font-mono tracking-wider uppercase font-bold">Enfoque Automático</span>
+                          <span className="text-[10px] text-white/60 font-mono uppercase font-bold">Enfoque Automático</span>
                         </div>
                       </div>
 
-                      {/* Botón Obturador */}
                       <div className="flex items-center justify-center pt-1">
                         <button
                           type="button"
@@ -612,7 +681,6 @@ export const IncidentsModule = () => {
                 </div>
               )}
 
-              {/* Lista de Fotos de Evidencia Adjuntas (Subidas o Capturadas) */}
               {uploadedFiles.length > 0 && (
                 <div className="pt-1">
                   <div className="flex items-center justify-between mb-1.5">
@@ -622,21 +690,15 @@ export const IncidentsModule = () => {
 
                   <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                     {uploadedFiles.map((f, i) => (
-                      <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0 group shadow-2xs">
+                      <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shrink-0 group shadow-2xs">
                         <img src={f.preview} alt="Evidencia" className="w-full h-full object-cover" />
                         <button
                           type="button"
                           onClick={() => removeFile(i)}
-                          title="Eliminar foto"
                           className="absolute top-1 right-1 w-5 h-5 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-md hover:bg-rose-700 cursor-pointer"
                         >
                           ×
                         </button>
-                        {f.isCameraCapture && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/80 text-[8px] text-white font-bold text-center py-0.2">
-                            Cámara
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -644,7 +706,7 @@ export const IncidentsModule = () => {
               )}
             </div>
 
-            <Button type="submit" className="w-full font-black py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl cursor-pointer shadow-md mt-2">
+            <Button type="submit" className="w-full font-bold h-11 bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md cursor-pointer mt-2">
               Enviar Reporte de Incidencia
             </Button>
           </form>
@@ -656,10 +718,10 @@ export const IncidentsModule = () => {
         <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
           <DialogContent className="max-w-2xl p-2 bg-slate-950 border-slate-800 rounded-3xl overflow-hidden">
             <div className="relative">
-              <img src={selectedImage} alt="Evidencia en grande" className="w-full h-auto rounded-2xl max-h-[80vh] object-contain" />
+              <img src={selectedImage} alt="Evidencia" className="w-full h-auto rounded-2xl max-h-[80vh] object-contain" />
               <button
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-3 right-3 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center text-white cursor-pointer"
+                className="absolute top-3 right-3 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center cursor-pointer"
               >
                 ✕
               </button>

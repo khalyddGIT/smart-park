@@ -1,15 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
+import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Plus, CreditCard, Trash2, CheckCircle2, ShieldCheck, QrCode, Lock, Receipt, FileText, Check, DollarSign } from 'lucide-react';
+import { 
+  Plus, 
+  CreditCard, 
+  Trash2, 
+  CheckCircle2, 
+  ShieldCheck, 
+  QrCode, 
+  Lock, 
+  Receipt, 
+  FileText, 
+  Check, 
+  DollarSign,
+  Smartphone,
+  Star,
+  Printer,
+  Calendar,
+  Layers,
+  Sparkles
+} from 'lucide-react';
 
 const CARDS_STORAGE_KEY = 'smart_park_cards_v2';
 
 const INITIAL_CARDS = [
-  { id: 1, type: 'Visa', number: '•••• •••• •••• 4242', expiry: '12/28', isDefault: true, holder: 'Carlos Mendoza' },
-  { id: 2, type: 'Mastercard', number: '•••• •••• •••• 8812', expiry: '09/27', isDefault: false, holder: 'Carlos Mendoza' },
+  { id: 1, type: 'Visa', number: '•••• •••• •••• 4242', rawLast4: '4242', expiry: '12/28', isDefault: true, holder: 'CARLOS MENDOZA' },
+  { id: 2, type: 'Mastercard', number: '•••• •••• •••• 8812', rawLast4: '8812', expiry: '09/27', isDefault: false, holder: 'CARLOS MENDOZA' },
 ];
 
 export const PaymentsModule = () => {
@@ -29,17 +47,19 @@ export const PaymentsModule = () => {
       localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(cards));
     } catch (e) {}
   }, [cards]);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [newCard, setNewCard] = useState({ number: '', name: '', expiry: '', cvc: '' });
-  const [activeTab, setActiveTab] = useState('cards'); // 'cards' o 'history'
+  const [activeTab, setActiveTab] = useState('cards'); // 'cards' | 'history'
   const [toast, setToast] = useState(null);
 
   const transactions = [
-    { id: 'TXN-90218', date: '2026-08-15 16:45', parking: 'Smart Park Central San Isidro', plate: 'ABC-123', amount: 17.00, method: 'Visa •••• 4242', invoice: 'B001-004291', status: 'Liquidado' },
-    { id: 'TXN-89412', date: '2026-08-12 11:30', parking: 'Smart Park Miraflores Kennedy', plate: 'ABC-123', amount: 15.00, method: 'Yape QR', invoice: 'B001-003810', status: 'Liquidado' },
-    { id: 'TXN-76120', date: '2026-08-05 20:00', parking: 'Smart Park Central San Isidro', plate: 'XYZ-987', amount: 14.80, method: 'Mastercard •••• 8812', invoice: 'B001-002955', status: 'Liquidado' },
+    { id: 'TXN-90218', date: '2026-08-18 16:45', parking: 'Smart Park Plaza Mayor - Planta Baja', plate: 'ABC-123', amount: 17.00, method: 'Visa •••• 4242', invoice: 'B001-004291', status: 'Liquidado' },
+    { id: 'TXN-89412', date: '2026-08-16 11:30', parking: 'Smart Park Plaza Mayor - Sótano 1', plate: 'AYC-501', amount: 15.00, method: 'Yape QR', invoice: 'B001-003810', status: 'Liquidado' },
+    { id: 'TXN-76120', date: '2026-08-12 20:00', parking: 'Smart Park Mercado Mariscal Cáceres', plate: 'XYZ-987', amount: 14.80, method: 'Mastercard •••• 8812', invoice: 'B001-002955', status: 'Liquidado' },
+    { id: 'TXN-65104', date: '2026-08-08 13:00', parking: 'Smart Park Terminal Terrestre', plate: 'W1P-404', amount: 18.00, method: 'Plin QR', invoice: 'B001-001890', status: 'Liquidado' }
   ];
 
   const notify = (msg) => {
@@ -50,18 +70,40 @@ export const PaymentsModule = () => {
   const handleAddCard = (e) => {
     e.preventDefault();
     if (!newCard.number || !newCard.name) return;
+
+    const raw4 = newCard.number.replace(/\D/g, '').slice(-4) || '9999';
+    const cardType = newCard.number.startsWith('5') ? 'Mastercard' : 'Visa';
+
     const cardObj = {
       id: Date.now(),
-      type: newCard.number.startsWith('5') ? 'Mastercard' : 'Visa',
-      number: `•••• •••• •••• ${newCard.number.slice(-4) || '9999'}`,
+      type: cardType,
+      number: `•••• •••• •••• ${raw4}`,
+      rawLast4: raw4,
       expiry: newCard.expiry || '12/29',
       isDefault: cards.length === 0,
-      holder: newCard.name
+      holder: newCard.name.toUpperCase().trim()
     };
+
     setCards([...cards, cardObj]);
     setShowAddModal(false);
     setNewCard({ number: '', name: '', expiry: '', cvc: '' });
-    notify('Tarjeta bancaria tokenizada y vinculada con éxito.');
+    notify('✓ Tarjeta bancaria tokenizada y vinculada con éxito.');
+  };
+
+  const handleSetDefaultCard = (id) => {
+    const updated = cards.map(c => ({
+      ...c,
+      isDefault: c.id === id
+    }));
+    setCards(updated);
+    notify('Tarjeta predeterminada para cobro automático actualizada.');
+  };
+
+  const handleDeleteCard = (id) => {
+    if (!window.confirm('¿Deseas desvincular esta tarjeta?')) return;
+    const updated = cards.filter(c => c.id !== id);
+    setCards(updated);
+    notify('Tarjeta eliminada de tus métodos de pago.');
   };
 
   const openReceipt = (txn) => {
@@ -69,47 +111,60 @@ export const PaymentsModule = () => {
     setShowReceiptModal(true);
   };
 
+  const totalSpent = transactions.reduce((acc, t) => acc + t.amount, 0);
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in">
+      
+      {/* Toast Alert */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-700 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold animate-bounce">
-          <Check className="w-4 h-4" />
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold animate-bounce">
+          <Check className="w-4 h-4 text-emerald-400" />
           <span>{toast}</span>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <CreditCard className="w-7 h-7 text-emerald-600" />
-            <span>Métodos de Pago</span>
-          </h1>
-          <p className="text-xs text-slate-500">
-            Administra tus tarjetas registradas y consulta tus comprobantes de pago.
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex items-center space-x-3.5">
+          <div className="p-3 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-200 shadow-xs">
+            <CreditCard className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Métodos de Pago & Facturación
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Administra tus tarjetas bancarias tokenizadas, billeteras móviles y consulta tus boletas electrónicas.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+
+        <div className="flex items-center space-x-2.5">
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button
               onClick={() => setActiveTab('cards')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
-                activeTab === 'cards' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                activeTab === 'cards' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Tarjetas & Billeteras
+              Mis Tarjetas & QR
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
-                activeTab === 'history' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                activeTab === 'history' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Comprobantes
+              Comprobantes Fiscales
             </button>
           </div>
+
           {activeTab === 'cards' && (
-            <Button onClick={() => setShowAddModal(true)} className="gap-2 font-bold shadow-md bg-emerald-600 hover:bg-emerald-700">
+            <Button 
+              onClick={() => setShowAddModal(true)} 
+              className="gap-1.5 font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-4"
+            >
               <Plus className="w-4 h-4" />
               <span>Nueva Tarjeta</span>
             </Button>
@@ -117,106 +172,186 @@ export const PaymentsModule = () => {
         </div>
       </div>
 
-      {/* Cards View */}
+      {/* Tarjetas KPI */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tarjetas Activas</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-slate-900">{cards.length}</span>
+            <span className="text-xs text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+              Encriptación AES-256
+            </span>
+          </div>
+        </Card>
+
+        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Billeteras Móviles</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-sm font-black text-teal-700 font-mono">YAPE & PLIN</span>
+            <span className="text-xs text-slate-400">0% Comisión</span>
+          </div>
+        </Card>
+
+        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Gasto Facturado</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-emerald-700">S/ {totalSpent.toFixed(2)}</span>
+            <span className="text-xs text-slate-500 font-mono">Moneda: PEN</span>
+          </div>
+        </Card>
+
+        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Comprobantes SUNAT</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-slate-800">{transactions.length}</span>
+            <span className="text-xs text-emerald-700 font-bold">Validadas</span>
+          </div>
+        </Card>
+      </div>
+
+      {/* VISTA 1: TARJETAS & BILLETERAS */}
       {activeTab === 'cards' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cards.map((card) => (
-            <Card key={card.id} className={`p-6 border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-between ${
-              card.isDefault ? 'border-emerald-500/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/30' : 'bg-white'
-            }`}>
-              <div>
-                <div className="flex justify-between items-start mb-6">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {cards.map((card) => (
+              <div 
+                key={card.id} 
+                className="relative h-56 rounded-3xl p-6 text-white overflow-hidden shadow-xl flex flex-col justify-between group transition-all duration-300 hover:scale-[1.02]"
+                style={{
+                  background: card.type === 'Visa'
+                    ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #064e3b 100%)'
+                    : 'linear-gradient(135deg, #18181b 0%, #27272a 50%, #7c2d12 100%)'
+                }}
+              >
+                {/* Chip EMV & Contactless */}
+                <div className="flex justify-between items-start">
                   <div className="flex items-center space-x-3">
-                    <div className="w-11 h-11 rounded-2xl bg-slate-950 text-emerald-400 flex items-center justify-center font-mono font-black text-xs shadow-md border border-slate-800">
-                      {card.type.slice(0, 4).toUpperCase()}
+                    {/* Chip Dorado */}
+                    <div className="w-10 h-7 rounded-md bg-gradient-to-tr from-amber-400 to-amber-200 border border-amber-500/50 shadow-inner flex items-center justify-center">
+                      <div className="w-6 h-4 border border-amber-600/40 rounded-xs" />
                     </div>
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-base">{card.type} Débito/Crédito</h3>
-                      <p className="text-xs text-slate-500 font-mono">{card.number}</p>
+                    {/* Icono Contactless */}
+                    <div className="text-slate-400 text-xs font-mono font-bold tracking-widest flex items-center gap-1">
+                      <span>📶</span>
+                      <span className="text-[10px] text-slate-300">NFC PASS</span>
                     </div>
                   </div>
+
                   {card.isDefault ? (
-                    <span className="text-[10px] font-bold text-emerald-600 font-mono">
-                      Principal
+                    <span className="bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full backdrop-blur-md flex items-center gap-1">
+                      <Star className="w-2.5 h-2.5 fill-emerald-300" /> Principal
                     </span>
                   ) : (
-                    <Button variant="ghost" size="sm" onClick={() => setCards(cards.filter(c => c.id !== card.id))} className="text-rose-500 hover:bg-rose-50">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <button
+                      onClick={() => handleSetDefaultCard(card.id)}
+                      className="text-slate-400 hover:text-white text-[10px] font-bold underline cursor-pointer"
+                    >
+                      Hacer Principal
+                    </button>
                   )}
                 </div>
 
-                <div className="bg-slate-900 text-slate-200 p-3.5 rounded-2xl font-mono text-xs mb-4 space-y-1">
-                  <div className="flex justify-between text-[10px] text-slate-400">
-                    <span>TITULAR</span>
-                    <span>EXPIRACIÓN</span>
+                {/* Número Enmascarado */}
+                <div className="font-mono text-lg sm:text-xl font-bold tracking-widest text-slate-100 drop-shadow-md">
+                  {card.number}
+                </div>
+
+                {/* Titular, Expiración y Marca */}
+                <div className="flex justify-between items-end pt-2 border-t border-white/10">
+                  <div>
+                    <span className="text-[9px] font-mono text-slate-400 block uppercase tracking-wider">Titular de la Tarjeta</span>
+                    <span className="font-bold text-xs tracking-wider uppercase text-slate-100">{card.holder}</span>
                   </div>
-                  <div className="flex justify-between font-bold text-white">
-                    <span className="uppercase">{card.holder}</span>
-                    <span>{card.expiry}</span>
+
+                  <div className="text-center">
+                    <span className="text-[9px] font-mono text-slate-400 block uppercase tracking-wider">Vence</span>
+                    <span className="font-mono font-bold text-xs text-slate-100">{card.expiry}</span>
+                  </div>
+
+                  <div className="text-right flex flex-col items-end">
+                    <span className="font-mono font-black text-base text-white tracking-wider drop-shadow-md">
+                      {card.type.toUpperCase()}
+                    </span>
+                    {!card.isDefault && (
+                      <button
+                        onClick={() => handleDeleteCard(card.id)}
+                        className="text-rose-400 hover:text-rose-300 text-[10px] font-bold mt-1 cursor-pointer"
+                        title="Eliminar tarjeta"
+                      >
+                        Eliminar
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
+            ))}
 
-              <div className="flex justify-between items-center text-xs text-slate-500 font-mono pt-3 border-t border-slate-100">
-                <span className="flex items-center gap-1 text-slate-500">
-                  <Lock className="w-3.5 h-3.5 text-emerald-600" /> Pago Seguro
-                </span>
-                <span className="text-[10px] text-emerald-700 font-bold">Activa</span>
+            {/* Tarjeta de Billetera Digital Interoperable */}
+            <Card className="p-6 border-slate-200 shadow-xs bg-gradient-to-br from-white via-teal-50/20 to-emerald-50/30 flex flex-col justify-between rounded-3xl">
+              <div>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-teal-900 text-teal-300 flex items-center justify-center font-black shadow-sm">
+                    <QrCode className="w-6 h-6" />
+                  </div>
+                  <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200 font-mono">
+                    Habilitado 24/7
+                  </span>
+                </div>
+
+                <h3 className="font-extrabold text-slate-900 text-base">Billeteras Móviles (Yape & Plin)</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Escanea el código QR en el tótem de salida o garita para liquidar tu estancia al instante sin contacto.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-teal-900">
+                  <span>Comisión por Pago:</span>
+                  <span className="font-mono font-black text-emerald-700">0.0% (Gratuito)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-purple-100 text-purple-800 text-[10px] font-black px-2 py-0.5 rounded-md">YAPE</span>
+                  <span className="bg-cyan-100 text-cyan-800 text-[10px] font-black px-2 py-0.5 rounded-md">PLIN</span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-md">CULQI</span>
+                </div>
               </div>
             </Card>
-          ))}
-
-          {/* Tarjeta de Billetera Digital Interoperable */}
-          <Card className="p-6 border-slate-200 shadow-sm bg-gradient-to-br from-white to-teal-50/40 flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <div className="w-11 h-11 rounded-2xl bg-teal-900 text-teal-300 flex items-center justify-center font-black text-xs shadow-md">
-                  <QrCode className="w-6 h-6" />
-                </div>
-              </div>
-              <h3 className="font-extrabold text-slate-900 text-base">Billeteras Móviles (Yape / Plin)</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Escanea el código QR al salir para pagar al instante desde tu celular.
-              </p>
-            </div>
-
-
-            <div className="pt-4 border-t border-slate-100">
-              <div className="flex items-center justify-between text-xs font-bold text-teal-800">
-                <span>Comisión por Transacción:</span>
-                <span className="font-mono font-black">0.0% (Convenio)</span>
-              </div>
-            </div>
-          </Card>
+          </div>
         </div>
       )}
 
-      {/* History & Invoices View */}
+      {/* VISTA 2: COMPROBANTES FISCALES */}
       {activeTab === 'history' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {transactions.map((t) => (
-            <Card key={t.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-slate-200 shadow-sm hover:shadow-md transition">
+            <Card key={t.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-slate-200 shadow-xs hover:shadow-md transition rounded-3xl bg-white">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-mono font-black text-xs border border-slate-200">
-                  <Receipt className="w-5 h-5 text-emerald-600" />
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-mono font-black text-xs border border-emerald-100 shrink-0">
+                  <Receipt className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
                     <h3 className="font-extrabold text-slate-900 text-base">{t.parking}</h3>
-                    <span className="text-[10px] font-bold text-emerald-600">● {t.status}</span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">
+                      ● {t.status}
+                    </span>
                   </div>
                   <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    {t.date} • Placa: <span className="font-bold text-slate-800">{t.plate}</span> • Comprobante: <span className="font-bold text-teal-700">{t.invoice}</span>
+                    {t.date} • Placa: <span className="font-bold text-slate-800">{t.plate}</span> • Boleta: <span className="font-bold text-teal-700">{t.invoice}</span> • {t.method}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4 justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
                 <span className="text-lg font-black text-slate-900 font-mono">S/ {t.amount.toFixed(2)}</span>
-                <Button variant="outline" size="sm" onClick={() => openReceipt(t)} className="font-bold text-xs gap-1.5 border-slate-300">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => openReceipt(t)} 
+                  className="font-bold text-xs gap-1.5 border-slate-300 rounded-xl h-9 hover:bg-slate-50"
+                >
                   <FileText className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Ver Comprobante</span>
+                  <span>Ver Boleta</span>
                 </Button>
               </div>
             </Card>
@@ -226,11 +361,11 @@ export const PaymentsModule = () => {
 
       {/* Modal Agregar Tarjeta */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-md rounded-3xl p-6">
+        <DialogContent className="max-w-md rounded-3xl p-6 bg-white shadow-2xl border-slate-200">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black">Agregar Tarjeta</DialogTitle>
-            <DialogDescription className="text-xs">
-              Ingresa los datos de tu tarjeta de crédito o débito.
+            <DialogTitle className="text-xl font-black text-slate-900">Vincular Tarjeta Bancaria</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Ingresa los datos de tu tarjeta de crédito o débito (Tokenización segura).
             </DialogDescription>
           </DialogHeader>
 
@@ -242,6 +377,7 @@ export const PaymentsModule = () => {
                 placeholder="CARLOS MENDOZA"
                 value={newCard.name}
                 onChange={(e) => setNewCard({ ...newCard, name: e.target.value.toUpperCase() })}
+                className="text-xs h-10 uppercase font-bold"
                 required
               />
             </div>
@@ -252,8 +388,11 @@ export const PaymentsModule = () => {
                 maxLength={19}
                 placeholder="4557 8890 1234 5678"
                 value={newCard.number}
-                onChange={(e) => setNewCard({ ...newCard, number: e.target.value })}
-                className="font-mono tracking-widest font-bold"
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                  setNewCard({ ...newCard, number: val });
+                }}
+                className="font-mono tracking-widest font-bold text-xs h-10"
                 required
               />
             </div>
@@ -266,7 +405,7 @@ export const PaymentsModule = () => {
                   placeholder="12/28"
                   value={newCard.expiry}
                   onChange={(e) => setNewCard({ ...newCard, expiry: e.target.value })}
-                  className="font-mono text-center font-bold"
+                  className="font-mono text-center font-bold text-xs h-10"
                   required
                 />
               </div>
@@ -278,16 +417,20 @@ export const PaymentsModule = () => {
                   placeholder="•••"
                   value={newCard.cvc}
                   onChange={(e) => setNewCard({ ...newCard, cvc: e.target.value })}
-                  className="font-mono text-center font-bold"
+                  className="font-mono text-center font-bold text-xs h-10"
                   required
                 />
               </div>
             </div>
 
-            <Button type="submit" className="w-full font-bold py-5 mt-2 bg-emerald-600 hover:bg-emerald-700 text-white">
-              Guardar Tarjeta
-            </Button>
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-2 text-slate-600 text-xs font-medium">
+              <Lock className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Tus datos son procesados mediante pasarela certificada PCI-DSS con tokenización.</span>
+            </div>
 
+            <Button type="submit" className="w-full font-bold h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md">
+              Guardar y Tokenizar Tarjeta
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -295,21 +438,23 @@ export const PaymentsModule = () => {
       {/* Modal Comprobante Fiscal */}
       {selectedReceipt && (
         <Dialog open={showReceiptModal} onOpenChange={setShowReceiptModal}>
-          <DialogContent className="max-w-md rounded-3xl p-6">
+          <DialogContent className="max-w-md rounded-3xl p-6 bg-white shadow-2xl border-slate-200">
             <DialogHeader>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-2">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-2">
                 <Receipt className="w-6 h-6" />
               </div>
-              <DialogTitle className="text-xl font-black text-center">Boleta de Venta Electrónica</DialogTitle>
-              <DialogDescription className="text-center text-xs font-mono">
-                RUC: 20608912345 • {selectedReceipt.invoice}
+              <DialogTitle className="text-xl font-black text-center text-slate-900">
+                Boleta de Venta Electrónica
+              </DialogTitle>
+              <DialogDescription className="text-center text-xs font-mono text-slate-500">
+                RUC: 20608945123 • {selectedReceipt.invoice}
               </DialogDescription>
             </DialogHeader>
 
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 font-mono text-xs space-y-2 my-2">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 font-mono text-xs space-y-2.5 my-2">
               <div className="flex justify-between">
                 <span className="text-slate-500">Establecimiento:</span>
-                <span className="font-bold text-slate-900">{selectedReceipt.parking}</span>
+                <span className="font-bold text-slate-900 text-right max-w-[200px] truncate">{selectedReceipt.parking}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Fecha de Emisión:</span>
@@ -317,20 +462,21 @@ export const PaymentsModule = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Placa Autorizada:</span>
-                <span className="font-bold text-emerald-800">{selectedReceipt.plate}</span>
+                <strong className="text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">{selectedReceipt.plate}</strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Medio de Pago:</span>
                 <span className="font-bold text-slate-900">{selectedReceipt.method}</span>
               </div>
-              <div className="pt-2 border-t border-slate-200 flex justify-between text-sm font-black">
+              <div className="pt-2 border-t border-slate-200 flex justify-between text-sm font-black text-slate-900">
                 <span>TOTAL LIQUIDADO (INC. IGV):</span>
                 <span className="text-emerald-700">S/ {selectedReceipt.amount.toFixed(2)}</span>
               </div>
             </div>
 
-            <Button onClick={() => window.print()} variant="outline" className="w-full font-black py-4 border-slate-300">
-              Imprimir / Descargar PDF
+            <Button onClick={() => window.print()} className="w-full font-black h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-xl gap-1.5">
+              <Printer className="w-4 h-4 text-emerald-400" />
+              <span>Imprimir / Descargar Comprobante</span>
             </Button>
           </DialogContent>
         </Dialog>

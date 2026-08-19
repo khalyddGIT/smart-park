@@ -22,7 +22,8 @@ import {
   ChevronRight,
   Menu,
   X,
-  Scale
+  Scale,
+  Sparkles
 } from 'lucide-react';
 
 const SECTIONS_BY_ROLE = {
@@ -85,6 +86,36 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
   const currentSections = SECTIONS_BY_ROLE[role] || SECTIONS_BY_ROLE.user;
   const allItems = currentSections.flatMap(sec => sec.items);
 
+  // Configuración de los 5 botones del Navbar Móvil Estilo Flotante Curvo
+  const getMobileNavConfig = () => {
+    if (role === 'local') {
+      return {
+        left1: allItems.find(i => i.id === 'dashboard') || allItems[0],
+        left2: allItems.find(i => i.id === 'reservations') || allItems[1],
+        center: allItems.find(i => i.id === 'anpr') || allItems[2],
+        right1: allItems.find(i => i.id === 'incidents') || allItems[3],
+      };
+    }
+    if (role === 'platform') {
+      return {
+        left1: allItems.find(i => i.id === 'dashboard') || allItems[0],
+        left2: allItems.find(i => i.id === 'finances') || allItems[1],
+        center: allItems.find(i => i.id === 'affiliates') || allItems[2],
+        right1: allItems.find(i => i.id === 'reservations') || allItems[4],
+      };
+    }
+    // Default: 'user'
+    return {
+      left1: allItems.find(i => i.id === 'dashboard') || allItems[0],
+      left2: allItems.find(i => i.id === 'reservations') || allItems[1],
+      center: allItems.find(i => i.id === 'loyalty') || allItems[2],
+      right1: allItems.find(i => i.id === 'vehicles') || allItems[3],
+    };
+  };
+
+  const navConfig = getMobileNavConfig();
+  const isDrawerActive = !['dashboard', 'reservations', navConfig.center?.id, 'vehicles', 'incidents', 'finances', 'affiliates'].includes(activeTab);
+
   const handleSelectTab = (tabId) => {
     setActiveTab(tabId);
     setMobileDrawerOpen(false);
@@ -93,7 +124,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
   return (
     <>
       {/* Sidebar Desktop Ajustado y Compacto (185px de ancho exacto) */}
-      <aside className="hidden md:flex w-[185px] min-w-[185px] max-w-[185px] bg-white border-r border-slate-200/90 flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] shadow-xs z-30 select-none flex-shrink-0">
+      <aside className="hidden md:flex w-[185px] min-w-[185px] max-w-[185px] bg-white border-r border-slate-200/90 flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] shadow-xs z-30 select-none shrink-0">
         <div className="p-2 space-y-3.5 overflow-y-auto">
           {currentSections.map((sec, idx) => (
             <div key={idx} className="space-y-1">
@@ -146,49 +177,95 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* =========================================================================
+          NAVBAR MÓVIL FLOTANTE CURVO CON BOTÓN ELEVADO CENTRAL & DOT INDICATOR
+          ========================================================================= */}
       <nav 
-        aria-label="Navegación Móvil"
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 px-3 py-1.5 flex justify-around items-center shadow-lg"
+        aria-label="Navegación Móvil Flotante"
+        className="md:hidden fixed bottom-3 left-3 right-3 max-w-sm sm:max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/90 px-3 py-1.5 flex items-center justify-between select-none"
       >
-        {allItems.slice(0, 4).map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
+        {/* 1. Botón Izquierdo 1 */}
+        {navConfig.left1 && (() => {
+          const Icon = navConfig.left1.icon;
+          const isActive = activeTab === navConfig.left1.id;
           return (
             <button
-              key={item.id}
-              onClick={() => handleSelectTab(item.id)}
-              className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition duration-150 ${
-                isActive 
-                  ? 'text-emerald-600 font-black' 
-                  : 'text-slate-500 hover:text-slate-800 font-medium'
-              }`}
+              onClick={() => handleSelectTab(navConfig.left1.id)}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition group cursor-pointer"
             >
-              <div className={`p-1 rounded-lg transition ${isActive ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400'}`}>
-                <Icon className="w-5 h-5" />
+              <div className={`p-1 transition-colors ${isActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
+                <Icon className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <span className="text-[11px] leading-tight mt-0.5 tracking-tight font-sans">
-                {item.shortLabel || item.label}
-              </span>
+              <span className={`w-1.5 h-1.5 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
             </button>
           );
-        })}
+        })()}
 
-        {/* Botón "+ Más" */}
+        {/* 2. Botón Izquierdo 2 */}
+        {navConfig.left2 && (() => {
+          const Icon = navConfig.left2.icon;
+          const isActive = activeTab === navConfig.left2.id;
+          return (
+            <button
+              onClick={() => handleSelectTab(navConfig.left2.id)}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition group cursor-pointer"
+            >
+              <div className={`p-1 transition-colors ${isActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
+                <Icon className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <span className={`w-1.5 h-1.5 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+            </button>
+          );
+        })()}
+
+        {/* 3. BOTÓN CENTRAL PROMINENTE ELEVADO (Curved Highlight Action) */}
+        {navConfig.center && (() => {
+          const Icon = navConfig.center.icon;
+          const isActive = activeTab === navConfig.center.id;
+          return (
+            <div className="flex-1 flex flex-col items-center justify-center relative">
+              <button
+                onClick={() => handleSelectTab(navConfig.center.id)}
+                title={navConfig.center.label}
+                className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer border-4 border-slate-50 active:scale-95 ${
+                  isActive 
+                    ? 'bg-emerald-600 text-white shadow-emerald-600/40 ring-4 ring-emerald-500/20 scale-105' 
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
+                }`}
+              >
+                <Icon className="w-6 h-6 stroke-[2.4]" />
+              </button>
+              <span className={`w-1.5 h-1.5 rounded-full mt-1.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+            </div>
+          );
+        })()}
+
+        {/* 4. Botón Derecho 1 */}
+        {navConfig.right1 && (() => {
+          const Icon = navConfig.right1.icon;
+          const isActive = activeTab === navConfig.right1.id;
+          return (
+            <button
+              onClick={() => handleSelectTab(navConfig.right1.id)}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition group cursor-pointer"
+            >
+              <div className={`p-1 transition-colors ${isActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
+                <Icon className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <span className={`w-1.5 h-1.5 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+            </button>
+          );
+        })()}
+
+        {/* 5. Botón Derecho 2: Menú "+ Más" */}
         <button
           onClick={() => setMobileDrawerOpen(true)}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition duration-150 ${
-            mobileDrawerOpen || allItems.slice(4).some(i => i.id === activeTab)
-              ? 'text-emerald-600 font-black'
-              : 'text-slate-500 hover:text-slate-800 font-medium'
-          }`}
+          className="flex-1 flex flex-col items-center justify-center py-1 transition group cursor-pointer"
         >
-          <div className="p-1 rounded-lg text-slate-400">
-            <Menu className="w-5 h-5" />
+          <div className={`p-1 transition-colors ${mobileDrawerOpen || isDrawerActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
+            <Menu className="w-5 h-5 stroke-[2.2]" />
           </div>
-          <span className="text-[11px] leading-tight mt-0.5 tracking-tight font-sans">
-            Más
-          </span>
+          <span className={`w-1.5 h-1.5 rounded-full mt-0.5 transition-all duration-200 ${mobileDrawerOpen || isDrawerActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
         </button>
       </nav>
 
@@ -199,7 +276,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <h3 className="font-black text-slate-900 text-sm">Menú de Navegación ({role.toUpperCase()})</h3>
+                <h3 className="font-black text-slate-900 text-sm">Menú Completo ({role.toUpperCase()})</h3>
               </div>
               <button 
                 onClick={() => setMobileDrawerOpen(false)}

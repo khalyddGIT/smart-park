@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
 
@@ -30,7 +30,8 @@ class UserResponse(UserBase):
     id: int
     is_active: bool
     created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 class Token(BaseModel):
     access_token: str
@@ -63,7 +64,8 @@ class VehicleUpdate(BaseModel):
 class VehicleResponse(VehicleBase):
     id: int
     user_id: int
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 # ==========================================
 # 3. SCHEMAS DE ESTACIONAMIENTOS
@@ -98,7 +100,8 @@ class ParkingUpdate(BaseModel):
 class ParkingResponse(ParkingBase):
     id: int
     available_slots: Optional[int] = 0
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 # ==========================================
 # 4. SCHEMAS DE CAJONES (SLOTS) & PLANO CAD
@@ -131,7 +134,8 @@ class SlotUpdate(BaseModel):
 class SlotResponse(SlotBase):
     id: int
     parking_id: int
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 class FloorPlanElementBase(BaseModel):
     element_type: str
@@ -149,7 +153,8 @@ class FloorPlanElementCreate(FloorPlanElementBase):
 class FloorPlanElementResponse(FloorPlanElementBase):
     id: int
     parking_id: int
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 class FloorPlanSyncRequest(BaseModel):
     parking_id: int
@@ -180,7 +185,8 @@ class StaffResponse(StaffBase):
     id: int
     parking_id: int
     created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 # ==========================================
 # 6. SCHEMAS DE RESERVAS
@@ -213,7 +219,8 @@ class ReservationResponse(BaseModel):
     total_cost: float
     status: str
     qr_code: str
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 # ==========================================
 # 7. SCHEMAS DE RESEÑAS & CALIFICACIONES
@@ -235,7 +242,8 @@ class ReviewResponse(BaseModel):
     comment: str
     response: Optional[str] = None
     created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 # ==========================================
 # 8. SCHEMAS DE ANPR

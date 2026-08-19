@@ -1,12 +1,11 @@
-import React, { useState, useRef } from 'react';
-import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
+import React, { useState, useMemo } from 'react';
+import { motion, useScroll, useSpring } from 'framer-motion';
 import { 
   Search, 
   MapPin, 
   Car, 
   ShieldCheck, 
   QrCode, 
-  Sparkles, 
   ChevronRight, 
   Building2, 
   ArrowRight, 
@@ -16,18 +15,17 @@ import {
   Camera, 
   CreditCard, 
   Smartphone, 
-  Phone, 
   LogIn,
   Filter,
   Check,
-  Shield,
   Layers,
   ArrowUpRight,
-  Maximize2
+  Shield,
+  Activity,
+  Compass
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Card } from './ui/card';
 import { AyacuchoMap } from './AyacuchoMap';
 
 export const LandingPage = ({ 
@@ -39,9 +37,8 @@ export const LandingPage = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('todos');
   const [activeFaq, setActiveFaq] = useState(null);
-  const heroRef = useRef(null);
 
-  // Barra de progreso de lectura fluida
+  // Barra de progreso de lectura fluida superior
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 120,
@@ -49,74 +46,78 @@ export const LandingPage = ({
     restDelta: 0.001
   });
 
-  // Filtrado de cocheras
-  const filteredParkings = establishments.filter((p) => {
-    const matchesSearch = 
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.reference && p.reference.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.city && p.city.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Filtrado optimizado de cocheras con useMemo
+  const filteredParkings = useMemo(() => {
+    return establishments.filter((p) => {
+      const matchesSearch = 
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.reference && p.reference.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (p.city && p.city.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    if (!matchesSearch) return false;
+      if (!matchesSearch) return false;
 
-    if (categoryFilter === 'centro') {
-      return p.address.toLowerCase().includes('centro') || p.name.toLowerCase().includes('plaza mayor');
-    }
-    if (categoryFilter === 'techados') {
-      const hasShaded = (p.elements || []).some(e => e.type === 'slot' && e.shaded);
-      return hasShaded || (p.level && (p.level.toLowerCase().includes('techado') || p.level.toLowerCase().includes('sótano')));
-    }
-    if (categoryFilter === 'economicos') {
-      return Number(p.rate) <= 4.50;
-    }
-    return true;
-  });
+      if (categoryFilter === 'centro') {
+        return p.address.toLowerCase().includes('centro') || p.name.toLowerCase().includes('plaza mayor');
+      }
+      if (categoryFilter === 'techados') {
+        const hasShaded = (p.elements || []).some(e => e.type === 'slot' && e.shaded);
+        return hasShaded || (p.level && (p.level.toLowerCase().includes('techado') || p.level.toLowerCase().includes('sótano')));
+      }
+      if (categoryFilter === 'economicos') {
+        return Number(p.rate) <= 4.50;
+      }
+      return true;
+    });
+  }, [establishments, searchQuery, categoryFilter]);
 
-  const totalSlots = establishments.reduce((acc, curr) => {
-    return acc + (curr.elements || []).filter(e => e.type === 'slot').length;
-  }, 0);
+  const totalFreeSlots = useMemo(() => {
+    return establishments.reduce((acc, curr) => {
+      return acc + (curr.elements || []).filter(e => e.type === 'slot' && e.status === 'free').length;
+    }, 0);
+  }, [establishments]);
 
-  const totalFreeSlots = establishments.reduce((acc, curr) => {
-    return acc + (curr.elements || []).filter(e => e.type === 'slot' && e.status === 'free').length;
-  }, 0);
+  const totalSlotsCount = useMemo(() => {
+    return establishments.reduce((acc, curr) => {
+      return acc + (curr.elements || []).filter(e => e.type === 'slot').length;
+    }, 0);
+  }, [establishments]);
 
   const faqs = [
     {
-      q: '¿Cómo ingreso a la cochera una vez reservada mi plaza?',
-      a: 'Al confirmar tu reserva se genera un Pase Digital QR con tu placa registrada. Al llegar a la garita en Ayacucho, la cámara ANPR reconoce tu placa y levanta la barrera automáticamente, o puedes mostrar tu código QR al operador.'
+      q: '¿Cómo accedo a la cochera una vez realizada mi reserva?',
+      a: 'Al confirmar tu reserva se genera un Pase Digital QR vinculado a tu placa. Al aproximarte a la garita, la cámara inteligente ANPR detecta tu vehículo y eleva la barrera automáticamente, o puedes mostrar el código QR al operador.'
     },
     {
-      q: '¿Cuáles son los métodos de pago aceptados?',
-      a: 'Aceptamos pagos con Yape, Plin y tarjetas de crédito o débito a través de la pasarela segura Culqi, emitiendo tu comprobante electrónico de forma instantánea.'
+      q: '¿Cuáles son los métodos de pago disponibles?',
+      a: 'Puedes pagar de forma digital mediante Yape, Plin y tarjetas de crédito o débito a través de la pasarela Culqi, emitiéndose tu comprobante de pago electrónico de manera instantánea.'
     },
     {
-      q: '¿Tengo tolerancia de tiempo si encuentro tráfico?',
-      a: 'Sí. Todas las cocheras afiliadas de la red incluyen 15 minutos de cortesía y tolerancia garantizada para que tu llegada sea tranquila.'
+      q: '¿Existe tolerancia de tiempo en caso de tráfico en Huamanga?',
+      a: 'Sí. Todas las cocheras de la red disponen de 15 minutos de cortesía y tolerancia garantizada para que tu ingreso se realice con total tranquilidad.'
     },
     {
-      q: '¿Cómo afilio mi cochera si soy propietario en Huamanga?',
-      a: 'Haz clic en "Afiliar Cochera", completa el formulario básico y nuestro equipo implementará el sistema digital en tu establecimiento en 24 horas.'
+      q: '¿Cómo puedo afiliar mi estacionamiento a la red Smart-Park?',
+      a: 'Haz clic en "Afiliar Cochera", completa los datos de tu inmueble y nuestro equipo técnico configurará tu plano 2D interactivo y garita en 24 horas.'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-[#030712] text-slate-100 font-sans selection:bg-emerald-500 selection:text-black antialiased overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#060913] text-slate-100 font-sans selection:bg-emerald-500 selection:text-black antialiased overflow-x-hidden relative">
       
-      {/* =========================================================================
-          BARRA DE PROGRESO DE SCROLL SUPERIOR
-          ========================================================================= */}
+      {/* Barra de progreso superior */}
       <motion.div 
         className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 z-[100] origin-left"
         style={{ scaleX }}
       />
 
       {/* =========================================================================
-          1. FLUID ISLAND NAVBAR (Apple / Linear Tier)
+          1. HEADER FLUIDO DE CRISTAL (FLUID ISLAND NAVBAR)
           ========================================================================= */}
       <div className="fixed top-5 left-0 right-0 z-50 px-4 flex justify-center pointer-events-none">
         <header className="pointer-events-auto w-full max-w-5xl bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-full px-4 sm:px-6 py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center justify-between transition-all">
           
-          {/* Logo & Marca */}
+          {/* Marca */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-full bg-white text-slate-950 flex items-center justify-center font-bold shadow-md shrink-0">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
@@ -129,7 +130,7 @@ export const LandingPage = ({
             </span>
           </div>
 
-          {/* Enlaces de Navegación Suave */}
+          {/* Navegación */}
           <nav className="hidden md:flex items-center space-x-7 text-xs font-semibold text-slate-400">
             <a href="#mapa" className="hover:text-white transition-colors">Cocheras en Vivo</a>
             <a href="#experiencia" className="hover:text-white transition-colors">Experiencia</a>
@@ -137,7 +138,7 @@ export const LandingPage = ({
             <a href="#afiliacion" className="hover:text-white transition-colors">Para Propietarios</a>
           </nav>
 
-          {/* Botones de Acción */}
+          {/* Acciones */}
           <div className="flex items-center space-x-2">
             <button
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
@@ -161,9 +162,9 @@ export const LandingPage = ({
       </div>
 
       {/* =========================================================================
-          2. CINEMATIC HERO SECTION (Clean, Expansive, High Impact)
+          2. CINEMATIC HERO SECTION
           ========================================================================= */}
-      <section ref={heroRef} className="relative pt-36 pb-20 sm:pt-44 sm:pb-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative pt-36 pb-20 sm:pt-44 sm:pb-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
         
         {/* Iluminación Atmosférica Suave */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[900px] h-[400px] bg-gradient-to-tr from-emerald-500/15 via-teal-500/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
@@ -200,7 +201,7 @@ export const LandingPage = ({
             Consulta disponibilidad satelital en tiempo real, elige tu plaza exacta en el plano 2D de la cochera y accede en segundos con tu pase digital o lectura de placa.
           </motion.p>
 
-          {/* Botón Principal de Exploración */}
+          {/* Botones Principales de Exploración */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -225,7 +226,7 @@ export const LandingPage = ({
             </button>
           </motion.div>
 
-          {/* Métricas Limpias Sin Badges */}
+          {/* Métricas de Precisión */}
           <motion.div 
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
@@ -262,7 +263,7 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          3. HARDWARE MOCKUP SHOWCASE (Double-Bezel Architecture)
+          3. HARDWARE MOCKUP SHOWCASE (Arquitectura de Doble Bisel)
           ========================================================================= */}
       <section id="experiencia" className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12">
         
@@ -274,11 +275,11 @@ export const LandingPage = ({
             Todo tu estacionamiento en un solo toque.
           </h2>
           <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-            Sin aplicaciones pesadas que descargar. Funciona directo desde el navegador de tu celular con máxima fluidez.
+            Sin aplicaciones pesadas. Funciona directo desde el navegador de tu celular con máxima fluidez y rapidez.
           </p>
         </div>
 
-        {/* Double-Bezel Enclosure: Shell Exterior + Núcleo Interior */}
+        {/* Double-Bezel Enclosure */}
         <div className="p-2.5 sm:p-4 rounded-[2.5rem] bg-gradient-to-b from-white/10 via-white/5 to-white/0 border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.8)]">
           <div className="rounded-[2rem] bg-slate-950 p-6 sm:p-10 border border-white/5 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
             

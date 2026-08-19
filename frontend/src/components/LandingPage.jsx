@@ -9,8 +9,6 @@ import {
   ChevronRight, 
   Building2, 
   ArrowRight, 
-  Zap, 
-  Clock, 
   Navigation, 
   Camera, 
   CreditCard, 
@@ -19,10 +17,9 @@ import {
   Filter,
   Check,
   Layers,
-  ArrowUpRight,
-  Shield,
-  Activity,
-  Compass
+  Clock,
+  Zap,
+  Globe
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -41,12 +38,12 @@ export const LandingPage = ({
   // Barra de progreso de lectura fluida superior
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
-    stiffness: 120,
+    stiffness: 140,
     damping: 30,
     restDelta: 0.001
   });
 
-  // Filtrado optimizado de cocheras con useMemo
+  // Filtrado de cocheras
   const filteredParkings = useMemo(() => {
     return establishments.filter((p) => {
       const matchesSearch = 
@@ -77,354 +74,333 @@ export const LandingPage = ({
     }, 0);
   }, [establishments]);
 
-  const totalSlotsCount = useMemo(() => {
-    return establishments.reduce((acc, curr) => {
-      return acc + (curr.elements || []).filter(e => e.type === 'slot').length;
-    }, 0);
-  }, [establishments]);
-
   const faqs = [
     {
-      q: '¿Cómo accedo a la cochera una vez realizada mi reserva?',
-      a: 'Al confirmar tu reserva se genera un Pase Digital QR vinculado a tu placa. Al aproximarte a la garita, la cámara inteligente ANPR detecta tu vehículo y eleva la barrera automáticamente, o puedes mostrar el código QR al operador.'
+      q: '¿Cómo se realiza el ingreso a la cochera con la reserva?',
+      a: 'Al confirmar la reserva en la plataforma se emite un Pase Digital con código de identificación vehicular. Al llegar a la garita en Huamanga, la cámara ANPR reconoce la placa registrada y habilita el acceso de forma inmediata.'
     },
     {
-      q: '¿Cuáles son los métodos de pago disponibles?',
-      a: 'Puedes pagar de forma digital mediante Yape, Plin y tarjetas de crédito o débito a través de la pasarela Culqi, emitiéndose tu comprobante de pago electrónico de manera instantánea.'
+      q: '¿Cuáles son los canales de pago habilitados?',
+      a: 'La plataforma procesa pagos digitales a través de Yape, Plin y tarjetas de crédito o débito mediante pasarela bancaria segura, emitiendo el comprobante de pago de inmediato.'
     },
     {
-      q: '¿Existe tolerancia de tiempo en caso de tráfico en Huamanga?',
-      a: 'Sí. Todas las cocheras de la red disponen de 15 minutos de cortesía y tolerancia garantizada para que tu ingreso se realice con total tranquilidad.'
+      q: '¿Existe tolerancia de tiempo ante eventualidades de tráfico?',
+      a: 'Todos los estacionamientos afiliados disponen de un margen de 15 minutos de cortesía y tolerancia garantizada para asegurar una llegada sin contratiempos.'
     },
     {
-      q: '¿Cómo puedo afiliar mi estacionamiento a la red Smart-Park?',
-      a: 'Haz clic en "Afiliar Cochera", completa los datos de tu inmueble y nuestro equipo técnico configurará tu plano 2D interactivo y garita en 24 horas.'
+      q: '¿Cuál es el procedimiento para afiliar un estacionamiento en Huamanga?',
+      a: 'Seleccione la opción "Afiliar Cochera", ingrese los datos de ubicación y capacidad del inmueble, y el equipo técnico configurará el plano digital y el acceso en un plazo de 24 horas.'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-[#060913] text-slate-100 font-sans selection:bg-emerald-500 selection:text-black antialiased overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#FBFBFA] text-[#191919] font-sans antialiased selection:bg-[#EAEAEA] selection:text-black">
       
-      {/* Barra de progreso superior */}
+      {/* Indicador de lectura superior */}
       <motion.div 
-        className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 z-[100] origin-left"
+        className="fixed top-0 left-0 right-0 h-[2px] bg-[#111111] z-[100] origin-left"
         style={{ scaleX }}
       />
 
       {/* =========================================================================
-          1. HEADER FLUIDO DE CRISTAL (FLUID ISLAND NAVBAR)
+          1. HEADER EDITORIAL MINIMALISTA
           ========================================================================= */}
-      <div className="fixed top-5 left-0 right-0 z-50 px-4 flex justify-center pointer-events-none">
-        <header className="pointer-events-auto w-full max-w-5xl bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-full px-4 sm:px-6 py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center justify-between transition-all">
+      <header className="sticky top-0 z-50 bg-[#FBFBFA]/90 backdrop-blur-md border-b border-[#EAEAEA] px-6 lg:px-12 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           
-          {/* Marca */}
+          {/* Logo y Denominación */}
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-white text-slate-950 flex items-center justify-center font-bold shadow-md shrink-0">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+            <div className="w-7 h-7 rounded-md bg-[#111111] text-white flex items-center justify-center font-bold text-xs">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
                 <path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
                 <circle cx="12" cy="12" r="10" />
               </svg>
             </div>
-            <span className="text-sm font-black text-white tracking-tight font-tech">
-              SMART-PARK
-            </span>
+            <div className="leading-none">
+              <span className="text-sm font-black tracking-tight text-[#111111] font-mono">
+                SMART-PARK
+              </span>
+              <span className="text-[10px] text-[#787774] font-mono block mt-0.5">
+                Ayacucho • Huamanga
+              </span>
+            </div>
           </div>
 
-          {/* Navegación */}
-          <nav className="hidden md:flex items-center space-x-7 text-xs font-semibold text-slate-400">
-            <a href="#mapa" className="hover:text-white transition-colors">Cocheras en Vivo</a>
-            <a href="#experiencia" className="hover:text-white transition-colors">Experiencia</a>
-            <a href="#infraestructura" className="hover:text-white transition-colors">Tecnología</a>
-            <a href="#afiliacion" className="hover:text-white transition-colors">Para Propietarios</a>
+          {/* Navegación Tipográfica */}
+          <nav className="hidden md:flex items-center space-x-8 text-xs font-medium text-[#787774]">
+            <a href="#mapa" className="hover:text-[#111111] transition-colors">Directorio de Cocheras</a>
+            <a href="#sistema" className="hover:text-[#111111] transition-colors">Funcionamiento</a>
+            <a href="#infraestructura" className="hover:text-[#111111] transition-colors">Infraestructura</a>
+            <a href="#afiliacion" className="hover:text-[#111111] transition-colors">Propietarios</a>
           </nav>
 
           {/* Acciones */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="hidden sm:inline-flex text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 transition cursor-pointer"
+              className="hidden sm:inline-flex text-xs font-medium text-[#787774] hover:text-[#111111] px-3 py-1.5 transition cursor-pointer"
             >
               Afiliar Cochera
             </button>
 
             <button
               onClick={() => onOpenAuth && onOpenAuth('login')}
-              className="group rounded-full bg-white hover:bg-slate-100 text-slate-950 font-black text-xs px-4 py-2 flex items-center space-x-2 transition-all duration-200 active:scale-95 shadow-md cursor-pointer"
+              className="bg-[#111111] hover:bg-[#333333] text-white text-xs font-medium px-4 py-2 rounded-md transition active:scale-[0.98] cursor-pointer flex items-center space-x-2"
             >
-              <span>Acceder</span>
-              <div className="w-5 h-5 rounded-full bg-slate-950 text-white flex items-center justify-center transition-transform duration-200 group-hover:translate-x-0.5">
-                <ArrowRight className="w-3 h-3" />
-              </div>
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Acceder al Sistema</span>
             </button>
           </div>
 
-        </header>
-      </div>
+        </div>
+      </header>
 
       {/* =========================================================================
-          2. CINEMATIC HERO SECTION
+          2. HERO SECTION EDITORIAL (Minimalist Typography & Structure)
           ========================================================================= */}
-      <section className="relative pt-36 pb-20 sm:pt-44 sm:pb-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="pt-24 pb-20 px-6 lg:px-12 max-w-6xl mx-auto space-y-12">
         
-        {/* Iluminación Atmosférica Suave */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[900px] h-[400px] bg-gradient-to-tr from-emerald-500/15 via-teal-500/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
-
-        <div className="max-w-5xl mx-auto text-center relative z-10 space-y-8">
+        <div className="max-w-4xl space-y-6">
           
-          {/* Subtítulo de Ciudad */}
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-xs font-mono font-bold tracking-[0.25em] text-emerald-400 uppercase"
-          >
-            Red de Estacionamientos Inteligentes • Ayacucho
-          </motion.div>
+          <div className="inline-flex items-center space-x-2 px-2.5 py-1 bg-[#EDF3EC] text-[#346538] rounded-md text-xs font-mono font-medium border border-[#DCE8DB]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#346538]" />
+            <span>{totalFreeSlots} plazas disponibles en tiempo real en Huamanga</span>
+          </div>
 
-          {/* Titular Monumental */}
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tighter leading-[1.05] max-w-4xl mx-auto"
-          >
-            El fin de buscar estacionamiento a ciegas en Huamanga.
-          </motion.h1>
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#111111] leading-[1.08]">
+            La infraestructura de estacionamiento para Ayacucho.
+          </h1>
 
-          {/* Subtítulo Descriptivo */}
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-sm sm:text-base md:text-lg text-slate-400 max-w-2xl mx-auto font-normal leading-relaxed"
-          >
-            Consulta disponibilidad satelital en tiempo real, elige tu plaza exacta en el plano 2D de la cochera y accede en segundos con tu pase digital o lectura de placa.
-          </motion.p>
+          <p className="text-base sm:text-lg text-[#555555] max-w-2xl font-normal leading-relaxed">
+            Consulte la disponibilidad en tiempo real, seleccione su plaza en el plano topográfico 2D del estacionamiento y acceda mediante reconocimiento de placa ANPR.
+          </p>
 
-          {/* Botones Principales de Exploración */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3.5"
-          >
+          <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
             <a
               href="#mapa"
-              className="group w-full sm:w-auto px-7 py-3.5 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center space-x-3 transition-all duration-200 shadow-xl shadow-emerald-500/20 active:scale-98 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded-md transition active:scale-[0.98] flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
             >
-              <span>Explorar Cocheras en Vivo</span>
-              <div className="w-6 h-6 rounded-full bg-slate-950 text-emerald-400 flex items-center justify-center transition-transform duration-200 group-hover:translate-x-1">
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
+              <span>Consultar Mapa en Vivo</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </a>
 
             <button
-              onClick={() => onOpenAuth && onOpenAuth('login')}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-xs sm:text-sm border border-white/10 transition cursor-pointer"
+              onClick={() => onOpenAuth && onOpenAuth('affiliation')}
+              className="w-full sm:w-auto px-5 py-3 bg-white hover:bg-[#F0F0EF] text-[#111111] text-xs font-medium rounded-md border border-[#EAEAEA] transition cursor-pointer"
             >
-              Iniciar Sesión
+              Afiliar Establecimiento
             </button>
-          </motion.div>
-
-          {/* Métricas de Precisión */}
-          <motion.div 
-            initial={{ opacity: 0, y: 25 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto text-center border-t border-white/5"
-          >
-            <div>
-              <span className="text-2xl sm:text-3xl font-black text-white font-mono block">
-                {establishments.length}+
-              </span>
-              <span className="text-xs text-slate-500 font-medium block mt-1">Cocheras Conectadas</span>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono block">
-                {totalFreeSlots}
-              </span>
-              <span className="text-xs text-slate-500 font-medium block mt-1">Plazas Libres Ahora</span>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-black text-white font-mono block">
-                100%
-              </span>
-              <span className="text-xs text-slate-500 font-medium block mt-1">Sin Tickets de Papel</span>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono block">
-                S/ 4.00
-              </span>
-              <span className="text-xs text-slate-500 font-medium block mt-1">Tarifa Promedio / Hora</span>
-            </div>
-          </motion.div>
+          </div>
 
         </div>
+
+        {/* Métricas de Precisión */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#EAEAEA]">
+          <div className="space-y-1">
+            <span className="font-mono text-2xl font-bold text-[#111111] block">
+              {establishments.length}
+            </span>
+            <span className="text-xs text-[#787774] font-medium block">Cocheras conectadas</span>
+          </div>
+
+          <div className="space-y-1">
+            <span className="font-mono text-2xl font-bold text-[#346538] block">
+              {totalFreeSlots}
+            </span>
+            <span className="text-xs text-[#787774] font-medium block">Plazas libres ahora</span>
+          </div>
+
+          <div className="space-y-1">
+            <span className="font-mono text-2xl font-bold text-[#111111] block">
+              &lt; 0.2s
+            </span>
+            <span className="text-xs text-[#787774] font-medium block">Lectura de placa ANPR</span>
+          </div>
+
+          <div className="space-y-1">
+            <span className="font-mono text-2xl font-bold text-[#111111] block">
+              S/ 4.00
+            </span>
+            <span className="text-xs text-[#787774] font-medium block">Tarifa base promedio</span>
+          </div>
+        </div>
+
       </section>
 
       {/* =========================================================================
-          3. HARDWARE MOCKUP SHOWCASE (Arquitectura de Doble Bisel)
+          3. MOCKUP DE VENTANA FAUX-OS (Document Style)
           ========================================================================= */}
-      <section id="experiencia" className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12">
+      <section id="sistema" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <span className="text-xs font-mono font-bold tracking-[0.2em] text-emerald-400 uppercase">
-            EXPERIENCIA DIGITAL NATIVA
+        <div className="max-w-2xl space-y-2">
+          <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
+            ARQUITECTURA DE ACCESO
           </span>
-          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            Todo tu estacionamiento en un solo toque.
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#111111] tracking-tight">
+            Interacción directa sin aplicaciones intermedias
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-            Sin aplicaciones pesadas. Funciona directo desde el navegador de tu celular con máxima fluidez y rapidez.
+          <p className="text-xs sm:text-sm text-[#787774]">
+            La plataforma opera mediante interfaz web ligera optimizada para cualquier navegador móvil.
           </p>
         </div>
 
-        {/* Double-Bezel Enclosure */}
-        <div className="p-2.5 sm:p-4 rounded-[2.5rem] bg-gradient-to-b from-white/10 via-white/5 to-white/0 border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.8)]">
-          <div className="rounded-[2rem] bg-slate-950 p-6 sm:p-10 border border-white/5 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+        {/* Contenedor Faux-OS Window Chrome */}
+        <div className="rounded-xl border border-[#EAEAEA] bg-white shadow-xs overflow-hidden">
+          
+          {/* Barra superior de ventana */}
+          <div className="px-4 py-3 bg-[#F7F6F3] border-b border-[#EAEAEA] flex items-center justify-between">
+            <div className="flex items-center space-x-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
+            </div>
+            <span className="font-mono text-[11px] text-[#787774]">
+              smart-park.pe/pase/SPK-8912
+            </span>
+            <div className="w-10" />
+          </div>
+
+          {/* Cuerpo del Mockup */}
+          <div className="p-6 sm:p-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-white">
             
-            {/* Columna 1: Características Clave */}
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-white tracking-tight">1. Plano Topográfico 2D</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Elige visualmente la plaza que prefieras: techada, cerca de la garita o con rampa accesible.
+            <div className="space-y-6 md:col-span-1 border-r border-[#EAEAEA] md:pr-6">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-[#111111]">1. Selección en Plano 2D</h3>
+                <p className="text-xs text-[#787774] leading-relaxed">
+                  Identificación exacta del espacio asignado: techado, estándar o con acceso preferencial.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-white tracking-tight">2. Navegación GPS Waze & Maps</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Un toque en tu pase digital y tu teléfono traza la ruta de manejo exacta hacia la cochera.
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-[#111111]">2. Ruteo Satelital GPS</h3>
+                <p className="text-xs text-[#787774] leading-relaxed">
+                  Trazado de navegación directa hacia la garita mediante Google Maps o Waze.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-white tracking-tight">3. Lectura de Placa ANPR</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Cero colas en garita. El sistema reconoce la placa de tu auto y autoriza el ingreso en menos de un segundo.
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-[#111111]">3. Control de Garita</h3>
+                <p className="text-xs text-[#787774] leading-relaxed">
+                  Apertura automática de la barrera vehicular tras el reconocimiento de caracteres de placa.
                 </p>
               </div>
             </div>
 
-            {/* Columna 2 & 3: Maqueta de Pase Digital Realista */}
-            <div className="lg:col-span-2 bg-gradient-to-b from-slate-900 to-slate-900/60 p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl space-y-6">
+            {/* Ficha de Pase Digital */}
+            <div className="md:col-span-2 bg-[#FBFBFA] p-6 rounded-lg border border-[#EAEAEA] space-y-4">
               
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-2xl bg-white text-slate-950 flex items-center justify-center font-bold">
-                    <QrCode className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-sm text-white">Smart Park Plaza Mayor</h4>
-                    <p className="text-xs text-slate-400">Jr. 28 de Julio 142 • Centro Histórico</p>
-                  </div>
+              <div className="flex items-center justify-between border-b border-[#EAEAEA] pb-3">
+                <div>
+                  <h4 className="font-bold text-sm text-[#111111]">Smart Park Plaza Mayor</h4>
+                  <p className="text-xs text-[#787774] font-mono">Jr. 28 de Julio 142 • Huamanga</p>
                 </div>
-                <div className="text-right font-mono">
-                  <span className="text-xs text-emerald-400 font-bold block">PASE AUTORIZADO</span>
-                  <span className="text-[10px] text-slate-500 block">Tolerancia 15 min</span>
+                <span className="px-2.5 py-1 rounded bg-[#EDF3EC] text-[#346538] font-mono text-xs font-semibold">
+                  AUTORIZADO
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 font-mono text-xs">
+                <div className="p-3 bg-white rounded border border-[#EAEAEA]">
+                  <span className="text-[10px] text-[#787774] block uppercase">Plaza</span>
+                  <strong className="text-sm text-[#111111] block mt-0.5">A-01</strong>
+                </div>
+                <div className="p-3 bg-white rounded border border-[#EAEAEA]">
+                  <span className="text-[10px] text-[#787774] block uppercase">Vehículo</span>
+                  <strong className="text-sm text-[#111111] block mt-0.5">ABC-123</strong>
+                </div>
+                <div className="p-3 bg-white rounded border border-[#EAEAEA]">
+                  <span className="text-[10px] text-[#787774] block uppercase">Tolerancia</span>
+                  <strong className="text-sm text-[#346538] block mt-0.5">15 min</strong>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
-                <div className="bg-slate-950 p-3.5 rounded-2xl border border-white/5 space-y-1">
-                  <span className="text-[10px] text-slate-500 block uppercase">Plaza Asignada</span>
-                  <strong className="text-base text-emerald-400 font-bold block">A-01 (Techada)</strong>
-                </div>
-                <div className="bg-slate-950 p-3.5 rounded-2xl border border-white/5 space-y-1">
-                  <span className="text-[10px] text-slate-500 block uppercase">Vehículo</span>
-                  <strong className="text-base text-white font-bold block">ABC-123</strong>
-                </div>
-                <div className="bg-slate-950 p-3.5 rounded-2xl border border-white/5 space-y-1">
-                  <span className="text-[10px] text-slate-500 block uppercase">Token de Acceso</span>
-                  <strong className="text-base text-slate-300 font-bold block truncate">SPK-8912</strong>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-white/5">
-                <span>Estado: <strong className="text-white font-medium">Listo para escanear en garita</strong></span>
-                <span>Plataforma: <strong className="text-emerald-400 font-medium">Smart-Park v2.4</strong></span>
+              <div className="flex items-center justify-between text-xs text-[#787774] pt-2 border-t border-[#EAEAEA] font-mono">
+                <span>Token: SPK-8912-7B2F9A</span>
+                <span>Visión Computacional 60 FPS</span>
               </div>
 
             </div>
 
           </div>
+
         </div>
 
       </section>
 
       {/* =========================================================================
-          4. SECCIÓN DEL MAPA EN VIVO DE AYACUCHO
+          4. DIRECTORIO Y MAPA EN TIEMPO REAL
           ========================================================================= */}
-      <section id="mapa" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
+      <section id="mapa" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="space-y-2">
-            <span className="text-xs font-mono font-bold tracking-[0.2em] text-emerald-400 uppercase block">
-              LOCALIZACIÓN EN TIEMPO REAL
+          <div className="space-y-1">
+            <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
+              COBERTURA URBANA
             </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-              Estacionamientos en Ayacucho
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#111111] tracking-tight">
+              Estacionamientos en Huamanga
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400">
-              Selecciona una cochera para ver tarifas por hora, disponibilidad de plazas y trazar ruta GPS.
+            <p className="text-xs sm:text-sm text-[#787774]">
+              Tarifas por hora, capacidad de plazas y ruteo directo.
             </p>
           </div>
 
-          {/* Filtros Tipográficos Limpios */}
-          <div className="flex items-center space-x-2 overflow-x-auto pb-1 text-xs scrollbar-none flex-nowrap shrink-0">
+          {/* Filtros */}
+          <div className="flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
             <button
               onClick={() => setCategoryFilter('todos')}
-              className={`px-4 py-2 rounded-full font-bold transition shrink-0 cursor-pointer ${
-                categoryFilter === 'todos' 
-                  ? 'bg-white text-slate-950 shadow-md' 
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-white/10'
+              className={`px-3 py-1.5 rounded-md font-medium transition cursor-pointer border ${
+                categoryFilter === 'todos'
+                  ? 'bg-[#111111] text-white border-[#111111]'
+                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
               }`}
             >
-              Todas ({establishments.length})
+              Todos ({establishments.length})
             </button>
             <button
               onClick={() => setCategoryFilter('centro')}
-              className={`px-4 py-2 rounded-full font-bold transition shrink-0 cursor-pointer ${
-                categoryFilter === 'centro' 
-                  ? 'bg-emerald-400 text-slate-950 shadow-md' 
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-white/10'
+              className={`px-3 py-1.5 rounded-md font-medium transition cursor-pointer border ${
+                categoryFilter === 'centro'
+                  ? 'bg-[#111111] text-white border-[#111111]'
+                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
               }`}
             >
               Centro Histórico
             </button>
             <button
               onClick={() => setCategoryFilter('techados')}
-              className={`px-4 py-2 rounded-full font-bold transition shrink-0 cursor-pointer ${
-                categoryFilter === 'techados' 
-                  ? 'bg-emerald-400 text-slate-950 shadow-md' 
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-white/10'
+              className={`px-3 py-1.5 rounded-md font-medium transition cursor-pointer border ${
+                categoryFilter === 'techados'
+                  ? 'bg-[#111111] text-white border-[#111111]'
+                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
               }`}
             >
-              Techadas
+              Techados
             </button>
             <button
               onClick={() => setCategoryFilter('economicos')}
-              className={`px-4 py-2 rounded-full font-bold transition shrink-0 cursor-pointer ${
-                categoryFilter === 'economicos' 
-                  ? 'bg-emerald-400 text-slate-950 shadow-md' 
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-white/10'
+              className={`px-3 py-1.5 rounded-md font-medium transition cursor-pointer border ${
+                categoryFilter === 'economicos'
+                  ? 'bg-[#111111] text-white border-[#111111]'
+                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
               }`}
             >
-              Económicas (≤ S/ 4.50)
+              Económicos (≤ S/ 4.50)
             </button>
           </div>
         </div>
 
         {/* Mapa Leaflet */}
-        <AyacuchoMap
-          parkings={filteredParkings}
-          onSelectParking={(p) => {
-            if (onSelectParking) onSelectParking(p);
-          }}
-        />
+        <div className="rounded-xl border border-[#EAEAEA] overflow-hidden shadow-xs bg-white">
+          <AyacuchoMap
+            parkings={filteredParkings}
+            onSelectParking={(p) => {
+              if (onSelectParking) onSelectParking(p);
+            }}
+          />
+        </div>
 
-        {/* Tarjetas de Cocheras con Estética Doble Bisel */}
+        {/* Grilla de Cocheras con Estilo Documental */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
           {filteredParkings.map((p) => {
             const elements = p.elements || [];
@@ -434,54 +410,51 @@ export const LandingPage = ({
             return (
               <div 
                 key={p.id} 
-                className="p-2 rounded-[2rem] bg-slate-900/60 border border-white/10 shadow-xl hover:border-emerald-500/30 transition-all duration-300 flex flex-col justify-between"
+                className="bg-white rounded-xl border border-[#EAEAEA] p-5 flex flex-col justify-between shadow-xs hover:border-[#D4D4D4] transition"
               >
-                <div className="rounded-[1.5rem] bg-slate-950 overflow-hidden">
-                  
-                  {/* Foto de Cochera */}
-                  <div className="h-44 relative overflow-hidden">
+                <div className="space-y-3">
+                  <div className="h-36 rounded-lg overflow-hidden relative bg-[#F7F6F3]">
                     <img 
                       src={p.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
                       alt={p.name} 
-                      className="w-full h-full object-cover opacity-90 hover:opacity-100 transition duration-500 hover:scale-105" 
+                      className="w-full h-full object-cover" 
                     />
-                    <div className="absolute top-3 right-3 bg-slate-950/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-mono font-bold text-emerald-400 border border-white/10">
+                    <div className="absolute top-2.5 right-2.5 bg-white/95 px-2.5 py-1 rounded text-xs font-mono font-bold text-[#111111] border border-[#EAEAEA] shadow-xs">
                       S/ {Number(p.rate).toFixed(2)}/h
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-slate-950/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-mono font-bold text-white border border-white/10">
-                      {freeSlots} Libres de {totalCount}
                     </div>
                   </div>
 
-                  {/* Detalles */}
-                  <div className="p-5 space-y-2.5">
-                    <h3 className="font-extrabold text-white text-base leading-tight">{p.name}</h3>
-                    <p className="text-xs text-slate-400 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> 
-                      <span className="truncate">{p.address} {p.reference ? `(${p.reference})` : ''}</span>
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-sm text-[#111111]">{p.name}</h3>
+                    <p className="text-xs text-[#787774] flex items-center gap-1 truncate">
+                      <MapPin className="w-3.5 h-3.5 text-[#111111] shrink-0" />
+                      <span>{p.address} {p.reference ? `(${p.reference})` : ''}</span>
                     </p>
                   </div>
 
+                  <div className="flex items-center justify-between text-xs font-mono text-[#787774] pt-2 border-t border-[#EAEAEA]">
+                    <span>Disponibilidad:</span>
+                    <strong className="text-[#346538] font-bold">{freeSlots} libres de {totalCount}</strong>
+                  </div>
                 </div>
 
-                {/* Acciones */}
-                <div className="p-3 pt-4 space-y-2">
+                <div className="pt-4 space-y-2">
                   <div className="flex items-center gap-2">
                     <a
                       href={`https://www.google.com/maps/dir/?api=1&destination=${p.latitude || -13.1604},${p.longitude || -74.2259}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 py-2 px-3 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border border-white/5"
+                      className="flex-1 py-1.5 px-3 bg-[#FBFBFA] hover:bg-[#F0F0EF] text-[#111111] rounded text-xs font-medium text-center border border-[#EAEAEA] transition"
                     >
-                      <span>📍 Google Maps</span>
+                      Google Maps
                     </a>
                     <a
                       href={`https://waze.com/ul?ll=${p.latitude || -13.1604},${p.longitude || -74.2259}&navigate=yes`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 py-2 px-3 bg-slate-900 hover:bg-slate-800 text-blue-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-white/5"
+                      className="flex-1 py-1.5 px-3 bg-[#FBFBFA] hover:bg-[#F0F0EF] text-[#111111] rounded text-xs font-medium text-center border border-[#EAEAEA] transition"
                     >
-                      <span>🚗 Waze</span>
+                      Waze
                     </a>
                   </div>
 
@@ -489,10 +462,10 @@ export const LandingPage = ({
                     onClick={() => {
                       if (onSelectParking) onSelectParking(p);
                     }}
-                    className="w-full py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-black text-xs flex items-center justify-center space-x-2 transition cursor-pointer active:scale-98 shadow-md"
+                    className="w-full py-2 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded transition flex items-center justify-center space-x-1.5 cursor-pointer"
                   >
                     <span>Ver Plano & Reservar</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
@@ -504,104 +477,92 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          5. BENTO GRID DE ARQUITECTURA TECNOLÓGICA
+          5. BENTO GRID DE ESPECIFICACIONES TÉCNICAS
           ========================================================================= */}
-      <section id="infraestructura" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+      <section id="infraestructura" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <span className="text-xs font-mono font-bold tracking-[0.2em] text-emerald-400 uppercase">
-            INFRAESTRUCTURA DE VANGUARDIA
+        <div className="max-w-2xl space-y-2">
+          <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
+            ESPECIFICACIÓN TÉCNICA
           </span>
-          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            Tecnología construida para la velocidad.
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#111111] tracking-tight">
+            Módulos del Sistema Operativo
           </h2>
         </div>
 
-        {/* Asymmetrical Bento Grid */}
+        {/* Bento Grid Editorial */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Card 1: Reconocimiento ANPR */}
-          <div className="md:col-span-2 p-8 rounded-[2rem] bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-white/10 shadow-2xl flex flex-col justify-between space-y-8">
-            <div className="space-y-3 max-w-md">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-400/10 text-emerald-400 flex items-center justify-center border border-emerald-400/20">
-                <Camera className="w-5 h-5" />
+          <div className="md:col-span-2 bg-white p-8 rounded-xl border border-[#EAEAEA] space-y-6 flex flex-col justify-between shadow-xs">
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded bg-[#EDF3EC] text-[#346538] flex items-center justify-center font-bold text-xs">
+                <Camera className="w-4 h-4" />
               </div>
-              <h3 className="text-2xl font-black text-white tracking-tight">
-                Visión Artificial y Detección ANPR
+              <h3 className="text-lg font-bold text-[#111111]">
+                Reconocimiento Automático de Placas (ANPR)
               </h3>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Algoritmos optimizados para reconocer placas del parque automotor peruano a 60 cuadros por segundo, incluso en condiciones de baja iluminación nocturna.
+              <p className="text-xs text-[#555555] leading-relaxed">
+                Algoritmos de visión artificial entrenados para placas vehiculares peruanas con captura a 60 cuadros por segundo y tolerancia a variaciones lumínicas.
               </p>
             </div>
-
-            <div className="p-4 bg-slate-950 rounded-2xl border border-white/5 flex items-center justify-between font-mono text-xs text-slate-300">
-              <span>Latencia de lectura en garita:</span>
-              <strong className="text-emerald-400 font-bold">&lt; 180 milisegundos</strong>
+            <div className="p-3 bg-[#FBFBFA] rounded border border-[#EAEAEA] font-mono text-xs text-[#787774] flex justify-between">
+              <span>Tiempo de detección:</span>
+              <strong className="text-[#111111]">&lt; 180 ms</strong>
             </div>
           </div>
 
-          {/* Card 2: Pase QR Inteligente */}
-          <div className="p-8 rounded-[2rem] bg-slate-900 border border-white/10 shadow-2xl flex flex-col justify-between space-y-8">
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-2xl bg-teal-400/10 text-teal-400 flex items-center justify-center border border-teal-400/20">
-                <QrCode className="w-5 h-5" />
+          <div className="bg-white p-8 rounded-xl border border-[#EAEAEA] space-y-6 flex flex-col justify-between shadow-xs">
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded bg-[#E1F3FE] text-[#1F6C9F] flex items-center justify-center font-bold text-xs">
+                <QrCode className="w-4 h-4" />
               </div>
-              <h3 className="text-xl font-black text-white tracking-tight">
-                Pase QR con Tolerancia
+              <h3 className="text-lg font-bold text-[#111111]">
+                Pase Digital Criptográfico
               </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Pase digital de alta resolución con temporizador de cuenta regresiva y 15 minutos de cortesía en todas las sedes.
+              <p className="text-xs text-[#555555] leading-relaxed">
+                Tokens únicos de acceso con temporizador en vivo y respaldo en almacenamiento local del dispositivo.
               </p>
             </div>
-
-            <div className="p-3 bg-slate-950 rounded-xl border border-white/5 text-center font-mono text-xs text-slate-400">
-              Operación 100% Sin Papel
+            <div className="p-3 bg-[#FBFBFA] rounded border border-[#EAEAEA] font-mono text-xs text-[#787774] text-center">
+              Protocolo Zero-Paper
             </div>
           </div>
 
-          {/* Card 3: Pasarelas de Pago */}
-          <div className="p-8 rounded-[2rem] bg-slate-900 border border-white/10 shadow-2xl flex flex-col justify-between space-y-8">
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-400/10 text-blue-400 flex items-center justify-center border border-blue-400/20">
-                <CreditCard className="w-5 h-5" />
+          <div className="bg-white p-8 rounded-xl border border-[#EAEAEA] space-y-6 flex flex-col justify-between shadow-xs">
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded bg-[#FBF3DB] text-[#956400] flex items-center justify-center font-bold text-xs">
+                <CreditCard className="w-4 h-4" />
               </div>
-              <h3 className="text-xl font-black text-white tracking-tight">
-                Pagos con Yape, Plin y Tarjeta
+              <h3 className="text-lg font-bold text-[#111111]">
+                Pasarela de Pagos
               </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Liquidación inmediata mediante Culqi con emisión automática de tu boleta electrónica tributaria.
+              <p className="text-xs text-[#555555] leading-relaxed">
+                Integración con Yape, Plin y tarjetas de débito/crédito con liquidación y comprobante inmediato.
               </p>
             </div>
-
-            <div className="flex items-center justify-around text-xs font-mono text-slate-400">
-              <span>Yape</span>
-              <span>•</span>
-              <span>Plin</span>
-              <span>•</span>
-              <span>Visa/Mastercard</span>
+            <div className="p-3 bg-[#FBFBFA] rounded border border-[#EAEAEA] font-mono text-xs text-[#787774] text-center">
+              Yape • Plin • Culqi
             </div>
           </div>
 
-          {/* Card 4: Seguridad y Trazabilidad */}
-          <div className="md:col-span-2 p-8 rounded-[2rem] bg-slate-900 border border-white/10 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="space-y-3 max-w-md">
-              <div className="w-10 h-10 rounded-2xl bg-amber-400/10 text-amber-400 flex items-center justify-center border border-amber-400/20">
-                <ShieldCheck className="w-5 h-5" />
+          <div className="md:col-span-2 bg-white p-8 rounded-xl border border-[#EAEAEA] space-y-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xs">
+            <div className="space-y-2 max-w-md">
+              <div className="w-8 h-8 rounded bg-[#EDF3EC] text-[#346538] flex items-center justify-center font-bold text-xs">
+                <ShieldCheck className="w-4 h-4" />
               </div>
-              <h3 className="text-2xl font-black text-white tracking-tight">
-                Seguridad y Trazabilidad 24 Horas
+              <h3 className="text-lg font-bold text-[#111111]">
+                Seguridad y Trazabilidad de Garita
               </h3>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Registro horario de ingresos, bitácora fotográfica y soporte en tiempo real ante cualquier eventualidad.
+              <p className="text-xs text-[#555555] leading-relaxed">
+                Registro horario inmutable de ingresos y salidas con bitácora fotográfica por evento.
               </p>
             </div>
-
-            <div className="space-y-2 text-xs font-mono text-slate-300 w-full sm:w-auto">
-              <div className="p-3 bg-slate-950 rounded-xl border border-white/5">
-                ✔ Auditoría de accesos en tiempo real
+            <div className="space-y-1.5 text-xs font-mono text-[#787774] w-full sm:w-auto">
+              <div className="p-2.5 bg-[#FBFBFA] rounded border border-[#EAEAEA]">
+                Auditoría horaria continua
               </div>
-              <div className="p-3 bg-slate-950 rounded-xl border border-white/5">
-                ✔ Registro fotográfico por vehículo
+              <div className="p-2.5 bg-[#FBFBFA] rounded border border-[#EAEAEA]">
+                Registro de eventos en vivo
               </div>
             </div>
           </div>
@@ -611,113 +572,108 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          6. SECCIÓN PARA DUEÑOS DE COCHERAS (B2B)
+          6. SECCIÓN PROPIETARIOS DE ESTACIONAMIENTOS
           ========================================================================= */}
-      <section id="afiliacion" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="p-3 sm:p-4 rounded-[2.5rem] bg-gradient-to-b from-white/10 to-transparent border border-white/10 shadow-2xl">
-          <div className="rounded-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-8 sm:p-14 border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8">
-            
-            <div className="max-w-xl space-y-4">
-              <span className="text-xs font-mono font-bold tracking-[0.2em] text-emerald-400 uppercase block">
-                PARA PROPIETARIOS DE ESTACIONAMIENTOS
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                Digitaliza tu cochera en Ayacucho.
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Únete a la red Smart-Park. Instalamos el plano 2D interactivo, el sistema de garita ANPR y conectamos tu negocio a miles de conductores en Huamanga.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <button
-                onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                className="px-8 py-4 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-black text-xs transition cursor-pointer shadow-lg active:scale-98"
-              >
-                Solicitar Afiliación
-              </button>
-              <a
-                href="https://wa.me/51966000000?text=Hola,%20deseo%20afiliar%20mi%20cochera%20en%20Ayacucho"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs border border-white/10 transition text-center cursor-pointer"
-              >
-                Hablar por WhatsApp
-              </a>
-            </div>
-
+      <section id="afiliacion" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto">
+        <div className="bg-[#111111] text-white rounded-xl p-8 sm:p-12 space-y-6 flex flex-col md:flex-row items-center justify-between gap-8">
+          
+          <div className="max-w-xl space-y-3">
+            <span className="text-xs font-mono text-[#A3A3A3] uppercase tracking-wider block">
+              RED DE COCHERAS EN HUAMANGA
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Digitalice la operación de su cochera
+            </h2>
+            <p className="text-xs sm:text-sm text-[#A3A3A3] leading-relaxed">
+              Integramos el plano 2D interactivo, el sistema de lectura de placas en garita y conectamos su inmueble con conductores de la ciudad.
+            </p>
           </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+            <button
+              onClick={() => onOpenAuth && onOpenAuth('affiliation')}
+              className="px-5 py-2.5 bg-white hover:bg-[#EAEAEA] text-[#111111] text-xs font-medium rounded transition cursor-pointer"
+            >
+              Solicitar Afiliación
+            </button>
+            <a
+              href="https://wa.me/51966000000?text=Hola,%20deseo%20afiliar%20mi%20cochera%20en%20Ayacucho"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-5 py-2.5 bg-[#222222] hover:bg-[#333333] text-white text-xs font-medium rounded border border-[#333333] transition text-center"
+            >
+              Contacto Directo
+            </a>
+          </div>
+
         </div>
       </section>
 
       {/* =========================================================================
           7. PREGUNTAS FRECUENTES (FAQ)
           ========================================================================= */}
-      <section className="py-20 bg-slate-950/80 border-t border-white/5 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto space-y-10">
-          
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Preguntas Frecuentes
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-400">
-              Información esencial sobre el funcionamiento del sistema.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {faqs.map((faq, idx) => (
-              <div 
-                key={idx}
-                className="border border-white/10 rounded-2xl overflow-hidden bg-slate-900/60"
-              >
-                <button
-                  onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                  className="w-full p-5 text-left font-bold text-xs sm:text-sm text-white flex items-center justify-between hover:bg-slate-900 cursor-pointer"
-                >
-                  <span>{faq.q}</span>
-                  <span className="text-slate-500 font-mono text-base">{activeFaq === idx ? '−' : '+'}</span>
-                </button>
-                {activeFaq === idx && (
-                  <div className="p-5 bg-slate-950 border-t border-white/5 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
+      <section className="py-16 px-6 lg:px-12 max-w-4xl mx-auto space-y-8">
+        
+        <div className="space-y-1">
+          <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
+            SOPORTE Y CONSULTAS
+          </span>
+          <h2 className="text-2xl font-bold text-[#111111] tracking-tight">
+            Preguntas Frecuentes
+          </h2>
         </div>
+
+        <div className="divide-y divide-[#EAEAEA] border-y border-[#EAEAEA]">
+          {faqs.map((faq, idx) => (
+            <div key={idx} className="py-4">
+              <button
+                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                className="w-full text-left font-medium text-xs sm:text-sm text-[#111111] flex items-center justify-between hover:text-[#555555] cursor-pointer"
+              >
+                <span>{faq.q}</span>
+                <span className="font-mono text-base text-[#787774]">
+                  {activeFaq === idx ? '−' : '+'}
+                </span>
+              </button>
+              {activeFaq === idx && (
+                <div className="pt-3 text-xs sm:text-sm text-[#555555] leading-relaxed">
+                  {faq.a}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
       </section>
 
       {/* =========================================================================
-          8. FOOTER LIMPIO & TÉRMINOS
+          8. FOOTER DOCUMENTAL
           ========================================================================= */}
-      <footer className="bg-[#030712] text-slate-500 py-12 px-4 sm:px-6 lg:px-8 border-t border-white/5 text-xs">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+      <footer className="bg-white border-t border-[#EAEAEA] py-12 px-6 lg:px-12 text-xs text-[#787774]">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center space-x-3">
-            <div className="w-7 h-7 rounded-full bg-white text-slate-950 flex items-center justify-center font-bold">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+            <div className="w-6 h-6 rounded bg-[#111111] text-white flex items-center justify-center font-bold text-[10px]">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
                 <path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
                 <circle cx="12" cy="12" r="10" />
               </svg>
             </div>
-            <span className="font-extrabold text-white tracking-tight font-tech">SMART-PARK AYACUCHO</span>
+            <span className="font-bold text-[#111111] font-mono">SMART-PARK AYACUCHO</span>
             <span>• © 2026</span>
           </div>
 
           <div className="flex items-center space-x-6">
             <button
               onClick={onOpenTerms}
-              className="hover:text-white transition cursor-pointer"
+              className="hover:text-[#111111] transition underline cursor-pointer"
             >
-              Términos Legales & Condiciones
+              Términos de Servicio
             </button>
             <a
               href="https://wa.me/51966000000"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-emerald-400 transition"
+              className="hover:text-[#111111] transition"
             >
               Soporte WhatsApp
             </a>

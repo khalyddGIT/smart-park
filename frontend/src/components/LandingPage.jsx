@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo, useRef } from 'react';
+import { motion, useScroll, useSpring, useTransform, useMotionValue, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
   MapPin, 
@@ -19,36 +19,80 @@ import {
   Layers,
   Clock,
   Zap,
-  Globe
+  Globe,
+  Sparkles
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { AyacuchoMap } from './AyacuchoMap';
 
-// Variantes de animación atómicas (HyperFrames motion rules)
-const FLUID_EASE = [0.16, 1, 0.3, 1]; // Curva de desaceleración natural
+// Curva de desaceleración orgánica (Apple / HyperFrames standard)
+const FLUID_EASE = [0.16, 1, 0.3, 1];
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
+      staggerChildren: 0.09,
       delayChildren: 0.1
     }
   }
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.6,
+      duration: 0.7,
       ease: FLUID_EASE
     }
   }
+};
+
+// Componente de Tarjeta con Inercia 3D y Efecto Parallax de Cursor
+const TiltCard = ({ children, className = '' }) => {
+  const cardRef = useRef(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), { stiffness: 200, damping: 25 });
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-6, 6]), { stiffness: 200, damping: 25 });
+
+  const handleMouseMove = (e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const xFromCenter = (e.clientX - rect.left) / width - 0.5;
+    const yFromCenter = (e.clientY - rect.top) / height - 0.5;
+    mouseX.set(xFromCenter);
+    mouseY.set(yFromCenter);
+  };
+
+  const handleMouseLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+  };
+
+  return (
+    <motion.div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateX,
+        rotateY,
+        transformStyle: 'preserve-3d',
+        perspective: 1000
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
 };
 
 export const LandingPage = ({ 
@@ -61,13 +105,39 @@ export const LandingPage = ({
   const [categoryFilter, setCategoryFilter] = useState('todos');
   const [activeFaq, setActiveFaq] = useState(null);
 
-  // Barra de progreso de lectura fluida
+  // Referencias para Parallax y Scroll-Driven Animations
+  const heroRef = useRef(null);
+  const mockupSectionRef = useRef(null);
+
+  // Scroll general de la página
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 140,
     damping: 30,
     restDelta: 0.001
   });
+
+  // Parallax del Hero
+  const { scrollYProgress: heroScrollProgress } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end start']
+  });
+
+  const heroHeadlineY = useTransform(heroScrollProgress, [0, 1], [0, 80]);
+  const heroOpacity = useTransform(heroScrollProgress, [0, 0.8], [1, 0.2]);
+  const heroMetricsY = useTransform(heroScrollProgress, [0, 1], [0, 40]);
+
+  // Transformación 3D del Mockup Faux-OS basada en el Scroll
+  const { scrollYProgress: mockupScrollProgress } = useScroll({
+    target: mockupSectionRef,
+    offset: ['start end', 'center center']
+  });
+
+  const mockupRotateX = useTransform(mockupScrollProgress, [0, 1], [14, 0]);
+  const mockupScale = useTransform(mockupScrollProgress, [0, 1], [0.93, 1]);
+  const mockupOpacity = useTransform(mockupScrollProgress, [0, 0.6], [0.4, 1]);
+  const smoothMockupRotateX = useSpring(mockupRotateX, { stiffness: 100, damping: 20 });
+  const smoothMockupScale = useSpring(mockupScale, { stiffness: 100, damping: 20 });
 
   // Filtrado de cocheras
   const filteredParkings = useMemo(() => {
@@ -183,16 +253,17 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION CON COREOGRAFÍA HYPERFRAMES
+          2. HERO SECTION CON PARALLAX Y COREOGRAFÍA HYPERFRAMES
           ========================================================================= */}
-      <motion.section 
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
-        className="pt-24 pb-20 px-6 lg:px-12 max-w-6xl mx-auto space-y-12"
-      >
+      <section ref={heroRef} className="pt-24 pb-20 px-6 lg:px-12 max-w-6xl mx-auto space-y-12 overflow-hidden">
         
-        <div className="max-w-4xl space-y-6">
+        <motion.div 
+          style={{ y: heroHeadlineY, opacity: heroOpacity }}
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="max-w-4xl space-y-6"
+        >
           
           <motion.div 
             variants={itemVariants}
@@ -237,11 +308,14 @@ export const LandingPage = ({
             </button>
           </motion.div>
 
-        </div>
+        </motion.div>
 
-        {/* Métricas de Precisión */}
+        {/* Métricas de Precisión con Parallax Suave */}
         <motion.div 
-          variants={itemVariants}
+          style={{ y: heroMetricsY }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3, ease: FLUID_EASE }}
           className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#EAEAEA]"
         >
           <div className="space-y-1">
@@ -273,12 +347,12 @@ export const LandingPage = ({
           </div>
         </motion.div>
 
-      </motion.section>
+      </section>
 
       {/* =========================================================================
-          3. MOCKUP DE VENTANA FAUX-OS (Document Style)
+          3. MOCKUP DE VENTANA FAUX-OS CON TRANSFORMACIÓN 3D BASADA EN SCROLL
           ========================================================================= */}
-      <section id="sistema" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
+      <section ref={mockupSectionRef} id="sistema" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
         <div className="max-w-2xl space-y-2">
           <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
@@ -292,97 +366,101 @@ export const LandingPage = ({
           </p>
         </div>
 
-        {/* Contenedor Faux-OS Window Chrome */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-40px' }}
-          transition={{ duration: 0.6, ease: FLUID_EASE }}
-          className="rounded-xl border border-[#EAEAEA] bg-white shadow-xs overflow-hidden"
-        >
-          
-          {/* Barra superior de ventana */}
-          <div className="px-4 py-3 bg-[#F7F6F3] border-b border-[#EAEAEA] flex items-center justify-between">
-            <div className="flex items-center space-x-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
-            </div>
-            <span className="font-mono text-[11px] text-[#787774]">
-              smart-park.pe/pase/SPK-8912
-            </span>
-            <div className="w-10" />
-          </div>
-
-          {/* Cuerpo del Mockup */}
-          <div className="p-6 sm:p-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-white">
+        {/* Contenedor Faux-OS Window Chrome con Inclinación 3D Progresiva */}
+        <div style={{ perspective: 1200 }}>
+          <motion.div 
+            style={{ 
+              rotateX: smoothMockupRotateX,
+              scale: smoothMockupScale,
+              opacity: mockupOpacity,
+              transformStyle: 'preserve-3d'
+            }}
+            className="rounded-xl border border-[#EAEAEA] bg-white shadow-md overflow-hidden"
+          >
             
-            <div className="space-y-6 md:col-span-1 border-r border-[#EAEAEA] md:pr-6">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-[#111111]">1. Selección en Plano 2D</h3>
-                <p className="text-xs text-[#787774] leading-relaxed">
-                  Identificación exacta del espacio asignado: techado, estándar o con acceso preferencial.
-                </p>
+            {/* Barra superior de ventana */}
+            <div className="px-4 py-3 bg-[#F7F6F3] border-b border-[#EAEAEA] flex items-center justify-between">
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
               </div>
-
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-[#111111]">2. Ruteo Satelital GPS</h3>
-                <p className="text-xs text-[#787774] leading-relaxed">
-                  Trazado de navegación directa hacia la garita mediante Google Maps o Waze.
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-[#111111]">3. Control de Garita</h3>
-                <p className="text-xs text-[#787774] leading-relaxed">
-                  Apertura automática de la barrera vehicular tras el reconocimiento de caracteres de placa.
-                </p>
-              </div>
+              <span className="font-mono text-[11px] text-[#787774]">
+                smart-park.pe/pase/SPK-8912
+              </span>
+              <div className="w-10" />
             </div>
 
-            {/* Ficha de Pase Digital */}
-            <div className="md:col-span-2 bg-[#FBFBFA] p-6 rounded-lg border border-[#EAEAEA] space-y-4">
+            {/* Cuerpo del Mockup */}
+            <div className="p-6 sm:p-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-white">
               
-              <div className="flex items-center justify-between border-b border-[#EAEAEA] pb-3">
-                <div>
-                  <h4 className="font-bold text-sm text-[#111111]">Smart Park Plaza Mayor</h4>
-                  <p className="text-xs text-[#787774] font-mono">Jr. 28 de Julio 142 • Huamanga</p>
+              <div className="space-y-6 md:col-span-1 border-r border-[#EAEAEA] md:pr-6">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-[#111111]">1. Selección en Plano 2D</h3>
+                  <p className="text-xs text-[#787774] leading-relaxed">
+                    Identificación exacta del espacio asignado: techado, estándar o con acceso preferencial.
+                  </p>
                 </div>
-                <span className="px-2.5 py-1 rounded bg-[#EDF3EC] text-[#346538] font-mono text-xs font-semibold">
-                  AUTORIZADO
-                </span>
+
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-[#111111]">2. Ruteo Satelital GPS</h3>
+                  <p className="text-xs text-[#787774] leading-relaxed">
+                    Trazado de navegación directa hacia la garita mediante Google Maps o Waze.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-[#111111]">3. Control de Garita</h3>
+                  <p className="text-xs text-[#787774] leading-relaxed">
+                    Apertura automática de la barrera vehicular tras el reconocimiento de caracteres de placa.
+                  </p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 font-mono text-xs">
-                <div className="p-3 bg-white rounded border border-[#EAEAEA]">
-                  <span className="text-[10px] text-[#787774] block uppercase">Plaza</span>
-                  <strong className="text-sm text-[#111111] block mt-0.5">A-01</strong>
+              {/* Ficha de Pase Digital */}
+              <div className="md:col-span-2 bg-[#FBFBFA] p-6 rounded-lg border border-[#EAEAEA] space-y-4">
+                
+                <div className="flex items-center justify-between border-b border-[#EAEAEA] pb-3">
+                  <div>
+                    <h4 className="font-bold text-sm text-[#111111]">Smart Park Plaza Mayor</h4>
+                    <p className="text-xs text-[#787774] font-mono">Jr. 28 de Julio 142 • Huamanga</p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded bg-[#EDF3EC] text-[#346538] font-mono text-xs font-semibold">
+                    AUTORIZADO
+                  </span>
                 </div>
-                <div className="p-3 bg-white rounded border border-[#EAEAEA]">
-                  <span className="text-[10px] text-[#787774] block uppercase">Vehículo</span>
-                  <strong className="text-sm text-[#111111] block mt-0.5">ABC-123</strong>
-                </div>
-                <div className="p-3 bg-white rounded border border-[#EAEAEA]">
-                  <span className="text-[10px] text-[#787774] block uppercase">Tolerancia</span>
-                  <strong className="text-sm text-[#346538] block mt-0.5">15 min</strong>
-                </div>
-              </div>
 
-              <div className="flex items-center justify-between text-xs text-[#787774] pt-2 border-t border-[#EAEAEA] font-mono">
-                <span>Token: SPK-8912-7B2F9A</span>
-                <span>Visión Computacional 60 FPS</span>
+                <div className="grid grid-cols-3 gap-3 font-mono text-xs">
+                  <div className="p-3 bg-white rounded border border-[#EAEAEA]">
+                    <span className="text-[10px] text-[#787774] block uppercase">Plaza</span>
+                    <strong className="text-sm text-[#111111] block mt-0.5">A-01</strong>
+                  </div>
+                  <div className="p-3 bg-white rounded border border-[#EAEAEA]">
+                    <span className="text-[10px] text-[#787774] block uppercase">Vehículo</span>
+                    <strong className="text-sm text-[#111111] block mt-0.5">ABC-123</strong>
+                  </div>
+                  <div className="p-3 bg-white rounded border border-[#EAEAEA]">
+                    <span className="text-[10px] text-[#787774] block uppercase">Tolerancia</span>
+                    <strong className="text-sm text-[#346538] block mt-0.5">15 min</strong>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-[#787774] pt-2 border-t border-[#EAEAEA] font-mono">
+                  <span>Token: SPK-8912-7B2F9A</span>
+                  <span>Visión Computacional 60 FPS</span>
+                </div>
+
               </div>
 
             </div>
 
-          </div>
-
-        </motion.div>
+          </motion.div>
+        </div>
 
       </section>
 
       {/* =========================================================================
-          4. DIRECTORIO Y MAPA EN TIEMPO REAL
+          4. DIRECTORIO Y MAPA EN TIEMPO REAL CON HOVER 3D
           ========================================================================= */}
       <section id="mapa" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
@@ -454,7 +532,7 @@ export const LandingPage = ({
           />
         </div>
 
-        {/* Grilla de Cocheras con Estilo Documental */}
+        {/* Grilla de Cocheras con Tilt 3D */}
         <motion.div 
           initial="hidden"
           whileInView="visible"
@@ -468,70 +546,66 @@ export const LandingPage = ({
             const totalCount = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
 
             return (
-              <motion.div 
-                key={p.id} 
-                variants={itemVariants}
-                whileHover={{ y: -3, transition: { duration: 0.2, ease: FLUID_EASE } }}
-                className="bg-white rounded-xl border border-[#EAEAEA] p-5 flex flex-col justify-between shadow-xs hover:border-[#D4D4D4] transition-colors"
-              >
-                <div className="space-y-3">
-                  <div className="h-36 rounded-lg overflow-hidden relative bg-[#F7F6F3]">
-                    <img 
-                      src={p.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
-                      alt={p.name} 
-                      className="w-full h-full object-cover" 
-                    />
-                    <div className="absolute top-2.5 right-2.5 bg-white/95 px-2.5 py-1 rounded text-xs font-mono font-bold text-[#111111] border border-[#EAEAEA] shadow-xs">
-                      S/ {Number(p.rate).toFixed(2)}/h
+              <motion.div key={p.id} variants={itemVariants}>
+                <TiltCard className="h-full bg-white rounded-xl border border-[#EAEAEA] p-5 flex flex-col justify-between shadow-xs hover:border-[#D4D4D4] transition-colors">
+                  <div className="space-y-3">
+                    <div className="h-36 rounded-lg overflow-hidden relative bg-[#F7F6F3]">
+                      <img 
+                        src={p.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
+                        alt={p.name} 
+                        className="w-full h-full object-cover" 
+                      />
+                      <div className="absolute top-2.5 right-2.5 bg-white/95 px-2.5 py-1 rounded text-xs font-mono font-bold text-[#111111] border border-[#EAEAEA] shadow-xs">
+                        S/ {Number(p.rate).toFixed(2)}/h
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-sm text-[#111111]">{p.name}</h3>
+                      <p className="text-xs text-[#787774] flex items-center gap-1 truncate">
+                        <MapPin className="w-3.5 h-3.5 text-[#111111] shrink-0" />
+                        <span>{p.address} {p.reference ? `(${p.reference})` : ''}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs font-mono text-[#787774] pt-2 border-t border-[#EAEAEA]">
+                      <span>Disponibilidad:</span>
+                      <strong className="text-[#346538] font-bold">{freeSlots} libres de {totalCount}</strong>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <h3 className="font-bold text-sm text-[#111111]">{p.name}</h3>
-                    <p className="text-xs text-[#787774] flex items-center gap-1 truncate">
-                      <MapPin className="w-3.5 h-3.5 text-[#111111] shrink-0" />
-                      <span>{p.address} {p.reference ? `(${p.reference})` : ''}</span>
-                    </p>
-                  </div>
+                  <div className="pt-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${p.latitude || -13.1604},${p.longitude || -74.2259}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-1.5 px-3 bg-[#FBFBFA] hover:bg-[#F0F0EF] text-[#111111] rounded text-xs font-medium text-center border border-[#EAEAEA] transition"
+                      >
+                        Google Maps
+                      </a>
+                      <a
+                        href={`https://waze.com/ul?ll=${p.latitude || -13.1604},${p.longitude || -74.2259}&navigate=yes`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-1.5 px-3 bg-[#FBFBFA] hover:bg-[#F0F0EF] text-[#111111] rounded text-xs font-medium text-center border border-[#EAEAEA] transition"
+                      >
+                        Waze
+                      </a>
+                    </div>
 
-                  <div className="flex items-center justify-between text-xs font-mono text-[#787774] pt-2 border-t border-[#EAEAEA]">
-                    <span>Disponibilidad:</span>
-                    <strong className="text-[#346538] font-bold">{freeSlots} libres de {totalCount}</strong>
-                  </div>
-                </div>
-
-                <div className="pt-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${p.latitude || -13.1604},${p.longitude || -74.2259}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 py-1.5 px-3 bg-[#FBFBFA] hover:bg-[#F0F0EF] text-[#111111] rounded text-xs font-medium text-center border border-[#EAEAEA] transition"
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        if (onSelectParking) onSelectParking(p);
+                      }}
+                      className="w-full py-2 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
                     >
-                      Google Maps
-                    </a>
-                    <a
-                      href={`https://waze.com/ul?ll=${p.latitude || -13.1604},${p.longitude || -74.2259}&navigate=yes`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 py-1.5 px-3 bg-[#FBFBFA] hover:bg-[#F0F0EF] text-[#111111] rounded text-xs font-medium text-center border border-[#EAEAEA] transition"
-                    >
-                      Waze
-                    </a>
+                      <span>Ver Plano & Reservar</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </motion.button>
                   </div>
-
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      if (onSelectParking) onSelectParking(p);
-                    }}
-                    className="w-full py-2 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
-                  >
-                    <span>Ver Plano & Reservar</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </motion.button>
-                </div>
-
+                </TiltCard>
               </motion.div>
             );
           })}
@@ -635,15 +709,15 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          6. SECCIÓN PROPIETARIOS DE ESTACIONAMIENTOS
+          6. SECCIÓN PROPIETARIOS DE ESTACIONAMIENTOS CON ENTRADA ESCALONADA
           ========================================================================= */}
       <section id="afiliacion" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto">
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-40px' }}
-          transition={{ duration: 0.6, ease: FLUID_EASE }}
-          className="bg-[#111111] text-white rounded-xl p-8 sm:p-12 space-y-6 flex flex-col md:flex-row items-center justify-between gap-8"
+          transition={{ duration: 0.7, ease: FLUID_EASE }}
+          className="bg-[#111111] text-white rounded-xl p-8 sm:p-12 space-y-6 flex flex-col md:flex-row items-center justify-between gap-8 shadow-md"
         >
           
           <div className="max-w-xl space-y-3">
@@ -680,7 +754,7 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          7. PREGUNTAS FRECUENTES (FAQ)
+          7. PREGUNTAS FRECUENTES (FAQ) CON ANIMATEPRESENCE FLUIDO
           ========================================================================= */}
       <section className="py-16 px-6 lg:px-12 max-w-4xl mx-auto space-y-8">
         
@@ -705,11 +779,21 @@ export const LandingPage = ({
                   {activeFaq === idx ? '−' : '+'}
                 </span>
               </button>
-              {activeFaq === idx && (
-                <div className="pt-3 text-xs sm:text-sm text-[#555555] leading-relaxed">
-                  {faq.a}
-                </div>
-              )}
+              <AnimatePresence>
+                {activeFaq === idx && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: FLUID_EASE }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-3 text-xs sm:text-sm text-[#555555] leading-relaxed">
+                      {faq.a}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ))}
         </div>

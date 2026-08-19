@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
 import { GoogleLogin } from '@react-oauth/google';
@@ -27,8 +27,15 @@ import { Input } from './ui/input';
 import { TermsAndConditionsModal } from './TermsAndConditionsModal';
 
 export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMode = 'login' }) => {
-  const { loginWithGoogle, loginWithEmail, registerUser } = useAuth();
+  const { user, loginWithGoogle, loginWithEmail, registerUser } = useAuth();
   const { createAffiliationRequest } = useEstablishments();
+
+  // Cerrar modal automáticamente si ya existe una sesión de usuario activa
+  useEffect(() => {
+    if (user && isModal && onClose) {
+      onClose();
+    }
+  }, [user, isModal, onClose]);
 
   // 'login' | 'register' | 'forgot_password'
   const [authMode, setAuthMode] = useState(defaultAuthMode);
@@ -700,8 +707,22 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
   if (isModal) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in overflow-y-auto">
+      <div 
+        onClick={(e) => {
+          if (e.target === e.currentTarget && onClose) onClose();
+        }}
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+      >
         <div className="relative z-[10000] w-full max-w-xl my-8 bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute top-4 right-4 z-[10001] p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
           {screenContent}
         </div>
       </div>

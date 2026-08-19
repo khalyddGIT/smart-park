@@ -179,12 +179,14 @@ export const App = () => {
     setSelectedParkingId(parking.id);
   };
 
-  // Reanudar reserva de plano tras iniciar sesión
+  // Cerrar modal de autenticación inmediatamente al autenticarse y reanudar selección si aplica
   useEffect(() => {
-    if (user && pendingParkingForBooking) {
-      setSelectedParkingId(pendingParkingForBooking);
-      setPendingParkingForBooking(null);
+    if (user) {
       setShowAuthModal(false);
+      if (pendingParkingForBooking) {
+        setSelectedParkingId(pendingParkingForBooking);
+        setPendingParkingForBooking(null);
+      }
     }
   }, [user, pendingParkingForBooking]);
 

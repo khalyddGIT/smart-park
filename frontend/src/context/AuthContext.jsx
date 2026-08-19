@@ -8,15 +8,7 @@ export const AuthProvider = ({ children }) => {
       const saved = localStorage.getItem('smart_park_user_session');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    // Sesión por defecto inicial (puede ser null si se prefiere login forzoso, o sesión activa)
-    return {
-      id: 1,
-      name: 'Yoniver Ch',
-      email: 'khalyddwtf@gmail.com',
-      avatar: null,
-      role: 'user',
-      isGoogleAuth: true
-    };
+    return null;
   });
 
   const [role, setRole] = useState(user?.role || 'user');
@@ -90,20 +82,34 @@ export const AuthProvider = ({ children }) => {
   // Login tradicional con Correo
   const loginWithEmail = (email, password, explicitRole = null) => {
     let userRole = explicitRole;
+    let userName = email.split('@')[0].replace('.', ' ');
+    const lower = email.toLowerCase().trim();
+
     if (!userRole) {
-      const lower = email.toLowerCase();
-      if (lower.includes('admin@') || lower.includes('superadmin')) {
-        userRole = 'platform';
-      } else if (lower.includes('operador') || lower.includes('cochera') || lower.includes('local')) {
-        userRole = 'local';
-      } else {
-        userRole = 'user';
+      // Verificar si es un admin de cochera aprobado por el Administrador del Sistema
+      try {
+        const approvedAdmins = JSON.parse(localStorage.getItem('smart_park_approved_admins_v1') || '[]');
+        const matched = approvedAdmins.find(a => a.email.toLowerCase() === lower);
+        if (matched) {
+          userRole = 'local';
+          userName = matched.name || userName;
+        }
+      } catch (e) {}
+
+      if (!userRole) {
+        if (lower.includes('admin@') || lower.includes('superadmin')) {
+          userRole = 'platform';
+        } else if (lower.includes('operador') || lower.includes('cochera') || lower.includes('local')) {
+          userRole = 'local';
+        } else {
+          userRole = 'user';
+        }
       }
     }
 
     const loggedUser = {
       id: Date.now(),
-      name: email.split('@')[0].replace('.', ' '),
+      name: userName,
       email: email,
       avatar: null,
       role: userRole,
@@ -111,6 +117,7 @@ export const AuthProvider = ({ children }) => {
     };
     setUser(loggedUser);
     setRole(userRole);
+    if (userRole === 'local') setPinVerified(true);
     return loggedUser;
   };
 

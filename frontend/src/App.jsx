@@ -23,6 +23,9 @@ import { CustomerInteractivePlanBooking } from './components/CustomerInteractive
 import { DigitalAccessPassModal } from './components/DigitalAccessPassModal';
 import { ReservationsModule } from './components/ReservationsModule';
 import { LoginAuthScreen } from './components/LoginAuthScreen';
+import { PlatformFinancesModule } from './components/PlatformFinancesModule';
+import { PlatformSettingsModule } from './components/PlatformSettingsModule';
+import { PlatformGlobalDashboard } from './components/PlatformGlobalDashboard';
 import { 
   Search, 
   MapPin, 
@@ -375,27 +378,11 @@ export const App = () => {
           {role === 'platform' && (
             <div className="max-w-7xl mx-auto space-y-6">
               {activeTab === 'dashboard' && (
-                <div className="space-y-6">
-                  <h1 className="text-2xl font-black text-slate-900">Panel Consolidado de la Red Smart Park</h1>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Card className="p-6">
-                      <CardDescription className="uppercase font-extrabold text-[10px] text-slate-400">Ingresos Globales Hoy</CardDescription>
-                      <p className="text-3xl font-black text-emerald-600 mt-2">S/ 12,450.00</p>
-                    </Card>
-                    <Card className="p-6">
-                      <CardDescription className="uppercase font-extrabold text-[10px] text-slate-400">Locales Afiliados Activos</CardDescription>
-                      <p className="text-3xl font-black text-teal-600 mt-2">{establishments.length} Locales</p>
-                    </Card>
-                    <Card className="p-6">
-                      <CardDescription className="uppercase font-extrabold text-[10px] text-slate-400">Ocupación Media Red</CardDescription>
-                      <p className="text-3xl font-black text-amber-600 mt-2">
-                        {totalNetworkSlots > 0 ? Math.round(((totalNetworkSlots - totalFreeSlots) / totalNetworkSlots) * 100) : 0}%
-                      </p>
-                    </Card>
-                  </div>
-                </div>
+                <PlatformGlobalDashboard onNavigateTab={(tab) => setActiveTab(tab)} />
               )}
 
+              {activeTab === 'finances' && <PlatformFinancesModule />}
+              {activeTab === 'settings' && <PlatformSettingsModule />}
               {activeTab === 'affiliates' && <AffiliatedParkingsModule />}
               {activeTab === 'reservations' && <ReservationsModule />}
               {activeTab === 'analytics' && <AnalyticsGlobalModule />}

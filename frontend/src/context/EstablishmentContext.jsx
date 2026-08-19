@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const STORAGE_KEY = 'smart_park_unified_establishments_v2';
 const RESERVATIONS_STORAGE_KEY = 'smart_park_unified_reservations_v2';
+const REQUESTS_STORAGE_KEY = 'smart_park_affiliation_requests_v1';
+const APPROVED_ADMINS_STORAGE_KEY = 'smart_park_approved_admins_v1';
 
 export const INITIAL_ESTABLISHMENTS = [
   {
@@ -108,6 +110,37 @@ export const INITIAL_ESTABLISHMENTS = [
   }
 ];
 
+export const INITIAL_AFFILIATION_REQUESTS = [
+  {
+    id: 'REQ-101',
+    parkingName: 'Cochera Colonial San Cristóbal',
+    ownerName: 'Roberto Quispe Valdivia',
+    email: 'roberto.quispe@cochera.com',
+    phone: '+51 966 456 789',
+    address: 'Jr. 28 de Julio 342, Centro Histórico',
+    city: 'Ayacucho - Huamanga',
+    capacity: 25,
+    rate: 4.50,
+    notes: 'Local cercado y techado en zona céntrica con cámaras de seguridad.',
+    status: 'PENDING', // 'PENDING' | 'APPROVED' | 'REJECTED'
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'REQ-102',
+    parkingName: 'Estacionamiento Los Andes',
+    ownerName: 'Elena Huamán Cárdenas',
+    email: 'elena.huaman@losandes.pe',
+    phone: '+51 984 112 233',
+    address: 'Av. Mariscal Cáceres 780',
+    city: 'Ayacucho - Huamanga',
+    capacity: 40,
+    rate: 3.50,
+    notes: 'Amplia playa para vehículos pesados y livianos con guardia 24h.',
+    status: 'PENDING',
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  }
+];
+
 export const INITIAL_RESERVATIONS = [
   {
     id: 1,
@@ -122,7 +155,7 @@ export const INITIAL_RESERVATIONS = [
     cost: 10.00,
     hours: 2,
     ratePerHour: 5.00,
-    status: 'SCHEDULED', // 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
+    status: 'SCHEDULED',
     startTime: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
     expiresAt: new Date(Date.now() + 100 * 60 * 1000).toISOString(),
     createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString()
@@ -196,14 +229,46 @@ export const EstablishmentProvider = ({ children }) => {
     return INITIAL_RESERVATIONS;
   });
 
+  const [affiliationRequests, setAffiliationRequests] = useState(() => {
+    try {
+      const saved = localStorage.getItem(REQUESTS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_AFFILIATION_REQUESTS;
+  });
+
+  const [approvedAdmins, setApprovedAdmins] = useState(() => {
+    try {
+      const saved = localStorage.getItem(APPROVED_ADMINS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
+
   // Guardar en localStorage siempre que cambie
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(establishments));
-    } catch (e) {
-      console.error('Error saving establishments to storage:', e);
-    }
+    } catch (e) {}
   }, [establishments]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(affiliationRequests));
+    } catch (e) {}
+  }, [affiliationRequests]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(APPROVED_ADMINS_STORAGE_KEY, JSON.stringify(approvedAdmins));
+    } catch (e) {}
+  }, [approvedAdmins]);
 
   // Guardar reservaciones en localStorage
   const saveReservations = (newReservations) => {
@@ -213,48 +278,125 @@ export const EstablishmentProvider = ({ children }) => {
     } catch (e) {}
   };
 
-  // Agregar nuevo establecimiento
+  // Crear Solicitud de Afiliación de Cochera
+  const createAffiliationRequest = (requestData) => {
+    const newReq = {
+      id: `REQ-${Date.now().toString().slice(-4)}`,
+      parkingName: requestData.parkingName,
+      ownerName: requestData.ownerName,
+      email: (requestData.email || '').trim().toLowerCase(),
+      phone: requestData.phone || '',
+      address: requestData.address || 'Centro Histórico',
+      city: requestData.city || 'Ayacucho - Huamanga',
+      capacity: Number(requestData.capacity) || 20,
+      rate: Number(requestData.rate) || 5.00,
+      notes: requestData.notes || '',
+      status: 'PENDING',
+      createdAt: new Date().toISOString()
+    };
+
+    setAffiliationRequests(prev => [newReq, ...prev]);
+    return newReq;
+  };
+
+  // Aprobar Solicitud de Afiliación (Crea la Cochera y Habilita la Cuenta de Admin Local)
+  const approveAffiliationRequest = (requestId) => {
+    const req = affiliationRequests.find(r => r.id === requestId);
+    if (!req) return null;
+
+    const newEstId = `EST-${Date.now().toString().slice(-4)}`;
+    
+    // Crear el nuevo establecimiento con plano base
+    const newEstablishment = {
+      id: newEstId,
+      name: req.parkingName,
+      address: req.address || 'Jr. 28 de Julio 100',
+      city: req.city || 'Ayacucho - Huamanga',
+      level: 'Nivel 1 - Superficie',
+      rate: Number(req.rate) || 5.00,
+      status: 'Operativo',
+      owner: req.ownerName,
+      commission: '10%',
+      image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800',
+      elements: [
+        { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
+        { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
+        { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
+        { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
+        { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
+        { id: 6, type: 'crosswalk', x: 500, y: 250, w: 80, h: 200, rot: 0 },
+        { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'ACCESO GARITA ANPR' },
+        { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+        { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+        { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+        { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+        { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+        { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 145, y: 480, w: 38, h: 65, rot: 0, status: 'free' }
+      ]
+    };
+
+    // Agregar a establecimientos
+    setEstablishments(prev => [newEstablishment, ...prev]);
+
+    // Registrar como admin aprobado para permitir login con rol 'local'
+    const newAdmin = {
+      id: Date.now(),
+      name: req.ownerName,
+      email: req.email.toLowerCase(),
+      phone: req.phone,
+      establishmentId: newEstId,
+      establishmentName: req.parkingName,
+      role: 'local'
+    };
+
+    setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== req.email.toLowerCase())]);
+
+    // Actualizar estado de la solicitud
+    setAffiliationRequests(prev => prev.map(r => r.id === requestId ? {
+      ...r,
+      status: 'APPROVED',
+      approvedAt: new Date().toISOString(),
+      establishmentId: newEstId
+    } : r));
+
+    return { establishment: newEstablishment, admin: newAdmin };
+  };
+
+  // Rechazar Solicitud
+  const rejectAffiliationRequest = (requestId, reason = '') => {
+    setAffiliationRequests(prev => prev.map(r => r.id === requestId ? {
+      ...r,
+      status: 'REJECTED',
+      rejectionReason: reason,
+      rejectedAt: new Date().toISOString()
+    } : r));
+  };
+
+  // Verificar si un correo corresponde a un administrador de cochera aprobado
+  const isApprovedAdminEmail = (email) => {
+    if (!email) return false;
+    const lower = email.trim().toLowerCase();
+    return approvedAdmins.some(a => a.email === lower);
+  };
+
+  // Agregar nuevo establecimiento manual
   const addEstablishment = (newEst) => {
-    setEstablishments(prev => {
-      const updated = [newEst, ...prev];
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
+    setEstablishments(prev => [newEst, ...prev]);
   };
 
   // Actualizar datos de un establecimiento
   const updateEstablishment = (id, updatedFields) => {
-    setEstablishments(prev => {
-      const updated = prev.map(est => est.id === id ? { ...est, ...updatedFields } : est);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
+    setEstablishments(prev => prev.map(est => est.id === id ? { ...est, ...updatedFields } : est));
   };
 
   // Actualizar plano topográfico
   const updateEstablishmentPlan = (id, elements) => {
-    setEstablishments(prev => {
-      const updated = prev.map(est => est.id === id ? { ...est, elements } : est);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
+    setEstablishments(prev => prev.map(est => est.id === id ? { ...est, elements } : est));
   };
 
   // Eliminar establecimiento
   const deleteEstablishment = (id) => {
-    setEstablishments(prev => {
-      const updated = prev.filter(est => est.id !== id);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
+    setEstablishments(prev => prev.filter(est => est.id !== id));
   };
 
   // Ocupar o reservar un cajón específico en un establecimiento
@@ -277,9 +419,6 @@ export const EstablishmentProvider = ({ children }) => {
         }
         return est;
       });
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch (e) {}
       return updated;
     });
   };
@@ -304,9 +443,6 @@ export const EstablishmentProvider = ({ children }) => {
         }
         return est;
       });
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch (e) {}
       return updated;
     });
   };
@@ -343,13 +479,12 @@ export const EstablishmentProvider = ({ children }) => {
     return newReservation;
   };
 
-  // Actualizar estado de reserva (Check-In / Check-Out / Cancelar)
+  // Actualizar estado de reserva
   const updateReservationStatus = (code, newStatus) => {
     const target = reservations.find(r => r.code === code);
     if (!target) return;
 
     if (newStatus === 'COMPLETED' || newStatus === 'CANCELLED') {
-      // Liberar cajón en el plano
       freeSlot(target.parkingId, target.slot);
     } else if (newStatus === 'ACTIVE') {
       occupySlot(target.parkingId, target.slot, target.plate);
@@ -359,12 +494,10 @@ export const EstablishmentProvider = ({ children }) => {
     saveReservations(updated);
   };
 
-  // Cancelar reserva
   const cancelReservation = (code) => {
     updateReservationStatus(code, 'CANCELLED');
   };
 
-  // Completar / Check-Out de reserva
   const completeReservation = (code) => {
     updateReservationStatus(code, 'COMPLETED');
   };
@@ -373,9 +506,13 @@ export const EstablishmentProvider = ({ children }) => {
   const resetToDefaults = () => {
     setEstablishments(INITIAL_ESTABLISHMENTS);
     setReservations(INITIAL_RESERVATIONS);
+    setAffiliationRequests(INITIAL_AFFILIATION_REQUESTS);
+    setApprovedAdmins([]);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ESTABLISHMENTS));
       localStorage.setItem(RESERVATIONS_STORAGE_KEY, JSON.stringify(INITIAL_RESERVATIONS));
+      localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(INITIAL_AFFILIATION_REQUESTS));
+      localStorage.setItem(APPROVED_ADMINS_STORAGE_KEY, JSON.stringify([]));
     } catch (e) {}
   };
 
@@ -385,6 +522,12 @@ export const EstablishmentProvider = ({ children }) => {
       setEstablishments,
       reservations,
       setReservations,
+      affiliationRequests,
+      approvedAdmins,
+      createAffiliationRequest,
+      approveAffiliationRequest,
+      rejectAffiliationRequest,
+      isApprovedAdminEmail,
       addEstablishment,
       updateEstablishment,
       updateEstablishmentPlan,

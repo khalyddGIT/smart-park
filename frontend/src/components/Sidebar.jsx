@@ -31,49 +31,51 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
   const menuSections = {
     user: [
       {
-        section: 'MÓDULOS DEL CONDUCTOR',
+        section: 'CONDUCTOR',
         items: [
           { id: 'dashboard', label: 'Búsqueda & Mapa', shortLabel: 'Mapa', icon: Search },
-          { id: 'reservations', label: 'Mis Reservas & QR', shortLabel: 'Reservas', icon: CalendarCheck },
-          { id: 'loyalty', label: 'Smart Club & Puntos', shortLabel: 'Club', icon: Award },
-          { id: 'vehicles', label: 'Mis Vehículos (Placas)', shortLabel: 'Vehículos', icon: Car },
+          { id: 'reservations', label: 'Mis Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
+          { id: 'loyalty', label: 'Smart Club', shortLabel: 'Club', icon: Award },
+          { id: 'vehicles', label: 'Mis Vehículos', shortLabel: 'Vehículos', icon: Car },
           { id: 'payments', label: 'Métodos de Pago', shortLabel: 'Pagos', icon: CreditCard },
-          { id: 'incidents', label: 'Reportar Incidencia', shortLabel: 'Incidencias', icon: AlertTriangle },
-          { id: 'history', label: 'Historial de Estancias', shortLabel: 'Historial', icon: History },
-          { id: 'reviews', label: 'Reseñas & Opiniones', shortLabel: 'Reseñas', icon: Star },
+          { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
+          { id: 'history', label: 'Historial', shortLabel: 'Historial', icon: History },
+          { id: 'reviews', label: 'Reseñas', shortLabel: 'Reseñas', icon: Star },
         ]
       }
     ],
     local: [
       {
-        section: 'OPERACIONES & GARITA',
+        section: 'GARITA & SEDE',
         items: [
-          { id: 'dashboard', label: 'Sedes & Espacios', shortLabel: 'Espacios', icon: Building2 },
-          { id: 'reservations', label: 'Gestión de Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
-          { id: 'anpr', label: 'Control Garita LPR', shortLabel: 'Garita', icon: Camera },
-          { id: 'incidents', label: 'Gestión de Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
-          { id: 'staff', label: 'Personal & Turnos', shortLabel: 'Personal', icon: Users },
-          { id: 'reports', label: 'Analítica de Ocupación', shortLabel: 'Reportes', icon: BarChart3 },
-          { id: 'audit', label: 'Bitácora de Accesos', shortLabel: 'Accesos', icon: ShieldCheck },
-          { id: 'reviews', label: 'Moderación de Reseñas', shortLabel: 'Reseñas', icon: Star },
-          { id: 'resiliency', label: 'Diagnóstico del Servidor', shortLabel: 'Servidor', icon: Radio },
+          { id: 'dashboard', label: 'Espacios & Plano', shortLabel: 'Espacios', icon: Building2 },
+          { id: 'reservations', label: 'Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
+          { id: 'anpr', label: 'Control LPR', shortLabel: 'Garita', icon: Camera },
+          { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
+          { id: 'staff', label: 'Personal', shortLabel: 'Personal', icon: Users },
+          { id: 'reports', label: 'Reportes', shortLabel: 'Reportes', icon: BarChart3 },
+          { id: 'audit', label: 'Accesos', shortLabel: 'Accesos', icon: ShieldCheck },
+          { id: 'reviews', label: 'Reseñas', shortLabel: 'Reseñas', icon: Star },
+          { id: 'resiliency', label: 'Diagnóstico', shortLabel: 'Servidor', icon: Radio },
         ]
       }
     ],
     platform: [
       {
-        section: 'ADMINISTRACIÓN GLOBAL',
+        section: 'ADMINISTRACIÓN & FINANZAS',
         items: [
-          { id: 'dashboard', label: 'Panel Consolidado', shortLabel: 'Panel', icon: LayoutDashboard },
-          { id: 'affiliates', label: 'Sedes Registradas', shortLabel: 'Sedes', icon: Building2 },
-          { id: 'reservations', label: 'Padrón Global Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
-          { id: 'analytics', label: 'Business Intelligence', shortLabel: 'Métricas', icon: BarChart3 },
-          { id: 'incidents', label: 'Control Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
-          { id: 'audit', label: 'Auditoría & Seguridad', shortLabel: 'Auditoría', icon: ShieldCheck },
-          { id: 'users', label: 'Padrón de Usuarios', shortLabel: 'Usuarios', icon: Shield },
+          { id: 'dashboard', label: 'Panel Global', shortLabel: 'Panel', icon: LayoutDashboard },
+          { id: 'finances', label: 'Finanzas & Pagos', shortLabel: 'Finanzas', icon: CreditCard },
+          { id: 'affiliates', label: 'Sedes & Afiliación', shortLabel: 'Sedes', icon: Building2 },
+          { id: 'settings', label: 'Ajustes Maestros', shortLabel: 'Ajustes', icon: Settings },
+          { id: 'reservations', label: 'Padrón Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
+          { id: 'analytics', label: 'Analítica Global', shortLabel: 'Métricas', icon: BarChart3 },
+          { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
+          { id: 'users', label: 'Usuarios & RBAC', shortLabel: 'Usuarios', icon: Shield },
           { id: 'staff', label: 'Directorio Personal', shortLabel: 'Personal', icon: Users },
-          { id: 'reviews', label: 'Supervisión Calidad', shortLabel: 'Calidad', icon: Star },
-          { id: 'resiliency', label: 'Diagnóstico Servicios', shortLabel: 'Servicios', icon: Server },
+          { id: 'audit', label: 'Auditoría', shortLabel: 'Auditoría', icon: ShieldCheck },
+          { id: 'reviews', label: 'Supervisión', shortLabel: 'Calidad', icon: Star },
+          { id: 'resiliency', label: 'Servicios Backend', shortLabel: 'Servicios', icon: Server },
         ]
       }
     ]
@@ -89,15 +91,15 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
 
   return (
     <>
-      {/* Sidebar Desktop */}
-      <aside className="hidden md:flex w-64 lg:w-72 bg-white border-r border-slate-200/90 flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] shadow-sm z-30 select-none flex-shrink-0">
-        <div className="p-4 space-y-6 overflow-y-auto">
+      {/* Sidebar Desktop Ajustado y Compacto (185px de ancho exacto) */}
+      <aside className="hidden md:flex w-[185px] min-w-[185px] max-w-[185px] bg-white border-r border-slate-200/90 flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] shadow-xs z-30 select-none flex-shrink-0">
+        <div className="p-2 space-y-3.5 overflow-y-auto">
           {currentSections.map((sec, idx) => (
-            <div key={idx} className="space-y-1.5">
-              <span className="text-[11px] font-bold uppercase text-slate-400 tracking-wider font-tech px-3 block">
+            <div key={idx} className="space-y-1">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider font-tech px-2 block">
                 {sec.section}
               </span>
-              <nav className="space-y-1">
+              <nav className="space-y-0.5">
                 {sec.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -105,10 +107,10 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                     <button
                       key={item.id}
                       onClick={() => handleSelectTab(item.id)}
-                      className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-150 ${
+                      className={`w-full flex items-center space-x-2 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
                         isActive
-                          ? 'bg-slate-900 text-white shadow-sm border border-slate-800'
-                          : 'text-slate-600 hover:bg-slate-100/90 hover:text-slate-900'
+                          ? 'bg-slate-900 text-white shadow-xs border border-slate-800 font-bold'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
                       <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
@@ -121,10 +123,10 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
           ))}
         </div>
 
-        <div className="p-4 border-t border-slate-100 space-y-1 bg-slate-50/50">
-          <div className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-slate-500 font-medium">
+        <div className="p-2 border-t border-slate-100 bg-slate-50/60">
+          <div className="flex items-center justify-between px-2 py-1 text-[11px] text-slate-500 font-medium">
             <span>Rol: <strong className="text-slate-800 font-bold capitalize">{role}</strong></span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
         </div>
       </aside>

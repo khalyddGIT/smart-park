@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { motion, useScroll, useSpring } from 'framer-motion';
+import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
   MapPin, 
@@ -25,6 +25,32 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { AyacuchoMap } from './AyacuchoMap';
 
+// Variantes de animación atómicas (HyperFrames motion rules)
+const FLUID_EASE = [0.16, 1, 0.3, 1]; // Curva de desaceleración natural
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: FLUID_EASE
+    }
+  }
+};
+
 export const LandingPage = ({ 
   establishments = [], 
   onOpenAuth, 
@@ -35,7 +61,7 @@ export const LandingPage = ({
   const [categoryFilter, setCategoryFilter] = useState('todos');
   const [activeFaq, setActiveFaq] = useState(null);
 
-  // Barra de progreso de lectura fluida superior
+  // Barra de progreso de lectura fluida
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 140,
@@ -96,7 +122,7 @@ export const LandingPage = ({
   return (
     <div className="min-h-screen bg-[#FBFBFA] text-[#191919] font-sans antialiased selection:bg-[#EAEAEA] selection:text-black">
       
-      {/* Indicador de lectura superior */}
+      {/* Indicador de progreso con física elástica */}
       <motion.div 
         className="fixed top-0 left-0 right-0 h-[2px] bg-[#111111] z-[100] origin-left"
         style={{ scaleX }}
@@ -143,46 +169,65 @@ export const LandingPage = ({
               Afiliar Cochera
             </button>
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.98 }}
               onClick={() => onOpenAuth && onOpenAuth('login')}
-              className="bg-[#111111] hover:bg-[#333333] text-white text-xs font-medium px-4 py-2 rounded-md transition active:scale-[0.98] cursor-pointer flex items-center space-x-2"
+              className="bg-[#111111] hover:bg-[#333333] text-white text-xs font-medium px-4 py-2 rounded-md transition cursor-pointer flex items-center space-x-2 shadow-xs"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Acceder al Sistema</span>
-            </button>
+            </motion.button>
           </div>
 
         </div>
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION EDITORIAL (Minimalist Typography & Structure)
+          2. HERO SECTION CON COREOGRAFÍA HYPERFRAMES
           ========================================================================= */}
-      <section className="pt-24 pb-20 px-6 lg:px-12 max-w-6xl mx-auto space-y-12">
+      <motion.section 
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="pt-24 pb-20 px-6 lg:px-12 max-w-6xl mx-auto space-y-12"
+      >
         
         <div className="max-w-4xl space-y-6">
           
-          <div className="inline-flex items-center space-x-2 px-2.5 py-1 bg-[#EDF3EC] text-[#346538] rounded-md text-xs font-mono font-medium border border-[#DCE8DB]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#346538]" />
+          <motion.div 
+            variants={itemVariants}
+            className="inline-flex items-center space-x-2 px-2.5 py-1 bg-[#EDF3EC] text-[#346538] rounded-md text-xs font-mono font-medium border border-[#DCE8DB]"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#346538] animate-pulse" />
             <span>{totalFreeSlots} plazas disponibles en tiempo real en Huamanga</span>
-          </div>
+          </motion.div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#111111] leading-[1.08]">
+          <motion.h1 
+            variants={itemVariants}
+            className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#111111] leading-[1.08]"
+          >
             La infraestructura de estacionamiento para Ayacucho.
-          </h1>
+          </motion.h1>
 
-          <p className="text-base sm:text-lg text-[#555555] max-w-2xl font-normal leading-relaxed">
+          <motion.p 
+            variants={itemVariants}
+            className="text-base sm:text-lg text-[#555555] max-w-2xl font-normal leading-relaxed"
+          >
             Consulte la disponibilidad en tiempo real, seleccione su plaza en el plano topográfico 2D del estacionamiento y acceda mediante reconocimiento de placa ANPR.
-          </p>
+          </motion.p>
 
-          <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-            <a
+          <motion.div 
+            variants={itemVariants}
+            className="pt-2 flex flex-col sm:flex-row items-center gap-3"
+          >
+            <motion.a
+              whileTap={{ scale: 0.98 }}
               href="#mapa"
-              className="w-full sm:w-auto px-6 py-3 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded-md transition active:scale-[0.98] flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
+              className="w-full sm:w-auto px-6 py-3 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded-md transition flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
             >
               <span>Consultar Mapa en Vivo</span>
               <ArrowRight className="w-3.5 h-3.5" />
-            </a>
+            </motion.a>
 
             <button
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
@@ -190,12 +235,15 @@ export const LandingPage = ({
             >
               Afiliar Establecimiento
             </button>
-          </div>
+          </motion.div>
 
         </div>
 
         {/* Métricas de Precisión */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#EAEAEA]">
+        <motion.div 
+          variants={itemVariants}
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#EAEAEA]"
+        >
           <div className="space-y-1">
             <span className="font-mono text-2xl font-bold text-[#111111] block">
               {establishments.length}
@@ -223,9 +271,9 @@ export const LandingPage = ({
             </span>
             <span className="text-xs text-[#787774] font-medium block">Tarifa base promedio</span>
           </div>
-        </div>
+        </motion.div>
 
-      </section>
+      </motion.section>
 
       {/* =========================================================================
           3. MOCKUP DE VENTANA FAUX-OS (Document Style)
@@ -245,7 +293,13 @@ export const LandingPage = ({
         </div>
 
         {/* Contenedor Faux-OS Window Chrome */}
-        <div className="rounded-xl border border-[#EAEAEA] bg-white shadow-xs overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.6, ease: FLUID_EASE }}
+          className="rounded-xl border border-[#EAEAEA] bg-white shadow-xs overflow-hidden"
+        >
           
           {/* Barra superior de ventana */}
           <div className="px-4 py-3 bg-[#F7F6F3] border-b border-[#EAEAEA] flex items-center justify-between">
@@ -323,7 +377,7 @@ export const LandingPage = ({
 
           </div>
 
-        </div>
+        </motion.div>
 
       </section>
 
@@ -401,16 +455,24 @@ export const LandingPage = ({
         </div>
 
         {/* Grilla de Cocheras con Estilo Documental */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-40px' }}
+          variants={containerVariants}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4"
+        >
           {filteredParkings.map((p) => {
             const elements = p.elements || [];
             const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
             const totalCount = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
 
             return (
-              <div 
+              <motion.div 
                 key={p.id} 
-                className="bg-white rounded-xl border border-[#EAEAEA] p-5 flex flex-col justify-between shadow-xs hover:border-[#D4D4D4] transition"
+                variants={itemVariants}
+                whileHover={{ y: -3, transition: { duration: 0.2, ease: FLUID_EASE } }}
+                className="bg-white rounded-xl border border-[#EAEAEA] p-5 flex flex-col justify-between shadow-xs hover:border-[#D4D4D4] transition-colors"
               >
                 <div className="space-y-3">
                   <div className="h-36 rounded-lg overflow-hidden relative bg-[#F7F6F3]">
@@ -458,21 +520,22 @@ export const LandingPage = ({
                     </a>
                   </div>
 
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       if (onSelectParking) onSelectParking(p);
                     }}
-                    className="w-full py-2 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                    className="w-full py-2 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
                   >
                     <span>Ver Plano & Reservar</span>
                     <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                  </motion.button>
                 </div>
 
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
       </section>
 
@@ -575,7 +638,13 @@ export const LandingPage = ({
           6. SECCIÓN PROPIETARIOS DE ESTACIONAMIENTOS
           ========================================================================= */}
       <section id="afiliacion" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto">
-        <div className="bg-[#111111] text-white rounded-xl p-8 sm:p-12 space-y-6 flex flex-col md:flex-row items-center justify-between gap-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.6, ease: FLUID_EASE }}
+          className="bg-[#111111] text-white rounded-xl p-8 sm:p-12 space-y-6 flex flex-col md:flex-row items-center justify-between gap-8"
+        >
           
           <div className="max-w-xl space-y-3">
             <span className="text-xs font-mono text-[#A3A3A3] uppercase tracking-wider block">
@@ -590,12 +659,13 @@ export const LandingPage = ({
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.98 }}
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="px-5 py-2.5 bg-white hover:bg-[#EAEAEA] text-[#111111] text-xs font-medium rounded transition cursor-pointer"
+              className="px-5 py-2.5 bg-white hover:bg-[#EAEAEA] text-[#111111] text-xs font-medium rounded transition cursor-pointer shadow-xs"
             >
               Solicitar Afiliación
-            </button>
+            </motion.button>
             <a
               href="https://wa.me/51966000000?text=Hola,%20deseo%20afiliar%20mi%20cochera%20en%20Ayacucho"
               target="_blank"
@@ -606,7 +676,7 @@ export const LandingPage = ({
             </a>
           </div>
 
-        </div>
+        </motion.div>
       </section>
 
       {/* =========================================================================
@@ -653,7 +723,7 @@ export const LandingPage = ({
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center space-x-3">
             <div className="w-6 h-6 rounded bg-[#111111] text-white flex items-center justify-center font-bold text-[10px]">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
                 <path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
                 <circle cx="12" cy="12" r="10" />
               </svg>

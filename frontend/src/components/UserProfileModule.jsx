@@ -114,7 +114,7 @@ export const UserProfileModule = () => {
 
           <Button
             onClick={handleSaveProfile}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 rounded-xl shadow-md shadow-emerald-600/20 h-10 px-5 cursor-pointer"
+            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 rounded-xl shadow-md shadow-emerald-600/20 h-10 px-5 cursor-pointer justify-center"
           >
             <Save className="w-4 h-4" />
             <span>Guardar Cambios</span>

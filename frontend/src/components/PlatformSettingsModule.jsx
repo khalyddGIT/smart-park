@@ -210,11 +210,11 @@ export const PlatformSettingsModule = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto shrink-0">
           <Button
             type="button"
             onClick={() => setShowBroadcastModal(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-2 h-10 px-4 cursor-pointer"
+            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-2 h-10 px-4 cursor-pointer justify-center"
           >
             <Send className="w-4 h-4" />
             <span>Emitir Comunicado Masivo</span>
@@ -223,7 +223,7 @@ export const PlatformSettingsModule = () => {
           <Button
             type="button"
             onClick={handleSaveSettings}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md gap-2 h-10 px-4 cursor-pointer"
+            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md gap-2 h-10 px-4 cursor-pointer justify-center"
           >
             <Save className="w-4 h-4 text-emerald-400" />
             <span>Guardar Ajustes</span>

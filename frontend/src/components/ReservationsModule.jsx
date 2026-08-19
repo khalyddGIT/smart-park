@@ -234,11 +234,11 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
           {role === 'user' && onNavigateToBooking && (
             <Button
               onClick={onNavigateToBooking}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-2 rounded-xl shadow-md shadow-emerald-600/20 h-10 px-4"
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-2 rounded-xl shadow-md shadow-emerald-600/20 h-10 px-4 justify-center cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Nueva Reserva en Mapa</span>
@@ -253,7 +253,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                 }
                 setShowCreateModal(true);
               }}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs gap-2 rounded-xl shadow-md shadow-slate-900/20 h-10 px-4"
+              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs gap-2 rounded-xl shadow-md shadow-slate-900/20 h-10 px-4 justify-center cursor-pointer"
             >
               <Plus className="w-4 h-4 text-emerald-400" />
               <span>Emitir Ticket en Garita</span>

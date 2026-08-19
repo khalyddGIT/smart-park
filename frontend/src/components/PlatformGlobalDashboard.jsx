@@ -46,6 +46,7 @@ import {
   Legend 
 } from 'recharts';
 import { useEstablishments } from '../context/EstablishmentContext';
+import { Skeleton, SkeletonCard, SkeletonRow } from './ui/skeleton';
 
 // Datos de recaudación histórica para gráficos
 const REVENUE_TIMELINE = [
@@ -67,6 +68,13 @@ const PAYMENT_METHODS_DATA = [
 export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
   const { establishments, reservations, affiliationRequests = [] } = useEstablishments();
   const [timeRange, setTimeRange] = useState('semana'); // 'hoy' | 'semana' | 'mes'
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleTimeRangeChange = (range) => {
+    setIsRefreshing(true);
+    setTimeRange(range);
+    setTimeout(() => setIsRefreshing(false), 350);
+  };
 
   // Cálculos dinámicos
   const totalBranches = establishments.length;
@@ -192,109 +200,117 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
       )}
 
       {/* Grid de 6 KPIs Financieros & Operativos en Vivo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        
-        {/* Recaudación Bruta Hoy */}
-        <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Recaudación Hoy</span>
-            <div className="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-              <TrendingUp className="w-3.5 h-3.5" />
+      {isRefreshing ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 animate-fade-in">
+          {[...Array(6)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          
+          {/* Recaudación Bruta Hoy */}
+          <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Recaudación Hoy</span>
+              <div className="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
             </div>
-          </div>
-          <div className="mt-2.5">
-            <h3 className="text-xl font-black text-slate-900 font-mono">
-              S/ {grossRevenueToday.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-            </h3>
-            <span className="inline-flex items-center text-[10px] font-bold text-emerald-600 gap-0.5 mt-0.5">
-              <ArrowUpRight className="w-3 h-3" /> +14.2% vs ayer
-            </span>
-          </div>
-        </Card>
+            <div className="mt-2.5">
+              <h3 className="text-xl font-black text-slate-900 font-mono">
+                S/ {grossRevenueToday.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+              </h3>
+              <span className="inline-flex items-center text-[10px] font-bold text-emerald-600 gap-0.5 mt-0.5">
+                <ArrowUpRight className="w-3 h-3" /> +14.2% vs ayer
+              </span>
+            </div>
+          </Card>
 
-        {/* Comisión Smart-Park */}
-        <Card className="p-4 border-emerald-200 rounded-3xl bg-emerald-50/50 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase text-emerald-800 tracking-wider">Comisión Neta (12%)</span>
-            <div className="w-7 h-7 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center">
-              <Percent className="w-3.5 h-3.5" />
+          {/* Comisión Smart-Park */}
+          <Card className="p-4 border-emerald-200 rounded-3xl bg-emerald-50/50 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase text-emerald-800 tracking-wider">Comisión Neta (12%)</span>
+              <div className="w-7 h-7 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center">
+                <Percent className="w-3.5 h-3.5" />
+              </div>
             </div>
-          </div>
-          <div className="mt-2.5">
-            <h3 className="text-xl font-black text-emerald-700 font-mono">
-              S/ {netCommissionToday.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-            </h3>
-            <span className="text-[10px] font-medium text-emerald-800/80 mt-0.5 block">Ganancia de plataforma</span>
-          </div>
-        </Card>
+            <div className="mt-2.5">
+              <h3 className="text-xl font-black text-emerald-700 font-mono">
+                S/ {netCommissionToday.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+              </h3>
+              <span className="text-[10px] font-medium text-emerald-800/80 mt-0.5 block">Ganancia de plataforma</span>
+            </div>
+          </Card>
 
-        {/* Cocheras Activas */}
-        <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Locales Afiliados</span>
-            <div className="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-              <Building2 className="w-3.5 h-3.5" />
+          {/* Cocheras Activas */}
+          <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Locales Afiliados</span>
+              <div className="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                <Building2 className="w-3.5 h-3.5" />
+              </div>
             </div>
-          </div>
-          <div className="mt-2.5">
-            <h3 className="text-xl font-black text-slate-900 font-mono">
-              {totalBranches} Sedes
-            </h3>
-            <span className="text-[10px] font-bold text-emerald-600 mt-0.5 block">● 100% Operativas</span>
-          </div>
-        </Card>
+            <div className="mt-2.5">
+              <h3 className="text-xl font-black text-slate-900 font-mono">
+                {totalBranches} Sedes
+              </h3>
+              <span className="text-[10px] font-bold text-emerald-600 mt-0.5 block">● 100% Operativas</span>
+            </div>
+          </Card>
 
-        {/* Ocupación Media */}
-        <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Ocupación Red</span>
-            <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Activity className="w-3.5 h-3.5" />
+          {/* Ocupación Media */}
+          <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Ocupación Red</span>
+              <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <Activity className="w-3.5 h-3.5" />
+              </div>
             </div>
-          </div>
-          <div className="mt-2.5">
-            <h3 className="text-xl font-black text-amber-600 font-mono">
-              {occupancyPercentage}%
-            </h3>
-            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
-              <div className="bg-amber-500 h-full rounded-full" style={{ width: `${occupancyPercentage}%` }} />
+            <div className="mt-2.5">
+              <h3 className="text-xl font-black text-amber-600 font-mono">
+                {occupancyPercentage}%
+              </h3>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
+                <div className="bg-amber-500 h-full rounded-full" style={{ width: `${occupancyPercentage}%` }} />
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        {/* Reservas Activas */}
-        <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Estancias en Curso</span>
-            <div className="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-              <Car className="w-3.5 h-3.5" />
+          {/* Reservas Activas */}
+          <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Estancias en Curso</span>
+              <div className="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                <Car className="w-3.5 h-3.5" />
+              </div>
             </div>
-          </div>
-          <div className="mt-2.5">
-            <h3 className="text-xl font-black text-slate-900 font-mono">
-              {activeBookingsCount} Autos
-            </h3>
-            <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">{freeSlotsCount} plazas libres</span>
-          </div>
-        </Card>
-
-        {/* Satisfacción de Clientes */}
-        <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Calificación Red</span>
-            <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <div className="mt-2.5">
+              <h3 className="text-xl font-black text-slate-900 font-mono">
+                {activeBookingsCount} Autos
+              </h3>
+              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">{freeSlotsCount} plazas libres</span>
             </div>
-          </div>
-          <div className="mt-2.5">
-            <h3 className="text-xl font-black text-slate-900 font-mono">
-              4.8 ★
-            </h3>
-            <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">480+ reseñas verificadas</span>
-          </div>
-        </Card>
+          </Card>
 
-      </div>
+          {/* Satisfacción de Clientes */}
+          <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Calificación Red</span>
+              <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <h3 className="text-xl font-black text-slate-900 font-mono">
+                4.8 ★
+              </h3>
+              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">480+ reseñas verificadas</span>
+            </div>
+          </Card>
+
+        </div>
+      )}
 
       {/* Gráficos de Inteligencia de Negocios (Recharts) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -310,8 +326,31 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
               <p className="text-xs text-slate-500">Curva diaria de dinero bruto procesado vs. comisión líquida retenida por Smart-Park.</p>
             </div>
 
-            <div className="flex items-center space-x-1.5 text-xs font-bold bg-slate-100 p-1 rounded-xl">
-              <span className="px-2.5 py-0.5 bg-white rounded-lg shadow-2xs text-slate-900">Esta Semana</span>
+            <div className="flex items-center space-x-1 text-xs font-bold bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => handleTimeRangeChange('hoy')}
+                className={`px-2.5 py-0.5 rounded-lg transition cursor-pointer ${
+                  timeRange === 'hoy' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Hoy
+              </button>
+              <button
+                onClick={() => handleTimeRangeChange('semana')}
+                className={`px-2.5 py-0.5 rounded-lg transition cursor-pointer ${
+                  timeRange === 'semana' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Semana
+              </button>
+              <button
+                onClick={() => handleTimeRangeChange('mes')}
+                className={`px-2.5 py-0.5 rounded-lg transition cursor-pointer ${
+                  timeRange === 'mes' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Mes
+              </button>
             </div>
           </div>
 

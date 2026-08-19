@@ -49,6 +49,7 @@ import { Card, CardDescription } from './components/ui/card';
 import { Button } from './components/ui/button';
 import { Badge } from './components/ui/badge';
 import { Input } from './components/ui/input';
+import { SkeletonParkingCard } from './components/ui/skeleton';
 
 export const App = () => {
   const { role, user } = useAuth();
@@ -58,6 +59,20 @@ export const App = () => {
   // Filtros de Búsqueda para Conductor
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('todos'); // 'todos' | 'centro' | 'techados' | 'economicos'
+  const [isLoadingSedes, setIsLoadingSedes] = useState(false);
+
+  // Efecto sutil de carga skeleton al cambiar filtros
+  const handleFilterChange = (newCat) => {
+    setIsLoadingSedes(true);
+    setCategoryFilter(newCat);
+    setTimeout(() => setIsLoadingSedes(false), 300);
+  };
+
+  const handleSearchChange = (val) => {
+    setIsLoadingSedes(true);
+    setSearchQuery(val);
+    setTimeout(() => setIsLoadingSedes(false), 250);
+  };
 
   // Estados de Reserva de Usuario
   const [selectedParkingId, setSelectedParkingId] = useState(null);
@@ -172,7 +187,7 @@ export const App = () => {
                             type="text"
                             placeholder="Buscar cochera, jirón o avenida..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => handleSearchChange(e.target.value)}
                             className="pl-10 h-10 border-slate-200 bg-white shadow-xs text-xs"
                           />
                         </div>
@@ -180,8 +195,8 @@ export const App = () => {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => setSearchQuery('')}
-                            className="text-xs font-bold text-slate-600 h-10"
+                            onClick={() => handleSearchChange('')}
+                            className="text-xs font-bold text-slate-600 h-10 cursor-pointer"
                           >
                             Limpiar
                           </Button>
@@ -194,32 +209,32 @@ export const App = () => {
                           <Filter className="w-3 h-3" /> Filtro:
                         </span>
                         <button
-                          onClick={() => setCategoryFilter('todos')}
-                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap ${
+                          onClick={() => handleFilterChange('todos')}
+                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap cursor-pointer ${
                             categoryFilter === 'todos' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
                           Todas ({establishments.length})
                         </button>
                         <button
-                          onClick={() => setCategoryFilter('centro')}
-                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap ${
+                          onClick={() => handleFilterChange('centro')}
+                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap cursor-pointer ${
                             categoryFilter === 'centro' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
                           Centro Histórico
                         </button>
                         <button
-                          onClick={() => setCategoryFilter('techados')}
-                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap ${
+                          onClick={() => handleFilterChange('techados')}
+                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap cursor-pointer ${
                             categoryFilter === 'techados' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
                           Techadas
                         </button>
                         <button
-                          onClick={() => setCategoryFilter('economicos')}
-                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap ${
+                          onClick={() => handleFilterChange('economicos')}
+                          className={`px-3 py-1 rounded-xl font-bold transition shrink-0 whitespace-nowrap cursor-pointer ${
                             categoryFilter === 'economicos' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
@@ -245,7 +260,7 @@ export const App = () => {
                           variant="ghost" 
                           size="sm" 
                           onClick={() => setSelectedParkingId(null)}
-                          className="text-xs font-bold text-slate-600 hover:text-slate-900 gap-1.5"
+                          className="text-xs font-bold text-slate-600 hover:text-slate-900 gap-1.5 cursor-pointer"
                         >
                           ← Volver al Listado de Todas las Sedes
                         </Button>
@@ -261,79 +276,87 @@ export const App = () => {
                       />
                     </div>
                   ) : (
-                    /* Grid de Tarjetas de Estacionamientos Disponibles */
+                    /* Grid de Tarjetas de Estacionamientos Disponibles con Skeleton Loader */
                     <div className="space-y-3">
                       <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
                         <Building2 className="w-5 h-5 text-emerald-600" />
                         <span>Sedes de Estacionamiento Registradas ({filteredParkings.length})</span>
                       </h2>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredParkings.map((p) => {
-                          const elements = p.elements || [];
-                          const totalSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
-                          const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
-                          const pmrSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'pmr').length;
-                          const shadedSlots = elements.filter(e => e.type === 'slot' && e.shaded).length;
+                      {isLoadingSedes ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+                          {[...Array(6)].map((_, i) => (
+                            <SkeletonParkingCard key={i} />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {filteredParkings.map((p) => {
+                            const elements = p.elements || [];
+                            const totalSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
+                            const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
+                            const pmrSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'pmr').length;
+                            const shadedSlots = elements.filter(e => e.type === 'slot' && e.shaded).length;
 
-                          return (
-                            <Card key={p.id} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-                              <div>
-                                <div className="h-44 relative overflow-hidden bg-slate-100">
-                                  <img 
-                                    src={p.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
-                                    alt={p.name} 
-                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
-                                  />
-                                  <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-emerald-800 shadow-sm border border-slate-200">
-                                    S/ {Number(p.rate).toFixed(2)}/h
+                            return (
+                              <Card key={p.id} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                                <div>
+                                  <div className="h-44 relative overflow-hidden bg-slate-100">
+                                    <img 
+                                      src={p.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
+                                      alt={p.name} 
+                                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                                    />
+                                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-emerald-800 shadow-sm border border-slate-200">
+                                      S/ {Number(p.rate).toFixed(2)}/h
+                                    </div>
+                                    <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
+                                      {freeSlots} Libres de {totalSlots}
+                                    </div>
+                                    <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
+                                      {p.level}
+                                    </div>
                                   </div>
-                                  <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
-                                    {freeSlots} Libres de {totalSlots}
-                                  </div>
-                                  <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
-                                    {p.level}
+
+                                  <div className="p-5 space-y-3">
+                                    <div>
+                                      <h3 className="font-extrabold text-slate-900 text-base leading-tight">{p.name}</h3>
+                                      <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                                        <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" /> 
+                                        <span>{p.address} • {p.city || 'Huamanga'}</span>
+                                      </p>
+                                    </div>
+
+                                    {/* Distintivos de Servicios */}
+                                    <div className="flex flex-wrap gap-1.5 text-[10px] font-mono pt-1">
+                                      {pmrSlots > 0 && (
+                                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-200 font-bold flex items-center gap-0.5">
+                                          <Accessibility className="w-3 h-3" /> {pmrSlots} PMR
+                                        </span>
+                                      )}
+                                      {shadedSlots > 0 && (
+                                        <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200 font-bold flex items-center gap-0.5">
+                                          <Umbrella className="w-3 h-3" /> {shadedSlots} Techados
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
 
-                                <div className="p-5 space-y-3">
-                                  <div>
-                                    <h3 className="font-extrabold text-slate-900 text-base leading-tight">{p.name}</h3>
-                                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                                      <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" /> 
-                                      <span>{p.address} • {p.city || 'Huamanga'}</span>
-                                    </p>
-                                  </div>
-
-                                  {/* Distintivos de Servicios */}
-                                  <div className="flex flex-wrap gap-1.5 text-[10px] font-mono pt-1">
-                                    {pmrSlots > 0 && (
-                                      <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-200 font-bold flex items-center gap-0.5">
-                                        <Accessibility className="w-3 h-3" /> {pmrSlots} PMR
-                                      </span>
-                                    )}
-                                    {shadedSlots > 0 && (
-                                      <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200 font-bold flex items-center gap-0.5">
-                                        <Umbrella className="w-3 h-3" /> {shadedSlots} Techados
-                                      </span>
-                                    )}
-                                  </div>
+                                <div className="p-5 pt-0">
+                                  <Button 
+                                    onClick={() => setSelectedParkingId(p.id)} 
+                                    className="w-full font-bold gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm cursor-pointer"
+                                  >
+                                    <span>Ver Estacionamiento & Reservar</span>
+                                    <ChevronRight className="w-4 h-4 text-emerald-400" />
+                                  </Button>
                                 </div>
-                              </div>
-
-                              <div className="p-5 pt-0">
-                                <Button 
-                                  onClick={() => setSelectedParkingId(p.id)} 
-                                  className="w-full font-bold gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
-                                >
-                                  <span>Ver Estacionamiento & Reservar</span>
-                                  <ChevronRight className="w-4 h-4 text-emerald-400" />
-                                </Button>
-                              </div>
-                            </Card>
-                          );
-                        })}
-                      </div>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </>

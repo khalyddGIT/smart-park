@@ -66,9 +66,9 @@ export const VehiclesModule = () => {
   const [vehicles, setVehicles] = useState(() => {
     try {
       const saved = localStorage.getItem(VEHICLES_STORAGE_KEY);
-      if (saved) {
+      if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {}
     return INITIAL_VEHICLES;
@@ -89,29 +89,12 @@ export const VehiclesModule = () => {
     vehicle_type: 'auto', 
     brand: '', 
     model: '', 
-    year: '2022',
-    color: '',
-    imageUrl: ''
+    year: '2022', 
+    color: '', 
+    imageUrl: '' 
   });
   const [notification, setNotification] = useState(null);
   const [loadingImage, setLoadingImage] = useState(false);
-
-  // Cargar del backend si está disponible
-  useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/v1/vehicles')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setVehicles(prev => {
-            return data.map(item => ({
-              ...item,
-              imageUrl: item.imageUrl || `http://www.regcheck.org.uk/image.aspx/@${btoa(`${item.brand || 'Toyota'} ${item.model || 'Corolla'} 2022`)}`
-            }));
-          });
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const showToast = (msg) => {
     setNotification(msg);
@@ -158,7 +141,7 @@ export const VehiclesModule = () => {
     }
   };
 
-  const handleSaveCreate = async (e) => {
+  const handleSaveCreate = (e) => {
     e.preventDefault();
     if (!formData.license_plate) return;
 
@@ -171,70 +154,54 @@ export const VehiclesModule = () => {
       id: Date.now(),
       license_plate: formData.license_plate.toUpperCase().trim(),
       vehicle_type: formData.vehicle_type,
-      brand: formData.brand,
-      model: formData.model,
+      brand: formData.brand.trim(),
+      model: formData.model.trim(),
       year: formData.year || '2022',
-      color: formData.color,
+      color: formData.color.trim() || 'Blanco',
       imageUrl: img,
       user_id: 1
     };
 
+    const updated = [newObj, ...vehicles];
+    setVehicles(updated);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/vehicles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newObj)
-      });
-      if (res.ok) {
-        const saved = await res.json();
-        setVehicles(prev => [{ ...saved, imageUrl: img }, ...prev.filter(x => x.id !== saved.id)]);
-      } else {
-        setVehicles(prev => [newObj, ...prev]);
-      }
-    } catch {
-      setVehicles(prev => [newObj, ...prev]);
-    }
+      localStorage.setItem(VEHICLES_STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {}
 
     setShowAddModal(false);
     showToast(`Vehículo ${newObj.license_plate} registrado con éxito.`);
   };
 
-  const handleSaveEdit = async (e) => {
+  const handleSaveEdit = (e) => {
     e.preventDefault();
     if (!selectedVehicle) return;
 
-    const updated = {
-      ...selectedVehicle,
+    const updated = vehicles.map(v => v.id === selectedVehicle.id ? {
+      ...v,
       license_plate: formData.license_plate.toUpperCase().trim(),
       vehicle_type: formData.vehicle_type,
-      brand: formData.brand,
-      model: formData.model,
+      brand: formData.brand.trim(),
+      model: formData.model.trim(),
       year: formData.year,
-      color: formData.color,
+      color: formData.color.trim(),
       imageUrl: formData.imageUrl || selectedVehicle.imageUrl
-    };
+    } : v);
 
+    setVehicles(updated);
     try {
-      await fetch(`http://127.0.0.1:8000/api/v1/vehicles/${selectedVehicle.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated)
-      });
-    } catch {}
+      localStorage.setItem(VEHICLES_STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {}
 
-    setVehicles(prev => prev.map(v => v.id === selectedVehicle.id ? updated : v));
     setShowEditModal(false);
-    showToast(`Vehículo ${updated.license_plate} actualizado.`);
+    showToast(`Vehículo ${formData.license_plate} actualizado.`);
   };
 
-  const handleDelete = async (id, plate) => {
-    if (!window.confirm(`¿Estás seguro de eliminar el vehículo con placa ${plate}?`)) return;
-
+  const handleDelete = (id, plate) => {
+    const updated = vehicles.filter(v => v.id !== id);
+    setVehicles(updated);
     try {
-      await fetch(`http://127.0.0.1:8000/api/v1/vehicles/${id}`, { method: 'DELETE' });
-    } catch {}
-
-    setVehicles(prev => prev.filter(v => v.id !== id));
+      localStorage.setItem(VEHICLES_STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {}
     showToast(`Vehículo ${plate} eliminado del sistema.`);
   };
 

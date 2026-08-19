@@ -46,26 +46,6 @@ export const StaffModule = () => {
   });
   const [toast, setToast] = useState(null);
 
-  useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/v1/staff')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped = data.map(d => ({
-            id: d.id,
-            full_name: d.full_name,
-            dni: d.dni,
-            position: d.position,
-            shift: d.shift || 'Mañana',
-            status: d.status === 'active' ? 'Activo' : 'Inactivo',
-            parking_name: 'Smart Park Central'
-          }));
-          setStaff(mapped);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
   const notify = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3500);
@@ -89,7 +69,7 @@ export const StaffModule = () => {
     setShowEditModal(true);
   };
 
-  const handleCreate = async (e) => {
+  const handleCreate = (e) => {
     e.preventDefault();
     if (!formData.full_name || !formData.dni) return;
 
@@ -99,66 +79,40 @@ export const StaffModule = () => {
       parking_name: 'Smart Park Central'
     };
 
+    const updated = [newObj, ...staff];
+    setStaff(updated);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          parking_id: 1,
-          full_name: formData.full_name,
-          dni: formData.dni,
-          position: formData.position,
-          shift: formData.shift,
-          status: formData.status === 'Activo' ? 'active' : 'inactive'
-        })
-      });
-      if (res.ok) {
-        const saved = await res.json();
-        newObj.id = saved.id;
-      }
-    } catch {}
+      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {}
 
-    setStaff([newObj, ...staff]);
     setShowAddModal(false);
     notify(`Colaborador "${newObj.full_name}" registrado en la nómina.`);
   };
 
-  const handleEdit = async (e) => {
+  const handleEdit = (e) => {
     e.preventDefault();
     if (!selectedMember) return;
 
-    const updated = {
-      ...selectedMember,
+    const updated = staff.map(s => s.id === selectedMember.id ? {
+      ...s,
       ...formData
-    };
+    } : s);
 
+    setStaff(updated);
     try {
-      await fetch(`http://127.0.0.1:8000/api/v1/staff/${selectedMember.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          full_name: formData.full_name,
-          dni: formData.dni,
-          position: formData.position,
-          shift: formData.shift,
-          status: formData.status === 'Activo' ? 'active' : 'inactive'
-        })
-      });
-    } catch {}
+      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {}
 
-    setStaff(staff.map(s => s.id === selectedMember.id ? updated : s));
     setShowEditModal(false);
-    notify(`Colaborador "${updated.full_name}" actualizado.`);
+    notify(`Colaborador "${formData.full_name}" actualizado.`);
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`¿Seguro que deseas dar de baja a "${name}" de la nómina?`)) return;
-
+  const handleDelete = (id, name) => {
+    const updated = staff.filter(s => s.id !== id);
+    setStaff(updated);
     try {
-      await fetch(`http://127.0.0.1:8000/api/v1/staff/${id}`, { method: 'DELETE' });
-    } catch {}
-
-    setStaff(staff.filter(s => s.id !== id));
+      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {}
     notify(`Colaborador "${name}" eliminado de la nómina.`);
   };
 

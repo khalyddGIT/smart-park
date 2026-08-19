@@ -253,48 +253,52 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION CON TIPOGRAFÍA DE PRECISIÓN Y PARALLAX
+          2. HERO SECTION CENTRADO CON TIPOGRAFÍA DE PRECISIÓN Y PARALLAX
           ========================================================================= */}
-      <section ref={heroRef} className="pt-24 pb-20 px-6 lg:px-12 max-w-6xl mx-auto space-y-12 overflow-hidden">
+      <section ref={heroRef} className="pt-24 pb-20 px-6 lg:px-12 max-w-5xl mx-auto space-y-12 overflow-hidden text-center">
         
         <motion.div 
           style={{ y: heroHeadlineY, opacity: heroOpacity }}
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="max-w-4xl space-y-6"
+          className="space-y-6 flex flex-col items-center"
         >
           
+          {/* Badge Indicador Centrado */}
           <motion.div 
             variants={itemVariants}
-            className="inline-flex items-center space-x-2 px-2.5 py-1 bg-[#EDF3EC] text-[#346538] rounded-md text-xs font-mono font-medium border border-[#DCE8DB] transition-shadow duration-300 hover:shadow-xs"
+            className="inline-flex items-center space-x-2 px-3 py-1 bg-[#EDF3EC] text-[#346538] rounded-md text-xs font-mono font-medium border border-[#DCE8DB] transition-shadow duration-300 hover:shadow-xs"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#346538] animate-radar" />
             <span>{totalFreeSlots} plazas disponibles en tiempo real en Huamanga</span>
           </motion.div>
 
+          {/* Titular Principal Centrado */}
           <motion.h1 
             variants={itemVariants}
-            className="text-4xl sm:text-6xl lg:text-7xl font-display text-[#111111] tracking-tight"
+            className="text-4xl sm:text-6xl lg:text-7xl font-display text-[#111111] tracking-tight max-w-4xl mx-auto"
           >
             La infraestructura de estacionamiento para <span className="font-editorial italic font-normal text-[#2A2A2A]">Ayacucho</span>.
           </motion.h1>
 
+          {/* Subtítulo Centrado */}
           <motion.p 
             variants={itemVariants}
-            className="text-base sm:text-lg text-[#555555] max-w-2xl font-normal leading-relaxed"
+            className="text-base sm:text-lg text-[#555555] max-w-2xl mx-auto font-normal leading-relaxed text-center"
           >
             Consulte la disponibilidad en tiempo real, seleccione su plaza en el plano topográfico 2D del estacionamiento y acceda mediante reconocimiento de placa ANPR.
           </motion.p>
 
+          {/* Botones Centrados */}
           <motion.div 
             variants={itemVariants}
-            className="pt-2 flex flex-col sm:flex-row items-center gap-3"
+            className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full"
           >
             <motion.a
               whileTap={{ scale: 0.98 }}
               href="#mapa"
-              className="w-full sm:w-auto px-6 py-3 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded-md transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
+              className="w-full sm:w-auto px-7 py-3 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded-md transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
             >
               <span>Consultar Mapa en Vivo</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -302,7 +306,7 @@ export const LandingPage = ({
 
             <button
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="w-full sm:w-auto px-5 py-3 bg-white hover:bg-[#F0F0EF] text-[#111111] text-xs font-medium rounded-md border border-[#EAEAEA] transition-colors duration-200 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#F0F0EF] text-[#111111] text-xs font-medium rounded-md border border-[#EAEAEA] transition-colors duration-200 cursor-pointer"
             >
               Afiliar Establecimiento
             </button>
@@ -310,37 +314,37 @@ export const LandingPage = ({
 
         </motion.div>
 
-        {/* Métricas de Precisión */}
+        {/* Métricas de Precisión Centradas */}
         <motion.div 
           style={{ y: heroMetricsY }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3, ease: FLUID_EASE }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#EAEAEA]"
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#EAEAEA] text-center"
         >
           <div className="space-y-1">
-            <span className="font-mono text-2xl font-bold text-[#111111] block">
+            <span className="font-mono text-2xl sm:text-3xl font-bold text-[#111111] block">
               {establishments.length}
             </span>
             <span className="text-xs text-[#787774] font-medium block">Cocheras conectadas</span>
           </div>
 
           <div className="space-y-1">
-            <span className="font-mono text-2xl font-bold text-[#346538] block">
+            <span className="font-mono text-2xl sm:text-3xl font-bold text-[#346538] block">
               {totalFreeSlots}
             </span>
             <span className="text-xs text-[#787774] font-medium block">Plazas libres ahora</span>
           </div>
 
           <div className="space-y-1">
-            <span className="font-mono text-2xl font-bold text-[#111111] block">
+            <span className="font-mono text-2xl sm:text-3xl font-bold text-[#111111] block">
               &lt; 0.2s
             </span>
             <span className="text-xs text-[#787774] font-medium block">Lectura de placa ANPR</span>
           </div>
 
           <div className="space-y-1">
-            <span className="font-mono text-2xl font-bold text-[#111111] block">
+            <span className="font-mono text-2xl sm:text-3xl font-bold text-[#111111] block">
               S/ 4.00
             </span>
             <span className="text-xs text-[#787774] font-medium block">Tarifa base promedio</span>
@@ -350,18 +354,19 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          3. MOCKUP DE VENTANA FAUX-OS CON TRANSFORMACIÓN 3D BASADA EN SCROLL
+          3. MOCKUP DE VENTANA FAUX-OS CON TÍTULOS CENTRADOS
           ========================================================================= */}
-      <section ref={mockupSectionRef} id="sistema" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
+      <section ref={mockupSectionRef} id="sistema" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
         
-        <div className="max-w-2xl space-y-2">
+        {/* Encabezado de Sección Centrado */}
+        <div className="max-w-2xl mx-auto text-center space-y-2">
           <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
             ARQUITECTURA DE ACCESO
           </span>
-          <h2 className="text-2xl sm:text-3xl font-display text-[#111111] tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-display text-[#111111] tracking-tight">
             Interacción directa sin aplicaciones intermedias
           </h2>
-          <p className="text-xs sm:text-sm text-[#787774]">
+          <p className="text-xs sm:text-sm text-[#787774] max-w-lg mx-auto">
             La plataforma opera mediante interfaz web ligera optimizada para cualquier navegador móvil.
           </p>
         </div>
@@ -460,28 +465,29 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          4. DIRECTORIO Y MAPA EN TIEMPO REAL CON HOVER 3D
+          4. DIRECTORIO Y MAPA EN TIEMPO REAL CON TÍTULOS Y FILTROS CENTRADOS
           ========================================================================= */}
       <section id="mapa" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="space-y-1">
+        {/* Encabezado y Filtros Centrados */}
+        <div className="max-w-3xl mx-auto text-center space-y-4">
+          <div className="space-y-2">
             <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
               COBERTURA URBANA
             </span>
-            <h2 className="text-2xl sm:text-3xl font-display text-[#111111] tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-display text-[#111111] tracking-tight">
               Estacionamientos en Huamanga
             </h2>
-            <p className="text-xs sm:text-sm text-[#787774]">
-              Tarifas por hora, capacidad de plazas y ruteo directo.
+            <p className="text-xs sm:text-sm text-[#787774] max-w-md mx-auto">
+              Tarifas por hora, capacidad de plazas y ruteo directo en tiempo real.
             </p>
           </div>
 
-          {/* Filtros */}
-          <div className="flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
+          {/* Filtros Centrados */}
+          <div className="flex items-center justify-center space-x-2 overflow-x-auto pb-1 text-xs flex-wrap gap-y-2">
             <button
               onClick={() => setCategoryFilter('todos')}
-              className={`px-3 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
+              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
                 categoryFilter === 'todos'
                   ? 'bg-[#111111] text-white border-[#111111]'
                   : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
@@ -491,7 +497,7 @@ export const LandingPage = ({
             </button>
             <button
               onClick={() => setCategoryFilter('centro')}
-              className={`px-3 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
+              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
                 categoryFilter === 'centro'
                   ? 'bg-[#111111] text-white border-[#111111]'
                   : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
@@ -501,7 +507,7 @@ export const LandingPage = ({
             </button>
             <button
               onClick={() => setCategoryFilter('techados')}
-              className={`px-3 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
+              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
                 categoryFilter === 'techados'
                   ? 'bg-[#111111] text-white border-[#111111]'
                   : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
@@ -511,7 +517,7 @@ export const LandingPage = ({
             </button>
             <button
               onClick={() => setCategoryFilter('economicos')}
-              className={`px-3 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
+              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
                 categoryFilter === 'economicos'
                   ? 'bg-[#111111] text-white border-[#111111]'
                   : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
@@ -614,17 +620,21 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          5. BENTO GRID DE ESPECIFICACIONES TÉCNICAS
+          5. BENTO GRID DE ESPECIFICACIONES TÉCNICAS CENTRADAS
           ========================================================================= */}
-      <section id="infraestructura" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
+      <section id="infraestructura" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
         
-        <div className="max-w-2xl space-y-2">
+        {/* Encabezado Centrado */}
+        <div className="max-w-2xl mx-auto text-center space-y-2">
           <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
             ESPECIFICACIÓN TÉCNICA
           </span>
-          <h2 className="text-2xl sm:text-3xl font-display text-[#111111] tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-display text-[#111111] tracking-tight">
             Módulos del Sistema Operativo
           </h2>
+          <p className="text-xs sm:text-sm text-[#787774] max-w-md mx-auto">
+            Infraestructura optimizada para operaciones de alto flujo vehicular.
+          </p>
         </div>
 
         {/* Bento Grid Editorial */}
@@ -709,34 +719,34 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          6. SECCIÓN PROPIETARIOS DE ESTACIONAMIENTOS
+          6. SECCIÓN PROPIETARIOS DE ESTACIONAMIENTOS CENTRADA
           ========================================================================= */}
-      <section id="afiliacion" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto">
+      <section id="afiliacion" className="py-16 px-6 lg:px-12 max-w-5xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.7, ease: FLUID_EASE }}
-          className="bg-[#111111] text-white rounded-xl p-8 sm:p-12 space-y-6 flex flex-col md:flex-row items-center justify-between gap-8 shadow-md"
+          className="bg-[#111111] text-white rounded-xl p-8 sm:p-14 space-y-6 flex flex-col items-center text-center shadow-md"
         >
           
-          <div className="max-w-xl space-y-3">
+          <div className="max-w-2xl space-y-3">
             <span className="text-xs font-mono text-[#A3A3A3] uppercase tracking-wider block">
               RED DE COCHERAS EN HUAMANGA
             </span>
-            <h2 className="text-2xl sm:text-3xl font-display tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-display tracking-tight text-white">
               Digitalice la operación de su cochera
             </h2>
-            <p className="text-xs sm:text-sm text-[#A3A3A3] leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#A3A3A3] leading-relaxed max-w-xl mx-auto">
               Integramos el plano 2D interactivo, el sistema de lectura de placas en garita y conectamos su inmueble con conductores de la ciudad.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto pt-2">
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="px-5 py-2.5 bg-white hover:bg-[#EAEAEA] text-[#111111] text-xs font-medium rounded transition-all duration-200 cursor-pointer shadow-xs"
+              className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#EAEAEA] text-[#111111] text-xs font-medium rounded transition-all duration-200 cursor-pointer shadow-xs"
             >
               Solicitar Afiliación
             </motion.button>
@@ -744,7 +754,7 @@ export const LandingPage = ({
               href="https://wa.me/51966000000?text=Hola,%20deseo%20afiliar%20mi%20cochera%20en%20Ayacucho"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-5 py-2.5 bg-[#222222] hover:bg-[#333333] text-white text-xs font-medium rounded border border-[#333333] transition-colors duration-200 text-center"
+              className="w-full sm:w-auto px-6 py-3 bg-[#222222] hover:bg-[#333333] text-white text-xs font-medium rounded border border-[#333333] transition-colors duration-200 text-center"
             >
               Contacto Directo
             </a>
@@ -754,22 +764,26 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          7. PREGUNTAS FRECUENTES (FAQ)
+          7. PREGUNTAS FRECUENTES (FAQ) CON TÍTULOS CENTRADOS
           ========================================================================= */}
-      <section className="py-16 px-6 lg:px-12 max-w-4xl mx-auto space-y-8">
+      <section className="py-16 px-6 lg:px-12 max-w-4xl mx-auto space-y-10">
         
-        <div className="space-y-1">
+        {/* Encabezado Centrado */}
+        <div className="max-w-2xl mx-auto text-center space-y-2">
           <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
             SOPORTE Y CONSULTAS
           </span>
-          <h2 className="text-2xl font-display text-[#111111] tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-display text-[#111111] tracking-tight">
             Preguntas Frecuentes
           </h2>
+          <p className="text-xs sm:text-sm text-[#787774]">
+            Respuestas a las dudas principales sobre el funcionamiento del sistema.
+          </p>
         </div>
 
         <div className="divide-y divide-[#EAEAEA] border-y border-[#EAEAEA]">
           {faqs.map((faq, idx) => (
-            <div key={idx} className="py-4">
+            <div key={idx} className="py-4.5">
               <button
                 onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
                 className="w-full text-left font-medium text-xs sm:text-sm text-[#111111] flex items-center justify-between hover:text-[#555555] transition-colors duration-200 cursor-pointer"

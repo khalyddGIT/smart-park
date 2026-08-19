@@ -510,7 +510,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
           MODAL: SOLICITUD DE AFILIACIÓN DE ESTACIONAMIENTO
           ========================================================================= */}
       {showAffiliationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
             
             {/* Cabecera del Modal */}
@@ -700,8 +700,8 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
   if (isModal) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in overflow-y-auto">
-        <div className="relative w-full max-w-xl my-8 bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in overflow-y-auto">
+        <div className="relative z-[10000] w-full max-w-xl my-8 bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
           {screenContent}
         </div>
       </div>

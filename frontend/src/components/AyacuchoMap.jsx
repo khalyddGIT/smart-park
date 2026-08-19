@@ -122,7 +122,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       const customIcon = L.divIcon({
         className: 'custom-map-pin',
         html: `
-          <div class="cursor-pointer transition-all duration-200 hover:scale-105 ${isSelected ? 'scale-110 z-50' : 'z-10'}">
+          <div class="cursor-pointer transition-all duration-200 hover:scale-105 ${isSelected ? 'scale-110 z-30' : 'z-10'}">
             <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg shadow-md border ${
               isSelected
                 ? 'bg-[#111111] text-white border-[#111111] ring-2 ring-black/20'
@@ -261,19 +261,19 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
   };
 
   return (
-    <div className="relative w-full h-[420px] sm:h-[480px] bg-[#FBFBFA] overflow-hidden rounded-xl">
+    <div className="relative isolate z-0 w-full h-[420px] sm:h-[480px] bg-[#FBFBFA] overflow-hidden rounded-xl">
       
-      {/* Contenedor del Mapa Leaflet */}
+      {/* Contenedor del Mapa Leaflet Scoped */}
       <div 
         ref={mapContainerRef} 
-        className="w-full h-full cursor-grab active:cursor-grabbing" 
+        className="w-full h-full cursor-grab active:cursor-grabbing relative z-0" 
       />
 
-      {/* Controles Flotantes Superiores en Vidrio Esmerilado */}
-      <div className="absolute top-4 left-4 right-4 z-[400] flex items-center justify-between pointer-events-none">
+      {/* Controles Flotantes Superiores con z-10 dentro del contexto aislado */}
+      <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between pointer-events-none">
         
         {/* Indicador de Cobertura */}
-        <div className="pointer-events-auto bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-lg border border-[#EAEAEA] shadow-xs flex items-center space-x-2">
+        <div className="pointer-events-auto bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-lg border border-[#E5E5E5] shadow-xs flex items-center space-x-2">
           <span className="w-1.5 h-1.5 rounded-full bg-[#346538] animate-radar" />
           <span className="text-xs font-mono text-[#111111] font-medium">
             Huamanga • {parkings.length} cocheras activas
@@ -281,7 +281,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
         </div>
 
         {/* Segmented Layer Toggle & GPS */}
-        <div className="pointer-events-auto flex items-center space-x-2 bg-white/90 backdrop-blur-md p-1 rounded-lg border border-[#EAEAEA] shadow-xs">
+        <div className="pointer-events-auto flex items-center space-x-2 bg-white/90 backdrop-blur-md p-1 rounded-lg border border-[#E5E5E5] shadow-xs">
           
           <div className="flex items-center">
             <button
@@ -306,7 +306,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
             </button>
           </div>
 
-          <div className="w-[1px] h-4 bg-[#EAEAEA]" />
+          <div className="w-[1px] h-4 bg-[#E5E5E5]" />
 
           {/* Centrar Plaza Mayor */}
           <button

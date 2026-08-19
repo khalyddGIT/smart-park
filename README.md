@@ -1,305 +1,268 @@
-# Smart-Park — Plataforma Enterprise de Gestión de Estacionamientos Inteligentes
+# Smart-Park — Plataforma Enterprise & Marketplace Multi-Tenant de Gestión de Estacionamientos
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI%200.110+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
 [![TailwindCSS](https://img.shields.io/badge/Styles-Tailwind%20CSS%20v4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Leaflet](https://img.shields.io/badge/Maps-Leaflet%201.9-199900.svg?logo=leaflet&logoColor=white)](https://leafletjs.com/)
+[![Recharts](https://img.shields.io/badge/BI%20Analytics-Recharts-22c55e.svg)](https://recharts.org/)
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2015%20%7C%20SQLite-336791.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/DevOps-Docker%20%26%20Compose-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![WebSockets](https://img.shields.io/badge/RealTime-WebSockets-010101.svg?logo=socketdotio&logoColor=white)](https://developer.mozilla.org/es/docs/Web/API/WebSockets_API)
 [![Fabric.js](https://img.shields.io/badge/CAD%20Engine-Fabric.js%207-blue.svg)](https://fabricjs.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **Plataforma Enterprise de Gestión de Estacionamientos, Topografía CAD 1:1, Gemelo Digital Tridimensional Isométrico, Reconocimiento Óptico de Placas ANPR/OCR (ISO 18000), Pasarela de Liquidación Criptográfica y Telemetría IoT.**
+> **Ecosistema Multi-Tenant SaaS & Marketplace para la digitalización, búsqueda, reserva, telemetría de garitas con IA (LPR/ANPR), diseño topográfico CAD 1:1 y dispersión financiera de comisiones para playas de estacionamiento.**
 
 ---
 
-## Tabla de Contenidos
+## 📑 Tabla de Contenidos
 
-- [Visión General y Propósito del Proyecto](#visión-general-y-propósito-del-proyecto)
-- [Arquitectura del Sistema](#arquitectura-del-sistema)
-- [Stack Tecnológico](#stack-tecnológico)
-- [Estructura del Repositorio](#estructura-del-repositorio)
-- [Módulos y Funcionalidades del Sistema](#módulos-y-funcionalidades-del-sistema)
-  - [Endpoints de API RESTful (8 Routers CRUD)](#endpoints-de-api-restful-8-routers-crud)
-- [Estudio CAD Arquitectónico & Gemelo Digital 3D](#estudio-cad-arquitectónico--gemelo-digital-3d)
-- [Control de Accesos ANPR / OCR con Cámara Web en Vivo](#control-de-accesos-anpr--ocr-con-cámara-web-en-vivo)
-- [Roles de Usuario y Matriz de Acceso RBAC](#roles-de-usuario-y-matriz-de-acceso-rbac)
-- [Guía de Instalación y Puesta en Marcha](#guía-de-instalación-y-puesta-en-marcha)
-  - [Opción 1: Ejecución Completa con Microservicios en Vivo](#opción-1-ejecución-completa-con-microservicios-en-vivo)
-  - [Opción 2: Despliegue con Docker Compose](#opción-2-despliegue-con-docker-compose)
-- [Variables de Entorno](#variables-de-entorno)
-- [Modelo de Datos y Esquema Relacional](#modelo-de-datos-y-esquema-relacional)
-- [Resiliencia y Modo Edge Desconectado](#resiliencia-y-modo-edge-desconectado)
-- [Licencia](#licencia)
+1. [Modelo de Negocio: Marketplace Multi-Tenant](#-modelo-de-negocio-marketplace-multi-tenant)
+2. [Arquitectura del Sistema & Flujo de Tres Actores](#-arquitectura-del-sistema--flujo-de-tres-actores)
+3. [Estructura de Roles y Matriz de Acceso RBAC](#-estructura-de-roles-y-matriz-de-acceso-rbac)
+4. [Módulos Principales del Sistema](#-módulos-principales-del-sistema)
+   - [Centro de Control del Super Admin (Dueño de la Plataforma)](#1-centro-de-control-del-super-admin-dueño-de-la-plataforma)
+   - [Software de Gestión para el Admin de Cochera (Afiliado)](#2-software-de-gestión-para-el-admin-de-cochera-afiliado)
+   - [Portal del Conductor (Cliente Final)](#3-portal-del-conductor-cliente-final)
+5. [Estrategias de Monetización del Ecosistema](#-estrategias-de-monetización-del-ecosistema)
+6. [Stack Tecnológico](#-stack-tecnológico)
+7. [Instalación y Despliegue Local](#-instalación-y-despliegue-local)
+8. [Estructura del Proyecto](#-estructura-del-proyecto)
 
 ---
 
-## Visión General y Propósito del Proyecto
+## 🌐 Modelo de Negocio: Marketplace Multi-Tenant
 
-**Smart-Park** es un ecosistema de software e IoT diseñado para modernizar integralmente la operación de playas de estacionamiento y garajes urbanos. Resuelve la congestión vehicular, optimiza los tiempos de búsqueda mediante reserva directa sobre planos interactivos y automatiza el control de ingresos y egresos con reconocimiento de matrícula en tiempo real.
+**Smart-Park** opera bajo un modelo de plataforma de tres vías (*Three-Sided Marketplace & SaaS*):
 
-### Capacidades Principales:
-1. **Para Conductores:** Búsqueda geolocalizada de aparcamientos, selección de plaza sobre plano arquitectónico (estándar, con cubierta tensada o accesibilidad PMR bajo Norma A.120), checkout con billeteras interoperables (Yape, Plin) o tarjeta bancaria tokenizada PCI-DSS, y emisión de boletas electrónicas con código QR.
-2. **Para Operadores de Garita:** Cámara ANPR en vivo con flujo WebRTC/getUserMedia, escaneo OCR de matrícula, telemetría de barrera electromecánica (apertura/cierre, servomotor, fotocélula de seguridad) e interfaz de contingencia por PIN.
-3. **Para Administradores y Topógrafos:** Editor CAD 1:1 con cálculo paramétrico de aforo, gemelo digital 3D con sensores ultrasónicos cenitales, gestión de flota vehicular, cuadrillas de personal por turno, red de establecimientos afiliados y auditoría de reseñas.
-4. **Para la Plataforma Central:** Monitoreo global de ingresos por comisión, telemetría de eventos AMQP RabbitMQ con tolerancia a caídas de red y liquidaciones fiscales consolidadas.
-
----
-
-## Arquitectura del Sistema
-
-El sistema implementa un patrón desacoplado y reactivo entre microservicios, asegurando alta disponibilidad e independencia entre nodos:
-
-```mermaid
-graph TD
-    subgraph "Capa de Presentación"
-        UI_Web["Frontend SPA (React 19 + Vite)"]
-        UI_Driver["Portal Conductor (PWA / Responsive)"]
-        UI_CAD["Estudio CAD 2D & Gemelo Digital 3D"]
-    end
-
-    subgraph "Capa de Comunicación en Tiempo Real"
-        WS_Gateway["WebSocket Gateway (Node.js / ws - Puerto 8080)"]
-    end
-
-    subgraph "Capa de Servicios y Negocio"
-        API_Gateway["Backend RESTful (FastAPI / Python 3.11+ - Puerto 8000)"]
-        Auth_Service["Autenticación JWT + Keypad Criptográfico PIN"]
-        ANPR_Engine["Motor ANPR OCR & Telemetría de Barrera"]
-        Billing_Engine["Pasarela de Cobro & Billeteras Interoperables"]
-        CAD_Sync["Motor de Sincronización Topográfica CAD/BIM"]
-    end
-
-    subgraph "Capa de Persistencia & Eventos"
-        DB[(PostgreSQL 15 / SQLite aiosqlite)]
-        LocalStorage["Buffer Local Seguro IndexedDB (Modo Edge)"]
-    end
-
-    UI_Web <-->|HTTP/REST| API_Gateway
-    UI_Driver <-->|HTTP/REST| API_Gateway
-    UI_CAD <-->|JSON CAD Sync| API_Gateway
-    UI_Web <-->|WSS Eventos Bidireccionales| WS_Gateway
-    
-    API_Gateway --> Auth_Service
-    API_Gateway --> ANPR_Engine
-    API_Gateway --> Billing_Engine
-    API_Gateway --> CAD_Sync
-    
-    Auth_Service --> DB
-    ANPR_Engine --> DB
-    Billing_Engine --> DB
-    CAD_Sync --> DB
-    
-    UI_Web -.->|Resiliencia de Red| LocalStorage
+```
+                       ┌─────────────────────────────────────────┐
+                       │       🌐 SUPER ADMIN (EL DUEÑO)         │
+                       │ • Dueño de la plataforma SaaS           │
+                       │ • Define comisiones (ej. 10% - 12%)     │
+                       │ • Aprueba o rechaza nuevas cocheras     │
+                       │ • Liquida ganancias y emite pagos       │
+                       └────────────────────┬────────────────────┘
+                                            │
+                    ┌───────────────────────┴───────────────────────┐
+                    ▼                                               ▼
+  ┌───────────────────────────────────┐           ┌───────────────────────────────────┐
+  │   🏢 ADMIN COCHERA (EL AFILIADO)  │           │      🚗 CONDUCTOR (EL CLIENTE)     │
+  │ • Dueño del negocio de cochera    │           │ • Busca cochera en el mapa        │
+  │ • Se afilia desde el portal       │  Servicio │ • Elige su plaza en plano CAD     │
+  │ • Diseña su plano CAD interactivo │ ────────► │ • Paga con Yape, Plin o Tarjeta   │
+  │ • Opera su garita con cámara LPR  │           │ • Entra con Pase QR o Placa       │
+  │ • Recibe sus pagos quincenales    │           │ • Califica el servicio            │
+  └───────────────────────────────────┘           └───────────────────────────────────┘
 ```
 
+1. **El Super Admin (Dueño de la Plataforma)**: Propietario del software. Establece comisiones comerciales (10%-12%), valida y aprueba solicitudes de afiliación de nuevos estacionamientos, gestiona la dispersión de fondos a las cuentas bancarias de las cocheras y supervisa la calidad de la red.
+2. **El Administrador de Cochera (Afiliado / Merchant)**: Dueño de una playa de estacionamiento que utiliza el SaaS para digitalizar su negocio, diseñar su distribución en CAD, automatizar su garita con reconocimiento de placas LPR y cobrar mediante reservas en línea.
+3. **El Conductor (Consumidor / Driver)**: Usuario que busca cocheras disponibles en tiempo real sobre el mapa de Ayacucho, reserva su cajón específico en el plano interactivo y paga digitalmente.
+
 ---
 
-## Stack Tecnológico
+## 🛡️ Estructura de Roles y Matriz de Acceso RBAC
 
-| Capa | Tecnología | Versión / Detalle |
+| Módulo / Funcionalidad | 🚗 Conductor (`user`) | 🏢 Admin Cochera (`local`) | 🌐 Super Admin (`platform`) |
+| :--- | :---: | :---: | :---: |
+| **Mapa Interactivo & Cinta Continua** | ✅ Consulta & Navegación | ✅ Vista General | ✅ Vista General |
+| **Reserva Visual en Plano CAD** | ✅ Selección & Checkout | ❌ | ❌ |
+| **Pase Digital QR / Token ANPR** | ✅ Generación & Descarga | ❌ | ❌ |
+| **Estudio CAD 2D & Editor de Plazas** | ❌ | ✅ Control Total de su Sede | ✅ Supervisión Global |
+| **Garita ANPR / Reconocimiento LPR** | ❌ | ✅ Operación de Barrera | ✅ Telemetría de Red |
+| **Check-In / Check-Out de Vehículos** | ❌ | ✅ Registro & Cobro | ✅ Auditoría Global |
+| **Gestión de Personal & Turnos** | ❌ | ✅ Operadores de su Sede | ✅ Directorio Completo |
+| **Finanzas & Liquidaciones Bancarias** | ❌ | ❌ (Solo ve su caja) | ✅ Dispersión de Fondos & Comprobantes |
+| **Ajustes Maestros & Comunicados Push** | ❌ | ❌ | ✅ Configuración Global |
+| **Aprobación de Nuevas Cocheras** | ❌ (Solo solicita) | ❌ | ✅ Bandeja de Afiliaciones |
+| **Escribir Reseñas** | ✅ Exclusivo Conductores | ❌ | ❌ |
+| **Responder a Reseñas** | ❌ | ✅ Réplica Oficial | ✅ Moderación / Eliminación |
+| **Reportar Incidencias** | ✅ Reporte de Usuario | ✅ Registro de Infracción | ✅ Registro & Supervisión |
+| **Resolver Incidencias** | ❌ (Solo informativo) | ✅ Resolución Local | ✅ Resolución Global |
+| **Padrón de Usuarios & Roles** | ❌ | ❌ | ✅ Asignación de Roles & PIN |
+
+---
+
+## 📦 Módulos Principales del Sistema
+
+### 1. Centro de Control del Super Admin (Dueño de la Plataforma)
+* **`PlatformGlobalDashboard.jsx` (Panel Global Ejecutivo)**:
+  - KPIs en tiempo real: Recaudación bruta de la red, comisión líquida retenida (12%), volumen de estancias y ocupación en vivo.
+  - Gráficos de Inteligencia de Negocios con **Recharts** (curva semanal de ingresos vs comisiones y donut chart de métodos de pago).
+  - Monitor en vivo de cocheras con estado de cámaras de garita (*LPR Online 🟢*) y barra de capacidad.
+  - Live Feed de eventos de la red (entradas por garita, cobros Yape/Plin y alertas).
+* **`PlatformFinancesModule.jsx` (Finanzas & Liquidaciones Payout)**:
+  - Registro de cocheras con RUC, Razón Social, Banco (BCP, BBVA, Interbank), Número de Cuenta y CCI.
+  - Botón **"Liquidar Fondos"** que dispersa el saldo neto a la cochera y genera un **Voucher / Comprobante Oficial descargable e imprimible**.
+  - Exportación contable completa a **CSV / Excel** para declaraciones SUNAT.
+* **`PlatformSettingsModule.jsx` (Ajustes Maestros & Broadcast)**:
+  - Configuración del % de comisión estándar y tiempo de gracia en garita (tolerancia de 15 min).
+  - Conmutador de pasarelas de pago (Yape, Plin, Tarjetas Visa/MC, Smart Wallet) y selector Producción / Sandbox.
+  - Interruptor de **Modo Mantenimiento** con mensaje de contingencia.
+  - **Centro de Comunicados Masivos**: Disparo de notificaciones push a Conductores, Cocheras o toda la red.
+* **`AffiliatedParkingsModule.jsx` (Gestión de Sedes & Solicitudes de Afiliación)**:
+  - Bandeja de revisión de solicitudes de afiliación enviadas por dueños de cocheras desde el login.
+  - Aprobación con 1 clic: crea la cochera en el mapa y genera la cuenta de Admin Local.
+
+---
+
+### 2. Software de Gestión para el Admin de Cochera (Afiliado)
+* **`LocalEstablishmentManager.jsx` & `InteractiveFloorPlanDrawingStudio.jsx` (Estudio CAD)**:
+  - Herramienta de dibujo arquitectónico 1:1 en lienzo interactivo (muros, plazas para autos, motos, discapacitados PMR, techadas, garitas y accesos peatonales).
+  - Conmutador de estado de plazas en vivo (*Libre / Ocupado / Reservado*).
+  - Configuración de tarifa horaria y aforo.
+* **`ANPRMonitor.jsx` (Control de Garita LPR & Barrera)**:
+  - Video en vivo / simulador de cámara OCR para lectura automática de matrículas vehiculares.
+  - Apertura y cierre remoto de barrera con verificación de confianza OCR.
+* **`ReservationsModule.jsx` (Operaciones de Garita)**:
+  - Escáner y validador de códigos QR de conductores.
+  - Registro de Check-In (Entrada) y Check-Out (Salida) con liquidación de tiempo excedido.
+* **`StaffModule.jsx`**: Control de turnos (mañana, tarde, noche) y operadores de caja.
+* **`ReviewsModule.jsx`**: Recepción y respuesta formal a comentarios de clientes.
+
+---
+
+### 3. Portal del Conductor (Cliente Final)
+* **`AyacuchoMap.jsx` (Mapa Interactivo & Marquee)**:
+  - Mapa interactivo con **Leaflet**, capas conmutables (*Calles de Alta Resolución / Satélite HD*) y geolocalización GPS.
+  - **Cinta Continua Infinita (*Infinite Marquee*)**: Desplazamiento continuo de sedes fuera del mapa con radar animado en vivo y pausa automática al posar el cursor (*hover*).
+  - Marcadores interactivos con popup directo para ver plano y reservar.
+* **`CustomerInteractivePlanBooking.jsx` (Reserva Visual en Plano)**:
+  - Selección táctil/clic del cajón deseado sobre el plano de la cochera.
+  - Checkout integrado con Yape, Plin, Tarjeta o Monedero Virtual.
+* **`DigitalAccessPassModal.jsx` (Pase QR)**:
+  - Generación instantánea de Pase Digital dinámico con código QR, token ANPR y countdown de vigencia.
+* **`LoyaltyClubModule.jsx` (Smart Club)**:
+  - Acumulación de 10 puntos por Sol gastado y canje de horas de estacionamiento gratis.
+* **`VehiclesModule.jsx` & `PaymentsModule.jsx`**: Gestión de placas vehiculares y tarjetas/billeteras.
+* **`ReviewsModule.jsx` & `IncidentsModule.jsx`**: Calificación de cocheras y reporte de incidencias con fotografías.
+
+---
+
+## 💰 Estrategias de Monetización del Ecosistema
+
+1. **Comisión por Transacción (10% - 12%)**: Retención automática sobre cada reserva o estancia pagada por la aplicación.
+2. **Suscripción Mensual SaaS para Cocheras**: Planes Básico (S/ 49/mes), Pro con LPR (S/ 149/mes) y Enterprise (S/ 299/mes).
+3. **Tarifa de Servicio / Conveniencia (S/ 0.80 por reserva)**: Pequeño recargo pagado por el conductor por garantizar su plaza en zonas de alta congestión.
+4. **Pases Mensuales B2C (S/ 180 - S/ 250 / mes)**: Abonos para trabajadores del centro histórico de Huamanga.
+5. **Venta de Hardware IoT (Kits LPR)**: Venta e instalación de cámaras IP de garita y controladoras de barrera.
+6. **Publicidad Geolocalizada B2B**: Comercios cercanos (restaurantes, hoteles, lavaderos) que se promocionan en el mapa.
+7. **Convenios Corporativos**: Facturación consolidada mensual para flotas de empresas e instituciones.
+
+---
+
+## 🛠️ Stack Tecnológico
+
+| Capa | Tecnología | Propósito |
 | :--- | :--- | :--- |
-| **Frontend Framework** | React | 19.x (Hooks avanzados, Context API) |
-| **Bundler & DevServer** | Vite | 6.x |
-| **Estilos & Diseño** | Tailwind CSS / Vanilla CSS | Tailwind v4 con tokens corporativos |
-| **Iconografía** | Lucide React | Iconos vectoriales puros SVG (cero emojis) |
-| **Lienzo CAD 2D** | Fabric.js / HTML5 Canvas | v7.x con acotación métrica y presets |
-| **Render 3D Isométrico** | CSS 3D Transforms / WebGL | Iluminación diurna/nocturna, shaders LED cenitales |
-| **Captura de Video** | WebRTC / MediaDevices API | `navigator.mediaDevices.getUserMedia` |
-| **Backend Framework** | FastAPI (Python) | 0.110+ con ASGI Uvicorn |
-| **ORM & Persistencia** | SQLAlchemy / aiosqlite | PostgreSQL 15+ / SQLite Asíncrono |
-| **Validación de Esquemas** | Pydantic v2 | Tipado estricto para modelos de dominio |
-| **WebSocket Gateway** | Node.js / ws | Puerto 8080 (difusión de eventos de plazas en <15ms) |
-| **Seguridad & Auth** | JWT (PyJWT) + Bcrypt | Tokens de sesión y códigos PIN con hashing |
+| **Frontend Framework** | React 19 + Vite 8 | Renderizado reactivo ultrarrápido y modular |
+| **Estilos & Diseño** | TailwindCSS v4 + Glassmorphism | Sistema de diseño claro (`#F8FAFC`, slate, emerald) |
+| **Mapas & Geolocalización** | Leaflet 1.9 + CartoDB / Esri Satellite | Motor de mapas interactivo sin costos de API |
+| **Estudio CAD** | Fabric.js 7 | Renderizado y manipulación de planos topográficos en 2D |
+| **Business Intelligence** | Recharts 3 | Gráficos ejecutivos interactivos de recaudación y aforo |
+| **Backend RESTful** | FastAPI (Python 3.11+) + Uvicorn | API REST asíncrona de alto rendimiento |
+| **Tiempo Real** | Node.js WebSockets (Puerto 8080) | Transmisión bidireccional de estados de garita y sensores |
+| **Base de Datos** | SQLite (aiosqlite) / PostgreSQL 15 | Persistencia relacional de usuarios, sedes y reservas |
 
 ---
 
-## Estructura del Repositorio
+## 🚀 Instalación y Despliegue Local
 
-```text
-smart-park/
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   │   └── v1/
-│   │   │       ├── auth.py              # Autenticación JWT y verificación de PIN
-│   │   │       ├── parkings.py          # CRUD de Estacionamientos, Plazas y CAD Sync
-│   │   │       ├── vehicles.py          # CRUD de Vehículos (Placas, Tipo, PMR)
-│   │   │       ├── staff.py             # CRUD de Personal y Control de Turnos
-│   │   │       ├── users.py             # CRUD de Usuarios y Asignación de Roles
-│   │   │       ├── reservations.py      # CRUD de Reservas de Estacionamiento
-│   │   │       ├── reviews.py           # CRUD de Reseñas y Respuestas de Administración
-│   │   │       ├── anpr.py              # Telemetría de Barrera y Lectura OCR
-│   │   │       ├── payments.py          # Checkout y Billeteras Digitales
-│   │   │       └── analytics.py         # Métricas BI y Reportes Consolidados
-│   │   ├── core/
-│   │   │   ├── config.py                # Variables de entorno y ajustes
-│   │   │   └── database.py              # Sesión asíncrona SQLAlchemy
-│   │   ├── models/
-│   │   │   └── models.py                # Modelos ORM (User, Vehicle, Parking, Slot, etc.)
-│   │   ├── schemas/
-│   │   │   └── schemas.py               # Esquemas Pydantic v2
-│   │   └── main.py                      # Punto de entrada FastAPI con CORS y Routers
-│   ├── requirements.txt                 # Dependencias Python
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Navbar.jsx               # Barra superior con SVG y selector de roles
-│   │   │   ├── Sidebar.jsx              # Navegación lateral por dominios de negocio
-│   │   │   ├── ANPRMonitor.jsx          # Monitor de Acceso con Cámara Web y OCR
-│   │   │   ├── VehiclesModule.jsx       # Gestión y CRUD de Flota Vehicular
-│   │   │   ├── AffiliatedParkingsModule.jsx # Red de Establecimientos Afiliados
-│   │   │   ├── UserRolesModule.jsx      # Control de Usuarios, Roles RBAC y PIN
-│   │   │   ├── StaffModule.jsx          # Cuadrilla Operativa y Exportación de Turnos
-│   │   │   ├── ReviewsModule.jsx        # Calificaciones y Respuestas de Garita
-│   │   │   ├── PaymentsModule.jsx       # Pasarela de Liquidación y Comprobantes
-│   │   │   ├── AnalyticsGlobalModule.jsx # Business Intelligence con Gráficos SVG
-│   │   │   ├── HistoryModule.jsx        # Bitácora de Estancias y Exportación CSV
-│   │   │   ├── ResiliencySimModule.jsx  # Monitor de Alta Disponibilidad (ISO 22301)
-│   │   │   ├── FloorPlanEditor.jsx      # Selector de Entorno CAD / 3D / Satelital
-│   │   │   ├── InteractiveFloorPlanDrawingStudio.jsx # Lienzo CAD 2D Paramétrico
-│   │   │   ├── DigitalTwin3DView.jsx    # Gemelo Digital 3D con Telemetría Cenital
-│   │   │   ├── TerrainMetricCADView.jsx # Topografía Satelital a Escala 1:1
-│   │   │   ├── CustomerInteractivePlanBooking.jsx # Reserva de Cajón sobre Plano
-│   │   │   └── KeypadModal.jsx          # Teclado Criptográfico para PIN Administrativo
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx          # Contexto global de sesión y rol
-│   │   ├── App.jsx                      # Orquestador de Vistas y Pases QR
-│   │   └── main.jsx                     # Punto de montaje React 19
-│   ├── package.json
-│   ├── vite.config.js
-│   └── Dockerfile
-├── server/
-│   └── ws-server.js                     # Servidor de WebSocket Gateway
-├── docker-compose.yml                   # Orquestación de contenedores
-└── README.md                            # Documentación técnica maestra
-```
+### Requisitos Previos:
+- **Node.js**: v18+ o v20+
+- **Python**: v3.10+ o v3.11+
+- **Git**
 
----
-
-## Módulos y Funcionalidades del Sistema
-
-### Endpoints de API RESTful (8 Routers CRUD)
-
-El backend de FastAPI expone una API OpenAPI RESTful documentada en `http://127.0.0.1:8000/docs`:
-
-| Recurso | Método | Endpoint | Descripción |
-| :--- | :--- | :--- | :--- |
-| **Vehículos** | `GET` | `/api/v1/vehicles/` | Listado de vehículos registrados |
-| | `POST` | `/api/v1/vehicles/` | Alta de nuevo vehículo con verificación ANPR |
-| | `PUT` | `/api/v1/vehicles/{id}` | Actualización de datos de vehículo |
-| | `DELETE` | `/api/v1/vehicles/{id}` | Baja de vehículo en el registro |
-| **Estacionamientos** | `GET` | `/api/v1/parkings/` | Listado de playas de estacionamiento |
-| | `POST` | `/api/v1/parkings/` | Alta de nuevo establecimiento afiliado |
-| | `PUT` | `/api/v1/parkings/{id}` | Modificación de tarifas, comisión y aforo |
-| | `DELETE` | `/api/v1/parkings/{id}` | Desafiliación de estacionamiento |
-| | `POST` | `/api/v1/parkings/{id}/floor-plan/sync` | Sincronización masiva de elementos CAD |
-| **Personal (Staff)** | `GET` | `/api/v1/staff/` | Nómina de operadores y supervisores |
-| | `POST` | `/api/v1/staff/` | Contratación / Alta de miembro de personal |
-| | `PUT` | `/api/v1/staff/{id}` | Actualización de turno, rol y estado operativo |
-| | `DELETE` | `/api/v1/staff/{id}` | Baja de miembro de personal |
-| **Usuarios & Roles** | `GET` | `/api/v1/users/` | Padrón de usuarios y cuentas de acceso |
-| | `POST` | `/api/v1/users/` | Registro de nuevo usuario en plataforma |
-| | `PUT` | `/api/v1/users/{id}` | Modificación de datos de perfil |
-| | `PUT` | `/api/v1/users/{id}/role` | Asignación de rol RBAC (Conductor, Local, Admin) |
-| | `PUT` | `/api/v1/users/{id}/pin` | Actualización de PIN criptográfico |
-| | `DELETE` | `/api/v1/users/{id}` | Eliminación de cuenta |
-| **Reservas** | `GET` | `/api/v1/reservations/` | Consulta de reservas por usuario o garita |
-| | `POST` | `/api/v1/reservations/` | Creación de reserva con cajón bloqueado |
-| | `PUT` | `/api/v1/reservations/{id}/cancel` | Cancelación de reserva y liberación de plaza |
-| | `PUT` | `/api/v1/reservations/{id}/extend` | Prórroga de tiempo de estancia |
-| **Reseñas** | `GET` | `/api/v1/reviews/` | Calificaciones y comentarios de usuarios |
-| | `POST` | `/api/v1/reviews/` | Publicación de calificación (1-5 estrellas) |
-| | `PUT` | `/api/v1/reviews/{id}/reply` | Respuesta administrativa oficial de garita |
-| | `DELETE` | `/api/v1/reviews/{id}` | Moderación de reseña |
-| **Control ANPR** | `POST` | `/api/v1/anpr/read-plate` | Inferencia OCR y validación de lista blanca |
-| | `POST` | `/api/v1/anpr/barrier-toggle` | Disparo de apertura/cierre de barrera |
-| **Pagos** | `POST` | `/api/v1/payments/checkout` | Liquidación con tarjeta o QR interoperable |
-
----
-
-## Control de Accesos ANPR / OCR con Cámara Web en Vivo
-
-El componente `ANPRMonitor.jsx` implementa acceso directo al hardware óptico local mediante la API de medios de HTML5:
-
-1. **Activación de Cámara en Vivo:** Permite seleccionar la cámara web del dispositivo (`navigator.mediaDevices.getUserMedia`) con resolución HD y 30 FPS.
-2. **Escaneo Óptico Continuo:** Dibuja una mira de telemetría de grado militar sobre el video en vivo, capturando frames periódicos para reconocimiento de caracteres (OCR).
-3. **Validación Instantánea:** Si la placa detectada coincide con una reserva activa o vehículo en lista blanca, envía un comando al servomotor de la barrera levadiza.
-4. **Telemetría de Hardware:** Muestra el ángulo angular del brazo (0° cerrado a 85° abierto), fotocélula infrarroja de paso y estado de conexión MQTT/WebSocket.
-
----
-
-## Guía de Instalación y Puesta en Marcha
-
-### Opción 1: Ejecución Completa con Microservicios en Vivo
-
-#### 1. Clonar el Repositorio:
+### 1. Clonar el Repositorio:
 ```bash
 git clone https://github.com/khalyddGIT/smart-park.git
 cd smart-park
 ```
 
-#### 2. Iniciar el Backend RESTful (FastAPI):
+### 2. Iniciar el Backend (FastAPI):
 ```bash
 cd backend
 python -m venv venv
-venv\Scripts\activate          # En Windows PowerShell
+# En Windows:
+.\venv\Scripts\activate
+# En Linux/Mac:
+source venv/bin/activate
+
 pip install -r requirements.txt
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn app.main:app --port 8000 --reload
 ```
-*API y documentación interactiva Swagger disponible en `http://127.0.0.1:8000/docs`.*
+*API disponible en: `http://127.0.0.1:8000/docs` (Swagger UI).*
 
-#### 3. Iniciar el WebSocket Gateway (Node.js):
+### 3. Iniciar el Servidor de WebSockets:
 ```bash
-cd server
-npm install
-node ws-server.js
+# En una nueva terminal en la raíz del proyecto:
+npm run ws
 ```
-*Servidor de eventos en tiempo real escuchando en `ws://localhost:8080`.*
+*Servidor WebSocket escuchando en `ws://localhost:8080`.*
 
-#### 4. Iniciar el Frontend SPA (React 19 + Vite):
+### 4. Iniciar el Frontend (React + Vite):
 ```bash
+# En una nueva terminal:
 cd frontend
 npm install
 npm run dev
 ```
-*Aplicación web disponible en `http://localhost:5173`.*
+*Aplicación web disponible en: `http://localhost:5173/`.*
 
 ---
 
-### Opción 2: Despliegue con Docker Compose
+## 📁 Estructura del Proyecto
 
-Para desplegar la infraestructura completa en un entorno contenerizado:
-
-```bash
-docker compose up -d --build
+```
+smart-park/
+├── backend/
+│   ├── app/
+│   │   ├── api/v1/          # Endpoints REST (Users, Establishments, Reservations, Reviews, Incidents, Staff, Payments, Audit)
+│   │   ├── core/            # Configuración, JWT, Hash de contraseñas
+│   │   ├── db/              # Sesión asíncrona y Base de Datos SQLite
+│   │   ├── models/          # Modelos relacionales SQLAlchemy
+│   │   ├── schemas/         # Esquemas Pydantic para validación
+│   │   └── main.py          # Entrypoint de FastAPI con CORS y Routers
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── PlatformGlobalDashboard.jsx    # Panel Ejecutivo del Super Admin
+│   │   │   ├── PlatformFinancesModule.jsx     # Finanzas, Comisiones & Liquidaciones
+│   │   │   ├── PlatformSettingsModule.jsx     # Ajustes Maestros & Broadcast Push
+│   │   │   ├── AffiliatedParkingsModule.jsx   # Sedes & Bandeja de Afiliaciones
+│   │   │   ├── AyacuchoMap.jsx                # Mapa Interactivo Leaflet + Marquee
+│   │   │   ├── LocalEstablishmentManager.jsx  # Gestor de Cochera del Afiliado
+│   │   │   ├── InteractiveFloorPlanDrawingStudio.jsx # Estudio CAD 2D
+│   │   │   ├── ANPRMonitor.jsx                # Monitor de Garita LPR con IA
+│   │   │   ├── CustomerInteractivePlanBooking.jsx # Reserva Visual del Conductor
+│   │   │   ├── DigitalAccessPassModal.jsx     # Pase QR Dinámico
+│   │   │   ├── ReservationsModule.jsx         # Padrón & Operaciones de Garita
+│   │   │   ├── IncidentsModule.jsx            # Módulo de Incidencias con RBAC
+│   │   │   ├── ReviewsModule.jsx              # Muro de Reseñas & Calificaciones
+│   │   │   ├── UserRolesModule.jsx            # Padrón Maestro de Usuarios & PIN
+│   │   │   ├── StaffModule.jsx                # Gestión de Personal & Turnos
+│   │   │   ├── AnalyticsGlobalModule.jsx      # Analítica de Red
+│   │   │   ├── LoyaltyClubModule.jsx          # Smart Club & Puntos
+│   │   │   ├── VehiclesModule.jsx             # Vehículos del Conductor
+│   │   │   ├── PaymentsModule.jsx             # Pasarelas & Smart Wallet
+│   │   │   ├── LoginAuthScreen.jsx            # Login & Solicitud de Afiliación
+│   │   │   ├── Navbar.jsx                     # Barra Superior con Selector RBAC
+│   │   │   └── Sidebar.jsx                    # Menú Lateral Compacto (185px)
+│   │   ├── context/
+│   │   │   ├── AuthContext.jsx                # Estado de Sesión & Autenticación
+│   │   │   └── EstablishmentContext.jsx       # Estado Global de Cocheras, Planos y Afiliaciones
+│   │   ├── App.jsx                            # Enrutador por Roles
+│   │   └── index.css                          # Tokens de Diseño & Animaciones
+│   └── package.json
+├── server/
+│   └── ws-server.js         # Gateway de WebSockets para Telemetría LPR
+├── public/                  # Bundle estático sincronizado
+└── README.md
 ```
 
-Servicios levantados:
-- `smartpark-frontend`: `http://localhost:5173`
-- `smartpark-backend`: `http://localhost:8000`
-- `smartpark-ws`: `ws://localhost:8080`
-
 ---
 
-## Variables de Entorno
+## 📄 Licencia
 
-Crear un archivo `.env` en la raíz de `backend/`:
-
-```env
-PROJECT_NAME="Smart-Park Enterprise"
-API_V1_STR="/api/v1"
-SECRET_KEY="clave-criptografica-super-segura-pci-dss"
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-DATABASE_URL="sqlite+aiosqlite:///./smartpark.db"
-# Para producción con PostgreSQL:
-# DATABASE_URL="postgresql+asyncpg://smartpark_user:password@localhost:5432/smartpark_db"
-CORS_ORIGINS=["http://localhost:5173","http://localhost:3000","http://127.0.0.1:5173"]
-```
-
----
-
-## Licencia
-
-Este proyecto está bajo la Licencia **MIT** — puedes consultar el archivo [LICENSE](LICENSE) para más información.
+Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles. Desarrollado con tecnología de vanguardia para la transformación digital del estacionamiento urbano.

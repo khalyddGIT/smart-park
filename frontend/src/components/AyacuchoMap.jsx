@@ -4,12 +4,10 @@ import {
   Navigation, 
   Compass, 
   Layers, 
-  Maximize2, 
-  CheckCircle2, 
   Car, 
-  Sparkles,
   LocateFixed,
-  DollarSign
+  ChevronRight,
+  ExternalLink
 } from 'lucide-react';
 
 // Coordenadas base de referencia en Ayacucho (Huamanga)
@@ -27,16 +25,15 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
 
   const [mapLayer, setMapLayer] = useState('streets'); // 'streets' | 'satellite'
   const [tileLayerInstance, setTileLayerInstance] = useState(null);
-  const [userLocation, setUserLocation] = useState(null);
   const [locatingUser, setLocatingUser] = useState(false);
 
-  // Inicializar Leaflet
+  // Inicializar Leaflet con capa CartoDB Voyager / Positron de alta definición
   useEffect(() => {
     if (!window.L || !mapContainerRef.current || mapInstanceRef.current) return;
 
     const L = window.L;
 
-    // Crear mapa centrado en Huamanga, Ayacucho
+    // Crear mapa centrado en el Centro Histórico de Huamanga
     const map = L.map(mapContainerRef.current, {
       center: [-13.1606, -74.2257],
       zoom: 15,
@@ -44,7 +41,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       attributionControl: false
     });
 
-    // Capa base CartoDB Voyager
+    // Capa base limpia y elegante de CartoDB Voyager
     const streetsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
       subdomains: 'abcd',
@@ -52,7 +49,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
 
     setTileLayerInstance(streetsLayer);
 
-    // Controles de zoom abajo a la derecha
+    // Controles de zoom minimalistas abajo a la derecha
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     mapInstanceRef.current = map;
@@ -67,7 +64,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
     };
   }, []);
 
-  // Cambiar entre capa de calles y satelital
+  // Alternar entre capa vectorial de calles y satélite
   const toggleMapLayer = (layerType) => {
     if (!window.L || !mapInstanceRef.current) return;
     const L = window.L;
@@ -94,7 +91,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
     setMapLayer(layerType);
   };
 
-  // Actualizar marcadores interactivos
+  // Actualizar marcadores minimalistas de alta precisión (Estilo Airbnb / Apple Maps)
   useEffect(() => {
     if (!window.L || !mapInstanceRef.current) return;
     const L = window.L;
@@ -119,78 +116,78 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
       const totalSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
       const isSelected = selectedParkingId === p.id;
+      const rateFormatted = `S/ ${Number(p.rate || 4).toFixed(2)}`;
 
-      // Icono HTML interactivo con badge
+      // Pin minimalista estilo Airbnb / Linear con precio y disponibilidad tipográfica
       const customIcon = L.divIcon({
         className: 'custom-map-pin',
         html: `
-          <div class="relative group cursor-pointer transition-transform duration-200 hover:scale-110 ${isSelected ? 'scale-110 z-50' : 'z-10'}">
-            <div class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-2xl shadow-xl border ${
+          <div class="cursor-pointer transition-all duration-200 hover:scale-105 ${isSelected ? 'scale-110 z-50' : 'z-10'}">
+            <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg shadow-md border ${
               isSelected
-                ? 'bg-slate-950 text-white border-emerald-400 ring-4 ring-emerald-400/30 font-black'
-                : 'bg-white text-slate-900 border-slate-200 shadow-md font-bold'
+                ? 'bg-[#111111] text-white border-[#111111] ring-2 ring-black/20'
+                : 'bg-white text-[#111111] border-[#EAEAEA] hover:border-[#CCCCCC]'
             }">
-              <div class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                isSelected ? 'bg-emerald-400 text-slate-950 font-black' : 'bg-slate-900 text-emerald-400'
-              }">
-                P
-              </div>
-              <span class="text-xs whitespace-nowrap">${freeSlots} lib</span>
-              <span class="w-2 h-2 rounded-full ${freeSlots > 0 ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse"></span>
+              <span class="text-xs font-mono font-bold tracking-tight">${rateFormatted}</span>
+              <span class="text-[10px] font-mono text-[#787774] border-l border-[#EAEAEA] pl-1.5">${freeSlots} lib</span>
             </div>
-            <div class="w-2 h-2 bg-slate-900 rotate-45 mx-auto -mt-1 ${isSelected ? 'bg-emerald-400' : 'bg-slate-800'}"></div>
+            <div class="w-1.5 h-1.5 rotate-45 mx-auto -mt-0.5 ${isSelected ? 'bg-[#111111]' : 'bg-white border-r border-b border-[#EAEAEA]'}"></div>
           </div>
         `,
-        iconSize: [80, 36],
-        iconAnchor: [40, 36]
+        iconSize: [95, 34],
+        iconAnchor: [47, 34]
       });
 
       const marker = L.marker(coords, { icon: customIcon }).addTo(map);
 
+      // Popup Minimalista Editorial
       const popupHtml = `
-        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 240px; max-width: 280px; padding: 2px;">
+        <div style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; min-width: 250px; max-width: 280px; padding: 4px;">
           ${p.image ? `
-            <div style="width: 100%; height: 110px; border-radius: 12px; overflow: hidden; margin-bottom: 8px; position: relative;">
+            <div style="width: 100%; height: 110px; border-radius: 8px; overflow: hidden; margin-bottom: 10px; position: relative; background: #F7F6F3;">
               <img src="${p.image}" alt="${p.name}" style="width: 100%; height: 100%; object-fit: cover;" />
-              <div style="position: absolute; top: 6px; right: 6px; background: rgba(15,23,42,0.85); color: #34d399; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 800;">
-                S/ ${Number(p.rate || 5).toFixed(2)}/h
+              <div style="position: absolute; top: 6px; right: 6px; background: rgba(17,17,17,0.9); color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-family: monospace; font-weight: bold;">
+                ${rateFormatted}/h
               </div>
             </div>
           ` : ''}
-          <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 2px; line-height: 1.2;">${p.name}</div>
-          <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">📍 ${p.address}${p.reference ? ` (${p.reference})` : ''}</div>
           
-          <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 6px 10px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 8px;">
-            <span style="font-size: 10px; color: #475569; font-weight: 700;">Disponibilidad:</span>
-            <span style="font-size: 11px; font-weight: 800; color: ${freeSlots > 0 ? '#059669' : '#e11d48'};">${freeSlots} de ${totalSlots} libres</span>
+          <div style="font-size: 13px; font-weight: 700; color: #111111; margin-bottom: 2px; line-height: 1.2;">
+            ${p.name}
+          </div>
+          <div style="font-size: 11px; color: #787774; margin-bottom: 8px;">
+            ${p.address}${p.reference ? ` (${p.reference})` : ''}
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; background: #FBFBFA; padding: 6px 10px; border-radius: 6px; border: 1px solid #EAEAEA; margin-bottom: 10px; font-family: monospace; font-size: 11px;">
+            <span style="color: #787774;">Disponibilidad:</span>
+            <strong style="color: #346538; font-weight: bold;">${freeSlots} de ${totalSlots} libres</strong>
           </div>
 
-          <div style="display: flex; gap: 4px; margin-bottom: 8px;">
-            ${p.whatsapp ? `
-              <a 
-                href="https://wa.me/${p.whatsapp.replace(/\D/g, '')}?text=Hola,%20solicito%20informaci%C3%B3n%20sobre%20el%20estacionamiento%20${encodeURIComponent(p.name)}" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                style="flex: 1; text-decoration: none; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 5px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px;"
-              >
-                <span>💬 WhatsApp</span>
-              </a>
-            ` : ''}
+          <div style="display: flex; gap: 6px; margin-bottom: 8px;">
             <a 
               href="https://www.google.com/maps/dir/?api=1&destination=${coords[0]},${coords[1]}" 
               target="_blank" 
               rel="noopener noreferrer" 
-              style="flex: 1; text-decoration: none; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 5px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px;"
+              style="flex: 1; text-decoration: none; background: #FBFBFA; color: #111111; border: 1px solid #EAEAEA; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; text-align: center; display: block;"
             >
-              <span>🗺️ Cómo llegar</span>
+              Google Maps
+            </a>
+            <a 
+              href="https://waze.com/ul?ll=${coords[0]},${coords[1]}&navigate=yes" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              style="flex: 1; text-decoration: none; background: #FBFBFA; color: #111111; border: 1px solid #EAEAEA; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; text-align: center; display: block;"
+            >
+              Waze
             </a>
           </div>
 
           <button 
             id="btn-select-${p.id}"
-            style="width: 100%; background: #0f172a; color: #ffffff; border: none; padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+            style="width: 100%; background: #111111; color: #ffffff; border: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;"
           >
-            <span>🚗 Ver Plano Topográfico & Reservar</span>
+            <span>Ver Plano 2D & Reservar</span>
           </button>
         </div>
       `;
@@ -218,25 +215,13 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
     });
   }, [parkings, selectedParkingId, onSelectParking]);
 
-  // Centrar en un establecimiento seleccionado
-  const handleSelectAndCenter = (p) => {
-    if (onSelectParking) onSelectParking(p);
-
-    const marker = markersRef.current[p.id];
-    if (marker && mapInstanceRef.current) {
-      const latlng = marker.getLatLng();
-      mapInstanceRef.current.setView(latlng, 16, { animate: true });
-      marker.openPopup();
-    }
-  };
-
-  // Re-centrar en el centro histórico de Ayacucho
+  // Re-centrar en el Centro Histórico
   const handleRecenterAyacucho = () => {
     if (!mapInstanceRef.current) return;
     mapInstanceRef.current.setView([-13.1606, -74.2257], 15, { animate: true });
   };
 
-  // Obtener geolocalización del usuario
+  // Obtener geolocalización GPS del usuario
   const handleGetLocation = () => {
     if (!navigator.geolocation || !mapInstanceRef.current) return;
     const L = window.L;
@@ -246,7 +231,6 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       (pos) => {
         setLocatingUser(false);
         const userCoords = [pos.coords.latitude, pos.coords.longitude];
-        setUserLocation(userCoords);
 
         const map = mapInstanceRef.current;
         map.setView(userCoords, 16, { animate: true });
@@ -255,8 +239,8 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
           className: 'user-pin',
           html: `
             <div class="relative flex items-center justify-center">
-              <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-blue-400 opacity-60"></span>
-              <div class="w-4 h-4 bg-blue-600 border-2 border-white rounded-full shadow-lg"></div>
+              <span class="animate-ping absolute inline-flex h-6 w-6 rounded-full bg-black opacity-30"></span>
+              <div class="w-3.5 h-3.5 bg-[#111111] border-2 border-white rounded-full shadow-md"></div>
             </div>
           `,
           iconSize: [24, 24],
@@ -265,7 +249,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
 
         L.marker(userCoords, { icon: userIcon })
           .addTo(map)
-          .bindPopup('<strong style="font-size: 11px;">📍 Tu ubicación actual</strong>')
+          .bindPopup('<strong style="font-size: 11px; font-family: monospace;">Tu ubicación</strong>')
           .openPopup();
       },
       () => {
@@ -276,156 +260,75 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
     );
   };
 
-  // Duplicar elementos para efecto infinito continuo (Marquee Ticker)
-  const marqueeList = parkings.length > 0 
-    ? [...parkings, ...parkings, ...parkings] 
-    : [];
-
   return (
-    <div className="space-y-3 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-xs">
+    <div className="relative w-full h-[420px] sm:h-[480px] bg-[#FBFBFA] overflow-hidden rounded-xl">
       
-      {/* Cabecera Interactiva del Mapa */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center space-x-2">
-          <MapPin className="w-4 h-4 text-emerald-600" />
-          <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">
-            Mapa Interactivo de Estacionamientos
-          </h3>
+      {/* Contenedor del Mapa Leaflet */}
+      <div 
+        ref={mapContainerRef} 
+        className="w-full h-full cursor-grab active:cursor-grabbing" 
+      />
+
+      {/* Controles Flotantes Superiores en Vidrio Esmerilado */}
+      <div className="absolute top-4 left-4 right-4 z-[400] flex items-center justify-between pointer-events-none">
+        
+        {/* Indicador de Cobertura */}
+        <div className="pointer-events-auto bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-lg border border-[#EAEAEA] shadow-xs flex items-center space-x-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#346538] animate-radar" />
+          <span className="text-xs font-mono text-[#111111] font-medium">
+            Huamanga • {parkings.length} cocheras activas
+          </span>
         </div>
 
-        {/* Controles de Capas y Geolocalización */}
-        <div className="flex items-center space-x-2 self-start sm:self-auto text-xs font-bold">
-          {/* Toggle Calles / Satélite */}
-          <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200">
+        {/* Segmented Layer Toggle & GPS */}
+        <div className="pointer-events-auto flex items-center space-x-2 bg-white/90 backdrop-blur-md p-1 rounded-lg border border-[#EAEAEA] shadow-xs">
+          
+          <div className="flex items-center">
             <button
               onClick={() => toggleMapLayer('streets')}
-              className={`px-2.5 py-1 rounded-lg transition ${
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-all duration-200 cursor-pointer ${
                 mapLayer === 'streets'
-                  ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-[#111111] text-white shadow-xs'
+                  : 'text-[#787774] hover:text-[#111111]'
               }`}
             >
               Calles
             </button>
             <button
               onClick={() => toggleMapLayer('satellite')}
-              className={`px-2.5 py-1 rounded-lg transition ${
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-all duration-200 cursor-pointer ${
                 mapLayer === 'satellite'
-                  ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-[#111111] text-white shadow-xs'
+                  : 'text-[#787774] hover:text-[#111111]'
               }`}
             >
               Satélite
             </button>
           </div>
 
-          {/* Centrar Mapa */}
+          <div className="w-[1px] h-4 bg-[#EAEAEA]" />
+
+          {/* Centrar Plaza Mayor */}
           <button
             onClick={handleRecenterAyacucho}
-            title="Centrar en Ayacucho"
-            className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 transition flex items-center gap-1 shadow-2xs"
+            title="Centrar en Plaza Mayor"
+            className="p-1 text-[#787774] hover:text-[#111111] transition-colors duration-200 cursor-pointer"
           >
-            <Compass className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="hidden md:inline text-[11px]">Centro</span>
+            <Compass className="w-4 h-4" />
           </button>
 
-          {/* Mi Ubicación */}
+          {/* Mi GPS */}
           <button
             onClick={handleGetLocation}
             title="Mi Ubicación GPS"
-            className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 transition flex items-center gap-1 shadow-2xs"
+            className="p-1 text-[#787774] hover:text-[#111111] transition-colors duration-200 cursor-pointer"
           >
-            <LocateFixed className={`w-3.5 h-3.5 text-blue-600 ${locatingUser ? 'animate-spin' : ''}`} />
-            <span className="hidden md:inline text-[11px]">Mi GPS</span>
+            <LocateFixed className={`w-4 h-4 ${locatingUser ? 'animate-spin' : ''}`} />
           </button>
-        </div>
-      </div>
-
-      {/* Contenedor del Mapa 100% Interactivo y Limpio */}
-      <div className="relative w-full h-[300px] sm:h-[360px] rounded-2xl overflow-hidden border border-slate-200/90 shadow-inner bg-slate-100 z-0">
-        <div 
-          ref={mapContainerRef} 
-          className="w-full h-full cursor-grab active:cursor-grabbing" 
-          style={{ minHeight: '300px' }}
-        />
-      </div>
-
-      {/* =========================================================================
-          CINTA MARQUEE CON MOVIMIENTO CONTINUO INFINITO
-          ========================================================================= */}
-      {parkings && parkings.length > 0 && (
-        <div className="pt-1 space-y-2">
-          
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <Navigation className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
-              <span>Sedes geolocalizadas ({parkings.length}):</span>
-            </span>
-            <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-              Pasa el cursor para pausar • Toca para enfocar
-            </span>
-          </div>
-
-          {/* Contenedor con degradados laterales de desvanecimiento suave */}
-          <div className="relative w-full overflow-hidden py-1 rounded-2xl">
-            
-            {/* Gradientes laterales suaves para efecto de entrada/salida infinita */}
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
-
-            {/* Pista de Movimiento Continuo (Infinite Marquee Track) */}
-            <div className="animate-marquee-infinite flex gap-2.5 items-center">
-              {marqueeList.map((p, idx) => {
-                const elements = p.elements || [];
-                const freeCount = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
-                const totalSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
-                const isSelected = selectedParkingId === p.id;
-                const isAvailable = freeCount > 0;
-
-                return (
-                  <button
-                    key={`${p.id}-${idx}`}
-                    onClick={() => handleSelectAndCenter(p)}
-                    className={`group flex items-center space-x-2.5 px-3.5 py-2 rounded-2xl border text-xs font-bold whitespace-nowrap transition-all duration-200 ease-out cursor-pointer flex-shrink-0 select-none ${
-                      isSelected 
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-emerald-400 ring-offset-2 ring-offset-white scale-[1.02]' 
-                        : 'bg-white text-slate-700 border-slate-200 shadow-2xs hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 active:scale-95'
-                    }`}
-                  >
-                    <span className="truncate max-w-[150px] tracking-tight">
-                      {p.name.replace('Smart Park ', '')}
-                    </span>
-
-                    {/* Badge animado de plazas libres con radar en vivo */}
-                    <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-xl font-mono text-[10px] font-bold transition-colors ${
-                      isSelected 
-                        ? 'bg-emerald-400 text-slate-950 shadow-inner' 
-                        : isAvailable 
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 group-hover:bg-emerald-100' 
-                        : 'bg-rose-50 text-rose-700 border border-rose-200/80'
-                    }`}>
-                      {/* Radar beacon parpadeante */}
-                      <span className="relative flex h-1.5 w-1.5">
-                        {isAvailable && (
-                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                            isSelected ? 'bg-slate-950' : 'bg-emerald-500'
-                          }`} />
-                        )}
-                        <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
-                          isSelected ? 'bg-slate-950' : isAvailable ? 'bg-emerald-600' : 'bg-rose-500'
-                        }`} />
-                      </span>
-                      <span>{freeCount}/{totalSlots} libres</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-          </div>
 
         </div>
-      )}
+
+      </div>
 
     </div>
   );

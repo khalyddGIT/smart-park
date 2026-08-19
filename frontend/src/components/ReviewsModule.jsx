@@ -1,20 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Star, MessageSquare, Plus, Reply, Trash2, Check, Filter, ShieldCheck, ThumbsUp, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const REVIEWS_STORAGE_KEY = 'smart_park_reviews_v2';
+
+const INITIAL_REVIEWS = [
+  { id: 1, user_name: 'Carlos Mendoza', parking_id: 'EST-01', parking_name: 'Smart Park Plaza Mayor - Planta Baja', rating: 5, comment: 'Excelente servicio. La barrera ANPR me reconoció al instante sin necesidad de bajar la ventana.', response: '¡Muchas gracias Carlos! Nos alegra que disfrutes el ingreso automatizado.', date: 'Hace 2 días' },
+  { id: 2, user_name: 'Ana María R.', parking_id: 'EST-02', parking_name: 'Smart Park Plaza Mayor - Sótano 1', rating: 4, comment: 'Muy buen estacionamiento, limpio y techado. El plano interactivo facilita elegir el cajón con anticipación.', response: null, date: 'Hace 5 días' },
+  { id: 3, user_name: 'David Huamán', parking_id: 'EST-01', parking_name: 'Smart Park Plaza Mayor - Planta Baja', rating: 5, comment: 'Pude pagar directamente con Yape desde la app y mi pase QR se generó al instante. 100% recomendado.', response: '¡Gracias por confiar en Smart Park Ayacucho!', date: 'Ayer' },
+  { id: 4, user_name: 'Jorge Quispe', parking_id: 'EST-03', parking_name: 'Smart Park Mercado Mariscal Cáceres', rating: 5, comment: 'Céntrico y seguro. Las cámaras en garita dan mucha tranquilidad.', response: 'Apreciamos tu preferencia Jorge.', date: 'Hace 3 días' }
+];
+
 export const ReviewsModule = () => {
   const { role, user } = useAuth();
-  const [reviews, setReviews] = useState([
-    { id: 1, user_name: 'Carlos Mendoza', parking_id: 'EST-01', parking_name: 'Smart Park Plaza Mayor - Planta Baja', rating: 5, comment: 'Excelente servicio. La barrera ANPR me reconoció al instante sin necesidad de bajar la ventana.', response: '¡Muchas gracias Carlos! Nos alegra que disfrutes el ingreso automatizado.', date: 'Hace 2 días' },
-    { id: 2, user_name: 'Ana María R.', parking_id: 'EST-02', parking_name: 'Smart Park Plaza Mayor - Sótano 1', rating: 4, comment: 'Muy buen estacionamiento, limpio y techado. El plano interactivo facilita elegir el cajón con anticipación.', response: null, date: 'Hace 5 días' },
-    { id: 3, user_name: 'David Huamán', parking_id: 'EST-01', parking_name: 'Smart Park Plaza Mayor - Planta Baja', rating: 5, comment: 'Pude pagar directamente con Yape desde la app y mi pase QR se generó al instante. 100% recomendado.', response: '¡Gracias por confiar en Smart Park Ayacucho!', date: 'Ayer' },
-    { id: 4, user_name: 'Jorge Quispe', parking_id: 'EST-03', parking_name: 'Smart Park Mercado Mariscal Cáceres', rating: 5, comment: 'Céntrico y seguro. Las cámaras en garita dan mucha tranquilidad.', response: 'Apreciamos tu preferencia Jorge.', date: 'Hace 3 días' }
-  ]);
+  const [reviews, setReviews] = useState(() => {
+    try {
+      const saved = localStorage.getItem(REVIEWS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_REVIEWS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(reviews));
+    } catch (e) {}
+  }, [reviews]);
 
   const [ratingFilter, setRatingFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);

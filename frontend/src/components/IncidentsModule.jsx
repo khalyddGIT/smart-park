@@ -23,54 +23,73 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useAuth } from '../context/AuthContext';
 
+const INCIDENTS_STORAGE_KEY = 'smart_park_incidents_v2';
+
+const INITIAL_INCIDENTS = [
+  {
+    id: 'INC-2026-001',
+    type: 'Bloqueo de Rampa PMR',
+    plate: 'XYZ-789',
+    slot: 'A-01 (PMR)',
+    parking: 'Smart Park Plaza Mayor',
+    description: 'Vehículo sedán estacionado bloqueando la rampa peatonal de acceso inclusivo.',
+    severity: 'Alta',
+    status: 'Pendiente',
+    date: '2026-08-18 14:10',
+    reporter: 'Operador Garita',
+    images: [
+      'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=600'
+    ]
+  },
+  {
+    id: 'INC-2026-002',
+    type: 'Estacionamiento Fuera de Línea',
+    plate: 'W1P-404',
+    slot: 'B-04',
+    parking: 'Smart Park Jr. 28 de Julio',
+    description: 'Vehículo ocupando dos cajones simultáneamente impidiendo ingreso de otro auto.',
+    severity: 'Media',
+    status: 'En Revisión',
+    date: '2026-08-17 18:30',
+    reporter: 'Operador Garita',
+    images: [
+      'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600'
+    ]
+  },
+  {
+    id: 'INC-2026-003',
+    type: 'Diferencia en Tarifa de Cobro',
+    plate: 'DEF-456',
+    slot: 'A-05',
+    parking: 'Smart Park Av. Independencia',
+    description: 'Conductor reportó discrepancia de 15 minutos en el cálculo de salida.',
+    severity: 'Baja',
+    status: 'Resuelto',
+    date: '2026-08-16 11:20',
+    reporter: 'Carlos Mendoza (Conductor)',
+    images: []
+  }
+];
+
 export const IncidentsModule = () => {
   const { role, user } = useAuth();
 
-  const [incidents, setIncidents] = useState([
-    {
-      id: 'INC-2026-001',
-      type: 'Bloqueo de Rampa PMR',
-      plate: 'XYZ-789',
-      slot: 'A-01 (PMR)',
-      parking: 'Smart Park Plaza Mayor',
-      description: 'Vehículo sedán estacionado bloqueando la rampa peatonal de acceso inclusivo.',
-      severity: 'Alta',
-      status: 'Pendiente',
-      date: '2026-08-18 14:10',
-      reporter: 'Operador Garita',
-      images: [
-        'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=600'
-      ]
-    },
-    {
-      id: 'INC-2026-002',
-      type: 'Estacionamiento Fuera de Línea',
-      plate: 'W1P-404',
-      slot: 'B-04',
-      parking: 'Smart Park Jr. 28 de Julio',
-      description: 'Vehículo ocupando dos cajones simultáneamente impidiendo ingreso de otro auto.',
-      severity: 'Media',
-      status: 'En Revisión',
-      date: '2026-08-17 18:30',
-      reporter: 'Operador Garita',
-      images: [
-        'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600'
-      ]
-    },
-    {
-      id: 'INC-2026-003',
-      type: 'Diferencia en Tarifa de Cobro',
-      plate: 'DEF-456',
-      slot: 'A-05',
-      parking: 'Smart Park Av. Independencia',
-      description: 'Conductor reportó discrepancia de 15 minutos en el cálculo de salida.',
-      severity: 'Baja',
-      status: 'Resuelto',
-      date: '2026-08-16 11:20',
-      reporter: 'Carlos Mendoza (Conductor)',
-      images: []
-    }
-  ]);
+  const [incidents, setIncidents] = useState(() => {
+    try {
+      const saved = localStorage.getItem(INCIDENTS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_INCIDENTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(INCIDENTS_STORAGE_KEY, JSON.stringify(incidents));
+    } catch (e) {}
+  }, [incidents]);
 
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);

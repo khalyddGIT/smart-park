@@ -1,16 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Plus, CreditCard, Trash2, CheckCircle2, ShieldCheck, QrCode, Lock, Receipt, FileText, Check, DollarSign } from 'lucide-react';
 
+const CARDS_STORAGE_KEY = 'smart_park_cards_v2';
+
+const INITIAL_CARDS = [
+  { id: 1, type: 'Visa', number: '•••• •••• •••• 4242', expiry: '12/28', isDefault: true, holder: 'Carlos Mendoza' },
+  { id: 2, type: 'Mastercard', number: '•••• •••• •••• 8812', expiry: '09/27', isDefault: false, holder: 'Carlos Mendoza' },
+];
+
 export const PaymentsModule = () => {
-  const [cards, setCards] = useState([
-    { id: 1, type: 'Visa', number: '•••• •••• •••• 4242', expiry: '12/28', isDefault: true, holder: 'Carlos Mendoza' },
-    { id: 2, type: 'Mastercard', number: '•••• •••• •••• 8812', expiry: '09/27', isDefault: false, holder: 'Carlos Mendoza' },
-  ]);
+  const [cards, setCards] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CARDS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_CARDS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(cards));
+    } catch (e) {}
+  }, [cards]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);

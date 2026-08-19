@@ -270,6 +270,12 @@ export const EstablishmentProvider = ({ children }) => {
     } catch (e) {}
   }, [approvedAdmins]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(RESERVATIONS_STORAGE_KEY, JSON.stringify(reservations));
+    } catch (e) {}
+  }, [reservations]);
+
   // Guardar reservaciones en localStorage
   const saveReservations = (newReservations) => {
     setReservations(newReservations);

@@ -6,12 +6,31 @@ import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Users, Plus, Edit3, Trash2, Search, Download, Clock, ShieldCheck, Check, UserCheck } from 'lucide-react';
 
+const STAFF_STORAGE_KEY = 'smart_park_staff_v2';
+
+const INITIAL_STAFF = [
+  { id: 1, full_name: 'Juan Pérez Mendoza', dni: '44556677', position: 'Operador Garita Principal', shift: 'Mañana (07:00 - 15:00)', status: 'Activo', parking_name: 'Smart Park Central San Isidro' },
+  { id: 2, full_name: 'Rosa Gutiérrez Alva', dni: '72334411', position: 'Supervisora de Operaciones', shift: 'Tarde (15:00 - 23:00)', status: 'Activo', parking_name: 'Smart Park Central San Isidro' },
+  { id: 3, full_name: 'Marcos Quispe Lara', dni: '48990022', position: 'Seguridad & Monitoreo ANPR', shift: 'Noche (23:00 - 07:00)', status: 'Activo', parking_name: 'Smart Park Central San Isidro' },
+];
+
 export const StaffModule = () => {
-  const [staff, setStaff] = useState([
-    { id: 1, full_name: 'Juan Pérez Mendoza', dni: '44556677', position: 'Operador Garita Principal', shift: 'Mañana (07:00 - 15:00)', status: 'Activo', parking_name: 'Smart Park Central San Isidro' },
-    { id: 2, full_name: 'Rosa Gutiérrez Alva', dni: '72334411', position: 'Supervisora de Operaciones', shift: 'Tarde (15:00 - 23:00)', status: 'Activo', parking_name: 'Smart Park Central San Isidro' },
-    { id: 3, full_name: 'Marcos Quispe Lara', dni: '48990022', position: 'Seguridad & Monitoreo ANPR', shift: 'Noche (23:00 - 07:00)', status: 'Activo', parking_name: 'Smart Park Central San Isidro' },
-  ]);
+  const [staff, setStaff] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STAFF_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_STAFF;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(staff));
+    } catch (e) {}
+  }, [staff]);
   const [search, setSearch] = useState('');
   const [shiftFilter, setShiftFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);

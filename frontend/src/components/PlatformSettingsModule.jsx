@@ -26,53 +26,88 @@ import {
   Layers
 } from 'lucide-react';
 
+const SETTINGS_STORAGE_KEY = 'smart_park_platform_settings_v2';
+const BROADCASTS_STORAGE_KEY = 'smart_park_broadcasts_v2';
+
+const INITIAL_SETTINGS = {
+  defaultCommission: 12,
+  gracePeriodMinutes: 15,
+  minHourlyRate: 3.00,
+  maxHourlyRate: 15.00,
+  maintenanceMode: false,
+  maintenanceMessage: 'Smart-Park está realizando una breve actualización programada de servidores. Volvemos en unos minutos.',
+  paymentGateways: {
+    culqi: true,
+    culqiPublicKey: 'pk_test_W5ShN8WanbYh5Ru8',
+    culqiSecretKey: 'sk_test_DqGi7c8DVwDLAkrt',
+    yape: true,
+    plin: true,
+    cards: true,
+    smartWallet: true,
+    environment: 'sandbox'
+  },
+  security: {
+    qrExpirationMinutes: 30,
+    maxPinAttempts: 5,
+    requireLprConfirmation: true
+  }
+};
+
+const INITIAL_BROADCASTS = [
+  {
+    id: 'BRD-001',
+    title: 'Descuento del 20% en Cocheras del Centro',
+    target: 'CONDUCTORES',
+    channel: 'Push App & SMS',
+    message: 'Aprovecha este fin de semana para aparcar en Plaza Mayor y Jr. 28 de Julio con 20% de descuento usando Smart Wallet.',
+    sentAt: '2026-08-16 09:00',
+    sentCount: 1420
+  },
+  {
+    id: 'BRD-002',
+    title: 'Mantenimiento de Servidores LPR & ANPR',
+    target: 'COCHERAS',
+    channel: 'Panel Garita & Correo',
+    message: 'Estimados administradores: este domingo a las 02:00 AM se realizará actualización de firmware en las cámaras de garita.',
+    sentAt: '2026-08-14 18:30',
+    sentCount: 6
+  }
+];
+
 export const PlatformSettingsModule = () => {
-  // Parámetros de negocio de la plataforma
-  const [settings, setSettings] = useState({
-    defaultCommission: 12,
-    gracePeriodMinutes: 15,
-    minHourlyRate: 3.00,
-    maxHourlyRate: 15.00,
-    maintenanceMode: false,
-    maintenanceMessage: 'Smart-Park está realizando una breve actualización programada de servidores. Volvemos en unos minutos.',
-    paymentGateways: {
-      culqi: true,
-      culqiPublicKey: 'pk_test_W5ShN8WanbYh5Ru8',
-      culqiSecretKey: 'sk_test_DqGi7c8DVwDLAkrt',
-      yape: true,
-      plin: true,
-      cards: true,
-      smartWallet: true,
-      environment: 'sandbox' // 'production' | 'sandbox'
-    },
-    security: {
-      qrExpirationMinutes: 30,
-      maxPinAttempts: 5,
-      requireLprConfirmation: true
-    }
+  const [settings, setSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') return { ...INITIAL_SETTINGS, ...parsed };
+      }
+    } catch (e) {}
+    return INITIAL_SETTINGS;
   });
 
-  // Historial de Comunicados Masivos
-  const [broadcasts, setBroadcasts] = useState([
-    {
-      id: 'BRD-001',
-      title: 'Descuento del 20% en Cocheras del Centro',
-      target: 'CONDUCTORES', // 'CONDUCTORES' | 'COCHERAS' | 'ALL'
-      channel: 'Push App & SMS',
-      message: 'Aprovecha este fin de semana para aparcar en Plaza Mayor y Jr. 28 de Julio con 20% de descuento usando Smart Wallet.',
-      sentAt: '2026-08-16 09:00',
-      sentCount: 1420
-    },
-    {
-      id: 'BRD-002',
-      title: 'Mantenimiento de Servidores LPR & ANPR',
-      target: 'COCHERAS',
-      channel: 'Panel Garita & Correo',
-      message: 'Estimados administradores: este domingo a las 02:00 AM se realizará actualización de firmware en las cámaras de garita.',
-      sentAt: '2026-08-14 18:30',
-      sentCount: 6
-    }
-  ]);
+  const [broadcasts, setBroadcasts] = useState(() => {
+    try {
+      const saved = localStorage.getItem(BROADCASTS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_BROADCASTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch (e) {}
+  }, [settings]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(BROADCASTS_STORAGE_KEY, JSON.stringify(broadcasts));
+    } catch (e) {}
+  }, [broadcasts]);
 
   // Formulario para nuevo comunicado
   const [newBroadcast, setNewBroadcast] = useState({

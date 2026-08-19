@@ -27,39 +27,58 @@ export const fetchCarPhoto = async (brand, model, year = '2022') => {
   return null;
 };
 
+const VEHICLES_STORAGE_KEY = 'smart_park_vehicles_v2';
+
+const INITIAL_VEHICLES = [
+  { 
+    id: 1, 
+    license_plate: 'ABC-123', 
+    vehicle_type: 'suv', 
+    brand: 'Toyota', 
+    model: 'RAV4', 
+    year: '2022',
+    color: 'Gris Metálico',
+    imageUrl: 'http://www.regcheck.org.uk/image.aspx/@VG95b3RhIFJBVjQgMjAyMg=='
+  },
+  { 
+    id: 2, 
+    license_plate: 'XYZ-987', 
+    vehicle_type: 'auto', 
+    brand: 'Honda', 
+    model: 'Civic', 
+    year: '2021',
+    color: 'Negro',
+    imageUrl: 'http://www.regcheck.org.uk/image.aspx/@SG9uZGEgQ2l2aWMgMjAyMQ=='
+  },
+  { 
+    id: 3, 
+    license_plate: 'AYC-501', 
+    vehicle_type: 'auto', 
+    brand: 'Toyota', 
+    model: 'Corolla', 
+    year: '2022',
+    color: 'Blanco Perlado',
+    imageUrl: 'http://www.regcheck.org.uk/image.aspx/@VG95b3RhIENvcm9sbGEgMjAyMg=='
+  },
+];
+
 export const VehiclesModule = () => {
-  const [vehicles, setVehicles] = useState([
-    { 
-      id: 1, 
-      license_plate: 'ABC-123', 
-      vehicle_type: 'suv', 
-      brand: 'Toyota', 
-      model: 'RAV4', 
-      year: '2022',
-      color: 'Gris Metálico',
-      imageUrl: 'http://www.regcheck.org.uk/image.aspx/@VG95b3RhIFJBVjQgMjAyMg=='
-    },
-    { 
-      id: 2, 
-      license_plate: 'XYZ-987', 
-      vehicle_type: 'auto', 
-      brand: 'Honda', 
-      model: 'Civic', 
-      year: '2021',
-      color: 'Negro',
-      imageUrl: 'http://www.regcheck.org.uk/image.aspx/@SG9uZGEgQ2l2aWMgMjAyMQ=='
-    },
-    { 
-      id: 3, 
-      license_plate: 'AYC-501', 
-      vehicle_type: 'auto', 
-      brand: 'Toyota', 
-      model: 'Corolla', 
-      year: '2022',
-      color: 'Blanco Perlado',
-      imageUrl: 'http://www.regcheck.org.uk/image.aspx/@VG95b3RhIENvcm9sbGEgMjAyMg=='
-    },
-  ]);
+  const [vehicles, setVehicles] = useState(() => {
+    try {
+      const saved = localStorage.getItem(VEHICLES_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_VEHICLES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(VEHICLES_STORAGE_KEY, JSON.stringify(vehicles));
+    } catch (e) {}
+  }, [vehicles]);
   
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);

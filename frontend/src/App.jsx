@@ -163,24 +163,63 @@ export const App = () => {
     return acc + (curr.elements || []).filter(e => e.type === 'slot' && e.status === 'free').length;
   }, 0);
 
-  // Si no hay sesión activa, renderizar la pantalla de Login y Registro
-  if (!user) {
-    return <LoginAuthScreen />;
-  }
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('login');
+  const [pendingParkingForBooking, setPendingParkingForBooking] = useState(null);
+
+  // Manejar selección de cochera con login bajo demanda
+  const handleSelectParking = (parking) => {
+    if (!user) {
+      setPendingParkingForBooking(parking.id);
+      setAuthModalMode('login');
+      setShowAuthModal(true);
+      return;
+    }
+    setSelectedParkingId(parking.id);
+  };
+
+  // Reanudar reserva de plano tras iniciar sesión
+  useEffect(() => {
+    if (user && pendingParkingForBooking) {
+      setSelectedParkingId(pendingParkingForBooking);
+      setPendingParkingForBooking(null);
+      setShowAuthModal(false);
+    }
+  }, [user, pendingParkingForBooking]);
+
+  const handleTabNavigation = (tab) => {
+    if (!user && tab !== 'dashboard') {
+      setAuthModalMode('login');
+      setShowAuthModal(true);
+      return;
+    }
+    setActiveTab(tab);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50/60 text-slate-800 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
       <Toaster position="top-right" toastOptions={{ duration: 3500, style: { borderRadius: '14px', background: '#0f172a', color: '#fff', fontSize: '13px' } }} />
       <Navbar 
-        onNavigateProfile={() => setActiveTab('profile')} 
-        onNavigateTab={(tab) => setActiveTab(tab)} 
+        onNavigateProfile={() => {
+          if (!user) {
+            setAuthModalMode('login');
+            setShowAuthModal(true);
+          } else {
+            setActiveTab('profile');
+          }
+        }} 
+        onNavigateTab={handleTabNavigation}
+        onOpenAuthModal={(mode) => {
+          setAuthModalMode(mode || 'login');
+          setShowAuthModal(true);
+        }}
       />
 
       <div className="flex flex-1">
         {/* BARRA LATERAL (SIDEBAR) */}
         <Sidebar 
           activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
+          setActiveTab={handleTabNavigation} 
           onOpenTerms={() => setShowTermsModal(true)} 
         />
 
@@ -188,16 +227,25 @@ export const App = () => {
         <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto pb-28 md:pb-6 w-full max-w-full overflow-x-hidden min-w-0">
           
           {/* VISTA ROL CONDUCTOR (BUSCAR Y RESERVAR PLAZAS) */}
-          {role === 'user' && (
+          {(role === 'user' || !user) && (
             <div className="space-y-6">
               {activeTab === 'dashboard' && (
                 <>
                   {/* Banner de Búsqueda Inteligente */}
                   <Card className="p-5 sm:p-6 border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/40 shadow-sm relative overflow-hidden">
-                    <div className="mb-3">
-                      <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                        Estacionamientos en Ayacucho
-                      </h1>
+                    <div className="mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                          Estacionamientos Inteligentes en Ayacucho
+                        </h1>
+                        <p className="text-xs text-slate-500 font-medium">
+                          Explora en vivo, consulta tarifas y reserva tu plaza en segundos
+                        </p>
+                      </div>
+                      <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-200 text-xs font-bold font-mono self-start sm:self-auto shadow-2xs">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                        <span>{totalFreeSlots} plazas libres en Huamanga</span>
+                      </div>
                     </div>
                     
                     {/* Barra de Búsqueda y Filtros de Categoría */}
@@ -373,12 +421,36 @@ export const App = () => {
                                   </div>
                                 </div>
 
-                                <div className="p-5 pt-0">
+                                <div className="p-5 pt-0 space-y-2.5">
+                                  {/* Botones de Navegación GPS Rápida */}
+                                  <div className="flex items-center gap-2">
+                                    <a
+                                      href={`https://www.google.com/maps/dir/?api=1&destination=${p.latitude || -13.1604},${p.longitude || -74.2259}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition border border-slate-200"
+                                      title="Abrir ruta en Google Maps"
+                                    >
+                                      <span>📍 Maps</span>
+                                    </a>
+                                    <a
+                                      href={`https://waze.com/ul?ll=${p.latitude || -13.1604},${p.longitude || -74.2259}&navigate=yes`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex-1 py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border border-blue-200"
+                                      title="Abrir ruta en Waze"
+                                    >
+                                      <span>🚗 Waze</span>
+                                    </a>
+                                  </div>
+
                                   <Button 
-                                    onClick={() => setSelectedParkingId(p.id)} 
-                                    className="w-full font-bold gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm cursor-pointer"
+                                    onClick={() => handleSelectParking(p)} 
+                                    className="w-full font-bold gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm cursor-pointer py-2.5 rounded-xl"
                                   >
-                                    <span>Ver Estacionamiento & Reservar</span>
+                                    <span>Ver Plano & Reservar</span>
                                     <ChevronRight className="w-4 h-4 text-emerald-400" />
                                   </Button>
                                 </div>
@@ -466,6 +538,15 @@ export const App = () => {
         isOpen={showTermsModal}
         onClose={() => setShowTermsModal(false)}
       />
+
+      {/* Modal de Autenticación Rápida Bajo Demanda */}
+      {showAuthModal && (
+        <LoginAuthScreen
+          isModal={true}
+          onClose={() => setShowAuthModal(false)}
+          defaultAuthMode={authModalMode}
+        />
+      )}
     </div>
   );
 };

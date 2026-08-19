@@ -13,7 +13,9 @@ import {
   Check, 
   Trash2, 
   X,
-  ChevronRight
+  ChevronRight,
+  Building2,
+  LogIn
 } from 'lucide-react';
 import { KeypadModal } from './KeypadModal';
 
@@ -43,7 +45,7 @@ const getColorForType = (type) => {
   }
 };
 
-export const Navbar = ({ onNavigateProfile, onNavigateTab }) => {
+export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) => {
   const { role, setRole, user, pinVerified, logout } = useAuth();
   const { 
     notifications, 
@@ -115,27 +117,43 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab }) => {
               <circle cx="12" cy="12" r="10" />
             </svg>
           </div>
-          <span className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight font-tech">
-            SMART-PARK
-          </span>
+          <div>
+            <span className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight font-tech block leading-none">
+              SMART-PARK
+            </span>
+            <span className="text-[9px] font-mono text-emerald-700 font-extrabold block leading-none mt-0.5">
+              AYACUCHO
+            </span>
+          </div>
         </div>
 
-        {/* Selector de Rol, Campana de Notificaciones & Perfil */}
-        <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-          
-          {/* Selector de Rol RBAC */}
-          <div className="flex items-center space-x-1 sm:space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-3 py-1.5 shadow-xs max-w-[120px] sm:max-w-[160px] md:max-w-none">
-            <Shield className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <select
-              value={role}
-              onChange={handleRoleChange}
-              className="bg-transparent text-[11px] sm:text-xs text-slate-900 font-bold focus:outline-none cursor-pointer tracking-tight truncate w-full"
+        {/* Controles de Usuario / Visitante */}
+        {!user ? (
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => onOpenAuthModal && onOpenAuthModal('login')}
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-md shadow-slate-900/20 cursor-pointer"
             >
-              <option value="user" className="bg-white text-slate-800">🚗 Conductor</option>
-              <option value="local" className="bg-white text-slate-800">🏢 Admin Cochera</option>
-              <option value="platform" className="bg-white text-slate-800">🌐 Super Admin</option>
-            </select>
+              <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Ingresar / Registrarse</span>
+            </button>
           </div>
+        ) : (
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
+            
+            {/* Selector de Rol RBAC */}
+            <div className="flex items-center space-x-1 sm:space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-3 py-1.5 shadow-xs max-w-[120px] sm:max-w-[160px] md:max-w-none">
+              <Shield className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <select
+                value={role}
+                onChange={handleRoleChange}
+                className="bg-transparent text-[11px] sm:text-xs text-slate-900 font-bold focus:outline-none cursor-pointer tracking-tight truncate w-full"
+              >
+                <option value="user" className="bg-white text-slate-800">🚗 Conductor</option>
+                <option value="local" className="bg-white text-slate-800">🏢 Admin Cochera</option>
+                <option value="platform" className="bg-white text-slate-800">🌐 Super Admin</option>
+              </select>
+            </div>
 
           {/* =========================================================================
               CENTRO DE NOTIFICACIONES INTERACTIVO POR ROL
@@ -345,6 +363,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab }) => {
           </div>
 
         </div>
+        )}
       </header>
 
       <KeypadModal

@@ -197,6 +197,31 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
             </span>
           </div>
 
+          {/* Rutas GPS Directas para Llegar a la Cochera */}
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider block text-center">
+              Navegación GPS hacia la Cochera:
+            </span>
+            <div className="flex items-center gap-2">
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(passData.parkingName + ' Ayacucho')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border border-slate-200"
+              >
+                <span>📍 Google Maps</span>
+              </a>
+              <a
+                href={`https://waze.com/ul?q=${encodeURIComponent(passData.parkingName + ' Ayacucho')}&navigate=yes`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border border-blue-200"
+              >
+                <span>🚗 Waze</span>
+              </a>
+            </div>
+          </div>
+
           {/* Acciones */}
           <div className="flex items-center gap-2">
             <Button

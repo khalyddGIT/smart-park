@@ -26,12 +26,12 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { TermsAndConditionsModal } from './TermsAndConditionsModal';
 
-export const LoginAuthScreen = () => {
+export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMode = 'login' }) => {
   const { loginWithGoogle, loginWithEmail, registerUser } = useAuth();
   const { createAffiliationRequest } = useEstablishments();
 
   // 'login' | 'register' | 'forgot_password'
-  const [authMode, setAuthMode] = useState('login');
+  const [authMode, setAuthMode] = useState(defaultAuthMode);
   const [showAffiliationModal, setShowAffiliationModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
@@ -122,15 +122,26 @@ export const LoginAuthScreen = () => {
     }, 3000);
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50/70 text-slate-800 flex flex-col justify-between items-center p-4 sm:p-6 lg:p-8 relative overflow-hidden font-sans selection:bg-emerald-500 selection:text-white">
+  const screenContent = (
+    <div className={`${isModal ? 'w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6' : 'min-h-screen p-4 sm:p-6 lg:p-8'} bg-slate-50/70 text-slate-800 flex flex-col justify-between items-center relative overflow-hidden font-sans selection:bg-emerald-500 selection:text-white`}>
       
+      {/* Botón de cerrar modal si está en modo modal */}
+      {isModal && onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition cursor-pointer"
+          title="Cerrar ventana"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Fondo con brillo sutil y elegante en tema claro */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-emerald-100/60 via-slate-100/40 to-transparent rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute -bottom-32 right-1/4 w-[400px] h-[200px] bg-teal-100/40 rounded-full blur-[90px] pointer-events-none" />
 
       {/* Header / Brand acorde al Navbar del sistema */}
-      <header className="relative z-10 pt-4 sm:pt-6 flex flex-col items-center text-center space-y-2">
+      <header className="relative z-10 pt-2 sm:pt-4 flex flex-col items-center text-center space-y-1.5">
         <div className="flex items-center space-x-2.5">
           <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 flex items-center justify-center shadow-md">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
@@ -686,4 +697,16 @@ export const LoginAuthScreen = () => {
 
     </div>
   );
+
+  if (isModal) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in overflow-y-auto">
+        <div className="relative w-full max-w-xl my-8 bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+          {screenContent}
+        </div>
+      </div>
+    );
+  }
+
+  return screenContent;
 };

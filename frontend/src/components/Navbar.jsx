@@ -126,8 +126,6 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab }) => {
               }`}
             >
               <Bell className="w-4 h-4" />
-              
-              {/* Indicador de Notificaciones No Leídas */}
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] bg-emerald-500 text-white font-mono font-bold text-[9px] rounded-full flex items-center justify-center px-0.5 shadow-xs animate-pulse border-2 border-white">
                   {unreadCount}
@@ -135,197 +133,178 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab }) => {
               )}
             </button>
 
-            {/* Panel Desplegable de Notificaciones Responsive */}
             {showNotifications && (
-              <div className="absolute right-0 mt-2.5 w-76 sm:w-96 max-w-[calc(100vw-24px)] bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-                
-                {/* Cabecera del Panel */}
-                <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Bell className="w-4 h-4 text-emerald-400" />
-                    <div>
-                      <h3 className="font-extrabold text-xs tracking-tight">
-                        Notificaciones ({role === 'user' ? 'Conductor' : role === 'local' ? 'Garita / Cochera' : 'Super Admin'})
-                      </h3>
-                      <p className="text-[10px] text-slate-400">
-                        {unreadCount > 0 ? `${unreadCount} sin leer` : 'Al día'}
-                      </p>
+              <>
+                <div 
+                  className="fixed inset-0 bg-black/40 backdrop-blur-2xs z-40 sm:hidden"
+                  onClick={() => setShowNotifications(false)}
+                />
+
+                <div className="fixed inset-x-3 top-14 max-w-sm mx-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2.5 sm:w-96 sm:max-w-none bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                  
+                  <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Bell className="w-4 h-4 text-emerald-400" />
+                      <div>
+                        <h3 className="font-extrabold text-xs tracking-tight">
+                          Notificaciones ({role === 'user' ? 'Conductor' : role === 'local' ? 'Garita / Cochera' : 'Super Admin'})
+                        </h3>
+                        <p className="text-[10px] text-slate-400">
+                          {unreadCount > 0 ? `${unreadCount} sin leer` : 'Al día'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-1.5">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllAsRead}
+                          title="Marcar todas como leídas"
+                          className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 hover:underline px-2 py-1 rounded cursor-pointer"
+                        >
+                          Leer todas
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowNotifications(false)}
+                        className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-1.5">
-                    {unreadCount > 0 && (
+                  <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-50 border-b border-slate-100 text-xs">
+                    <div className="flex items-center space-x-1">
                       <button
-                        onClick={markAllAsRead}
-                        title="Marcar todas como leídas"
-                        className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 hover:underline px-2 py-1 rounded cursor-pointer"
+                        onClick={() => setFilterUnreadOnly(false)}
+                        className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer ${
+                          !filterUnreadOnly ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                        }`}
                       >
-                        Leer todas
+                        Todas ({notifications.length})
+                      </button>
+                      <button
+                        onClick={() => setFilterUnreadOnly(true)}
+                        className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer ${
+                          filterUnreadOnly ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        No leídas ({unreadCount})
+                      </button>
+                    </div>
+
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={clearRoleNotifications}
+                        className="text-[10px] text-slate-400 hover:text-rose-600 font-bold transition flex items-center gap-1 cursor-pointer"
+                        title="Limpiar todas las notificaciones de este rol"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Limpiar</span>
                       </button>
                     )}
-                    <button
-                      onClick={() => setShowNotifications(false)}
-                      className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Filtro Rápido */}
-                <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-50 border-b border-slate-100 text-xs">
-                  <div className="flex items-center space-x-1">
-                    <button
-                      onClick={() => setFilterUnreadOnly(false)}
-                      className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer ${
-                        !filterUnreadOnly ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      Todas ({notifications.length})
-                    </button>
-                    <button
-                      onClick={() => setFilterUnreadOnly(true)}
-                      className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer ${
-                        filterUnreadOnly ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      No leídas ({unreadCount})
-                    </button>
                   </div>
 
-                  {notifications.length > 0 && (
-                    <button
-                      onClick={clearRoleNotifications}
-                      className="text-[10px] text-slate-400 hover:text-rose-600 font-bold transition flex items-center gap-1 cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Limpiar</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Lista de Notificaciones con Scroll */}
-                <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
-                  {displayedNotifications.length === 0 ? (
-                    <div className="p-8 text-center space-y-2">
-                      <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-                        <Check className="w-5 h-5 text-emerald-600" />
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                    {displayedNotifications.length === 0 ? (
+                      <div className="p-8 text-center text-slate-400 space-y-2">
+                        <CheckCircle2 className="w-8 h-8 mx-auto text-slate-300" />
+                        <p className="text-xs font-semibold text-slate-600">No tienes notificaciones pendientes</p>
+                        <p className="text-[10px] text-slate-400">Los avisos de reservas, LPR y accesos aparecerán aquí.</p>
                       </div>
-                      <p className="text-xs font-bold text-slate-700">No hay notificaciones</p>
-                      <p className="text-[11px] text-slate-400">
-                        {filterUnreadOnly ? 'Has leído todos tus avisos.' : 'No tienes notificaciones pendientes en este rol.'}
-                      </p>
-                    </div>
-                  ) : (
-                    displayedNotifications.map((n) => {
-                      const isSuccess = n.type === 'success';
-                      const isWarning = n.type === 'warning';
+                    ) : (
+                      displayedNotifications.map((n) => {
+                        const Icon = getIconForType(n.type);
+                        const colors = getColorForType(n.type);
 
-                      return (
-                        <div
-                          key={n.id}
-                          onClick={() => handleNotificationClick(n)}
-                          className={`p-3.5 transition cursor-pointer flex items-start space-x-3 group ${
-                            !n.read ? 'bg-emerald-50/40 hover:bg-emerald-50/80' : 'bg-white hover:bg-slate-50'
-                          }`}
-                        >
-                          {/* Icono temático */}
-                          <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${
-                            isSuccess 
-                              ? 'bg-emerald-100 text-emerald-700' 
-                              : isWarning 
-                              ? 'bg-amber-100 text-amber-800' 
-                              : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {isSuccess ? (
-                              <CheckCircle2 className="w-4 h-4" />
-                            ) : isWarning ? (
-                              <AlertTriangle className="w-4 h-4" />
-                            ) : (
-                              <Info className="w-4 h-4" />
+                        return (
+                          <div 
+                            key={n.id}
+                            className={`p-3.5 transition flex items-start space-x-3 ${
+                              n.read ? 'bg-white opacity-70 hover:opacity-100' : 'bg-emerald-50/30'
+                            } hover:bg-slate-50`}
+                          >
+                            <div className={`p-2 rounded-xl border shrink-0 ${colors}`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <h4 className="text-xs font-bold text-slate-900 truncate">
+                                  {n.title}
+                                </h4>
+                                <span className="text-[9px] font-mono text-slate-400 shrink-0">
+                                  {n.time}
+                                </span>
+                              </div>
+
+                              <p className="text-[11px] text-slate-600 mt-0.5 leading-snug">
+                                {n.message}
+                              </p>
+
+                              <div className="flex items-center justify-between mt-2 pt-1">
+                                {n.targetTab ? (
+                                  <button
+                                    onClick={() => handleNotificationClick(n)}
+                                    className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-0.5 cursor-pointer"
+                                  >
+                                    <span>Ver detalle</span>
+                                    <ChevronRight className="w-3 h-3" />
+                                  </button>
+                                ) : (
+                                  <span />
+                                )}
+
+                                <button
+                                  onClick={() => removeNotification(n.id)}
+                                  title="Eliminar notificación"
+                                  className="text-slate-300 hover:text-rose-500 p-0.5 rounded cursor-pointer"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {!n.read && (
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
                             )}
                           </div>
+                        );
+                      })
+                    )}
+                  </div>
 
-                          {/* Contenido */}
-                          <div className="flex-1 min-w-0 space-y-0.5">
-                            <div className="flex items-center justify-between">
-                              <h4 className={`text-xs leading-tight truncate ${!n.read ? 'font-black text-slate-900' : 'font-bold text-slate-700'}`}>
-                                {n.title}
-                              </h4>
-                              <span className="text-[10px] text-slate-400 font-mono shrink-0 ml-2">
-                                {n.time}
-                              </span>
-                            </div>
+                  <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                    <span className="text-[10px] font-mono text-slate-500">
+                      Notificaciones en tiempo real para {role.toUpperCase()}
+                    </span>
+                  </div>
 
-                            <p className="text-[11px] text-slate-600 leading-snug">
-                              {n.message}
-                            </p>
-
-                            <div className="flex items-center justify-between pt-1">
-                              <span className="text-[10px] text-emerald-700 font-bold group-hover:translate-x-0.5 transition flex items-center gap-0.5">
-                                <span>Ver detalle</span>
-                                <ChevronRight className="w-3 h-3" />
-                              </span>
-
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeNotification(n.id);
-                                }}
-                                className="text-slate-300 hover:text-rose-600 p-0.5 rounded transition"
-                                title="Eliminar aviso"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Indicador No Leído */}
-                          {!n.read && (
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
                 </div>
-
-                {/* Footer */}
-                <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
-                  <span className="text-[10px] font-mono text-slate-500">
-                    Notificaciones en tiempo real para {role.toUpperCase()}
-                  </span>
-                </div>
-
-              </div>
+              </>
             )}
           </div>
 
-          {/* Botón de Perfil de Usuario Directo */}
+          {/* Botón de Perfil de Usuario Directo Limpio */}
           <div className="flex items-center space-x-1 sm:space-x-2 pl-1 sm:pl-2 border-l border-slate-200">
             <button
               onClick={() => {
                 if (onNavigateProfile) onNavigateProfile();
               }}
               title="Abrir Mi Perfil"
-              className="flex items-center space-x-2 p-1 rounded-xl hover:bg-slate-100 transition cursor-pointer group"
+              className="flex items-center space-x-1.5 p-1 sm:p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer group bg-slate-50 border border-slate-200"
             >
-              {user?.avatar ? (
-                <img 
-                  src={user.avatar} 
-                  alt={user.name} 
-                  referrerPolicy="no-referrer"
-                  className="w-8 h-8 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0 group-hover:border-emerald-500 transition" 
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-emerald-50 text-slate-600 group-hover:text-emerald-700 flex items-center justify-center border border-slate-200 group-hover:border-emerald-300 shadow-xs shrink-0 transition">
-                  <User className="w-4 h-4" />
-                </div>
-              )}
-              
-              <div className="text-left hidden xl:block pr-1">
-                <p className="text-xs font-bold text-slate-900 leading-none tracking-tight group-hover:text-emerald-700 transition truncate max-w-[120px]">{user?.name || 'Usuario'}</p>
-                <p className="text-[10px] text-slate-500 font-tech font-medium capitalize mt-0.5 truncate max-w-[120px]">{user?.email || `Rol: ${role}`}</p>
+              <div className="w-6 h-6 rounded-lg bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shrink-0 shadow-2xs">
+                <User className="w-3.5 h-3.5" />
+              </div>
+              <div className="hidden lg:block text-left pr-1">
+                <span className="text-xs font-black text-slate-800 block leading-tight tracking-tight">
+                  {user?.name?.split(' ')[0] || 'Usuario'}
+                </span>
+                <span className="text-[9px] font-mono text-emerald-700 font-bold block uppercase leading-none">
+                  {role}
+                </span>
               </div>
             </button>
 

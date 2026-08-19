@@ -114,7 +114,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
   };
 
   const navConfig = getMobileNavConfig();
-  const isDrawerActive = !['dashboard', 'reservations', navConfig.center?.id, 'vehicles', 'incidents', 'finances', 'affiliates'].includes(activeTab);
+  const isDrawerActive = ![navConfig.left1?.id, navConfig.left2?.id, navConfig.center?.id, navConfig.right1?.id].includes(activeTab);
 
   const handleSelectTab = (tabId) => {
     setActiveTab(tabId);
@@ -178,109 +178,70 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
       </aside>
 
       {/* =========================================================================
-          NAVBAR MÓVIL FLOTANTE CURVO CON BOTÓN ELEVADO CENTRAL & LABELS
+          NAVBAR MÓVIL FLOTANTE GLASSMORPHISM CON BOTÓN ACTIVO ELEVADO DINÁMICO
           ========================================================================= */}
       <nav 
-        aria-label="Navegación Móvil Flotante"
-        className="md:hidden fixed bottom-3 left-3 right-3 max-w-sm sm:max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/90 px-2 sm:px-3 py-1.5 flex items-center justify-between select-none"
+        aria-label="Navegación Móvil Flotante Glassmorphism"
+        className="md:hidden fixed bottom-3 left-3 right-3 max-w-sm sm:max-w-md mx-auto z-40 bg-white/80 backdrop-blur-xl rounded-[28px] shadow-[0_12px_40px_rgba(0,0,0,0.14)] border border-white/80 ring-1 ring-slate-900/5 px-2 sm:px-3 py-1 flex items-center justify-between select-none"
       >
-        {/* 1. Botón Izquierdo 1 */}
-        {navConfig.left1 && (() => {
-          const Icon = navConfig.left1.icon;
-          const isActive = activeTab === navConfig.left1.id;
+        {/* 4 Botones Principales por Rol */}
+        {[navConfig.left1, navConfig.left2, navConfig.center, navConfig.right1].filter(Boolean).map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+
           return (
             <button
-              onClick={() => handleSelectTab(navConfig.left1.id)}
-              className="flex-1 flex flex-col items-center justify-center py-0.5 transition group cursor-pointer active:scale-95"
+              key={item.id}
+              onClick={() => handleSelectTab(item.id)}
+              className="flex-1 flex flex-col items-center justify-center transition-all duration-300 group cursor-pointer relative"
             >
-              <div className={`p-1 transition-colors ${isActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
-                <Icon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
-              </div>
-              <span className={`text-[9px] font-extrabold tracking-tight transition-colors ${isActive ? 'text-emerald-700 font-black' : 'text-slate-400'}`}>
-                {navConfig.left1.shortLabel}
-              </span>
-              <span className={`w-1 h-1 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+              {isActive ? (
+                <div className="flex flex-col items-center justify-center -mt-6 animate-in zoom-in-90 duration-200">
+                  <div className="w-12 h-12 rounded-full bg-slate-950 text-emerald-400 border-[3.5px] border-white shadow-xl shadow-slate-950/30 ring-2 ring-emerald-500/20 flex items-center justify-center transition-transform duration-200 scale-105 active:scale-95">
+                    <Icon className="w-5 h-5 stroke-[2.4]" />
+                  </div>
+                  <span className="text-[10px] font-black text-slate-900 tracking-tight mt-1">
+                    {item.shortLabel || item.label}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-1 transition-all duration-200">
+                  <div className="p-1 text-slate-400 group-hover:text-slate-700 transition-colors">
+                    <Icon className="w-5 h-5 stroke-[2.2]" />
+                  </div>
+                  <span className="text-[9px] font-semibold text-slate-400 tracking-tight group-hover:text-slate-700 transition-colors">
+                    {item.shortLabel || item.label}
+                  </span>
+                </div>
+              )}
             </button>
           );
-        })()}
+        })}
 
-        {/* 2. Botón Izquierdo 2 */}
-        {navConfig.left2 && (() => {
-          const Icon = navConfig.left2.icon;
-          const isActive = activeTab === navConfig.left2.id;
-          return (
-            <button
-              onClick={() => handleSelectTab(navConfig.left2.id)}
-              className="flex-1 flex flex-col items-center justify-center py-0.5 transition group cursor-pointer active:scale-95"
-            >
-              <div className={`p-1 transition-colors ${isActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
-                <Icon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
-              </div>
-              <span className={`text-[9px] font-extrabold tracking-tight transition-colors ${isActive ? 'text-emerald-700 font-black' : 'text-slate-400'}`}>
-                {navConfig.left2.shortLabel}
-              </span>
-              <span className={`w-1 h-1 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
-            </button>
-          );
-        })()}
-
-        {/* 3. BOTÓN CENTRAL PROMINENTE ELEVADO (Curved Highlight Action) */}
-        {navConfig.center && (() => {
-          const Icon = navConfig.center.icon;
-          const isActive = activeTab === navConfig.center.id;
-          return (
-            <div className="flex-1 flex flex-col items-center justify-center relative">
-              <button
-                onClick={() => handleSelectTab(navConfig.center.id)}
-                title={navConfig.center.label}
-                className={`w-11 h-11 -mt-6 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl cursor-pointer border-4 border-white active:scale-90 ${
-                  isActive 
-                    ? 'bg-emerald-600 text-white shadow-emerald-600/50 ring-4 ring-emerald-500/25 scale-105' 
-                    : 'bg-slate-900 hover:bg-slate-800 text-emerald-400 shadow-slate-900/30'
-                }`}
-              >
-                <Icon className="w-5 h-5 stroke-[2.4]" />
-              </button>
-              <span className={`text-[9px] font-black tracking-tight mt-0.5 transition-colors ${isActive ? 'text-emerald-700 font-black' : 'text-slate-600'}`}>
-                {navConfig.center.shortLabel}
-              </span>
-              <span className={`w-1 h-1 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
-            </div>
-          );
-        })()}
-
-        {/* 4. Botón Derecho 1 */}
-        {navConfig.right1 && (() => {
-          const Icon = navConfig.right1.icon;
-          const isActive = activeTab === navConfig.right1.id;
-          return (
-            <button
-              onClick={() => handleSelectTab(navConfig.right1.id)}
-              className="flex-1 flex flex-col items-center justify-center py-0.5 transition group cursor-pointer active:scale-95"
-            >
-              <div className={`p-1 transition-colors ${isActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
-                <Icon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
-              </div>
-              <span className={`text-[9px] font-extrabold tracking-tight transition-colors ${isActive ? 'text-emerald-700 font-black' : 'text-slate-400'}`}>
-                {navConfig.right1.shortLabel}
-              </span>
-              <span className={`w-1 h-1 rounded-full mt-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
-            </button>
-          );
-        })()}
-
-        {/* 5. Botón Derecho 2: Menú "+ Más" */}
+        {/* 5. Botón Derecho: Menú "+ Más" */}
         <button
           onClick={() => setMobileDrawerOpen(true)}
-          className="flex-1 flex flex-col items-center justify-center py-0.5 transition group cursor-pointer active:scale-95"
+          className="flex-1 flex flex-col items-center justify-center transition-all duration-300 group cursor-pointer relative"
         >
-          <div className={`p-1 transition-colors ${mobileDrawerOpen || isDrawerActive ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
-            <Menu className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
-          </div>
-          <span className={`text-[9px] font-extrabold tracking-tight transition-colors ${mobileDrawerOpen || isDrawerActive ? 'text-emerald-700 font-black' : 'text-slate-400'}`}>
-            Más
-          </span>
-          <span className={`w-1 h-1 rounded-full mt-0.5 transition-all duration-200 ${mobileDrawerOpen || isDrawerActive ? 'bg-emerald-600 opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+          {mobileDrawerOpen || isDrawerActive ? (
+            <div className="flex flex-col items-center justify-center -mt-6 animate-in zoom-in-90 duration-200">
+              <div className="w-12 h-12 rounded-full bg-slate-950 text-emerald-400 border-[3.5px] border-white shadow-xl shadow-slate-950/30 ring-2 ring-emerald-500/20 flex items-center justify-center transition-transform duration-200 scale-105 active:scale-95">
+                <Menu className="w-5 h-5 stroke-[2.4]" />
+              </div>
+              <span className="text-[10px] font-black text-slate-900 tracking-tight mt-1">
+                Más
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-1 transition-all duration-200">
+              <div className="p-1 text-slate-400 group-hover:text-slate-700 transition-colors">
+                <Menu className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <span className="text-[9px] font-semibold text-slate-400 tracking-tight group-hover:text-slate-700 transition-colors">
+                Más
+              </span>
+            </div>
+          )}
         </button>
       </nav>
 

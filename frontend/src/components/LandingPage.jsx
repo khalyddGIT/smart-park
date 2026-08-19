@@ -253,7 +253,7 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION CON PARALLAX Y COREOGRAFÍA HYPERFRAMES
+          2. HERO SECTION CON TIPOGRAFÍA DE PRECISIÓN Y PARALLAX
           ========================================================================= */}
       <section ref={heroRef} className="pt-24 pb-20 px-6 lg:px-12 max-w-6xl mx-auto space-y-12 overflow-hidden">
         
@@ -275,9 +275,9 @@ export const LandingPage = ({
 
           <motion.h1 
             variants={itemVariants}
-            className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#111111] leading-[1.08]"
+            className="text-4xl sm:text-6xl lg:text-7xl font-display text-[#111111] tracking-tight"
           >
-            La infraestructura de estacionamiento para Ayacucho.
+            La infraestructura de estacionamiento para <span className="font-editorial italic font-normal text-[#2A2A2A]">Ayacucho</span>.
           </motion.h1>
 
           <motion.p 
@@ -358,7 +358,7 @@ export const LandingPage = ({
           <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
             ARQUITECTURA DE ACCESO
           </span>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#111111] tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-display text-[#111111] tracking-tight">
             Interacción directa sin aplicaciones intermedias
           </h2>
           <p className="text-xs sm:text-sm text-[#787774]">
@@ -469,7 +469,7 @@ export const LandingPage = ({
             <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
               COBERTURA URBANA
             </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#111111] tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-display text-[#111111] tracking-tight">
               Estacionamientos en Huamanga
             </h2>
             <p className="text-xs sm:text-sm text-[#787774]">
@@ -622,7 +622,7 @@ export const LandingPage = ({
           <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
             ESPECIFICACIÓN TÉCNICA
           </span>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#111111] tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-display text-[#111111] tracking-tight">
             Módulos del Sistema Operativo
           </h2>
         </div>
@@ -724,7 +724,7 @@ export const LandingPage = ({
             <span className="text-xs font-mono text-[#A3A3A3] uppercase tracking-wider block">
               RED DE COCHERAS EN HUAMANGA
             </span>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-display tracking-tight">
               Digitalice la operación de su cochera
             </h2>
             <p className="text-xs sm:text-sm text-[#A3A3A3] leading-relaxed">
@@ -762,7 +762,7 @@ export const LandingPage = ({
           <span className="text-xs font-mono text-[#787774] uppercase tracking-wider block">
             SOPORTE Y CONSULTAS
           </span>
-          <h2 className="text-2xl font-bold text-[#111111] tracking-tight">
+          <h2 className="text-2xl font-display text-[#111111] tracking-tight">
             Preguntas Frecuentes
           </h2>
         </div>

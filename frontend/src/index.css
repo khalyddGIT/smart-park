@@ -52,41 +52,44 @@
   font-feature-settings: "tnum", "zero", "ss01";
 }
 
-/* Glassmorphism Editorial */
+/* Contenedores con Sombras Suaves Multicapa y Bordes Pulidos */
+.surface-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E5E5;
+  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  transition: transform 0.25s var(--ease-fluid), border-color 0.25s var(--ease-fluid), box-shadow 0.25s var(--ease-fluid);
+}
+
+.surface-card:hover {
+  border-color: #D1D1D1;
+  box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.03);
+}
+
+/* Glassmorphism Editorial con Sombra Suave */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(234, 234, 234, 0.9);
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(225, 225, 225, 0.9);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 /* =========================================================================
-   ANIMACIONES CSS & KEYFRAMES DE ALTO RENDIMIENTO (Tailwind Transitions)
+   ANIMACIONES CSS & KEYFRAMES DE ALTO RENDIMIENTO
    ========================================================================= */
 
-/* 1. Flotación Suave (Float) */
 @keyframes float-gentle {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
 }
 
 .animate-float {
   animation: float-gentle 4.5s ease-in-out infinite;
 }
 
-/* 2. Brillo / Destello Especular (Shimmer Effect) */
 @keyframes shimmer-sweep {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .animate-shimmer {
@@ -95,7 +98,6 @@
   animation: shimmer-sweep 3s infinite;
 }
 
-/* 3. Expansión Radar / Pulso Háptico */
 @keyframes radar-pulse {
   0% {
     transform: scale(0.95);
@@ -115,58 +117,17 @@
   animation: radar-pulse 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 
-/* 4. Pulso Sutil */
-@keyframes pulse-subtle {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-}
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 3s ease-in-out infinite;
-}
-
-/* 5. Transiciones Hápticas de Tarjetas */
-.hover-card-elevate {
-  transition: transform 0.25s var(--ease-fluid), border-color 0.25s var(--ease-fluid), box-shadow 0.25s var(--ease-fluid);
-}
-
-.hover-card-elevate:hover {
-  transform: translateY(-3px);
-  border-color: #D4D4D4;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-}
-
-/* 6. Marquee Infinito */
-@keyframes marquee-scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-marquee-infinite {
-  display: flex;
-  width: max-content;
-  animation: marquee-scroll 26s linear infinite;
-}
-
-.animate-marquee-infinite:hover {
-  animation-play-state: paused;
-}
-
 /* Custom Leaflet Popups and Controls */
 .leaflet-popup-content-wrapper {
-  border-radius: 16px !important;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1) !important;
-  border: 1px solid #EAEAEA !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid #E5E5E5 !important;
   padding: 4px !important;
 }
 
 .leaflet-popup-tip {
   background: white !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08) !important;
 }
 
 .custom-map-pin {
@@ -174,10 +135,15 @@
   border: none !important;
 }
 
-.leaflet-control-zoom a {
+.leaflet-control-zoom {
+  border: 1px solid #E5E5E5 !important;
   border-radius: 8px !important;
-  border: 1px solid #EAEAEA !important;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: #FFFFFF !important;
   color: #111111 !important;
-  margin-bottom: 4px !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.03) !important;
+  border-bottom: 1px solid #EAEAEA !important;
 }

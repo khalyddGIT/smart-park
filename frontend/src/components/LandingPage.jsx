@@ -199,14 +199,14 @@ export const LandingPage = ({
       />
 
       {/* =========================================================================
-          1. HEADER EDITORIAL MINIMALISTA
+          1. HEADER EDITORIAL MINIMALISTA CON SOMBRA SUAVE
           ========================================================================= */}
-      <header className="sticky top-0 z-50 bg-[#FBFBFA]/90 backdrop-blur-md border-b border-[#EAEAEA] px-6 lg:px-12 py-4 transition-colors duration-300">
+      <header className="sticky top-0 z-50 bg-[#FBFBFA]/90 backdrop-blur-md border-b border-[#E5E5E5] px-6 lg:px-12 py-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.03)] transition-colors duration-300">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           
           {/* Logo y Denominación */}
           <div className="flex items-center space-x-3">
-            <div className="w-7 h-7 rounded-md bg-[#111111] text-white flex items-center justify-center font-bold text-xs transition-transform duration-200 hover:scale-105">
+            <div className="w-7 h-7 rounded-md bg-[#111111] text-white flex items-center justify-center font-bold text-xs shadow-xs transition-transform duration-200 hover:scale-105">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
                 <path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
                 <circle cx="12" cy="12" r="10" />
@@ -242,7 +242,7 @@ export const LandingPage = ({
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => onOpenAuth && onOpenAuth('login')}
-              className="bg-[#111111] hover:bg-[#333333] text-white text-xs font-medium px-4 py-2 rounded-md transition-all duration-200 cursor-pointer flex items-center space-x-2 shadow-xs"
+              className="bg-[#111111] hover:bg-[#333333] text-white text-xs font-medium px-4 py-2 rounded-md transition-all duration-200 cursor-pointer flex items-center space-x-2 shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Acceder al Sistema</span>
@@ -253,7 +253,7 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION CENTRADO - SIN BADGES NI PILLS
+          2. HERO SECTION CENTRADO CON SOMBRAS Y BORDES PULIDOS
           ========================================================================= */}
       <section ref={heroRef} className="pt-24 pb-20 px-6 lg:px-12 max-w-5xl mx-auto space-y-12 overflow-hidden text-center">
         
@@ -289,7 +289,7 @@ export const LandingPage = ({
             <motion.a
               whileTap={{ scale: 0.98 }}
               href="#mapa"
-              className="w-full sm:w-auto px-7 py-3 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded-md transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
+              className="w-full sm:w-auto px-7 py-3 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded-md transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
             >
               <span>Consultar Mapa en Vivo</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -297,7 +297,7 @@ export const LandingPage = ({
 
             <button
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#F0F0EF] text-[#111111] text-xs font-medium rounded-md border border-[#EAEAEA] transition-colors duration-200 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#F0F0EF] text-[#111111] text-xs font-medium rounded-md border border-[#E5E5E5] shadow-xs transition-colors duration-200 cursor-pointer"
             >
               Afiliar Establecimiento
             </button>
@@ -305,13 +305,13 @@ export const LandingPage = ({
 
         </motion.div>
 
-        {/* Métricas de Precisión Centradas */}
+        {/* Métricas de Precisión Centradas con Sombra Sutil */}
         <motion.div 
           style={{ y: heroMetricsY }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3, ease: FLUID_EASE }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#EAEAEA] text-center"
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#E5E5E5] text-center"
         >
           <div className="space-y-1">
             <span className="font-mono text-2xl sm:text-3xl font-bold text-[#111111] block">
@@ -345,7 +345,7 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          3. MOCKUP DE VENTANA FAUX-OS - SIN BADGES
+          3. MOCKUP DE VENTANA FAUX-OS CON BORDES PULIDOS Y SOMBRA ELEVADA
           ========================================================================= */}
       <section ref={mockupSectionRef} id="sistema" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
         
@@ -362,7 +362,7 @@ export const LandingPage = ({
           </p>
         </div>
 
-        {/* Contenedor Faux-OS Window Chrome con Inclinación 3D Progresiva */}
+        {/* Contenedor Faux-OS Window Chrome con Inclinación 3D y Sombra Refinada */}
         <div style={{ perspective: 1200 }}>
           <motion.div 
             style={{ 
@@ -371,11 +371,11 @@ export const LandingPage = ({
               opacity: mockupOpacity,
               transformStyle: 'preserve-3d'
             }}
-            className="rounded-xl border border-[#EAEAEA] bg-white shadow-md overflow-hidden transition-shadow duration-300"
+            className="rounded-xl border border-[#E5E5E5] bg-white shadow-[0_12px_36px_-4px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.02)] overflow-hidden transition-shadow duration-300"
           >
             
             {/* Barra superior de ventana */}
-            <div className="px-4 py-3 bg-[#F7F6F3] border-b border-[#EAEAEA] flex items-center justify-between">
+            <div className="px-4 py-3 bg-[#F7F6F3] border-b border-[#E5E5E5] flex items-center justify-between">
               <div className="flex items-center space-x-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
                 <span className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5] border border-[#D4D4D4]" />
@@ -390,7 +390,7 @@ export const LandingPage = ({
             {/* Cuerpo del Mockup */}
             <div className="p-6 sm:p-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-white">
               
-              <div className="space-y-6 md:col-span-1 border-r border-[#EAEAEA] md:pr-6">
+              <div className="space-y-6 md:col-span-1 border-r border-[#E5E5E5] md:pr-6">
                 <div className="space-y-1">
                   <h3 className="text-sm font-bold text-[#111111]">1. Selección en Plano 2D</h3>
                   <p className="text-xs text-[#787774] leading-relaxed">
@@ -414,9 +414,9 @@ export const LandingPage = ({
               </div>
 
               {/* Ficha de Pase Digital */}
-              <div className="md:col-span-2 bg-[#FBFBFA] p-6 rounded-lg border border-[#EAEAEA] space-y-4">
+              <div className="md:col-span-2 bg-[#FBFBFA] p-6 rounded-lg border border-[#E5E5E5] shadow-xs space-y-4">
                 
-                <div className="flex items-center justify-between border-b border-[#EAEAEA] pb-3">
+                <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
                   <div>
                     <h4 className="font-bold text-sm text-[#111111]">Smart Park Plaza Mayor</h4>
                     <p className="text-xs text-[#787774] font-mono">Jr. 28 de Julio 142 • Huamanga</p>
@@ -427,21 +427,21 @@ export const LandingPage = ({
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 font-mono text-xs">
-                  <div className="p-3 bg-white rounded border border-[#EAEAEA] transition-colors duration-200 hover:border-[#D4D4D4]">
+                  <div className="p-3 bg-white rounded border border-[#E5E5E5] shadow-2xs transition-colors duration-200 hover:border-[#D4D4D4]">
                     <span className="text-[10px] text-[#787774] block uppercase">Plaza</span>
                     <strong className="text-sm text-[#111111] block mt-0.5">A-01</strong>
                   </div>
-                  <div className="p-3 bg-white rounded border border-[#EAEAEA] transition-colors duration-200 hover:border-[#D4D4D4]">
+                  <div className="p-3 bg-white rounded border border-[#E5E5E5] shadow-2xs transition-colors duration-200 hover:border-[#D4D4D4]">
                     <span className="text-[10px] text-[#787774] block uppercase">Vehículo</span>
                     <strong className="text-sm text-[#111111] block mt-0.5">ABC-123</strong>
                   </div>
-                  <div className="p-3 bg-white rounded border border-[#EAEAEA] transition-colors duration-200 hover:border-[#D4D4D4]">
+                  <div className="p-3 bg-white rounded border border-[#E5E5E5] shadow-2xs transition-colors duration-200 hover:border-[#D4D4D4]">
                     <span className="text-[10px] text-[#787774] block uppercase">Tolerancia</span>
                     <strong className="text-sm text-[#346538] block mt-0.5">15 min</strong>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-[#787774] pt-2 border-t border-[#EAEAEA] font-mono">
+                <div className="flex items-center justify-between text-xs text-[#787774] pt-2 border-t border-[#E5E5E5] font-mono">
                   <span>Token: SPK-8912-7B2F9A</span>
                   <span>Visión Computacional 60 FPS</span>
                 </div>
@@ -456,7 +456,7 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          4. DIRECTORIO Y MAPA EN TIEMPO REAL CON TÍTULOS Y FILTROS CENTRADOS
+          4. DIRECTORIO Y MAPA CON BORDES PULIDOS Y SOMBRA ELEVADA
           ========================================================================= */}
       <section id="mapa" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
@@ -474,44 +474,44 @@ export const LandingPage = ({
             </p>
           </div>
 
-          {/* Filtros Centrados */}
+          {/* Filtros Centrados con Bordes y Sombra */}
           <div className="flex items-center justify-center space-x-2 overflow-x-auto pb-1 text-xs flex-wrap gap-y-2">
             <button
               onClick={() => setCategoryFilter('todos')}
-              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
+              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border shadow-2xs ${
                 categoryFilter === 'todos'
                   ? 'bg-[#111111] text-white border-[#111111]'
-                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
+                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#E5E5E5]'
               }`}
             >
               Todos ({establishments.length})
             </button>
             <button
               onClick={() => setCategoryFilter('centro')}
-              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
+              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border shadow-2xs ${
                 categoryFilter === 'centro'
                   ? 'bg-[#111111] text-white border-[#111111]'
-                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
+                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#E5E5E5]'
               }`}
             >
               Centro Histórico
             </button>
             <button
               onClick={() => setCategoryFilter('techados')}
-              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
+              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border shadow-2xs ${
                 categoryFilter === 'techados'
                   ? 'bg-[#111111] text-white border-[#111111]'
-                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
+                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#E5E5E5]'
               }`}
             >
               Techados
             </button>
             <button
               onClick={() => setCategoryFilter('economicos')}
-              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border ${
+              className={`px-3.5 py-1.5 rounded-md font-medium transition-all duration-200 cursor-pointer border shadow-2xs ${
                 categoryFilter === 'economicos'
                   ? 'bg-[#111111] text-white border-[#111111]'
-                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#EAEAEA]'
+                  : 'bg-white text-[#787774] hover:text-[#111111] border-[#E5E5E5]'
               }`}
             >
               Económicos (≤ S/ 4.50)
@@ -519,8 +519,8 @@ export const LandingPage = ({
           </div>
         </div>
 
-        {/* Mapa Leaflet */}
-        <div className="rounded-xl border border-[#EAEAEA] overflow-hidden shadow-xs bg-white transition-shadow duration-300 hover:shadow-sm">
+        {/* Mapa Leaflet con Borde Pulido y Sombra */}
+        <div className="rounded-xl border border-[#E5E5E5] overflow-hidden shadow-[0_6px_24px_-4px_rgba(0,0,0,0.06)] bg-white transition-shadow duration-300 hover:shadow-md">
           <AyacuchoMap
             parkings={filteredParkings}
             onSelectParking={(p) => {
@@ -529,7 +529,7 @@ export const LandingPage = ({
           />
         </div>
 
-        {/* Grilla de Cocheras con Tilt 3D y Tailwind Transitions */}
+        {/* Grilla de Cocheras con Sombra y Bordes */}
         <motion.div 
           initial="hidden"
           whileInView="visible"
@@ -544,7 +544,7 @@ export const LandingPage = ({
 
             return (
               <motion.div key={p.id} variants={itemVariants}>
-                <TiltCard className="h-full bg-white rounded-xl border border-[#EAEAEA] p-5 flex flex-col justify-between shadow-xs hover:border-[#D4D4D4] hover:shadow-md transition-all duration-300">
+                <TiltCard className="h-full bg-white rounded-xl border border-[#E5E5E5] p-5 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.08)] transition-all duration-300">
                   <div className="space-y-3">
                     <div className="h-36 rounded-lg overflow-hidden relative bg-[#F7F6F3]">
                       <img 
@@ -552,7 +552,7 @@ export const LandingPage = ({
                         alt={p.name} 
                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
                       />
-                      <div className="absolute top-2.5 right-2.5 bg-white/95 px-2.5 py-1 rounded text-xs font-mono font-bold text-[#111111] border border-[#EAEAEA] shadow-xs">
+                      <div className="absolute top-2.5 right-2.5 bg-white/95 px-2.5 py-1 rounded text-xs font-mono font-bold text-[#111111] border border-[#E5E5E5] shadow-xs">
                         S/ {Number(p.rate).toFixed(2)}/h
                       </div>
                     </div>
@@ -565,7 +565,7 @@ export const LandingPage = ({
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs font-mono text-[#787774] pt-2 border-t border-[#EAEAEA]">
+                    <div className="flex items-center justify-between text-xs font-mono text-[#787774] pt-2 border-t border-[#E5E5E5]">
                       <span>Disponibilidad:</span>
                       <strong className="text-[#346538] font-bold">{freeSlots} libres de {totalCount}</strong>
                     </div>
@@ -577,7 +577,7 @@ export const LandingPage = ({
                         href={`https://www.google.com/maps/dir/?api=1&destination=${p.latitude || -13.1604},${p.longitude || -74.2259}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 py-1.5 px-3 bg-[#FBFBFA] hover:bg-[#F0F0EF] text-[#111111] rounded text-xs font-medium text-center border border-[#EAEAEA] transition-colors duration-200"
+                        className="flex-1 py-1.5 px-3 bg-[#FBFBFA] hover:bg-[#F0F0EF] text-[#111111] rounded text-xs font-medium text-center border border-[#E5E5E5] shadow-2xs transition-colors duration-200"
                       >
                         Google Maps
                       </a>
@@ -585,7 +585,7 @@ export const LandingPage = ({
                         href={`https://waze.com/ul?ll=${p.latitude || -13.1604},${p.longitude || -74.2259}&navigate=yes`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 py-1.5 px-3 bg-[#FBFBFA] hover:bg-[#F0F0EF] text-[#111111] rounded text-xs font-medium text-center border border-[#EAEAEA] transition-colors duration-200"
+                        className="flex-1 py-1.5 px-3 bg-[#FBFBFA] hover:bg-[#F0F0EF] text-[#111111] rounded text-xs font-medium text-center border border-[#E5E5E5] shadow-2xs transition-colors duration-200"
                       >
                         Waze
                       </a>
@@ -596,7 +596,7 @@ export const LandingPage = ({
                       onClick={() => {
                         if (onSelectParking) onSelectParking(p);
                       }}
-                      className="w-full py-2 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded transition-colors duration-200 flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
+                      className="w-full py-2 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded transition-colors duration-200 flex items-center justify-center space-x-1.5 cursor-pointer shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
                     >
                       <span>Ver Plano & Reservar</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -611,7 +611,7 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          5. BENTO GRID DE ESPECIFICACIONES TÉCNICAS CENTRADAS
+          5. BENTO GRID DE ESPECIFICACIONES TÉCNICAS CON SOMBRAS SUAVES
           ========================================================================= */}
       <section id="infraestructura" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
         
@@ -628,10 +628,10 @@ export const LandingPage = ({
           </p>
         </div>
 
-        {/* Bento Grid Editorial */}
+        {/* Bento Grid Editorial con Sombras y Bordes */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          <div className="md:col-span-2 bg-white p-8 rounded-xl border border-[#EAEAEA] space-y-6 flex flex-col justify-between shadow-xs hover:border-[#D4D4D4] hover:shadow-sm transition-all duration-300">
+          <div className="md:col-span-2 bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300">
             <div className="space-y-2">
               <div className="w-8 h-8 rounded bg-[#EDF3EC] text-[#346538] flex items-center justify-center font-bold text-xs">
                 <Camera className="w-4 h-4" />
@@ -643,13 +643,13 @@ export const LandingPage = ({
                 Algoritmos de visión artificial entrenados para placas vehiculares peruanas con captura a 60 cuadros por segundo y tolerancia a variaciones lumínicas.
               </p>
             </div>
-            <div className="p-3 bg-[#FBFBFA] rounded border border-[#EAEAEA] font-mono text-xs text-[#787774] flex justify-between">
+            <div className="p-3 bg-[#FBFBFA] rounded border border-[#E5E5E5] font-mono text-xs text-[#787774] flex justify-between shadow-2xs">
               <span>Tiempo de detección:</span>
               <strong className="text-[#111111]">&lt; 180 ms</strong>
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-xl border border-[#EAEAEA] space-y-6 flex flex-col justify-between shadow-xs hover:border-[#D4D4D4] hover:shadow-sm transition-all duration-300">
+          <div className="bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300">
             <div className="space-y-2">
               <div className="w-8 h-8 rounded bg-[#E1F3FE] text-[#1F6C9F] flex items-center justify-center font-bold text-xs">
                 <QrCode className="w-4 h-4" />
@@ -661,12 +661,12 @@ export const LandingPage = ({
                 Tokens únicos de acceso con temporizador en vivo y respaldo en almacenamiento local del dispositivo.
               </p>
             </div>
-            <div className="p-3 bg-[#FBFBFA] rounded border border-[#EAEAEA] font-mono text-xs text-[#787774] text-center">
+            <div className="p-3 bg-[#FBFBFA] rounded border border-[#E5E5E5] font-mono text-xs text-[#787774] text-center shadow-2xs">
               Protocolo Zero-Paper
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-xl border border-[#EAEAEA] space-y-6 flex flex-col justify-between shadow-xs hover:border-[#D4D4D4] hover:shadow-sm transition-all duration-300">
+          <div className="bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300">
             <div className="space-y-2">
               <div className="w-8 h-8 rounded bg-[#FBF3DB] text-[#956400] flex items-center justify-center font-bold text-xs">
                 <CreditCard className="w-4 h-4" />
@@ -678,12 +678,12 @@ export const LandingPage = ({
                 Integración con Yape, Plin y tarjetas de débito/crédito con liquidación y comprobante inmediato.
               </p>
             </div>
-            <div className="p-3 bg-[#FBFBFA] rounded border border-[#EAEAEA] font-mono text-xs text-[#787774] text-center">
+            <div className="p-3 bg-[#FBFBFA] rounded border border-[#E5E5E5] font-mono text-xs text-[#787774] text-center shadow-2xs">
               Yape • Plin • Culqi
             </div>
           </div>
 
-          <div className="md:col-span-2 bg-white p-8 rounded-xl border border-[#EAEAEA] space-y-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xs hover:border-[#D4D4D4] hover:shadow-sm transition-all duration-300">
+          <div className="md:col-span-2 bg-white p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.07)] transition-all duration-300">
             <div className="space-y-2 max-w-md">
               <div className="w-8 h-8 rounded bg-[#EDF3EC] text-[#346538] flex items-center justify-center font-bold text-xs">
                 <ShieldCheck className="w-4 h-4" />
@@ -696,10 +696,10 @@ export const LandingPage = ({
               </p>
             </div>
             <div className="space-y-1.5 text-xs font-mono text-[#787774] w-full sm:w-auto">
-              <div className="p-2.5 bg-[#FBFBFA] rounded border border-[#EAEAEA]">
+              <div className="p-2.5 bg-[#FBFBFA] rounded border border-[#E5E5E5] shadow-2xs">
                 Auditoría horaria continua
               </div>
-              <div className="p-2.5 bg-[#FBFBFA] rounded border border-[#EAEAEA]">
+              <div className="p-2.5 bg-[#FBFBFA] rounded border border-[#E5E5E5] shadow-2xs">
                 Registro de eventos en vivo
               </div>
             </div>
@@ -710,7 +710,7 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          6. SECCIÓN PROPIETARIOS DE ESTACIONAMIENTOS CENTRADA
+          6. SECCIÓN PROPIETARIOS DE ESTACIONAMIENTOS CENTRADA CON SOMBRA
           ========================================================================= */}
       <section id="afiliacion" className="py-16 px-6 lg:px-12 max-w-5xl mx-auto">
         <motion.div 
@@ -718,7 +718,7 @@ export const LandingPage = ({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.7, ease: FLUID_EASE }}
-          className="bg-[#111111] text-white rounded-xl p-8 sm:p-14 space-y-6 flex flex-col items-center text-center shadow-md"
+          className="bg-[#111111] text-white rounded-xl p-8 sm:p-14 space-y-6 flex flex-col items-center text-center border border-[#262626] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.35)]"
         >
           
           <div className="max-w-2xl space-y-3">
@@ -737,7 +737,7 @@ export const LandingPage = ({
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#EAEAEA] text-[#111111] text-xs font-medium rounded transition-all duration-200 cursor-pointer shadow-xs"
+              className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#EAEAEA] text-[#111111] text-xs font-medium rounded transition-all duration-200 cursor-pointer shadow-[0_4px_12px_rgba(255,255,255,0.15)]"
             >
               Solicitar Afiliación
             </motion.button>
@@ -755,7 +755,7 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          7. PREGUNTAS FRECUENTES (FAQ) CON TÍTULOS CENTRADOS
+          7. PREGUNTAS FRECUENTES (FAQ) CON BORDES PULIDOS
           ========================================================================= */}
       <section className="py-16 px-6 lg:px-12 max-w-4xl mx-auto space-y-10">
         
@@ -772,7 +772,7 @@ export const LandingPage = ({
           </p>
         </div>
 
-        <div className="divide-y divide-[#EAEAEA] border-y border-[#EAEAEA]">
+        <div className="divide-y divide-[#E5E5E5] border-y border-[#E5E5E5]">
           {faqs.map((faq, idx) => (
             <div key={idx} className="py-4.5">
               <button
@@ -808,10 +808,10 @@ export const LandingPage = ({
       {/* =========================================================================
           8. FOOTER DOCUMENTAL
           ========================================================================= */}
-      <footer className="bg-white border-t border-[#EAEAEA] py-12 px-6 lg:px-12 text-xs text-[#787774]">
+      <footer className="bg-white border-t border-[#E5E5E5] py-12 px-6 lg:px-12 text-xs text-[#787774] shadow-[0_-2px_10px_-2px_rgba(0,0,0,0.02)]">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center space-x-3">
-            <div className="w-6 h-6 rounded bg-[#111111] text-white flex items-center justify-center font-bold text-[10px]">
+            <div className="w-6 h-6 rounded bg-[#111111] text-white flex items-center justify-center font-bold text-[10px] shadow-xs">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
                 <path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
                 <circle cx="12" cy="12" r="10" />

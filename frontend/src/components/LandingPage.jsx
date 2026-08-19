@@ -29,7 +29,7 @@ import { AyacuchoMap } from './AyacuchoMap';
 // Curva de desaceleración orgánica y elástica
 const FLUID_EASE = [0.16, 1, 0.3, 1];
 
-// Componente de Sección con Animaciones de Scroll Exageradas y 3D en Avance y Retroceso
+// Componente de Sección con Animaciones de Scroll Suaves sin colisión
 const CinematicScrollSection = ({ children, className = '', id = '' }) => {
   const sectionRef = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -37,33 +37,27 @@ const CinematicScrollSection = ({ children, className = '', id = '' }) => {
     offset: ['start end', 'end start']
   });
 
-  // Interpolaciones pronunciadas de entrada (0 -> 0.35) y salida (0.65 -> 1)
-  const opacity = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [0.1, 1, 1, 0.15]);
-  const scale = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0.86, 1, 1, 0.88]);
-  const y = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [140, 0, 0, -100]);
-  const rotateX = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [14, 0, 0, -12]);
+  // Interpolación limpia: Entrada suave desde abajo y salida suave hacia arriba
+  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.25, 1, 1, 0.25]);
+  const scale = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [0.95, 1, 1, 0.96]);
+  const y = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [50, 0, 0, -40]);
 
-  const smoothScale = useSpring(scale, { stiffness: 140, damping: 20 });
-  const smoothY = useSpring(y, { stiffness: 140, damping: 20 });
-  const smoothRotateX = useSpring(rotateX, { stiffness: 140, damping: 20 });
+  const smoothScale = useSpring(scale, { stiffness: 140, damping: 24 });
+  const smoothY = useSpring(y, { stiffness: 140, damping: 24 });
 
   return (
-    <div style={{ perspective: 1400 }}>
-      <motion.section
-        ref={sectionRef}
-        id={id}
-        style={{
-          opacity,
-          scale: smoothScale,
-          y: smoothY,
-          rotateX: smoothRotateX,
-          transformStyle: 'preserve-3d'
-        }}
-        className={className}
-      >
-        {children}
-      </motion.section>
-    </div>
+    <motion.section
+      ref={sectionRef}
+      id={id}
+      style={{
+        opacity,
+        scale: smoothScale,
+        y: smoothY
+      }}
+      className={className}
+    >
+      {children}
+    </motion.section>
   );
 };
 
@@ -73,9 +67,8 @@ const DynamicTiltCard = ({ children, className = '' }) => {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [10, -10]), { stiffness: 260, damping: 22 });
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-10, 10]), { stiffness: 260, damping: 22 });
-  const cardScale = useSpring(useTransform(mouseX, [-0.5, 0, 0.5], [1.02, 1, 1.02]), { stiffness: 260, damping: 22 });
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [8, -8]), { stiffness: 240, damping: 22 });
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), { stiffness: 240, damping: 22 });
 
   const handleMouseMove = (e) => {
     if (!cardRef.current) return;
@@ -101,9 +94,8 @@ const DynamicTiltCard = ({ children, className = '' }) => {
       style={{
         rotateX,
         rotateY,
-        scale: cardScale,
         transformStyle: 'preserve-3d',
-        perspective: 1200
+        perspective: 1000
       }}
       className={className}
     >
@@ -134,59 +126,54 @@ export const LandingPage = ({
     restDelta: 0.001
   });
 
-  // =========================================================================
-  // FONDO GRADIENTE 3D ESPACIAL DINÁMICO INTERPOLADO POR SCROLL
-  // (Tonos suaves y elegantes que mutan sin saturación excesiva)
-  // =========================================================================
+  // Fondo Gradiente 3D Suave Interpolado por Scroll
   const bgPageColor = useTransform(
     scrollYProgress,
     [0, 0.25, 0.5, 0.75, 1],
     ['#FBFBFA', '#F4F7F4', '#F0F5F9', '#FAF6EE', '#FBFBFA']
   );
 
-  const orb1X = useTransform(scrollYProgress, [0, 0.5, 1], ['-8%', '35%', '-2%']);
+  const orb1X = useTransform(scrollYProgress, [0, 0.5, 1], ['-5%', '30%', '-2%']);
   const orb1Y = useTransform(scrollYProgress, [0, 0.5, 1], ['4%', '38%', '76%']);
-  const orb1Scale = useTransform(scrollYProgress, [0, 0.5, 1], [1, 1.25, 0.95]);
+  const orb1Scale = useTransform(scrollYProgress, [0, 0.5, 1], [1, 1.2, 0.95]);
   const orb1Color = useTransform(
     scrollYProgress,
     [0, 0.33, 0.66, 1],
-    ['rgba(215, 237, 218, 0.7)', 'rgba(214, 235, 252, 0.65)', 'rgba(252, 238, 210, 0.6)', 'rgba(215, 237, 218, 0.7)']
+    ['rgba(215, 237, 218, 0.65)', 'rgba(214, 235, 252, 0.6)', 'rgba(252, 238, 210, 0.55)', 'rgba(215, 237, 218, 0.65)']
   );
 
   const orb2X = useTransform(scrollYProgress, [0, 0.5, 1], ['75%', '50%', '15%']);
   const orb2Y = useTransform(scrollYProgress, [0, 0.5, 1], ['12%', '65%', '28%']);
-  const orb2Scale = useTransform(scrollYProgress, [0, 0.5, 1], [1.15, 0.9, 1.2]);
+  const orb2Scale = useTransform(scrollYProgress, [0, 0.5, 1], [1.1, 0.9, 1.15]);
   const orb2Color = useTransform(
     scrollYProgress,
     [0, 0.33, 0.66, 1],
-    ['rgba(214, 235, 252, 0.65)', 'rgba(252, 238, 210, 0.6)', 'rgba(215, 237, 218, 0.7)', 'rgba(214, 235, 252, 0.65)']
+    ['rgba(214, 235, 252, 0.6)', 'rgba(252, 238, 210, 0.55)', 'rgba(215, 237, 218, 0.65)', 'rgba(214, 235, 252, 0.6)']
   );
 
-  // Parallax Exagerado en la Hero Section
+  // Parallax del Hero: Se desplaza hacia ARRIBA (negativo) al hacer scroll hacia abajo
   const { scrollYProgress: heroScrollProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start']
   });
 
-  const heroHeadlineY = useTransform(heroScrollProgress, [0, 1], [0, 180]);
-  const heroOpacity = useTransform(heroScrollProgress, [0, 0.7], [1, 0]);
-  const heroScale = useTransform(heroScrollProgress, [0, 1], [1, 0.88]);
-  const heroRotateX = useTransform(heroScrollProgress, [0, 1], [0, -16]);
-  const heroMetricsY = useTransform(heroScrollProgress, [0, 1], [0, 80]);
+  const heroHeadlineY = useTransform(heroScrollProgress, [0, 1], [0, -50]);
+  const heroOpacity = useTransform(heroScrollProgress, [0, 0.8], [1, 0.1]);
+  const heroScale = useTransform(heroScrollProgress, [0, 1], [1, 0.96]);
+  const heroMetricsY = useTransform(heroScrollProgress, [0, 1], [0, -25]);
 
   const smoothHeroHeadlineY = useSpring(heroHeadlineY, { stiffness: 120, damping: 20 });
   const smoothHeroScale = useSpring(heroScale, { stiffness: 120, damping: 20 });
-  const smoothHeroRotateX = useSpring(heroRotateX, { stiffness: 120, damping: 20 });
 
-  // Transformación 3D Exagerada del Mockup Faux-OS
+  // Transformación 3D del Mockup Faux-OS
   const { scrollYProgress: mockupScrollProgress } = useScroll({
     target: mockupSectionRef,
     offset: ['start end', 'center center']
   });
 
-  const mockupRotateX = useTransform(mockupScrollProgress, [0, 1], [26, 0]);
-  const mockupScale = useTransform(mockupScrollProgress, [0, 1], [0.82, 1]);
-  const mockupOpacity = useTransform(mockupScrollProgress, [0, 0.4], [0.2, 1]);
+  const mockupRotateX = useTransform(mockupScrollProgress, [0, 1], [18, 0]);
+  const mockupScale = useTransform(mockupScrollProgress, [0, 1], [0.88, 1]);
+  const mockupOpacity = useTransform(mockupScrollProgress, [0, 0.45], [0.3, 1]);
   const smoothMockupRotateX = useSpring(mockupRotateX, { stiffness: 90, damping: 18 });
   const smoothMockupScale = useSpring(mockupScale, { stiffness: 90, damping: 18 });
 
@@ -243,7 +230,7 @@ export const LandingPage = ({
   return (
     <motion.div 
       style={{ backgroundColor: bgPageColor }}
-      className="min-h-screen text-[#191919] font-sans antialiased selection:bg-[#EAEAEA] selection:text-black overflow-x-hidden relative transition-colors duration-500"
+      className="w-full text-[#191919] font-sans antialiased selection:bg-[#EAEAEA] selection:text-black relative transition-colors duration-500"
     >
       
       {/* =========================================================================
@@ -335,103 +322,99 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION CON PARALLAX Y TILT 3D EXAGERADO AL SCROLLEAR
+          2. HERO SECTION CON PARALLAX LIMPIO SIN COLISIONES
           ========================================================================= */}
-      <div style={{ perspective: 1400 }}>
-        <section ref={heroRef} className="pt-24 pb-20 px-6 lg:px-12 max-w-5xl mx-auto space-y-12 text-center">
+      <section ref={heroRef} className="pt-24 pb-28 px-6 lg:px-12 max-w-5xl mx-auto space-y-12 text-center">
+        
+        <motion.div 
+          style={{ 
+            y: smoothHeroHeadlineY, 
+            opacity: heroOpacity,
+            scale: smoothHeroScale
+          }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: FLUID_EASE }}
+          className="space-y-6 flex flex-col items-center"
+        >
           
-          <motion.div 
-            style={{ 
-              y: smoothHeroHeadlineY, 
-              opacity: heroOpacity,
-              scale: smoothHeroScale,
-              rotateX: smoothHeroRotateX,
-              transformStyle: 'preserve-3d'
-            }}
-            initial={{ opacity: 0, y: 50, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.9, ease: FLUID_EASE }}
-            className="space-y-6 flex flex-col items-center"
-          >
-            
-            {/* Titular Principal Centrado con Gran Impacto */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display text-[#111111] tracking-tight max-w-4xl mx-auto leading-[1.06]">
-              La infraestructura de estacionamiento para <span className="font-editorial italic font-normal text-[#2A2A2A]">Ayacucho</span>.
-            </h1>
+          {/* Titular Principal Centrado con Gran Impacto */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display text-[#111111] tracking-tight max-w-4xl mx-auto leading-[1.06]">
+            La infraestructura de estacionamiento para <span className="font-editorial italic font-normal text-[#2A2A2A]">Ayacucho</span>.
+          </h1>
 
-            {/* Subtítulo Centrado */}
-            <p className="text-base sm:text-lg text-[#555555] max-w-2xl mx-auto font-normal leading-relaxed text-center">
-              Consulte la disponibilidad en tiempo real, seleccione su plaza en el plano topográfico 2D del estacionamiento y acceda mediante reconocimiento de placa ANPR.
-            </p>
+          {/* Subtítulo Centrado */}
+          <p className="text-base sm:text-lg text-[#555555] max-w-2xl mx-auto font-normal leading-relaxed text-center">
+            Consulte la disponibilidad en tiempo real, seleccione su plaza en el plano topográfico 2D del estacionamiento y acceda mediante reconocimiento de placa ANPR.
+          </p>
 
-            {/* Botones Centrados */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
-              <motion.a
-                whileHover={{ scale: 1.04, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-                href="#mapa"
-                className="w-full sm:w-auto px-7 py-3 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded-md transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-[0_6px_16px_rgba(0,0,0,0.14)]"
-              >
-                <span>Consultar Mapa en Vivo</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </motion.a>
+          {/* Botones Centrados */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
+            <motion.a
+              whileHover={{ scale: 1.04, y: -2 }}
+              whileTap={{ scale: 0.96 }}
+              href="#mapa"
+              className="w-full sm:w-auto px-7 py-3 bg-[#111111] hover:bg-[#2B2B2B] text-white text-xs font-medium rounded-md transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-[0_6px_16px_rgba(0,0,0,0.14)]"
+            >
+              <span>Consultar Mapa en Vivo</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </motion.a>
 
-              <motion.button
-                whileHover={{ scale: 1.04, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                className="w-full sm:w-auto px-6 py-3 bg-white/90 hover:bg-[#F0F0EF] text-[#111111] text-xs font-medium rounded-md border border-[#E5E5E5] shadow-xs transition-colors duration-200 cursor-pointer backdrop-blur-xs"
-              >
-                Afiliar Establecimiento
-              </motion.button>
-            </div>
+            <motion.button
+              whileHover={{ scale: 1.04, y: -2 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => onOpenAuth && onOpenAuth('affiliation')}
+              className="w-full sm:w-auto px-6 py-3 bg-white/90 hover:bg-[#F0F0EF] text-[#111111] text-xs font-medium rounded-md border border-[#E5E5E5] shadow-xs transition-colors duration-200 cursor-pointer backdrop-blur-xs"
+            >
+              Afiliar Establecimiento
+            </motion.button>
+          </div>
 
-          </motion.div>
+        </motion.div>
 
-          {/* Métricas de Precisión con Parallax Propio */}
-          <motion.div 
-            style={{ y: heroMetricsY }}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.25, ease: FLUID_EASE }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#E5E5E5] text-center"
-          >
-            <div className="space-y-1">
-              <span className="font-mono text-2xl sm:text-3xl font-bold text-[#111111] block">
-                {establishments.length}
-              </span>
-              <span className="text-xs text-[#787774] font-medium block">Cocheras conectadas</span>
-            </div>
+        {/* Métricas de Precisión */}
+        <motion.div 
+          style={{ y: heroMetricsY }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.25, ease: FLUID_EASE }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-[#E5E5E5] text-center"
+        >
+          <div className="space-y-1">
+            <span className="font-mono text-2xl sm:text-3xl font-bold text-[#111111] block">
+              {establishments.length}
+            </span>
+            <span className="text-xs text-[#787774] font-medium block">Cocheras conectadas</span>
+          </div>
 
-            <div className="space-y-1">
-              <span className="font-mono text-2xl sm:text-3xl font-bold text-[#346538] block">
-                {totalFreeSlots}
-              </span>
-              <span className="text-xs text-[#787774] font-medium block">Plazas libres ahora</span>
-            </div>
+          <div className="space-y-1">
+            <span className="font-mono text-2xl sm:text-3xl font-bold text-[#346538] block">
+              {totalFreeSlots}
+            </span>
+            <span className="text-xs text-[#787774] font-medium block">Plazas libres ahora</span>
+          </div>
 
-            <div className="space-y-1">
-              <span className="font-mono text-2xl sm:text-3xl font-bold text-[#111111] block">
-                &lt; 0.2s
-              </span>
-              <span className="text-xs text-[#787774] font-medium block">Lectura de placa ANPR</span>
-            </div>
+          <div className="space-y-1">
+            <span className="font-mono text-2xl sm:text-3xl font-bold text-[#111111] block">
+              &lt; 0.2s
+            </span>
+            <span className="text-xs text-[#787774] font-medium block">Lectura de placa ANPR</span>
+          </div>
 
-            <div className="space-y-1">
-              <span className="font-mono text-2xl sm:text-3xl font-bold text-[#111111] block">
-                S/ 4.00
-              </span>
-              <span className="text-xs text-[#787774] font-medium block">Tarifa base promedio</span>
-            </div>
-          </motion.div>
+          <div className="space-y-1">
+            <span className="font-mono text-2xl sm:text-3xl font-bold text-[#111111] block">
+              S/ 4.00
+            </span>
+            <span className="text-xs text-[#787774] font-medium block">Tarifa base promedio</span>
+          </div>
+        </motion.div>
 
-        </section>
-      </div>
+      </section>
 
       {/* =========================================================================
-          3. MOCKUP DE VENTANA FAUX-OS CON 3D SCROLL PROFUNDO
+          3. MOCKUP DE VENTANA FAUX-OS CON 3D SCROLL Y ESPACIADO ROBUSTO
           ========================================================================= */}
-      <CinematicScrollSection id="sistema" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
+      <CinematicScrollSection id="sistema" className="py-24 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
         
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2">
@@ -446,7 +429,7 @@ export const LandingPage = ({
           </p>
         </div>
 
-        {/* Contenedor Faux-OS Window Chrome con Inclinación 3D Marcada */}
+        {/* Contenedor Faux-OS Window Chrome */}
         <div ref={mockupSectionRef} style={{ perspective: 1200 }}>
           <motion.div 
             style={{ 
@@ -542,7 +525,7 @@ export const LandingPage = ({
       {/* =========================================================================
           4. DIRECTORIO Y MAPA CON SCROLL DINÁMICO
           ========================================================================= */}
-      <CinematicScrollSection id="mapa" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
+      <CinematicScrollSection id="mapa" className="py-24 px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
         {/* Encabezado y Filtros Centrados */}
         <div className="max-w-3xl mx-auto text-center space-y-4">
@@ -613,7 +596,7 @@ export const LandingPage = ({
           />
         </div>
 
-        {/* Grilla de Cocheras con Parallax y Entrada Fluida */}
+        {/* Grilla de Cocheras con Entrada Fluida */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
           {filteredParkings.map((p, idx) => {
             const elements = p.elements || [];
@@ -623,10 +606,10 @@ export const LandingPage = ({
             return (
               <motion.div 
                 key={p.id}
-                initial={{ opacity: 0, y: 50, scale: 0.93 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                viewport={{ once: false, margin: '-40px' }}
-                transition={{ duration: 0.6, delay: (idx % 3) * 0.08, ease: FLUID_EASE }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.5, delay: (idx % 3) * 0.08, ease: FLUID_EASE }}
               >
                 <DynamicTiltCard className="h-full bg-white/95 backdrop-blur-sm rounded-xl border border-[#E5E5E5] p-5 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.1)] transition-all duration-300">
                   <div className="space-y-3">
@@ -698,7 +681,7 @@ export const LandingPage = ({
       {/* =========================================================================
           5. BENTO GRID DE ESPECIFICACIONES CON PARALLAX MARCADO
           ========================================================================= */}
-      <CinematicScrollSection id="infraestructura" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
+      <CinematicScrollSection id="infraestructura" className="py-24 px-6 lg:px-12 max-w-6xl mx-auto space-y-10">
         
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2">
@@ -717,10 +700,10 @@ export const LandingPage = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.94 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: false, margin: '-40px' }}
-            transition={{ duration: 0.7, ease: FLUID_EASE }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, ease: FLUID_EASE }}
             className="md:col-span-2 bg-white/95 backdrop-blur-sm p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
           >
             <div className="space-y-2">
@@ -741,10 +724,10 @@ export const LandingPage = ({
           </motion.div>
 
           <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.94 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: false, margin: '-40px' }}
-            transition={{ duration: 0.7, delay: 0.1, ease: FLUID_EASE }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, delay: 0.1, ease: FLUID_EASE }}
             className="bg-white/95 backdrop-blur-sm p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
           >
             <div className="space-y-2">
@@ -764,10 +747,10 @@ export const LandingPage = ({
           </motion.div>
 
           <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.94 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: false, margin: '-40px' }}
-            transition={{ duration: 0.7, delay: 0.15, ease: FLUID_EASE }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, delay: 0.15, ease: FLUID_EASE }}
             className="bg-white/95 backdrop-blur-sm p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col justify-between shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
           >
             <div className="space-y-2">
@@ -787,10 +770,10 @@ export const LandingPage = ({
           </motion.div>
 
           <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.94 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: false, margin: '-40px' }}
-            transition={{ duration: 0.7, delay: 0.2, ease: FLUID_EASE }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, delay: 0.2, ease: FLUID_EASE }}
             className="md:col-span-2 bg-white/95 backdrop-blur-sm p-8 rounded-xl border border-[#E5E5E5] space-y-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-[0_4px_14px_-2px_rgba(0,0,0,0.04)] hover:border-[#D1D1D1] hover:shadow-[0_16px_36px_-4px_rgba(0,0,0,0.09)] transition-all duration-300"
           >
             <div className="space-y-2 max-w-md">
@@ -821,12 +804,12 @@ export const LandingPage = ({
       {/* =========================================================================
           6. SECCIÓN PROPIETARIOS CON APARICIÓN DINÁMICA
           ========================================================================= */}
-      <CinematicScrollSection id="afiliacion" className="py-16 px-6 lg:px-12 max-w-5xl mx-auto">
+      <CinematicScrollSection id="afiliacion" className="py-24 px-6 lg:px-12 max-w-5xl mx-auto">
         <motion.div 
-          initial={{ opacity: 0, y: 50, scale: 0.92 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          viewport={{ once: false, margin: '-40px' }}
-          transition={{ duration: 0.8, ease: FLUID_EASE }}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.7, ease: FLUID_EASE }}
           className="bg-[#111111] text-white rounded-xl p-8 sm:p-14 space-y-6 flex flex-col items-center text-center border border-[#262626] shadow-[0_24px_60px_-10px_rgba(0,0,0,0.45)]"
         >
           
@@ -869,7 +852,7 @@ export const LandingPage = ({
       {/* =========================================================================
           7. PREGUNTAS FRECUENTES (FAQ) CON SCROLL REVEAL CASCADA
           ========================================================================= */}
-      <CinematicScrollSection className="py-16 px-6 lg:px-12 max-w-4xl mx-auto space-y-10">
+      <CinematicScrollSection className="py-24 px-6 lg:px-12 max-w-4xl mx-auto space-y-10">
         
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2">
@@ -888,10 +871,10 @@ export const LandingPage = ({
           {faqs.map((faq, idx) => (
             <motion.div 
               key={idx} 
-              initial={{ opacity: 0, y: 25 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, margin: '-20px' }}
-              transition={{ duration: 0.5, delay: idx * 0.06, ease: FLUID_EASE }}
+              viewport={{ once: true, margin: '-20px' }}
+              transition={{ duration: 0.4, delay: idx * 0.05, ease: FLUID_EASE }}
               className="py-4.5"
             >
               <button
@@ -909,7 +892,7 @@ export const LandingPage = ({
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.35, ease: FLUID_EASE }}
+                    transition={{ duration: 0.3, ease: FLUID_EASE }}
                     className="overflow-hidden"
                   >
                     <div className="pt-3 text-xs sm:text-sm text-[#555555] leading-relaxed">

@@ -200,7 +200,7 @@ export const App = () => {
   // Si el usuario no ha iniciado sesión, mostrar la Landing Page de última generación
   if (!user && !selectedParkingId) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-500 selection:text-white">
+      <div className="w-full bg-[#FBFBFA] text-[#191919] font-sans antialiased selection:bg-[#EAEAEA] selection:text-black">
         <Toaster position="top-right" toastOptions={{ duration: 3500, style: { borderRadius: '14px', background: '#0f172a', color: '#fff', fontSize: '13px' } }} />
         
         <LandingPage

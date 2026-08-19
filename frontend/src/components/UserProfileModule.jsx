@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -9,38 +9,22 @@ import {
   Shield, 
   Car, 
   Award, 
-  CheckCircle2, 
   Save, 
   Lock, 
-  Camera, 
   Key, 
   Bell, 
   MapPin, 
-  Calendar,
-  CreditCard,
-  History,
-  Sparkles,
-  ExternalLink,
-  ShieldCheck,
-  RotateCcw,
-  Check
+  ShieldCheck, 
+  Check 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
-
-const AVATAR_PRESETS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400',
-  'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=400'
-];
 
 export const UserProfileModule = () => {
   const { user, setUser, role } = useAuth();
   const { reservations } = useEstablishments();
 
-  // Estado del formulario de perfil
+  // Estado del formulario de perfil limpio
   const [formData, setFormData] = useState({
     name: user?.name || 'Carlos Mendoza',
     email: user?.email || 'carlos.mendoza@smartpark.pe',
@@ -48,7 +32,6 @@ export const UserProfileModule = () => {
     dni: user?.dni || '72458912',
     address: user?.address || 'Jr. 28 de Julio 340, Huamanga',
     plate: user?.plate || 'ABC-123',
-    avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
     notifyEmail: true,
     notifyWhatsapp: true,
     autoGateOpen: true
@@ -63,7 +46,7 @@ export const UserProfileModule = () => {
   };
 
   const handleSaveProfile = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const updatedUser = {
       ...user,
       name: formData.name.trim(),
@@ -71,8 +54,7 @@ export const UserProfileModule = () => {
       phone: formData.phone.trim(),
       dni: formData.dni.trim(),
       address: formData.address.trim(),
-      plate: formData.plate.toUpperCase().trim(),
-      avatar: formData.avatar
+      plate: formData.plate.toUpperCase().trim()
     };
 
     setUser(updatedUser);
@@ -96,26 +78,16 @@ export const UserProfileModule = () => {
         </div>
       )}
 
-      {/* Header de Perfil */}
+      {/* Header de Perfil Minimalista y Limpio */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-32 bg-gradient-to-l from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 relative z-10">
           <div className="flex items-center space-x-4">
             
-            {/* Avatar con selector de foto */}
-            <div className="relative group">
-              <img
-                src={formData.avatar}
-                alt={formData.name}
-                className="w-20 h-20 rounded-3xl object-cover border-2 border-slate-200 shadow-md group-hover:opacity-90 transition"
-                onError={(e) => {
-                  e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400';
-                }}
-              />
-              <div className="absolute -bottom-1 -right-1 bg-slate-900 text-emerald-400 p-1.5 rounded-xl border border-slate-800 shadow-xs">
-                <ShieldCheck className="w-3.5 h-3.5" />
-              </div>
+            {/* Icono de Usuario Limpio */}
+            <div className="w-16 h-16 rounded-2xl bg-slate-900 text-emerald-400 flex items-center justify-center font-black text-xl shadow-md border border-slate-800 shrink-0">
+              <User className="w-8 h-8" />
             </div>
 
             {/* Info Básica */}
@@ -134,7 +106,7 @@ export const UserProfileModule = () => {
               <div className="flex items-center gap-3 mt-2 text-xs text-slate-600">
                 <span>Nivel Smart Club: <strong className="text-emerald-700 font-bold">Oro</strong></span>
                 <span>•</span>
-                <span className="font-mono">Placa: <strong className="text-slate-900 font-bold">{formData.plate}</strong></span>
+                <span className="font-mono">Placa Principal: <strong className="text-slate-900 font-bold">{formData.plate}</strong></span>
               </div>
             </div>
 
@@ -142,7 +114,7 @@ export const UserProfileModule = () => {
 
           <Button
             onClick={handleSaveProfile}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 rounded-xl shadow-md shadow-emerald-600/20 h-10 px-5"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 rounded-xl shadow-md shadow-emerald-600/20 h-10 px-5 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>Guardar Cambios</span>
@@ -319,27 +291,8 @@ export const UserProfileModule = () => {
                   </div>
                 </div>
 
-                {/* Selección de Avatar */}
-                <div className="pt-2">
-                  <label className="text-xs font-bold text-slate-700 block mb-2">Elegir Avatar de Perfil:</label>
-                  <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                    {AVATAR_PRESETS.map((av, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, avatar: av })}
-                        className={`w-12 h-12 rounded-2xl overflow-hidden border-2 transition shrink-0 cursor-pointer ${
-                          formData.avatar === av ? 'border-emerald-500 ring-2 ring-emerald-400' : 'border-slate-200 hover:border-slate-400'
-                        }`}
-                      >
-                        <img src={av} alt="Preset" className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <div className="pt-3 border-t border-slate-100 flex justify-end">
-                  <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl h-10 px-6">
+                  <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl h-10 px-6 cursor-pointer">
                     <Save className="w-4 h-4 mr-1.5" />
                     <span>Guardar Datos Personales</span>
                   </Button>
@@ -443,9 +396,9 @@ export const UserProfileModule = () => {
 
         </div>
 
-        {/* Columna Derecha: Tarjeta Visual de Credencial */}
+        {/* Columna Derecha: Tarjeta Visual de Credencial Limpia */}
         <div className="space-y-4">
-          <div className="bg-slate-900 text-white p-4 rounded-3xl shadow-lg border border-slate-800 space-y-4">
+          <div className="bg-slate-900 text-white p-5 rounded-3xl shadow-lg border border-slate-800 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <span className="text-[10px] font-tech font-bold uppercase tracking-widest text-emerald-400">
                 CREDENCIAL DIGITAL SMART-PARK
@@ -454,11 +407,9 @@ export const UserProfileModule = () => {
             </div>
 
             <div className="flex items-center space-x-3.5">
-              <img
-                src={formData.avatar}
-                alt="Avatar"
-                className="w-14 h-14 rounded-2xl object-cover border border-slate-700 shadow-md"
-              />
+              <div className="w-12 h-12 rounded-2xl bg-slate-800 text-emerald-400 flex items-center justify-center border border-slate-700 shadow-md shrink-0 font-bold">
+                <User className="w-6 h-6" />
+              </div>
               <div>
                 <h4 className="font-extrabold text-sm text-white">{formData.name}</h4>
                 <p className="text-[11px] font-mono text-slate-400">{formData.dni}</p>

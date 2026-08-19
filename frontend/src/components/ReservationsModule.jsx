@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
+import { QRCodeSVG } from 'qrcode.react';
 import { 
   CalendarCheck, 
   Search, 
@@ -866,9 +867,28 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
               </div>
             </div>
 
-            {/* Token ANPR */}
-            <div className="text-center p-2.5 bg-slate-100 rounded-xl font-mono text-[10px] text-slate-600">
-              Token Garita: <strong className="text-slate-900">{selectedReceipt.token || 'SPK-TOKEN-VALID'}</strong>
+            {/* Código QR Escaneable para Celulares y Garita */}
+            <div className="bg-white p-3 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center">
+              <div className="p-1.5 bg-white rounded-xl border border-slate-100 shadow-xs inline-block">
+                <QRCodeSVG
+                  value={`🚗 SMART-PARK AYACUCHO - TICKET
+Sede: ${selectedReceipt.parking}
+Plaza: ${selectedReceipt.slot}
+Placa: ${selectedReceipt.plate}
+Reserva: ${selectedReceipt.code}
+Token: ${selectedReceipt.token || 'SPK-TOKEN-VALID'}
+Total: S/ ${Number(selectedReceipt.cost).toFixed(2)}
+ESTADO: AUTORIZADO`}
+                  size={120}
+                  level="Q"
+                  includeMargin={false}
+                  fgColor="#0f172a"
+                  bgColor="#ffffff"
+                />
+              </div>
+              <p className="text-[10px] font-mono text-slate-500 mt-2">
+                Token: <strong className="text-slate-900">{selectedReceipt.token || 'SPK-TOKEN-VALID'}</strong>
+              </p>
             </div>
 
             {/* Botones */}

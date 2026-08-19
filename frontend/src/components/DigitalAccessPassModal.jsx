@@ -35,7 +35,15 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
     const startTime = reservation.startTime ? new Date(reservation.startTime) : new Date();
     const expiresAt = reservation.expiresAt ? new Date(reservation.expiresAt) : new Date(startTime.getTime() + hours * 60 * 60 * 1000);
 
-    const qrPayload = `https://smartpark.pe/pass?id=${id}&token=${token}&slot=${slotCode}&plate=${plate}`;
+    const qrPayload = `🚗 SMART-PARK AYACUCHO - PASE DE ACCESO
+📍 Sede: ${parkingName}
+🅿️ Plaza: ${slotCode} (Nivel 1)
+🚘 Placa: ${plate}
+🎫 Reserva: ${id}
+🔑 Token: ${token}
+⏱️ Duración: ${hours} hora(s)
+💰 Total: S/ ${Number(cost).toFixed(2)}
+✅ ESTADO: ACCESO AUTORIZADO`;
 
     return {
       id,

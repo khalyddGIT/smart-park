@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
@@ -15,7 +15,10 @@ import {
   Search, 
   Eye,
   Plus,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw,
+  Sparkles,
+  Smartphone
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useAuth } from '../context/AuthContext';
@@ -85,7 +88,100 @@ export const IncidentsModule = () => {
   });
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
-  // Configuración de react-dropzone
+  // =========================================================================
+  // ESTADOS Y REFERENCIAS PARA LA CÁMARA / TOMAR FOTO EN VIVO
+  // =========================================================================
+  const [photoMode, setPhotoMode] = useState('upload'); // 'upload' | 'camera'
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
+  // Iniciar la cámara
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError('Tu navegador no soporta captura de cámara directa.');
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      setIsCameraActive(true);
+    } catch (err) {
+      console.error('Error al abrir la cámara:', err);
+      setCameraError('No se pudo acceder a la cámara. Revisa los permisos de tu navegador.');
+      setIsCameraActive(false);
+    }
+  };
+
+  // Detener la cámara
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  // Capturar foto desde el stream de video
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+    const newPhoto = {
+      preview: dataUrl,
+      name: `captura_${Date.now()}.jpg`,
+      isCameraCapture: true
+    };
+
+    setUploadedFiles(prev => [newPhoto, ...prev]);
+
+    // Efecto de feedback auditivo/visual sutil
+    const shutter = document.getElementById('camera-shutter-flash');
+    if (shutter) {
+      shutter.style.opacity = '1';
+      setTimeout(() => {
+        shutter.style.opacity = '0';
+      }, 150);
+    }
+  };
+
+  // Apagar cámara al cerrar modal o cambiar modo
+  useEffect(() => {
+    if (!showModal || photoMode !== 'camera') {
+      stopCamera();
+    } else if (showModal && photoMode === 'camera' && !isCameraActive) {
+      startCamera();
+    }
+    return () => {
+      stopCamera();
+    };
+  }, [showModal, photoMode]);
+
+  // React Dropzone
   const onDrop = useCallback((acceptedFiles) => {
     const mapped = acceptedFiles.map(file => Object.assign(file, {
       preview: URL.createObjectURL(file)
@@ -123,6 +219,7 @@ export const IncidentsModule = () => {
 
     setIncidents([newInc, ...incidents]);
     setShowModal(false);
+    stopCamera();
     setFormData({
       type: role === 'user' ? 'Cajón Ocupado Indebidamente' : 'Estacionamiento Fuera de Línea',
       plate: '',
@@ -134,7 +231,6 @@ export const IncidentsModule = () => {
     setUploadedFiles([]);
   };
 
-  // Solo administradores pueden resolver incidencias
   const handleResolveIncident = (id) => {
     setIncidents(incidents.map(inc => {
       if (inc.id === id) {
@@ -172,8 +268,11 @@ export const IncidentsModule = () => {
         </div>
 
         <Button
-          onClick={() => setShowModal(true)}
-          className="bg-amber-500 hover:bg-amber-600 text-white font-bold gap-2 rounded-2xl shadow-md"
+          onClick={() => {
+            setShowModal(true);
+            setPhotoMode('upload');
+          }}
+          className="bg-amber-500 hover:bg-amber-600 text-white font-bold gap-2 rounded-2xl shadow-md cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>{role === 'user' ? 'Reportar Problema' : 'Registrar Infracción'}</span>
@@ -259,16 +358,15 @@ export const IncidentsModule = () => {
               )}
             </div>
 
-            {/* Footer de Tarjeta con Permisos Estrictos */}
+            {/* Footer de Tarjeta */}
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-              {/* SOLO ADMIN LOCAL O PLATAFORMA PUEDEN RESOLVER */}
               {(role === 'local' || role === 'platform') ? (
                 inc.status !== 'Resuelto' ? (
                   <Button
                     onClick={() => handleResolveIncident(inc.id)}
                     size="sm"
                     variant="outline"
-                    className="w-full text-xs font-bold gap-1 text-emerald-700 hover:bg-emerald-50 border-emerald-300 rounded-xl"
+                    className="w-full text-xs font-bold gap-1 text-emerald-700 hover:bg-emerald-50 border-emerald-300 rounded-xl cursor-pointer"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Marcar como Resuelto</span>
@@ -279,7 +377,6 @@ export const IncidentsModule = () => {
                   </span>
                 )
               ) : (
-                /* VISTA CONDUCTOR: SOLO ESTADO INFORMATIVO */
                 <span className={`text-[11px] font-bold flex items-center gap-1 mx-auto ${
                   inc.status === 'Resuelto' ? 'text-emerald-700' : 'text-amber-700'
                 }`}>
@@ -292,8 +389,13 @@ export const IncidentsModule = () => {
         ))}
       </div>
 
-      {/* Modal para Reportar Incidencia con Dropzone */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      {/* =========================================================================
+          MODAL PARA REPORTAR INCIDENCIA CON OPCIÓN DE CÁMARA O SUBIR FOTO
+          ========================================================================= */}
+      <Dialog open={showModal} onOpenChange={(open) => {
+        if (!open) stopCamera();
+        setShowModal(open);
+      }}>
         <DialogContent className="max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-2">
@@ -302,7 +404,7 @@ export const IncidentsModule = () => {
             </DialogTitle>
             <DialogDescription className="text-xs">
               {role === 'user' 
-                ? 'Detalla el problema ocurrido en la cochera para que el personal te asista.' 
+                ? 'Detalla el problema ocurrido y adjunta fotos tomadas al instante con tu cámara o galería.' 
                 : 'Registra la anomalía con placa y fotos de evidencia para la bitácora.'}
             </DialogDescription>
           </DialogHeader>
@@ -386,41 +488,145 @@ export const IncidentsModule = () => {
               />
             </div>
 
-            {/* React Dropzone */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Fotos de Evidencia (Opcional)</label>
-              <div
-                {...getRootProps()}
-                className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition ${
-                  isDragActive ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                <input {...getInputProps()} />
-                <UploadCloud className="w-7 h-7 text-slate-400 mx-auto mb-1" />
-                <p className="text-xs font-bold text-slate-700">Arrastra fotos aquí o haz clic para subir</p>
-                <p className="text-[10px] text-slate-400">JPG, PNG o WebP hasta 5MB</p>
+            {/* SECCIÓN DE EVIDENCIA: SUBIR O TOMAR FOTO DIRECTA */}
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700">Fotos de Evidencia</label>
+                
+                {/* Selector de Modo: Subir vs Cámara */}
+                <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setPhotoMode('upload')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                      photoMode === 'upload' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    📁 Subir Archivo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPhotoMode('camera')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer ${
+                      photoMode === 'camera' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>📸 Tomar Foto</span>
+                  </button>
+                </div>
               </div>
 
-              {uploadedFiles.length > 0 && (
-                <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1">
-                  {uploadedFiles.map((f, i) => (
-                    <div key={i} className="relative w-14 h-14 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0">
-                      <img src={f.preview} alt="Vista previa" className="w-full h-full object-cover" />
-                      <button
+              {/* MODO 1: SUBIR DESDE ARCHIVO */}
+              {photoMode === 'upload' && (
+                <div
+                  {...getRootProps()}
+                  className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition ${
+                    isDragActive ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  <input {...getInputProps()} />
+                  <UploadCloud className="w-7 h-7 text-slate-400 mx-auto mb-1" />
+                  <p className="text-xs font-bold text-slate-700">Arrastra fotos aquí o haz clic para subir</p>
+                  <p className="text-[10px] text-slate-400">JPG, PNG o WebP hasta 5MB</p>
+                </div>
+              )}
+
+              {/* MODO 2: TOMAR FOTO CON LA CÁMARA / WEBCAM EN VIVO */}
+              {photoMode === 'camera' && (
+                <div className="space-y-2.5 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-white relative overflow-hidden">
+                  
+                  {/* Flash visual de obturador */}
+                  <div 
+                    id="camera-shutter-flash" 
+                    className="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-150 z-30" 
+                  />
+
+                  {cameraError ? (
+                    <div className="p-4 text-center space-y-2">
+                      <p className="text-xs text-rose-400 font-bold">{cameraError}</p>
+                      <Button
                         type="button"
-                        onClick={() => removeFile(i)}
-                        className="absolute top-0.5 right-0.5 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px]"
+                        onClick={startCamera}
+                        size="sm"
+                        className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl gap-1"
                       >
-                        ×
-                      </button>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Reintentar Acceso a Cámara</span>
+                      </Button>
                     </div>
-                  ))}
+                  ) : (
+                    <>
+                      {/* Visor de Video en Vivo */}
+                      <div className="relative w-full h-56 bg-slate-900 rounded-xl overflow-hidden border border-slate-700/60 flex items-center justify-center">
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="w-full h-full object-cover"
+                        />
+
+                        {/* Retícula de Enfoque */}
+                        <div className="absolute inset-4 border border-white/20 rounded-xl pointer-events-none flex items-center justify-center">
+                          <div className="w-8 h-8 border-t-2 border-l-2 border-emerald-400 absolute top-0 left-0" />
+                          <div className="w-8 h-8 border-t-2 border-r-2 border-emerald-400 absolute top-0 right-0" />
+                          <div className="w-8 h-8 border-b-2 border-l-2 border-emerald-400 absolute bottom-0 left-0" />
+                          <div className="w-8 h-8 border-b-2 border-r-2 border-emerald-400 absolute bottom-0 right-0" />
+                          <span className="text-[10px] text-white/60 font-mono tracking-wider uppercase font-bold">Enfoque Automático</span>
+                        </div>
+                      </div>
+
+                      {/* Botón Obturador */}
+                      <div className="flex items-center justify-center pt-1">
+                        <button
+                          type="button"
+                          onClick={capturePhoto}
+                          className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition shadow-lg active:scale-95 cursor-pointer"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span>Capturar Foto Ahora</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Lista de Fotos de Evidencia Adjuntas (Subidas o Capturadas) */}
+              {uploadedFiles.length > 0 && (
+                <div className="pt-1">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold text-slate-600">Fotos adjuntas ({uploadedFiles.length}):</span>
+                    <span className="text-[10px] text-emerald-700 font-bold">Listas para enviar</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    {uploadedFiles.map((f, i) => (
+                      <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0 group shadow-2xs">
+                        <img src={f.preview} alt="Evidencia" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeFile(i)}
+                          title="Eliminar foto"
+                          className="absolute top-1 right-1 w-5 h-5 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-md hover:bg-rose-700 cursor-pointer"
+                        >
+                          ×
+                        </button>
+                        {f.isCameraCapture && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/80 text-[8px] text-white font-bold text-center py-0.2">
+                            Cámara
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            <Button type="submit" className="w-full font-black py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
-              Enviar Reporte
+            <Button type="submit" className="w-full font-black py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl cursor-pointer shadow-md mt-2">
+              Enviar Reporte de Incidencia
             </Button>
           </form>
         </DialogContent>
@@ -434,7 +640,7 @@ export const IncidentsModule = () => {
               <img src={selectedImage} alt="Evidencia en grande" className="w-full h-auto rounded-2xl max-h-[80vh] object-contain" />
               <button
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-3 right-3 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center"
+                className="absolute top-3 right-3 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center text-white cursor-pointer"
               >
                 ✕
               </button>

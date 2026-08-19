@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { 
   CreditCard, 
@@ -209,17 +208,14 @@ export const CulqiPaymentModal = ({
         <DialogHeader className="border-b border-slate-100 pb-3 space-y-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-base shadow-sm">
+              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm">
                 C
               </div>
               <div>
-                <DialogTitle className="text-base font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-                  <span>Culqi Checkout v4</span>
-                  <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                    TEST MODE
-                  </span>
+                <DialogTitle className="text-base font-black text-slate-900 tracking-tight">
+                  Culqi Checkout v4
                 </DialogTitle>
-                <p className="text-[11px] text-slate-500">Pasarela oficial certificada PCI-DSS Nivel 1 • Cifrado TLS 1.3</p>
+                <p className="text-[11px] text-slate-500">Pasarela oficial certificada PCI-DSS Nivel 1 • TLS 1.3</p>
               </div>
             </div>
 
@@ -252,8 +248,8 @@ export const CulqiPaymentModal = ({
                   <span className="text-[10px] text-emerald-400 font-bold block uppercase tracking-wider">SMART PARK PERÚ S.A.C.</span>
                   <span className="text-[9px] text-slate-400">RUC: 20608912341 • BOLETA {paymentSuccess.invoiceNumber}</span>
                 </div>
-                <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                  PAGADO
+                <span className="text-[10px] font-bold text-emerald-400 font-mono uppercase">
+                  ✓ PAGADO
                 </span>
               </div>
 

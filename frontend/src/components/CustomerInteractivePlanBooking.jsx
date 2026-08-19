@@ -19,7 +19,6 @@ import {
   Check
 } from 'lucide-react';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
 
 const DEFAULT_FALLBACK_ELEMENTS = [

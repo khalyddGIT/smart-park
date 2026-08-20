@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getAccessToken, listMyReservations, createReservationApi, cancelReservationApi } from '../services/api';
 
 const STORAGE_KEY = 'smart_park_unified_establishments_v2';
 const RESERVATIONS_STORAGE_KEY_BASE = 'smart_park_unified_reservations_v2';
@@ -390,6 +391,22 @@ export const EstablishmentProvider = ({ children }) => {
     } catch (e) {}
   }, [reservations]);
 
+  // Sincronización Supabase: si hay token, cargar reservas persistentes
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+    listMyReservations().then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        // Mapear backend -> frontend shape
+        const mapped = data.map(r => ({
+          id: r.id, code: r.code, token: r.qr_code || r.code, parkingId: String(r.parking_id), parking: `Parking #${r.parking_id}`, slot: String(r.slot_id), plate: r.license_plate, cost: r.total_cost, hours: 2, ratePerHour: 5, status: r.status?.toUpperCase() || 'SCHEDULED', startTime: r.start_time, expiresAt: r.end_time, createdAt: r.start_time
+        }));
+        setReservations(mapped);
+        try { localStorage.setItem(getReservationsKey(), JSON.stringify(mapped)); } catch {}
+      }
+    }).catch(() => {});
+  }, []);
+
   // Guardar reservaciones en localStorage per-user
   const saveReservations = (newReservations) => {
     setReservations(newReservations);
@@ -586,11 +603,10 @@ export const EstablishmentProvider = ({ children }) => {
     });
   };
 
-  // Crear nueva reserva unificada
+  // Crear nueva reserva unificada - intenta Supabase backend si hay token, fallback localStorage per-user
   const createReservation = (bookingData) => {
     const code = bookingData.code || `RSV-${Math.floor(1000 + Math.random() * 9000)}`;
     const token = bookingData.token || `SPK-AYC${code.replace('RSV-', '')}-7B2F9A`;
-    
     const newReservation = {
       id: Date.now(),
       code,
@@ -609,12 +625,19 @@ export const EstablishmentProvider = ({ children }) => {
       expiresAt: bookingData.expiresAt || new Date(Date.now() + (Number(bookingData.hours || 2)) * 60 * 60 * 1000).toISOString(),
       createdAt: new Date().toISOString()
     };
-
-    // Ocupar cajón en el plano
     occupySlot(newReservation.parkingId, newReservation.slot, newReservation.plate);
-
     const updated = [newReservation, ...reservations];
     saveReservations(updated);
+    // Intentar persistir en Supabase si hay sesión backend
+    try {
+      const t = getAccessToken();
+      if (t) {
+        // Mapear a backend: parking_id numérico (si es EST-* usar 1), slot_id 1 por defecto
+        const parkingIdNum = isNaN(Number(bookingData.parkingId)) ? 1 : Number(bookingData.parkingId);
+        const slotIdNum = 1;
+        createReservationApi({ parking_id: parkingIdNum, slot_id: slotIdNum, license_plate: newReservation.plate, start_time: newReservation.startTime, end_time: newReservation.expiresAt }).catch(()=>{});
+      }
+    } catch {}
     return newReservation;
   };
 
@@ -635,6 +658,15 @@ export const EstablishmentProvider = ({ children }) => {
 
   const cancelReservation = (code) => {
     updateReservationStatus(code, 'CANCELLED');
+    try {
+      const t = getAccessToken();
+      if (t) {
+        const target = reservations.find(r => r.code === code);
+        if (target && typeof target.id === 'number' && target.id < 1000000000000) {
+          cancelReservationApi(target.id).catch(()=>{});
+        }
+      }
+    } catch {}
   };
 
   const completeReservation = (code) => {

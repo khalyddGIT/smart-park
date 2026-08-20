@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { listVehicles, createVehicle as apiCreateVehicle, deleteVehicleApi, getAccessToken } from '../services/api';
 
 // Función para consultar la API de Car Imagery y obtener foto real del modelo
 export const fetchCarPhoto = async (brand, model, year = '2022') => {
@@ -70,8 +71,25 @@ export const VehiclesModule = () => {
     return INITIAL_VEHICLES;
   });
 
-  // Recargar vehículos al cambiar de usuario
+  // Sincronización Supabase: si hay token, traer del backend (persistente cross-device)
   useEffect(() => {
+    const token = getAccessToken();
+    if (token) {
+      listVehicles().then(data => {
+        if (Array.isArray(data)) {
+          // Mapear backend -> frontend
+          const mapped = data.map(v => ({ id: v.id, license_plate: v.license_plate, vehicle_type: v.vehicle_type, brand: v.brand, model: v.model, color: v.color, isDefault: false, imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800' }));
+          setVehicles(mapped);
+          try { localStorage.setItem(getVehiclesKey(), JSON.stringify(mapped)); } catch {}
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  // Recargar vehículos al cambiar de usuario (fallback localStorage)
+  useEffect(() => {
+    const token = getAccessToken();
+    if (token) return; // si hay backend, no usar polling localStorage
     const loadForUser = () => {
       try {
         const key = getVehiclesKey();
@@ -100,7 +118,6 @@ export const VehiclesModule = () => {
   useEffect(() => {
     try {
       const key = getVehiclesKey();
-      // No guardar para guest
       if (!key.endsWith('_guest')) {
         localStorage.setItem(key, JSON.stringify(vehicles));
       }
@@ -177,32 +194,33 @@ export const VehiclesModule = () => {
     }
   };
 
-  const handleSaveCreate = (e) => {
+  const handleSaveCreate = async (e) => {
     e.preventDefault();
     if (!formData.license_plate) return;
-
     let img = formData.imageUrl;
-    if (!img) {
-      img = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800';
+    if (!img) img = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800';
+    const plate = formData.license_plate.toUpperCase().trim();
+    // Intentar backend primero (cross-device)
+    const token = getAccessToken();
+    if (token) {
+      try {
+        const created = await apiCreateVehicle({ license_plate: plate, vehicle_type: formData.vehicle_type, brand: formData.brand.trim(), model: formData.model.trim(), color: formData.color.trim() || 'Blanco' });
+        const newObj = { id: created.id, license_plate: created.license_plate, vehicle_type: created.vehicle_type, brand: created.brand, model: created.model, color: created.color, isDefault: vehicles.length === 0, imageUrl: img };
+        setVehicles(prev => [newObj, ...prev]);
+        setShowAddModal(false);
+        showToast(`✓ Vehículo ${newObj.license_plate} registrado en Supabase (persistente).`);
+        return;
+      } catch (err) {
+        const msg = err?.response?.data?.detail || err.message;
+        if (msg?.includes('ya se encuentra')) { showToast('Placa ya registrada en sistema'); return; }
+        console.warn('Fallback localStorage', msg);
+      }
     }
-
-    const newObj = {
-      id: Date.now(),
-      license_plate: formData.license_plate.toUpperCase().trim(),
-      vehicle_type: formData.vehicle_type,
-      brand: formData.brand.trim(),
-      model: formData.model.trim(),
-      year: formData.year || '2023',
-      color: formData.color.trim() || 'Blanco',
-      isDefault: vehicles.length === 0,
-      imageUrl: img,
-      user_id: 1
-    };
-
+    const newObj = { id: Date.now(), license_plate: plate, vehicle_type: formData.vehicle_type, brand: formData.brand.trim(), model: formData.model.trim(), year: formData.year || '2023', color: formData.color.trim() || 'Blanco', isDefault: vehicles.length === 0, imageUrl: img, user_id: 1 };
     const updated = [newObj, ...vehicles];
     setVehicles(updated);
     setShowAddModal(false);
-    showToast(`✓ Vehículo ${newObj.license_plate} registrado y habilitado en ANPR.`);
+    showToast(`✓ Vehículo ${newObj.license_plate} registrado (local).`);
   };
 
   const handleSaveEdit = (e) => {
@@ -225,8 +243,12 @@ export const VehiclesModule = () => {
     showToast(`✓ Vehículo ${formData.license_plate} actualizado correctamente.`);
   };
 
-  const handleDelete = (id, plate) => {
+  const handleDelete = async (id, plate) => {
     if (!window.confirm(`¿Deseas eliminar el vehículo ${plate}?`)) return;
+    const token = getAccessToken();
+    if (token && typeof id === 'number' && id < 1000000000000) {
+      try { await deleteVehicleApi(id); } catch (e) { console.warn('Delete backend fail', e.response?.data); }
+    }
     const updated = vehicles.filter(v => v.id !== id);
     setVehicles(updated);
     showToast(`Vehículo ${plate} eliminado.`);

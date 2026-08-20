@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { setAccessToken, getAccessToken, register as apiRegister, login as apiLogin, googleAuth as apiGoogleAuth } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -33,109 +34,77 @@ export const AuthProvider = ({ children }) => {
     if (newRole === 'user') setPinVerified(false);
   };
 
-  // Autenticación con Google Real (JWT ID Token)
+  // Autenticación con Google Real (JWT ID Token) - persistente Supabase
   const loginWithGoogle = async (credentialResponse) => {
     try {
       const idToken = credentialResponse.credential;
-      
-      // Decodificación client-side del token de Google para UI inmediata
       const base64Url = idToken.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
       const profile = JSON.parse(jsonPayload);
-
-      const googleUser = {
-        id: profile.sub || Date.now(),
-        name: profile.name || profile.email.split('@')[0],
-        email: profile.email,
-        avatar: profile.picture || null,
-        role: 'user',
-        isGoogleAuth: true
-      };
-
-      // Sincronizar con backend FastAPI si está disponible
+      // Intentar backend primero (persistente)
       try {
-        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
-        await fetch(`${apiBase}/api/v1/auth/google`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            token: idToken,
-            email: profile.email,
-            name: profile.name,
-            picture: profile.picture
-          })
-        });
-      } catch (err) {
-        console.warn('Backend offline o sin verificación remota, usando sesión local');
-      }
-
-      setUser(googleUser);
-      setRole('user');
-      return googleUser;
-    } catch (e) {
-      console.error('Error al procesar Google Auth:', e);
-      throw e;
-    }
+        const data = await apiGoogleAuth({ token: idToken, email: profile.email, name: profile.name, picture: profile.picture });
+        if (data?.access_token && data?.user) {
+          setAccessToken(data.access_token);
+          const u = { id: data.user.id, name: data.user.full_name || profile.name, email: data.user.email, avatar: profile.picture || null, role: data.user.role || 'user', isGoogleAuth: true };
+          setUser(u); setRole(u.role); return u;
+        }
+      } catch (err) { console.warn('Google backend no disponible, fallback local', err?.response?.data || err.message); }
+      const googleUser = { id: profile.sub || Date.now(), name: profile.name || profile.email.split('@')[0], email: profile.email, avatar: profile.picture || null, role: 'user', isGoogleAuth: true };
+      setUser(googleUser); setRole('user'); return googleUser;
+    } catch (e) { console.error('Error al procesar Google Auth:', e); throw e; }
   };
 
-  // Login tradicional con Correo
-  const loginWithEmail = (email, password, explicitRole = null) => {
+  // Login tradicional con Correo - intenta backend Supabase, fallback local
+  const loginWithEmail = async (email, password, explicitRole = null) => {
+    // Intentar backend primero para persistencia real
+    try {
+      const data = await apiLogin({ email, password, full_name: email.split('@')[0], phone: '' });
+      if (data?.access_token && data?.user) {
+        setAccessToken(data.access_token);
+        const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, avatar: null, role: data.user.role || explicitRole || 'user', isGoogleAuth: false };
+        setUser(u); setRole(u.role); if (u.role === 'local') setPinVerified(true); return u;
+      }
+    } catch (err) {
+      // Si backend responde 401, propagar error real
+      if (err?.response?.status === 401) throw new Error(err.response.data?.detail || 'Credenciales incorrectas');
+      console.warn('Login backend no disponible, fallback local', err.message);
+    }
     let userRole = explicitRole;
     let userName = email.split('@')[0].replace('.', ' ');
     const lower = email.toLowerCase().trim();
-
     if (!userRole) {
-      // Verificar si es un admin de cochera aprobado por el Administrador del Sistema
       try {
         const approvedAdmins = JSON.parse(localStorage.getItem('smart_park_approved_admins_v1') || '[]');
         const matched = approvedAdmins.find(a => a.email.toLowerCase() === lower);
-        if (matched) {
-          userRole = 'local';
-          userName = matched.name || userName;
-        }
+        if (matched) { userRole = 'local'; userName = matched.name || userName; }
       } catch (e) {}
-
       if (!userRole) {
-        if (lower.includes('admin@') || lower.includes('superadmin')) {
-          userRole = 'platform';
-        } else if (lower.includes('operador') || lower.includes('cochera') || lower.includes('local')) {
-          userRole = 'local';
-        } else {
-          userRole = 'user';
-        }
+        if (lower.includes('admin@') || lower.includes('superadmin')) userRole = 'platform';
+        else if (lower.includes('operador') || lower.includes('cochera') || lower.includes('local')) userRole = 'local';
+        else userRole = 'user';
       }
     }
-
-    const loggedUser = {
-      id: Date.now(),
-      name: userName,
-      email: email,
-      avatar: null,
-      role: userRole,
-      isGoogleAuth: false
-    };
-    setUser(loggedUser);
-    setRole(userRole);
-    if (userRole === 'local') setPinVerified(true);
-    return loggedUser;
+    const loggedUser = { id: Date.now(), name: userName, email, avatar: null, role: userRole, isGoogleAuth: false };
+    setUser(loggedUser); setRole(userRole); if (userRole === 'local') setPinVerified(true); return loggedUser;
   };
 
-  // Registro de Conductor
-  const registerUser = (userData) => {
-    const newUser = {
-      id: Date.now(),
-      name: userData.name,
-      email: userData.email,
-      phone: userData.phone,
-      plate: userData.plate,
-      avatar: null,
-      role: 'user',
-      isGoogleAuth: false
-    };
-    setUser(newUser);
-    setRole('user');
-    return newUser;
+  // Registro de Conductor - persistente Supabase
+  const registerUser = async (userData) => {
+    try {
+      const data = await apiRegister({ full_name: userData.name, email: userData.email, phone: userData.phone || '', password: userData.password || userData.plate || 'password123', role: 'user' });
+      if (data?.access_token && data?.user) {
+        setAccessToken(data.access_token);
+        const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, phone: data.user.phone, avatar: null, role: data.user.role || 'user', isGoogleAuth: false };
+        setUser(u); setRole('user'); return u;
+      }
+    } catch (err) {
+      if (err?.response?.status === 400) throw new Error(err.response.data?.detail || 'Correo ya registrado');
+      console.warn('Register backend no disponible, fallback local', err.message);
+    }
+    const newUser = { id: Date.now(), name: userData.name, email: userData.email, phone: userData.phone, plate: userData.plate, avatar: null, role: 'user', isGoogleAuth: false };
+    setUser(newUser); setRole('user'); return newUser;
   };
 
   // Registro de Administrador de Establecimiento / Cochera
@@ -163,6 +132,7 @@ export const AuthProvider = ({ children }) => {
     setRole('user');
     setPinVerified(false);
     localStorage.removeItem('smart_park_user_session');
+    setAccessToken(null);
   };
 
   return (

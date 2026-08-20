@@ -476,42 +476,43 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           ========================================================================= */}
       {activeViewMode === 'list' && (
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                <Building2 className="w-7 h-7 text-emerald-600" />
-                <span>Gestión de Sedes & Establecimientos</span>
+          {/* Header - mejorado responsive y jerarquía */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5 leading-tight">
+                <span className="p-2 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20 shrink-0">
+                  <Building2 className="w-5 h-5" />
+                </span>
+                <span className="truncate">Gestión de Sedes & Establecimientos</span>
               </h1>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 mt-1.5 max-w-2xl">
                 Edita imágenes, coordenadas GPS en el mapa, tarifas, redes sociales y planos.
               </p>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={handleOpenAdd}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs gap-2 shadow-lg shadow-emerald-600/20 rounded-xl"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Registrar Nueva Sede / Nivel</span>
-              </Button>
-            </div>
+            <Button
+              onClick={handleOpenAdd}
+              className="w-full lg:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs gap-2 shadow-lg shadow-emerald-600/20 rounded-xl h-10 px-5 shrink-0 whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>Registrar Nueva Sede / Nivel</span>
+            </Button>
           </div>
 
-          {/* Barra de Búsqueda & Métricas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-            <div className="md:col-span-3 relative">
-              <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+          {/* Barra de Búsqueda & Métricas - reparada alineación */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+            <div className="flex-1 relative">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <Input
                 type="text"
                 placeholder="Buscar por nombre de cochera, dirección o ciudad..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-10 border-slate-200 bg-white"
+                className="pl-10 h-10 border-slate-200 bg-white rounded-xl text-sm focus-visible:ring-emerald-500"
               />
             </div>
-            <div className="bg-slate-100 p-2.5 rounded-xl text-center text-xs font-bold text-slate-700 border border-slate-200">
-              Total Sedes: <span className="font-mono text-emerald-700 font-extrabold text-sm">{establishments.length}</span>
+            <div className="bg-white p-2.5 px-4 rounded-xl text-center text-xs font-bold text-slate-700 border border-slate-200 shadow-xs flex items-center justify-center gap-2 shrink-0">
+              <span className="text-slate-500">Total Sedes:</span>
+              <span className="font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg font-extrabold text-sm min-w-[28px]">{establishments.length}</span>
             </div>
           </div>
 
@@ -525,30 +526,31 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               return (
                 <Card key={est.id} className="border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden rounded-3xl bg-white flex flex-col justify-between group">
                   <div>
-                    {/* Imagen de Portada del Local */}
-                    <div className="h-44 relative bg-slate-100 overflow-hidden">
+                    {/* Imagen de Portada del Local - badges mejor espaciados */}
+                    <div className="h-48 relative bg-slate-100 overflow-hidden">
                       <img 
                         src={est.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
                         alt={est.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
+                        loading="lazy"
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 via-transparent to-transparent pointer-events-none" />
                       
-                      <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-[10px] font-bold font-mono border border-slate-700">
+                      <div className="absolute top-3 left-3 bg-slate-900/85 backdrop-blur-md text-white px-2.5 py-1.5 rounded-xl text-[10px] font-bold font-mono border border-white/20 shadow-md">
                         {est.id}
                       </div>
 
-                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md text-emerald-700 px-3 py-1 rounded-xl text-xs font-black shadow-sm border border-slate-200 font-mono">
+                      <div className="absolute top-3 right-3 bg-white text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-black shadow-md border border-slate-200 font-mono">
                         S/ {Number(est.rate).toFixed(2)}/h
                       </div>
 
-                      <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span>{freeSlots} Libres de {totalSlots}</span>
-                      </div>
-
-                      <div className="absolute bottom-3 right-3">
-                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-xl backdrop-blur-md ${
-                          est.status === 'Operativo' ? 'bg-emerald-600/90 text-white' : 'bg-amber-600/90 text-white'
+                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+                        <span className="bg-slate-900/90 backdrop-blur-md text-emerald-400 px-3 py-1.5 rounded-xl text-xs font-bold font-mono border border-emerald-500/30 flex items-center gap-1.5 shadow-md">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                          <span>{freeSlots} Libres de {totalSlots}</span>
+                        </span>
+                        <span className={`text-[10px] font-black px-2.5 py-1.5 rounded-xl shadow-md border shrink-0 ${
+                          est.status === 'Operativo' ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-amber-500 text-white border-amber-600'
                         }`}>
                           ● {est.status}
                         </span>
@@ -565,42 +567,44 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         </p>
                       </div>
 
-                      {/* Coordenadas & Enlace de Mapa */}
-                      <div className="flex items-center justify-between text-[11px] bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-mono">
-                        <span className="text-slate-500 flex items-center gap-1">
-                          <Navigation className="w-3 h-3 text-blue-500" />
-                          <span>{est.latitude ? `${Number(est.latitude).toFixed(4)}, ${Number(est.longitude).toFixed(4)}` : 'Sin GPS'}</span>
+                      {/* Coordenadas & Enlace de Mapa - reparado */}
+                      <div className={`flex items-center justify-between gap-2 text-[11px] p-2.5 rounded-xl border font-mono ${est.latitude ? 'bg-blue-50/50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
+                        <span className={`flex items-center gap-1.5 truncate ${est.latitude ? 'text-slate-700' : 'text-slate-400'}`}>
+                          <Navigation className={`w-3.5 h-3.5 shrink-0 ${est.latitude ? 'text-blue-600' : 'text-slate-400'}`} />
+                          <span className="truncate">{est.latitude ? `${Number(est.latitude).toFixed(4)}, ${Number(est.longitude).toFixed(4)}` : 'Sin GPS configurado'}</span>
                         </span>
-                        {est.latitude && (
+                        {est.latitude ? (
                           <a 
                             href={`https://www.google.com/maps/dir/?api=1&destination=${est.latitude},${est.longitude}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-0.5"
+                            className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 shrink-0 bg-white px-2 py-1 rounded-lg border border-emerald-200 hover:bg-emerald-50 transition whitespace-nowrap"
                           >
-                            <span>Google Maps</span>
+                            <span>Maps</span>
                             <ExternalLink className="w-3 h-3" />
                           </a>
+                        ) : (
+                          <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg font-bold whitespace-nowrap">Configurar</span>
                         )}
                       </div>
 
                       {/* Contacto & WhatsApp */}
                       {(est.phone || est.whatsapp) && (
-                        <div className="flex items-center space-x-2 text-xs">
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
                           {est.whatsapp && (
                             <a
                               href={`https://wa.me/${est.whatsapp.replace(/\D/g, '')}?text=Hola,%20solicito%20informaci%C3%B3n%20sobre%20el%20estacionamiento%20${encodeURIComponent(est.name)}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px] hover:bg-emerald-100 transition"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-[11px] hover:bg-emerald-700 transition shadow-sm"
                             >
-                              <MessageSquare className="w-3 h-3 text-emerald-600" />
+                              <MessageSquare className="w-3 h-3" />
                               <span>WhatsApp</span>
                             </a>
                           )}
                           {est.phone && (
-                            <span className="text-slate-600 text-[11px] flex items-center gap-1 font-mono">
-                              <Phone className="w-3 h-3 text-slate-400" />
+                            <span className="inline-flex items-center gap-1.5 text-slate-700 text-[11px] font-mono bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl">
+                              <Phone className="w-3 h-3 text-slate-500 shrink-0" />
                               <span>{est.phone}</span>
                             </span>
                           )}
@@ -609,43 +613,43 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     </div>
                   </div>
 
-                  {/* Acciones CRUD & Planos */}
-                  <div className="p-5 pt-0 space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
+                  {/* Acciones CRUD & Planos - reparado: evita solapamiento y corte de texto */}
+                  <div className="p-4 pt-0 space-y-2.5">
+                    <div className="grid grid-cols-2 gap-2.5">
                       <Button
                         onClick={() => handleOpenPlan(est, 'viewer_2d')}
                         variant="outline"
                         size="sm"
-                        className="font-bold text-xs gap-1.5 text-slate-700 hover:bg-slate-100 rounded-xl"
+                        className="font-bold text-[11px] sm:text-xs gap-1.5 text-slate-700 hover:bg-slate-50 border-slate-200 rounded-xl h-9 px-2 whitespace-nowrap"
                       >
-                        <Eye className="w-3.5 h-3.5 text-teal-600" />
-                        <span>Ver Plano</span>
+                        <Eye className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                        <span className="truncate">Ver Plano</span>
                       </Button>
                       <Button
                         onClick={() => handleOpenPlan(est, 'editor_cad')}
                         size="sm"
-                        className="font-bold text-xs bg-slate-900 hover:bg-slate-800 text-white gap-1.5 shadow-sm rounded-xl"
+                        className="font-bold text-[11px] sm:text-xs bg-slate-900 hover:bg-slate-800 text-white gap-1.5 shadow-sm rounded-xl h-9 px-2 whitespace-nowrap"
                       >
-                        <Grid className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Editar CAD</span>
+                        <Grid className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span className="truncate">Editar CAD</span>
                       </Button>
                     </div>
 
-                    <div className="flex items-center space-x-2 pt-1">
+                    <div className="flex gap-2">
                       <Button
                         onClick={() => handleOpenEdit(est)}
                         variant="outline"
                         size="sm"
-                        className="flex-1 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-xs font-bold gap-1.5 rounded-xl h-9"
+                        className="flex-1 min-w-0 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-xs font-bold gap-1.5 rounded-xl h-9 px-3"
                       >
-                        <Edit3 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Editar Ficha Completa</span>
+                        <Edit3 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="truncate">Editar Ficha Completa</span>
                       </Button>
                       <Button
                         onClick={() => handleDelete(est.id, est.name)}
                         variant="ghost"
                         size="sm"
-                        className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 text-xs font-bold p-2 rounded-xl"
+                        className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-xl h-9 w-9 p-0 shrink-0 border border-transparent hover:border-rose-200"
                         title="Eliminar Sede"
                       >
                         <Trash2 className="w-4 h-4" />

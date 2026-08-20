@@ -330,33 +330,30 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
             )}
           </div>
 
-          {/* Botón de Perfil de Usuario Directo Limpio */}
-          <div className="flex items-center space-x-1 sm:space-x-2 pl-1 sm:pl-2 border-l border-slate-200">
+          {/* Perfil - reparado: evita corte de texto y solapamiento */}
+          <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-3 border-l border-slate-200 shrink-0">
             <button
-              onClick={() => {
-                if (onNavigateProfile) onNavigateProfile();
-              }}
+              onClick={() => { if (onNavigateProfile) onNavigateProfile(); }}
               title="Abrir Mi Perfil"
-              className="flex items-center space-x-1.5 p-1 sm:p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer group bg-slate-50 border border-slate-200"
+              className="flex items-center gap-2 py-1.5 px-2 sm:px-2.5 rounded-xl hover:bg-slate-50 transition cursor-pointer group bg-white border border-slate-200 shadow-xs"
             >
-              <div className="w-6 h-6 rounded-lg bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shrink-0 shadow-2xs">
+              <div className="w-7 h-7 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shrink-0 shadow-sm ring-1 ring-slate-200">
                 <User className="w-3.5 h-3.5" />
               </div>
-              <div className="hidden lg:block text-left pr-1">
-                <span className="text-xs font-black text-slate-800 block leading-tight tracking-tight">
+              <div className="hidden sm:block text-left min-w-0 pr-1">
+                <span className="text-xs font-black text-slate-900 block leading-tight tracking-tight truncate max-w-[90px]">
                   {user?.name?.split(' ')[0] || 'Usuario'}
                 </span>
-                <span className="text-[9px] font-mono text-emerald-700 font-bold block uppercase leading-none">
+                <span className="text-[10px] font-bold text-emerald-700 block uppercase leading-none tracking-wider">
                   {role}
                 </span>
               </div>
+              <span className="sm:hidden text-xs font-black text-slate-900 truncate max-w-[60px]">{user?.name?.split(' ')[0] || 'Yo'}</span>
             </button>
-
-            {/* Botón Cerrar Sesión */}
             <button
               onClick={logout}
               title="Cerrar Sesión"
-              className="p-1.5 sm:p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-transparent hover:border-rose-200 shrink-0"
             >
               <LogOut className="w-4 h-4" />
             </button>

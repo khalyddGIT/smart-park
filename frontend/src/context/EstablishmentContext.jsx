@@ -392,20 +392,19 @@ export const EstablishmentProvider = ({ children }) => {
     } catch (e) {}
   }, [reservations]);
 
-  // Sincronización Supabase: si hay token, cargar reservas y parkings persistentes
+  // Sincronización Supabase: parkings siempre (global), reservas solo con token
   useEffect(() => {
-    const token = getAccessToken();
-    if (!token) return;
-    // Parkings globales Supabase (compartidos)
+    // Parkings globales Supabase (compartidos) - sin token también para que se vean en Gestión de Sedes
     api.get('/parkings').then(res => {
       if (Array.isArray(res.data) && res.data.length > 0) {
         const mappedParkings = res.data.map(p => ({
-          id: String(p.id), name: p.name, address: p.address, city: p.city, latitude: p.latitude, longitude: p.longitude, rate: p.hourly_rate, status: p.status === 'active' ? 'Operativo' : p.status, image: p.image_url, totalCapacity: p.total_capacity, elements: [] // se cargará floor-plan aparte
+          id: String(p.id), name: p.name, address: p.address, city: p.city, latitude: p.latitude, longitude: p.longitude, rate: p.hourly_rate, status: p.status === 'active' ? 'Operativo' : p.status, image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', totalSlots: p.total_capacity, available_slots: p.available_slots, elements: Array.from({length: p.total_capacity || 0}, (_,i)=>({id: i+10, type:'slot', code: `P-${String(i+1).padStart(2,'0')}`, slotType:'auto', x:0,y:0,w:56,h:96, status: i < (p.available_slots||0) ? 'free' : 'occupied'}))
         }));
-        // Merge con mock solo si Supabase tiene datos reales (Ayacucho)
-        if (mappedParkings.length >= 3) setEstablishments(mappedParkings);
+        if (mappedParkings.length >= 2) setEstablishments(mappedParkings);
       }
     }).catch(()=>{});
+    const token = getAccessToken();
+    if (!token) return;
     listMyReservations().then(data => {
       if (Array.isArray(data)) {
         const mapped = data.map(r => ({

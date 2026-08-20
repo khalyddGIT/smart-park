@@ -5,8 +5,7 @@ from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import Review, Parking, User
 from app.schemas.schemas import ReviewCreate, ReviewReply, ReviewResponse
-
-router = APIRouter(prefix="/reviews", tags=["Reseñas, Calificaciones & Muro Social"])
+from app.core.security import get_current_user
 
 @router.get("", response_model=List[ReviewResponse])
 async def list_reviews(
@@ -27,9 +26,8 @@ async def list_reviews(
 @router.post("", response_model=ReviewResponse, status_code=status.HTTP_201_CREATED)
 async def create_review(
     review_in: ReviewCreate,
-    user_id: int = 1,
-    user_name: str = "Usuario Conductor Demo",
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     # Verificar parking
     p_res = await db.execute(select(Parking).where(Parking.id == review_in.parking_id))
@@ -41,8 +39,8 @@ async def create_review(
 
     db_review = Review(
         parking_id=review_in.parking_id,
-        user_id=user_id,
-        user_name=user_name,
+        user_id=current_user.id,
+        user_name=current_user.full_name,
         rating=review_in.rating,
         comment=review_in.comment
     )

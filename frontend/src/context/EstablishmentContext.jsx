@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getAccessToken, listMyReservations, createReservationApi, cancelReservationApi } from '../services/api';
+import api from '../services/api';
 
 const STORAGE_KEY = 'smart_park_unified_establishments_v2';
 const RESERVATIONS_STORAGE_KEY_BASE = 'smart_park_unified_reservations_v2';
@@ -391,13 +392,22 @@ export const EstablishmentProvider = ({ children }) => {
     } catch (e) {}
   }, [reservations]);
 
-  // Sincronización Supabase: si hay token, cargar reservas persistentes
+  // Sincronización Supabase: si hay token, cargar reservas y parkings persistentes
   useEffect(() => {
     const token = getAccessToken();
     if (!token) return;
+    // Parkings globales Supabase (compartidos)
+    api.get('/parkings').then(res => {
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        const mappedParkings = res.data.map(p => ({
+          id: String(p.id), name: p.name, address: p.address, city: p.city, latitude: p.latitude, longitude: p.longitude, rate: p.hourly_rate, status: p.status === 'active' ? 'Operativo' : p.status, image: p.image_url, totalCapacity: p.total_capacity, elements: [] // se cargará floor-plan aparte
+        }));
+        // Merge con mock solo si Supabase tiene datos reales (Ayacucho)
+        if (mappedParkings.length >= 3) setEstablishments(mappedParkings);
+      }
+    }).catch(()=>{});
     listMyReservations().then(data => {
-      if (Array.isArray(data) && data.length > 0) {
-        // Mapear backend -> frontend shape
+      if (Array.isArray(data)) {
         const mapped = data.map(r => ({
           id: r.id, code: r.code, token: r.qr_code || r.code, parkingId: String(r.parking_id), parking: `Parking #${r.parking_id}`, slot: String(r.slot_id), plate: r.license_plate, cost: r.total_cost, hours: 2, ratePerHour: 5, status: r.status?.toUpperCase() || 'SCHEDULED', startTime: r.start_time, expiresAt: r.end_time, createdAt: r.start_time
         }));

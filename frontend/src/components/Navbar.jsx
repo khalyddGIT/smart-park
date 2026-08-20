@@ -139,10 +139,10 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
             </button>
           </div>
         ) : (
-          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             
             {/* Selector de Rol RBAC */}
-            <div className="flex items-center space-x-1 sm:space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-3 py-1.5 shadow-xs max-w-[120px] sm:max-w-[160px] md:max-w-none">
+            <div className="hidden sm:flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 shadow-xs max-w-[160px]">
               <Shield className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               <select
                 value={role}
@@ -158,21 +158,21 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
           {/* =========================================================================
               CENTRO DE NOTIFICACIONES INTERACTIVO POR ROL
               ========================================================================= */}
-          <div className="relative" ref={notifRef}>
+          <div className="relative shrink-0" ref={notifRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
               aria-label="Notificaciones del Sistema" 
               title="Ver notificaciones del sistema"
-              className={`relative p-2 rounded-xl transition shadow-xs cursor-pointer border ${
+              className={`relative p-2 sm:p-2.5 rounded-xl transition shadow-xs cursor-pointer border flex items-center justify-center shrink-0 ${
                 showNotifications 
-                  ? 'bg-slate-900 text-white border-slate-900' 
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
+                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
               }`}
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-[18px] h-[18px] shrink-0" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] bg-emerald-500 text-white font-mono font-bold text-[9px] rounded-full flex items-center justify-center px-0.5 shadow-xs animate-pulse border-2 border-white">
-                  {unreadCount}
+                <span className="absolute -top-1.5 -right-1.5 min-w-[19px] h-[19px] bg-emerald-500 text-white font-mono font-bold text-[10px] rounded-full flex items-center justify-center px-1 shadow-md ring-2 ring-white leading-none">
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </button>
@@ -180,11 +180,11 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
             {showNotifications && (
               <>
                 <div 
-                  className="fixed inset-0 bg-black/40 backdrop-blur-2xs z-40 sm:hidden"
+                  className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 sm:hidden"
                   onClick={() => setShowNotifications(false)}
                 />
 
-                <div className="fixed inset-x-3 top-14 max-w-sm mx-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2.5 sm:w-96 sm:max-w-none bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="fixed inset-x-3 top-[64px] max-w-sm mx-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2.5 sm:w-96 sm:max-w-none bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 max-h-[80vh] flex flex-col">
                   
                   <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
                     <div className="flex items-center space-x-2">

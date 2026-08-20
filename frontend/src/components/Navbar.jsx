@@ -337,7 +337,10 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
               title="Abrir Mi Perfil"
               className="flex items-center gap-2 py-1.5 px-2 sm:px-2.5 rounded-xl hover:bg-slate-50 transition cursor-pointer group bg-white border border-slate-200 shadow-xs"
             >
-              <div className="w-7 h-7 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shrink-0 shadow-sm ring-1 ring-slate-200">
+              {user?.avatar ? (
+                <img src={user.avatar} alt={user.name} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-7 h-7 rounded-xl object-cover shrink-0 shadow-sm ring-1 ring-slate-200 bg-white" onError={(e)=>{e.currentTarget.style.display='none'; if(e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display='flex';}} />
+              ) : null}
+              <div className={`w-7 h-7 rounded-xl bg-slate-900 text-emerald-400 items-center justify-center font-bold shrink-0 shadow-sm ring-1 ring-slate-200 ${user?.avatar ? 'hidden' : 'flex'}`} style={{display: user?.avatar ? 'none' : 'flex'}}>
                 <User className="w-3.5 h-3.5" />
               </div>
               <div className="hidden sm:block text-left min-w-0 pr-1">

@@ -9,8 +9,11 @@ DATABASE_URL = settings.ASYNC_DATABASE_URL
 if "sqlite" in DATABASE_URL:
     engine = create_async_engine(DATABASE_URL, echo=False)
 else:
-    # Usamos SQLite en memoria o fallback para facilitar pruebas si no hay pg local activo
-    engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+    # Supabase pooler 6543 pgbouncer transaction mode no soporta prepared statements
+    # asyncpg requiere statement_cache_size=0 (ver error DuplicatePreparedStatementError)
+    is_pgbouncer = "pgbouncer=true" in DATABASE_URL or ":6543" in DATABASE_URL
+    connect_args = {"statement_cache_size": 0, "prepared_statement_cache_size": 0} if is_pgbouncer else {}
+    engine = create_async_engine(DATABASE_URL, echo=False, future=True, connect_args=connect_args, pool_pre_ping=True)
 
 AsyncSessionLocal = sessionmaker(
     bind=engine,

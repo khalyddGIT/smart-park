@@ -7,21 +7,22 @@ from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import Reservation, Slot, Parking
 from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationResponse
+from app.core.security import get_current_user
+from app.models.models import User
 
 router = APIRouter(prefix="/reservations", tags=["Reservas & Pases QR"])
 
 @router.get("", response_model=List[ReservationResponse])
 async def list_reservations(
     parking_id: Optional[int] = None,
-    user_id: Optional[int] = None,
     status_filter: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    stmt = select(Reservation).order_by(Reservation.id.desc())
+    # Solo reservas del usuario autenticado - aislamiento por usuario
+    stmt = select(Reservation).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc())
     if parking_id:
         stmt = stmt.where(Reservation.parking_id == parking_id)
-    if user_id:
-        stmt = stmt.where(Reservation.user_id == user_id)
     if status_filter:
         stmt = stmt.where(Reservation.status == status_filter)
     
@@ -30,8 +31,8 @@ async def list_reservations(
     return [ReservationResponse.model_validate(r) for r in reservations]
 
 @router.get("/my-reservations", response_model=List[ReservationResponse])
-async def get_my_reservations(user_id: int = 1, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Reservation).where(Reservation.user_id == user_id).order_by(Reservation.id.desc()))
+async def get_my_reservations(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    result = await db.execute(select(Reservation).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc()))
     reservations = result.scalars().all()
     return [ReservationResponse.model_validate(r) for r in reservations]
 
@@ -46,8 +47,8 @@ async def get_reservation(reservation_id: int, db: AsyncSession = Depends(get_db
 @router.post("", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
 async def create_reservation(
     res_in: ReservationCreate,
-    user_id: int = 1,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     # Verificar cajón
     slot_res = await db.execute(select(Slot).where(Slot.id == res_in.slot_id))
@@ -68,7 +69,7 @@ async def create_reservation(
 
     db_res = Reservation(
         code=reservation_code,
-        user_id=user_id,
+        user_id=current_user.id,
         parking_id=res_in.parking_id,
         slot_id=res_in.slot_id,
         license_plate=res_in.license_plate.strip().upper(),
@@ -88,11 +89,13 @@ async def create_reservation(
     return ReservationResponse.model_validate(db_res)
 
 @router.put("/{reservation_id}/cancel", response_model=ReservationResponse)
-async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
+async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    if reservation.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
     
     if reservation.status == "cancelled":
         raise HTTPException(status_code=400, detail="La reserva ya ha sido cancelada")
@@ -110,11 +113,13 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
     return ReservationResponse.model_validate(reservation)
 
 @router.put("/{reservation_id}/extend", response_model=ReservationResponse)
-async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncSession = Depends(get_db)):
+async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    if reservation.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
 
     parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
     parking = parking_res.scalars().first()
@@ -129,11 +134,13 @@ async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncS
     return ReservationResponse.model_validate(reservation)
 
 @router.delete("/{reservation_id}", status_code=status.HTTP_200_OK)
-async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    if reservation.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
 
     # Si estaba activa o programada, liberar el cajón
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))

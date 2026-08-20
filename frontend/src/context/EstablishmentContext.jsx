@@ -1,9 +1,22 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const STORAGE_KEY = 'smart_park_unified_establishments_v2';
-const RESERVATIONS_STORAGE_KEY = 'smart_park_unified_reservations_v2';
+const RESERVATIONS_STORAGE_KEY_BASE = 'smart_park_unified_reservations_v2';
 const REQUESTS_STORAGE_KEY = 'smart_park_affiliation_requests_v1';
 const APPROVED_ADMINS_STORAGE_KEY = 'smart_park_approved_admins_v1';
+
+// Helper para aislar datos por usuario - evita fuga entre usuarios
+const getCurrentUserKey = () => {
+  try {
+    const saved = localStorage.getItem('smart_park_user_session');
+    if (saved) {
+      const u = JSON.parse(saved);
+      return u?.id || u?.email || 'guest';
+    }
+  } catch {}
+  return 'guest';
+};
+const getReservationsKey = () => `${RESERVATIONS_STORAGE_KEY_BASE}_${getCurrentUserKey()}`;
 
 export const INITIAL_ESTABLISHMENTS = [
   {
@@ -282,15 +295,21 @@ export const EstablishmentProvider = ({ children }) => {
 
   const [reservations, setReservations] = useState(() => {
     try {
-      const saved = localStorage.getItem(RESERVATIONS_STORAGE_KEY);
+      const key = getReservationsKey();
+      const saved = localStorage.getItem(key);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
+        if (Array.isArray(parsed)) return parsed;
+      }
+      // Nuevo usuario: iniciar vacío, no con datos demo de otro usuario
+      // Solo mostrar INITIAL_RESERVATIONS si es la primera vez global y no hay usuario previo
+      const legacy = localStorage.getItem(RESERVATIONS_STORAGE_KEY_BASE);
+      if (legacy && getCurrentUserKey() !== 'guest') {
+        // Migrar legacy solo si existe y usuario es guest inicial - luego limpiar
+        return [];
       }
     } catch (e) {}
-    return INITIAL_RESERVATIONS;
+    return [];
   });
 
   const [affiliationRequests, setAffiliationRequests] = useState(() => {
@@ -334,17 +353,51 @@ export const EstablishmentProvider = ({ children }) => {
     } catch (e) {}
   }, [approvedAdmins]);
 
+  // Recargar reservas al cambiar de usuario (aislamiento)
+  useEffect(() => {
+    const handleStorage = () => {
+      try {
+        const key = getReservationsKey();
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setReservations(parsed);
+          else setReservations([]);
+        } else {
+          setReservations([]);
+        }
+      } catch { setReservations([]); }
+    };
+    window.addEventListener('storage', handleStorage);
+    // También escuchar cambios de sesión en misma pestaña vía evento custom
+    const interval = setInterval(() => {
+      const currentKey = getReservationsKey();
+      if (currentKey !== window.__lastReservationsKey) {
+        window.__lastReservationsKey = currentKey;
+        handleStorage();
+      }
+    }, 500);
+    window.__lastReservationsKey = getReservationsKey();
+    return () => { window.removeEventListener('storage', handleStorage); clearInterval(interval); };
+  }, []);
+
   useEffect(() => {
     try {
-      localStorage.setItem(RESERVATIONS_STORAGE_KEY, JSON.stringify(reservations));
+      const key = getReservationsKey();
+      if (getCurrentUserKey() !== 'guest') {
+        localStorage.setItem(key, JSON.stringify(reservations));
+      }
     } catch (e) {}
   }, [reservations]);
 
-  // Guardar reservaciones en localStorage
+  // Guardar reservaciones en localStorage per-user
   const saveReservations = (newReservations) => {
     setReservations(newReservations);
     try {
-      localStorage.setItem(RESERVATIONS_STORAGE_KEY, JSON.stringify(newReservations));
+      const key = getReservationsKey();
+      if (getCurrentUserKey() !== 'guest') {
+        localStorage.setItem(key, JSON.stringify(newReservations));
+      }
     } catch (e) {}
   };
 

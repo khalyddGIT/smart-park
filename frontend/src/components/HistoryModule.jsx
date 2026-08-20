@@ -39,7 +39,7 @@ export const HistoryModule = () => {
   const [dateFilter, setDateFilter] = useState('ALL'); // 'ALL' | 'TODAY' | 'MONTH'
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
-  // Unificar historial inicial con reservas completadas de la sesión actual
+  // Unificar historial: solo reservas completadas del usuario actual - sin fuga de datos demo
   const allHistory = useMemo(() => {
     const fromReservations = reservations
       .filter(r => r.status === 'COMPLETED')
@@ -57,8 +57,9 @@ export const HistoryModule = () => {
         paymentMethod: 'Pase Digital / Tarjeta'
       }));
 
-    // Evitar duplicados por ID
-    const combined = [...fromReservations, ...INITIAL_HISTORY];
+    // Nuevo usuario: historial vacío (no mostrar INITIAL_HISTORY global)
+    // Solo combinar si hay reservas reales del usuario
+    const combined = [...fromReservations];
     const unique = [];
     const seen = new Set();
     for (const item of combined) {

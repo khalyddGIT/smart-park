@@ -23,28 +23,62 @@ import {
   Sparkles
 } from 'lucide-react';
 
-const CARDS_STORAGE_KEY = 'smart_park_cards_v2';
+const CARDS_STORAGE_KEY_BASE = 'smart_park_cards_v2';
+const getCardsKey = () => {
+  try {
+    const saved = localStorage.getItem('smart_park_user_session');
+    if (saved) {
+      const u = JSON.parse(saved);
+      return `${CARDS_STORAGE_KEY_BASE}_${u?.id || u?.email || 'guest'}`;
+    }
+  } catch {}
+  return `${CARDS_STORAGE_KEY_BASE}_guest`;
+};
 
-const INITIAL_CARDS = [
-  { id: 1, type: 'Visa', number: '•••• •••• •••• 4242', rawLast4: '4242', expiry: '12/28', isDefault: true, holder: 'CARLOS MENDOZA' },
-  { id: 2, type: 'Mastercard', number: '•••• •••• •••• 8812', rawLast4: '8812', expiry: '09/27', isDefault: false, holder: 'CARLOS MENDOZA' },
-];
+const INITIAL_CARDS = [];
 
 export const PaymentsModule = () => {
   const [cards, setCards] = useState(() => {
     try {
-      const saved = localStorage.getItem(CARDS_STORAGE_KEY);
+      const key = getCardsKey();
+      const saved = localStorage.getItem(key);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {}
     return INITIAL_CARDS;
   });
 
+  // Recargar tarjetas al cambiar de usuario
+  useEffect(() => {
+    const loadForUser = () => {
+      try {
+        const key = getCardsKey();
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setCards(parsed);
+          else setCards([]);
+        } else setCards([]);
+      } catch { setCards([]); }
+    };
+    const interval = setInterval(() => {
+      const k = getCardsKey();
+      if (k !== window.__lastCardsKey) {
+        window.__lastCardsKey = k;
+        loadForUser();
+      }
+    }, 500);
+    window.__lastCardsKey = getCardsKey();
+    window.addEventListener('storage', loadForUser);
+    return () => { clearInterval(interval); window.removeEventListener('storage', loadForUser); };
+  }, []);
+
   useEffect(() => {
     try {
-      localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(cards));
+      const key = getCardsKey();
+      if (!key.endsWith('_guest')) localStorage.setItem(key, JSON.stringify(cards));
     } catch (e) {}
   }, [cards]);
 
@@ -55,12 +89,8 @@ export const PaymentsModule = () => {
   const [activeTab, setActiveTab] = useState('cards'); // 'cards' | 'history'
   const [toast, setToast] = useState(null);
 
-  const transactions = [
-    { id: 'TXN-90218', date: '2026-08-18 16:45', parking: 'Smart Park Plaza Mayor - Planta Baja', plate: 'ABC-123', amount: 17.00, method: 'Visa •••• 4242', invoice: 'B001-004291', status: 'Liquidado' },
-    { id: 'TXN-89412', date: '2026-08-16 11:30', parking: 'Smart Park Plaza Mayor - Sótano 1', plate: 'AYC-501', amount: 15.00, method: 'Yape QR', invoice: 'B001-003810', status: 'Liquidado' },
-    { id: 'TXN-76120', date: '2026-08-12 20:00', parking: 'Smart Park Mercado Mariscal Cáceres', plate: 'XYZ-987', amount: 14.80, method: 'Mastercard •••• 8812', invoice: 'B001-002955', status: 'Liquidado' },
-    { id: 'TXN-65104', date: '2026-08-08 13:00', parking: 'Smart Park Terminal Terrestre', plate: 'W1P-404', amount: 18.00, method: 'Plin QR', invoice: 'B001-001890', status: 'Liquidado' }
-  ];
+  // Nuevo usuario: sin transacciones heredadas
+  const transactions = [];
 
   const notify = (msg) => {
     setToast(msg);

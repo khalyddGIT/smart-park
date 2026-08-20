@@ -43,59 +43,67 @@ export const fetchCarPhoto = async (brand, model, year = '2022') => {
   return null;
 };
 
-const VEHICLES_STORAGE_KEY = 'smart_park_vehicles_v2';
+const VEHICLES_STORAGE_KEY_BASE = 'smart_park_vehicles_v2';
+const getVehiclesKey = () => {
+  try {
+    const saved = localStorage.getItem('smart_park_user_session');
+    if (saved) {
+      const u = JSON.parse(saved);
+      return `${VEHICLES_STORAGE_KEY_BASE}_${u?.id || u?.email || 'guest'}`;
+    }
+  } catch {}
+  return `${VEHICLES_STORAGE_KEY_BASE}_guest`;
+};
 
-const INITIAL_VEHICLES = [
-  { 
-    id: 1, 
-    license_plate: 'ABC-123', 
-    vehicle_type: 'suv', 
-    brand: 'Toyota', 
-    model: 'RAV4', 
-    year: '2022',
-    color: 'Gris Metálico',
-    isDefault: true,
-    imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800'
-  },
-  { 
-    id: 2, 
-    license_plate: 'XYZ-987', 
-    vehicle_type: 'auto', 
-    brand: 'Honda', 
-    model: 'Civic', 
-    year: '2021',
-    color: 'Negro Profundo',
-    isDefault: false,
-    imageUrl: 'https://images.unsplash.com/photo-1590362891991-f776e747a588?w=800'
-  },
-  { 
-    id: 3, 
-    license_plate: 'AYC-501', 
-    vehicle_type: 'auto', 
-    brand: 'Toyota', 
-    model: 'Corolla', 
-    year: '2023',
-    color: 'Blanco Perlado',
-    isDefault: false,
-    imageUrl: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800'
-  },
-];
+const INITIAL_VEHICLES = [];
 
 export const VehiclesModule = () => {
   const [vehicles, setVehicles] = useState(() => {
     try {
-      const saved = localStorage.getItem(VEHICLES_STORAGE_KEY);
+      const key = getVehiclesKey();
+      const saved = localStorage.getItem(key);
       if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {}
     return INITIAL_VEHICLES;
   });
 
+  // Recargar vehículos al cambiar de usuario
+  useEffect(() => {
+    const loadForUser = () => {
+      try {
+        const key = getVehiclesKey();
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setVehicles(parsed);
+          else setVehicles([]);
+        } else {
+          setVehicles([]);
+        }
+      } catch { setVehicles([]); }
+    };
+    const interval = setInterval(() => {
+      const k = getVehiclesKey();
+      if (k !== window.__lastVehiclesKey) {
+        window.__lastVehiclesKey = k;
+        loadForUser();
+      }
+    }, 500);
+    window.__lastVehiclesKey = getVehiclesKey();
+    window.addEventListener('storage', loadForUser);
+    return () => { clearInterval(interval); window.removeEventListener('storage', loadForUser); };
+  }, []);
+
   useEffect(() => {
     try {
-      localStorage.setItem(VEHICLES_STORAGE_KEY, JSON.stringify(vehicles));
+      const key = getVehiclesKey();
+      // No guardar para guest
+      if (!key.endsWith('_guest')) {
+        localStorage.setItem(key, JSON.stringify(vehicles));
+      }
     } catch (e) {}
   }, [vehicles]);
   

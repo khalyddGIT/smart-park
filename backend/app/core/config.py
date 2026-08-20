@@ -23,12 +23,13 @@ class Settings(BaseSettings):
     def ASYNC_DATABASE_URL(self) -> str:
         if self.DATABASE_URL:
             url = self.DATABASE_URL.strip()
-            # Vercel/Supabase: corregir puerto pooler 5432 -> 6543 para serverless y añadir pgbouncer
-            # Si el host es pooler.supabase.com y puerto 5432, cambiar a 6543 + pgbouncer=true
+            # Vercel/Supabase: corregir puerto pooler 5432 -> 6543 para serverless
+            # asyncpg no soporta query ?pgbouncer=true (TypeError: unexpected kwarg), solo puerto 6543 indica transaction mode
             if "pooler.supabase.com:5432" in url:
                 url = url.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
-                if "pgbouncer" not in url:
-                    url += ("&" if "?" in url else "?") + "pgbouncer=true"
+            # Eliminar ?pgbouncer=true si existe (asyncpg no lo acepta)
+            if "pgbouncer=true" in url:
+                url = url.replace("?pgbouncer=true", "").replace("&pgbouncer=true", "").replace("pgbouncer=true", "")
             if url.startswith("postgres://"):
                 url = url.replace("postgres://", "postgresql+asyncpg://", 1)
             elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):

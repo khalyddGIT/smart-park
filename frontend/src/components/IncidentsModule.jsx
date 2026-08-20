@@ -25,72 +25,45 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useAuth } from '../context/AuthContext';
 
-const INCIDENTS_STORAGE_KEY = 'smart_park_incidents_v2';
-
-const INITIAL_INCIDENTS = [
-  {
-    id: 'INC-2026-001',
-    type: 'Bloqueo de Rampa de Acceso',
-    plate: 'XYZ-789',
-    slot: 'A-01',
-    parking: 'Smart Park Plaza Mayor - Planta Baja',
-    description: 'Vehículo sedán estacionado bloqueando la rampa peatonal de acceso principal.',
-    severity: 'Alta',
-    status: 'Pendiente',
-    date: '2026-08-18 14:10',
-    reporter: 'Operador Garita',
-    images: [
-      'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=600'
-    ]
-  },
-  {
-    id: 'INC-2026-002',
-    type: 'Estacionamiento Fuera de Línea',
-    plate: 'W1P-404',
-    slot: 'B-04',
-    parking: 'Smart Park Plaza Mayor - Sótano 1',
-    description: 'Vehículo ocupando dos cajones simultáneamente impidiendo ingreso de otro auto.',
-    severity: 'Media',
-    status: 'En Revisión',
-    date: '2026-08-17 18:30',
-    reporter: 'Operador Garita',
-    images: [
-      'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600'
-    ]
-  },
-  {
-    id: 'INC-2026-003',
-    type: 'Diferencia en Tarifa de Cobro',
-    plate: 'DEF-456',
-    slot: 'A-05',
-    parking: 'Smart Park Mercado Mariscal Cáceres',
-    description: 'Conductor reportó discrepancia de 15 minutos en el cálculo de salida.',
-    severity: 'Baja',
-    status: 'Resuelto',
-    date: '2026-08-16 11:20',
-    reporter: 'Carlos Mendoza (Conductor)',
-    images: []
-  }
-];
+const INCIDENTS_STORAGE_KEY_BASE = 'smart_park_incidents_v2';
+const getIncidentsKey = () => {
+  try {
+    const s = localStorage.getItem('smart_park_user_session');
+    if (s) { const u = JSON.parse(s); return `${INCIDENTS_STORAGE_KEY_BASE}_${u?.id || u?.email || 'guest'}`; }
+  } catch {}
+  return `${INCIDENTS_STORAGE_KEY_BASE}_guest`;
+};
+const INITIAL_INCIDENTS = [];
 
 export const IncidentsModule = () => {
   const { role, user } = useAuth();
 
   const [incidents, setIncidents] = useState(() => {
     try {
-      const saved = localStorage.getItem(INCIDENTS_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
+      const k = getIncidentsKey();
+      const saved = localStorage.getItem(k);
+      if (saved) { const p = JSON.parse(saved); if (Array.isArray(p)) return p; }
+    } catch {}
     return INITIAL_INCIDENTS;
   });
-
+  useEffect(() => {
+    const load = () => {
+      try {
+        const k = getIncidentsKey();
+        const s = localStorage.getItem(k);
+        if (s) { const p = JSON.parse(s); if (Array.isArray(p)) setIncidents(p); else setIncidents([]); } else setIncidents([]);
+      } catch { setIncidents([]); }
+    };
+    const iv = setInterval(()=>{ const k=getIncidentsKey(); if(k!==window.__lastIncKey){window.__lastIncKey=k; load();}},500);
+    window.__lastIncKey = getIncidentsKey();
+    window.addEventListener('storage', load);
+    return ()=>{ clearInterval(iv); window.removeEventListener('storage', load); };
+  }, []);
   useEffect(() => {
     try {
-      localStorage.setItem(INCIDENTS_STORAGE_KEY, JSON.stringify(incidents));
-    } catch (e) {}
+      const k = getIncidentsKey();
+      if (!k.endsWith('_guest')) localStorage.setItem(k, JSON.stringify(incidents));
+    } catch {}
   }, [incidents]);
 
   const [showModal, setShowModal] = useState(false);

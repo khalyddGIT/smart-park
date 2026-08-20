@@ -353,9 +353,11 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
             <button
               onClick={logout}
               title="Cerrar Sesión"
-              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-transparent hover:border-rose-200 shrink-0"
+              aria-label="Cerrar Sesión"
+              className="flex items-center gap-1.5 p-2 sm:p-2.5 bg-white text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-slate-200 hover:border-rose-200 shadow-xs shrink-0"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline text-xs font-bold">Salir</span>
             </button>
           </div>
 

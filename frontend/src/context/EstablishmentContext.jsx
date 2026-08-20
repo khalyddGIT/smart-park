@@ -544,24 +544,62 @@ export const EstablishmentProvider = ({ children }) => {
     return approvedAdmins.some(a => a.email === lower);
   };
 
-  // Agregar nuevo establecimiento manual
-  const addEstablishment = (newEst) => {
+  // Agregar nuevo establecimiento manual - intenta Supabase primero
+  const addEstablishment = async (newEst) => {
+    const token = getAccessToken();
+    if (token || true) {
+      try {
+        const payload = { name: newEst.name, address: newEst.address, city: newEst.city || 'Ayacucho - Huamanga', latitude: newEst.latitude || -13.1604, longitude: newEst.longitude || -74.2259, hourly_rate: newEst.rate || 5, tolerance_minutes: 15, status: 'active', total_capacity: newEst.totalSlots || newEst.elements?.filter(e=>e.type==='slot').length || 10, image_url: newEst.image };
+        const res = await api.post('/parkings', payload);
+        if (res.data?.id) {
+          const created = { ...newEst, id: String(res.data.id), rate: res.data.hourly_rate, image: res.data.image_url, status: res.data.status === 'active' ? 'Operativo' : res.data.status };
+          setEstablishments(prev => [created, ...prev]);
+          return created;
+        }
+      } catch (e) { console.warn('addEstablishment backend fallback', e.response?.data); }
+    }
     setEstablishments(prev => [newEst, ...prev]);
+    return newEst;
   };
 
-  // Actualizar datos de un establecimiento
-  const updateEstablishment = (id, updatedFields) => {
+  // Actualizar datos de un establecimiento - persistente
+  const updateEstablishment = async (id, updatedFields) => {
     setEstablishments(prev => prev.map(est => est.id === id ? { ...est, ...updatedFields } : est));
+    const numId = Number(id);
+    if (!isNaN(numId)) {
+      try {
+        const payload = {};
+        if (updatedFields.name) payload.name = updatedFields.name;
+        if (updatedFields.address) payload.address = updatedFields.address;
+        if (updatedFields.city) payload.city = updatedFields.city;
+        if (updatedFields.rate) payload.hourly_rate = Number(updatedFields.rate);
+        if (updatedFields.status) payload.status = updatedFields.status === 'Operativo' ? 'active' : updatedFields.status;
+        if (updatedFields.image) payload.image_url = updatedFields.image;
+        if (Object.keys(payload).length) await api.put(`/parkings/${numId}`, payload);
+      } catch (e) { console.warn('updateEstablishment backend fail', e.response?.data); }
+    }
   };
 
-  // Actualizar plano topográfico
-  const updateEstablishmentPlan = (id, elements) => {
+  // Actualizar plano topográfico - persistente via sync
+  const updateEstablishmentPlan = async (id, elements) => {
     setEstablishments(prev => prev.map(est => est.id === id ? { ...est, elements } : est));
+    const numId = Number(id);
+    if (!isNaN(numId) && Array.isArray(elements)) {
+      try {
+        const slots = elements.filter(e=>e.type==='slot').map(s=>({ code: s.code, floor_level: 'Piso 1', slot_type: s.slotType || 'auto', status: s.status || 'free', pos_x: s.x||0, pos_y: s.y||0, width: s.w||60, height: s.h||100, rotation: s.rot||0 }));
+        const elems = elements.filter(e=>e.type!=='slot').map(e=>({ element_type: e.type, pos_x: e.x||0, pos_y: e.y||0, width: e.w||100, height: e.h||20, rotation: e.rot||0, z_index: 1, properties_json: null }));
+        await api.post(`/parkings/${numId}/floor-plan/sync`, { slots, elements: elems });
+      } catch (e) { console.warn('sync floor-plan fail', e.response?.data); }
+    }
   };
 
-  // Eliminar establecimiento
-  const deleteEstablishment = (id) => {
+  // Eliminar establecimiento - persistente
+  const deleteEstablishment = async (id) => {
     setEstablishments(prev => prev.filter(est => est.id !== id));
+    const numId = Number(id);
+    if (!isNaN(numId)) {
+      try { await api.delete(`/parkings/${numId}`); } catch (e) { console.warn('delete backend fail', e.response?.data); }
+    }
   };
 
   // Ocupar o reservar un cajón específico en un establecimiento

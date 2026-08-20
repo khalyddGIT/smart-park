@@ -21,79 +21,76 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Inicialización de tablas y datos semilla
+# Inicialización de tablas y datos semilla - resiliente en Vercel Serverless (no tumbar lambda si DB no conecta)
 @app.on_event("startup")
 async def startup_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    # Sembrar datos iniciales si no existen
-    from app.db.session import AsyncSessionLocal
-    async with AsyncSessionLocal() as session:
-        from sqlalchemy.future import select
-        res = await session.execute(select(Parking))
-        if not res.scalars().first():
-            # Crear Parqueos Semilla
-            p1 = Parking(
-                name="Smart Park Central San Isidro",
-                address="Av. Javier Prado Este 456",
-                city="San Isidro",
-                latitude=-12.089,
-                longitude=-77.032,
-                hourly_rate=8.50,
-                tolerance_minutes=15,
-                total_capacity=20,
-                image_url="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800"
-            )
-            p2 = Parking(
-                name="Smart Park Miraflores Kennedy",
-                address="Calle Shell 230",
-                city="Miraflores",
-                latitude=-12.121,
-                longitude=-77.029,
-                hourly_rate=10.00,
-                tolerance_minutes=10,
-                total_capacity=15,
-                image_url="https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800"
-            )
-            session.add_all([p1, p2])
-            await session.commit()
-            await session.refresh(p1)
-
-            # Sembrar Cajones para San Isidro
-            slots = [
-                Slot(parking_id=p1.id, code="A-01", slot_type="auto", status="free", pos_x=50, pos_y=50, width=60, height=100),
-                Slot(parking_id=p1.id, code="A-02", slot_type="auto", status="occupied", pos_x=130, pos_y=50, width=60, height=100),
-                Slot(parking_id=p1.id, code="A-03", slot_type="pmr", status="free", pos_x=210, pos_y=50, width=60, height=100),
-                Slot(parking_id=p1.id, code="A-04", slot_type="moto", status="free", pos_x=290, pos_y=50, width=50, height=60),
-            ]
-            
-            # Sembrar Pasos Peatonales y Paredes
-            elems = [
-                FloorPlanElement(parking_id=p1.id, element_type="crosswalk", pos_x=50, pos_y=180, width=300, height=60, z_index=2),
-                FloorPlanElement(parking_id=p1.id, element_type="wall", pos_x=20, pos_y=20, width=10, height=300, z_index=1),
-            ]
-
-            session.add_all(slots + elems)
-            
-            # Crear usuario demo
-            demo_user = User(
-                full_name="Usuario Conductor Demo",
-                email="usuario@smartpark.com",
-                phone="+51 987654321",
-                hashed_password=get_password_hash("password123"),
-                security_pin="1234",
-                role="user"
-            )
-            session.add(demo_user)
-            await session.commit()
-            await session.refresh(demo_user)
-
-            # Sembrar Vehículos demo
-            v1 = Vehicle(user_id=demo_user.id, license_plate="ABC-123", vehicle_type="suv", brand="Toyota", model="RAV4", color="Gris")
-            v2 = Vehicle(user_id=demo_user.id, license_plate="XYZ-987", vehicle_type="auto", brand="Honda", model="Civic", color="Negro")
-            session.add_all([v1, v2])
-            await session.commit()
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        import logging
+        logging.warning(f"[smart-park] startup_db: no se pudo inicializar DB remota, continuando en modo degradado: {e}")
+        return
+    try:
+        from app.db.session import AsyncSessionLocal
+        async with AsyncSessionLocal() as session:
+            from sqlalchemy.future import select
+            res = await session.execute(select(Parking))
+            if not res.scalars().first():
+                p1 = Parking(
+                    name="Smart Park Central San Isidro",
+                    address="Av. Javier Prado Este 456",
+                    city="San Isidro",
+                    latitude=-12.089,
+                    longitude=-77.032,
+                    hourly_rate=8.50,
+                    tolerance_minutes=15,
+                    total_capacity=20,
+                    image_url="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800"
+                )
+                p2 = Parking(
+                    name="Smart Park Miraflores Kennedy",
+                    address="Calle Shell 230",
+                    city="Miraflores",
+                    latitude=-12.121,
+                    longitude=-77.029,
+                    hourly_rate=10.00,
+                    tolerance_minutes=10,
+                    total_capacity=15,
+                    image_url="https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800"
+                )
+                session.add_all([p1, p2])
+                await session.commit()
+                await session.refresh(p1)
+                slots = [
+                    Slot(parking_id=p1.id, code="A-01", slot_type="auto", status="free", pos_x=50, pos_y=50, width=60, height=100),
+                    Slot(parking_id=p1.id, code="A-02", slot_type="auto", status="occupied", pos_x=130, pos_y=50, width=60, height=100),
+                    Slot(parking_id=p1.id, code="A-03", slot_type="pmr", status="free", pos_x=210, pos_y=50, width=60, height=100),
+                    Slot(parking_id=p1.id, code="A-04", slot_type="moto", status="free", pos_x=290, pos_y=50, width=50, height=60),
+                ]
+                elems = [
+                    FloorPlanElement(parking_id=p1.id, element_type="crosswalk", pos_x=50, pos_y=180, width=300, height=60, z_index=2),
+                    FloorPlanElement(parking_id=p1.id, element_type="wall", pos_x=20, pos_y=20, width=10, height=300, z_index=1),
+                ]
+                session.add_all(slots + elems)
+                demo_user = User(
+                    full_name="Usuario Conductor Demo",
+                    email="usuario@smartpark.com",
+                    phone="+51 987654321",
+                    hashed_password=get_password_hash("password123"),
+                    security_pin="1234",
+                    role="user"
+                )
+                session.add(demo_user)
+                await session.commit()
+                await session.refresh(demo_user)
+                v1 = Vehicle(user_id=demo_user.id, license_plate="ABC-123", vehicle_type="suv", brand="Toyota", model="RAV4", color="Gris")
+                v2 = Vehicle(user_id=demo_user.id, license_plate="XYZ-987", vehicle_type="auto", brand="Honda", model="Civic", color="Negro")
+                session.add_all([v1, v2])
+                await session.commit()
+    except Exception as e:
+        import logging
+        logging.warning(f"[smart-park] seed skip: {e}")
 
 # Conectar todos los routers v1
 app.include_router(auth.router, prefix=settings.API_V1_STR)

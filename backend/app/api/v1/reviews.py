@@ -7,6 +7,8 @@ from app.models.models import Review, Parking, User
 from app.schemas.schemas import ReviewCreate, ReviewReply, ReviewResponse
 from app.core.security import get_current_user
 
+router = APIRouter(prefix="/reviews", tags=["Reseñas & Calificaciones"])
+
 @router.get("", response_model=List[ReviewResponse])
 async def list_reviews(
     parking_id: Optional[int] = None,

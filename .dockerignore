@@ -1,0 +1,24 @@
+.git
+.agents
+.npm-cache
+.vercel
+node_modules
+frontend/node_modules
+backend/venv
+backend/__pycache__
+backend/app/__pycache__
+backend/.pytest_cache
+backend/.env
+backend/smartpark_dev.db
+public
+api
+server
+modules
+js
+css
+img
+skills-lock.json
+*.log
+DOCUMENTACION_AVANCE_2026-08-20.md
+Sistema de Estacionamiento/
+supabase/

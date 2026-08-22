@@ -32,6 +32,9 @@ async def get_staff(staff_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Colaborador no encontrado")
     return StaffResponse.model_validate(member)
 
+from app.models.models import Staff, User
+from app.core.security import get_password_hash
+
 @router.post("", response_model=StaffResponse, status_code=status.HTTP_201_CREATED)
 async def create_staff(staff_in: StaffCreate, db: AsyncSession = Depends(get_db)):
     db_staff = Staff(
@@ -40,11 +43,30 @@ async def create_staff(staff_in: StaffCreate, db: AsyncSession = Depends(get_db)
         dni=staff_in.dni,
         position=staff_in.position,
         shift=staff_in.shift or "Mañana",
-        status=staff_in.status or "active"
+        status=staff_in.status or "active",
+        email=staff_in.email,
+        security_pin=staff_in.security_pin or "1234"
     )
     db.add(db_staff)
     await db.commit()
     await db.refresh(db_staff)
+
+    # Si se proporcionó un email, registrar también la cuenta de usuario para que el personal pueda ingresar
+    if staff_in.email:
+        res = await db.execute(select(User).where(User.email == staff_in.email))
+        if not res.scalars().first():
+            user_account = User(
+                full_name=staff_in.full_name,
+                email=staff_in.email,
+                phone=staff_in.dni,
+                hashed_password=get_password_hash(staff_in.password or "Garita2026!"),
+                security_pin=staff_in.security_pin or "1234",
+                role="user",
+                is_active=True
+            )
+            db.add(user_account)
+            await db.commit()
+
     return StaffResponse.model_validate(db_staff)
 
 @router.put("/{staff_id}", response_model=StaffResponse)

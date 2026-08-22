@@ -170,9 +170,12 @@ class StaffBase(BaseModel):
     position: str
     shift: Optional[str] = "Mañana"
     status: Optional[str] = "active"
+    email: Optional[str] = None
+    security_pin: Optional[str] = "1234"
 
 class StaffCreate(StaffBase):
     parking_id: int
+    password: Optional[str] = None
 
 class StaffUpdate(BaseModel):
     full_name: Optional[str] = None
@@ -180,6 +183,8 @@ class StaffUpdate(BaseModel):
     position: Optional[str] = None
     shift: Optional[str] = None
     status: Optional[str] = None
+    email: Optional[str] = None
+    security_pin: Optional[str] = None
 
 class StaffResponse(StaffBase):
     id: int

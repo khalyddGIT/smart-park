@@ -32,6 +32,7 @@ export const getAccessToken = () => {
 export const register = (data) => api.post('/auth/register', data).then(r => r.data);
 export const login = (data) => api.post('/auth/login', data).then(r => r.data);
 export const googleAuth = (data) => api.post('/auth/google', data).then(r => r.data);
+export const verifyPinApi = (pin) => api.post('/auth/verify-pin', { pin }).then(r => r.data);
 
 // Vehicles (requiere JWT)
 export const listVehicles = () => api.get('/vehicles').then(r => r.data);

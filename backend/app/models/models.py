@@ -30,7 +30,7 @@ class ReservationStatusEnum(str, enum.Enum):
     CANCELLED = "cancelled"
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "usuarios"
 
     id = Column(Integer, primary_key=True, index=True)
     full_name = Column(String(150), nullable=False)
@@ -46,10 +46,10 @@ class User(Base):
     reservations = relationship("Reservation", back_populates="user")
 
 class Vehicle(Base):
-    __tablename__ = "vehicles"
+    __tablename__ = "vehiculos"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     license_plate = Column(String(20), index=True, nullable=False)
     vehicle_type = Column(String(20), default=VehicleTypeEnum.AUTO.value)
     brand = Column(String(50), nullable=True)
@@ -59,7 +59,7 @@ class Vehicle(Base):
     owner = relationship("User", back_populates="vehicles")
 
 class Parking(Base):
-    __tablename__ = "parkings"
+    __tablename__ = "estacionamientos"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(150), nullable=False)
@@ -77,10 +77,10 @@ class Parking(Base):
     elements = relationship("FloorPlanElement", back_populates="parking", cascade="all, delete-orphan")
 
 class Slot(Base):
-    __tablename__ = "slots"
+    __tablename__ = "plazas"
 
     id = Column(Integer, primary_key=True, index=True)
-    parking_id = Column(Integer, ForeignKey("parkings.id"), nullable=False)
+    parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
     code = Column(String(20), nullable=False)
     floor_level = Column(String(20), default="Piso 1")
     slot_type = Column(String(20), default=VehicleTypeEnum.AUTO.value)
@@ -94,10 +94,10 @@ class Slot(Base):
     parking = relationship("Parking", back_populates="slots")
 
 class FloorPlanElement(Base):
-    __tablename__ = "floor_plan_elements"
+    __tablename__ = "elementos_plano"
 
     id = Column(Integer, primary_key=True, index=True)
-    parking_id = Column(Integer, ForeignKey("parkings.id"), nullable=False)
+    parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
     element_type = Column(String(30), nullable=False) # wall, crosswalk, text, gate
     pos_x = Column(Integer, nullable=False)
     pos_y = Column(Integer, nullable=False)
@@ -110,13 +110,13 @@ class FloorPlanElement(Base):
     parking = relationship("Parking", back_populates="elements")
 
 class Reservation(Base):
-    __tablename__ = "reservations"
+    __tablename__ = "reservas"
 
     id = Column(Integer, primary_key=True, index=True)
     code = Column(String(50), unique=True, index=True, nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    parking_id = Column(Integer, ForeignKey("parkings.id"), nullable=False)
-    slot_id = Column(Integer, ForeignKey("slots.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
+    slot_id = Column(Integer, ForeignKey("plazas.id"), nullable=False)
     license_plate = Column(String(20), nullable=False)
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
@@ -129,26 +129,39 @@ class Reservation(Base):
     user = relationship("User", back_populates="reservations")
 
 class Staff(Base):
-    __tablename__ = "staff"
+    __tablename__ = "personal"
 
     id = Column(Integer, primary_key=True, index=True)
-    parking_id = Column(Integer, ForeignKey("parkings.id"), nullable=False)
+    parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
     full_name = Column(String(150), nullable=False)
     dni = Column(String(20), nullable=False)
     position = Column(String(50), nullable=False)
     shift = Column(String(30), default="Mañana")
     status = Column(String(20), default="active")
+    email = Column(String(150), nullable=True)
+    security_pin = Column(String(20), nullable=True, default="1234")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Review(Base):
-    __tablename__ = "reviews"
+    __tablename__ = "resenas"
 
     id = Column(Integer, primary_key=True, index=True)
-    parking_id = Column(Integer, ForeignKey("parkings.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     user_name = Column(String(150), nullable=False)
     rating = Column(Integer, nullable=False, default=5) # 1 a 5 estrellas
     comment = Column(Text, nullable=False)
     response = Column(Text, nullable=True) # Respuesta del administrador local
     created_at = Column(DateTime, default=datetime.utcnow)
+
+# Alias en español para los modelos de datos
+Usuario = User
+Vehiculo = Vehicle
+Estacionamiento = Parking
+Plaza = Slot
+ElementoPlano = FloorPlanElement
+Reserva = Reservation
+Personal = Staff
+Resena = Review
+
 

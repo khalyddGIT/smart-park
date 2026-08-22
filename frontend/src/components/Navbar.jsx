@@ -141,19 +141,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
         ) : (
           <div className="flex items-center gap-2 sm:gap-2.5">
             
-            {/* Selector de Rol RBAC */}
-            <div className="hidden sm:flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 shadow-xs max-w-[160px]">
-              <Shield className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <select
-                value={role}
-                onChange={handleRoleChange}
-                className="bg-transparent text-[11px] sm:text-xs text-slate-900 font-bold focus:outline-none cursor-pointer tracking-tight truncate w-full"
-              >
-                <option value="user" className="bg-white text-slate-800">🚗 Conductor</option>
-                <option value="local" className="bg-white text-slate-800">🏢 Admin Cochera</option>
-                <option value="platform" className="bg-white text-slate-800">🌐 Super Admin</option>
-              </select>
-            </div>
+
 
           {/* =========================================================================
               CENTRO DE NOTIFICACIONES INTERACTIVO POR ROL

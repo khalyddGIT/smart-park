@@ -1,5 +1,8 @@
+import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.core.config import settings
 from app.db.session import engine, Base
 from app.models.models import User, Parking, Slot, FloorPlanElement, Vehicle
@@ -88,6 +91,36 @@ async def startup_db():
                 v2 = Vehicle(user_id=demo_user.id, license_plate="XYZ-987", vehicle_type="auto", brand="Honda", model="Civic", color="Negro")
                 session.add_all([v1, v2])
                 await session.commit()
+
+            # Seed superadmin
+            res_admin = await session.execute(select(User).where(User.email == "superadmin@smartpark.com"))
+            if not res_admin.scalars().first():
+                super_admin = User(
+                    full_name="Super Administrador",
+                    email="superadmin@smartpark.com",
+                    phone="+51 999999999",
+                    hashed_password=get_password_hash("SmartParkSuperAdmin2026!"),
+                    security_pin="7391",
+                    role="platform",
+                    is_active=True
+                )
+                session.add(super_admin)
+                await session.commit()
+
+            # Seed adminlocal
+            res_local = await session.execute(select(User).where(User.email == "adminlocal@smartpark.com"))
+            if not res_local.scalars().first():
+                local_admin = User(
+                    full_name="Administrador Local",
+                    email="adminlocal@smartpark.com",
+                    phone="+51 988888888",
+                    hashed_password=get_password_hash("SmartParkLocal2026!"),
+                    security_pin="4826",
+                    role="local",
+                    is_active=True
+                )
+                session.add(local_admin)
+                await session.commit()
     except Exception as e:
         import logging
         logging.warning(f"[smart-park] seed skip: {e}")
@@ -104,5 +137,19 @@ app.include_router(reviews.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():
+    if STATIC_DIR and os.path.isdir(STATIC_DIR):
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
     return {"message": "Bienvenido a la API RESTful de Smart Park", "status": "online", "docs": "/docs"}
+
+# Servir frontend compilado (deploy unificado en Railway) con fallback SPA
+STATIC_DIR = os.getenv("STATIC_DIR", "")
+if STATIC_DIR and os.path.isdir(STATIC_DIR):
+    app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa_fallback(full_path: str):
+        file_path = os.path.normpath(os.path.join(STATIC_DIR, full_path))
+        if file_path.startswith(STATIC_DIR) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 

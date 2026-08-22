@@ -207,7 +207,28 @@ cd frontend
 npm install
 npm run dev
 ```
-*Aplicación web disponible en: `http://localhost:5173/`.*
+### 5. Despliegue en Producción (Railway.app):
+El proyecto cuenta con configuración unificada mediante `railway.json` y `Dockerfile` multi-stage:
+```bash
+# Para desplegar en Railway con la CLI:
+railway up
+```
+*Consulta la guía completa en [RAILWAY_DEPLOY.md](RAILWAY_DEPLOY.md) para vincular PostgreSQL.*
+
+---
+
+## 🗄️ Esquema de Base de Datos Relacional (Tablas en Español)
+
+| Tabla en BD | Modelo SQLAlchemy | Propósito |
+| :--- | :--- | :--- |
+| `usuarios` | `User` / `Usuario` | Cuentas de usuario, roles RBAC (`user`, `local`, `platform`) y PINs |
+| `vehiculos` | `Vehicle` / `Vehiculo` | Padrón de vehículos y placas asociadas por usuario |
+| `estacionamientos` | `Parking` / `Estacionamiento` | Sedes de cocheras, coordenadas GPS, tarifas y aforo |
+| `plazas` | `Slot` / `Plaza` | Cajones de estacionamiento en el plano 2D (libres/ocupadas) |
+| `elementos_plano` | `FloorPlanElement` / `ElementoPlano` | Paredes, accesos, garitas y paso peatonal en lienzo CAD |
+| `reservas` | `Reservation` / `Reserva` | Histórico y pases activos QR / ANPR con costos |
+| `personal` | `Staff` / `Personal` | Nómina de operadores de garita y turnos asignados por Admin Local |
+| `resenas` | `Review` / `Resena` | Calificaciones y réplicas oficiales de la comunidad |
 
 ---
 
@@ -217,7 +238,25 @@ npm run dev
 smart-park/
 ├── backend/
 │   ├── app/
-│   │   ├── api/v1/          # Endpoints REST (Users, Establishments, Reservations, Reviews, Incidents, Staff, Payments, Audit)
+│   │   ├── api/v1/          # Endpoints REST (Users, Establishments, Reservations, Reviews, Incidents, Staff, Payments)
+│   │   ├── core/            # Configuración, JWT, Security & Hash
+│   │   ├── db/              # Sesión asíncrona SQLAlchemy & SQLite/PostgreSQL
+│   │   ├── models/          # Modelos relacionales en español (usuarios, estacionamientos, plazas, etc.)
+│   │   ├── schemas/         # Esquemas Pydantic para validación de datos
+│   │   └── main.py          # Entrypoint de FastAPI con CORS y Routers
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Componentes React (CAD, ANPR, Mapas, Dashboard, RBAC)
+│   │   ├── context/         # AuthContext & EstablishmentContext
+│   │   └── services/        # Cliente Axios sincronizado con Backend API
+│   └── package.json
+├── server/
+│   └── ws-server.js         # Gateway de WebSockets para Telemetría LPR
+├── Dockerfile               # Multi-Stage Docker Build para Producción
+├── railway.json             # Configuración oficial de Despliegue en Railway
+├── RAILWAY_DEPLOY.md        # Guía de Despliegue en la Nube
+└── README.md
 │   │   ├── core/            # Configuración, JWT, Hash de contraseñas
 │   │   ├── db/              # Sesión asíncrona y Base de Datos SQLite
 │   │   ├── models/          # Modelos relacionales SQLAlchemy

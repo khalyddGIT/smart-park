@@ -9,7 +9,7 @@ from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import User
 from app.schemas.schemas import UserCreate, UserResponse, Token, PinVerify
-from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
@@ -107,7 +107,10 @@ async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(ge
     }
 
 @router.post("/verify-pin")
-async def verify_pin(pin_in: PinVerify):
-    if pin_in.pin == "1234" or len(pin_in.pin) >= 4:
+async def verify_pin(
+    pin_in: PinVerify,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.security_pin == pin_in.pin:
         return {"valid": True, "message": "PIN verificado correctamente"}
     raise HTTPException(status_code=400, detail="PIN de seguridad inválido")

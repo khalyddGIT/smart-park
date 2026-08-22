@@ -307,6 +307,26 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                 <p className="text-[11px] text-slate-500">Reserva plazas garantizadas en tiempo real</p>
               </div>
 
+              {/* Botón Google Registro */}
+              <div className="flex justify-center pt-1">
+                <GoogleLogin
+                  onSuccess={(res) => loginWithGoogle(res)}
+                  onError={() => setErrorMsg('Error al conectar con Google.')}
+                  size="large"
+                  shape="pill"
+                  text="signup_with"
+                  theme="outline"
+                  width="100%"
+                />
+              </div>
+
+              {/* Divisor */}
+              <div className="flex items-center space-x-3 my-1">
+                <div className="h-px bg-slate-200 flex-1" />
+                <span className="text-[11px] text-slate-400 font-medium">o con tu correo</span>
+                <div className="h-px bg-slate-200 flex-1" />
+              </div>
+
               <form onSubmit={handleDriverRegister} className="space-y-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700">Nombre Completo *</label>
@@ -338,26 +358,16 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Placa Vehículo</label>
-                    <Input
-                      type="text"
-                      placeholder="ABC-123"
-                      value={driverPlate}
-                      onChange={(e) => setDriverPlate(e.target.value.toUpperCase())}
-                      className="bg-slate-50/80 border-slate-200 text-emerald-700 font-mono font-bold rounded-xl text-xs h-10 uppercase"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Celular</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Celular</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
                       type="tel"
                       placeholder="+51 987 654 321"
                       value={driverPhone}
                       onChange={(e) => setDriverPhone(e.target.value)}
-                      className="bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                      className="pl-10 bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
                     />
                   </div>
                 </div>

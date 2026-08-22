@@ -459,29 +459,7 @@ export const App = () => {
                                 </div>
 
                                 <div className="p-5 pt-0 space-y-2.5">
-                                  {/* Botones de Navegación GPS Rápida */}
-                                  <div className="flex items-center gap-2">
-                                    <a
-                                      href={`https://www.google.com/maps/dir/?api=1&destination=${p.latitude || -13.1604},${p.longitude || -74.2259}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition border border-slate-200"
-                                      title="Abrir ruta en Google Maps"
-                                    >
-                                      <span>📍 Maps</span>
-                                    </a>
-                                    <a
-                                      href={`https://waze.com/ul?ll=${p.latitude || -13.1604},${p.longitude || -74.2259}&navigate=yes`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="flex-1 py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border border-blue-200"
-                                      title="Abrir ruta en Waze"
-                                    >
-                                      <span>🚗 Waze</span>
-                                    </a>
-                                  </div>
+
 
                                   <Button 
                                     onClick={() => handleSelectParking(p)} 

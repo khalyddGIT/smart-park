@@ -365,8 +365,8 @@ export const UserRolesModule = () => {
                 className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
               >
                 <option value="user">Conductor (Acceso a Mapa, Reservas y Pagos)</option>
-                <option value="local">Operador de Garita (Control ANPR y Reportes)</option>
-                <option value="platform">Super Admin (Control Financiero y Ajustes)</option>
+                <option value="local">Admin Local Cochera (Gestión de Sede, Garita & Personal)</option>
+                <option value="platform">Super Admin (Control Global, Finanzas & Licencias)</option>
               </select>
             </div>
 

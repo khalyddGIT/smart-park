@@ -500,14 +500,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
           {/* Barra de Búsqueda & Métricas - reparada alineación */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-            <div className="flex-1 relative">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <div className="flex-1 relative flex items-center">
+              <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none z-10 shrink-0" strokeWidth={2.2} />
               <Input
                 type="text"
                 placeholder="Buscar por nombre de cochera, dirección o ciudad..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-10 border-slate-200 bg-white rounded-xl text-sm focus-visible:ring-emerald-500"
+                className="pl-10 h-10 border-slate-200 bg-white rounded-xl text-sm focus-visible:ring-emerald-500 w-full"
               />
             </div>
             <div className="bg-white p-2.5 px-4 rounded-xl text-center text-xs font-bold text-slate-700 border border-slate-200 shadow-xs flex items-center justify-center gap-2 shrink-0">
@@ -567,7 +567,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         </p>
                       </div>
 
-                      {/* Coordenadas & Enlace de Mapa - reparado */}
+                      {/* Coordenadas & Enlace de Mapa */}
                       <div className={`flex items-center justify-between gap-2 text-[11px] p-2.5 rounded-xl border font-mono ${est.latitude ? 'bg-blue-50/50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
                         <span className={`flex items-center gap-1.5 truncate ${est.latitude ? 'text-slate-700' : 'text-slate-400'}`}>
                           <Navigation className={`w-3.5 h-3.5 shrink-0 ${est.latitude ? 'text-blue-600' : 'text-slate-400'}`} />
@@ -613,46 +613,46 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     </div>
                   </div>
 
-                  {/* Acciones CRUD & Planos - reparado: evita solapamiento y corte de texto */}
+                  {/* Acciones CRUD & Planos - totalmente restaurado y alineado */}
                   <div className="p-4 pt-0 space-y-2.5">
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-2 gap-2">
                       <Button
+                        type="button"
                         onClick={() => handleOpenPlan(est, 'viewer_2d')}
                         variant="outline"
-                        size="sm"
-                        className="font-bold text-[11px] sm:text-xs gap-1.5 text-slate-700 hover:bg-slate-50 border-slate-200 rounded-xl h-9 px-2 whitespace-nowrap"
+                        className="w-full h-9 font-extrabold text-xs gap-1.5 text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl px-2.5 flex items-center justify-center shadow-xs"
                       >
-                        <Eye className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                        <Eye className="w-4 h-4 text-teal-600 shrink-0" strokeWidth={2} />
                         <span className="truncate">Ver Plano</span>
                       </Button>
                       <Button
+                        type="button"
                         onClick={() => handleOpenPlan(est, 'editor_cad')}
-                        size="sm"
-                        className="font-bold text-[11px] sm:text-xs bg-slate-900 hover:bg-slate-800 text-white gap-1.5 shadow-sm rounded-xl h-9 px-2 whitespace-nowrap"
+                        className="w-full h-9 font-extrabold text-xs bg-slate-900 hover:bg-slate-800 text-white gap-1.5 shadow-sm rounded-xl px-2.5 flex items-center justify-center"
                       >
-                        <Grid className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <Grid className="w-4 h-4 text-emerald-400 shrink-0" strokeWidth={2} />
                         <span className="truncate">Editar CAD</span>
                       </Button>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <Button
+                        type="button"
                         onClick={() => handleOpenEdit(est)}
                         variant="outline"
-                        size="sm"
-                        className="flex-1 min-w-0 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-xs font-bold gap-1.5 rounded-xl h-9 px-3"
+                        className="flex-1 min-w-0 h-9 text-slate-700 border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-xs font-extrabold gap-1.5 rounded-xl px-3 flex items-center justify-center"
                       >
-                        <Edit3 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <Edit3 className="w-4 h-4 text-emerald-600 shrink-0" strokeWidth={2} />
                         <span className="truncate">Editar Ficha Completa</span>
                       </Button>
                       <Button
+                        type="button"
                         onClick={() => handleDelete(est.id, est.name)}
                         variant="ghost"
-                        size="sm"
-                        className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-xl h-9 w-9 p-0 shrink-0 border border-transparent hover:border-rose-200"
+                        className="h-9 w-9 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-100 bg-rose-50/70 border border-rose-200/80 rounded-xl shrink-0 flex items-center justify-center transition-colors"
                         title="Eliminar Sede"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4 shrink-0" strokeWidth={2} />
                       </Button>
                     </div>
                   </div>

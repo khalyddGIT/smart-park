@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import api from '../services/api';
 import { 
   CreditCard, 
   Lock, 
@@ -26,8 +27,8 @@ import {
   EyeOff
 } from 'lucide-react';
 
-export const CULQI_PUBLIC_KEY = 'pk_test_W5ShN8WanbYh5Ru8';
-export const CULQI_SECRET_KEY = 'sk_test_DqGi7c8DVwDLAkrt';
+// Solo llave publica en el frontend; el secreto vive en el backend (Railway env)
+export const CULQI_PUBLIC_KEY = import.meta.env.VITE_CULQI_PUBLIC_KEY || 'pk_test_W5ShN8WanbYh5Ru8';
 
 // Tarjetas de prueba oficiales de Culqi Sandbox
 const CULQI_TEST_CARDS = [
@@ -45,7 +46,8 @@ export const CulqiPaymentModal = ({
   parkingName = 'Smart Park Plaza Mayor',
   slotCode = 'A-01',
   customerEmail = 'conductor@smartpark.com',
-  onPaymentSuccess 
+  onPaymentSuccess,
+  reservationId = null
 }) => {
   const [activeMethod, setActiveMethod] = useState('card'); // 'card' | 'yape' | 'plin' | 'pagoefectivo'
   const [isProcessing, setIsProcessing] = useState(false);
@@ -68,7 +70,7 @@ export const CulqiPaymentModal = ({
   const [yapeOtp, setYapeOtp] = useState('');
   const [qrTimer, setQrTimer] = useState(120);
 
-  // Formulario PagoEfectivo (CIP)
+  // CIP informativo (no genera cobro real)
   const [cipCode] = useState(`CIP-${Math.floor(10000000 + Math.random() * 90000000)}`);
 
   // Temporizador para QR de Yape/Plin
@@ -115,76 +117,145 @@ export const CulqiPaymentModal = ({
     setErrorMsg('');
   };
 
-  // Procesar Pago
-  const handleProcessPayment = (e) => {
+  // Helper: extraer mes/anio de MM/AA
+  const parseExpiry = (val) => {
+    const [mm, yy] = val.split('/');
+    const month = (mm || '').padStart(2, '0');
+    let year = yy || '';
+    if (year.length === 2) year = '20' + year;
+    return { month, year };
+  };
+
+  // Procesar Pago - flujo real Culqi
+  const handleProcessPayment = async (e) => {
     if (e) e.preventDefault();
     setErrorMsg('');
 
-    if (activeMethod === 'card') {
-      const cleanCard = cardNumber.replace(/\s/g, '');
-      if (cleanCard.length < 15) {
-        setErrorMsg('Ingresa un número de tarjeta válido (16 dígitos).');
-        return;
-      }
-      if (cardCvv.length < 3) {
-        setErrorMsg('Ingresa el código CVV (3 o 4 dígitos).');
-        return;
-      }
-      if (cleanCard === '4000000000000002') {
-        setIsProcessing(true);
-        setProcessingStep('Validando fondos con el banco emisor...');
-        setTimeout(() => {
-          setIsProcessing(false);
-          setErrorMsg('Error Culqi [declined]: La tarjeta no cuenta con fondos suficientes.');
-        }, 1500);
-        return;
-      }
+    // Metodos no-tarjeta: fallback honesto, no marcar como pagado
+    if (activeMethod !== 'card') {
+      setErrorMsg('El cobro no pudo procesarse — la reserva no se confirmó. Los pagos Yape/Plin/PagoEfectivo requieren habilitación adicional en Culqi. Usa tarjeta o contacta al administrador.');
+      return;
     }
 
-    if (activeMethod === 'yape' && yapeOtp.length < 6 && activeMethod !== 'pagoefectivo') {
-      setErrorMsg('Ingresa el código de aprobación de 6 dígitos de tu app Yape.');
+    // Validaciones tarjeta
+    const cleanCard = cardNumber.replace(/\s/g, '');
+    if (cleanCard.length < 15) {
+      setErrorMsg('Ingresa un número de tarjeta válido (15-16 dígitos).');
+      return;
+    }
+    if (cardCvv.length < 3) {
+      setErrorMsg('Ingresa el código CVV (3 o 4 dígitos).');
+      return;
+    }
+    if (!cardExpiry.includes('/') || cardExpiry.length < 5) {
+      setErrorMsg('Ingresa vencimiento en formato MM/AA.');
+      return;
+    }
+    const { month, year } = parseExpiry(cardExpiry);
+    if (!month || !year || Number(month) < 1 || Number(month) > 12) {
+      setErrorMsg('Vencimiento inválido.');
+      return;
+    }
+
+    // Verificar que hay llave publica configurada
+    const pk = (CULQI_PUBLIC_KEY || '').trim();
+    if (!pk || !pk.startsWith('pk_')) {
+      setErrorMsg('El cobro no pudo procesarse — la reserva no se confirmó. Llave pública de Culqi no configurada en el frontend (VITE_CULQI_PUBLIC_KEY).');
       return;
     }
 
     setIsProcessing(true);
-    setProcessingStep('Cifrando credenciales con Culqi Tokenizer v4...');
+    setProcessingStep('Tokenizando…');
 
-    setTimeout(() => {
-      setProcessingStep('Autorizando cargo con sk_test_DqGi7c8DVwDLAkrt...');
-    }, 800);
-
-    setTimeout(() => {
+    let tokenId;
+    try {
+      // 1) Tokenizar tarjeta con Culqi API directamente (solo pk en frontend)
+      const tokenResp = await fetch('https://api.culqi.com/v2/tokens', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${pk}`,
+        },
+        body: JSON.stringify({
+          card_number: cleanCard,
+          cvv: cardCvv,
+          expiration_month: month,
+          expiration_year: year,
+          email: customerEmail,
+        }),
+      });
+      const tokenData = await tokenResp.json().catch(() => ({}));
+      if (!tokenResp.ok) {
+        const msg = tokenData.user_message || tokenData.merchant_message || tokenData.message || `Error al tokenizar (${tokenResp.status})`;
+        throw new Error(msg);
+      }
+      tokenId = tokenData.id;
+      if (!tokenId) throw new Error('Culqi no devolvió token (id vacío)');
+    } catch (err) {
       setIsProcessing(false);
+      // Mensaje honesto, no marcar como pagado
+      setErrorMsg(err.message?.includes('Failed to fetch') ? 'No se pudo conectar con Culqi para tokenizar. Verifica tu conexión.' : `Error al tokenizar: ${err.message}`);
+      return;
+    }
+
+    // 2) Cobrar via backend (el secreto nunca sale del servidor)
+    setProcessingStep('Cobrando…');
+    try {
+      const amountCents = Math.round(Number(amount) * 100);
+      const payload = {
+        amount_cents: amountCents,
+        currency: 'PEN',
+        token_id: tokenId,
+        description: (concept || 'Reserva Smart Park').slice(0, 80),
+        email: customerEmail,
+      };
+      if (reservationId) payload.reservation_id = reservationId;
+
+      const res = await api.post('/payments/charge', payload);
+      const data = res.data;
+
+      // Usar IDs reales de Culqi; boleta B001-* es placeholder visual derivado del recibo
       const chargeData = {
-        chargeId: `chr_test_${Math.random().toString(36).substring(2, 10)}`,
-        tokenId: `tkn_test_${Math.random().toString(36).substring(2, 10)}`,
+        chargeId: data.id || data.chargeId || tokenId,
+        tokenId: tokenId,
         amount: Number(amount),
         currency: 'PEN',
         currencySymbol: 'S/',
-        method: activeMethod === 'card' 
-          ? `Tarjeta ${getCardBrand(cardNumber)}` 
-          : activeMethod === 'yape' 
-          ? 'Yape Culqi' 
-          : activeMethod === 'plin' 
-          ? 'Plin Culqi' 
-          : 'PagoEfectivo CIP',
+        method: `Tarjeta ${getCardBrand(cardNumber)}`,
         cardBrand: getCardBrand(cardNumber),
-        last4: cardNumber.replace(/\s/g, '').slice(-4) || '4242',
+        last4: cleanCard.slice(-4) || '4242',
         cardHolder: cardHolder || 'CARLOS MENDOZA',
         email: customerEmail,
         installments: Number(installments),
-        invoiceNumber: `B001-${Math.floor(100000 + Math.random() * 900000)}`,
+        // placeholder visual pero indica origen Culqi cuando existe
+        invoiceNumber: data.invoice_number || `B001-${String(data.id || '').slice(-6) || Math.floor(100000 + Math.random() * 900000)}`,
         date: new Date().toLocaleString('es-PE'),
-        authorizationCode: `AUT-${Math.floor(100000 + Math.random() * 900000)}`,
+        authorizationCode: data.authorization_code || data.auth_code || `AUT-${String(data.id || '').slice(-6) || '---'}`,
         status: 'PAID',
-        gateway: 'CULQI PERÚ (PCI-DSS)'
+        gateway: 'CULQI PERÚ (PCI-DSS)',
+        raw: data,
       };
 
+      setIsProcessing(false);
       setPaymentSuccess(chargeData);
-      if (onPaymentSuccess) {
-        onPaymentSuccess(chargeData);
+      if (onPaymentSuccess) onPaymentSuccess(chargeData);
+    } catch (err) {
+      setIsProcessing(false);
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail || err.message || 'Error desconocido';
+      if (status === 401) {
+        setErrorMsg('Sesión expirada. Inicia sesión nuevamente para pagar.');
+      } else if (status === 503) {
+        // Backend sin CULQI_SECRET_KEY -> honesto, no se confirma reserva
+        setErrorMsg(`${detail} — El cobro no pudo procesarse — la reserva no se confirmó.`);
+      } else if (status === 402) {
+        setErrorMsg(`Pago rechazado por Culqi: ${detail}`);
+      } else if (status === 502) {
+        setErrorMsg(`Error de pasarela Culqi: ${detail}`);
+      } else {
+        setErrorMsg(`El cobro no pudo procesarse: ${detail} — la reserva no se confirmó.`);
       }
-    }, 1900);
+    }
   };
 
   const handleResetAndClose = () => {
@@ -226,9 +297,7 @@ export const CulqiPaymentModal = ({
           </div>
         </DialogHeader>
 
-        {/* =========================================================================
-            PANTALLA DE PAGO EXITOSO CON VOUCHER SUNAT & CULQI
-            ========================================================================= */}
+        {/* PANTALLA DE PAGO EXITOSO CON VOUCHER */}
         {paymentSuccess ? (
           <div className="py-2 space-y-4 animate-in fade-in">
             <div className="text-center space-y-1.5">
@@ -239,14 +308,14 @@ export const CulqiPaymentModal = ({
               <p className="text-xs text-slate-500">Tu transacción fue autorizada satisfactoriamente.</p>
             </div>
 
-            {/* Voucher Oficial Culqi & Boleta */}
+            {/* Voucher */}
             <div className="bg-slate-950 text-white p-5 rounded-3xl shadow-xl space-y-3 font-mono border border-slate-800 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
 
               <div className="flex justify-between items-center border-b border-slate-800 pb-2.5">
                 <div>
                   <span className="text-[10px] text-emerald-400 font-bold block uppercase tracking-wider">SMART PARK PERÚ S.A.C.</span>
-                  <span className="text-[9px] text-slate-400">RUC: 20608912341 • BOLETA {paymentSuccess.invoiceNumber}</span>
+                  <span className="text-[9px] text-slate-400">RUC: 20608912341 • BOLETA {paymentSuccess.invoiceNumber} <span className="text-[8px] text-slate-500">(placeholder derivado del recibo Culqi)</span></span>
                 </div>
                 <span className="text-[10px] font-bold text-emerald-400 font-mono uppercase">
                   ✓ PAGADO
@@ -268,7 +337,7 @@ export const CulqiPaymentModal = ({
                 </div>
                 <div className="flex justify-between text-slate-300">
                   <span className="font-sans">ID de Cargo (Culqi):</span>
-                  <span className="text-slate-400 text-[10px]">{paymentSuccess.chargeId}</span>
+                  <span className="text-slate-400 text-[10px] break-all">{paymentSuccess.chargeId}</span>
                 </div>
                 <div className="flex justify-between text-slate-300">
                   <span className="font-sans">Autorización:</span>
@@ -306,9 +375,6 @@ export const CulqiPaymentModal = ({
             </div>
           </div>
         ) : (
-          /* =========================================================================
-              FORMULARIO DE CHECKOUT CULQI CON MÉTODOS PERUANOS
-              ========================================================================= */
           <div className="space-y-4 my-1">
             
             {/* Selector de Pestañas de Pago */}
@@ -329,7 +395,7 @@ export const CulqiPaymentModal = ({
                 onClick={() => { setActiveMethod('yape'); setErrorMsg(''); }}
                 className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'yape' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
+                }}`}
               >
                 <Smartphone className="w-3.5 h-3.5 text-purple-600" />
                 <span>Yape</span>
@@ -340,7 +406,7 @@ export const CulqiPaymentModal = ({
                 onClick={() => { setActiveMethod('plin'); setErrorMsg(''); }}
                 className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'plin' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
+                }}`}
               >
                 <QrCode className="w-3.5 h-3.5 text-sky-600" />
                 <span>Plin</span>
@@ -351,7 +417,7 @@ export const CulqiPaymentModal = ({
                 onClick={() => { setActiveMethod('pagoefectivo'); setErrorMsg(''); }}
                 className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'pagoefectivo' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
+                }}`}
               >
                 <Building className="w-3.5 h-3.5 text-amber-600" />
                 <span>Agentes CIP</span>
@@ -365,10 +431,9 @@ export const CulqiPaymentModal = ({
               </div>
             )}
 
-            {/* 1. MÉTODO: TARJETA CRÉDITO / DÉBITO */}
+            {/* 1. MÉTODO: TARJETA */}
             {activeMethod === 'card' && (
               <div className="space-y-3.5">
-                {/* Visual Card 3D Preview */}
                 <div className="bg-gradient-to-tr from-slate-900 via-slate-800 to-emerald-950 p-4 rounded-2xl text-white shadow-lg space-y-3 border border-slate-700 relative overflow-hidden">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-mono tracking-widest text-emerald-400 font-bold">SMART-PARK CULQI PAY</span>
@@ -376,18 +441,15 @@ export const CulqiPaymentModal = ({
                       {getCardBrand(cardNumber)}
                     </span>
                   </div>
-
                   <div className="flex items-center space-x-2">
                     <div className="w-7 h-5 rounded bg-amber-400/80 border border-amber-300 flex items-center justify-center">
                       <div className="w-4 h-3 border border-amber-600 rounded-xs opacity-60" />
                     </div>
                     <span className="text-xs font-mono text-slate-400">••••</span>
                   </div>
-
                   <div className="font-mono text-sm tracking-widest font-black text-slate-100">
                     {cardNumber || '•••• •••• •••• ••••'}
                   </div>
-
                   <div className="flex justify-between items-end text-[10px] font-mono text-slate-300">
                     <div>
                       <span className="text-[8px] text-slate-400 block uppercase">Titular</span>
@@ -400,7 +462,6 @@ export const CulqiPaymentModal = ({
                   </div>
                 </div>
 
-                {/* Presets rápidos para probar Culqi */}
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Tarjetas de Prueba Culqi (Sandbox):</span>
                   <div className="flex flex-wrap gap-1.5">
@@ -498,7 +559,6 @@ export const CulqiPaymentModal = ({
                         <option value={6}>6 Cuotas</option>
                       </select>
                     </div>
-
                     <div className="flex items-center space-x-2 pt-4">
                       <input
                         type="checkbox"
@@ -535,159 +595,76 @@ export const CulqiPaymentModal = ({
               </div>
             )}
 
-            {/* 2. MÉTODO: YAPE CULQI */}
+            {/* 2. MÉTODO: YAPE - fallback honesto */}
             {activeMethod === 'yape' && (
               <div className="space-y-4">
                 <div className="p-4 rounded-3xl bg-purple-50/70 border border-purple-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-purple-950">Pago Inmediato con Yape Culqi</span>
-                    <span className="text-[10px] font-mono font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full">
-                      Expira: {Math.floor(qrTimer / 60)}:{(qrTimer % 60).toString().padStart(2, '0')}
-                    </span>
+                    <span className="text-xs font-black text-purple-950">Pago con Yape (no habilitado)</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">Requiere configuración</span>
                   </div>
-
-                  <div className="space-y-2">
+                  <p className="text-xs text-slate-600">Este método aún no está integrado con Culqi. Usa <strong>Tarjeta</strong> para un cobro real.</p>
+                  <div className="space-y-2 opacity-60">
                     <div>
                       <label className="text-xs font-bold text-purple-900 block mb-1">Número de Celular Yape</label>
-                      <Input
-                        type="tel"
-                        value={yapePhone}
-                        onChange={(e) => setYapePhone(e.target.value)}
-                        className="font-mono font-bold text-xs h-10 bg-white border-purple-300"
-                        required
-                      />
+                      <Input type="tel" value={yapePhone} onChange={(e) => setYapePhone(e.target.value)} className="font-mono font-bold text-xs h-10 bg-white border-purple-300" />
                     </div>
-
                     <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="text-xs font-bold text-purple-900">Código de Aprobación (6 dígitos) *</label>
-                        <span className="text-[10px] text-purple-700 font-bold">Abre Yape → Código de Aprobación</span>
-                      </div>
-                      <Input
-                        type="text"
-                        maxLength={6}
-                        placeholder="123456"
-                        value={yapeOtp}
-                        onChange={(e) => setYapeOtp(e.target.value.replace(/\D/g, ''))}
-                        className="font-mono font-black text-center text-base tracking-widest h-11 bg-white border-purple-300"
-                        required
-                      />
+                      <label className="text-xs font-bold text-purple-900 block mb-1">Código de Aprobación (6 dígitos)</label>
+                      <Input type="text" maxLength={6} placeholder="123456" value={yapeOtp} onChange={(e) => setYapeOtp(e.target.value.replace(/\D/g, ''))} className="font-mono font-black text-center text-base tracking-widest h-11 bg-white border-purple-300" />
                     </div>
                   </div>
                 </div>
-
-                <Button
-                  type="button"
-                  onClick={handleProcessPayment}
-                  disabled={isProcessing}
-                  className="w-full py-4 text-xs font-black bg-purple-700 hover:bg-purple-600 text-white rounded-2xl cursor-pointer shadow-md gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Verificando OTP con Yape Culqi...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Smartphone className="w-4 h-4" />
-                      <span>Yapear S/ {Number(amount).toFixed(2)} Ahora</span>
-                    </>
-                  )}
+                <Button type="button" onClick={handleProcessPayment} disabled={isProcessing} className="w-full py-4 text-xs font-black bg-purple-700 hover:bg-purple-600 text-white rounded-2xl cursor-pointer shadow-md gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Intentar cobro Yape (mostrará error honesto)</span>
                 </Button>
               </div>
             )}
 
-            {/* 3. MÉTODO: PLIN & BILLETERAS */}
+            {/* 3. MÉTODO: PLIN */}
             {activeMethod === 'plin' && (
               <div className="space-y-4 text-center">
                 <div className="p-4 rounded-3xl bg-sky-50/70 border border-sky-200 space-y-3">
-                  <h4 className="text-xs font-black text-sky-950">Escanea el QR con Plin, Interbank o BBVA</h4>
-                  
-                  {/* QR Simulado */}
-                  <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border-2 border-sky-300 shadow-md flex items-center justify-center relative">
+                  <h4 className="text-xs font-black text-sky-950">Plin / Billeteras (no habilitado)</h4>
+                  <p className="text-xs text-slate-600">Este método aún no procesa cobros reales. Usa <strong>Tarjeta</strong>.</p>
+                  <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border-2 border-sky-300 shadow-md flex items-center justify-center relative opacity-50">
                     <QrCode className="w-28 h-28 text-slate-800" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-7 h-7 bg-sky-600 text-white font-black text-[10px] rounded-lg flex items-center justify-center shadow-xs">
-                        PLIN
-                      </div>
+                      <div className="w-7 h-7 bg-sky-600 text-white font-black text-[10px] rounded-lg flex items-center justify-center">PLIN</div>
                     </div>
                   </div>
-
-                  <p className="text-[11px] text-sky-800 font-mono">
-                    Monto exacto: <strong>S/ {Number(amount).toFixed(2)}</strong> • Smart Park Perú
-                  </p>
                 </div>
-
-                <Button
-                  type="button"
-                  onClick={handleProcessPayment}
-                  disabled={isProcessing}
-                  className="w-full py-4 text-xs font-black bg-sky-600 hover:bg-sky-500 text-white rounded-2xl cursor-pointer shadow-md gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Confirmando transferencia Plin...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Ya realicé el pago por Plin</span>
-                    </>
-                  )}
+                <Button type="button" onClick={handleProcessPayment} disabled={isProcessing} className="w-full py-4 text-xs font-black bg-sky-600 hover:bg-sky-500 text-white rounded-2xl cursor-pointer shadow-md gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Intentar cobro Plin (mostrará error honesto)</span>
                 </Button>
               </div>
             )}
 
-            {/* 4. MÉTODO: PAGOEFECTIVO CIP */}
+            {/* 4. MÉTODO: PAGOEFECTIVO CIP - informativo */}
             {activeMethod === 'pagoefectivo' && (
               <div className="space-y-4">
                 <div className="p-4 rounded-3xl bg-amber-50/70 border border-amber-200 space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-amber-950">Pago en Agentes y Banca por Internet</span>
-                    <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-mono">
-                      Vence en 24h
-                    </span>
+                    <span className="text-xs font-black text-amber-950">PagoEfectivo CIP (informativo)</span>
+                    <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-mono">No cobra</span>
                   </div>
-
+                  <p className="text-[11px] text-slate-600">Código referencial. No confirma reserva ni genera cobro.</p>
                   <div className="bg-white p-3.5 rounded-2xl border border-amber-300 flex items-center justify-between font-mono">
                     <div>
-                      <span className="text-[9px] text-slate-400 uppercase font-bold block">Código CIP de Pago</span>
+                      <span className="text-[9px] text-slate-400 uppercase font-bold block">Código CIP (solo demo)</span>
                       <span className="text-lg font-black text-slate-900 tracking-wider">{cipCode}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleCopyCIP}
-                      className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold rounded-xl flex items-center gap-1 cursor-pointer transition"
-                    >
+                    <button type="button" onClick={handleCopyCIP} className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold rounded-xl flex items-center gap-1 cursor-pointer transition">
                       {copiedCIP ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedCIP ? 'Copiado' : 'Copiar'}</span>
                     </button>
                   </div>
-
-                  <div className="text-[10px] text-slate-600 space-y-1">
-                    <p>• Paga en Agentes BCP, BBVA, Interbank, Kasnet o Western Union.</p>
-                    <p>• Indica el código CIP <strong>{cipCode}</strong> y el monto <strong>S/ {Number(amount).toFixed(2)}</strong>.</p>
-                  </div>
                 </div>
-
-                <Button
-                  type="button"
-                  onClick={handleProcessPayment}
-                  disabled={isProcessing}
-                  className="w-full py-4 text-xs font-black bg-amber-600 hover:bg-amber-500 text-white rounded-2xl cursor-pointer shadow-md gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Validando acreditación en Agente...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Simular Pago Acreditado en Agente</span>
-                    </>
-                  )}
+                <Button type="button" onClick={handleProcessPayment} disabled={isProcessing} className="w-full py-4 text-xs font-black bg-amber-600 hover:bg-amber-500 text-white rounded-2xl cursor-pointer shadow-md gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Intentar validación (mostrará error honesto)</span>
                 </Button>
               </div>
             )}
@@ -695,7 +672,7 @@ export const CulqiPaymentModal = ({
             {/* Footer de Seguridad */}
             <div className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1.5 pt-1 border-t border-slate-100">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Transacción cifrada de extremo a extremo con Culqi v4 • Clave: pk_test_W5Sh...</span>
+              <span>Transacción cifrada con Culqi v4 • pk_test_W5Sh… (el secreto nunca se expone en el cliente)</span>
             </div>
 
           </div>

@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 # 24 horas
 
+    # Culqi - secreto solo en servidor, nunca en el frontend
+    CULQI_SECRET_KEY: str = os.getenv("CULQI_SECRET_KEY", "")
+
     # Conexión a Base de Datos (Soporta DATABASE_URL de Supabase / PostgreSQL o SQLite en /tmp para Vercel)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     USE_SQLITE: bool = os.getenv("USE_SQLITE", "True" if not os.getenv("DATABASE_URL") else "False") == "True"

@@ -25,6 +25,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
+import api from '../services/api';
 
 const SETTINGS_STORAGE_KEY = 'smart_park_platform_settings_v2';
 const BROADCASTS_STORAGE_KEY = 'smart_park_broadcasts_v2';
@@ -36,10 +37,9 @@ const INITIAL_SETTINGS = {
   maxHourlyRate: 15.00,
   maintenanceMode: false,
   maintenanceMessage: 'Smart-Park está realizando una breve actualización programada de servidores. Volvemos en unos minutos.',
+  // Culqi: claves nunca en el frontend; estado real viene de GET /payments/status
   paymentGateways: {
     culqi: true,
-    culqiPublicKey: 'pk_test_W5ShN8WanbYh5Ru8',
-    culqiSecretKey: 'sk_test_DqGi7c8DVwDLAkrt',
     yape: true,
     plin: true,
     cards: true,
@@ -101,6 +101,8 @@ export const PlatformSettingsModule = () => {
   const [activeSection, setActiveSection] = useState('business'); // 'business' | 'payments' | 'security' | 'broadcasts'
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [toast, setToast] = useState(null);
+  // Estado honesto de Culqi desde el backend (nunca expone sk_)
+  const [culqiStatus, setCulqiStatus] = useState({ loading: true, configured: false, environment: '—', message: 'Consultando servidor...' });
 
   // Formulario para nuevo comunicado
   const [newBroadcast, setNewBroadcast] = useState({
@@ -114,6 +116,21 @@ export const PlatformSettingsModule = () => {
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     } catch (e) {}
   }, [settings]);
+
+  // Consultar estado real de Culqi en el servidor (no expone secreto)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStatus = async () => {
+      try {
+        const res = await api.get('/payments/status');
+        if (!cancelled) setCulqiStatus({ loading: false, configured: !!res.data.configured, environment: res.data.environment || '—', message: res.data.message || '' });
+      } catch (err) {
+        if (!cancelled) setCulqiStatus({ loading: false, configured: false, environment: 'no disponible', message: 'Configuración de Culqi gestionada en el servidor — contacta al administrador.' });
+      }
+    };
+    fetchStatus();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     try {
@@ -376,24 +393,23 @@ export const PlatformSettingsModule = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               
-              {/* Culqi */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-3">
+              {/* Culqi - estado honesto desde backend, sin exponer secreto */}
+              <div className={`p-4 rounded-2xl border flex flex-col justify-between space-y-3 ${culqiStatus.configured ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
                 <div>
                   <div className="flex items-center justify-between">
                     <strong className="text-xs text-slate-900 font-black">Culqi Perú</strong>
-                    <input
-                      type="checkbox"
-                      checked={settings.paymentGateways.culqi}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        paymentGateways: { ...settings.paymentGateways, culqi: e.target.checked }
-                      })}
-                      className="w-4 h-4 accent-emerald-600 cursor-pointer"
-                    />
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${culqiStatus.configured ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-amber-500 text-white border-amber-600'}`}>
+                      {culqiStatus.loading ? 'Consultando…' : culqiStatus.configured ? 'Habilitado' : 'No configurado'}
+                    </span>
                   </div>
-                  <span className="text-[10px] text-slate-500 font-mono block mt-1">pk_test_W5Sh...</span>
+                  <span className="text-[10px] text-slate-600 block mt-1 leading-tight">
+                    {culqiStatus.loading ? 'Verificando CULQI_SECRET_KEY en el servidor…' : culqiStatus.message}
+                  </span>
+                  {!culqiStatus.loading && !culqiStatus.configured && (
+                    <span className="text-[10px] text-amber-800 font-mono block mt-1">Configuración de Culqi gestionada en el servidor — contacta al administrador</span>
+                  )}
                 </div>
-                <span className="text-[10px] font-mono font-bold text-emerald-700">Comisión Culqi: 3.99% + IGV</span>
+                <span className="text-[10px] font-mono font-bold text-slate-600">Comisión Culqi: 3.99% + IGV</span>
               </div>
 
               {/* Yape & Plin */}

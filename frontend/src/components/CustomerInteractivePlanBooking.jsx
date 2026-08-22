@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import api from '../services/api';
 import { 
   Car, 
   Sparkles, 
@@ -16,7 +17,9 @@ import {
   Bike,
   Crown,
   CreditCard,
-  Check
+  Check,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
@@ -55,19 +58,90 @@ const DEFAULT_FALLBACK_ELEMENTS = [
   { id: 27, type: 'slot', x: 915, y: 470, w: 85, h: 160, rot: 0, code: 'B-10', status: 'free', slotType: 'moto', shaded: false }
 ];
 
+// Convierte un slot del backend (GET /parkings/{id}/floor-plan) al formato del plano
+const mapServerSlot = (s) => ({
+  id: s.id,
+  type: 'slot',
+  code: s.code,
+  status: s.status || 'free',
+  slotType: s.slot_type || 'auto',
+  shaded: false,
+  x: s.pos_x || 0,
+  y: s.pos_y || 0,
+  w: s.width || 60,
+  h: s.height || 100,
+  rot: s.rotation || 0
+});
+
+// Convierte los elementos decorativos del backend (muros, carriles, garita...)
+const mapServerElement = (e) => {
+  let extra = {};
+  try { if (e.properties_json) extra = JSON.parse(e.properties_json) || {}; } catch {}
+  return {
+    id: `el-${e.id}`,
+    type: e.element_type,
+    x: e.pos_x || 0,
+    y: e.pos_y || 0,
+    w: e.width || 100,
+    h: e.height || 20,
+    rot: e.rotation || 0,
+    label: extra.label
+  };
+};
+
 export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onReserveSlot }) => {
-  const elements = planElements && planElements.length > 0 ? planElements : DEFAULT_FALLBACK_ELEMENTS;
-  
   const BASE_WIDTH = 1100;
   const BASE_HEIGHT = 700;
   
   const [scale, setScale] = useState(1);
   const containerRef = useRef(null);
   
+  // Plano REAL cargado desde el servidor; sin datos falsos si falla
+  const [remotePlan, setRemotePlan] = useState(null); // {slots, elements}
+  const [planStatus, setPlanStatus] = useState('idle'); // 'loading' | 'ready' | 'error' | 'unregistered'
+  const [planErrorDetail, setPlanErrorDetail] = useState('');
+
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [hours, setHours] = useState(2);
   const [selectedPlate, setSelectedPlate] = useState('ABC-123 (Toyota Corolla Blanco)');
   const [showCulqiModal, setShowCulqiModal] = useState(false);
+
+  const numericParkingId = Number(parking?.id);
+
+  // Carga del plano real del servidor al abrir/seleccionar una cochera registrada
+  useEffect(() => {
+    setSelectedSlot(null);
+    setRemotePlan(null);
+    setPlanErrorDetail('');
+    if (!parking || isNaN(numericParkingId)) {
+      // Cochera local "EST-*": aún no existe en el servidor, no inventar plano
+      setPlanStatus('unregistered');
+      return;
+    }
+    let cancelled = false;
+    setPlanStatus('loading');
+    api.get(`/parkings/${numericParkingId}/floor-plan`)
+      .then((res) => {
+        if (cancelled) return;
+        setRemotePlan({
+          slots: (res.data?.slots || []).map(mapServerSlot),
+          elements: (res.data?.elements || []).map(mapServerElement)
+        });
+        setPlanStatus('ready');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setPlanErrorDetail(err?.response?.data?.detail || '');
+        setPlanStatus('error');
+      });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parking?.id]);
+
+  // Elementos mostrados: prioridad al plano real del servidor; fallback al plano local
+  const elements = planStatus === 'ready' && remotePlan
+    ? [...remotePlan.elements, ...remotePlan.slots]
+    : (planElements && planElements.length > 0 ? planElements : DEFAULT_FALLBACK_ELEMENTS);
 
   // Auto-ajuste de escala para que el plano se adapte a cualquier pantalla
   useEffect(() => {
@@ -85,7 +159,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   }, []);
 
   const slots = elements.filter(e => e && e.type === 'slot');
-  const freeSlots = slots.filter(s => s.status !== 'occupied' && s.status !== 'ocupado');
+  // Solo los cajones con status "free" del servidor son reservables
+  const freeSlots = slots.filter(s => s.status === 'free');
   const totalSlots = slots.length;
 
   // Auto-seleccionar el primer cajón libre si no hay ninguno seleccionado
@@ -96,19 +171,20 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   }, [elements]);
 
   const handleSlotClick = (slot) => {
-    const isOccupied = slot.status === 'occupied' || slot.status === 'ocupado';
-    if (!isOccupied) {
+    // Solo se pueden elegir cajones libres confirmados por el servidor
+    if (slot.status === 'free') {
       setSelectedSlot(slot);
     }
   };
 
-  // Confirmar reserva directa instantánea
-  const handleDirectReservation = () => {
-    if (!selectedSlot) return;
+  // Datos base compartidos por ambas vías de reserva
+  const buildReservationData = (paymentMeta) => {
     const now = new Date();
-    const reservationData = {
+    return {
+      slotId: selectedSlot.id, // ID REAL del cajón en el servidor
       slotCode: selectedSlot.code,
       slotType: selectedSlot.slotType || 'standard',
+      parkingId: numericParkingId, // ID numérico real de la cochera
       parkingName: parking?.name || 'Smart Park Central',
       hours,
       plate: selectedPlate.split(' ')[0],
@@ -117,39 +193,54 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       token: `SPK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
       startTime: now,
       expiresAt: new Date(now.getTime() + hours * 60 * 60 * 1000),
-      paymentMethod: 'Pase Digital Directo'
+      ...paymentMeta
     };
+  };
+
+  const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free';
+
+  // Confirmar reserva directa instantánea
+  const handleDirectReservation = () => {
+    if (!canReserve) return;
     if (onReserveSlot) {
-      onReserveSlot(reservationData);
+      onReserveSlot(buildReservationData({ paymentMethod: 'Pase Digital Directo' }));
     }
   };
 
   // Confirmar reserva tras pago exitoso con Culqi
   const handleCulqiSuccess = (chargeData) => {
-    if (!selectedSlot) return;
-    const now = new Date();
-    const reservationData = {
-      slotCode: selectedSlot.code,
-      slotType: selectedSlot.slotType || 'standard',
-      parkingName: parking?.name || 'Smart Park Central',
-      hours,
-      plate: selectedPlate.split(' ')[0],
-      totalCost: (parking?.rate || 5.0) * hours,
-      code: `RSV-${Date.now().toString().slice(-6)}`,
-      token: `SPK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
-      startTime: now,
-      expiresAt: new Date(now.getTime() + hours * 60 * 60 * 1000),
-      paymentMethod: chargeData ? chargeData.method : 'Culqi Pasarela',
-      chargeId: chargeData ? chargeData.chargeId : `chr_test_${Date.now()}`
-    };
+    if (!canReserve) return;
     if (onReserveSlot) {
-      onReserveSlot(reservationData);
+      onReserveSlot(buildReservationData({
+        paymentMethod: chargeData ? chargeData.method : 'Culqi Pasarela',
+        chargeId: chargeData ? chargeData.chargeId : `chr_test_${Date.now()}`
+      }));
     }
   };
 
   return (
     <div className="space-y-6">
       
+      {/* Estados honestos del plano: sin datos falsos */}
+      {planStatus === 'unregistered' && (
+        <div className="p-4 bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl text-xs font-bold flex items-center gap-2.5">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+          <span>Esta cochera aún no está registrada en el servidor, por lo que no se pueden emitir reservas reales para ella.</span>
+        </div>
+      )}
+      {planStatus === 'loading' && (
+        <div className="p-4 bg-slate-50 border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold flex items-center gap-2.5">
+          <Loader2 className="w-5 h-5 text-slate-500 shrink-0 animate-spin" />
+          <span>Cargando el plano real de la cochera desde el servidor...</span>
+        </div>
+      )}
+      {planStatus === 'error' && (
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs font-bold flex items-center gap-2.5">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+          <span>No se pudo cargar el plano del servidor{planErrorDetail ? `: ${planErrorDetail}` : '. Intenta nuevamente más tarde.'} Se muestra el plano local informativo, pero no es fuente de disponibilidad real.</span>
+        </div>
+      )}
+
       {/* Resumen del Estacionamiento Seleccionado */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
         <div>
@@ -235,8 +326,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             {elements.map((el) => {
               // 1. Cajones de Estacionamiento
               if (el.type === 'slot') {
-                const isOccupied = el.status === 'occupied' || el.status === 'ocupado';
-                const isFree = !isOccupied;
+                // Solo "free" (según el servidor) es reservable; reserved/occupied no
+                const isFree = el.status === 'free';
                 const isSelected = selectedSlot?.id === el.id || selectedSlot?.code === el.code;
                 const isPMR = el.slotType === 'pmr';
                 const isMoto = el.slotType === 'moto';
@@ -412,6 +503,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 Selector Rápido de Cajones Libres ({freeSlots.length})
               </label>
               <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 bg-slate-50 rounded-2xl border border-slate-200">
+                {freeSlots.length === 0 && (
+                  <span className="text-xs text-slate-500 font-semibold p-2">
+                    {planStatus === 'ready' ? 'Actualmente no hay cajones libres en esta cochera según el servidor.' : 'Sin cajones libres para mostrar.'}
+                  </span>
+                )}
                 {freeSlots.map((s) => {
                   const isCurSelected = selectedSlot?.code === s.code;
                   return (

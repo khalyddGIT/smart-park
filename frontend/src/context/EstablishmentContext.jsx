@@ -314,6 +314,9 @@ export const EstablishmentProvider = ({ children }) => {
     return [];
   });
 
+  // Último error de reserva devuelto por el servidor (para feedback honesto en la UI)
+  const [bookingError, setBookingError] = useState(null);
+
   const [affiliationRequests, setAffiliationRequests] = useState(() => {
     try {
       const saved = localStorage.getItem(REQUESTS_STORAGE_KEY);
@@ -877,7 +880,7 @@ export const EstablishmentProvider = ({ children }) => {
     setApprovedAdmins([]);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ESTABLISHMENTS));
-      localStorage.setItem(RESERVATIONS_STORAGE_KEY, JSON.stringify(INITIAL_RESERVATIONS));
+      localStorage.setItem(getReservationsKey(), JSON.stringify(INITIAL_RESERVATIONS));
       localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(INITIAL_AFFILIATION_REQUESTS));
       localStorage.setItem(APPROVED_ADMINS_STORAGE_KEY, JSON.stringify([]));
     } catch (e) {}
@@ -902,8 +905,12 @@ export const EstablishmentProvider = ({ children }) => {
       occupySlot,
       freeSlot,
       createReservation,
+      bookingError,
+      refreshMyReservations,
       updateReservationStatus,
       cancelReservation,
+      checkInReservation,
+      checkOutReservation,
       completeReservation,
       resetToDefaults
     }}>

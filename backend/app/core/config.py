@@ -5,8 +5,12 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Smart Park API"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
-    
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "smartpark_super_secret_jwt_key_2026_change_in_prod")
+
+    # Entorno: "development" (default local) | "production" (Railway). En producción
+    # SECRET_KEY y DATABASE_URL son obligatorias: la app no arranca sin ellas.
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 # 24 horas
 
@@ -54,3 +58,10 @@ class Settings(BaseSettings):
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 settings = Settings()
+
+# Fail-fast: en producción es mejor no arrancar que arrancar inseguro o con datos efímeros
+if settings.ENVIRONMENT == "production":
+    if not settings.SECRET_KEY:
+        raise RuntimeError("[smart-park] SECRET_KEY es obligatoria en producción (variable de entorno)")
+    if not settings.DATABASE_URL:
+        raise RuntimeError("[smart-park] DATABASE_URL es obligatoria en producción (no se permite fallback a SQLite)")

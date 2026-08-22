@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -15,10 +15,22 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# Configuración CORS para Frontend React
+# Configuración CORS por entorno: en producción solo orígenes explícitos.
+# El frontend se sirve same-origin desde esta misma app, por lo que no requiere CORS.
+if settings.ENVIRONMENT == "production":
+    CORS_ORIGINS = [
+        o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()
+    ] or ["https://smart-park-web-production.up.railway.app"]
+else:
+    CORS_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://smart-park-web-production.up.railway.app",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

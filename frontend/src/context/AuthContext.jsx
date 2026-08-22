@@ -58,36 +58,20 @@ export const AuthProvider = ({ children }) => {
 
   // Login tradicional con Correo - intenta backend Supabase, fallback local
   const loginWithEmail = async (email, password, explicitRole = null) => {
-    // Intentar backend primero para persistencia real
+    // Autenticación SIEMPRE contra el backend: el rol lo define la base de datos, nunca el email
+    let data;
     try {
-      const data = await apiLogin({ email, password, full_name: email.split('@')[0], phone: '' });
-      if (data?.access_token && data?.user) {
-        setAccessToken(data.access_token);
-        const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, avatar: null, role: data.user.role || explicitRole || 'user', isGoogleAuth: false };
-        setUser(u); setRole(u.role); if (u.role === 'local') setPinVerified(true); return u;
-      }
+      data = await apiLogin({ email, password, full_name: email.split('@')[0], phone: '' });
     } catch (err) {
-      // Si backend responde 401, propagar error real
       if (err?.response?.status === 401) throw new Error(err.response.data?.detail || 'Credenciales incorrectas');
-      console.warn('Login backend no disponible, fallback local', err.message);
+      throw new Error('Servidor no disponible. Intenta más tarde.');
     }
-    let userRole = explicitRole;
-    let userName = email.split('@')[0].replace('.', ' ');
-    const lower = email.toLowerCase().trim();
-    if (!userRole) {
-      try {
-        const approvedAdmins = JSON.parse(localStorage.getItem('smart_park_approved_admins_v1') || '[]');
-        const matched = approvedAdmins.find(a => a.email.toLowerCase() === lower);
-        if (matched) { userRole = 'local'; userName = matched.name || userName; }
-      } catch (e) {}
-      if (!userRole) {
-        if (lower.includes('admin@') || lower.includes('superadmin')) userRole = 'platform';
-        else if (lower.includes('operador') || lower.includes('cochera') || lower.includes('local')) userRole = 'local';
-        else userRole = 'user';
-      }
+    if (!data?.access_token || !data?.user) {
+      throw new Error('Respuesta inválida del servidor de autenticación');
     }
-    const loggedUser = { id: Date.now(), name: userName, email, avatar: null, role: userRole, isGoogleAuth: false };
-    setUser(loggedUser); setRole(userRole); if (userRole === 'local') setPinVerified(true); return loggedUser;
+    setAccessToken(data.access_token);
+    const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, avatar: null, role: data.user.role || explicitRole || 'user', isGoogleAuth: false };
+    setUser(u); setRole(u.role); return u;
   };
 
   // Registro de Conductor - persistente Supabase

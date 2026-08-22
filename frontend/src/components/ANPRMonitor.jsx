@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import api from '../services/api';
 import { 
   Camera, 
   ShieldCheck, 
@@ -33,6 +34,7 @@ import {
 export const ANPRMonitor = () => {
   const [activeScannerTab, setActiveScannerTab] = useState('lpr'); // 'lpr' | 'qr'
   const [plate, setPlate] = useState('ABC-123');
+  const [parkingId, setParkingId] = useState(null);
   const [useRealWebcam, setUseRealWebcam] = useState(false);
   const [barrierOpen, setBarrierOpen] = useState(false);
   const [barrierAngle, setBarrierAngle] = useState(0); // 0 a 90 grados
@@ -112,24 +114,17 @@ export const ANPRMonitor = () => {
     let rsvCode = 'RSV-' + Math.floor(100000 + Math.random() * 900000);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/anpr/simulate-scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          parking_id: 1,
-          license_plate: formattedPlate,
-          gate_type: gateType
-        })
+      // Llamada real a la garita vía instancia api (mismo origen en producción + JWT)
+      const res = await api.post('/anpr/simulate-scan', {
+        parking_id: parkingId,
+        license_plate: formattedPlate,
+        gate_type: gateType
       });
-      if (res.ok) {
-        const data = await res.json();
-        matched = data.matched ?? data.authorized;
-        rsvCode = data.reservation_code || rsvCode;
-      } else {
-        matched = formattedPlate.startsWith('ABC') || formattedPlate.startsWith('XYZ') || formattedPlate.startsWith('AYC');
-      }
+      matched = res.data.matched ?? false;
+      rsvCode = res.data.reservation_code || rsvCode;
     } catch {
-      matched = formattedPlate.startsWith('ABC') || formattedPlate.startsWith('XYZ') || formattedPlate.startsWith('AYC');
+      // Sin verificación del servidor NO se autoriza el paso (fail-closed)
+      matched = false;
     }
 
     const t1 = performance.now();
@@ -170,6 +165,14 @@ export const ANPRMonitor = () => {
       ...prev
     ]);
   };
+
+  // Cargar la cochera activa real para operar la garita
+  useEffect(() => {
+    api.get('/parkings').then(res => {
+      const parks = Array.isArray(res.data) ? res.data : [];
+      if (parks.length > 0) setParkingId(parks[0].id);
+    }).catch(() => {});
+  }, []);
 
   // Inicializar escáner QR con html5-qrcode
   useEffect(() => {

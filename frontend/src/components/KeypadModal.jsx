@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
+import { verifyPinApi } from '../services/api';
 
 export const KeypadModal = ({ isOpen, onClose, onSuccess }) => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [checking, setChecking] = useState(false);
   const { setPinVerified } = useAuth();
 
   const handleKeyPress = (num) => {
@@ -20,14 +22,26 @@ export const KeypadModal = ({ isOpen, onClose, onSuccess }) => {
     setPin(prev => prev.slice(0, -1));
   };
 
-  const handleVerify = () => {
-    if (pin === '1234' || pin.length >= 4) {
+  // Verificación REAL contra el servidor: POST /auth/verify-pin con el JWT del usuario
+  const handleVerify = async () => {
+    if (pin.length < 4) {
+      setError('Ingresa un PIN de al menos 4 dígitos');
+      return;
+    }
+    setChecking(true);
+    try {
+      await verifyPinApi(pin);
       setPinVerified(true);
       onSuccess();
       onClose();
       setPin('');
-    } else {
-      setError('PIN incorrecto (Prueba: 1234)');
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 401) setError('Sesión expirada. Inicia sesión nuevamente.');
+      else if (status === 400) setError('PIN incorrecto');
+      else setError('No se pudo verificar el PIN. Intenta de nuevo.');
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -87,9 +101,10 @@ export const KeypadModal = ({ isOpen, onClose, onSuccess }) => {
           <Button
             variant="default"
             onClick={handleVerify}
+            disabled={checking}
             className="py-6 text-xs font-black shadow-lg shadow-emerald-600/20"
           >
-            OK
+            {checking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'OK'}
           </Button>
         </div>
       </DialogContent>

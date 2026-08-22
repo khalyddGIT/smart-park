@@ -3,36 +3,28 @@ import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Star, MessageSquare, Plus, Reply, Trash2, Check, Filter, ShieldCheck, ThumbsUp, Building2 } from 'lucide-react';
+import { Star, MessageSquare, Plus, Reply, Trash2, Check, Filter, ShieldCheck, ThumbsUp, Building2, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
-const REVIEWS_STORAGE_KEY = 'smart_park_reviews_v2';
-
-const INITIAL_REVIEWS = [
-  { id: 1, user_name: 'Carlos Mendoza', parking_id: 'EST-01', parking_name: 'Smart Park Plaza Mayor - Planta Baja', rating: 5, comment: 'Excelente servicio. La barrera ANPR me reconoció al instante sin necesidad de bajar la ventana.', response: '¡Muchas gracias Carlos! Nos alegra que disfrutes el ingreso automatizado.', date: 'Hace 2 días' },
-  { id: 2, user_name: 'Ana María R.', parking_id: 'EST-02', parking_name: 'Smart Park Plaza Mayor - Sótano 1', rating: 4, comment: 'Muy buen estacionamiento, limpio y techado. El plano interactivo facilita elegir el cajón con anticipación.', response: null, date: 'Hace 5 días' },
-  { id: 3, user_name: 'David Huamán', parking_id: 'EST-01', parking_name: 'Smart Park Plaza Mayor - Planta Baja', rating: 5, comment: 'Pude pagar directamente con Yape desde la app y mi pase QR se generó al instante. 100% recomendado.', response: '¡Gracias por confiar en Smart Park Ayacucho!', date: 'Ayer' },
-  { id: 4, user_name: 'Jorge Quispe', parking_id: 'EST-03', parking_name: 'Smart Park Mercado Mariscal Cáceres', rating: 5, comment: 'Céntrico y seguro. Las cámaras en garita dan mucha tranquilidad.', response: 'Apreciamos tu preferencia Jorge.', date: 'Hace 3 días' }
-];
+// Formatea la fecha ISO del backend a texto relativo/corto
+const formatDate = (iso) => {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (diffDays <= 0) return 'Hoy';
+    if (diffDays === 1) return 'Ayer';
+    if (diffDays < 7) return `Hace ${diffDays} días`;
+    return d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (e) { return ''; }
+};
 
 export const ReviewsModule = () => {
   const { role, user } = useAuth();
-  const [reviews, setReviews] = useState(() => {
-    try {
-      const saved = localStorage.getItem(REVIEWS_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    return INITIAL_REVIEWS;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(reviews));
-    } catch (e) {}
-  }, [reviews]);
+  const [reviews, setReviews] = useState([]);
+  const [parkingsMap, setParkingsMap] = useState({});
+  const [loading, setLoading] = useState(true);
 
   const [ratingFilter, setRatingFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -40,7 +32,7 @@ export const ReviewsModule = () => {
   const [selectedReview, setSelectedReview] = useState(null);
   const [newComment, setNewComment] = useState('');
   const [newRating, setNewRating] = useState(5);
-  const [selectedParkingForReview, setSelectedParkingForReview] = useState('Smart Park Plaza Mayor - Planta Baja');
+  const [selectedParkingId, setSelectedParkingId] = useState('');
   const [replyText, setReplyText] = useState('');
   const [toast, setToast] = useState(null);
 
@@ -49,50 +41,85 @@ export const ReviewsModule = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Solo conductores pueden crear nuevas reseñas
-  const handleCreateReview = (e) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-
-    const newObj = {
-      id: Date.now(),
-      user_name: user?.name || 'Conductor Registrado',
-      parking_id: 'EST-01',
-      parking_name: selectedParkingForReview,
-      rating: Number(newRating),
-      comment: newComment.trim(),
-      response: null,
-      date: 'Hace un momento'
-    };
-
-    setReviews([newObj, ...reviews]);
-    setShowAddModal(false);
-    setNewComment('');
-    setNewRating(5);
-    notify('¡Tu reseña ha sido publicada exitosamente!');
+  // Cargar reseñas REALES desde la API (públicas para todos los usuarios) + catálogo de cocheras
+  const loadReviews = async () => {
+    try {
+      const [revRes, parkRes] = await Promise.all([
+        api.get('/reviews'),
+        api.get('/parkings'),
+      ]);
+      const revs = Array.isArray(revRes.data) ? revRes.data : [];
+      const parks = Array.isArray(parkRes.data) ? parkRes.data : [];
+      const pmap = {};
+      parks.forEach(p => { pmap[p.id] = p.name; });
+      setParkingsMap(pmap);
+      setReviews(revs);
+      if (!selectedParkingId && parks.length > 0) setSelectedParkingId(String(parks[0].id));
+    } catch (e) {
+      notify('No se pudieron cargar las reseñas. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Administrador de local o plataforma puede responder
+  useEffect(() => { loadReviews(); }, []);
+
+  const parkingNameOf = (r) => r.parking_name || parkingsMap[r.parking_id] || `Cochera #${r.parking_id}`;
+
+  // Solo conductores pueden crear nuevas reseñas -> POST /reviews (requiere JWT)
+  const handleCreateReview = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim() || !selectedParkingId) return;
+    try {
+      await api.post('/reviews', {
+        parking_id: Number(selectedParkingId),
+        rating: Number(newRating),
+        comment: newComment.trim(),
+      });
+      setShowAddModal(false);
+      setNewComment('');
+      setNewRating(5);
+      notify('¡Tu reseña ha sido publicada exitosamente!');
+      await loadReviews(); // refresca desde el servidor: visible para TODOS los usuarios
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 401) notify('Debes iniciar sesión para dejar una reseña.');
+      else notify('No se pudo publicar la reseña. Intenta de nuevo.');
+    }
+  };
+
+  // Administrador de local o plataforma puede responder -> PUT /reviews/{id}/reply
   const handleOpenReply = (r) => {
     setSelectedReview(r);
     setReplyText(r.response || '');
     setShowReplyModal(true);
   };
 
-  const handleSaveReply = (e) => {
+  const handleSaveReply = async (e) => {
     e.preventDefault();
     if (!selectedReview || !replyText.trim()) return;
-
-    setReviews(reviews.map(r => r.id === selectedReview.id ? { ...r, response: replyText.trim() } : r));
-    setShowReplyModal(false);
-    notify('Respuesta oficial guardada y notificada al cliente.');
+    try {
+      await api.put(`/reviews/${selectedReview.id}/reply`, { response: replyText.trim() });
+      setShowReplyModal(false);
+      notify('Respuesta oficial guardada y notificada al cliente.');
+      await loadReviews();
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 403) notify('Solo administradores pueden responder reseñas.');
+      else notify('No se pudo guardar la respuesta.');
+    }
   };
 
-  // Eliminar / moderar reseña (Solo Super Admin)
-  const handleDelete = (id) => {
+  // Eliminar / moderar reseña (Solo Super Admin) -> DELETE /reviews/{id}
+  const handleDelete = async (id) => {
     if (!window.confirm('¿Deseas moderar y retirar esta reseña de la plataforma?')) return;
-    setReviews(reviews.filter(r => r.id !== id));
-    notify('Reseña retirada por moderación.');
+    try {
+      await api.delete(`/reviews/${id}`);
+      notify('Reseña retirada por moderación.');
+      await loadReviews();
+    } catch (err) {
+      notify('No se pudo eliminar la reseña.');
+    }
   };
 
   const filtered = reviews.filter(r => {
@@ -100,7 +127,9 @@ export const ReviewsModule = () => {
     return r.rating === Number(ratingFilter);
   });
 
-  const avgRating = (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1);
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / reviews.length).toFixed(1)
+    : '—';
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -144,8 +173,8 @@ export const ReviewsModule = () => {
 
           {/* BOTÓN SOLO PARA CONDUCTORES (ROLE === 'USER') */}
           {role === 'user' && (
-            <Button 
-              onClick={() => setShowAddModal(true)} 
+            <Button
+              onClick={() => setShowAddModal(true)}
               className="gap-2 font-bold shadow-md bg-amber-500 hover:bg-amber-600 text-white rounded-2xl"
             >
               <Plus className="w-4 h-4" />
@@ -164,84 +193,97 @@ export const ReviewsModule = () => {
       </div>
 
       {/* Lista de Reseñas */}
-      <div className="space-y-4">
-        {filtered.map((r) => (
-          <Card key={r.id} className="p-5 sm:p-6 border-slate-200 shadow-xs space-y-3 hover:shadow-md transition">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-extrabold text-slate-900 text-base">{r.user_name}</h3>
-                <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-                  <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{r.parking_name}</span>
-                  <span>•</span>
-                  <span className="text-slate-400">{r.date}</span>
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center space-x-0.5 text-amber-400 bg-amber-50/80 px-2.5 py-1 rounded-xl border border-amber-200/60">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`w-3.5 h-3.5 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
-                  ))}
-                  <span className="text-xs font-mono font-black text-amber-800 ml-1">{r.rating}.0</span>
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-slate-400">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span className="ml-3 text-sm font-bold">Cargando reseñas de la comunidad...</span>
+        </div>
+      ) : filtered.length === 0 ? (
+        <Card className="p-10 border-dashed border-slate-300 text-center space-y-2">
+          <MessageSquare className="w-8 h-8 mx-auto text-slate-300" />
+          <p className="text-sm font-bold text-slate-500">Aún no hay reseñas publicadas.</p>
+          {role === 'user' && <p className="text-xs text-slate-400">¡Sé el primero en compartir tu experiencia!</p>}
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((r) => (
+            <Card key={r.id} className="p-5 sm:p-6 border-slate-200 shadow-xs space-y-3 hover:shadow-md transition">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">{r.user_name}</h3>
+                  <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
+                    <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{parkingNameOf(r)}</span>
+                    <span>•</span>
+                    <span className="text-slate-400">{formatDate(r.created_at)}</span>
+                  </p>
                 </div>
 
-                {/* BOTÓN ELIMINAR SOLO PARA SUPER ADMIN */}
-                {role === 'platform' && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => handleDelete(r.id)} 
-                    title="Moderar / Eliminar Reseña"
-                    className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-xl"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-0.5 text-amber-400 bg-amber-50/80 px-2.5 py-1 rounded-xl border border-amber-200/60">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className={`w-3.5 h-3.5 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                    ))}
+                    <span className="text-xs font-mono font-black text-amber-800 ml-1">{r.rating}.0</span>
+                  </div>
 
-            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium bg-slate-50/80 p-4 rounded-2xl border border-slate-100">
-              "{r.comment}"
-            </p>
-
-            {/* Respuesta del Establecimiento */}
-            {r.response ? (
-              <div className="bg-emerald-50/90 border border-emerald-200/80 p-3.5 rounded-2xl ml-3 sm:ml-6 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider flex items-center gap-1.5">
-                    <Reply className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Respuesta Oficial de la Cochera</span>
-                  </span>
-                  {(role === 'local' || role === 'platform') && (
-                    <button 
-                      onClick={() => handleOpenReply(r)} 
-                      className="text-[11px] text-emerald-700 font-bold hover:underline"
+                  {/* BOTÓN ELIMINAR SOLO PARA SUPER ADMIN */}
+                  {role === 'platform' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(r.id)}
+                      title="Moderar / Eliminar Reseña"
+                      className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-xl"
                     >
-                      Editar Respuesta
-                    </button>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   )}
                 </div>
-                <p className="text-xs text-emerald-950 font-medium">{r.response}</p>
               </div>
-            ) : (
-              (role === 'local' || role === 'platform') && (
-                <div className="flex justify-end pt-1">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleOpenReply(r)} 
-                    className="text-xs font-bold gap-1.5 text-emerald-700 border-emerald-200 hover:bg-emerald-50 rounded-xl"
-                  >
-                    <Reply className="w-3.5 h-3.5" />
-                    <span>Responder al Conductor</span>
-                  </Button>
+
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium bg-slate-50/80 p-4 rounded-2xl border border-slate-100">
+                "{r.comment}"
+              </p>
+
+              {/* Respuesta del Establecimiento */}
+              {r.response ? (
+                <div className="bg-emerald-50/90 border border-emerald-200/80 p-3.5 rounded-2xl ml-3 sm:ml-6 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider flex items-center gap-1.5">
+                      <Reply className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>Respuesta Oficial de la Cochera</span>
+                    </span>
+                    {(role === 'local' || role === 'platform') && (
+                      <button
+                        onClick={() => handleOpenReply(r)}
+                        className="text-[11px] text-emerald-700 font-bold hover:underline"
+                      >
+                        Editar Respuesta
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-emerald-950 font-medium">{r.response}</p>
                 </div>
-              )
-            )}
-          </Card>
-        ))}
-      </div>
+              ) : (
+                (role === 'local' || role === 'platform') && (
+                  <div className="flex justify-end pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenReply(r)}
+                      className="text-xs font-bold gap-1.5 text-emerald-700 border-emerald-200 hover:bg-emerald-50 rounded-xl"
+                    >
+                      <Reply className="w-3.5 h-3.5" />
+                      <span>Responder al Conductor</span>
+                    </Button>
+                  </div>
+                )
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Modal Escribir Reseña (SOLO PARA CONDUCTOR) */}
       {role === 'user' && (
@@ -258,14 +300,16 @@ export const ReviewsModule = () => {
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Cochera a Calificar</label>
                 <select
-                  value={selectedParkingForReview}
-                  onChange={(e) => setSelectedParkingForReview(e.target.value)}
+                  value={selectedParkingId}
+                  onChange={(e) => setSelectedParkingId(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
                 >
-                  <option value="Smart Park Plaza Mayor - Planta Baja">Smart Park Plaza Mayor - Planta Baja</option>
-                  <option value="Smart Park Plaza Mayor - Sótano 1">Smart Park Plaza Mayor - Sótano 1</option>
-                  <option value="Smart Park Mercado Mariscal Cáceres">Smart Park Mercado Mariscal Cáceres</option>
-                  <option value="Smart Park Terminal Terrestre">Smart Park Terminal Terrestre</option>
+                  {Object.entries(parkingsMap).length === 0 && (
+                    <option value="">Cargando cocheras...</option>
+                  )}
+                  {Object.entries(parkingsMap).map(([pid, pname]) => (
+                    <option key={pid} value={pid}>{pname}</option>
+                  ))}
                 </select>
               </div>
 

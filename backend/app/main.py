@@ -135,16 +135,25 @@ app.include_router(staff.router, prefix=settings.API_V1_STR)
 app.include_router(users.router, prefix=settings.API_V1_STR)
 app.include_router(reviews.router, prefix=settings.API_V1_STR)
 
+STATIC_DIR = os.getenv("STATIC_DIR", "")
+
+@app.get("/health")
+def healthcheck():
+    return {"status": "ok", "service": "smart-park"}
+
 @app.get("/")
 def root():
     if STATIC_DIR and os.path.isdir(STATIC_DIR):
-        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+        index_path = os.path.join(STATIC_DIR, "index.html")
+        if os.path.isfile(index_path):
+            return FileResponse(index_path)
     return {"message": "Bienvenido a la API RESTful de Smart Park", "status": "online", "docs": "/docs"}
 
 # Servir frontend compilado (deploy unificado en Railway) con fallback SPA
-STATIC_DIR = os.getenv("STATIC_DIR", "")
 if STATIC_DIR and os.path.isdir(STATIC_DIR):
-    app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
+    assets_dir = os.path.join(STATIC_DIR, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
     @app.get("/{full_path:path}", include_in_schema=False)
     async def spa_fallback(full_path: str):

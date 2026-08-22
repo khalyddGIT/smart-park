@@ -35,7 +35,7 @@ async def register_user(user_in: UserCreate, db: AsyncSession = Depends(get_db))
         phone=user_in.phone,
         hashed_password=get_password_hash(user_in.password),
         role=user_in.role or "user",
-        security_pin="1234" # PIN por defecto para prueba
+        security_pin=hash_pin("1234") # PIN por defecto para prueba (almacenado hasheado)
     )
     db.add(db_user)
     await db.commit()

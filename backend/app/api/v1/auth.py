@@ -1,4 +1,5 @@
 import os
+import secrets
 from pydantic import BaseModel
 from typing import Optional
 from google.oauth2 import id_token
@@ -9,7 +10,7 @@ from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import User
 from app.schemas.schemas import UserCreate, UserResponse, Token, PinVerify
-from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user
+from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user, verify_pin_hash, is_pin_hashed, hash_pin
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
@@ -63,24 +64,26 @@ async def login_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/google", response_model=Token)
 async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(get_db)):
-    email = payload.email
-    name = payload.name
-    
-    # Si se envía un token de Google real y GOOGLE_CLIENT_ID está configurado, verificarlo
-    if payload.token and GOOGLE_CLIENT_ID:
-        try:
-            idinfo = id_token.verify_oauth2_token(
-                payload.token, 
-                google_requests.Request(), 
-                GOOGLE_CLIENT_ID
-            )
-            email = idinfo.get("email", email)
-            name = idinfo.get("name", name)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Token de Google inválido: {str(e)}")
+    # Fail-closed: sin client_id configurado o sin token, NO se confía en el email del body
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=503, detail="Inicio de sesión con Google no está configurado en el servidor")
+    if not payload.token:
+        raise HTTPException(status_code=400, detail="Token de Google requerido")
+
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            payload.token,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Token de Google inválido")
+
+    email = idinfo.get("email")
+    name = idinfo.get("name")
 
     if not email:
-        raise HTTPException(status_code=400, detail="Correo electrónico no proporcionado por Google")
+        raise HTTPException(status_code=400, detail="El token de Google no incluye un correo válido")
 
     # Buscar usuario o registrarlo automáticamente
     result = await db.execute(select(User).where(User.email == email))
@@ -91,9 +94,10 @@ async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(ge
             full_name=name or email.split("@")[0],
             email=email,
             phone="+51 900 000 000",
-            hashed_password=get_password_hash("GOOGLE_OAUTH_ACCOUNT"),
+            # Contraseña aleatoria criptográfica: la cuenta OAuth no debe ser accesible vía /auth/login
+            hashed_password=get_password_hash(secrets.token_urlsafe(32)),
             role="user",
-            security_pin="1234"
+            security_pin=hash_pin("1234"),
         )
         db.add(user)
         await db.commit()
@@ -109,8 +113,14 @@ async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(ge
 @router.post("/verify-pin")
 async def verify_pin(
     pin_in: PinVerify,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.security_pin == pin_in.pin:
+    stored = current_user.security_pin
+    # Compatibilidad con filas legacy en texto plano: al validar, se re-hashea (migración perezosa)
+    if verify_pin_hash(pin_in.pin, stored):
+        if stored and not is_pin_hashed(stored):
+            current_user.security_pin = hash_pin(pin_in.pin)
+            await db.commit()
         return {"valid": True, "message": "PIN verificado correctamente"}
     raise HTTPException(status_code=400, detail="PIN de seguridad inválido")

@@ -474,38 +474,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
             </button>
           </div>
 
-          {/* Accesos rápidos Demo (Discretos) */}
-          <div className="pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
-              <span className="flex items-center gap-1 font-mono">
-                <Zap className="w-3 h-3 text-emerald-600" />
-                <span>Perfiles demo:</span>
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              <button
-                type="button"
-                onClick={() => loginWithEmail('conductor@smartpark.com', '1234', 'user')}
-                className="py-1 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 hover:text-slate-900 text-[10px] font-semibold transition text-center cursor-pointer"
-              >
-                🚗 Conductor
-              </button>
-              <button
-                type="button"
-                onClick={() => loginWithEmail('operador@smartpark.com', '1234', 'local')}
-                className="py-1 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 hover:text-slate-900 text-[10px] font-semibold transition text-center cursor-pointer"
-              >
-                🏢 Cochera
-              </button>
-              <button
-                type="button"
-                onClick={() => loginWithEmail('admin@smartpark.com', '1234', 'platform')}
-                className="py-1 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 hover:text-slate-900 text-[10px] font-semibold transition text-center cursor-pointer"
-              >
-                🌐 Admin
-              </button>
-            </div>
-          </div>
+
 
         </div>
       </main>

@@ -9,9 +9,13 @@ from app.schemas.schemas import (
     SlotBase, SlotCreate, SlotUpdate, SlotResponse,
     FloorPlanElementBase, FloorPlanElementCreate, FloorPlanElementResponse, FloorPlanSyncRequest
 )
+from app.core.security import require_role
 
 
 router = APIRouter(prefix="/parkings", tags=["Estacionamientos, Cajones & Planos CAD"])
+
+# La lectura es pública (mapa del conductor); la escritura exige rol Admin Local o Super Admin
+write_required = require_role("local", "platform")
 
 # =======================================================
 # 1. CRUD DE ESTACIONAMIENTOS
@@ -62,7 +66,7 @@ async def get_parking(parking_id: int, db: AsyncSession = Depends(get_db)):
     return p_dict
 
 @router.post("", response_model=ParkingResponse, status_code=status.HTTP_201_CREATED)
-async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(get_db)):
+async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
     db_parking = Parking(
         name=parking_in.name,
         address=parking_in.address,
@@ -81,7 +85,7 @@ async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(g
     return ParkingResponse.model_validate(db_parking)
 
 @router.put("/{parking_id}", response_model=ParkingResponse)
-async def update_parking(parking_id: int, parking_in: ParkingUpdate, db: AsyncSession = Depends(get_db)):
+async def update_parking(parking_id: int, parking_in: ParkingUpdate, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
     result = await db.execute(select(Parking).where(Parking.id == parking_id))
     parking = result.scalars().first()
     if not parking:
@@ -96,7 +100,7 @@ async def update_parking(parking_id: int, parking_in: ParkingUpdate, db: AsyncSe
     return ParkingResponse.model_validate(parking)
 
 @router.delete("/{parking_id}", status_code=status.HTTP_200_OK)
-async def delete_parking(parking_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_parking(parking_id: int, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
     result = await db.execute(select(Parking).where(Parking.id == parking_id))
     parking = result.scalars().first()
     if not parking:
@@ -116,7 +120,7 @@ async def list_slots(parking_id: int, db: AsyncSession = Depends(get_db)):
     return [SlotResponse.model_validate(s) for s in slots]
 
 @router.post("/{parking_id}/slots", response_model=SlotResponse, status_code=status.HTTP_201_CREATED)
-async def create_slot(parking_id: int, slot_in: SlotBase, db: AsyncSession = Depends(get_db)):
+async def create_slot(parking_id: int, slot_in: SlotBase, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
     db_slot = Slot(
         parking_id=parking_id,
         code=slot_in.code,
@@ -135,7 +139,7 @@ async def create_slot(parking_id: int, slot_in: SlotBase, db: AsyncSession = Dep
     return SlotResponse.model_validate(db_slot)
 
 @router.put("/{parking_id}/slots/{slot_id}", response_model=SlotResponse)
-async def update_slot(parking_id: int, slot_id: int, slot_in: SlotUpdate, db: AsyncSession = Depends(get_db)):
+async def update_slot(parking_id: int, slot_id: int, slot_in: SlotUpdate, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
     result = await db.execute(select(Slot).where(Slot.id == slot_id, Slot.parking_id == parking_id))
     slot = result.scalars().first()
     if not slot:
@@ -150,7 +154,7 @@ async def update_slot(parking_id: int, slot_id: int, slot_in: SlotUpdate, db: As
     return SlotResponse.model_validate(slot)
 
 @router.delete("/{parking_id}/slots/{slot_id}", status_code=status.HTTP_200_OK)
-async def delete_slot(parking_id: int, slot_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_slot(parking_id: int, slot_id: int, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
     result = await db.execute(select(Slot).where(Slot.id == slot_id, Slot.parking_id == parking_id))
     slot = result.scalars().first()
     if not slot:
@@ -184,7 +188,7 @@ async def get_floor_plan(parking_id: int, db: AsyncSession = Depends(get_db)):
     }
 
 @router.post("/{parking_id}/floor-plan/sync", status_code=status.HTTP_200_OK)
-async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: AsyncSession = Depends(get_db)):
+async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
     # Limpiar elementos anteriores
     await db.execute(select(FloorPlanElement).where(FloorPlanElement.parking_id == parking_id))
     

@@ -37,11 +37,14 @@ async def get_my_reservations(db: AsyncSession = Depends(get_db), current_user: 
     return [ReservationResponse.model_validate(r) for r in reservations]
 
 @router.get("/{reservation_id}", response_model=ReservationResponse)
-async def get_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
+async def get_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    # IDOR: solo el dueño de la reserva o un administrador puede consultarla
+    if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
+        raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
     return ReservationResponse.model_validate(reservation)
 
 @router.post("", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)

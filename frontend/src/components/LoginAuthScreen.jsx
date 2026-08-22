@@ -16,7 +16,6 @@ import {
   EyeOff, 
   ArrowLeft, 
   KeyRound,
-  Zap,
   Send,
   FileCheck2,
   X,
@@ -37,9 +36,8 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
     }
   }, [user, isModal, onClose]);
 
-  // 'login' | 'register' | 'forgot_password'
+  // 'login' | 'register' | 'affiliation' | 'forgot_password'
   const [authMode, setAuthMode] = useState(defaultAuthMode);
-  const [showAffiliationModal, setShowAffiliationModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
   const [errorMsg, setErrorMsg] = useState('');
@@ -100,6 +98,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
   const handleAffiliationSubmit = (e) => {
     e.preventDefault();
     if (!reqParkingName.trim() || !reqOwnerName.trim() || !reqEmail.trim()) {
+      setErrorMsg('Por favor completa el nombre de cochera, propietario y correo');
       return;
     }
 
@@ -118,7 +117,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
     setReqSuccess(true);
     setTimeout(() => {
       setReqSuccess(false);
-      setShowAffiliationModal(false);
+      setAuthMode('login');
       // Reset campos
       setReqParkingName('');
       setReqOwnerName('');
@@ -126,7 +125,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       setReqPhone('');
       setReqAddress('');
       setReqNotes('');
-    }, 3000);
+    }, 3500);
   };
 
   const screenContent = (
@@ -143,11 +142,11 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
         </button>
       )}
 
-      {/* Fondo con brillo sutil y elegante en tema claro */}
+      {/* Fondo con brillo sutil */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-emerald-100/60 via-slate-100/40 to-transparent rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute -bottom-32 right-1/4 w-[400px] h-[200px] bg-teal-100/40 rounded-full blur-[90px] pointer-events-none" />
 
-      {/* Header / Brand acorde al Navbar del sistema */}
+      {/* Header / Brand */}
       <header className="relative z-10 pt-2 sm:pt-4 flex flex-col items-center text-center space-y-1.5">
         <div className="flex items-center space-x-2.5">
           <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 flex items-center justify-center shadow-md">
@@ -166,12 +165,12 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       </header>
 
       {/* Tarjeta Central de Autenticación */}
-      <main className="w-full max-w-[420px] my-auto relative z-10 py-4">
-        <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/60 space-y-5">
+      <main className="w-full max-w-[440px] my-auto relative z-10 py-4">
+        <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xl shadow-slate-200/60 space-y-5">
           
-          {/* Segmented Control / Tabs: Login vs Registro de Conductor */}
+          {/* Tabs principales: Iniciar Sesión | Crear Cuenta | Afiliar Cochera */}
           {authMode !== 'forgot_password' && (
-            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold">
+            <div className="grid grid-cols-3 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-[11px] font-bold">
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
@@ -194,6 +193,18 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
               >
                 Crear Cuenta
               </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('affiliation'); setErrorMsg(''); }}
+                className={`py-2 rounded-xl transition-all duration-150 flex items-center justify-center space-x-1 ${
+                  authMode === 'affiliation'
+                    ? 'bg-emerald-600 text-white shadow-xs font-extrabold'
+                    : 'text-emerald-700 hover:text-emerald-900 font-extrabold'
+                }`}
+              >
+                <Building2 className="w-3 h-3" />
+                <span>Afiliar Cochera</span>
+              </button>
             </div>
           )}
 
@@ -213,7 +224,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
           )}
 
           {/* =========================================================================
-              MODO 1: INICIAR SESIÓN (USUARIOS / CONDUCTORES / ADMINS)
+              MODO 1: INICIAR SESIÓN (USUARIOS / CONDUCTORES / ADMINS LOCALES)
               ========================================================================= */}
           {authMode === 'login' && (
             <div className="space-y-4">
@@ -234,7 +245,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
               {/* Divisor */}
               <div className="flex items-center space-x-3 my-2">
                 <div className="h-px bg-slate-200 flex-1" />
-                <span className="text-[11px] text-slate-400 font-medium">o con tu correo</span>
+                <span className="text-[11px] text-slate-400 font-medium">o con tu correo y contraseña</span>
                 <div className="h-px bg-slate-200 flex-1" />
               </div>
 
@@ -287,9 +298,9 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
                 <Button
                   type="submit"
-                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm mt-1 transition"
+                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm mt-1 transition cursor-pointer"
                 >
-                  <span>Ingresar</span>
+                  <span>Ingresar al Sistema</span>
                   <ArrowRight className="w-4 h-4 ml-1.5 text-emerald-400" />
                 </Button>
               </form>
@@ -399,15 +410,138 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     className="text-emerald-700 font-bold underline hover:text-emerald-800 cursor-pointer"
                   >
                     Términos y Condiciones
-                  </button>{' '}
-                  y Política de Privacidad (Ley N° 29733).
+                  </button>.
                 </p>
               </form>
             </div>
           )}
 
           {/* =========================================================================
-              MODO 3: RECUPERAR CONTRASEÑA
+              MODO 3: SOLICITUD DE AFILIACIÓN DE ESTACIONAMIENTO / COCHERA
+              ========================================================================= */}
+          {authMode === 'affiliation' && (
+            <div className="space-y-4">
+              <div className="text-center pb-1">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto mb-1.5">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900">Solicitud de Afiliación de Cochera</h3>
+                <p className="text-[11px] text-slate-500">Envía tus datos para habilitar tu cuenta de Admin Local</p>
+              </div>
+
+              {reqSuccess ? (
+                <div className="py-6 text-center space-y-3 animate-fade-in bg-emerald-50/50 border border-emerald-200 rounded-2xl p-4">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                    <FileCheck2 className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-xs font-black text-slate-900">¡Solicitud Enviada con Éxito!</h4>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    El Super Admin ha recibido los datos de tu establecimiento. Una vez aprobada la solicitud, podrás iniciar sesión con tu correo.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleAffiliationSubmit} className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Nombre Comercial del Estacionamiento *</label>
+                    <Input
+                      type="text"
+                      required
+                      placeholder="Ej. Cochera San Cristóbal"
+                      value={reqParkingName}
+                      onChange={(e) => setReqParkingName(e.target.value)}
+                      className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Propietario / Responsable *</label>
+                      <Input
+                        type="text"
+                        required
+                        placeholder="Ej. Roberto Quispe"
+                        value={reqOwnerName}
+                        onChange={(e) => setReqOwnerName(e.target.value)}
+                        className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Correo Electrónico *</label>
+                      <Input
+                        type="email"
+                        required
+                        placeholder="contacto@cochera.com"
+                        value={reqEmail}
+                        onChange={(e) => setReqEmail(e.target.value)}
+                        className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">WhatsApp / Teléfono</label>
+                      <Input
+                        type="tel"
+                        placeholder="+51 966 123 456"
+                        value={reqPhone}
+                        onChange={(e) => setReqPhone(e.target.value)}
+                        className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Dirección del Local</label>
+                      <Input
+                        type="text"
+                        placeholder="Jr. 28 de Julio 340"
+                        value={reqAddress}
+                        onChange={(e) => setReqAddress(e.target.value)}
+                        className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Plazas Estimadas</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={reqCapacity}
+                        onChange={(e) => setReqCapacity(e.target.value)}
+                        className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10 font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Tarifa Sugerida / h (S/)</label>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        min="1"
+                        value={reqRate}
+                        onChange={(e) => setReqRate(e.target.value)}
+                        className="bg-slate-50 border-slate-200 text-emerald-700 font-bold rounded-xl text-xs h-10 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full h-10.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm mt-1 cursor-pointer"
+                  >
+                    <Send className="w-4 h-4 ml-1 text-white mr-1.5" />
+                    <span>Enviar Solicitud de Afiliación</span>
+                  </Button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* =========================================================================
+              MODO 4: RECUPERAR CONTRASEÑA
               ========================================================================= */}
           {authMode === 'forgot_password' && (
             <div className="space-y-4">
@@ -457,24 +591,28 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
             </div>
           )}
 
-          {/* =========================================================================
-              SECCIÓN SOLICITAR REGISTRO DE ESTACIONAMIENTO
-              ========================================================================= */}
-          <div className="pt-3 border-t border-slate-100 text-center space-y-2">
-            <div className="text-[11px] text-slate-500">
-              ¿Administras o eres dueño de una cochera?
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowAffiliationModal(true)}
-              className="w-full py-2.5 px-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold transition flex items-center justify-center space-x-2 group shadow-2xs cursor-pointer"
-            >
-              <Building2 className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-              <span>Solicitar Afiliación de Estacionamiento</span>
-            </button>
+          {/* Botón inferior dinámico para alternar entre Afiliación e Iniciar Sesión */}
+          <div className="pt-3 border-t border-slate-100 text-center">
+            {authMode === 'affiliation' ? (
+              <button
+                type="button"
+                onClick={() => setAuthMode('login')}
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center justify-center mx-auto space-x-1.5 transition cursor-pointer"
+              >
+                <span>¿Ya tienes tu cuenta de cochera habilitada?</span>
+                <span className="text-emerald-700 underline font-extrabold">Iniciar Sesión</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAuthMode('affiliation')}
+                className="w-full py-2.5 px-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold transition flex items-center justify-center space-x-2 group cursor-pointer"
+              >
+                <Building2 className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                <span>¿Administras una cochera? Solicitar Afiliación</span>
+              </button>
+            )}
           </div>
-
-
 
         </div>
       </main>
@@ -491,189 +629,6 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
           Términos y Condiciones
         </button>
       </footer>
-
-      {/* =========================================================================
-          MODAL: SOLICITUD DE AFILIACIÓN DE ESTACIONAMIENTO
-          ========================================================================= */}
-      {showAffiliationModal && (
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
-            
-            {/* Cabecera del Modal */}
-            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold">
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-slate-900 tracking-tight">Solicitud de Afiliación de Cochera</h3>
-                  <p className="text-xs text-slate-500">Envía tus datos para que el administrador habilite tu cuenta</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowAffiliationModal(false)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Estado de Éxito al Enviar */}
-            {reqSuccess ? (
-              <div className="py-8 text-center space-y-3 animate-fade-in">
-                <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
-                  <FileCheck2 className="w-7 h-7" />
-                </div>
-                <h4 className="text-base font-black text-slate-900">¡Solicitud Enviada con Éxito!</h4>
-                <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-                  El Administrador del Sistema ha recibido los datos de tu establecimiento. Una vez aprobada la solicitud, se habilitará tu cuenta con tu correo para que gestiones tu cochera.
-                </p>
-              </div>
-            ) : (
-              /* Formulario de Solicitud */
-              <form onSubmit={handleAffiliationSubmit} className="space-y-3.5">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Nombre Comercial del Estacionamiento *</label>
-                  <Input
-                    type="text"
-                    required
-                    placeholder="Ej. Cochera San Cristóbal"
-                    value={reqParkingName}
-                    onChange={(e) => setReqParkingName(e.target.value)}
-                    className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Propietario / Responsable *</label>
-                    <Input
-                      type="text"
-                      required
-                      placeholder="Ej. Roberto Quispe"
-                      value={reqOwnerName}
-                      onChange={(e) => setReqOwnerName(e.target.value)}
-                      className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Correo Electrónico *</label>
-                    <Input
-                      type="email"
-                      required
-                      placeholder="contacto@cochera.com"
-                      value={reqEmail}
-                      onChange={(e) => setReqEmail(e.target.value)}
-                      className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">WhatsApp / Teléfono</label>
-                    <Input
-                      type="tel"
-                      placeholder="+51 966 123 456"
-                      value={reqPhone}
-                      onChange={(e) => setReqPhone(e.target.value)}
-                      className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Ciudad / Distrito</label>
-                    <Input
-                      type="text"
-                      value={reqCity}
-                      onChange={(e) => setReqCity(e.target.value)}
-                      className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Dirección del Local</label>
-                  <Input
-                    type="text"
-                    placeholder="Jr. 28 de Julio 340"
-                    value={reqAddress}
-                    onChange={(e) => setReqAddress(e.target.value)}
-                    className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Plazas Estimadas</label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={reqCapacity}
-                      onChange={(e) => setReqCapacity(e.target.value)}
-                      className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10 font-mono"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Tarifa Sugerida / h (S/)</label>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      min="1"
-                      value={reqRate}
-                      onChange={(e) => setReqRate(e.target.value)}
-                      className="bg-slate-50 border-slate-200 text-emerald-700 font-bold rounded-xl text-xs h-10 font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Descripción o notas adicionales</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Ej. Cochera techada, cámaras de seguridad, portón levadizo..."
-                    value={reqNotes}
-                    onChange={(e) => setReqNotes(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs p-2.5 focus:border-slate-900 focus:outline-none"
-                  />
-                </div>
-
-                <p className="text-[10px] text-slate-500 text-center leading-relaxed">
-                  Al enviar la solicitud, declaras ser titular o representante facultado del inmueble y aceptas los{' '}
-                  <button
-                    type="button"
-                    onClick={() => setShowTermsModal(true)}
-                    className="text-emerald-700 font-bold underline hover:text-emerald-800 cursor-pointer"
-                  >
-                    Términos y Condiciones para Cocheras
-                  </button>.
-                </p>
-
-                <div className="flex gap-2.5 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowAffiliationModal(false)}
-                    className="flex-1 border-slate-200 text-slate-600 hover:bg-slate-100 text-xs h-10.5 rounded-xl cursor-pointer"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs h-10.5 rounded-xl shadow-sm cursor-pointer"
-                  >
-                    <Send className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
-                    <span>Enviar Solicitud</span>
-                  </Button>
-                </div>
-              </form>
-            )}
-
-          </div>
-        </div>
-      )}
 
       {/* Modal de Términos y Condiciones */}
       <TermsAndConditionsModal
@@ -710,3 +665,4 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
   return screenContent;
 };
+

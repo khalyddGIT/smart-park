@@ -5,11 +5,19 @@ from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import Reservation, Slot
 from app.schemas.schemas import ANPRScanRequest
+from app.core.security import require_role
 
 router = APIRouter(prefix="/anpr", tags=["Simulación ANPR & Control de Garita"])
 
+# La barrera física solo puede ser operada por personal autorizado de garita
+gate_required = require_role("local", "platform")
+
 @router.post("/simulate-scan")
-async def simulate_anpr_scan(scan: ANPRScanRequest, db: AsyncSession = Depends(get_db)):
+async def simulate_anpr_scan(
+    scan: ANPRScanRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(gate_required)
+):
     # Buscar reserva activa para esa placa en este parqueo
     stmt = select(Reservation).where(
         Reservation.parking_id == scan.parking_id,

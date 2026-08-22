@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.db.session import engine, Base
 from app.models.models import User, Parking, Slot, FloorPlanElement, Vehicle
 from app.api.v1 import auth, parkings, reservations, anpr, vehicles, staff, users, reviews
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, hash_pin
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -93,7 +93,7 @@ async def startup_db():
                     email="usuario@smartpark.com",
                     phone="+51 987654321",
                     hashed_password=get_password_hash("password123"),
-                    security_pin="1234",
+                    security_pin=hash_pin("1234"),
                     role="user"
                 )
                 session.add(demo_user)
@@ -112,7 +112,7 @@ async def startup_db():
                     email="superadmin@smartpark.com",
                     phone="+51 999999999",
                     hashed_password=get_password_hash("SmartParkSuperAdmin2026!"),
-                    security_pin="7391",
+                    security_pin=hash_pin("7391"),
                     role="platform",
                     is_active=True
                 )
@@ -127,7 +127,7 @@ async def startup_db():
                     email="adminlocal@smartpark.com",
                     phone="+51 988888888",
                     hashed_password=get_password_hash("SmartParkLocal2026!"),
-                    security_pin="4826",
+                    security_pin=hash_pin("4826"),
                     role="local",
                     is_active=True
                 )

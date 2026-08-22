@@ -46,7 +46,9 @@ from app.models.models import Staff, User
 from app.core.security import get_password_hash
 
 @router.post("", response_model=StaffResponse, status_code=status.HTTP_201_CREATED)
-async def create_staff(staff_in: StaffCreate, db: AsyncSession = Depends(get_db)):
+async def create_staff(staff_in: StaffCreate, db: AsyncSession = Depends(get_db), current_user = Depends(staff_required)):
+    # El PIN se almacena siempre hasheado (mínimo 4 dígitos)
+    pin = staff_in.security_pin if staff_in.security_pin and len(staff_in.security_pin) >= 4 else f"{secrets.randbelow(10000):04d}"
     db_staff = Staff(
         parking_id=staff_in.parking_id,
         full_name=staff_in.full_name,
@@ -55,7 +57,7 @@ async def create_staff(staff_in: StaffCreate, db: AsyncSession = Depends(get_db)
         shift=staff_in.shift or "Mañana",
         status=staff_in.status or "active",
         email=staff_in.email,
-        security_pin=staff_in.security_pin or "1234"
+        security_pin=hash_pin(pin)
     )
     db.add(db_staff)
     await db.commit()
@@ -69,8 +71,9 @@ async def create_staff(staff_in: StaffCreate, db: AsyncSession = Depends(get_db)
                 full_name=staff_in.full_name,
                 email=staff_in.email,
                 phone=staff_in.dni,
-                hashed_password=get_password_hash(staff_in.password or "Garita2026!"),
-                security_pin=staff_in.security_pin or "1234",
+                # Sin contraseña por defecto predecible: aleatoria criptográfica si no se provee una fuerte
+                hashed_password=get_password_hash(staff_in.password) if staff_in.password and len(staff_in.password) >= 8 else get_password_hash(secrets.token_urlsafe(16)),
+                security_pin=hash_pin(pin),
                 role="user",
                 is_active=True
             )
@@ -80,13 +83,15 @@ async def create_staff(staff_in: StaffCreate, db: AsyncSession = Depends(get_db)
     return StaffResponse.model_validate(db_staff)
 
 @router.put("/{staff_id}", response_model=StaffResponse)
-async def update_staff(staff_id: int, staff_in: StaffUpdate, db: AsyncSession = Depends(get_db)):
+async def update_staff(staff_id: int, staff_in: StaffUpdate, db: AsyncSession = Depends(get_db), current_user = Depends(staff_required)):
     result = await db.execute(select(Staff).where(Staff.id == staff_id))
     member = result.scalars().first()
     if not member:
         raise HTTPException(status_code=404, detail="Colaborador no encontrado")
     
     update_data = staff_in.model_dump(exclude_unset=True)
+    if "security_pin" in update_data and update_data["security_pin"]:
+        update_data["security_pin"] = hash_pin(update_data["security_pin"])
     for key, value in update_data.items():
         setattr(member, key, value)
     
@@ -95,7 +100,7 @@ async def update_staff(staff_id: int, staff_in: StaffUpdate, db: AsyncSession = 
     return StaffResponse.model_validate(member)
 
 @router.delete("/{staff_id}", status_code=status.HTTP_200_OK)
-async def delete_staff(staff_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_staff(staff_id: int, db: AsyncSession = Depends(get_db), current_user = Depends(staff_required)):
     result = await db.execute(select(Staff).where(Staff.id == staff_id))
     member = result.scalars().first()
     if not member:

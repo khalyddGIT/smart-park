@@ -26,11 +26,13 @@ async def list_vehicles(
     return [VehicleResponse.model_validate(v) for v in vehicles]
 
 @router.get("/{vehicle_id}", response_model=VehicleResponse)
-async def get_vehicle(vehicle_id: int, db: AsyncSession = Depends(get_db)):
+async def get_vehicle(vehicle_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
     vehicle = result.scalars().first()
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado")
+    if vehicle.user_id != current_user.id and current_user.role != "platform":
+        raise HTTPException(status_code=403, detail="No autorizado para este vehículo")
     return VehicleResponse.model_validate(vehicle)
 
 @router.post("", response_model=VehicleResponse, status_code=status.HTTP_201_CREATED)

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -12,7 +12,7 @@ class UserBase(BaseModel):
     role: Optional[str] = "user"
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(min_length=8)
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
@@ -186,7 +186,14 @@ class StaffUpdate(BaseModel):
     email: Optional[str] = None
     security_pin: Optional[str] = None
 
-class StaffResponse(StaffBase):
+class StaffResponse(BaseModel):
+    # Sin security_pin: el PIN nunca debe salir de la API (se almacena hasheado)
+    full_name: str
+    dni: str
+    position: str
+    shift: Optional[str] = "Mañana"
+    status: Optional[str] = "active"
+    email: Optional[str] = None
     id: int
     parking_id: int
     created_at: datetime

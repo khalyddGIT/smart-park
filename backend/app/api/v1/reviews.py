@@ -5,9 +5,12 @@ from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import Review, Parking, User
 from app.schemas.schemas import ReviewCreate, ReviewReply, ReviewResponse
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_role
 
 router = APIRouter(prefix="/reviews", tags=["Reseñas & Calificaciones"])
+
+# Responder reseñas es función del Admin Local o Super Admin
+admin_required = require_role("local", "platform")
 
 @router.get("", response_model=List[ReviewResponse])
 async def list_reviews(
@@ -55,7 +58,8 @@ async def create_review(
 async def reply_review(
     review_id: int,
     reply_in: ReviewReply,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(admin_required)
 ):
     result = await db.execute(select(Review).where(Review.id == review_id))
     review = result.scalars().first()
@@ -68,11 +72,18 @@ async def reply_review(
     return ReviewResponse.model_validate(review)
 
 @router.delete("/{review_id}", status_code=status.HTTP_200_OK)
-async def delete_review(review_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_review(
+    review_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     result = await db.execute(select(Review).where(Review.id == review_id))
     review = result.scalars().first()
     if not review:
         raise HTTPException(status_code=404, detail="Reseña no encontrada")
+    # Solo el autor de la reseña o el Super Admin pueden eliminarla
+    if review.user_id != current_user.id and current_user.role != "platform":
+        raise HTTPException(status_code=403, detail="No autorizado para eliminar esta reseña")
 
     await db.delete(review)
     await db.commit()

@@ -6,7 +6,7 @@
 [![Leaflet](https://img.shields.io/badge/Maps-Leaflet%201.9-199900.svg?logo=leaflet&logoColor=white)](https://leafletjs.com/)
 [![Recharts](https://img.shields.io/badge/BI%20Analytics-Recharts-22c55e.svg)](https://recharts.org/)
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2015%20%7C%20SQLite-336791.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![WebSockets](https://img.shields.io/badge/RealTime-WebSockets-010101.svg?logo=socketdotio&logoColor=white)](https://developer.mozilla.org/es/docs/Web/API/WebSockets_API)
+[![Railway](https://img.shields.io/badge/Deploy-Railway%20Docker-purple.svg?logo=railway&logoColor=white)](https://railway.app/)
 [![Fabric.js](https://img.shields.io/badge/CAD%20Engine-Fabric.js%207-blue.svg)](https://fabricjs.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -161,16 +161,16 @@
 | **Estudio CAD** | Fabric.js 7 | Renderizado y manipulación de planos topográficos en 2D |
 | **Business Intelligence** | Recharts 3 | Gráficos ejecutivos interactivos de recaudación y aforo |
 | **Backend RESTful** | FastAPI (Python 3.11+) + Uvicorn | API REST asíncrona de alto rendimiento |
-| **Tiempo Real** | Node.js WebSockets (Puerto 8080) | Transmisión bidireccional de estados de garita y sensores |
-| **Base de Datos** | SQLite (aiosqlite) / PostgreSQL 15 | Persistencia relacional de usuarios, sedes y reservas |
+| **Tiempo Real** | Simulación en cliente (WebSocket en Roadmap) | Estados de garita, notificaciones y telemetría |
+| **Base de Datos** | PostgreSQL 15 (Railway) / SQLite (dev) | Persistencia relacional de usuarios, sedes y reservas |
 
 ---
 
-## 🚀 Instalación y Despliegue Local
+## 🚀 Instalación y Despliegue
 
 ### Requisitos Previos:
 - **Node.js**: v18+ o v20+
-- **Python**: v3.10+ o v3.11+
+- **Python**: v3.11+
 - **Git**
 
 ### 1. Clonar el Repositorio:
@@ -191,29 +191,53 @@ source venv/bin/activate
 pip install -r requirements.txt
 python -m uvicorn app.main:app --port 8000 --reload
 ```
-*API disponible en: `http://127.0.0.1:8000/docs` (Swagger UI).*
+*API disponible en: `http://127.0.0.1:8000/docs` (Swagger UI). Sin `DATABASE_URL` el backend usa SQLite local automáticamente.*
 
-### 3. Iniciar el Servidor de WebSockets:
-```bash
-# En una nueva terminal en la raíz del proyecto:
-npm run ws
-```
-*Servidor WebSocket escuchando en `ws://localhost:8080`.*
-
-### 4. Iniciar el Frontend (React + Vite):
+### 3. Iniciar el Frontend (React + Vite):
 ```bash
 # En una nueva terminal:
 cd frontend
 npm install
 npm run dev
 ```
-### 5. Despliegue en Producción (Railway.app):
-El proyecto cuenta con configuración unificada mediante `railway.json` y `Dockerfile` multi-stage:
+
+### Alternativa: Docker Compose (entorno completo local)
 ```bash
-# Para desplegar en Railway con la CLI:
-railway up
+docker compose up --build
 ```
-*Consulta la guía completa en [RAILWAY_DEPLOY.md](RAILWAY_DEPLOY.md) para vincular PostgreSQL.*
+
+### 4. Despliegue en Producción (Railway.app)
+El proyecto se despliega como **un solo contenedor Docker multi-stage** (`Dockerfile` compila el frontend Vite y lo sirve desde FastAPI) configurado vía `railway.json`:
+
+| Variable obligatoria | Valor | Descripción |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | Referencia al plugin PostgreSQL de Railway |
+| `SECRET_KEY` | *(cadena aleatoria segura)* | Firma de tokens JWT |
+| `ENVIRONMENT` | `production` | Activa validaciones estrictas de arranque |
+
+> 🔒 En producción la aplicación **no arranca** si falta `DATABASE_URL` o `SECRET_KEY` (fail-fast), y el CORS queda restringido a los orígenes definidos en `CORS_ORIGINS`.
+
+```bash
+railway up   # despliegue directo con la CLI
+```
+*Guía completa paso a paso: [RAILWAY_DEPLOY.md](RAILWAY_DEPLOY.md)*
+
+---
+
+## 🌍 Producción y Usuarios Semilla
+
+- **App:** https://smart-park-web-production.up.railway.app
+- **Healthcheck:** `/health` · **Swagger:** `/docs`
+
+Cuentas creadas automáticamente en el primer arranque (semilla idempotente):
+
+| Rol | Correo | Contraseña | PIN |
+| :--- | :--- | :--- | :--- |
+| 🚗 Conductor demo | `usuario@smartpark.com` | `password123` | `1234` |
+| 🏢 Admin Local | `adminlocal@smartpark.com` | `SmartParkLocal2026!` | `4826` |
+| 🌐 Super Admin | `superadmin@smartpark.com` | `SmartParkSuperAdmin2026!` | `7391` |
+
+> ⚠️ Rotar estas credenciales antes de un uso real en producción.
 
 ---
 
@@ -236,67 +260,31 @@ railway up
 
 ```
 smart-park/
-├── backend/
+├── backend/                    # API FastAPI (Python 3.11)
 │   ├── app/
-│   │   ├── api/v1/          # Endpoints REST (Users, Establishments, Reservations, Reviews, Incidents, Staff, Payments)
-│   │   ├── core/            # Configuración, JWT, Security & Hash
-│   │   ├── db/              # Sesión asíncrona SQLAlchemy & SQLite/PostgreSQL
-│   │   ├── models/          # Modelos relacionales en español (usuarios, estacionamientos, plazas, etc.)
-│   │   ├── schemas/         # Esquemas Pydantic para validación de datos
-│   │   └── main.py          # Entrypoint de FastAPI con CORS y Routers
+│   │   ├── api/v1/            # Endpoints REST (auth, parkings, reservations, vehicles,
+│   │   │                      #   staff, users, reviews, anpr)
+│   │   ├── core/              # config.py (settings + fail-fast), security.py (JWT/bcrypt), broker
+│   │   ├── db/                # Sesión asíncrona SQLAlchemy (PostgreSQL / SQLite dev)
+│   │   ├── models/            # Modelos relacionales en español
+│   │   ├── schemas/           # Esquemas Pydantic de validación
+│   │   ├── tests/             # Tests de API
+│   │   └── main.py            # Entrypoint: CORS por entorno, seeds idempotentes, SPA fallback
 │   └── requirements.txt
-├── frontend/
+├── frontend/                   # SPA React 19 + Vite 8 + Tailwind v4
 │   ├── src/
-│   │   ├── components/      # Componentes React (CAD, ANPR, Mapas, Dashboard, RBAC)
-│   │   ├── context/         # AuthContext & EstablishmentContext
-│   │   └── services/        # Cliente Axios sincronizado con Backend API
+│   │   ├── components/        # Dashboards RBAC, Estudio CAD, ANPR, Mapa Leaflet, Módulos
+│   │   ├── context/           # AuthContext & EstablishmentContext
+│   │   └── services/          # Cliente Axios hacia la API
 │   └── package.json
-├── server/
-│   └── ws-server.js         # Gateway de WebSockets para Telemetría LPR
-├── Dockerfile               # Multi-Stage Docker Build para Producción
-├── railway.json             # Configuración oficial de Despliegue en Railway
-├── RAILWAY_DEPLOY.md        # Guía de Despliegue en la Nube
-└── README.md
-│   │   ├── core/            # Configuración, JWT, Hash de contraseñas
-│   │   ├── db/              # Sesión asíncrona y Base de Datos SQLite
-│   │   ├── models/          # Modelos relacionales SQLAlchemy
-│   │   ├── schemas/         # Esquemas Pydantic para validación
-│   │   └── main.py          # Entrypoint de FastAPI con CORS y Routers
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── PlatformGlobalDashboard.jsx    # Panel Ejecutivo del Super Admin
-│   │   │   ├── PlatformFinancesModule.jsx     # Finanzas, Comisiones & Liquidaciones
-│   │   │   ├── PlatformSettingsModule.jsx     # Ajustes Maestros & Broadcast Push
-│   │   │   ├── AffiliatedParkingsModule.jsx   # Sedes & Bandeja de Afiliaciones
-│   │   │   ├── AyacuchoMap.jsx                # Mapa Interactivo Leaflet + Marquee
-│   │   │   ├── LocalEstablishmentManager.jsx  # Gestor de Cochera del Afiliado
-│   │   │   ├── InteractiveFloorPlanDrawingStudio.jsx # Estudio CAD 2D
-│   │   │   ├── ANPRMonitor.jsx                # Monitor de Garita LPR con IA
-│   │   │   ├── CustomerInteractivePlanBooking.jsx # Reserva Visual del Conductor
-│   │   │   ├── DigitalAccessPassModal.jsx     # Pase QR Dinámico
-│   │   │   ├── ReservationsModule.jsx         # Padrón & Operaciones de Garita
-│   │   │   ├── IncidentsModule.jsx            # Módulo de Incidencias con RBAC
-│   │   │   ├── ReviewsModule.jsx              # Muro de Reseñas & Calificaciones
-│   │   │   ├── UserRolesModule.jsx            # Padrón Maestro de Usuarios & PIN
-│   │   │   ├── StaffModule.jsx                # Gestión de Personal & Turnos
-│   │   │   ├── AnalyticsGlobalModule.jsx      # Analítica de Red
-│   │   │   ├── LoyaltyClubModule.jsx          # Smart Club & Puntos
-│   │   │   ├── VehiclesModule.jsx             # Vehículos del Conductor
-│   │   │   ├── PaymentsModule.jsx             # Pasarelas & Smart Wallet
-│   │   │   ├── LoginAuthScreen.jsx            # Login & Solicitud de Afiliación
-│   │   │   ├── Navbar.jsx                     # Barra Superior con Selector RBAC
-│   │   │   └── Sidebar.jsx                    # Menú Lateral Compacto (185px)
-│   │   ├── context/
-│   │   │   ├── AuthContext.jsx                # Estado de Sesión & Autenticación
-│   │   │   └── EstablishmentContext.jsx       # Estado Global de Cocheras, Planos y Afiliaciones
-│   │   ├── App.jsx                            # Enrutador por Roles
-│   │   └── index.css                          # Tokens de Diseño & Animaciones
-│   └── package.json
-├── server/
-│   └── ws-server.js         # Gateway de WebSockets para Telemetría LPR
-├── public/                  # Bundle estático sincronizado
+├── supabase/migrations/        # SQL de esquema inicial versionado
+├── Sistema de Estacionamiento/ # Documentación de diseño: requerimientos, casos de uso,
+│                               #   arquitectura C4, esquema BD, especificación API y roadmap
+├── Dockerfile                  # Build multi-stage: compila frontend y sirve desde FastAPI
+├── docker-compose.yml          # Entorno local completo (Postgres + backend + frontend)
+├── railway.json                # Configuración de despliegue Railway (builder DOCKERFILE)
+├── RAILWAY_DEPLOY.md           # Guía de despliegue en producción
+├── PROYECTO.md                 # Especificación funcional maestra (agnóstica al stack)
 └── README.md
 ```
 
@@ -304,4 +292,4 @@ smart-park/
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles. Desarrollado con tecnología de vanguardia para la transformación digital del estacionamiento urbano.
+Este proyecto está bajo la Licencia MIT. Desarrollado con tecnología de vanguardia para la transformación digital del estacionamiento urbano.

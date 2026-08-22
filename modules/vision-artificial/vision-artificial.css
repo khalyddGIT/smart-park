@@ -1,3 +1,0 @@
-/* Vision Artificial CSS */
-.detection-view{border-radius:var(--radius-md);overflow:hidden;position:relative}
-.detection-view img{filter:brightness(.85) contrast(1.1)}

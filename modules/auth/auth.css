@@ -1,5 +1,0 @@
-/* Auth module styles */
-#biometric-scanner { transition: border-color .3s; }
-#biometric-scanner.scanning { border-color: var(--c2); box-shadow: 0 0 20px rgba(var(--c2-rgb),.3); }
-#biometric-scanner.success { border-color: var(--color-success); }
-#biometric-scanner.fail { border-color: var(--color-danger); }

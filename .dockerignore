@@ -9,16 +9,10 @@ backend/__pycache__
 backend/app/__pycache__
 backend/.pytest_cache
 backend/.env
-backend/smartpark_dev.db
+backend/*.db
 public
-api
-server
-modules
-js
-css
-img
 skills-lock.json
 *.log
-DOCUMENTACION_AVANCE_2026-08-20.md
+DOCUMENTACION_AVANCE_*.md
 Sistema de Estacionamiento/
 supabase/

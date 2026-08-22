@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,6 +9,12 @@ from app.models.models import Reservation, Slot, Parking
 from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationResponse
 from app.core.security import get_current_user, require_role
 from app.models.models import User
+
+# Normaliza datetimes a UTC naive para compatibilidad con columnas DateTime sin zona horaria
+def _naive_utc(dt: datetime) -> datetime:
+    if dt is None:
+        return dt
+    return dt.astimezone(timezone.utc).replace(tzinfo=None) if dt.tzinfo else dt
 
 # Operador de garita autorizado para registrar entradas/salidas físicas
 gate_operator_required = require_role("local", "platform")
@@ -68,8 +74,10 @@ async def create_reservation(
     if not parking:
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
 
-    # Duración en horas
-    duration = max(1.0, (res_in.end_time - res_in.start_time).total_seconds() / 3600.0)
+    # Duración en horas (normaliza antes de restar para evitar aware vs naive)
+    _start = _naive_utc(res_in.start_time)
+    _end = _naive_utc(res_in.end_time)
+    duration = max(1.0, (_end - _start).total_seconds() / 3600.0)
     total_cost = round(duration * parking.hourly_rate, 2)
     reservation_code = f"RSV-{uuid.uuid4().hex[:6].upper()}"
 
@@ -79,8 +87,8 @@ async def create_reservation(
         parking_id=res_in.parking_id,
         slot_id=res_in.slot_id,
         license_plate=res_in.license_plate.strip().upper(),
-        start_time=res_in.start_time,
-        end_time=res_in.end_time,
+        start_time=_start,
+        end_time=_end,
         total_cost=total_cost,
         status="scheduled",
         qr_code=f"SMARTPARK-{reservation_code}-{res_in.license_plate.strip().upper()}"

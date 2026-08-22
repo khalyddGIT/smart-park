@@ -104,8 +104,6 @@ export const UserProfileModule = () => {
                 <span className="font-bold text-slate-700 capitalize">Rol: {role}</span>
               </p>
               <div className="flex items-center gap-3 mt-2 text-xs text-slate-600">
-                <span>Nivel Smart Club: <strong className="text-emerald-700 font-bold">Oro</strong></span>
-                <span>•</span>
                 <span className="font-mono">Placa Principal: <strong className="text-slate-900 font-bold">{formData.plate}</strong></span>
               </div>
             </div>
@@ -123,7 +121,7 @@ export const UserProfileModule = () => {
       </div>
 
       {/* Tarjetas KPI de Actividad */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Estancias Completadas</span>
           <div className="mt-2 flex items-baseline justify-between">
@@ -131,14 +129,6 @@ export const UserProfileModule = () => {
             <span className="text-xs text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
               Histórico
             </span>
-          </div>
-        </Card>
-
-        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Puntos Smart Club</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-emerald-700">1,250 PTS</span>
-            <span className="text-xs text-amber-700 font-bold">Nivel 2</span>
           </div>
         </Card>
 

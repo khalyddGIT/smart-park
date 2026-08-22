@@ -40,17 +40,6 @@ const INITIAL_NOTIFICATIONS = [
     type: 'success',
     targetTab: 'history'
   },
-  {
-    id: 'NOTIF-U4',
-    role: 'user',
-    title: 'Puntos Smart Club Acreditados',
-    message: '¡Ganaste +50 puntos de fidelidad por tu última estancia en Huamanga!',
-    time: 'Hace 2 días',
-    timestamp: Date.now() - 48 * 60 * 60 * 1000,
-    read: true,
-    type: 'success',
-    targetTab: 'loyalty'
-  },
 
   // NOTIFICACIONES ROL ADMIN LOCAL (LOCAL)
   {

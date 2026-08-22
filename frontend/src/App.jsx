@@ -15,7 +15,6 @@ import { UserRolesModule } from './components/UserRolesModule';
 import { StaffModule } from './components/StaffModule';
 import { AnalyticsGlobalModule } from './components/AnalyticsGlobalModule';
 import { IncidentsModule } from './components/IncidentsModule';
-import { LoyaltyClubModule } from './components/LoyaltyClubModule';
 import { AuditLogsModule } from './components/AuditLogsModule';
 import { ResiliencySimModule } from './components/ResiliencySimModule';
 import { AyacuchoMap } from './components/AyacuchoMap';
@@ -61,7 +60,7 @@ export const App = () => {
   // Redirección segura entre vistas al cambiar de rol
   useEffect(() => {
     const validTabsByRole = {
-      user: ['dashboard', 'reservations', 'profile', 'loyalty', 'vehicles', 'payments', 'incidents', 'history', 'reviews'],
+      user: ['dashboard', 'reservations', 'profile', 'vehicles', 'payments', 'incidents', 'history', 'reviews'],
       local: ['dashboard', 'editor', 'reservations', 'profile', 'anpr', 'garita', 'incidents', 'staff', 'reports', 'audit', 'reviews', 'resiliency'],
       platform: ['dashboard', 'profile', 'finances', 'settings', 'affiliates', 'reservations', 'analytics', 'incidents', 'audit', 'users', 'staff', 'reviews', 'resiliency']
     };
@@ -489,7 +488,6 @@ export const App = () => {
               )}
 
               {activeTab === 'profile' && <UserProfileModule />}
-              {activeTab === 'loyalty' && <LoyaltyClubModule />}
               {activeTab === 'vehicles' && <VehiclesModule />}
               {activeTab === 'payments' && <PaymentsModule />}
               {activeTab === 'incidents' && <IncidentsModule />}

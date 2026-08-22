@@ -154,6 +154,21 @@ class Review(Base):
     response = Column(Text, nullable=True) # Respuesta del administrador local
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class Incident(Base):
+    __tablename__ = "incidencias"
+
+    id = Column(Integer, primary_key=True, index=True)
+    parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    user_name = Column(String(150), nullable=False)
+    category = Column(String(50), default="general")
+    description = Column(Text, nullable=False)
+    photo_url = Column(Text, nullable=True)
+    status = Column(String(20), default="reported")
+    resolution_note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    resolved_at = Column(DateTime, nullable=True)
+
 # Alias en español para los modelos de datos
 Usuario = User
 Vehiculo = Vehicle
@@ -163,5 +178,6 @@ ElementoPlano = FloorPlanElement
 Reserva = Reservation
 Personal = Staff
 Resena = Review
+Incidente = Incident
 
 

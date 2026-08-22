@@ -4,33 +4,17 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Users, Plus, Edit3, Trash2, Search, Download, Clock, ShieldCheck, Check, UserCheck } from 'lucide-react';
-
-const STAFF_STORAGE_KEY = 'smart_park_staff_v2';
-
-const INITIAL_STAFF = [
-  { id: 1, full_name: 'Juan Pérez Mendoza', dni: '44556677', position: 'Operador Garita Principal', shift: 'Mañana (07:00 - 15:00)', status: 'Activo', parking_name: 'Smart Park Central San Isidro' },
-  { id: 2, full_name: 'Rosa Gutiérrez Alva', dni: '72334411', position: 'Supervisora de Operaciones', shift: 'Tarde (15:00 - 23:00)', status: 'Activo', parking_name: 'Smart Park Central San Isidro' },
-  { id: 3, full_name: 'Marcos Quispe Lara', dni: '48990022', position: 'Seguridad & Monitoreo ANPR', shift: 'Noche (23:00 - 07:00)', status: 'Activo', parking_name: 'Smart Park Central San Isidro' },
-];
+import { Users, Plus, Edit3, Trash2, Search, Download, Clock, ShieldCheck, Check, UserCheck, ShieldAlert, Loader2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 export const StaffModule = () => {
-  const [staff, setStaff] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STAFF_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    return INITIAL_STAFF;
-  });
+  const { role } = useAuth();
+  const canManage = role === 'local' || role === 'platform';
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(staff));
-    } catch (e) {}
-  }, [staff]);
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(canManage);
+
   const [search, setSearch] = useState('');
   const [shiftFilter, setShiftFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -42,7 +26,9 @@ export const StaffModule = () => {
     position: 'Operador de Garita',
     shift: 'Mañana (07:00 - 15:00)',
     status: 'Activo',
-    parking_id: 1
+    parking_id: 1,
+    email: '',
+    security_pin: ''
   });
   const [toast, setToast] = useState(null);
 
@@ -51,8 +37,43 @@ export const StaffModule = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
+  const describeError = (err, action) => {
+    const status = err?.response?.status;
+    if (status === 401) notify('Tu sesión expiró o no has iniciado sesión. Vuelve a autenticarte.');
+    else if (status === 403) notify(`No tienes permisos para ${action}.`);
+    else notify('Ocurrió un error de conexión con el servidor. Intenta de nuevo.');
+  };
+
+  // Carga REAL desde la API (requiere rol local | platform)
+  const loadStaff = async () => {
+    try {
+      const res = await api.get('/staff');
+      setStaff(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      describeError(err, 'cargar la nómina de personal');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (canManage) loadStaff();
+    else setLoading(false);
+  }, [canManage]);
+
+  const resetForm = () => setFormData({
+    full_name: '',
+    dni: '',
+    position: 'Operador de Garita',
+    shift: 'Mañana (07:00 - 15:00)',
+    status: 'Activo',
+    parking_id: 1,
+    email: '',
+    security_pin: ''
+  });
+
   const handleOpenAdd = () => {
-    setFormData({ full_name: '', dni: '', position: 'Operador de Garita', shift: 'Mañana (07:00 - 15:00)', status: 'Activo', parking_id: 1 });
+    resetForm();
     setShowAddModal(true);
   };
 
@@ -64,56 +85,79 @@ export const StaffModule = () => {
       position: m.position,
       shift: m.shift,
       status: m.status,
-      parking_id: 1
+      parking_id: m.parking_id || 1,
+      email: m.email || '',
+      security_pin: ''
     });
     setShowEditModal(true);
   };
 
-  const handleCreate = (e) => {
+  // POST /staff — mapeo del formulario al contrato real del backend
+  const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.full_name || !formData.dni) return;
 
-    const newObj = {
-      id: Date.now(),
-      ...formData,
-      parking_name: 'Smart Park Central'
+    const payload = {
+      parking_id: Number(formData.parking_id) || 1,
+      full_name: formData.full_name.trim(),
+      dni: formData.dni.trim(),
+      position: formData.position,
+      shift: formData.shift,
+      status: formData.status
     };
+    if (formData.email && formData.email.trim()) payload.email = formData.email.trim();
 
-    const updated = [newObj, ...staff];
-    setStaff(updated);
+    // security_pin es OPCIONAL (4 dígitos, se hashea server-side)
+    const pin = (formData.security_pin || '').trim();
+    if (pin) {
+      if (!/^\d{4}$/.test(pin)) {
+        notify('El PIN de garita debe tener exactamente 4 dígitos numéricos.');
+        return;
+      }
+      payload.security_pin = pin;
+    }
+
     try {
-      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {}
-
-    setShowAddModal(false);
-    notify(`Colaborador "${newObj.full_name}" registrado en la nómina.`);
+      await api.post('/staff', payload);
+      setShowAddModal(false);
+      notify(`Colaborador "${payload.full_name}" registrado en la nómina.`);
+      await loadStaff(); // refresh post-mutación
+    } catch (err) {
+      describeError(err, 'registrar al colaborador');
+    }
   };
 
-  const handleEdit = (e) => {
+  // PUT /staff/{id} — solo campos editables del formulario
+  const handleEdit = async (e) => {
     e.preventDefault();
     if (!selectedMember) return;
 
-    const updated = staff.map(s => s.id === selectedMember.id ? {
-      ...s,
-      ...formData
-    } : s);
-
-    setStaff(updated);
     try {
-      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {}
-
-    setShowEditModal(false);
-    notify(`Colaborador "${formData.full_name}" actualizado.`);
+      await api.put(`/staff/${selectedMember.id}`, {
+        full_name: formData.full_name.trim(),
+        dni: formData.dni.trim(),
+        position: formData.position,
+        shift: formData.shift,
+        status: formData.status
+      });
+      setShowEditModal(false);
+      notify(`Colaborador "${formData.full_name}" actualizado.`);
+      await loadStaff();
+    } catch (err) {
+      describeError(err, 'actualizar al colaborador');
+    }
   };
 
-  const handleDelete = (id, name) => {
-    const updated = staff.filter(s => s.id !== id);
-    setStaff(updated);
+  // DELETE /staff/{id}
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`¿Eliminar a "${name}" de la nómina? Esta acción no se puede deshacer.`)) return;
     try {
-      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {}
-    notify(`Colaborador "${name}" eliminado de la nómina.`);
+      await api.delete(`/staff/${id}`);
+      notify(`Colaborador "${name}" eliminado de la nómina.`);
+      await loadStaff();
+    } catch (err) {
+      describeError(err, 'eliminar al colaborador');
+    }
   };
 
   const exportCSV = () => {
@@ -125,14 +169,34 @@ export const StaffModule = () => {
     a.href = url;
     a.download = `staff_smartpark_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
+    URL.revokeObjectURL(url);
     notify('Nómina de personal exportada en formato CSV.');
   };
 
   const filtered = staff.filter(s => {
-    const matchesSearch = s.full_name.toLowerCase().includes(search.toLowerCase()) || s.dni.includes(search) || s.position.toLowerCase().includes(search.toLowerCase());
-    const matchesShift = shiftFilter === 'all' || s.shift.toLowerCase().includes(shiftFilter.toLowerCase());
+    const matchesSearch = (s.full_name || '').toLowerCase().includes(search.toLowerCase()) || (s.dni || '').includes(search) || (s.position || '').toLowerCase().includes(search.toLowerCase());
+    const matchesShift = shiftFilter === 'all' || (s.shift || '').toLowerCase().includes(shiftFilter.toLowerCase());
     return matchesSearch && matchesShift;
   });
+
+  // Panel honesto: sin rol local/platform NO hay tabla ni acciones
+  if (!canManage) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <Card className="p-12 border-dashed border-slate-300 text-center space-y-3">
+          <ShieldAlert className="w-10 h-10 mx-auto text-slate-400" />
+          <h2 className="text-lg font-black text-slate-900">Acceso restringido</h2>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            La gestión de personal y turnos de garita está disponible únicamente para administradores
+            de cochera (local) o super admins de plataforma (platform).
+          </p>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Tu rol actual: {role || 'sin sesión'}
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -177,56 +241,68 @@ export const StaffModule = () => {
       </div>
 
       {/* Staff List Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {filtered.map((s) => (
-          <Card key={s.id} className="p-6 border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition">
-            <div>
-              <div className="flex justify-between items-start mb-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black shadow-inner">
-                  {s.full_name.charAt(0)}
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-slate-400">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span className="ml-3 text-sm font-bold">Cargando nómina de personal...</span>
+        </div>
+      ) : filtered.length === 0 ? (
+        <Card className="p-10 border-dashed border-slate-300 text-center space-y-2">
+          <Users className="w-8 h-8 mx-auto text-slate-300" />
+          <p className="text-sm font-bold text-slate-500">No hay colaboradores registrados que coincidan con la búsqueda.</p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {filtered.map((s) => (
+            <Card key={s.id} className="p-6 border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+              <div>
+                <div className="flex justify-between items-start mb-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black shadow-inner">
+                    {(s.full_name || '?').charAt(0)}
+                  </div>
+                  <span className={`text-xs font-bold ${s.status === 'Activo' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    ● {s.status}
+                  </span>
                 </div>
-                <span className={`text-xs font-bold ${s.status === 'Activo' ? 'text-emerald-600' : 'text-slate-400'}`}>
-                  ● {s.status}
-                </span>
+
+                <h3 className="font-extrabold text-slate-900 text-base mb-1">{s.full_name}</h3>
+                <p className="text-xs text-emerald-700 font-bold mb-3">{s.position}</p>
+
+                <div className="space-y-1.5 text-xs font-mono bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-4">
+                  <p className="flex justify-between text-slate-600">
+                    <span>DNI:</span>
+                    <span className="font-bold text-slate-900">{s.dni}</span>
+                  </p>
+                  <p className="flex justify-between text-slate-600">
+                    <span>Turno:</span>
+                    <span className="font-medium text-slate-700">{s.shift}</span>
+                  </p>
+                </div>
               </div>
 
-              <h3 className="font-extrabold text-slate-900 text-base mb-1">{s.full_name}</h3>
-              <p className="text-xs text-emerald-700 font-bold mb-3">{s.position}</p>
-
-              <div className="space-y-1.5 text-xs font-mono bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-4">
-                <p className="flex justify-between text-slate-600">
-                  <span>DNI:</span>
-                  <span className="font-bold text-slate-900">{s.dni}</span>
-                </p>
-                <p className="flex justify-between text-slate-600">
-                  <span>Turno:</span>
-                  <span className="font-medium text-slate-700">{s.shift}</span>
-                </p>
+              <div className="flex items-center space-x-2 pt-2 border-t border-slate-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleOpenEdit(s)}
+                  className="flex-1 font-bold text-xs gap-1.5"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Editar</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(s.id, s.full_name)}
+                  className="text-rose-600 hover:bg-rose-50 px-3"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
-            </div>
-
-            <div className="flex items-center space-x-2 pt-2 border-t border-slate-100">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleOpenEdit(s)}
-                className="flex-1 font-bold text-xs gap-1.5"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Editar</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDelete(s.id, s.full_name)}
-                className="text-rose-600 hover:bg-rose-50 px-3"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Modal Nuevo Colaborador */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
@@ -299,19 +375,19 @@ export const StaffModule = () => {
                   <Input
                     type="email"
                     placeholder="operador@cochera.pe"
-                    value={formData.email || ''}
+                    value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="bg-white text-xs py-1"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">PIN Garita ANPR (4 dígitos)</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">PIN Garita ANPR (opcional, 4 dígitos)</label>
                   <Input
-                    type="text"
+                    type="password"
                     maxLength={4}
-                    placeholder="1234"
-                    value={formData.security_pin || '1234'}
-                    onChange={(e) => setFormData({ ...formData, security_pin: e.target.value })}
+                    placeholder="••••"
+                    value={formData.security_pin}
+                    onChange={(e) => setFormData({ ...formData, security_pin: e.target.value.replace(/\D/g, '') })}
                     className="bg-white text-xs py-1 text-center font-mono font-bold"
                   />
                 </div>

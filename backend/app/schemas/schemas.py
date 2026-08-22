@@ -258,7 +258,34 @@ class ReviewResponse(BaseModel):
         from_attributes = True
 
 # ==========================================
-# 8. SCHEMAS DE ANPR
+# 8. SCHEMAS DE INCIDENCIAS & ASISTENCIA
+# ==========================================
+class IncidentCreate(BaseModel):
+    parking_id: int
+    category: str = "general"
+    description: str = Field(min_length=5)
+    photo_url: Optional[str] = None
+
+class IncidentResolve(BaseModel):
+    resolution_note: str
+
+class IncidentResponse(BaseModel):
+    id: int
+    parking_id: int
+    user_id: int
+    user_name: str
+    category: str
+    description: str
+    photo_url: Optional[str] = None
+    status: str
+    resolution_note: Optional[str] = None
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
+    class Config:
+        from_attributes = True
+
+# ==========================================
+# 9. SCHEMAS DE ANPR
 # ==========================================
 class ANPRScanRequest(BaseModel):
     parking_id: int

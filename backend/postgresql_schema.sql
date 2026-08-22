@@ -176,7 +176,7 @@ CREATE INDEX idx_incidencias_status ON incidencias(status);
 -- 2. DATOS DE PRUEBA INICIALES (SEED DEMO DATA)
 -- =============================================================================
 
--- Insertar Usuarios Maestros
+-- Insertar Usuarios Maestros (Passwords hasheadas con Bcrypt)
 INSERT INTO usuarios (full_name, email, phone, hashed_password, security_pin, role, is_active) VALUES
 ('Super Administrador', 'superadmin@smartpark.com', '+51 999999999', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW', '7391', 'platform', TRUE),
 ('Administrador Local Cochera', 'adminlocal@smartpark.com', '+51 988888888', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW', '4826', 'local', TRUE),

@@ -7,8 +7,11 @@ from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import Reservation, Slot, Parking
 from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationResponse
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_role
 from app.models.models import User
+
+# Operador de garita autorizado para registrar entradas/salidas físicas
+gate_operator_required = require_role("local", "platform")
 
 router = APIRouter(prefix="/reservations", tags=["Reservas & Pases QR"])
 
@@ -131,6 +134,56 @@ async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncS
     from datetime import timedelta
     reservation.end_time = reservation.end_time + timedelta(hours=hours)
     reservation.total_cost = round(reservation.total_cost + (hours * rate), 2)
+
+    await db.commit()
+    await db.refresh(reservation)
+    return ReservationResponse.model_validate(reservation)
+
+@router.put("/{reservation_id}/check-in", response_model=ReservationResponse)
+async def check_in_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(gate_operator_required)):
+    # Check-in de garita: registra el ingreso físico del vehículo (solo operadores)
+    result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+
+    # Transición válida: solo una reserva programada puede pasar a activa
+    if reservation.status != "scheduled":
+        raise HTTPException(status_code=400, detail=f"Solo se puede hacer check-in de reservas programadas (estado actual: {reservation.status})")
+
+    reservation.status = "active"
+    reservation.actual_entry = datetime.utcnow()
+
+    # El cajón pasa a ocupado mientras dure la estancia
+    slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))
+    slot = slot_res.scalars().first()
+    if slot:
+        slot.status = "occupied"
+
+    await db.commit()
+    await db.refresh(reservation)
+    return ReservationResponse.model_validate(reservation)
+
+@router.put("/{reservation_id}/check-out", response_model=ReservationResponse)
+async def check_out_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(gate_operator_required)):
+    # Check-out de garita: registra la salida física y cierra la estancia
+    result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+
+    # Transición válida: solo una reserva activa puede completarse
+    if reservation.status != "active":
+        raise HTTPException(status_code=400, detail=f"Solo se puede hacer check-out de reservas activas (estado actual: {reservation.status})")
+
+    reservation.status = "completed"
+    reservation.actual_exit = datetime.utcnow()
+
+    # Liberar el cajón al terminar la estancia
+    slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))
+    slot = slot_res.scalars().first()
+    if slot and slot.status == "occupied":
+        slot.status = "free"
 
     await db.commit()
     await db.refresh(reservation)

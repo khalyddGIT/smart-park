@@ -3,33 +3,25 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Shield, UserCheck, KeyRound, Plus, Edit3, Trash2, Search, Check, Lock } from 'lucide-react';
+import { Shield, UserCheck, KeyRound, Plus, Edit3, Search, Check, Lock, Power, Info, Loader2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
-const USERS_STORAGE_KEY = 'smart_park_users_v2';
-
-const INITIAL_USERS = [
-  { id: 1, full_name: 'Carlos Mendoza', email: 'carlos@smartpark.com', phone: '+51 987654321', role: 'user', security_pin: '1234', lastAccess: 'Hoy 14:20 (Credenciales)' },
-  { id: 2, full_name: 'Operador San Isidro', email: 'garita.sanisidro@smartpark.com', phone: '+51 912345678', role: 'local', security_pin: '4321', lastAccess: 'Hoy 12:00 (PIN Virtual)' },
-  { id: 3, full_name: 'Administrador General', email: 'admin@smartpark.com', phone: '+51 999888777', role: 'platform', security_pin: '8888', lastAccess: 'Hace 1 hora (PIN)' },
-];
+// Formatea la fecha ISO del backend a texto corto
+const formatDate = (iso) => {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (e) { return '—'; }
+};
 
 export const UserRolesModule = () => {
-  const [users, setUsers] = useState(() => {
-    try {
-      const saved = localStorage.getItem(USERS_STORAGE_KEY);
-      if (saved !== null) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {}
-    return INITIAL_USERS;
-  });
+  const { role } = useAuth();
+  const isPlatform = role === 'platform';
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-    } catch (e) {}
-  }, [users]);
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState({ user: 0, local: 0, platform: 0 });
+  const [loading, setLoading] = useState(isPlatform);
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -46,6 +38,47 @@ export const UserRolesModule = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
+  const describeError = (err, action) => {
+    const status = err?.response?.status;
+    if (status === 401) notify('Tu sesión expiró o no has iniciado sesión. Vuelve a autenticarte.');
+    else if (status === 403) notify(`No tienes permisos de Super Admin para ${action}.`);
+    else notify('Ocurrió un error de conexión con el servidor. Intenta de nuevo.');
+  };
+
+  // GET /users con búsqueda (query) + filtro por rol (role), según los controles de la UI.
+  // Se pide además la lista sin filtros para mantener las tarjetas de estadísticas globales.
+  const loadUsers = async () => {
+    try {
+      const params = {};
+      if (search.trim()) params.query = search.trim();
+      if (roleFilter !== 'all') params.role = roleFilter;
+
+      const [listRes, allRes] = await Promise.all([
+        api.get('/users', Object.keys(params).length ? { params } : undefined),
+        api.get('/users'),
+      ]);
+      const list = Array.isArray(listRes.data) ? listRes.data : [];
+      const all = Array.isArray(allRes.data) ? allRes.data : [];
+      setUsers(list);
+      setStats({
+        user: all.filter(u => u.role === 'user').length,
+        local: all.filter(u => u.role === 'local').length,
+        platform: all.filter(u => u.role === 'platform').length,
+      });
+    } catch (err) {
+      describeError(err, 'ver el directorio de usuarios');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refetch con debounce al cambiar búsqueda o filtro de rol
+  useEffect(() => {
+    if (!isPlatform) { setLoading(false); return; }
+    const t = setTimeout(() => { loadUsers(); }, 300);
+    return () => clearTimeout(t);
+  }, [isPlatform, search, roleFilter]);
+
   const handleOpenAdd = () => {
     setFormData({ full_name: '', email: '', phone: '', role: 'user', password: '' });
     setShowAddModal(true);
@@ -53,98 +86,122 @@ export const UserRolesModule = () => {
 
   const handleOpenEdit = (u) => {
     setSelectedUser(u);
-    setFormData({ full_name: u.full_name, email: u.email, phone: u.phone, role: u.role, password: '' });
+    setFormData({ full_name: u.full_name, email: u.email, phone: u.phone || '', role: u.role, password: '' });
     setShowEditModal(true);
   };
 
+  // Nunca se precarga el PIN actual (el backend nunca lo devuelve en claro)
   const handleOpenPin = (u) => {
     setSelectedUser(u);
-    setPinValue(u.security_pin || '');
+    setPinValue('');
     setShowPinModal(true);
   };
 
-  const handleCreate = (e) => {
+  // POST /users — crea SIEMPRE role="user"; requiere password de 8+ caracteres
+  const handleCreate = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.full_name) return;
-
-    const newObj = {
-      id: Date.now(),
-      ...formData,
-      security_pin: '1234',
-      lastAccess: 'Recién Creado'
-    };
-
-    const updated = [newObj, ...users];
-    setUsers(updated);
-    try {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {}
-
-    setShowAddModal(false);
-    notify(`Usuario "${newObj.full_name}" registrado correctamente.`);
-  };
-
-  const handleEdit = (e) => {
-    e.preventDefault();
-    if (!selectedUser) return;
-
-    const updated = users.map(u => u.id === selectedUser.id ? {
-      ...u,
-      full_name: formData.full_name,
-      email: formData.email,
-      phone: formData.phone,
-      role: formData.role
-    } : u);
-
-    setUsers(updated);
-    try {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {}
-
-    setShowEditModal(false);
-    notify(`Usuario "${formData.full_name}" actualizado.`);
-  };
-
-  const changeRole = (id, newRole) => {
-    const updated = users.map(u => u.id === id ? { ...u, role: newRole } : u);
-    setUsers(updated);
-    try {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {}
-    notify(`Rol de usuario actualizado a "${newRole}".`);
-  };
-
-  const handleSavePin = (e) => {
-    e.preventDefault();
-    if (!pinValue || pinValue.length < 4) {
-      alert('El PIN debe contener al menos 4 dígitos numéricos.');
+    if (!formData.email || !formData.full_name || !formData.password) return;
+    if (formData.password.length < 8) {
+      notify('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
 
-    const updated = users.map(u => u.id === selectedUser.id ? { ...u, security_pin: pinValue } : u);
-    setUsers(updated);
     try {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {}
-
-    setShowPinModal(false);
-    notify(`Nuevo PIN configurado para "${selectedUser.full_name}".`);
+      await api.post('/users', {
+        full_name: formData.full_name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+      setShowAddModal(false);
+      notify(`Usuario "${formData.full_name.trim()}" creado con rol Conductor (user).`);
+      await loadUsers(); // refresh post-mutación
+    } catch (err) {
+      describeError(err, 'crear el usuario');
+    }
   };
 
-  const handleDelete = (id, name) => {
-    const updated = users.filter(u => u.id !== id);
-    setUsers(updated);
+  // PUT /users/{id} — solo full_name y phone (el email no es editable vía API).
+  // Si el rol cambió en el formulario, se aplica además PUT /users/{id}/role.
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+
     try {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {}
-    notify(`Usuario "${name}" eliminado del directorio.`);
+      await api.put(`/users/${selectedUser.id}`, {
+        full_name: formData.full_name.trim(),
+        phone: formData.phone.trim(),
+      });
+      if (formData.role !== selectedUser.role) {
+        await api.put(`/users/${selectedUser.id}/role`, { role: formData.role });
+      }
+      setShowEditModal(false);
+      notify(`Usuario "${formData.full_name}" actualizado.`);
+      await loadUsers();
+    } catch (err) {
+      describeError(err, 'actualizar al usuario');
+    }
   };
 
-  const filtered = users.filter(u => {
-    const matchesSearch = u.full_name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
-    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
-    return matchesSearch && matchesRole;
-  });
+  // PUT /users/{id}/role — cambio de rol desde el selector de la tabla
+  const changeRole = async (id, newRole) => {
+    try {
+      await api.put(`/users/${id}/role`, { role: newRole });
+      notify(`Rol de usuario actualizado a "${newRole}".`);
+      await loadUsers();
+    } catch (err) {
+      describeError(err, 'cambiar el rol');
+      await loadUsers(); // restaura el valor real del select
+    }
+  };
+
+  // PUT /users/{id}/pin — validación client-side: 4+ dígitos numéricos
+  const handleSavePin = async (e) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    if (!/^\d{4,6}$/.test(pinValue)) {
+      notify('El PIN debe contener entre 4 y 6 dígitos numéricos.');
+      return;
+    }
+
+    try {
+      await api.put(`/users/${selectedUser.id}/pin`, { pin: pinValue });
+      setShowPinModal(false);
+      notify(`Nuevo PIN configurado para "${selectedUser.full_name}".`);
+      setPinValue('');
+    } catch (err) {
+      describeError(err, 'actualizar el PIN');
+    }
+  };
+
+  // PUT /users/{id} {is_active} — activar/desactivar cuenta
+  const toggleActive = async (u) => {
+    try {
+      await api.put(`/users/${u.id}`, { is_active: !u.is_active });
+      notify(`Usuario "${u.full_name}" ${!u.is_active ? 'activado' : 'desactivado'}.`);
+      await loadUsers();
+    } catch (err) {
+      describeError(err, 'cambiar el estado de la cuenta');
+    }
+  };
+
+  // Panel honesto: SOLO rol platform accede a este módulo
+  if (!isPlatform) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <Card className="p-12 border-dashed border-slate-300 text-center space-y-3">
+          <Lock className="w-10 h-10 mx-auto text-slate-400" />
+          <h2 className="text-lg font-black text-slate-900">Acceso restringido</h2>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Este módulo requiere el rol <strong>Super Admin (platform)</strong>. La administración de roles,
+            accesos y PINs de toda la plataforma no está disponible para tu cuenta.
+          </p>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Tu rol actual: {role || 'sin sesión'}
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -177,7 +234,7 @@ export const UserRolesModule = () => {
         <Card className="p-4 flex items-center justify-between border-slate-200 shadow-xs">
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-400">Conductores (Clientes)</span>
-            <p className="text-2xl font-black text-slate-900">{users.filter(u => u.role === 'user').length}</p>
+            <p className="text-2xl font-black text-slate-900">{stats.user}</p>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600">
             <UserCheck className="w-5 h-5" />
@@ -187,7 +244,7 @@ export const UserRolesModule = () => {
         <Card className="p-4 flex items-center justify-between border-slate-200 shadow-xs">
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-400">Operadores de Garita</span>
-            <p className="text-2xl font-black text-slate-900">{users.filter(u => u.role === 'local').length}</p>
+            <p className="text-2xl font-black text-slate-900">{stats.local}</p>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
             <Shield className="w-5 h-5" />
@@ -197,7 +254,7 @@ export const UserRolesModule = () => {
         <Card className="p-4 flex items-center justify-between border-slate-200 shadow-xs">
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-400">Super Admins Plataforma</span>
-            <p className="text-2xl font-black text-slate-900">{users.filter(u => u.role === 'platform').length}</p>
+            <p className="text-2xl font-black text-slate-900">{stats.platform}</p>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
             <KeyRound className="w-5 h-5" />
@@ -238,82 +295,106 @@ export const UserRolesModule = () => {
         </div>
 
         {/* Directory Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-100/75 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
-              <tr>
-                <th className="py-3 px-4">Usuario</th>
-                <th className="py-3 px-4">Contacto</th>
-                <th className="py-3 px-4">Rol Asignado</th>
-                <th className="py-3 px-4">Seguridad / PIN</th>
-                <th className="py-3 px-4">Último Acceso</th>
-                <th className="py-3 px-4 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filtered.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50/80 transition">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-700 uppercase text-xs">
-                        {u.full_name.charAt(0)}
-                      </div>
-                      <div>
-                        <strong className="text-slate-900 block font-bold">{u.full_name}</strong>
-                        <span className="text-[11px] text-slate-400">{u.email}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 font-mono text-[11px]">{u.phone || '+51 987654321'}</td>
-                  <td className="py-3 px-4">
-                    <select
-                      value={u.role}
-                      onChange={(e) => changeRole(u.id, e.target.value)}
-                      className={`text-[11px] font-bold rounded-lg px-2 py-1 border cursor-pointer ${
-                        u.role === 'platform'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200'
-                          : u.role === 'local'
-                          ? 'bg-amber-50 text-amber-700 border-amber-200'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      }`}
-                    >
-                      <option value="user">Conductor (user)</option>
-                      <option value="local">Operador Garita (local)</option>
-                      <option value="platform">Super Admin (platform)</option>
-                    </select>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center space-x-1.5">
-                      <span className="font-mono text-slate-500 font-bold">••••</span>
-                      <button
-                        onClick={() => handleOpenPin(u)}
-                        className="p-1 hover:bg-slate-200 rounded text-slate-500 transition cursor-pointer"
-                        title="Cambiar PIN"
-                      >
-                        <KeyRound className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-slate-400 text-[11px]">{u.lastAccess || 'Hoy'}</td>
-                  <td className="py-3 px-4 text-right space-x-1">
-                    <button
-                      onClick={() => handleOpenEdit(u)}
-                      className="p-1.5 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(u.id, u.full_name)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-slate-400">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span className="ml-3 text-sm font-bold">Cargando directorio de usuarios...</span>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="py-14 text-center space-y-1">
+            <Shield className="w-8 h-8 mx-auto text-slate-300" />
+            <p className="text-sm font-bold text-slate-500">No hay usuarios que coincidan con la búsqueda.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-100/75 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                <tr>
+                  <th className="py-3 px-4">Usuario</th>
+                  <th className="py-3 px-4">Contacto</th>
+                  <th className="py-3 px-4">Rol Asignado</th>
+                  <th className="py-3 px-4">Seguridad / PIN</th>
+                  <th className="py-3 px-4">Estado</th>
+                  <th className="py-3 px-4">Registrado</th>
+                  <th className="py-3 px-4 text-right">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {users.map((u) => (
+                  <tr key={u.id} className="hover:bg-slate-50/80 transition">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase text-xs ${u.is_active === false ? 'bg-slate-100 text-slate-400' : 'bg-slate-200 text-slate-700'}`}>
+                          {(u.full_name || '?').charAt(0)}
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 block font-bold">{u.full_name}</strong>
+                          <span className="text-[11px] text-slate-400">{u.email}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px]">{u.phone || '—'}</td>
+                    <td className="py-3 px-4">
+                      <select
+                        value={u.role}
+                        onChange={(e) => changeRole(u.id, e.target.value)}
+                        className={`text-[11px] font-bold rounded-lg px-2 py-1 border cursor-pointer ${
+                          u.role === 'platform'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : u.role === 'local'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}
+                      >
+                        <option value="user">Conductor (user)</option>
+                        <option value="local">Operador Garita (local)</option>
+                        <option value="platform">Super Admin (platform)</option>
+                      </select>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-mono text-slate-500 font-bold">••••</span>
+                        <button
+                          onClick={() => handleOpenPin(u)}
+                          className="p-1 hover:bg-slate-200 rounded text-slate-500 transition cursor-pointer"
+                          title="Cambiar PIN"
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`text-[11px] font-bold ${u.is_active === false ? 'text-rose-500' : 'text-emerald-600'}`}>
+                        ● {u.is_active === false ? 'Inactivo' : 'Activo'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-400 text-[11px]">{formatDate(u.created_at)}</td>
+                    <td className="py-3 px-4 text-right space-x-1">
+                      <button
+                        onClick={() => handleOpenEdit(u)}
+                        className="p-1.5 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                        title="Editar datos"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => toggleActive(u)}
+                        className={`p-1.5 rounded-lg transition cursor-pointer ${
+                          u.is_active === false
+                            ? 'text-emerald-600 hover:bg-emerald-50'
+                            : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'
+                        }`}
+                        title={u.is_active === false ? 'Activar cuenta' : 'Desactivar cuenta'}
+                      >
+                        <Power className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       {/* Modal Agregar Usuario */}
@@ -321,7 +402,7 @@ export const UserRolesModule = () => {
         <DialogContent className="max-w-md rounded-3xl p-6 bg-white border-slate-200">
           <DialogHeader className="border-b border-slate-100 pb-3">
             <DialogTitle className="text-base font-black text-slate-900">Registrar Nuevo Usuario</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">Crea credenciales con asignación de rol en el sistema.</DialogDescription>
+            <DialogDescription className="text-xs text-slate-500">Crea credenciales de acceso al sistema.</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreate} className="space-y-4 pt-2">
@@ -348,26 +429,23 @@ export const UserRolesModule = () => {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono Móvil</label>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Contraseña * (mínimo 8 caracteres)</label>
               <Input
-                type="tel"
-                placeholder="+51 987654321"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="text-xs font-mono"
+                type="password"
+                placeholder="********"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                minLength={8}
+                required
+                className="text-xs"
               />
             </div>
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Rol de Acceso *</label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-              >
-                <option value="user">Conductor (Acceso a Mapa, Reservas y Pagos)</option>
-                <option value="local">Admin Local Cochera (Gestión de Sede, Garita & Personal)</option>
-                <option value="platform">Super Admin (Control Global, Finanzas & Licencias)</option>
-              </select>
+            <div className="flex items-start gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-100 text-[11px] text-slate-500">
+              <Info className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" />
+              <span>
+                Los nuevos usuarios se crean siempre con rol <strong>Conductor (user)</strong>.
+                Usa el selector de la tabla para promoverlos a Operador o Super Admin después del registro.
+              </span>
             </div>
 
             <Button type="submit" className="w-full font-bold text-xs py-3 bg-emerald-600 hover:bg-emerald-700 mt-2">
@@ -397,14 +475,14 @@ export const UserRolesModule = () => {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Correo Electrónico *</label>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Correo Electrónico</label>
               <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-                className="text-xs"
+                disabled
+                className="text-xs bg-slate-100 text-slate-400 cursor-not-allowed"
               />
+              <span className="text-[10px] text-slate-400">El correo no puede modificarse desde la plataforma.</span>
             </div>
             <div>
               <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono Móvil</label>
@@ -440,7 +518,7 @@ export const UserRolesModule = () => {
         <DialogContent className="max-w-xs rounded-3xl p-6 bg-white border-slate-200 text-center">
           <DialogHeader className="border-b border-slate-100 pb-3">
             <DialogTitle className="text-base font-black text-slate-900">PIN de Garita / Acceso</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">Para {selectedUser?.full_name}</DialogDescription>
+            <DialogDescription className="text-xs text-slate-500">Define un nuevo PIN para {selectedUser?.full_name}</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSavePin} className="space-y-4 pt-4">
@@ -449,7 +527,7 @@ export const UserRolesModule = () => {
               <Input
                 type="password"
                 maxLength={6}
-                placeholder="4 o 6 dígitos"
+                placeholder="4 a 6 dígitos"
                 value={pinValue}
                 onChange={(e) => setPinValue(e.target.value.replace(/\D/g, ''))}
                 className="pl-9 font-mono text-center text-lg tracking-widest font-black"

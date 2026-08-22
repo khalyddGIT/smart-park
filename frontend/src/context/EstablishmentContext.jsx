@@ -403,20 +403,13 @@ export const EstablishmentProvider = ({ children }) => {
         if (mappedParkings.length >= 2) setEstablishments(mappedParkings);
       }
     }).catch(()=>{});
-    const token = getAccessToken();
-    if (!token) return;
-    listMyReservations().then(data => {
-      if (Array.isArray(data)) {
-        const mapped = data.map(r => ({
-          id: r.id, code: r.code, token: r.qr_code || r.code, parkingId: String(r.parking_id), parking: `Parking #${r.parking_id}`, slot: String(r.slot_id), plate: r.license_plate, cost: r.total_cost, hours: 2, ratePerHour: 5, status: r.status?.toUpperCase() || 'SCHEDULED', startTime: r.start_time, expiresAt: r.end_time, createdAt: r.start_time
-        }));
-        setReservations(mapped);
-        try { localStorage.setItem(getReservationsKey(), JSON.stringify(mapped)); } catch {}
-      }
-    }).catch(() => {});
+    // La verdad de las reservas es el servidor: localStorage queda solo como caché de lectura
+    if (!getAccessToken()) return;
+    refreshMyReservations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Guardar reservaciones en localStorage per-user
+  // Guardar reservaciones en localStorage per-user (solo caché de lectura posterior)
   const saveReservations = (newReservations) => {
     setReservations(newReservations);
     try {
@@ -650,16 +643,91 @@ export const EstablishmentProvider = ({ children }) => {
     });
   };
 
-  // Crear nueva reserva unificada - intenta Supabase backend si hay token, fallback localStorage per-user
+  // ============================================================
+  // RESERVAS: la verdad es la respuesta del servidor.
+  // localStorage solo se usa como caché de lectura posterior.
+  // ============================================================
+
+  // Los IDs del backend son enteros pequeños; los optimistas locales son Date.now()
+  const isBackendReservation = (res) => typeof res?.id === 'number' && res.id > 0 && res.id < 10000000000;
+
+  const resolveParkingName = (parkingIdNum) => {
+    const est = establishments.find(e => Number(e.id) === Number(parkingIdNum));
+    return est ? est.name : `Sede #${parkingIdNum}`;
+  };
+
+  const resolveSlotCode = (parkingIdNum, slotIdNum) => {
+    const est = establishments.find(e => Number(e.id) === Number(parkingIdNum));
+    const slot = (est?.elements || []).find(el => el.type === 'slot' && Number(el.id) === Number(slotIdNum));
+    return slot ? slot.code : `#${slotIdNum}`;
+  };
+
+  // Mapea la respuesta del backend al formato interno que consume la UI
+  const mapServerReservation = (r) => {
+    const startMs = new Date(r.start_time).getTime();
+    const endMs = new Date(r.end_time).getTime();
+    return {
+      id: r.id,
+      code: r.code,
+      token: r.qr_code || r.code,
+      parkingId: String(r.parking_id),
+      parking: resolveParkingName(r.parking_id),
+      slotId: r.slot_id,
+      slot: resolveSlotCode(r.parking_id, r.slot_id),
+      plate: r.license_plate,
+      cost: Number(r.total_cost ?? 0),
+      hours: Math.max(1, Math.round((endMs - startMs) / 3600000)) || 1,
+      ratePerHour: Number((Number(r.total_cost ?? 0) / Math.max(1, (endMs - startMs) / 3600000)).toFixed(2)),
+      status: (r.status || 'scheduled').toUpperCase(),
+      startTime: r.start_time,
+      expiresAt: r.end_time,
+      createdAt: r.actual_entry || r.start_time,
+      actualEntry: r.actual_entry || null,
+      actualExit: r.actual_exit || null
+    };
+  };
+
+  // Refresca las reservas del usuario desde GET /my-reservations y sincroniza estado+caché
+  const refreshMyReservations = async () => {
+    if (!getAccessToken()) return;
+    try {
+      const data = await listMyReservations();
+      if (Array.isArray(data)) {
+        const mapped = data.map(mapServerReservation);
+        setReservations(mapped);
+        try { localStorage.setItem(getReservationsKey(), JSON.stringify(mapped)); } catch {}
+      }
+    } catch (e) {
+      console.warn('No se pudieron refrescar las reservas del servidor', e?.response?.data);
+    }
+  };
+
+  // Crear nueva reserva: POST real con parking_id y slot_id numéricos reales.
+  // Devuelve el objeto optimista para no romper a quienes llaman de forma síncrona;
+  // al confirmar el servidor se sincroniza el estado desde my-reservations.
   const createReservation = (bookingData) => {
+    const authed = !!getAccessToken();
+    const parkingIdNum = Number(bookingData?.parkingId);
+    const slotIdNum = Number(bookingData?.slotId);
+
+    // IDs locales "EST-*" o cajón sin id real: bloquear en lugar de fingir reserva
+    if (!authed || isNaN(parkingIdNum) || isNaN(slotIdNum)) {
+      console.warn('Reserva bloqueada: esta cochera aún no está registrada en el servidor o falta seleccionar un cajón válido.');
+      return null;
+    }
+
     const code = bookingData.code || `RSV-${Math.floor(1000 + Math.random() * 9000)}`;
     const token = bookingData.token || `SPK-AYC${code.replace('RSV-', '')}-7B2F9A`;
+    const tempId = Date.now();
     const newReservation = {
-      id: Date.now(),
+      id: tempId,
+      pendingSync: true,
       code,
       token,
-      parkingId: bookingData.parkingId || 'EST-01',
+      parkingId: bookingData.parkingId,
+      parkingName: bookingData.parkingName || bookingData.parking || 'Smart Park Plaza Mayor',
       parking: bookingData.parkingName || bookingData.parking || 'Smart Park Plaza Mayor',
+      slotId: slotIdNum,
       slot: bookingData.slotCode || bookingData.slot || 'A-01',
       customerName: bookingData.customerName || 'Conductor Registrado',
       customerPhone: bookingData.customerPhone || '+51 966 000 000',
@@ -668,28 +736,115 @@ export const EstablishmentProvider = ({ children }) => {
       hours: Number(bookingData.hours || 2),
       ratePerHour: Number(bookingData.rate || 5.0),
       status: 'SCHEDULED',
-      startTime: bookingData.startTime || new Date().toISOString(),
-      expiresAt: bookingData.expiresAt || new Date(Date.now() + (Number(bookingData.hours || 2)) * 60 * 60 * 1000).toISOString(),
+      startTime: bookingData.startTime instanceof Date ? bookingData.startTime.toISOString() : (bookingData.startTime || new Date().toISOString()),
+      expiresAt: bookingData.expiresAt instanceof Date ? bookingData.expiresAt.toISOString() : (bookingData.expiresAt || new Date(Date.now() + (Number(bookingData.hours || 2)) * 60 * 60 * 1000).toISOString()),
       createdAt: new Date().toISOString()
     };
     occupySlot(newReservation.parkingId, newReservation.slot, newReservation.plate);
-    const updated = [newReservation, ...reservations];
-    saveReservations(updated);
-    // Intentar persistir en Supabase si hay sesión backend
-    try {
-      const t = getAccessToken();
-      if (t) {
-        // Mapear a backend: parking_id numérico (si es EST-* usar 1), slot_id 1 por defecto
-        const parkingIdNum = isNaN(Number(bookingData.parkingId)) ? 1 : Number(bookingData.parkingId);
-        const slotIdNum = 1;
-        createReservationApi({ parking_id: parkingIdNum, slot_id: slotIdNum, license_plate: newReservation.plate, start_time: newReservation.startTime, end_time: newReservation.expiresAt }).catch(()=>{});
+    saveReservations([newReservation, ...reservations]);
+
+    // Persistir en el servidor con los IDs reales; luego la lista se reconstruye desde la API
+    (async () => {
+      try {
+        await createReservationApi({
+          parking_id: parkingIdNum,
+          slot_id: slotIdNum,
+          license_plate: newReservation.plate,
+          start_time: newReservation.startTime,
+          end_time: newReservation.expiresAt
+        });
+        setBookingError(null);
+        await refreshMyReservations();
+      } catch (e) {
+        // Rollback del registro optimista si el servidor rechaza (cajón ocupado, etc.)
+        console.error('Error creando reserva en el servidor', e?.response?.data || e);
+        setBookingError(e?.response?.data?.detail || 'No se pudo registrar la reserva en el servidor.');
+        setReservations(prev => prev.filter(r => r.id !== tempId));
+        freeSlot(newReservation.parkingId, newReservation.slot);
       }
-    } catch {}
+    })();
+
     return newReservation;
   };
 
-  // Actualizar estado de reserva
-  const updateReservationStatus = (code, newStatus) => {
+  // Cancelar reserva: PUT /reservations/{id}/cancel cuando existe en el servidor
+  const cancelReservation = async (code) => {
+    const target = reservations.find(r => r.code === code || String(r.id) === String(code));
+    if (!target) return { ok: false, message: 'Reserva no encontrada.' };
+
+    if (isBackendReservation(target)) {
+      try {
+        await cancelReservationApi(target.id);
+        await refreshMyReservations();
+        return { ok: true, message: `Reserva ${code} cancelada. Plaza liberada.` };
+      } catch (e) {
+        const s = e?.response?.status;
+        return {
+          ok: false,
+          status: s,
+          detail: e?.response?.data?.detail,
+          message: s === 403
+            ? 'Solo operadores autorizados pueden modificar esta reserva.'
+            : (e?.response?.data?.detail || 'No se pudo cancelar la reserva.')
+        };
+      }
+    }
+
+    // Fallback local solo para datos demo sin backend (no simula persistencia)
+    updateReservationStatusLocal(target.code, 'CANCELLED');
+    return { ok: true, message: `Reserva ${code} cancelada localmente (sin registro en servidor).` };
+  };
+
+  // Check-In de garita: PUT /reservations/{id}/check-in → status active
+  const checkInReservation = async (code) => {
+    const target = reservations.find(r => r.code === code || String(r.id) === String(code));
+    if (!target) return { ok: false, message: 'Reserva no encontrada.' };
+    if (!isBackendReservation(target)) {
+      return { ok: false, message: 'Esta reserva aún no está registrada en el servidor; no se puede registrar el ingreso.' };
+    }
+    try {
+      await api.put(`/reservations/${target.id}/check-in`);
+      await refreshMyReservations();
+      return { ok: true, message: `Entrada registrada: vehículo ${target.plate} ingresó a la plaza ${target.slot}.` };
+    } catch (e) {
+      const s = e?.response?.status;
+      return {
+        ok: false,
+        status: s,
+        detail: e?.response?.data?.detail,
+        message: s === 403
+          ? 'Solo los operadores de garita (local/plataforma) pueden registrar ingresos.'
+          : (e?.response?.data?.detail || 'No se pudo registrar el check-in.')
+      };
+    }
+  };
+
+  // Check-Out de garita: PUT /reservations/{id}/check-out → status completed
+  const checkOutReservation = async (code) => {
+    const target = reservations.find(r => r.code === code || String(r.id) === String(code));
+    if (!target) return { ok: false, message: 'Reserva no encontrada.' };
+    if (!isBackendReservation(target)) {
+      return { ok: false, message: 'Esta reserva aún no está registrada en el servidor; no se puede registrar la salida.' };
+    }
+    try {
+      await api.put(`/reservations/${target.id}/check-out`);
+      await refreshMyReservations();
+      return { ok: true, message: `Salida registrada para ${target.plate}. Cajón ${target.slot} liberado.` };
+    } catch (e) {
+      const s = e?.response?.status;
+      return {
+        ok: false,
+        status: s,
+        detail: e?.response?.data?.detail,
+        message: s === 403
+          ? 'Solo los operadores de garita (local/plataforma) pueden registrar salidas.'
+          : (e?.response?.data?.detail || 'No se pudo registrar el check-out.')
+      };
+    }
+  };
+
+  // Mutación de estado puramente local (solo datos demo sin backend)
+  const updateReservationStatusLocal = (code, newStatus) => {
     const target = reservations.find(r => r.code === code);
     if (!target) return;
 
@@ -703,22 +858,16 @@ export const EstablishmentProvider = ({ children }) => {
     saveReservations(updated);
   };
 
-  const cancelReservation = (code) => {
-    updateReservationStatus(code, 'CANCELLED');
-    try {
-      const t = getAccessToken();
-      if (t) {
-        const target = reservations.find(r => r.code === code);
-        if (target && typeof target.id === 'number' && target.id < 1000000000000) {
-          cancelReservationApi(target.id).catch(()=>{});
-        }
-      }
-    } catch {}
+  // Compatibilidad con llamadas existentes: enruta hacia las acciones reales del servidor
+  const updateReservationStatus = (code, newStatus) => {
+    if (newStatus === 'ACTIVE') return checkInReservation(code);
+    if (newStatus === 'COMPLETED') return checkOutReservation(code);
+    if (newStatus === 'CANCELLED') return cancelReservation(code);
+    updateReservationStatusLocal(code, newStatus);
+    return Promise.resolve({ ok: true });
   };
 
-  const completeReservation = (code) => {
-    updateReservationStatus(code, 'COMPLETED');
-  };
+  const completeReservation = (code) => checkOutReservation(code);
 
   // Restablecer valores por defecto
   const resetToDefaults = () => {

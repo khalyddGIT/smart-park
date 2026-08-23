@@ -279,64 +279,53 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       )}
 
       {/* =========================================================================
-          TARJETAS KPI EJECUTIVAS
+          MÉTRICAS KPI COMPACTAS Y LIMPIAS (SIN TEXTOS DE RELLENO NI PUNTOS)
           ========================================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         
         {/* Total Reservas */}
-        <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Reservas</span>
-            <CalendarCheck className="w-4 h-4 text-slate-400 shrink-0" />
+        <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total</span>
+            <span className="text-xl font-black font-mono text-slate-900">{totalReservations}</span>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-extrabold font-mono text-slate-900">{totalReservations}</span>
-            <span className="text-[11px] text-slate-500 font-medium">Histórico general</span>
+          <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+            <CalendarCheck className="w-4 h-4" />
           </div>
         </div>
 
         {/* En Curso / Activas */}
-        <div className="p-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/40 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span>En Estancia</span>
-            </span>
-            <Car className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50 shadow-2xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">En Estancia</span>
+            <span className="text-xl font-black font-mono text-emerald-700">{activeCount}</span>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-extrabold font-mono text-emerald-700">{activeCount}</span>
-            <span className="text-[11px] text-emerald-700 font-semibold">Ocupando plaza</span>
+          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <Car className="w-4 h-4" />
           </div>
         </div>
 
         {/* Programadas */}
-        <div className="p-4 rounded-2xl border border-cyan-200/80 bg-cyan-50/40 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800">Programadas</span>
-            <Clock className="w-4 h-4 text-cyan-600 shrink-0" />
+        <div className="p-3.5 rounded-xl border border-cyan-200 bg-cyan-50/50 shadow-2xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800 block">Programadas</span>
+            <span className="text-xl font-black font-mono text-cyan-800">{scheduledCount}</span>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-extrabold font-mono text-cyan-800">{scheduledCount}</span>
-            <span className="text-[11px] text-cyan-700 font-medium">Por ingresar</span>
+          <div className="w-8 h-8 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center">
+            <Clock className="w-4 h-4" />
           </div>
         </div>
 
-        {/* Recaudación o Gasto Total */}
-        <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              {role === 'user' ? 'Gasto Estimado' : 'Recaudación'}
+        {/* Gasto Total / Recaudación */}
+        <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+              {role === 'user' ? 'Gasto Total' : 'Recaudación'}
             </span>
-            <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-              PEN
-            </span>
+            <span className="text-xl font-black font-mono text-emerald-700">S/ {totalRevenue.toFixed(2)}</span>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-extrabold font-mono text-emerald-700">S/ {totalRevenue.toFixed(2)}</span>
-            <span className="text-[11px] text-slate-500 font-medium font-mono">
-              {role === 'user' ? `Activas: S/ ${todayRevenue.toFixed(2)}` : `Hoy: S/ ${todayRevenue.toFixed(2)}`}
-            </span>
+          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 font-black text-xs font-mono flex items-center justify-center">
+            S/
           </div>
         </div>
 
@@ -345,7 +334,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       {/* =========================================================================
           BARRA DE BÚSQUEDA Y FILTROS INTEGRADOS
           ========================================================================= */}
-      <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs space-y-3">
+      <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           
           {/* Buscador */}
@@ -356,12 +345,12 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
               placeholder="Buscar por placa, código RSV, cajón o cochera..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-8 h-9 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
+              className="w-full pl-9 pr-8 h-9 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
             />
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm('')} 
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer p-0.5"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
               >
                 ✕
               </button>
@@ -373,7 +362,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <select
               value={parkingFilter}
               onChange={(e) => setParkingFilter(e.target.value)}
-              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer focus:border-emerald-500"
+              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none cursor-pointer focus:border-emerald-500"
             >
               <option value="ALL">Todas las Sedes ({establishments.length})</option>
               {establishments.map(e => (
@@ -384,7 +373,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer focus:border-emerald-500"
+              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none cursor-pointer focus:border-emerald-500"
             >
               <option value="ALL">Cualquier Fecha</option>
               <option value="TODAY">Solo Hoy</option>
@@ -392,8 +381,8 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           </div>
         </div>
 
-        {/* Pestañas de Estado (Segment Control Elegante) */}
-        <div className="flex items-center gap-1.5 border-t border-slate-100 pt-3 overflow-x-auto scrollbar-none">
+        {/* Pestañas de Estado */}
+        <div className="flex items-center gap-1.5 border-t border-slate-100 pt-2.5 overflow-x-auto scrollbar-none">
           {[
             { id: 'ALL', label: 'Todas', count: totalReservations },
             { id: 'ACTIVE', label: 'En Curso', count: activeCount },
@@ -406,10 +395,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
               <button
                 key={tab.id}
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                   isSelected 
                     ? 'bg-slate-900 text-white shadow-xs' 
-                    : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 <span>{tab.label}</span>
@@ -423,15 +412,15 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       </div>
 
       {/* =========================================================================
-          LISTADO PRINCIPAL DE RESERVAS & TICKETS
+          LISTADO PRINCIPAL DE RESERVAS (DISEÑO ULTRA-LIMPIO)
           ========================================================================= */}
       <div className="space-y-3">
         {filteredReservations.length === 0 ? (
-          <div className="p-12 text-center rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2">
-            <CalendarCheck className="w-10 h-10 text-slate-300 mx-auto stroke-[1.5]" />
-            <h3 className="font-bold text-slate-800 text-sm">No se encontraron reservas con los filtros actuales</h3>
+          <div className="p-12 text-center rounded-xl border border-slate-200 bg-white shadow-2xs space-y-2">
+            <CalendarCheck className="w-8 h-8 text-slate-300 mx-auto" />
+            <h3 className="font-bold text-slate-800 text-sm">No se encontraron reservas</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Intenta buscar por otro término o restablece los filtros para ver tus registros.
+              Intenta buscar por otro término o restablece los filtros.
             </p>
           </div>
         ) : (
@@ -447,56 +436,54 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             return (
               <div 
                 key={res.code} 
-                className={`p-4 sm:p-5 rounded-2xl border bg-white transition-all shadow-2xs hover:shadow-xs ${
+                className={`p-4 rounded-xl border bg-white shadow-2xs hover:border-slate-300 transition-all ${
                   isActive 
-                    ? 'border-emerald-300 ring-1 ring-emerald-400/30' 
+                    ? 'border-emerald-300' 
                     : isScheduled 
-                    ? 'border-cyan-300' 
+                    ? 'border-cyan-200' 
                     : 'border-slate-200'
                 }`}
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   
-                  {/* Bloque Izquierdo: Datos de la Reserva */}
-                  <div className="flex items-start gap-4">
+                  {/* Bloque Izquierdo: Identificador y Datos */}
+                  <div className="flex items-start gap-3.5">
                     
                     {/* Caja de Plaza / Cajón */}
-                    <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center font-mono font-black shrink-0 border ${
+                    <div className={`w-12 h-12 rounded-lg flex flex-col items-center justify-center font-mono font-black shrink-0 border ${
                       isActive 
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' 
+                        ? 'bg-emerald-600 text-white border-emerald-600' 
                         : isScheduled
-                        ? 'bg-cyan-600 text-white border-cyan-600 shadow-xs'
+                        ? 'bg-slate-900 text-white border-slate-900'
                         : isCompleted
                         ? 'bg-slate-100 text-slate-700 border-slate-200'
                         : 'bg-rose-50 text-rose-700 border-rose-200'
                     }`}>
-                      <span className="text-[9px] uppercase font-bold tracking-tighter opacity-80 leading-none">Plaza</span>
-                      <span className="text-lg leading-tight mt-0.5">{res.slot}</span>
+                      <span className="text-[8px] uppercase font-bold tracking-tighter opacity-80 leading-none">Plaza</span>
+                      <span className="text-base leading-tight font-black">{res.slot}</span>
                     </div>
 
                     {/* Contenido Central */}
                     <div className="space-y-1">
                       {/* Fila 1: Código, Estado y Placa */}
-                      <div className="flex flex-wrap items-center gap-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono font-bold text-xs text-slate-400">{res.code}</span>
                         
                         {/* Estado en Texto Directo */}
                         {isActive && (
-                          <span className="text-xs font-extrabold text-emerald-700 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>En Estancia</span>
+                          <span className="text-xs font-bold text-emerald-600">
+                            En Estancia
                           </span>
                         )}
 
                         {isScheduled && (
-                          <span className="text-xs font-extrabold text-cyan-700 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                            <span>Programada</span>
+                          <span className="text-xs font-bold text-cyan-600">
+                            Programada
                           </span>
                         )}
 
                         {isCompleted && (
-                          <span className="text-xs font-bold text-slate-500">
+                          <span className="text-xs font-bold text-slate-400">
                             Finalizada
                           </span>
                         )}
@@ -508,30 +495,23 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                         )}
 
                         {/* Placa en Monospace */}
-                        <span className="font-mono font-extrabold text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                        <span className="font-mono font-bold text-xs text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
                           PE {res.plate}
                         </span>
                       </div>
 
-                      {/* Fila 2: Nombre del Establecimiento (Sin Viñetas ni Puntos) */}
-                      <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.2]" />
+                      {/* Fila 2: Nombre del Establecimiento */}
+                      <h3 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         <span>{res.parking}</span>
                       </h3>
 
-                      {/* Fila 3: Conductor, Teléfono y Horario */}
-                      <div className="flex flex-wrap items-center text-xs text-slate-600 gap-x-4 gap-y-1 pt-0.5">
-                        <span className="flex items-center gap-1 font-semibold text-slate-700">
+                      {/* Fila 3: Conductor y Horario */}
+                      <div className="flex flex-wrap items-center text-xs text-slate-500 gap-x-3 gap-y-1">
+                        <span className="flex items-center gap-1 text-slate-700 font-medium">
                           <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span>{res.customerName}</span>
                         </span>
-
-                        {res.customerPhone && (
-                          <span className="flex items-center gap-1 font-mono text-slate-500">
-                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{res.customerPhone}</span>
-                          </span>
-                        )}
 
                         <span className="flex items-center gap-1 font-medium text-slate-500">
                           <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -541,14 +521,14 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
 
                       {/* Barra de Tiempo Transcurrido */}
                       {(isActive || isScheduled) && (
-                        <div className="pt-2 max-w-sm">
-                          <div className="flex justify-between text-[10px] font-mono text-slate-500 mb-1 font-semibold">
+                        <div className="pt-1 max-w-xs">
+                          <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-0.5 font-medium">
                             <span>Tiempo transcurrido</span>
-                            <span className={isActive ? 'text-emerald-700 font-bold' : 'text-cyan-700'}>
+                            <span className={isActive ? 'text-emerald-600 font-bold' : 'text-cyan-600 font-bold'}>
                               {remainingText}
                             </span>
                           </div>
-                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                          <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                             <div 
                               className={`h-full transition-all duration-500 ${
                                 isActive ? 'bg-emerald-500' : 'bg-cyan-500'
@@ -562,28 +542,28 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                   </div>
 
                   {/* Bloque Derecho: Importe y Acciones */}
-                  <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-3 border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-100 shrink-0">
+                  <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-2.5 border-t lg:border-t-0 pt-2.5 lg:pt-0 border-slate-100 shrink-0">
                     
                     {/* Importe */}
                     <div className="text-left lg:text-right">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block font-mono">
                         Importe Total
                       </span>
-                      <span className="text-lg sm:text-xl font-extrabold text-slate-900 font-mono">
+                      <span className="text-lg font-black text-slate-900 font-mono">
                         S/ {Number(res.cost).toFixed(2)}
                       </span>
                     </div>
 
                     {/* Botones de Acción */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       
                       {/* Ver Pase Digital QR */}
                       <Button
                         onClick={() => handleOpenPass(res)}
                         size="sm"
-                        className="rounded-xl text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-2xs h-8 px-3 cursor-pointer"
+                        className="rounded-lg text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-xs h-8 px-3 cursor-pointer"
                       >
-                        <QrCode className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                        <QrCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         <span>Pase QR</span>
                       </Button>
 
@@ -592,10 +572,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                         onClick={() => handlePrintReceipt(res)}
                         variant="outline"
                         size="sm"
-                        className="rounded-xl text-xs font-semibold gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border-slate-200 h-8 px-2.5 cursor-pointer"
+                        className="rounded-lg text-xs font-semibold gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border-slate-200 h-8 px-2.5 cursor-pointer"
                         title="Imprimir Comprobante"
                       >
-                        <Printer className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                        <Printer className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                         <span className="hidden sm:inline">Ticket</span>
                       </Button>
 
@@ -609,7 +589,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                               setFeedbackMessage(`Reserva ${res.code} cancelada. Plaza ${res.slot} disponible.`);
                             }
                           }}
-                          className="text-xs font-semibold text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-md transition-colors cursor-pointer"
                         >
                           Cancelar
                         </button>

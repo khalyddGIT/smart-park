@@ -270,7 +270,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       {/* Feedback Toast */}
       {feedbackMessage && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl text-xs font-bold flex items-center justify-between shadow-xs animate-in fade-in">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center gap-2.5">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>{feedbackMessage}</span>
           </div>
@@ -373,7 +373,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           </div>
 
           {/* Selectores de Sede y Fecha */}
-          <div className="flex items-center space-x-2 w-full md:w-auto justify-start md:justify-end">
+          <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end">
             <select
               value={parkingFilter}
               onChange={(e) => setParkingFilter(e.target.value)}
@@ -428,7 +428,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       {/* =========================================================================
           LISTADO PRINCIPAL DE RESERVAS & TICKETS
           ========================================================================= */}
-      <div className="space-y-4">
+      <div className="gap-4">
         {filteredReservations.length === 0 ? (
           <Card className="p-12 text-center rounded-3xl border-slate-200 shadow-xs bg-white space-y-3">
             <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
@@ -526,19 +526,19 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                         {/* Datos del Conductor & Horarios */}
                         <div className="flex flex-wrap items-center text-xs text-slate-600 gap-x-4 gap-y-1">
                           <span className="flex items-center gap-1 font-bold text-slate-800">
-                            <User className="w-3.5 h-3.5 text-slate-400" />
+                            <User className="w-4 h-4 shrink-0 text-slate-400" />
                             <span>{res.customerName}</span>
                           </span>
 
                           {res.customerPhone && (
                             <span className="flex items-center gap-1 font-mono text-slate-500">
-                              <Phone className="w-3.5 h-3.5 text-slate-400" />
+                              <Phone className="w-4 h-4 shrink-0 text-slate-400" />
                               <span>{res.customerPhone}</span>
                             </span>
                           )}
 
                           <span className="flex items-center gap-1 font-medium text-slate-500">
-                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            <Clock className="w-4 h-4 shrink-0 text-slate-400" />
                             <span>{new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(res.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({res.hours}h)</span>
                           </span>
                         </div>
@@ -588,7 +588,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                           size="sm"
                           className="rounded-xl text-xs font-bold gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 h-9"
                         >
-                          <QrCode className="w-3.5 h-3.5 text-emerald-600" />
+                          <QrCode className="w-4 h-4 shrink-0 text-emerald-600" />
                           <span>Pase QR</span>
                         </Button>
 
@@ -600,7 +600,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                           className="rounded-xl text-xs font-bold gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 h-9"
                           title="Imprimir Comprobante"
                         >
-                          <Printer className="w-3.5 h-3.5 text-slate-600" />
+                          <Printer className="w-4 h-4 shrink-0 text-slate-600" />
                           <span className="hidden sm:inline">Ticket</span>
                         </Button>
 
@@ -614,7 +614,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                             size="sm"
                             className="rounded-xl text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm h-9 px-3"
                           >
-                            <LogIn className="w-3.5 h-3.5" />
+                            <LogIn className="w-4 h-4 shrink-0" />
                             <span>Check-In</span>
                           </Button>
                         )}
@@ -629,7 +629,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                             size="sm"
                             className="rounded-xl text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm h-9 px-3"
                           >
-                            <LogOut className="w-3.5 h-3.5 text-amber-400" />
+                            <LogOut className="w-4 h-4 shrink-0 text-amber-400" />
                             <span>Cobrar y Check-Out</span>
                           </Button>
                         )}
@@ -669,7 +669,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2.5">
+              <div className="flex items-center gap-2.5">
                 <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl">
                   <CalendarCheck className="w-5 h-5" />
                 </div>
@@ -683,7 +683,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateSubmit} className="space-y-4">
+            <form onSubmit={handleCreateSubmit} className="gap-4">
               {/* Selector de Sede */}
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Sede de Estacionamiento</label>
@@ -801,7 +801,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                 </span>
               </div>
 
-              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -829,7 +829,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           ========================================================================= */}
       {selectedReceipt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 gap-4">
             
             {/* Header del Ticket */}
             <div className="text-center border-b border-dashed border-slate-300 pb-4 space-y-1">
@@ -897,7 +897,7 @@ ESTADO: AUTORIZADO`}
             </div>
 
             {/* Botones */}
-            <div className="flex items-center space-x-2 pt-2">
+            <div className="flex items-center gap-2 pt-2">
               <Button
                 variant="outline"
                 onClick={() => setSelectedReceipt(null)}
@@ -909,7 +909,7 @@ ESTADO: AUTORIZADO`}
                 onClick={() => window.print()}
                 className="flex-1 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white gap-1.5"
               >
-                <Printer className="w-3.5 h-3.5" />
+                <Printer className="w-4 h-4 shrink-0" />
                 <span>Imprimir</span>
               </Button>
             </div>

@@ -134,7 +134,7 @@ export const ReviewsModule = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold animate-bounce border border-slate-800">
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-bounce border border-slate-800">
           <Check className="w-4 h-4 text-emerald-400" />
           <span>{toast}</span>
         </div>
@@ -143,8 +143,8 @@ export const ReviewsModule = () => {
       {/* Cabecera Diferenciada por Rol */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-2">
-            <Star className="w-6 h-6 text-amber-500 fill-amber-400" />
+          <div className="flex items-center gap-2">
+            <Star className="w-5 h-5 shrink-0 text-amber-500 fill-amber-400" />
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               {role === 'user' && 'Reseñas & Opiniones de la Comunidad'}
               {role === 'local' && 'Atención y Respuesta a Reseñas del Local'}
@@ -175,7 +175,7 @@ export const ReviewsModule = () => {
           {role === 'user' && (
             <Button
               onClick={() => setShowAddModal(true)}
-              className="gap-2 font-bold shadow-md bg-amber-500 hover:bg-amber-600 text-white rounded-2xl"
+              variant="primary" size="md"
             >
               <Plus className="w-4 h-4" />
               <span>Dejar Reseña</span>
@@ -184,7 +184,7 @@ export const ReviewsModule = () => {
 
           {/* BADGE DE SUPERVISOR PARA ADMIN LOCAL / PLATAFORMA */}
           {role !== 'user' && (
-            <div className="flex items-center space-x-2 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-2xl text-emerald-800 text-xs font-bold">
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-2xl text-emerald-800 text-xs font-bold">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
               <span>Calificación Promedio: <strong className="font-mono text-slate-900">{avgRating} / 5.0</strong></span>
             </div>
@@ -205,24 +205,24 @@ export const ReviewsModule = () => {
           {role === 'user' && <p className="text-xs text-slate-400">¡Sé el primero en compartir tu experiencia!</p>}
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="gap-4">
           {filtered.map((r) => (
             <Card key={r.id} className="p-5 sm:p-6 border-slate-200 shadow-xs space-y-3 hover:shadow-md transition">
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-extrabold text-slate-900 text-base">{r.user_name}</h3>
                   <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-                    <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                    <Building2 className="w-4 h-4 shrink-0 text-slate-400" />
                     <span>{parkingNameOf(r)}</span>
                     <span>•</span>
                     <span className="text-slate-400">{formatDate(r.created_at)}</span>
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center space-x-0.5 text-amber-400 bg-amber-50/80 px-2.5 py-1 rounded-xl border border-amber-200/60">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 text-amber-400 bg-amber-50/80 px-2.5 py-1 rounded-xl border border-amber-200/60">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`w-3.5 h-3.5 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                      <Star key={i} className={`w-4 h-4 shrink-0 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
                     ))}
                     <span className="text-xs font-mono font-black text-amber-800 ml-1">{r.rating}.0</span>
                   </div>
@@ -251,7 +251,7 @@ export const ReviewsModule = () => {
                 <div className="bg-emerald-50/90 border border-emerald-200/80 p-3.5 rounded-2xl ml-3 sm:ml-6 space-y-1">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider flex items-center gap-1.5">
-                      <Reply className="w-3.5 h-3.5 text-emerald-700" />
+                      <Reply className="w-4 h-4 shrink-0 text-emerald-700" />
                       <span>Respuesta Oficial de la Cochera</span>
                     </span>
                     {(role === 'local' || role === 'platform') && (
@@ -274,7 +274,7 @@ export const ReviewsModule = () => {
                       onClick={() => handleOpenReply(r)}
                       className="text-xs font-bold gap-1.5 text-emerald-700 border-emerald-200 hover:bg-emerald-50 rounded-xl"
                     >
-                      <Reply className="w-3.5 h-3.5" />
+                      <Reply className="w-4 h-4 shrink-0" />
                       <span>Responder al Conductor</span>
                     </Button>
                   </div>
@@ -296,7 +296,7 @@ export const ReviewsModule = () => {
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleCreateReview} className="space-y-4 my-2">
+            <form onSubmit={handleCreateReview} className="gap-4 my-2">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Cochera a Calificar</label>
                 <select
@@ -315,7 +315,7 @@ export const ReviewsModule = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-2">Puntuación</label>
-                <div className="flex items-center justify-center space-x-2 py-2">
+                <div className="flex items-center justify-center gap-2 py-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       type="button"
@@ -360,7 +360,7 @@ export const ReviewsModule = () => {
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSaveReply} className="space-y-4 my-2">
+            <form onSubmit={handleSaveReply} className="gap-4 my-2">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Mensaje Institucional</label>
                 <textarea

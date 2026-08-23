@@ -44,8 +44,8 @@ import {
   LogOut
 } from 'lucide-react';
 
+import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 
 // ==========================================

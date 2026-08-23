@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { InteractiveFloorPlanDrawingStudio } from './InteractiveFloorPlanDrawingStudio';
 import { TerrainMetricCADView } from './TerrainMetricCADView';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { 
   Building2, 
   Sparkles, 

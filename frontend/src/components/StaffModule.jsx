@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Users, Plus, Edit3, Trash2, Search, Download, Clock, ShieldCheck, Check, UserCheck, ShieldAlert, Loader2 } from 'lucide-react';

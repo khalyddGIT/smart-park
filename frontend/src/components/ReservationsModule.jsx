@@ -37,7 +37,6 @@ import {
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
-import { Badge } from './ui/badge';
 import { DigitalAccessPassModal } from './DigitalAccessPassModal';
 
 export const ReservationsModule = ({ onNavigateToBooking }) => {

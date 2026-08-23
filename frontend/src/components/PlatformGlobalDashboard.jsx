@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { 
   Building2, 
   TrendingUp, 

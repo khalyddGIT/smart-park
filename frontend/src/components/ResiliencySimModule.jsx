@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
+import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { ShieldCheck, ShieldAlert, Radio, Server, RefreshCw, CheckCircle2, AlertTriangle, ArrowRight, Zap, Database, Activity, Cpu } from 'lucide-react';
 
 export const ResiliencySimModule = () => {

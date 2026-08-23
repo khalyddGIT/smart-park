@@ -20,8 +20,8 @@ import {
   Bike
 } from 'lucide-react';
 
+import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 
 export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "Ayacucho - Centro Histórico" }) => {

@@ -25,25 +25,19 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
     if (!reservation) return null;
     
     const id = reservation.code || 'RSV-8912';
-    const token = reservation.token || `SPK-${id.replace('RSV-', '')}-7B2F9A`;
-    const parkingName = reservation.parking || 'Smart Park Plaza Mayor';
-    const slotCode = reservation.slot || 'A-01';
-    const plate = reservation.plate || 'ABC-123';
+    const token = reservation.token || reservation.qr_code || `SPK-${id.replace('RSV-', '')}-7B2F9A`;
+    const parkingName = reservation.parking || reservation.parkingName || 'Smart Park Plaza Mayor';
+    const slotCode = reservation.slot || reservation.slotCode || 'A-01';
+    const plate = reservation.plate || reservation.license_plate || 'ABC-123';
     const hours = reservation.hours || 2;
-    const cost = reservation.cost || 10.0;
+    const cost = reservation.cost || reservation.total_cost || 10.0;
     
     const startTime = reservation.startTime ? new Date(reservation.startTime) : new Date();
     const expiresAt = reservation.expiresAt ? new Date(reservation.expiresAt) : new Date(startTime.getTime() + hours * 60 * 60 * 1000);
 
-    const qrPayload = `🚗 SMART-PARK AYACUCHO - PASE DE ACCESO
-📍 Sede: ${parkingName}
-🅿️ Plaza: ${slotCode} (Nivel 1)
-🚘 Placa: ${plate}
-🎫 Reserva: ${id}
-🔑 Token: ${token}
-⏱️ Duración: ${hours} hora(s)
-💰 Total: S/ ${Number(cost).toFixed(2)}
-✅ ESTADO: ACCESO AUTORIZADO`;
+    // QR verificable: URL que al escanear abre la página pública de verificación con estado en vivo
+    const verifyUrl = `${window.location.origin}/verify/${encodeURIComponent(id)}`;
+    const qrPayload = verifyUrl;
 
     return {
       id,

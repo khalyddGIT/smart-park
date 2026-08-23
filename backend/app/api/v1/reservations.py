@@ -45,6 +45,29 @@ async def get_my_reservations(db: AsyncSession = Depends(get_db), current_user: 
     reservations = result.scalars().all()
     return [ReservationResponse.model_validate(r) for r in reservations]
 
+@router.get("/verify/{code}", tags=["Reservas & Pases QR"])
+async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
+    """Verificación pública del QR: escanea el código y valida el estado sin requerir login."""
+    result = await db.execute(select(Reservation).where(Reservation.code == code))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada o código inválido")
+    slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))
+    slot = slot_res.scalars().first()
+    parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
+    parking = parking_res.scalars().first()
+    return {
+        "code": reservation.code,
+        "qr_code": reservation.qr_code,
+        "license_plate": reservation.license_plate,
+        "parking_name": parking.name if parking else f"Sede #{reservation.parking_id}",
+        "slot_code": slot.code if slot else f"#{reservation.slot_id}",
+        "status": reservation.status,
+        "start_time": reservation.start_time,
+        "end_time": reservation.end_time,
+        "total_cost": reservation.total_cost,
+    }
+
 @router.get("/{reservation_id}", response_model=ReservationResponse)
 async def get_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
@@ -116,10 +139,10 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
 
     reservation.status = "cancelled"
 
-    # Liberar cajón asociado si sigue reservado
+    # Liberar cajón asociado si sigue reservado u ocupado (ej. cancela una reserva activa con check-in)
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))
     slot = slot_res.scalars().first()
-    if slot and slot.status == "reserved":
+    if slot and slot.status in ("reserved", "occupied"):
         slot.status = "free"
 
     await db.commit()

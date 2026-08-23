@@ -17,6 +17,7 @@ import { AnalyticsGlobalModule } from './components/AnalyticsGlobalModule';
 import { IncidentsModule } from './components/IncidentsModule';
 import { AuditLogsModule } from './components/AuditLogsModule';
 import { ResiliencySimModule } from './components/ResiliencySimModule';
+import { VerifyReservationPage } from './components/VerifyReservationPage';
 import { AyacuchoMap } from './components/AyacuchoMap';
 import { CustomerInteractivePlanBooking } from './components/CustomerInteractivePlanBooking';
 import { DigitalAccessPassModal } from './components/DigitalAccessPassModal';
@@ -53,6 +54,11 @@ import { Input } from './components/ui/input';
 import { SkeletonParkingCard } from './components/ui/skeleton';
 
 export const App = () => {
+  // Ruta pública de verificación de QR: /verify/RSV-XXXX (accesible sin login, escaneable con Google Lens)
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/verify/')) {
+    return <VerifyReservationPage />;
+  }
+
   const { role, user } = useAuth();
   const { establishments, occupySlot, createReservation, bookingError } = useEstablishments();
   const [activeTab, setActiveTab] = useState('dashboard');

@@ -778,8 +778,22 @@ export const EstablishmentProvider = ({ children }) => {
     if (isBackendReservation(target)) {
       try {
         await cancelReservationApi(target.id);
+        freeSlot(target.parkingId, target.slot);
         await refreshMyReservations();
-        return { ok: true, message: `Reserva ${code} cancelada. Plaza liberada.` };
+        // Refrescar plano real del servidor para que el cajón aparezca libre
+        try {
+          const pid = Number(target.parkingId);
+          if (!isNaN(pid)) {
+            const res = await api.get(`/parkings/${pid}/floor-plan`);
+            const slots = Array.isArray(res.data?.slots) ? res.data.slots : [];
+            const slotMap = new Map(slots.map(s => [String(s.code), s.status]));
+            setEstablishments(prev => prev.map(est => {
+              if (String(est.id) !== String(pid)) return est;
+              return { ...est, elements: (est.elements || []).map(el => el.type === 'slot' && slotMap.has(el.code) ? { ...el, status: slotMap.get(el.code) } : el) };
+            }));
+          }
+        } catch {}
+        return { ok: true, message: `Reserva ${code} cancelada. Plaza ${target.slot} liberada.` };
       } catch (e) {
         const s = e?.response?.status;
         return {

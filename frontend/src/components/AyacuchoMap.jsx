@@ -270,16 +270,8 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       />
 
       {/* Controles Flotantes Superiores con z-10 dentro del contexto aislado */}
-      <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between pointer-events-none">
+      <div className="absolute top-4 right-4 z-10 flex items-center justify-end pointer-events-none">
         
-        {/* Indicador de Cobertura */}
-        <div className="pointer-events-auto bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-lg border border-[#E5E5E5] shadow-xs flex items-center space-x-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#346538] animate-radar" />
-          <span className="text-xs font-mono text-[#111111] font-medium">
-            Huamanga • {parkings.length} cocheras activas
-          </span>
-        </div>
-
         {/* Segmented Layer Toggle & GPS */}
         <div className="pointer-events-auto flex items-center space-x-2 bg-white/90 backdrop-blur-md p-1 rounded-lg border border-[#E5E5E5] shadow-xs">
           

@@ -214,28 +214,25 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
   return (
     <div className="space-y-6 animate-in fade-in">
       
-      {/* =========================================================================
-          ENCABEZADO PRINCIPAL & ACCIONES
-          ========================================================================= */}
-      {/* Header Compacto y Elegante */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
-        <div className="flex items-center space-x-3">
+      {/* Encabezado Principal Limpio y Profesional */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
+        <div className="flex items-center space-x-3.5">
           <div className="w-10 h-10 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shadow-xs shrink-0">
             <CalendarCheck className="w-5 h-5 stroke-[2.2]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-black text-slate-900 tracking-tight">
+              <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
                 {role === 'user' ? 'Mis Reservas & Pases Digitales' : 'Centro de Reservas & Garita'}
               </h1>
               <span className="text-xs font-mono font-bold text-slate-500">
                 ({filteredReservations.length} {filteredReservations.length === 1 ? 'reserva' : 'reservas'})
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-medium">
+            <p className="text-xs text-slate-500 font-normal mt-0.5">
               {role === 'user' 
-                ? 'Monitorea tus estancias en tiempo real y gestiona tus pases QR de parqueo.' 
-                : 'Control operativo de entradas, salidas LPR y emisión de tickets.'}
+                ? 'Monitorea tus estancias en tiempo real, descarga tus pases QR y gestiona tus horarios.' 
+                : 'Control operativo de entradas, salidas y emisión de tickets en tiempo real.'}
             </p>
           </div>
         </div>
@@ -244,10 +241,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           {role === 'user' && onNavigateToBooking && (
             <Button
               onClick={onNavigateToBooking}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs gap-1.5 rounded-xl h-9 px-3.5 cursor-pointer shadow-xs"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 rounded-xl h-9 px-4 shadow-xs cursor-pointer transition-colors"
             >
-              <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
-              <span>Nueva Reserva</span>
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>Nueva Reserva en Mapa</span>
             </Button>
           )}
 
@@ -259,7 +256,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                 }
                 setShowCreateModal(true);
               }}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs gap-1.5 rounded-xl h-9 px-3.5 cursor-pointer shadow-xs"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs gap-1.5 rounded-xl h-9 px-4 shadow-xs cursor-pointer transition-colors"
             >
               <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
               <span>Emitir Ticket</span>
@@ -268,9 +265,9 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
         </div>
       </div>
 
-      {/* Feedback Toast */}
+      {/* Alerta de Feedback */}
       {feedbackMessage && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs font-bold flex items-center justify-between shadow-xs animate-in fade-in">
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs font-semibold flex items-center justify-between shadow-2xs animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.2]" />
             <span>{feedbackMessage}</span>
@@ -282,87 +279,89 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       )}
 
       {/* =========================================================================
-          TARJETAS KPI COMPACTAS SIN BADGES INNECESARIOS
+          TARJETAS KPI EJECUTIVAS
           ========================================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
         {/* Total Reservas */}
-        <Card className="p-4 rounded-2xl border-slate-200 shadow-2xs bg-white flex flex-col justify-between">
+        <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Reservas</span>
-            <CalendarCheck className="w-4 h-4 text-slate-400" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Reservas</span>
+            <CalendarCheck className="w-4 h-4 text-slate-400 shrink-0" />
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-slate-900">{totalReservations}</span>
-            <span className="text-xs text-slate-500 font-medium">Histórico</span>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-extrabold font-mono text-slate-900">{totalReservations}</span>
+            <span className="text-[11px] text-slate-500 font-medium">Histórico general</span>
           </div>
-        </Card>
+        </div>
 
         {/* En Curso / Activas */}
-        <Card className="p-4 rounded-2xl border-emerald-200 shadow-2xs bg-emerald-50/50 flex flex-col justify-between">
+        <div className="p-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/40 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              En Estancia
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span>En Estancia</span>
             </span>
-            <Car className="w-4 h-4 text-emerald-600" />
+            <Car className="w-4 h-4 text-emerald-600 shrink-0" />
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-emerald-700">{activeCount}</span>
-            <span className="text-xs text-emerald-700 font-semibold">En Plaza</span>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-extrabold font-mono text-emerald-700">{activeCount}</span>
+            <span className="text-[11px] text-emerald-700 font-semibold">Ocupando plaza</span>
           </div>
-        </Card>
+        </div>
 
         {/* Programadas */}
-        <Card className="p-4 rounded-2xl border-cyan-200 shadow-2xs bg-cyan-50/50 flex flex-col justify-between">
+        <div className="p-4 rounded-2xl border border-cyan-200/80 bg-cyan-50/40 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800">Programadas</span>
-            <Clock className="w-4 h-4 text-cyan-600" />
+            <Clock className="w-4 h-4 text-cyan-600 shrink-0" />
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-cyan-800">{scheduledCount}</span>
-            <span className="text-xs text-cyan-700 font-medium">Por Ingresar</span>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-extrabold font-mono text-cyan-800">{scheduledCount}</span>
+            <span className="text-[11px] text-cyan-700 font-medium">Por ingresar</span>
           </div>
-        </Card>
+        </div>
 
         {/* Recaudación o Gasto Total */}
-        <Card className="p-4 rounded-2xl border-slate-200 shadow-2xs bg-white flex flex-col justify-between">
+        <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              {role === 'user' ? 'Gasto Total Estimado' : 'Recaudación Bruta'}
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              {role === 'user' ? 'Gasto Estimado' : 'Recaudación'}
             </span>
-            <span className="text-xs font-mono font-bold text-emerald-600">S/</span>
+            <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+              PEN
+            </span>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-emerald-700">S/ {totalRevenue.toFixed(2)}</span>
-            <span className="text-xs text-slate-500 font-medium">
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-extrabold font-mono text-emerald-700">S/ {totalRevenue.toFixed(2)}</span>
+            <span className="text-[11px] text-slate-500 font-medium font-mono">
               {role === 'user' ? `Activas: S/ ${todayRevenue.toFixed(2)}` : `Hoy: S/ ${todayRevenue.toFixed(2)}`}
             </span>
           </div>
-        </Card>
+        </div>
 
       </div>
 
       {/* =========================================================================
-          BARRA DE BÚSQUEDA Y FILTROS COMPACTOS SIN BADGES
+          BARRA DE BÚSQUEDA Y FILTROS INTEGRADOS
           ========================================================================= */}
-      <Card className="p-3.5 rounded-2xl border-slate-200 shadow-2xs bg-white space-y-3">
+      <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           
           {/* Buscador */}
           <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 shrink-0" />
+            <input
               type="text"
-              placeholder="Buscar por placa, código RSV, cajón o conductor..."
+              placeholder="Buscar por placa, código RSV, cajón o cochera..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9 rounded-xl bg-slate-50 border-slate-200 text-xs font-semibold"
+              className="w-full pl-9 pr-8 h-9 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
             />
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm('')} 
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer p-0.5"
               >
                 ✕
               </button>
@@ -374,7 +373,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <select
               value={parkingFilter}
               onChange={(e) => setParkingFilter(e.target.value)}
-              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
+              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer focus:border-emerald-500"
             >
               <option value="ALL">Todas las Sedes ({establishments.length})</option>
               {establishments.map(e => (
@@ -385,7 +384,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
+              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer focus:border-emerald-500"
             >
               <option value="ALL">Cualquier Fecha</option>
               <option value="TODAY">Solo Hoy</option>
@@ -393,261 +392,235 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           </div>
         </div>
 
-        {/* Pestañas de Filtro como Texto Limpio (Sin Badges) */}
-        <div className="flex items-center gap-2 border-t border-slate-100 pt-2.5 overflow-x-auto scrollbar-none">
+        {/* Pestañas de Estado (Segment Control Elegante) */}
+        <div className="flex items-center gap-1.5 border-t border-slate-100 pt-3 overflow-x-auto scrollbar-none">
           {[
             { id: 'ALL', label: 'Todas', count: totalReservations },
             { id: 'ACTIVE', label: 'En Curso', count: activeCount },
             { id: 'SCHEDULED', label: 'Programadas', count: scheduledCount },
             { id: 'COMPLETED', label: 'Finalizadas', count: completedCount },
             { id: 'CANCELLED', label: 'Canceladas', count: cancelledCount }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setStatusFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                statusFilter === tab.id 
-                  ? 'bg-slate-900 text-white font-extrabold shadow-xs' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'
-              }`}
-            >
-              <span>{tab.label} ({tab.count})</span>
-            </button>
-          ))}
+          ].map(tab => {
+            const isSelected = statusFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setStatusFilter(tab.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  isSelected 
+                    ? 'bg-slate-900 text-white shadow-xs' 
+                    : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className={`text-[11px] font-mono ${isSelected ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  ({tab.count})
+                </span>
+              </button>
+            );
+          })}
         </div>
-      </Card>
+      </div>
 
       {/* =========================================================================
-          LISTADO PRINCIPAL DE RESERVAS (SIN BADGES)
+          LISTADO PRINCIPAL DE RESERVAS & TICKETS
           ========================================================================= */}
-      <div className="gap-3">
+      <div className="space-y-3">
         {filteredReservations.length === 0 ? (
-          <Card className="p-10 text-center rounded-2xl border-slate-200 shadow-2xs bg-white space-y-2">
-            <CalendarCheck className="w-8 h-8 text-slate-300 mx-auto" />
-            <h3 className="font-bold text-slate-800 text-sm">No se encontraron reservas</h3>
+          <div className="p-12 text-center rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2">
+            <CalendarCheck className="w-10 h-10 text-slate-300 mx-auto stroke-[1.5]" />
+            <h3 className="font-bold text-slate-800 text-sm">No se encontraron reservas con los filtros actuales</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Intenta buscar por otro término o restablece los filtros.
+              Intenta buscar por otro término o restablece los filtros para ver tus registros.
             </p>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 gap-3">
-            {filteredReservations.map((res) => {
-              const isScheduled = res.status === 'SCHEDULED';
-              const isActive = res.status === 'ACTIVE';
-              const isCompleted = res.status === 'COMPLETED';
-              const isCancelled = res.status === 'CANCELLED';
-
-              const progress = calculateTimeProgress(res.startTime, res.expiresAt);
-              const remainingText = getRemainingTimeText(res.expiresAt, res.status);
-
-              return (
-                <Card 
-                  key={res.code} 
-                  className={`p-4 rounded-2xl border transition-all duration-150 bg-white hover:border-slate-300 shadow-2xs ${
-                    isActive 
-                      ? 'border-emerald-300' 
-                      : isScheduled 
-                      ? 'border-cyan-200' 
-                      : 'border-slate-200'
-                  }`}
-                >
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    
-                    {/* Sección Izquierda: Identificador, Cajón y Placa */}
-                    <div className="flex items-start space-x-3.5">
-                      
-                      {/* Cajón Compacto */}
-                      <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center font-mono font-black shrink-0 border ${
-                        isActive 
-                          ? 'bg-emerald-600 text-white border-emerald-600' 
-                          : isScheduled
-                          ? 'bg-cyan-600 text-white border-cyan-600'
-                          : isCompleted
-                          ? 'bg-slate-100 text-slate-700 border-slate-200'
-                          : 'bg-rose-50 text-rose-700 border-rose-200'
-                      }`}>
-                        <span className="text-[9px] uppercase font-bold tracking-tighter opacity-80">Plaza</span>
-                        <span className="text-lg leading-none">{res.slot}</span>
-                      </div>
-
-                      {/* Información de Reserva como Texto Limpio (Sin Badges) */}
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono font-black text-xs text-slate-400">{res.code}</span>
-                          
-                          {/* Estado como Texto Directo (Sin Badges) */}
-                          {isActive && (
-                            <span className="text-xs font-extrabold text-emerald-700 flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              <span>En Estancia</span>
-                            </span>
-                          )}
-
-                          {isScheduled && (
-                            <span className="text-xs font-extrabold text-cyan-700">
-                              Programada
-                            </span>
-                          )}
-
-                          {isCompleted && (
-                            <span className="text-xs font-bold text-slate-500">
-                              Finalizada
-                            </span>
-                          )}
-
-                          {isCancelled && (
-                            <span className="text-xs font-bold text-rose-600">
-                              Cancelada
-                            </span>
-                          )}
-
-                          {/* Placa como Texto Monospace Limpio */}
-                          <span className="font-mono font-black text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                            PE {res.plate}
-                          </span>
-                        </div>
-
-                        {/* Nombre del Establecimiento */}
-                        <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5">
-                          <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>{res.parking}</span>
-                        </h3>
-
-                        {/* Datos del Conductor & Horarios */}
-                        <div className="flex flex-wrap items-center text-xs text-slate-600 gap-x-4 gap-y-1">
-                          <span className="flex items-center gap-1 font-bold text-slate-800">
-                            <User className="w-4 h-4 shrink-0 text-slate-400" />
-                            <span>{res.customerName}</span>
-                          </span>
-
-                          {res.customerPhone && (
-                            <span className="flex items-center gap-1 font-mono text-slate-500">
-                              <Phone className="w-4 h-4 shrink-0 text-slate-400" />
-                              <span>{res.customerPhone}</span>
-                            </span>
-                          )}
-
-                          <span className="flex items-center gap-1 font-medium text-slate-500">
-                            <Clock className="w-4 h-4 shrink-0 text-slate-400" />
-                            <span>{new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(res.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({res.hours}h)</span>
-                          </span>
-                        </div>
-
-                        {/* Barra de Progreso de Tiempo (Solo en Activas o Programadas) */}
-                        {(isActive || isScheduled) && (
-                          <div className="pt-1.5 max-w-md">
-                            <div className="flex justify-between text-[10px] font-mono text-slate-500 mb-1 font-bold">
-                              <span>Tiempo transcurrido</span>
-                              <span className={isActive ? 'text-emerald-700 font-extrabold' : 'text-cyan-700'}>
-                                {remainingText}
-                              </span>
-                            </div>
-                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                              <div 
-                                className={`h-full transition-all duration-500 ${
-                                  isActive ? 'bg-emerald-500' : 'bg-cyan-500'
-                                }`} 
-                                style={{ width: `${progress}%` }} 
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Sección Derecha: Monto y Acciones Rápidas */}
-                    <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end justify-between gap-3 border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-100 shrink-0">
-                      
-                      {/* Importe */}
-                      <div className="text-left lg:text-right">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block font-mono">
-                          Importe Total
-                        </span>
-                        <span className="text-xl font-black text-emerald-700 font-mono">
-                          S/ {Number(res.cost).toFixed(2)}
-                        </span>
-                      </div>
-
-                      {/* Botones de Acción */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        
-                        {/* Ver Pase Digital QR */}
-                        <Button
-                          onClick={() => handleOpenPass(res)}
-                          size="sm"
-                          className="rounded-xl text-xs font-black gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm h-9 px-3.5 cursor-pointer"
-                        >
-                          <QrCode className="w-4 h-4 shrink-0 text-emerald-400" />
-                          <span>Pase QR</span>
-                        </Button>
-
-                        {/* Imprimir Ticket */}
-                        <Button
-                          onClick={() => handlePrintReceipt(res)}
-                          variant="outline"
-                          size="sm"
-                          className="rounded-xl text-xs font-bold gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border-slate-200 h-9 px-3 cursor-pointer"
-                          title="Imprimir Comprobante"
-                        >
-                          <Printer className="w-4 h-4 shrink-0 text-slate-500" />
-                          <span className="hidden sm:inline">Ticket</span>
-                        </Button>
-
-                        {/* Operador: Check-In Entrada */}
-                        {role !== 'user' && isScheduled && (
-                          <Button
-                            onClick={() => {
-                              updateReservationStatus(res.code, 'ACTIVE');
-                              setFeedbackMessage(`✓ Entrada registrada: Vehículo ${res.plate} ingresó a la plaza ${res.slot}.`);
-                            }}
-                            size="sm"
-                            className="rounded-xl text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm h-9 px-3"
-                          >
-                            <LogIn className="w-4 h-4 shrink-0" />
-                            <span>Check-In</span>
-                          </Button>
-                        )}
-
-                        {/* Operador: Check-Out Salida — pago real al salir */}
-                        {role !== 'user' && isActive && (
-                          <Button
-                            onClick={() => {
-                              setCheckoutTarget(res);
-                              setShowCheckoutPayment(true);
-                            }}
-                            size="sm"
-                            className="rounded-xl text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm h-9 px-3"
-                          >
-                            <LogOut className="w-4 h-4 shrink-0 text-amber-400" />
-                            <span>Cobrar y Check-Out</span>
-                          </Button>
-                        )}
-
-                        {/* Cancelar Reserva */}
-                        {(isScheduled || isActive) && (
-                          <Button
-                            onClick={() => {
-                              if (confirm(`¿Deseas cancelar la reserva ${res.code} y liberar la plaza ${res.slot}?`)) {
-                                cancelReservation(res.code);
-                                setFeedbackMessage(`Reserva ${res.code} cancelada. Plaza ${res.slot} disponible.`);
-                              }
-                            }}
-                            variant="ghost"
-                            size="sm"
-                            className="rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 h-9"
-                          >
-                            <span>Cancelar</span>
-                          </Button>
-                        )}
-                      </div>
-
-                    </div>
-
-                  </div>
-                </Card>
-              );
-            })}
           </div>
+        ) : (
+          filteredReservations.map((res) => {
+            const isScheduled = res.status === 'SCHEDULED';
+            const isActive = res.status === 'ACTIVE';
+            const isCompleted = res.status === 'COMPLETED';
+            const isCancelled = res.status === 'CANCELLED';
+
+            const progress = calculateTimeProgress(res.startTime, res.expiresAt);
+            const remainingText = getRemainingTimeText(res.expiresAt, res.status);
+
+            return (
+              <div 
+                key={res.code} 
+                className={`p-4 sm:p-5 rounded-2xl border bg-white transition-all shadow-2xs hover:shadow-xs ${
+                  isActive 
+                    ? 'border-emerald-300 ring-1 ring-emerald-400/30' 
+                    : isScheduled 
+                    ? 'border-cyan-300' 
+                    : 'border-slate-200'
+                }`}
+              >
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  
+                  {/* Bloque Izquierdo: Datos de la Reserva */}
+                  <div className="flex items-start gap-4">
+                    
+                    {/* Caja de Plaza / Cajón */}
+                    <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center font-mono font-black shrink-0 border ${
+                      isActive 
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' 
+                        : isScheduled
+                        ? 'bg-cyan-600 text-white border-cyan-600 shadow-xs'
+                        : isCompleted
+                        ? 'bg-slate-100 text-slate-700 border-slate-200'
+                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                    }`}>
+                      <span className="text-[9px] uppercase font-bold tracking-tighter opacity-80 leading-none">Plaza</span>
+                      <span className="text-lg leading-tight mt-0.5">{res.slot}</span>
+                    </div>
+
+                    {/* Contenido Central */}
+                    <div className="space-y-1">
+                      {/* Fila 1: Código, Estado y Placa */}
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <span className="font-mono font-bold text-xs text-slate-400">{res.code}</span>
+                        
+                        {/* Estado en Texto Directo */}
+                        {isActive && (
+                          <span className="text-xs font-extrabold text-emerald-700 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>En Estancia</span>
+                          </span>
+                        )}
+
+                        {isScheduled && (
+                          <span className="text-xs font-extrabold text-cyan-700 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                            <span>Programada</span>
+                          </span>
+                        )}
+
+                        {isCompleted && (
+                          <span className="text-xs font-bold text-slate-500">
+                            Finalizada
+                          </span>
+                        )}
+
+                        {isCancelled && (
+                          <span className="text-xs font-bold text-rose-600">
+                            Cancelada
+                          </span>
+                        )}
+
+                        {/* Placa en Monospace */}
+                        <span className="font-mono font-extrabold text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                          PE {res.plate}
+                        </span>
+                      </div>
+
+                      {/* Fila 2: Nombre del Establecimiento (Sin Viñetas ni Puntos) */}
+                      <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.2]" />
+                        <span>{res.parking}</span>
+                      </h3>
+
+                      {/* Fila 3: Conductor, Teléfono y Horario */}
+                      <div className="flex flex-wrap items-center text-xs text-slate-600 gap-x-4 gap-y-1 pt-0.5">
+                        <span className="flex items-center gap-1 font-semibold text-slate-700">
+                          <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{res.customerName}</span>
+                        </span>
+
+                        {res.customerPhone && (
+                          <span className="flex items-center gap-1 font-mono text-slate-500">
+                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{res.customerPhone}</span>
+                          </span>
+                        )}
+
+                        <span className="flex items-center gap-1 font-medium text-slate-500">
+                          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(res.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({res.hours}h)</span>
+                        </span>
+                      </div>
+
+                      {/* Barra de Tiempo Transcurrido */}
+                      {(isActive || isScheduled) && (
+                        <div className="pt-2 max-w-sm">
+                          <div className="flex justify-between text-[10px] font-mono text-slate-500 mb-1 font-semibold">
+                            <span>Tiempo transcurrido</span>
+                            <span className={isActive ? 'text-emerald-700 font-bold' : 'text-cyan-700'}>
+                              {remainingText}
+                            </span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                            <div 
+                              className={`h-full transition-all duration-500 ${
+                                isActive ? 'bg-emerald-500' : 'bg-cyan-500'
+                              }`} 
+                              style={{ width: `${progress}%` }} 
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bloque Derecho: Importe y Acciones */}
+                  <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-3 border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-100 shrink-0">
+                    
+                    {/* Importe */}
+                    <div className="text-left lg:text-right">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block font-mono">
+                        Importe Total
+                      </span>
+                      <span className="text-lg sm:text-xl font-extrabold text-slate-900 font-mono">
+                        S/ {Number(res.cost).toFixed(2)}
+                      </span>
+                    </div>
+
+                    {/* Botones de Acción */}
+                    <div className="flex items-center gap-2">
+                      
+                      {/* Ver Pase Digital QR */}
+                      <Button
+                        onClick={() => handleOpenPass(res)}
+                        size="sm"
+                        className="rounded-xl text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-2xs h-8 px-3 cursor-pointer"
+                      >
+                        <QrCode className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                        <span>Pase QR</span>
+                      </Button>
+
+                      {/* Imprimir Ticket */}
+                      <Button
+                        onClick={() => handlePrintReceipt(res)}
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl text-xs font-semibold gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border-slate-200 h-8 px-2.5 cursor-pointer"
+                        title="Imprimir Comprobante"
+                      >
+                        <Printer className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                        <span className="hidden sm:inline">Ticket</span>
+                      </Button>
+
+                      {/* Cancelar Reserva */}
+                      {(isScheduled || isActive) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm(`¿Deseas cancelar la reserva ${res.code} y liberar la plaza ${res.slot}?`)) {
+                              cancelReservation(res.code);
+                              setFeedbackMessage(`Reserva ${res.code} cancelada. Plaza ${res.slot} disponible.`);
+                            }
+                          }}
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 

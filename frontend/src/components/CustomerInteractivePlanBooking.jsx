@@ -22,7 +22,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { Button } from './ui/button';
-import { CulqiPaymentModal } from './CulqiPaymentModal';
 
 const DEFAULT_FALLBACK_ELEMENTS = [
   { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
@@ -104,7 +103,6 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [hours, setHours] = useState(2);
   const [selectedPlate, setSelectedPlate] = useState('ABC-123 (Toyota Corolla Blanco)');
-  const [showCulqiModal, setShowCulqiModal] = useState(false);
 
   const numericParkingId = Number(parking?.id);
 
@@ -199,22 +197,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
   const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free';
 
-  // Confirmar reserva directa instantánea
+  // Confirmar reserva (sin cobro: el pago se realiza en garita al salir)
   const handleDirectReservation = () => {
     if (!canReserve) return;
     if (onReserveSlot) {
-      onReserveSlot(buildReservationData({ paymentMethod: 'Pase Digital Directo' }));
-    }
-  };
-
-  // Confirmar reserva tras pago exitoso con Culqi
-  const handleCulqiSuccess = (chargeData) => {
-    if (!canReserve) return;
-    if (onReserveSlot) {
-      onReserveSlot(buildReservationData({
-        paymentMethod: chargeData ? chargeData.method : 'Culqi Pasarela',
-        chargeId: chargeData ? chargeData.chargeId : `chr_test_${Date.now()}`
-      }));
+      onReserveSlot(buildReservationData({ paymentMethod: 'Pago en garita al salir' }));
     }
   };
 
@@ -597,51 +584,25 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             </div>
           </div>
 
-          {/* BOTONES DE ACCIÓN */}
+          {/* BOTÓN DE ACCIÓN — Reserva sin cobro (el pago se realiza al salir, según tiempo real) */}
           <div className="space-y-2 pt-1">
-            {/* Opción 1: Pago Oficial con Culqi */}
             <Button
               type="button"
-              onClick={() => setShowCulqiModal(true)}
+              variant="default"
+              onClick={handleDirectReservation}
               disabled={!selectedSlot}
               className="w-full py-4 text-xs font-black gap-2 shadow-md bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl cursor-pointer"
             >
-              <CreditCard className="w-4 h-4" />
-              <span>Pagar con Culqi (S/ {((parking?.rate || 5.0) * hours).toFixed(2)})</span>
+              <QrCode className="w-4 h-4" />
+              <span>Reservar Cajón — Pagarás al salir (S/ {(parking?.rate || 5.0).toFixed(2)}/h)</span>
               <ChevronRight className="w-4 h-4 text-emerald-200" />
             </Button>
-
-            {/* Opción 2: Reserva Directa Instantánea */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleDirectReservation}
-              disabled={!selectedSlot}
-              className="w-full py-3 text-xs font-bold gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-100 rounded-2xl cursor-pointer"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>Generar Pase Directo (Pagar en Garita)</span>
-            </Button>
+            <p className="text-[11px] text-slate-500 text-center font-medium">
+              Tu pase QR quedará activo. El cobro se calculará al salir según el tiempo real de estancia.
+            </p>
           </div>
         </div>
       </div>
-
-      {/* Modal de Pasarela Culqi */}
-      {selectedSlot && (
-        <CulqiPaymentModal
-          isOpen={showCulqiModal}
-          onClose={() => setShowCulqiModal(false)}
-          amount={(parking?.rate || 5.0) * hours}
-          concept={`Estancia de ${hours}h en ${parking?.name || 'Smart Park'}`}
-          parkingName={parking?.name || 'Smart Park Central'}
-          slotCode={selectedSlot.code}
-          customerEmail="conductor@smartpark.com"
-          onPaymentSuccess={(charge) => {
-            handleCulqiSuccess(charge);
-            setShowCulqiModal(false);
-          }}
-        />
-      )}
 
     </div>
   );

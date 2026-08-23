@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
 import { QRCodeSVG } from 'qrcode.react';
+import { CulqiPaymentModal } from './CulqiPaymentModal';
 import { 
   CalendarCheck, 
   Search, 
@@ -64,6 +65,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
   const [selectedParkingId, setSelectedParkingId] = useState(establishments[0]?.id || 'EST-01');
   const [selectedSlotCode, setSelectedSlotCode] = useState('');
   const [customerName, setCustomerName] = useState('');
+
+  // Pago al salir: el cobro real ocurre en el check-out, no al reservar
+  const [checkoutTarget, setCheckoutTarget] = useState(null);
+  const [showCheckoutPayment, setShowCheckoutPayment] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
   const [plate, setPlate] = useState('');
   const [hours, setHours] = useState(2);
@@ -614,18 +619,18 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                           </Button>
                         )}
 
-                        {/* Operador: Check-Out Salida */}
+                        {/* Operador: Check-Out Salida — pago real al salir */}
                         {role !== 'user' && isActive && (
                           <Button
                             onClick={() => {
-                              completeReservation(res.code);
-                              setFeedbackMessage(`✓ Salida registrada para ${res.plate}. Cajón ${res.slot} liberado.`);
+                              setCheckoutTarget(res);
+                              setShowCheckoutPayment(true);
                             }}
                             size="sm"
                             className="rounded-xl text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm h-9 px-3"
                           >
                             <LogOut className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Check-Out</span>
+                            <span>Cobrar y Check-Out</span>
                           </Button>
                         )}
 
@@ -919,6 +924,31 @@ ESTADO: AUTORIZADO`}
         onClose={() => setShowPassModal(false)}
         reservation={selectedReservationForPass}
       />
+
+      {/* Cobro real al salir: pasarela Culqi con costo calculado por tiempo real */}
+      {checkoutTarget && (() => {
+        const rate = Number(establishments.find(e => String(e.id) === String(checkoutTarget.parkingId) || String(e.id) === String(checkoutTarget.parking))?.rate || establishments.find(e => e.id === checkoutTarget.parkingId)?.rate || 5.0);
+        const start = checkoutTarget.startTime ? new Date(checkoutTarget.startTime) : new Date();
+        const hoursReal = Math.max(1, Math.ceil((Date.now() - start.getTime()) / 3600000));
+        const amount = Number((rate * hoursReal).toFixed(2));
+        return (
+          <CulqiPaymentModal
+            isOpen={showCheckoutPayment}
+            onClose={() => { setShowCheckoutPayment(false); setCheckoutTarget(null); }}
+            amount={amount}
+            concept={`Salida ${checkoutTarget.plate} — ${hoursReal}h en ${checkoutTarget.parking || 'Smart Park'}`}
+            parkingName={String(checkoutTarget.parking || 'Smart Park')}
+            slotCode={String(checkoutTarget.slot || '')}
+            customerEmail={String(checkoutTarget.email || 'conductor@smartpark.com')}
+            onPaymentSuccess={() => {
+              completeReservation(checkoutTarget.code);
+              setFeedbackMessage(`✓ Pago de S/ ${amount.toFixed(2)} confirmado. Salida registrada para ${checkoutTarget.plate}. Cajón ${checkoutTarget.slot} liberado.`);
+              setShowCheckoutPayment(false);
+              setCheckoutTarget(null);
+            }}
+          />
+        );
+      })()}
 
     </div>
   );

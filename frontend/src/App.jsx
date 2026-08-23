@@ -54,8 +54,9 @@ import { SkeletonParkingCard } from './components/ui/skeleton';
 
 export const App = () => {
   const { role, user } = useAuth();
-  const { establishments, occupySlot, createReservation } = useEstablishments();
+  const { establishments, occupySlot, createReservation, bookingError } = useEstablishments();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [bookingFeedback, setBookingFeedback] = useState(null);
 
   // Redirección segura entre vistas al cambiar de rol
   useEffect(() => {
@@ -110,9 +111,10 @@ export const App = () => {
   const handleCustomerBooking = (bookingData) => {
     if (!selectedParking) return;
 
-    // 1. Crear la reserva en el contexto global persistente
+    // Crear la reserva en el contexto global (usa IDs reales del servidor)
     const newRes = createReservation({
-      parkingId: selectedParking.id,
+      parkingId: bookingData.parkingId || selectedParking.id,
+      slotId: bookingData.slotId,
       parkingName: bookingData.parkingName || selectedParking.name,
       slotCode: bookingData.slotCode,
       plate: bookingData.plate,
@@ -125,7 +127,14 @@ export const App = () => {
       expiresAt: bookingData.expiresAt
     });
 
-    // 2. Establecer la reserva activa y abrir el modal con el QR y token ANPR
+    if (!newRes) {
+      const msg = bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
+      setBookingFeedback(msg);
+      setTimeout(() => setBookingFeedback(null), 4000);
+      return;
+    }
+
+    // Establecer la reserva activa y abrir el modal con el QR y token ANPR
     setActiveReservation(newRes);
     setShowQRModal(true);
     setSelectedParkingId(null);
@@ -361,6 +370,12 @@ export const App = () => {
                   {selectedParking ? (
                     /* Vista del Plano Topográfico Interactivo para el Conductor */
                     <div className="space-y-4 animate-in fade-in">
+                      {bookingFeedback && (
+                        <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs font-bold flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                          <span>{bookingFeedback}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
                         <Button 
                           variant="ghost" 

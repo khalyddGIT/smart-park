@@ -44,7 +44,6 @@ export const StaffModule = () => {
     else notify('Ocurrió un error de conexión con el servidor. Intenta de nuevo.');
   };
 
-  // Carga REAL desde la API (requiere rol local | platform)
   const loadStaff = async () => {
     try {
       const res = await api.get('/staff');
@@ -92,11 +91,9 @@ export const StaffModule = () => {
     setShowEditModal(true);
   };
 
-  // POST /staff — mapeo del formulario al contrato real del backend
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.full_name || !formData.dni) return;
-
     const payload = {
       parking_id: Number(formData.parking_id) || 1,
       full_name: formData.full_name.trim(),
@@ -106,8 +103,6 @@ export const StaffModule = () => {
       status: formData.status
     };
     if (formData.email && formData.email.trim()) payload.email = formData.email.trim();
-
-    // security_pin es OPCIONAL (4 dígitos, se hashea server-side)
     const pin = (formData.security_pin || '').trim();
     if (pin) {
       if (!/^\d{4}$/.test(pin)) {
@@ -116,22 +111,19 @@ export const StaffModule = () => {
       }
       payload.security_pin = pin;
     }
-
     try {
       await api.post('/staff', payload);
       setShowAddModal(false);
       notify(`Colaborador "${payload.full_name}" registrado en la nómina.`);
-      await loadStaff(); // refresh post-mutación
+      await loadStaff();
     } catch (err) {
       describeError(err, 'registrar al colaborador');
     }
   };
 
-  // PUT /staff/{id} — solo campos editables del formulario
   const handleEdit = async (e) => {
     e.preventDefault();
     if (!selectedMember) return;
-
     try {
       await api.put(`/staff/${selectedMember.id}`, {
         full_name: formData.full_name.trim(),
@@ -148,7 +140,6 @@ export const StaffModule = () => {
     }
   };
 
-  // DELETE /staff/{id}
   const handleDelete = async (id, name) => {
     if (!window.confirm(`¿Eliminar a "${name}" de la nómina? Esta acción no se puede deshacer.`)) return;
     try {
@@ -179,12 +170,11 @@ export const StaffModule = () => {
     return matchesSearch && matchesShift;
   });
 
-  // Panel honesto: sin rol local/platform NO hay tabla ni acciones
   if (!canManage) {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
-        <Card className="p-12 border-dashed border-slate-300 text-center space-y-3">
-          <ShieldAlert className="w-10 h-10 mx-auto text-slate-400" />
+        <Card className="h-full flex flex-col gap-4 p-6 border-dashed border-slate-300 text-center">
+          <ShieldAlert className="w-5 h-5 shrink-0 mx-auto text-slate-400" />
           <h2 className="text-lg font-black text-slate-900">Acceso restringido</h2>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
             La gestión de personal y turnos de garita está disponible únicamente para administradores
@@ -201,8 +191,8 @@ export const StaffModule = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-700 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold animate-bounce">
-          <Check className="w-4 h-4" />
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-700 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-bounce">
+          <Check className="w-5 h-5 shrink-0" />
           <span>{toast}</span>
         </div>
       )}
@@ -211,30 +201,30 @@ export const StaffModule = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <Users className="w-7 h-7 text-emerald-600" />
+            <Users className="w-5 h-5 shrink-0 text-emerald-600" />
             <span>Gestión de Personal & Turnos de Garita (CRUD)</span>
           </h1>
           <p className="text-xs text-slate-500">
             Administra los operadores, supervisores y roles de turno del estacionamiento.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" onClick={exportCSV} className="gap-1.5 font-bold text-xs">
-            <Download className="w-4 h-4 text-slate-500" />
+        <div className="flex flex-wrap items-center gap-4">
+          <Button variant="secondary" size="sm" onClick={exportCSV} className="gap-2">
+            <Download className="w-5 h-5 shrink-0 text-slate-500" />
             <span>Exportar CSV</span>
           </Button>
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 shrink-0 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <Input
               type="text"
               placeholder="Buscar por nombre o DNI..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 text-xs w-56 rounded-2xl"
+              className="pl-9 w-56"
             />
           </div>
-          <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-md bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="w-4 h-4" />
+          <Button variant="primary" size="md" onClick={handleOpenAdd} className="gap-2">
+            <Plus className="w-5 h-5 shrink-0" />
             <span>Nuevo Colaborador</span>
           </Button>
         </div>
@@ -242,65 +232,56 @@ export const StaffModule = () => {
 
       {/* Staff List Grid */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-slate-400">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span className="ml-3 text-sm font-bold">Cargando nómina de personal...</span>
+        <div className="flex items-center justify-center py-16 text-slate-400 gap-2">
+          <Loader2 className="w-5 h-5 shrink-0 animate-spin" />
+          <span className="text-sm font-bold">Cargando nómina de personal...</span>
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="p-10 border-dashed border-slate-300 text-center space-y-2">
-          <Users className="w-8 h-8 mx-auto text-slate-300" />
+        <Card className="h-full flex flex-col gap-4 p-6 border-dashed border-slate-300 text-center">
+          <Users className="w-5 h-5 shrink-0 mx-auto text-slate-300" />
           <p className="text-sm font-bold text-slate-500">No hay colaboradores registrados que coincidan con la búsqueda.</p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {filtered.map((s) => (
-            <Card key={s.id} className="p-6 border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition">
-              <div>
-                <div className="flex justify-between items-start mb-3">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black shadow-inner">
-                    {(s.full_name || '?').charAt(0)}
+        <div className="overflow-x-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+            {filtered.map((s) => (
+              <Card key={s.id} className="h-full flex flex-col gap-4 p-6 border-slate-200 shadow-sm hover:shadow-md transition">
+                <div className="flex flex-col gap-4 flex-1">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black shadow-inner shrink-0">
+                      {(s.full_name || '?').charAt(0)}
+                    </div>
+                    <span className={`text-xs font-bold flex items-center gap-2 ${s.status === 'Activo' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      ● {s.status}
+                    </span>
                   </div>
-                  <span className={`text-xs font-bold ${s.status === 'Activo' ? 'text-emerald-600' : 'text-slate-400'}`}>
-                    ● {s.status}
-                  </span>
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-extrabold text-slate-900 text-base">{s.full_name}</h3>
+                    <p className="text-xs text-emerald-700 font-bold">{s.position}</p>
+                  </div>
+                  <div className="flex flex-col gap-2 text-xs font-mono bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p className="flex justify-between gap-2 text-slate-600">
+                      <span>DNI:</span>
+                      <span className="font-bold text-slate-900">{s.dni}</span>
+                    </p>
+                    <p className="flex justify-between gap-2 text-slate-600">
+                      <span>Turno:</span>
+                      <span className="font-medium text-slate-700">{s.shift}</span>
+                    </p>
+                  </div>
                 </div>
-
-                <h3 className="font-extrabold text-slate-900 text-base mb-1">{s.full_name}</h3>
-                <p className="text-xs text-emerald-700 font-bold mb-3">{s.position}</p>
-
-                <div className="space-y-1.5 text-xs font-mono bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-4">
-                  <p className="flex justify-between text-slate-600">
-                    <span>DNI:</span>
-                    <span className="font-bold text-slate-900">{s.dni}</span>
-                  </p>
-                  <p className="flex justify-between text-slate-600">
-                    <span>Turno:</span>
-                    <span className="font-medium text-slate-700">{s.shift}</span>
-                  </p>
+                <div className="flex items-center gap-2 pt-4 border-t border-slate-100 mt-auto">
+                  <Button variant="secondary" size="sm" onClick={() => handleOpenEdit(s)} className="flex-1 gap-2">
+                    <Edit3 className="w-5 h-5 shrink-0" />
+                    <span>Editar</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id, s.full_name)} className="gap-2 text-rose-600 hover:bg-rose-50">
+                    <Trash2 className="w-5 h-5 shrink-0" />
+                  </Button>
                 </div>
-              </div>
-
-              <div className="flex items-center space-x-2 pt-2 border-t border-slate-100">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleOpenEdit(s)}
-                  className="flex-1 font-bold text-xs gap-1.5"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Editar</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(s.id, s.full_name)}
-                  className="text-rose-600 hover:bg-rose-50 px-3"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
@@ -313,37 +294,19 @@ export const StaffModule = () => {
               Ingresa los datos laborales para el control de accesos de garita.
             </DialogDescription>
           </DialogHeader>
-
-          <form onSubmit={handleCreate} className="space-y-4 my-2">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Nombre y Apellidos *</label>
-              <Input
-                type="text"
-                placeholder="Juan Pérez"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                required
-              />
+          <form onSubmit={handleCreate} className="flex flex-col gap-4 my-2">
+            <div className="flex flex-col gap-2">
+              <label className="block text-xs font-bold text-slate-700">Nombre y Apellidos *</label>
+              <Input type="text" placeholder="Juan Pérez" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} required />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">DNI / Documento *</label>
-                <Input
-                  type="text"
-                  maxLength={8}
-                  placeholder="44556677"
-                  value={formData.dni}
-                  onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
-                  required
-                />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="block text-xs font-bold text-slate-700">DNI / Documento *</label>
+                <Input type="text" maxLength={8} placeholder="44556677" value={formData.dni} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} required />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Cargo</label>
-                <select
-                  value={formData.position}
-                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none"
-                >
+              <div className="flex flex-col gap-2">
+                <label className="block text-xs font-bold text-slate-700">Cargo</label>
+                <select value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} className="h-10 w-full bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20">
                   <option value="Operador de Garita">Operador de Garita</option>
                   <option value="Supervisor de Turno">Supervisor de Turno</option>
                   <option value="Seguridad & ANPR">Seguridad & ANPR</option>
@@ -351,50 +314,31 @@ export const StaffModule = () => {
                 </select>
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Turno Asignado</label>
-              <select
-                value={formData.shift}
-                onChange={(e) => setFormData({ ...formData, shift: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none"
-              >
+            <div className="flex flex-col gap-2">
+              <label className="block text-xs font-bold text-slate-700">Turno Asignado</label>
+              <select value={formData.shift} onChange={(e) => setFormData({ ...formData, shift: e.target.value })} className="h-10 w-full bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20">
                 <option value="Mañana (07:00 - 15:00)">Mañana (07:00 - 15:00)</option>
                 <option value="Tarde (15:00 - 23:00)">Tarde (15:00 - 23:00)</option>
                 <option value="Noche (23:00 - 07:00)">Noche (23:00 - 07:00)</option>
                 <option value="Rotativo 24/7">Rotativo 24/7</option>
               </select>
             </div>
-
-            <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-900 space-y-2">
-              <span className="font-bold flex items-center gap-1 text-emerald-800">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Cuentas & Permiso de Acceso (Operador Garita)
+            <div className="flex flex-col gap-2 p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900">
+              <span className="font-bold flex items-center gap-2 text-emerald-800">
+                <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-600" /> Cuentas & Permiso de Acceso (Operador Garita)
               </span>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Correo / Usuario Acceso</label>
-                  <Input
-                    type="email"
-                    placeholder="operador@cochera.pe"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="bg-white text-xs py-1"
-                  />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="block text-[11px] font-bold text-slate-700">Correo / Usuario Acceso</label>
+                  <Input type="email" placeholder="operador@cochera.pe" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="bg-white" />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">PIN Garita ANPR (opcional, 4 dígitos)</label>
-                  <Input
-                    type="password"
-                    maxLength={4}
-                    placeholder="••••"
-                    value={formData.security_pin}
-                    onChange={(e) => setFormData({ ...formData, security_pin: e.target.value.replace(/\D/g, '') })}
-                    className="bg-white text-xs py-1 text-center font-mono font-bold"
-                  />
+                <div className="flex flex-col gap-2">
+                  <label className="block text-[11px] font-bold text-slate-700">PIN Garita ANPR (opcional, 4 dígitos)</label>
+                  <Input type="password" maxLength={4} placeholder="••••" value={formData.security_pin} onChange={(e) => setFormData({ ...formData, security_pin: e.target.value.replace(/\D/g, '') })} className="bg-white text-center font-mono font-bold" />
                 </div>
               </div>
             </div>
-
-            <Button type="submit" className="w-full font-black py-5 mt-2 bg-emerald-600 hover:bg-emerald-700">
+            <Button variant="primary" size="md" type="submit" className="w-full gap-2">
               Registrar Colaborador y Crear Acceso
             </Button>
           </form>
@@ -410,34 +354,19 @@ export const StaffModule = () => {
               Modifica los turnos o estado laboral del colaborador.
             </DialogDescription>
           </DialogHeader>
-
-          <form onSubmit={handleEdit} className="space-y-4 my-2">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Nombre y Apellidos *</label>
-              <Input
-                type="text"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                required
-              />
+          <form onSubmit={handleEdit} className="flex flex-col gap-4 my-2">
+            <div className="flex flex-col gap-2">
+              <label className="block text-xs font-bold text-slate-700">Nombre y Apellidos *</label>
+              <Input type="text" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} required />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">DNI *</label>
-                <Input
-                  type="text"
-                  value={formData.dni}
-                  onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
-                  required
-                />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="block text-xs font-bold text-slate-700">DNI *</label>
+                <Input type="text" value={formData.dni} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} required />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Cargo</label>
-                <select
-                  value={formData.position}
-                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none"
-                >
+              <div className="flex flex-col gap-2">
+                <label className="block text-xs font-bold text-slate-700">Cargo</label>
+                <select value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} className="h-10 w-full bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20">
                   <option value="Operador de Garita">Operador de Garita</option>
                   <option value="Supervisor de Turno">Supervisor de Turno</option>
                   <option value="Seguridad & ANPR">Seguridad & ANPR</option>
@@ -445,21 +374,16 @@ export const StaffModule = () => {
                 </select>
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Turno Asignado</label>
-              <select
-                value={formData.shift}
-                onChange={(e) => setFormData({ ...formData, shift: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none"
-              >
+            <div className="flex flex-col gap-2">
+              <label className="block text-xs font-bold text-slate-700">Turno Asignado</label>
+              <select value={formData.shift} onChange={(e) => setFormData({ ...formData, shift: e.target.value })} className="h-10 w-full bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20">
                 <option value="Mañana (07:00 - 15:00)">Mañana (07:00 - 15:00)</option>
                 <option value="Tarde (15:00 - 23:00)">Tarde (15:00 - 23:00)</option>
                 <option value="Noche (23:00 - 07:00)">Noche (23:00 - 07:00)</option>
                 <option value="Rotativo 24/7">Rotativo 24/7</option>
               </select>
             </div>
-
-            <Button type="submit" className="w-full font-black py-5 mt-2 bg-emerald-600 hover:bg-emerald-700">
+            <Button variant="primary" size="md" type="submit" className="w-full gap-2">
               Guardar Cambios
             </Button>
           </form>

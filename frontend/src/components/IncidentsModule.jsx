@@ -313,17 +313,17 @@ export const IncidentsModule = () => {
 
       {/* Toast Alert */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold animate-bounce">
-          <Check className="w-4 h-4 text-emerald-400" />
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-bounce">
+          <Check className="w-5 h-5 shrink-0 text-emerald-400" />
           <span>{notification}</span>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="flex items-center space-x-3.5">
-          <div className="p-3 bg-amber-50 text-amber-700 rounded-2xl border border-amber-200 shadow-xs">
-            <AlertTriangle className="w-6 h-6" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-amber-50 text-amber-700 rounded-2xl border border-amber-200 shadow-xs shrink-0">
+            <AlertTriangle className="w-5 h-5 shrink-0" />
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
@@ -340,46 +340,48 @@ export const IncidentsModule = () => {
         </div>
 
         <Button
+          variant="primary"
+          size="md"
           onClick={() => {
             setShowModal(true);
             setPhotoMode('upload');
           }}
-          className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-2 rounded-xl shadow-md shadow-amber-600/20 h-10 px-4 cursor-pointer"
+          className="gap-2"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-5 h-5 shrink-0" />
           <span>{role === 'user' ? 'Reportar Problema' : 'Registrar Incidencia'}</span>
         </Button>
       </div>
 
       {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 h-full">
+        <Card className="h-full flex flex-col gap-4 p-6 border-slate-200 bg-white">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Reportes</span>
-          <div className="mt-2 flex items-baseline justify-between">
+          <div className="flex items-baseline justify-between gap-2">
             <span className="text-2xl font-black font-mono text-slate-900">{totalIncidents}</span>
             <span className="text-xs text-slate-500">Histórico</span>
           </div>
         </Card>
 
-        <Card className="p-4 rounded-3xl border-rose-200 shadow-xs bg-rose-50/40 flex flex-col justify-between">
+        <Card className="h-full flex flex-col gap-4 p-6 border-rose-200 bg-rose-50/40">
           <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700">Reportadas</span>
-          <div className="mt-2 flex items-baseline justify-between">
+          <div className="flex items-baseline justify-between gap-2">
             <span className="text-2xl font-black font-mono text-rose-700">{reportedCount}</span>
             <span className="text-xs text-rose-600 font-bold">Por atender</span>
           </div>
         </Card>
 
-        <Card className="p-4 rounded-3xl border-emerald-200 shadow-xs bg-emerald-50/40 flex flex-col justify-between">
+        <Card className="h-full flex flex-col gap-4 p-6 border-emerald-200 bg-emerald-50/40">
           <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Resueltas</span>
-          <div className="mt-2 flex items-baseline justify-between">
+          <div className="flex items-baseline justify-between gap-2">
             <span className="text-2xl font-black font-mono text-emerald-700">{resolvedCount}</span>
             <span className="text-xs text-emerald-700 font-bold">Concluidas</span>
           </div>
         </Card>
 
-        <Card className="p-4 rounded-3xl border-sky-200 shadow-xs bg-sky-50/40 flex flex-col justify-between">
+        <Card className="h-full flex flex-col gap-4 p-6 border-sky-200 bg-sky-50/40">
           <span className="text-[11px] font-bold uppercase tracking-wider text-sky-800">Tasa de Resolución</span>
-          <div className="mt-2 flex items-baseline justify-between">
+          <div className="flex items-baseline justify-between gap-2">
             <span className="text-2xl font-black font-mono text-sky-700">{resolutionRate}%</span>
             <span className="text-xs text-sky-700 font-bold">{isAdmin ? 'Red completa' : 'Tus casos'}</span>
           </div>
@@ -387,18 +389,18 @@ export const IncidentsModule = () => {
       </div>
 
       {/* Buscador y Filtros */}
-      <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col lg:flex-row items-center justify-between gap-3">
+      <Card className="p-4 border-slate-200 bg-white flex flex-col lg:flex-row items-center justify-between gap-4">
         <div className="relative w-full lg:w-96">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 shrink-0 text-slate-400" />
           <Input
             type="text"
             placeholder={role === 'user' ? 'Buscar por código, categoría o descripción...' : 'Buscar por código, reportante o cochera...'}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-xs font-semibold"
+            className="pl-10"
           />
           {searchText && (
-            <button onClick={() => setSearchText('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs cursor-pointer">✕</button>
+            <button onClick={() => setSearchText('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">✕</button>
           )}
         </div>
 
@@ -406,7 +408,7 @@ export const IncidentsModule = () => {
           <select
             value={filterParking}
             onChange={(e) => setFilterParking(e.target.value)}
-            className="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none"
+            className="h-10 w-full lg:w-auto bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
           >
             <option value="all">Todas las Cocheras</option>
             {Object.entries(parkingsMap).map(([pid, pname]) => (
@@ -415,7 +417,7 @@ export const IncidentsModule = () => {
           </select>
         )}
 
-        <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto">
           {[
             { id: 'all', label: 'Todos', count: totalIncidents },
             { id: 'reported', label: 'Reportadas', count: reportedCount, color: 'text-rose-700 bg-rose-100' },
@@ -424,14 +426,14 @@ export const IncidentsModule = () => {
             <button
               key={st.id}
               onClick={() => setFilterStatus(st.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
                 filterStatus === st.id
                   ? 'bg-slate-900 text-white shadow-xs font-black'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               <span>{st.label}</span>
-              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
+              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
                 filterStatus === st.id ? 'bg-white/20 text-white' : st.color || 'bg-slate-200 text-slate-700'
               }`}>
                 {st.count}
@@ -443,13 +445,13 @@ export const IncidentsModule = () => {
 
       {/* Grid de Incidencias */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-slate-400">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span className="ml-3 text-sm font-bold">Cargando incidencias...</span>
+        <div className="flex items-center justify-center py-16 text-slate-400 gap-2">
+          <Loader2 className="w-5 h-5 shrink-0 animate-spin" />
+          <span className="text-sm font-bold">Cargando incidencias...</span>
         </div>
       ) : filteredIncidents.length === 0 ? (
-        <Card className="p-10 border-dashed border-slate-300 text-center space-y-2">
-          <AlertTriangle className="w-8 h-8 mx-auto text-slate-300" />
+        <Card className="h-full flex flex-col gap-4 p-6 border-dashed border-slate-300 text-center">
+          <AlertTriangle className="w-5 h-5 shrink-0 mx-auto text-slate-300" />
           {searchText || filterStatus !== 'all' || filterParking !== 'all' ? (
             <>
               <p className="text-sm font-bold text-slate-500">Ninguna incidencia coincide con los filtros aplicados.</p>
@@ -468,101 +470,104 @@ export const IncidentsModule = () => {
           )}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredIncidents.map((inc) => (
-            <Card key={inc.id} className="p-5 border-slate-200 shadow-xs bg-white flex flex-col justify-between hover:shadow-md transition rounded-3xl group">
-              <div>
-                <div className="flex justify-between items-start mb-3">
-                  <span className="font-mono text-xs font-black text-slate-400">INC-{String(inc.id).padStart(3, '0')}</span>
-                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border ${
-                    inc.status === 'resolved'
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : 'bg-rose-50 text-rose-700 border-rose-200'
-                  }`}>
-                    ● {inc.status === 'resolved' ? 'Resuelta' : 'Pendiente'}
-                  </span>
-                </div>
-
-                <h3 className="font-extrabold text-slate-900 text-base mb-1">{CATEGORY_LABELS[inc.category] || inc.category}</h3>
-                <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span className="truncate">{parkingNameOf(inc)}</span>
-                </p>
-
-                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-1.5 text-xs font-mono mb-3">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 shrink-0 mr-2">Reportante:</span>
-                    <span className="font-bold text-slate-900 truncate">{inc.user_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Categoría:</span>
-                    <span className={`font-bold ${(CATEGORY_LABELS[inc.category] || '').length > 14 ? 'text-[10px]' : 'text-xs'} text-slate-700 truncate ml-2`}>
-                      {CATEGORY_LABELS[inc.category] || inc.category}
+        <div className="overflow-x-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
+            {filteredIncidents.map((inc) => (
+              <Card key={inc.id} className="h-full flex flex-col gap-4 p-6 border-slate-200 bg-white hover:shadow-md transition">
+                <div className="flex flex-col gap-4 flex-1">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="font-mono text-xs font-black text-slate-400">INC-{String(inc.id).padStart(3, '0')}</span>
+                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border flex items-center gap-2 ${
+                      inc.status === 'resolved'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                    }`}>
+                      ● {inc.status === 'resolved' ? 'Resuelta' : 'Pendiente'}
                     </span>
                   </div>
-                  <div className="flex justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-200">
-                    <span>Fecha:</span>
-                    <span>{formatDateTime(inc.created_at)}</span>
+
+                  <h3 className="font-extrabold text-slate-900 text-base">{CATEGORY_LABELS[inc.category] || inc.category}</h3>
+                  <p className="text-xs text-slate-500 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
+                    <span className="truncate">{parkingNameOf(inc)}</span>
+                  </p>
+
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-2 text-xs font-mono">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-slate-400 shrink-0">Reportante:</span>
+                      <span className="font-bold text-slate-900 truncate">{inc.user_name}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-slate-400">Categoría:</span>
+                      <span className="font-bold text-slate-700 truncate ml-2">
+                        {CATEGORY_LABELS[inc.category] || inc.category}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2 text-[10px] text-slate-400 pt-2 border-t border-slate-200">
+                      <span>Fecha:</span>
+                      <span>{formatDateTime(inc.created_at)}</span>
+                    </div>
                   </div>
+
+                  <p className="text-xs text-slate-600 leading-relaxed">{inc.description}</p>
+
+                  {/* Evidencia Fotográfica Adjunta */}
+                  {inc.photo_url && (
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => setSelectedImage(inc.photo_url)}
+                        className="relative w-full h-40 rounded-xl overflow-hidden border border-slate-200 group/eye"
+                      >
+                        <img src={inc.photo_url} alt="Evidencia" className="w-full h-40 object-cover group-hover/eye:scale-105 transition" />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/eye:opacity-100 flex items-center justify-center transition">
+                          <Eye className="w-5 h-5 shrink-0 text-white" />
+                        </div>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                <p className="text-xs text-slate-600 leading-relaxed mb-4">{inc.description}</p>
-
-                {/* Evidencia Fotográfica Adjunta */}
-                {inc.photo_url && (
-                  <div className="mb-4">
-                    <button
-                      onClick={() => setSelectedImage(inc.photo_url)}
-                      className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 group/eye cursor-pointer"
-                    >
-                      <img src={inc.photo_url} alt="Evidencia" className="w-full h-full object-cover group-hover/eye:scale-110 transition" />
-                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/eye:opacity-100 flex items-center justify-center transition">
-                        <Eye className="w-4 h-4 text-white" />
-                      </div>
-                    </button>
+                {/* Nota de Resolución del Administrador */}
+                {inc.status === 'resolved' && inc.resolution_note && (
+                  <div className="bg-emerald-50/90 border border-emerald-200/80 p-4 rounded-xl flex flex-col gap-2">
+                    <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-700" />
+                      <span>Nota de Resolución</span>
+                    </span>
+                    <p className="text-xs text-emerald-950 font-medium">{inc.resolution_note}</p>
                   </div>
                 )}
-              </div>
 
-              {/* Nota de Resolución del Administrador */}
-              {inc.status === 'resolved' && inc.resolution_note && (
-                <div className="bg-emerald-50/90 border border-emerald-200/80 p-3 rounded-2xl mb-3 space-y-1">
-                  <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider flex items-center gap-1.5">
-                    <ShieldCheck className="w-3 h-3 text-emerald-700" />
-                    <span>Nota de Resolución</span>
-                  </span>
-                  <p className="text-xs text-emerald-950 font-medium">{inc.resolution_note}</p>
-                </div>
-              )}
-
-              {/* Footer de Tarjeta */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                {isAdmin ? (
-                  inc.status !== 'resolved' ? (
-                    <Button
-                      onClick={() => handleOpenResolve(inc)}
-                      size="sm"
-                      className="w-full text-xs font-bold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Resolver</span>
-                    </Button>
+                {/* Footer de Tarjeta */}
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
+                  {isAdmin ? (
+                    inc.status !== 'resolved' ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleOpenResolve(inc)}
+                        className="w-full gap-2"
+                      >
+                        <CheckCircle2 className="w-5 h-5 shrink-0" />
+                        <span>Resolver</span>
+                      </Button>
+                    ) : (
+                      <span className="text-[11px] text-slate-400 font-bold flex items-center gap-2 mx-auto">
+                        <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" /> Caso Finalizado · {formatDateTime(inc.resolved_at)}
+                      </span>
+                    )
                   ) : (
-                    <span className="text-[11px] text-slate-400 font-bold flex items-center gap-1 mx-auto">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Caso Finalizado · {formatDateTime(inc.resolved_at)}
+                    <span className={`text-[11px] font-bold flex items-center gap-2 mx-auto ${
+                      inc.status === 'resolved' ? 'text-emerald-700' : 'text-amber-700'
+                    }`}>
+                      <Clock className="w-5 h-5 shrink-0" />
+                      {inc.status === 'resolved' ? 'Resuelto por Administración' : 'En Atención por Garita'}
                     </span>
-                  )
-                ) : (
-                  <span className={`text-[11px] font-bold flex items-center gap-1 mx-auto ${
-                    inc.status === 'resolved' ? 'text-emerald-700' : 'text-amber-700'
-                  }`}>
-                    <Clock className="w-3.5 h-3.5" />
-                    {inc.status === 'resolved' ? 'Resuelto por Administración' : 'En Atención por Garita'}
-                  </span>
-                )}
-              </div>
-            </Card>
-          ))}
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
@@ -574,7 +579,7 @@ export const IncidentsModule = () => {
         <DialogContent className="max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto bg-white shadow-2xl border-slate-200">
           <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
+              <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600" />
               <span>{role === 'user' ? 'Reportar Problema con mi Estancia' : 'Registrar Incidencia Operativa'}</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
@@ -582,13 +587,13 @@ export const IncidentsModule = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateIncident} className="space-y-4 my-2">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Tipo de Anomalía *</label>
+          <form onSubmit={handleCreateIncident} className="flex flex-col gap-4 my-2">
+            <div className="flex flex-col gap-2">
+              <label className="block text-xs font-bold text-slate-700">Tipo de Anomalía *</label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                className="h-10 w-full bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
               >
                 {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
@@ -596,12 +601,12 @@ export const IncidentsModule = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Establecimiento *</label>
+            <div className="flex flex-col gap-2">
+              <label className="block text-xs font-bold text-slate-700">Establecimiento *</label>
               <select
                 value={formData.parkingId}
                 onChange={(e) => setFormData({ ...formData, parkingId: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                className="h-10 w-full bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
                 required
               >
                 {Object.keys(parkingsMap).length === 0 && (
@@ -613,42 +618,42 @@ export const IncidentsModule = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Descripción del Suceso *</label>
+            <div className="flex flex-col gap-2">
+              <label className="block text-xs font-bold text-slate-700">Descripción del Suceso *</label>
               <textarea
                 rows={3}
                 placeholder="Explica detalladamente lo sucedido (mínimo 5 caracteres)..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-medium text-slate-800 focus:outline-none"
+                className="w-full bg-white border border-slate-200 rounded-xl p-4 text-xs font-medium text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
                 required
               />
             </div>
 
             {/* SECCIÓN DE EVIDENCIA (opcional, una foto) */}
-            <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 pt-2">
+              <div className="flex items-center justify-between gap-4">
                 <label className="block text-xs font-bold text-slate-700">Foto de Evidencia (opcional)</label>
 
-                <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 text-xs">
+                <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 gap-2">
                   <button
                     type="button"
                     onClick={() => setPhotoMode('upload')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
-                      photoMode === 'upload' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                    className={`px-3 py-1.5 rounded-lg font-bold transition text-xs gap-2 flex items-center ${
+                      photoMode === 'upload' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    📁 Subir Archivo
+                    <span>📁 Subir Archivo</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setPhotoMode('camera')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer ${
-                      photoMode === 'camera' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                    className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-2 text-xs ${
+                      photoMode === 'camera' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    <Camera className="w-3.5 h-3.5" />
-                    <span>📸 Tomar Foto</span>
+                    <Camera className="w-5 h-5 shrink-0" />
+                    <span>Tomar Foto</span>
                   </button>
                 </div>
               </div>
@@ -656,46 +661,47 @@ export const IncidentsModule = () => {
               {photoMode === 'upload' && !photoPreview && (
                 <div
                   {...getRootProps()}
-                  className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition ${
+                  className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition flex flex-col gap-2 items-center ${
                     isDragActive ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   <input {...getInputProps()} />
-                  <UploadCloud className="w-7 h-7 text-slate-400 mx-auto mb-1" />
+                  <UploadCloud className="w-5 h-5 shrink-0 text-slate-400" />
                   <p className="text-xs font-bold text-slate-700">Arrastra una foto aquí o haz clic para subir</p>
                   <p className="text-[10px] text-slate-400">JPG, PNG o WebP hasta 6MB (se comprime automáticamente)</p>
                 </div>
               )}
 
               {photoMode === 'camera' && (
-                <div className="space-y-2.5 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-white relative overflow-hidden">
+                <div className="flex flex-col gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800 text-white relative overflow-hidden">
                   <div
                     id="camera-shutter-flash"
                     className="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-150 z-30"
                   />
 
                   {cameraError ? (
-                    <div className="p-4 text-center space-y-2">
+                    <div className="p-4 text-center flex flex-col gap-4 items-center">
                       <p className="text-xs text-rose-400 font-bold">{cameraError}</p>
                       <Button
+                        variant="secondary"
+                        size="sm"
                         type="button"
                         onClick={startCamera}
-                        size="sm"
-                        className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl gap-1"
+                        className="gap-2"
                       >
-                        <RefreshCw className="w-3.5 h-3.5" />
+                        <RefreshCw className="w-5 h-5 shrink-0" />
                         <span>Reintentar Acceso a Cámara</span>
                       </Button>
                     </div>
                   ) : (
                     <>
-                      <div className="relative w-full h-56 bg-slate-900 rounded-xl overflow-hidden border border-slate-700/60 flex items-center justify-center">
+                      <div className="relative w-full h-40 bg-slate-900 rounded-xl overflow-hidden border border-slate-700/60 flex items-center justify-center">
                         <video
                           ref={videoRef}
                           autoPlay
                           playsInline
                           muted
-                          className="w-full h-full object-cover"
+                          className="w-full h-40 object-cover"
                         />
 
                         <div className="absolute inset-4 border border-white/20 rounded-xl pointer-events-none flex items-center justify-center">
@@ -707,22 +713,26 @@ export const IncidentsModule = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-center pt-1 gap-3">
-                        <button
+                      <div className="flex items-center justify-center gap-4">
+                        <Button
+                          variant="primary"
+                          size="sm"
                           type="button"
                           onClick={capturePhoto}
-                          className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition shadow-lg active:scale-95 cursor-pointer"
+                          className="gap-2 rounded-full"
                         >
-                          <Camera className="w-4 h-4" />
+                          <Camera className="w-5 h-5 shrink-0" />
                           <span>Capturar Foto Ahora</span>
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           type="button"
                           onClick={() => setPhotoMode('upload')}
-                          className="px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition cursor-pointer"
+                          className="gap-2 rounded-full bg-white/10 text-white hover:bg-white/20 hover:text-white"
                         >
                           Cancelar
-                        </button>
+                        </Button>
                       </div>
                     </>
                   )}
@@ -730,19 +740,19 @@ export const IncidentsModule = () => {
               )}
 
               {photoPreview && (
-                <div className="pt-1">
-                  <div className="flex items-center justify-between mb-1.5">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-[11px] font-bold text-slate-600">Evidencia adjunta:</span>
                     <span className="text-[10px] text-emerald-700 font-bold">
                       ~{Math.round(photoPreview.length * 0.75 / 1024)} KB · Lista para enviar
                     </span>
                   </div>
-                  <div className="relative w-24 h-24 rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
-                    <img src={photoPreview} alt="Evidencia" className="w-full h-full object-cover" />
+                  <div className="relative w-full h-40 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                    <img src={photoPreview} alt="Evidencia" className="w-full h-40 object-cover" />
                     <button
                       type="button"
                       onClick={removePhoto}
-                      className="absolute top-1 right-1 w-5 h-5 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-md hover:bg-rose-700 cursor-pointer"
+                      className="absolute top-2 right-2 w-8 h-8 bg-rose-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md hover:bg-rose-700"
                     >
                       ×
                     </button>
@@ -751,9 +761,9 @@ export const IncidentsModule = () => {
               )}
             </div>
 
-            <Button type="submit" disabled={submitting} className="w-full font-bold h-11 bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md cursor-pointer mt-2 disabled:opacity-60">
+            <Button variant="primary" size="md" type="submit" disabled={submitting} className="w-full gap-2">
               {submitting ? (
-                <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Enviando Reporte...</span>
+                <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 shrink-0 animate-spin" /> Enviando Reporte...</span>
               ) : (
                 'Enviar Reporte de Incidencia'
               )}
@@ -768,7 +778,7 @@ export const IncidentsModule = () => {
           <DialogContent className="max-w-md rounded-3xl p-6">
             <DialogHeader>
               <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
                 Resolver Incidencia INC-{String(resolveTarget?.id || '').padStart(3, '0')}
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
@@ -776,22 +786,22 @@ export const IncidentsModule = () => {
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleResolveIncident} className="space-y-4 my-2">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Nota de Resolución *</label>
+            <form onSubmit={handleResolveIncident} className="flex flex-col gap-4 my-2">
+              <div className="flex flex-col gap-2">
+                <label className="block text-xs font-bold text-slate-700">Nota de Resolución *</label>
                 <textarea
                   rows={4}
                   placeholder="Describe cómo se atendió o resolvió el caso..."
                   value={resolutionNote}
                   onChange={(e) => setResolutionNote(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs font-medium text-slate-800 focus:outline-none"
+                  className="w-full bg-white border border-slate-200 rounded-xl p-4 text-xs font-medium text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
                   required
                 />
               </div>
 
-              <Button type="submit" disabled={submitting} className="w-full font-black h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl disabled:opacity-60">
+              <Button variant="primary" size="md" type="submit" disabled={submitting} className="w-full gap-2">
                 {submitting ? (
-                  <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</span>
+                  <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 shrink-0 animate-spin" /> Procesando...</span>
                 ) : (
                   'Confirmar Resolución'
                 )}
@@ -806,10 +816,10 @@ export const IncidentsModule = () => {
         <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
           <DialogContent className="max-w-2xl p-2 bg-slate-950 border-slate-800 rounded-3xl overflow-hidden">
             <div className="relative">
-              <img src={selectedImage} alt="Evidencia" className="w-full h-auto rounded-2xl max-h-[80vh] object-contain" />
+              <img src={selectedImage} alt="Evidencia" className="w-full h-auto max-h-[80vh] object-cover rounded-2xl" />
               <button
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-3 right-3 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center cursor-pointer"
+                className="absolute top-3 right-3 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center"
               >
                 ✕
               </button>

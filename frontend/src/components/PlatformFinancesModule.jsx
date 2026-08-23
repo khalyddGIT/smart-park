@@ -188,10 +188,12 @@ export const PlatformFinancesModule = () => {
   if (role !== 'platform') {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
-        <Card className="p-10 text-center border-amber-200 bg-amber-50/60 rounded-3xl">
-          <ShieldCheck className="w-8 h-8 mx-auto text-amber-600 mb-2" />
-          <p className="text-sm font-black text-slate-800">Acceso restringido</p>
-          <p className="text-xs text-slate-600 mt-1">Este módulo es exclusivo del rol <span className="font-mono font-bold">platform</span> (Super Admin). Inicia sesión con superadmin@smartpark.com.</p>
+        <Card className="p-6 h-full flex flex-col gap-4 text-center">
+          <div className="flex flex-col items-center gap-2">
+            <ShieldCheck className="w-5 h-5 shrink-0 text-amber-600" />
+            <p className="text-subheading text-slate-800">Acceso restringido</p>
+          </div>
+          <p className="text-xs text-slate-600">Este módulo es exclusivo del rol <span className="font-mono font-bold">platform</span> (Super Admin). Inicia sesión con superadmin@smartpark.com.</p>
         </Card>
       </div>
     );
@@ -200,186 +202,187 @@ export const PlatformFinancesModule = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold border border-slate-800 max-w-sm">
-          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold border border-slate-800 max-w-sm">
+          <Check className="w-4 h-4 shrink-0 text-emerald-400" />
           <span>{toast}</span>
         </div>
       )}
 
       {/* Cabecera Principal */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
-              <Wallet className="w-4 h-4" />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm shrink-0">
+              <Wallet className="w-5 h-5 shrink-0" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Finanzas, Comisiones & Liquidaciones a Cocheras</h1>
+            <h1 className="text-heading text-xl sm:text-2xl text-slate-900 tracking-tight">Finanzas, Comisiones & Liquidaciones a Cocheras</h1>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500">
             Control de comisiones de la plataforma Smart-Park y dispersión bancaria quincenal a propietarios afiliados.{' '}
             <span className="text-amber-700 font-bold">Comisión fija 12% • Fuente: reservas reales (canceladas excluidas).</span>
           </p>
           {summary?.nota && (
-            <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-              <Info className="w-3 h-3" />
+            <p className="text-xs text-slate-400 flex items-center gap-2">
+              <Info className="w-5 h-5 shrink-0" />
               <span>{summary.nota}</span>
             </p>
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <Button
             onClick={handleExportCSV}
-            variant="outline"
-            className="text-xs font-bold gap-1.5 border-slate-200 text-slate-700 bg-white hover:bg-slate-50 rounded-2xl shadow-2xs"
+            variant="secondary"
+            size="sm"
           >
-            <Download className="w-3.5 h-3.5 text-slate-600" />
-            <span>Exportar para Contabilidad (CSV)</span>
+            <Download className="w-4 h-4 shrink-0" />
+            Exportar para Contabilidad (CSV)
           </Button>
           <Button
             onClick={fetchSummary}
-            variant="outline"
-            className="text-xs font-bold gap-1.5 border-slate-200 text-slate-700 bg-white hover:bg-slate-50 rounded-2xl"
+            variant="secondary"
+            size="sm"
           >
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>Actualizar</span>
+            <TrendingUp className="w-4 h-4 shrink-0" />
+            Actualizar
           </Button>
         </div>
       </div>
 
       {/* Loading / Error */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-slate-400">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span className="ml-3 text-sm font-bold">Cargando resumen financiero...</span>
+        <div className="flex items-center justify-center py-16 gap-2 text-slate-400">
+          <Loader2 className="w-5 h-5 shrink-0 animate-spin" />
+          <span className="text-sm font-bold">Cargando resumen financiero...</span>
         </div>
       ) : error ? (
-        <Card className="p-6 border-rose-200 bg-rose-50/60 rounded-3xl flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-rose-600 mt-0.5" />
-          <div>
-            <p className="text-sm font-black text-rose-900">No se pudo cargar finanzas</p>
-            <p className="text-xs text-rose-800 mt-1">{error}</p>
-            {errorStatus === 401 && <p className="text-[11px] text-slate-500 mt-1">Verifica tu JWT (localStorage smart_park_access_token).</p>}
-            {errorStatus === 403 && <p className="text-[11px] text-slate-500 mt-1">Solo platform puede consultar GET /finances/summary.</p>}
-            <Button onClick={fetchSummary} size="sm" className="mt-3 rounded-xl text-xs font-bold">
-              Reintentar
-            </Button>
+        <Card className="p-6 h-full flex flex-col gap-4 border-rose-200 bg-rose-50/60">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600 mt-0.5" />
+            <div className="flex flex-col gap-2">
+              <p className="text-subheading text-rose-900">No se pudo cargar finanzas</p>
+              <p className="text-xs text-rose-800">{error}</p>
+              {errorStatus === 401 && <p className="text-xs text-slate-500">Verifica tu JWT (localStorage smart_park_access_token).</p>}
+              {errorStatus === 403 && <p className="text-xs text-slate-500">Solo platform puede consultar GET /finances/summary.</p>}
+              <Button onClick={fetchSummary} variant="primary" size="sm">
+                Reintentar
+              </Button>
+            </div>
           </div>
         </Card>
       ) : (
         <>
           {/* KPIs Financieros Reales */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="p-5 border-slate-200/90 rounded-3xl bg-white shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Recaudación Bruta Red</span>
-                <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4" />
+            <Card className="p-6 h-full flex flex-col justify-between gap-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-caption text-slate-400">Recaudación Bruta Red</span>
+                <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                  <TrendingUp className="w-5 h-5 shrink-0" />
                 </div>
               </div>
-              <div className="mt-3">
-                <h3 className="text-2xl font-black text-slate-900 font-mono tracking-tight">{fmt(grossNetworkRevenue)}</h3>
-                <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-heading text-2xl font-mono tracking-tight text-slate-900">{fmt(grossNetworkRevenue)}</h3>
+                <p className="text-xs text-slate-500 font-medium">
                   {totales.total_reservas_global} reserva(s) no canceladas • {totales.liquidados_count} completadas
                 </p>
               </div>
             </Card>
 
-            <Card className="p-5 border-emerald-200 rounded-3xl bg-gradient-to-br from-emerald-50/70 to-white shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold uppercase text-emerald-800 tracking-wider">Comisión Smart-Park (12%)</span>
-                <div className="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center shadow-xs">
-                  <Percent className="w-4 h-4" />
+            <Card className="p-6 h-full flex flex-col justify-between gap-4 border-emerald-200 bg-gradient-to-br from-emerald-50/70 to-white">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-caption text-emerald-800">Comisión Smart-Park (12%)</span>
+                <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                  <Percent className="w-5 h-5 shrink-0" />
                 </div>
               </div>
-              <div className="mt-3">
-                <h3 className="text-2xl font-black text-emerald-700 font-mono tracking-tight">{fmt(totalPlatformEarnings)}</h3>
-                <p className="text-[11px] text-emerald-800/80 font-medium mt-0.5">Ganancia líquida de la plataforma</p>
+              <div className="flex flex-col gap-2">
+                <h3 className="text-heading text-2xl font-mono tracking-tight text-emerald-700">{fmt(totalPlatformEarnings)}</h3>
+                <p className="text-xs text-emerald-800/80 font-medium">Ganancia líquida de la plataforma</p>
               </div>
             </Card>
 
-            <Card className="p-5 border-amber-200 rounded-3xl bg-amber-50/40 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold uppercase text-amber-800 tracking-wider">Por Transferir a Cocheras</span>
-                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center">
-                  <Clock className="w-4 h-4" />
+            <Card className="p-6 h-full flex flex-col justify-between gap-4 border-amber-200 bg-amber-50/40">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-caption text-amber-800">Por Transferir a Cocheras</span>
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+                  <Clock className="w-5 h-5 shrink-0" />
                 </div>
               </div>
-              <div className="mt-3">
-                <h3 className="text-2xl font-black text-amber-900 font-mono tracking-tight">{fmt(pendingPayoutsAmount)}</h3>
-                <p className="text-[11px] text-amber-700 font-medium mt-0.5">Liquidaciones listas para desembolso</p>
+              <div className="flex flex-col gap-2">
+                <h3 className="text-heading text-2xl font-mono tracking-tight text-amber-900">{fmt(pendingPayoutsAmount)}</h3>
+                <p className="text-xs text-amber-700 font-medium">Liquidaciones listas para desembolso</p>
               </div>
             </Card>
 
-            <Card className="p-5 border-slate-200/90 rounded-3xl bg-white shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Liquidado & Transferido</span>
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4" />
+            <Card className="p-6 h-full flex flex-col justify-between gap-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-caption text-slate-400">Liquidado & Transferido</span>
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-5 h-5 shrink-0" />
                 </div>
               </div>
-              <div className="mt-3">
-                <h3 className="text-2xl font-black text-slate-900 font-mono tracking-tight">{fmt(disbursedPayoutsAmount)}</h3>
-                <p className="text-[11px] text-slate-500 font-medium mt-0.5">Marcado como liquidado (local, sin persistencia)</p>
+              <div className="flex flex-col gap-2">
+                <h3 className="text-heading text-2xl font-mono tracking-tight text-slate-900">{fmt(disbursedPayoutsAmount)}</h3>
+                <p className="text-xs text-slate-500 font-medium">Marcado como liquidado (local, sin persistencia)</p>
               </div>
             </Card>
           </div>
 
           {/* Controles */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-slate-200 shadow-xs">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
             <div className="relative w-full sm:w-80">
-              <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+              <Search className="w-4 h-4 shrink-0 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
                 type="text"
                 placeholder="Buscar cochera, RUC o ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-10 text-xs bg-slate-50 border-slate-200"
+                className="pl-10"
               />
             </div>
 
-            <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
               {['ALL', 'PENDING', 'COMPLETED'].map((st) => (
-                <button
+                <Button
                   key={st}
                   onClick={() => setStatusFilter(st)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-                    statusFilter === st ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                  variant={statusFilter === st ? 'primary' : 'secondary'}
+                  size="sm"
                 >
                   {st === 'ALL' ? 'Todas las Sedes' : st === 'PENDING' ? 'Pendientes de Pago' : 'Liquidadas (local)'}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
           {/* Tabla */}
-          <Card className="rounded-3xl border-slate-200 shadow-xs bg-white overflow-hidden">
+          <Card className="overflow-hidden p-0 gap-0">
             {!hasAnyMovement ? (
-              <div className="py-16 text-center space-y-2">
-                <DollarSign className="w-8 h-8 mx-auto text-slate-300" />
-                <p className="text-sm font-bold text-slate-600">Aún no hay movimientos para liquidar.</p>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
+              <div className="p-6 flex flex-col items-center gap-2 py-16 text-center">
+                <DollarSign className="w-5 h-5 shrink-0 text-slate-300" />
+                <p className="text-subheading text-slate-600">Aún no hay movimientos para liquidar.</p>
+                <p className="text-xs text-slate-400 max-w-md">
                   No se encontraron reservas no canceladas. Cuando existan reservas (scheduled/active/completed), aquí verás la
                   recaudación por sede, comisión 12% y neto a liquidar.
                 </p>
               </div>
             ) : filteredPayouts.length === 0 ? (
-              <div className="py-12 text-center">
-                <p className="text-sm font-bold text-slate-500">Sin resultados para el filtro actual.</p>
+              <div className="p-6 py-12 text-center">
+                <p className="text-subheading text-slate-500">Sin resultados para el filtro actual.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500 font-tech">
-                      <th className="py-3.5 px-4">Establecimiento & Razón Social</th>
-                      <th className="py-3.5 px-4">Datos Bancarios</th>
-                      <th className="py-3.5 px-4 text-right">Recaudado</th>
-                      <th className="py-3.5 px-4 text-right">Comisión Smart-Park</th>
-                      <th className="py-3.5 px-4 text-right">Neto a Transferir</th>
-                      <th className="py-3.5 px-4 text-center">Estado</th>
-                      <th className="py-3.5 px-4 text-center">Acción</th>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="p-4 text-caption text-slate-500">Establecimiento & Razón Social</th>
+                      <th className="p-4 text-caption text-slate-500">Datos Bancarios</th>
+                      <th className="p-4 text-caption text-slate-500 text-right">Recaudado</th>
+                      <th className="p-4 text-caption text-slate-500 text-right">Comisión Smart-Park</th>
+                      <th className="p-4 text-caption text-slate-500 text-right">Neto a Transferir</th>
+                      <th className="p-4 text-caption text-slate-500 text-center">Estado</th>
+                      <th className="p-4 text-caption text-slate-500 text-center">Acción</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
@@ -388,59 +391,60 @@ export const PlatformFinancesModule = () => {
                       const isPending = p.status === 'PENDING';
                       return (
                         <tr key={p.id} className="hover:bg-slate-50/70 transition">
-                          <td className="py-4 px-4">
+                          <td className="p-4">
                             <div className="font-extrabold text-slate-900">{p.parkingName}</div>
-                            <div className="text-[11px] text-slate-500 font-medium">
-                              RUC: <span className="font-mono">{p.ruc}</span> <span className="text-amber-600 font-bold">• pendiente de completar</span>
+                            <div className="text-xs text-slate-500 font-medium flex items-center gap-2">
+                              <span>RUC: <span className="font-mono">{p.ruc}</span></span>
+                              <span className="text-amber-600 font-bold">• pendiente de completar</span>
                             </div>
-                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                            <div className="text-xs text-slate-400 font-mono">
                               Sede #{p.parkingId} • {p.totalReservas} reserva(s) • {p.reservasCompleted} completada(s)
                             </div>
                           </td>
 
-                          <td className="py-4 px-4 font-mono text-[11px]">
+                          <td className="p-4 font-mono text-xs">
                             <div className="font-bold text-amber-700">{p.bank}</div>
-                            <div className="text-slate-500 text-[10px]">Cta: {p.accountNumber}</div>
-                            <div className="text-slate-400 text-[9px]">CCI: {p.cci}</div>
-                            <div className="text-[9px] text-amber-600 font-bold mt-1">RUC/CCI sin tabla — dato ilustrativo</div>
+                            <div className="text-slate-500 text-xs">Cta: {p.accountNumber}</div>
+                            <div className="text-slate-400 text-xs">CCI: {p.cci}</div>
+                            <div className="text-xs text-amber-600 font-bold mt-1">RUC/CCI sin tabla — dato ilustrativo</div>
                           </td>
 
-                          <td className="py-4 px-4 text-right font-mono font-bold text-slate-900">{fmt(p.totalRevenue)}</td>
+                          <td className="p-4 text-right font-mono font-bold text-slate-900">{fmt(p.totalRevenue)}</td>
 
-                          <td className="py-4 px-4 text-right font-mono">
+                          <td className="p-4 text-right font-mono">
                             <div className="font-bold text-emerald-700">{fmt(p.platformFee)}</div>
-                            <div className="text-[10px] text-emerald-600 font-extrabold bg-emerald-50 px-1.5 py-0.2 rounded inline-block">
+                            <div className="text-xs text-emerald-600 font-extrabold bg-emerald-50 px-2 py-0.5 rounded inline-block">
                               {p.commissionRate}%
                             </div>
                           </td>
 
-                          <td className="py-4 px-4 text-right font-mono font-black text-slate-900 text-sm">{fmt(p.netPayout)}</td>
+                          <td className="p-4 text-right font-mono font-black text-slate-900 text-sm">{fmt(p.netPayout)}</td>
 
-                          <td className="py-4 px-4 text-center">
+                          <td className="p-4 text-center">
                             <span
-                              className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl text-[10px] font-extrabold uppercase ${
+                              className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-xl text-xs font-extrabold uppercase ${
                                 isPending ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                               }`}
                             >
-                              <span className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${isPending ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                               <span>{isPending ? 'Por Liquidar' : 'Transferido (local)'}</span>
                             </span>
-                            {p.processedAt && <div className="text-[9px] text-slate-400 font-mono mt-0.5">{p.processedAt}</div>}
+                            {p.processedAt && <div className="text-xs text-slate-400 font-mono mt-1">{p.processedAt}</div>}
                           </td>
 
-                          <td className="py-4 px-4 text-center">
+                          <td className="p-4 text-center">
                             {isPending ? (
                               <Button
                                 onClick={() => {
                                   setSelectedPayout(p);
                                   setShowPayoutModal(true);
                                 }}
+                                variant="primary"
                                 size="sm"
                                 title="Registro contable — la transferencia se gestiona fuera de la plataforma; este botón solo marca como liquidado"
-                                className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs gap-1"
                               >
-                                <Send className="w-3 h-3 text-emerald-400" />
-                                <span>Liquidar Fondos</span>
+                                <Send className="w-4 h-4 shrink-0" />
+                                Liquidar Fondos
                               </Button>
                             ) : (
                               <Button
@@ -451,12 +455,11 @@ export const PlatformFinancesModule = () => {
                                   });
                                   setShowReceiptModal(true);
                                 }}
-                                variant="outline"
+                                variant="secondary"
                                 size="sm"
-                                className="text-xs font-bold text-slate-700 border-slate-200 hover:bg-slate-100 rounded-xl gap-1"
                               >
-                                <Receipt className="w-3 h-3 text-slate-500" />
-                                <span>Comprobante</span>
+                                <Receipt className="w-4 h-4 shrink-0" />
+                                Comprobante
                               </Button>
                             )}
                           </td>
@@ -475,9 +478,9 @@ export const PlatformFinancesModule = () => {
       <Dialog open={showPayoutModal} onOpenChange={setShowPayoutModal}>
         <DialogContent className="max-w-md rounded-3xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black flex items-center gap-2">
-              <Send className="w-5 h-5 text-emerald-600" />
-              <span>Emitir Liquidación Bancaria</span>
+            <DialogTitle className="text-heading flex items-center gap-2">
+              <Send className="w-5 h-5 shrink-0 text-emerald-600" />
+              Emitir Liquidación Bancaria
             </DialogTitle>
             <DialogDescription className="text-xs">
               Registro contable — la transferencia se gestiona fuera de la plataforma; este botón solo marca como liquidado (sin persistencia).
@@ -485,57 +488,59 @@ export const PlatformFinancesModule = () => {
           </DialogHeader>
 
           {selectedPayout && (
-            <div className="space-y-4 my-2">
-              <div className="bg-amber-50 p-3 rounded-2xl border border-amber-200 text-[11px] text-amber-900 font-medium">
+            <div className="flex flex-col gap-4 my-2">
+              <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200 text-xs text-amber-900 font-medium">
                 <strong>Aviso honesto:</strong> no existe aún tabla de cuentas bancarias (RUC/CCI) ni endpoint de liquidaciones persistente. El
                 RUC/CCI mostrado es ficticio. La liquidación real es manual por tesorería.
               </div>
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-xs">
-                <div className="flex justify-between">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col gap-2 text-xs">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-500 font-medium">Establecimiento:</span>
                   <strong className="text-slate-900">{selectedPayout.parkingName}</strong>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-500 font-medium">RUC (ilustrativo):</span>
                   <span className="font-mono text-slate-800">{selectedPayout.ruc} — pendiente de completar</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-500 font-medium">Banco & Cuenta:</span>
                   <span className="font-mono text-slate-800 font-bold">{selectedPayout.bank} • {selectedPayout.accountNumber}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-500 font-medium">CCI (ilustrativo):</span>
-                  <span className="font-mono text-slate-600 text-[11px]">{selectedPayout.cci}</span>
+                  <span className="font-mono text-slate-600 text-xs">{selectedPayout.cci}</span>
                 </div>
               </div>
 
-              <div className="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-200 space-y-2 text-xs font-mono">
-                <div className="flex justify-between text-slate-700">
+              <div className="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-200 flex flex-col gap-2 text-xs font-mono">
+                <div className="flex justify-between gap-2 text-slate-700">
                   <span>Recaudación Bruta ({selectedPayout.totalReservas} reservas):</span>
                   <span>{fmt(selectedPayout.totalRevenue)}</span>
                 </div>
-                <div className="flex justify-between text-emerald-800 font-bold">
+                <div className="flex justify-between gap-2 text-emerald-800 font-bold">
                   <span>Retención Comisión Smart-Park ({selectedPayout.commissionRate}%):</span>
                   <span>- {fmt(selectedPayout.platformFee)}</span>
                 </div>
-                <div className="border-t border-emerald-200/80 pt-2 flex justify-between text-sm font-black text-slate-900">
+                <div className="border-t border-emerald-200/80 pt-2 flex justify-between gap-2 text-sm font-black text-slate-900">
                   <span>MONTO NETO A TRANSFERIR:</span>
                   <span className="text-emerald-700 text-base">{fmt(selectedPayout.netPayout)}</span>
                 </div>
               </div>
 
-              <div className="flex gap-2.5 pt-2">
-                <Button type="button" variant="outline" onClick={() => setShowPayoutModal(false)} className="flex-1 rounded-xl text-xs font-bold">
+              <div className="flex gap-2 pt-2">
+                <Button type="button" variant="secondary" size="md" onClick={() => setShowPayoutModal(false)} className="flex-1">
                   Cancelar
                 </Button>
                 <Button
                   type="button"
                   onClick={handleConfirmPayout}
+                  variant="primary"
+                  size="md"
                   title="Registro contable — la transferencia se gestiona fuera de la plataforma; este botón solo marca como liquidado"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md gap-1"
+                  className="flex-1"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Marcar como liquidado</span>
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  Marcar como liquidado
                 </Button>
               </div>
             </div>
@@ -547,9 +552,9 @@ export const PlatformFinancesModule = () => {
       <Dialog open={showReceiptModal} onOpenChange={setShowReceiptModal}>
         <DialogContent className="max-w-md rounded-3xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black text-center flex items-center justify-center gap-2">
-              <Receipt className="w-5 h-5 text-emerald-600" />
-              <span>Comprobante de Liquidación</span>
+            <DialogTitle className="text-heading text-center flex items-center justify-center gap-2">
+              <Receipt className="w-5 h-5 shrink-0 text-emerald-600" />
+              Comprobante de Liquidación
             </DialogTitle>
             <DialogDescription className="text-xs text-center">
               Constancia de registro contable — tesorería gestiona la transferencia fuera de plataforma.
@@ -557,43 +562,43 @@ export const PlatformFinancesModule = () => {
           </DialogHeader>
 
           {receiptData && (
-            <div className="space-y-4 my-2">
-              <div className="border border-slate-200 rounded-2xl p-4 bg-white space-y-3 text-xs font-mono">
-                <div className="text-center pb-2 border-b border-slate-100">
+            <div className="flex flex-col gap-4 my-2">
+              <div className="border border-slate-200 rounded-2xl p-4 bg-white flex flex-col gap-4 text-xs font-mono">
+                <div className="text-center pb-2 border-b border-slate-100 flex flex-col gap-2">
                   <div className="font-extrabold text-sm text-slate-900 font-sans">SMART-PARK ENTERPRISE</div>
-                  <div className="text-[10px] text-slate-400">RUC: 20719284019 • Ayacucho, Perú</div>
-                  <div className="text-[11px] font-bold text-emerald-600 mt-1">{receiptData.operationNumber}</div>
+                  <div className="text-xs text-slate-400">RUC: 20719284019 • Ayacucho, Perú</div>
+                  <div className="text-xs font-bold text-emerald-600">{receiptData.operationNumber}</div>
                 </div>
 
-                <div className="space-y-1 text-[11px]">
-                  <div className="flex justify-between">
+                <div className="flex flex-col gap-2 text-xs">
+                  <div className="flex justify-between gap-2">
                     <span className="text-slate-500">Destinatario:</span>
                     <strong className="text-slate-900">{receiptData.parkingName}</strong>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-2">
                     <span className="text-slate-500">RUC (pendiente):</span>
                     <span className="text-slate-800">{receiptData.ruc}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-2">
                     <span className="text-slate-500">Banco:</span>
                     <span className="text-slate-800 font-bold">{receiptData.bank}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-2">
                     <span className="text-slate-500">Fecha:</span>
                     <span className="text-slate-800">{receiptData.processedAt || '—'}</span>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-100 pt-2 space-y-1 text-[11px]">
-                  <div className="flex justify-between text-slate-600">
+                <div className="border-t border-slate-100 pt-2 flex flex-col gap-2 text-xs">
+                  <div className="flex justify-between gap-2 text-slate-600">
                     <span>Recaudación Total:</span>
                     <span>{fmt(receiptData.totalRevenue)}</span>
                   </div>
-                  <div className="flex justify-between text-emerald-700">
+                  <div className="flex justify-between gap-2 text-emerald-700">
                     <span>Comisión Smart-Park ({receiptData.commissionRate}%):</span>
                     <span>{fmt(receiptData.platformFee)}</span>
                   </div>
-                  <div className="flex justify-between font-black text-slate-900 text-sm border-t border-slate-100 pt-1">
+                  <div className="flex justify-between gap-2 font-black text-slate-900 text-sm border-t border-slate-100 pt-2">
                     <span>TOTAL REGISTRADO:</span>
                     <span className="text-emerald-600">{fmt(receiptData.netPayout)}</span>
                   </div>
@@ -602,10 +607,12 @@ export const PlatformFinancesModule = () => {
 
               <Button
                 onClick={() => window.print()}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs gap-1.5 py-4"
+                variant="primary"
+                size="md"
+                className="w-full"
               >
-                <Download className="w-4 h-4" />
-                <span>Imprimir / Descargar Voucher</span>
+                <Download className="w-4 h-4 shrink-0" />
+                Imprimir / Descargar Voucher
               </Button>
             </div>
           )}

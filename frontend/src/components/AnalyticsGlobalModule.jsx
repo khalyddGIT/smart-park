@@ -365,8 +365,8 @@ export const AnalyticsGlobalModule = () => {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto py-16 flex flex-col items-center justify-center gap-3 text-slate-500">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+      <div className="max-w-7xl mx-auto py-16 flex flex-col items-center justify-center gap-4 text-slate-500">
+        <Loader2 className="w-5 h-5 shrink-0 animate-spin text-emerald-600" />
         <span className="text-xs font-bold">Cargando analítica real…</span>
       </div>
     );
@@ -375,18 +375,18 @@ export const AnalyticsGlobalModule = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold border border-slate-800">
-          <Check className="w-4 h-4 text-amber-400" />
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold border border-slate-800">
+          <Check className="w-4 h-4 shrink-0 text-amber-400" />
           <span>{toast}</span>
         </div>
       )}
 
       {/* Encabezado */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <BarChart3 className="w-7 h-7 text-emerald-600" />
-            <span>Analítica &amp; Tendencias de Ocupación</span>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-heading text-2xl text-slate-900 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 shrink-0 text-emerald-600" />
+            Analítica &amp; Tendencias de Ocupación
           </h1>
           <p className="text-xs text-slate-500 max-w-2xl">
             Métricas derivadas de datos reales: reservas, ocupación por plano y reseñas. {revenueScopeNote}
@@ -396,84 +396,92 @@ export const AnalyticsGlobalModule = () => {
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="bg-white border border-slate-200 rounded-2xl px-3 py-2 text-xs font-bold text-slate-700"
+            className="bg-white border border-slate-200 rounded-xl h-10 px-4 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300"
           >
             <option value="today">Hoy</option>
             <option value="7d">Últimos 7 Días</option>
             <option value="30d">Últimos 30 Días</option>
           </select>
-          <Button onClick={exportReport} variant="outline" className="gap-2 font-bold text-xs">
-            <Download className="w-4 h-4 text-emerald-600" />
-            <span>Exportar CSV</span>
+          <Button onClick={exportReport} variant="secondary" size="sm">
+            <Download className="w-4 h-4 shrink-0" />
+            Exportar CSV
           </Button>
         </div>
       </div>
 
       {/* KPI Cards — valores reales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Recaudación en rango</span>
-            <DollarSign className="w-4 h-4 text-emerald-600" />
+        <Card className="p-6 h-full flex flex-col justify-between gap-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-caption text-slate-400">Recaudación en rango</span>
+            <DollarSign className="w-5 h-5 shrink-0 text-emerald-600" />
           </div>
-          <p className="text-2xl font-black text-slate-900">
-            S/ {revenueStats.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-          <span className="text-[10px] text-slate-500 mt-1 block">
-            {hasAnyRevenue ? `${revenueStats.count} estancias no canceladas · ${revenueScopeNote ? 'parcial si solo my-reservations' : ''}` : 'Aún no hay datos para graficar'}
-          </span>
+          <div className="flex flex-col gap-2">
+            <p className="text-heading text-2xl text-slate-900">
+              S/ {revenueStats.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <span className="text-xs text-slate-500 font-medium">
+              {hasAnyRevenue ? `${revenueStats.count} estancias no canceladas · ${revenueScopeNote ? 'parcial si solo my-reservations' : ''}` : 'Aún no hay datos para graficar'}
+            </span>
+          </div>
         </Card>
 
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Estancias en rango</span>
-            <Car className="w-4 h-4 text-teal-600" />
+        <Card className="p-6 h-full flex flex-col justify-between gap-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-caption text-slate-400">Estancias en rango</span>
+            <Car className="w-5 h-5 shrink-0 text-teal-600" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{revenueStats.count}</p>
-          <span className="text-[10px] text-slate-500 mt-1 block">
-            {revenueStats.cancelled ? `${revenueStats.cancelled} canceladas excluidas` : 'Excluye canceladas'}
-          </span>
+          <div className="flex flex-col gap-2">
+            <p className="text-heading text-2xl text-slate-900">{revenueStats.count}</p>
+            <span className="text-xs text-slate-500 font-medium">
+              {revenueStats.cancelled ? `${revenueStats.cancelled} canceladas excluidas` : 'Excluye canceladas'}
+            </span>
+          </div>
         </Card>
 
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Ocupación pico (sede)</span>
-            <Activity className="w-4 h-4 text-amber-500" />
+        <Card className="p-6 h-full flex flex-col justify-between gap-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-caption text-slate-400">Ocupación pico (sede)</span>
+            <Activity className="w-5 h-5 shrink-0 text-amber-500" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{hasAnyParking ? `${maxOcupacion}%` : '—'}</p>
-          <span className="text-[10px] text-amber-700 font-bold mt-1 block truncate" title={picoSede}>
-            {hasAnyParking ? picoSede : 'Aún no hay datos para graficar'}
-          </span>
+          <div className="flex flex-col gap-2">
+            <p className="text-heading text-2xl text-slate-900">{hasAnyParking ? `${maxOcupacion}%` : '—'}</p>
+            <span className="text-xs text-amber-700 font-bold truncate" title={picoSede}>
+              {hasAnyParking ? picoSede : 'Aún no hay datos para graficar'}
+            </span>
+          </div>
         </Card>
 
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Rotación por plaza</span>
-            <Clock className="w-4 h-4 text-blue-500" />
+        <Card className="p-6 h-full flex flex-col justify-between gap-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-caption text-slate-400">Rotación por plaza</span>
+            <Clock className="w-5 h-5 shrink-0 text-blue-500" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{rotacion === '—' ? '—' : `${rotacion} veh/plaza`}</p>
-          <span className="text-[10px] text-slate-500 mt-1 block">Estancias / capacidad total en rango</span>
+          <div className="flex flex-col gap-2">
+            <p className="text-heading text-2xl text-slate-900">{rotacion === '—' ? '—' : `${rotacion} veh/plaza`}</p>
+            <span className="text-xs text-slate-500 font-medium">Estancias / capacidad total en rango</span>
+          </div>
         </Card>
       </div>
 
       {/* Gráficos Recharts — datos reales */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Afluencia por hora — histograma honesto de reservas */}
         <div className="lg:col-span-8">
-          <Card className="p-6 border-slate-200 shadow-sm bg-white">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="font-extrabold text-slate-900 text-base">Afluencia por franja horaria</h3>
+          <Card className="p-6 h-full flex flex-col gap-4">
+            <div className="flex justify-between items-center gap-2">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-subheading text-slate-900">Afluencia por franja horaria</h3>
                 <p className="text-xs text-slate-500">Histograma real de reservas por hora de inicio (no canceladas) — {timeRange}</p>
               </div>
             </div>
 
-            <div className="h-72 w-full">
+            <div className="h-64 w-full">
               {!hasHourly ? (
-                <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                  <Clock className="w-8 h-8 text-slate-300" />
+                <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
+                  <Clock className="w-5 h-5 shrink-0 text-slate-300" />
                   <span className="text-xs font-bold">Aún no hay datos para graficar</span>
-                  <span className="text-[11px]">No hay reservas no canceladas en este rango.</span>
+                  <span className="text-xs">No hay reservas no canceladas en este rango.</span>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -505,19 +513,20 @@ export const AnalyticsGlobalModule = () => {
 
         {/* Distribución de calificaciones — Pie honesto desde GET /reviews */}
         <div className="lg:col-span-4">
-          <Card className="p-6 border-slate-200 shadow-sm bg-white flex flex-col justify-between h-full">
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-base mb-1 flex items-center gap-1.5">
-                <Star className="w-4 h-4 text-amber-500 fill-amber-400" /> Distribución de calificaciones
+          <Card className="p-6 h-full flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-subheading text-slate-900 flex items-center gap-2">
+                <Star className="w-5 h-5 shrink-0 text-amber-500 fill-amber-400" /> Distribución de calificaciones
               </h3>
-              <p className="text-xs text-slate-500 mb-1">Desde GET /reviews · promedio {reviewStats.avg != null ? `${reviewStats.avg.toFixed(1)} / 5.0` : '—'} · {reviewStats.count} reseñas</p>
+              <p className="text-xs text-slate-500">Desde GET /reviews · promedio {reviewStats.avg != null ? `${reviewStats.avg.toFixed(1)} / 5.0` : '—'} · {reviewStats.count} reseñas</p>
+            </div>
 
-              <div className="h-52 w-full flex items-center justify-center">
+            <div className="h-64 w-full flex items-center justify-center">
                 {!hasAnyReview ? (
-                  <div className="text-center space-y-1">
-                    <Star className="w-8 h-8 mx-auto text-slate-200" />
+                  <div className="text-center flex flex-col items-center gap-2">
+                    <Star className="w-5 h-5 shrink-0 text-slate-200" />
                     <p className="text-xs font-bold text-slate-500">Aún no hay datos para graficar</p>
-                    <p className="text-[11px] text-slate-400">Sin reseñas publicadas.</p>
+                    <p className="text-xs text-slate-400">Sin reseñas publicadas.</p>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -543,21 +552,20 @@ export const AnalyticsGlobalModule = () => {
                   </ResponsiveContainer>
                 )}
               </div>
-            </div>
 
-            <div className="space-y-2 pt-2 border-t border-slate-100">
+            <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
               {hasAnyReview ? (
                 reviewStats.distribution.map((v) => (
-                  <div key={v.star} className="flex justify-between items-center text-xs">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: v.color }} />
+                  <div key={v.star} className="flex justify-between items-center gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: v.color }} />
                       <span className="text-slate-600 font-bold">{v.star} estrellas</span>
                     </div>
                     <span className="font-mono font-bold text-slate-900">{v.value} · {v.percent}%</span>
                   </div>
                 ))
               ) : (
-                <span className="text-[11px] text-slate-400 font-medium">Sin datos de reseñas.</span>
+                <span className="text-xs text-slate-400 font-medium">Sin datos de reseñas.</span>
               )}
             </div>
           </Card>
@@ -565,22 +573,24 @@ export const AnalyticsGlobalModule = () => {
       </div>
 
       {/* Recaudación por sede — barras honestas desde reservas agrupadas */}
-      <Card className="p-6 border-slate-200 shadow-sm bg-white">
-        <h3 className="font-extrabold text-slate-900 text-base mb-1">Recaudación por sede en rango</h3>
-        <p className="text-xs text-slate-500 mb-4">Suma de total_cost (no canceladas) agrupada por parking · fuente: {revenueScopeNote || 'reservas filtradas'}</p>
+      <Card className="p-6 h-full flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <h3 className="text-subheading text-slate-900">Recaudación por sede en rango</h3>
+          <p className="text-xs text-slate-500">Suma de total_cost (no canceladas) agrupada por parking · fuente: {revenueScopeNote || 'reservas filtradas'}</p>
+        </div>
 
         <div className="h-64 w-full">
           {!hasAnyParking ? (
-            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-              <BarChart3 className="w-8 h-8 text-slate-300" />
+            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
+              <BarChart3 className="w-5 h-5 shrink-0 text-slate-300" />
               <span className="text-xs font-bold">Aún no hay datos para graficar</span>
-              <span className="text-[11px]">Sin cocheras registradas.</span>
+              <span className="text-xs">Sin cocheras registradas.</span>
             </div>
           ) : recaudacionPorSede.every((r) => r.recaudacion === 0) ? (
-            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-              <DollarSign className="w-8 h-8 text-slate-300" />
+            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
+              <DollarSign className="w-5 h-5 shrink-0 text-slate-300" />
               <span className="text-xs font-bold">Aún no hay datos para graficar</span>
-              <span className="text-[11px]">Sin recaudación en este rango (o solo my-reservations vacío).</span>
+              <span className="text-xs">Sin recaudación en este rango (o solo my-reservations vacío).</span>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
@@ -599,13 +609,15 @@ export const AnalyticsGlobalModule = () => {
       </Card>
 
       {/* Ocupación por sede — barras honestas desde parkings */}
-      <Card className="p-6 border-slate-200 shadow-sm bg-white">
-        <h3 className="font-extrabold text-slate-900 text-base mb-1">Ocupación por sede (tiempo real del plano)</h3>
-        <p className="text-xs text-slate-500 mb-4">Derivado de GET /parkings (available_slots/total_capacity) enriquecido con GET /parkings/&#123;id&#125;/floor-plan cuando está disponible.</p>
+      <Card className="p-6 h-full flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <h3 className="text-subheading text-slate-900">Ocupación por sede (tiempo real del plano)</h3>
+          <p className="text-xs text-slate-500">Derivado de GET /parkings (available_slots/total_capacity) enriquecido con GET /parkings/&#123;id&#125;/floor-plan cuando está disponible.</p>
+        </div>
         <div className="h-64 w-full">
           {!hasAnyParking ? (
-            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-              <Users className="w-8 h-8 text-slate-300" />
+            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
+              <Users className="w-5 h-5 shrink-0 text-slate-300" />
               <span className="text-xs font-bold">Aún no hay datos para graficar</span>
             </div>
           ) : (

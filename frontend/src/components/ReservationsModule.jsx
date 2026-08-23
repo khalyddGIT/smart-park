@@ -217,40 +217,37 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       {/* =========================================================================
           ENCABEZADO PRINCIPAL & ACCIONES
           ========================================================================= */}
-      {/* Header Banner Ultra-Premium */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 p-6 sm:p-7 rounded-3xl border border-slate-800/80 shadow-2xl text-white flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-        <div className="absolute top-0 right-1/3 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 right-10 w-60 h-60 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-slate-950 flex items-center justify-center font-black shadow-lg shadow-emerald-500/20 shrink-0">
-            <CalendarCheck className="w-6 h-6 stroke-[2.2]" />
+      {/* Header Compacto y Elegante */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shadow-xs shrink-0">
+            <CalendarCheck className="w-5 h-5 stroke-[2.2]" />
           </div>
           <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-black text-slate-900 tracking-tight">
                 {role === 'user' ? 'Mis Reservas & Pases Digitales' : 'Centro de Reservas & Garita'}
               </h1>
-              <span className="bg-emerald-500/20 text-emerald-300 font-mono text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                {filteredReservations.length} {filteredReservations.length === 1 ? 'reserva' : 'reservas'}
+              <span className="text-xs font-mono font-bold text-slate-500">
+                ({filteredReservations.length} {filteredReservations.length === 1 ? 'reserva' : 'reservas'})
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1 font-medium max-w-xl">
+            <p className="text-xs text-slate-500 font-medium">
               {role === 'user' 
-                ? 'Monitorea tus estancias en tiempo real, descarga tus pases QR con token único y gestiona tus horarios de parqueo.' 
-                : 'Control operativo de entradas, salidas LPR, emisión de tickets e inspección de plazas en tiempo real.'}
+                ? 'Monitorea tus estancias en tiempo real y gestiona tus pases QR de parqueo.' 
+                : 'Control operativo de entradas, salidas LPR y emisión de tickets.'}
             </p>
           </div>
         </div>
 
-        <div className="relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {role === 'user' && onNavigateToBooking && (
             <Button
               onClick={onNavigateToBooking}
-              className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs gap-2 rounded-2xl shadow-lg shadow-emerald-500/25 h-11 px-5 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02]"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs gap-1.5 rounded-xl h-9 px-3.5 cursor-pointer shadow-xs"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Nueva Reserva en Mapa</span>
+              <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+              <span>Nueva Reserva</span>
             </Button>
           )}
 
@@ -262,10 +259,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                 }
                 setShowCreateModal(true);
               }}
-              className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs gap-2 rounded-2xl shadow-lg shadow-emerald-500/25 h-11 px-5 justify-center cursor-pointer transition-all duration-200"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs gap-1.5 rounded-xl h-9 px-3.5 cursor-pointer shadow-xs"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Emitir Ticket en Garita</span>
+              <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+              <span>Emitir Ticket</span>
             </Button>
           )}
         </div>
@@ -273,81 +270,72 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
 
       {/* Feedback Toast */}
       {feedbackMessage && (
-        <div className="p-4 bg-emerald-950/90 border border-emerald-500/40 text-emerald-200 rounded-2xl text-xs font-bold flex items-center justify-between shadow-xl animate-in fade-in">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 stroke-[2.2]" />
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs font-bold flex items-center justify-between shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.2]" />
             <span>{feedbackMessage}</span>
           </div>
-          <button onClick={() => setFeedbackMessage('')} className="text-emerald-400 hover:text-emerald-200 cursor-pointer">
+          <button onClick={() => setFeedbackMessage('')} className="text-emerald-700 hover:text-emerald-900 cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
       {/* =========================================================================
-          TARJETAS KPI & MÉTRICAS EXECUTIVE HIGH-CONTRAST
+          TARJETAS KPI COMPACTAS SIN BADGES INNECESARIOS
           ========================================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         
         {/* Total Reservas */}
-        <Card className="p-4 sm:p-5 rounded-3xl border-slate-200/90 shadow-sm bg-white hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+        <Card className="p-4 rounded-2xl border-slate-200 shadow-2xs bg-white flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Reservas</span>
-            <div className="p-2.5 rounded-2xl bg-slate-100 text-slate-700 group-hover:scale-110 transition-transform">
-              <CalendarCheck className="w-5 h-5 stroke-[2]" />
-            </div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Reservas</span>
+            <CalendarCheck className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-3xl font-black font-mono text-slate-900 tracking-tight">{totalReservations}</span>
-            <span className="text-xs text-slate-500 font-bold bg-slate-100 px-2.5 py-1 rounded-xl">Histórico</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-slate-900">{totalReservations}</span>
+            <span className="text-xs text-slate-500 font-medium">Histórico</span>
           </div>
         </Card>
 
         {/* En Curso / Activas */}
-        <Card className="p-4 sm:p-5 rounded-3xl border-emerald-300/80 shadow-md bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-900 text-white flex flex-col justify-between group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
-          <div className="flex items-center justify-between relative z-10">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-300 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+        <Card className="p-4 rounded-2xl border-emerald-200 shadow-2xs bg-emerald-50/50 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               En Estancia
             </span>
-            <div className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 group-hover:scale-110 transition-transform">
-              <Car className="w-5 h-5 stroke-[2]" />
-            </div>
+            <Car className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="mt-4 flex items-baseline justify-between relative z-10">
-            <span className="text-3xl font-black font-mono text-emerald-300 tracking-tight">{activeCount}</span>
-            <span className="text-xs text-emerald-300 font-extrabold bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1 rounded-xl">En Plaza</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-emerald-700">{activeCount}</span>
+            <span className="text-xs text-emerald-700 font-semibold">En Plaza</span>
           </div>
         </Card>
 
         {/* Programadas */}
-        <Card className="p-4 sm:p-5 rounded-3xl border-cyan-300/80 shadow-md bg-gradient-to-br from-cyan-950 via-slate-900 to-slate-950 text-white flex flex-col justify-between group relative overflow-hidden">
-          <div className="flex items-center justify-between relative z-10">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-cyan-300">Programadas</span>
-            <div className="p-2.5 rounded-2xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 group-hover:scale-110 transition-transform">
-              <Clock className="w-5 h-5 stroke-[2]" />
-            </div>
+        <Card className="p-4 rounded-2xl border-cyan-200 shadow-2xs bg-cyan-50/50 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800">Programadas</span>
+            <Clock className="w-4 h-4 text-cyan-600" />
           </div>
-          <div className="mt-4 flex items-baseline justify-between relative z-10">
-            <span className="text-3xl font-black font-mono text-cyan-300 tracking-tight">{scheduledCount}</span>
-            <span className="text-xs text-cyan-300 font-extrabold bg-cyan-500/20 border border-cyan-500/30 px-2.5 py-1 rounded-xl">Por Ingresar</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-cyan-800">{scheduledCount}</span>
+            <span className="text-xs text-cyan-700 font-medium">Por Ingresar</span>
           </div>
         </Card>
 
         {/* Recaudación o Gasto Total */}
-        <Card className="p-4 sm:p-5 rounded-3xl border-slate-900 shadow-md bg-slate-900 text-white flex flex-col justify-between group">
+        <Card className="p-4 rounded-2xl border-slate-200 shadow-2xs bg-white flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               {role === 'user' ? 'Gasto Total Estimado' : 'Recaudación Bruta'}
             </span>
-            <div className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-black text-xs">
-              S/
-            </div>
+            <span className="text-xs font-mono font-bold text-emerald-600">S/</span>
           </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-3xl font-black font-mono text-emerald-400 tracking-tight">S/ {totalRevenue.toFixed(2)}</span>
-            <span className="text-xs text-slate-400 font-bold bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-xl">
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-black font-mono text-emerald-700">S/ {totalRevenue.toFixed(2)}</span>
+            <span className="text-xs text-slate-500 font-medium">
               {role === 'user' ? `Activas: S/ ${todayRevenue.toFixed(2)}` : `Hoy: S/ ${todayRevenue.toFixed(2)}`}
             </span>
           </div>
@@ -356,20 +344,20 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       </div>
 
       {/* =========================================================================
-          BARRA DE BÚSQUEDA Y FILTROS INTEGRADOS
+          BARRA DE BÚSQUEDA Y FILTROS COMPACTOS SIN BADGES
           ========================================================================= */}
-      <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white space-y-3">
+      <Card className="p-3.5 rounded-2xl border-slate-200 shadow-2xs bg-white space-y-3">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           
           {/* Buscador */}
           <div className="relative w-full md:w-96">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               type="text"
               placeholder="Buscar por placa, código RSV, cajón o conductor..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-xs font-semibold"
+              className="pl-9 h-9 rounded-xl bg-slate-50 border-slate-200 text-xs font-semibold"
             />
             {searchTerm && (
               <button 
@@ -386,7 +374,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <select
               value={parkingFilter}
               onChange={(e) => setParkingFilter(e.target.value)}
-              className="h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none flex-1 sm:flex-none"
+              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
             >
               <option value="ALL">Todas las Sedes ({establishments.length})</option>
               {establishments.map(e => (
@@ -397,7 +385,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
+              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
             >
               <option value="ALL">Cualquier Fecha</option>
               <option value="TODAY">Solo Hoy</option>
@@ -405,51 +393,44 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           </div>
         </div>
 
-        {/* Pestañas de Estado con Contadores */}
-        <div className="flex items-center space-x-1.5 border-t border-slate-100 pt-3 overflow-x-auto scrollbar-none">
+        {/* Pestañas de Filtro como Texto Limpio (Sin Badges) */}
+        <div className="flex items-center gap-2 border-t border-slate-100 pt-2.5 overflow-x-auto scrollbar-none">
           {[
             { id: 'ALL', label: 'Todas', count: totalReservations },
-            { id: 'ACTIVE', label: 'En Curso', count: activeCount, color: 'text-emerald-700 bg-emerald-100' },
-            { id: 'SCHEDULED', label: 'Programadas', count: scheduledCount, color: 'text-cyan-700 bg-cyan-100' },
-            { id: 'COMPLETED', label: 'Finalizadas', count: completedCount, color: 'text-slate-700 bg-slate-200' },
-            { id: 'CANCELLED', label: 'Canceladas', count: cancelledCount, color: 'text-rose-700 bg-rose-100' }
+            { id: 'ACTIVE', label: 'En Curso', count: activeCount },
+            { id: 'SCHEDULED', label: 'Programadas', count: scheduledCount },
+            { id: 'COMPLETED', label: 'Finalizadas', count: completedCount },
+            { id: 'CANCELLED', label: 'Canceladas', count: cancelledCount }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 statusFilter === tab.id 
-                  ? 'bg-slate-900 text-white shadow-xs font-black' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-slate-900 text-white font-extrabold shadow-xs' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'
               }`}
             >
-              <span>{tab.label}</span>
-              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
-                statusFilter === tab.id ? 'bg-white/20 text-white' : tab.color || 'bg-slate-200 text-slate-700'
-              }`}>
-                {tab.count}
-              </span>
+              <span>{tab.label} ({tab.count})</span>
             </button>
           ))}
         </div>
       </Card>
 
       {/* =========================================================================
-          LISTADO PRINCIPAL DE RESERVAS & TICKETS
+          LISTADO PRINCIPAL DE RESERVAS (SIN BADGES)
           ========================================================================= */}
-      <div className="gap-4">
+      <div className="gap-3">
         {filteredReservations.length === 0 ? (
-          <Card className="p-12 text-center rounded-3xl border-slate-200 shadow-xs bg-white space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-              <CalendarCheck className="w-7 h-7" />
-            </div>
-            <h3 className="font-bold text-slate-800 text-base">No se encontraron reservas con los filtros actuales</h3>
+          <Card className="p-10 text-center rounded-2xl border-slate-200 shadow-2xs bg-white space-y-2">
+            <CalendarCheck className="w-8 h-8 text-slate-300 mx-auto" />
+            <h3 className="font-bold text-slate-800 text-sm">No se encontraron reservas</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Intenta buscar por otro término o restablece los filtros para ver los registros del sistema.
+              Intenta buscar por otro término o restablece los filtros.
             </p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             {filteredReservations.map((res) => {
               const isScheduled = res.status === 'SCHEDULED';
               const isActive = res.status === 'ACTIVE';
@@ -462,68 +443,68 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
               return (
                 <Card 
                   key={res.code} 
-                  className={`p-5 rounded-3xl border transition-all duration-200 bg-white hover:shadow-md ${
+                  className={`p-4 rounded-2xl border transition-all duration-150 bg-white hover:border-slate-300 shadow-2xs ${
                     isActive 
-                      ? 'border-emerald-300 ring-2 ring-emerald-400/20' 
+                      ? 'border-emerald-300' 
                       : isScheduled 
                       ? 'border-cyan-200' 
                       : 'border-slate-200'
                   }`}
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     
                     {/* Sección Izquierda: Identificador, Cajón y Placa */}
-                    <div className="flex items-start space-x-4">
+                    <div className="flex items-start space-x-3.5">
                       
-                      {/* Cajón Grande */}
-                      <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center font-mono font-black shrink-0 shadow-xs ${
+                      {/* Cajón Compacto */}
+                      <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center font-mono font-black shrink-0 border ${
                         isActive 
-                          ? 'bg-emerald-600 text-white shadow-emerald-600/30' 
+                          ? 'bg-emerald-600 text-white border-emerald-600' 
                           : isScheduled
-                          ? 'bg-cyan-600 text-white shadow-cyan-600/30'
+                          ? 'bg-cyan-600 text-white border-cyan-600'
                           : isCompleted
-                          ? 'bg-slate-100 text-slate-700 border border-slate-200'
-                          : 'bg-rose-100 text-rose-700 border border-rose-200'
+                          ? 'bg-slate-100 text-slate-700 border-slate-200'
+                          : 'bg-rose-50 text-rose-700 border-rose-200'
                       }`}>
-                        <span className="text-[10px] uppercase font-bold tracking-tighter opacity-80">Plaza</span>
-                        <span className="text-xl leading-none">{res.slot}</span>
+                        <span className="text-[9px] uppercase font-bold tracking-tighter opacity-80">Plaza</span>
+                        <span className="text-lg leading-none">{res.slot}</span>
                       </div>
 
-                      {/* Información de Reserva */}
-                      <div className="space-y-1.5">
+                      {/* Información de Reserva como Texto Limpio (Sin Badges) */}
+                      <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-mono font-black text-xs text-slate-400">{res.code}</span>
                           
-                          {/* Badge de Estado */}
+                          {/* Estado como Texto Directo (Sin Badges) */}
                           {isActive && (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 flex items-center gap-1.5 border border-emerald-300">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                            <span className="text-xs font-extrabold text-emerald-700 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                               <span>En Estancia</span>
                             </span>
                           )}
 
                           {isScheduled && (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-cyan-100 text-cyan-800 border border-cyan-300">
+                            <span className="text-xs font-extrabold text-cyan-700">
                               Programada
                             </span>
                           )}
 
                           {isCompleted && (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">
+                            <span className="text-xs font-bold text-slate-500">
                               Finalizada
                             </span>
                           )}
 
                           {isCancelled && (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-100 text-rose-700 border border-rose-200">
+                            <span className="text-xs font-bold text-rose-600">
                               Cancelada
                             </span>
                           )}
 
-                          {/* Placa Estilo Matrícula */}
-                          <div className="bg-slate-950 text-white px-2 py-0.5 rounded-md font-mono font-black text-xs tracking-wider border border-slate-700 shadow-2xs">
-                            🇵🇪 {res.plate}
-                          </div>
+                          {/* Placa como Texto Monospace Limpio */}
+                          <span className="font-mono font-black text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                            PE {res.plate}
+                          </span>
                         </div>
 
                         {/* Nombre del Establecimiento */}

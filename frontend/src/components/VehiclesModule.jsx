@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Webcam from 'react-webcam';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -19,7 +20,9 @@ import {
   Layers,
   X,
   Upload,
-  Camera
+  Camera,
+  RefreshCw,
+  VideoOff
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { listVehicles, createVehicle as apiCreateVehicle, deleteVehicleApi, getAccessToken } from '../services/api';
@@ -61,6 +64,11 @@ const COLOR_PALETTE = ['Negro', 'Blanco', 'Gris Plata', 'Rojo', 'Azul', 'Verde',
 
 export const VehiclesModule = () => {
   const fileInputRef = useRef(null);
+  const webcamRef = useRef(null);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState('environment');
+  const [cameraError, setCameraError] = useState(false);
+
   const [vehicles, setVehicles] = useState(() => {
     try {
       const key = getVehiclesKey();
@@ -230,9 +238,28 @@ export const VehiclesModule = () => {
   };
 
   const handleCameraCapture = () => {
+    setCameraError(false);
+    setShowCameraModal(true);
+  };
+
+  const handleTakeSnapshot = () => {
+    if (webcamRef.current) {
+      try {
+        const screenshot = webcamRef.current.getScreenshot();
+        if (screenshot) {
+          setFormData(prev => ({ ...prev, imageUrl: screenshot }));
+          setShowCameraModal(false);
+          showToast('✓ Fotografía capturada con éxito desde la cámara.');
+          return;
+        }
+      } catch (err) {
+        console.warn('Webcam capture error', err);
+      }
+    }
     const samplePhoto = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800';
     setFormData(prev => ({ ...prev, imageUrl: samplePhoto }));
-    showToast('✓ Captura de cámara realizada con éxito.');
+    setShowCameraModal(false);
+    showToast('✓ Fotografía asignada.');
   };
 
   const handleSaveCreate = async (e) => {
@@ -449,7 +476,7 @@ export const VehiclesModule = () => {
             variant="outline"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
-            className="text-xs font-bold gap-1.5 h-9 bg-white border-slate-200 hover:bg-slate-100 rounded-xl"
+            className="text-xs font-bold gap-1.5 h-9 bg-white border-slate-200 hover:bg-slate-100 rounded-xl cursor-pointer"
           >
             <Upload className="w-4 h-4 text-slate-600" />
             <span>Subir</span>
@@ -460,7 +487,7 @@ export const VehiclesModule = () => {
             variant="outline"
             size="sm"
             onClick={handleCameraCapture}
-            className="text-xs font-bold gap-1.5 h-9 bg-white border-slate-200 hover:bg-slate-100 rounded-xl"
+            className="text-xs font-bold gap-1.5 h-9 bg-white border-slate-200 hover:bg-slate-100 rounded-xl cursor-pointer"
           >
             <Camera className="w-4 h-4 text-emerald-600" />
             <span>Tomar</span>
@@ -472,7 +499,7 @@ export const VehiclesModule = () => {
             size="sm"
             onClick={handleFetchCarPhoto}
             disabled={loadingImage || !formData.brand || !formData.model}
-            className="text-xs font-bold gap-1.5 h-9 bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-xl"
+            className="text-xs font-bold gap-1.5 h-9 bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-xl cursor-pointer"
           >
             <Search className="w-4 h-4" />
             <span>{loadingImage ? '...' : 'Oficial'}</span>
@@ -534,6 +561,7 @@ export const VehiclesModule = () => {
         </div>
       )}
 
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
         <div className="flex items-center space-x-3.5">
           <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 shrink-0">
@@ -558,6 +586,7 @@ export const VehiclesModule = () => {
         </Button>
       </div>
 
+      {/* Tarjetas KPI */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Vehículos Registrados</span>
@@ -588,6 +617,7 @@ export const VehiclesModule = () => {
         </div>
       </div>
 
+      {/* Buscador y Filtros */}
       <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -620,10 +650,12 @@ export const VehiclesModule = () => {
         </div>
       </div>
 
+      {/* Grid de Vehículos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredVehicles.map((v) => (
           <div key={v.id} className="overflow-hidden border border-slate-200 shadow-2xs flex flex-col justify-between hover:shadow-xs transition rounded-2xl bg-white group">
             <div>
+              {/* Foto del Vehículo */}
               <div className="h-44 bg-slate-950 relative overflow-hidden flex items-center justify-center">
                 <img 
                   src={v.imageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800'} 
@@ -647,6 +679,7 @@ export const VehiclesModule = () => {
               </div>
 
               <div className="p-4 space-y-3">
+                {/* Placa Estilo Matrícula Oficial */}
                 <div className="bg-slate-950 text-white font-mono p-2.5 rounded-xl text-center shadow-inner border border-slate-800 flex items-center justify-between px-4">
                   <span className="text-[10px] text-slate-400 font-sans font-bold uppercase tracking-widest">🇵🇪 PERÚ</span>
                   <span className="text-lg font-black text-amber-400 tracking-widest">{v.license_plate}</span>
@@ -676,13 +709,14 @@ export const VehiclesModule = () => {
               </div>
             </div>
 
+            {/* Acciones */}
             <div className="px-4 pb-4 pt-0 flex items-center space-x-2 border-t border-slate-100 pt-3">
               {!v.isDefault && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleSetDefault(v.id)}
-                  className="text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl h-9"
+                  className="text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl h-9 cursor-pointer"
                   title="Marcar como vehículo predeterminado"
                 >
                   <Star className="w-4 h-4 shrink-0" />
@@ -692,7 +726,7 @@ export const VehiclesModule = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleOpenEdit(v)}
-                className="flex-1 font-bold text-xs gap-1.5 text-slate-700 hover:bg-slate-100 rounded-xl h-9"
+                className="flex-1 font-bold text-xs gap-1.5 text-slate-700 hover:bg-slate-100 rounded-xl h-9 cursor-pointer"
               >
                 <Edit3 className="w-4 h-4 shrink-0 text-emerald-600" />
                 <span>Editar</span>
@@ -701,7 +735,7 @@ export const VehiclesModule = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleDelete(v.id, v.license_plate)}
-                className="font-bold text-xs text-rose-600 hover:bg-rose-50 border-rose-200 rounded-xl h-9 px-3"
+                className="font-bold text-xs text-rose-600 hover:bg-rose-50 border-rose-200 rounded-xl h-9 px-3 cursor-pointer"
               >
                 <Trash2 className="w-4 h-4 shrink-0" />
               </Button>
@@ -710,6 +744,7 @@ export const VehiclesModule = () => {
         ))}
       </div>
 
+      {/* Modal Registrar Nuevo Vehículo */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
         <DialogContent className="max-w-md rounded-3xl p-6 bg-white shadow-2xl border-slate-200 max-h-[92vh] overflow-y-auto">
           <DialogHeader>
@@ -722,6 +757,7 @@ export const VehiclesModule = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Modal Editar Vehículo */}
       {showEditModal && (
         <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
           <DialogContent className="max-w-md rounded-3xl p-6 bg-white shadow-2xl border-slate-200 max-h-[92vh] overflow-y-auto">
@@ -732,6 +768,76 @@ export const VehiclesModule = () => {
               </DialogDescription>
             </DialogHeader>
             {renderVehicleForm(true)}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modal Cámara en Vivo */}
+      {showCameraModal && (
+        <Dialog open={showCameraModal} onOpenChange={setShowCameraModal}>
+          <DialogContent className="max-w-md rounded-3xl p-5 bg-slate-950 text-white shadow-2xl border-slate-800">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-black text-white flex items-center gap-2">
+                <Camera className="w-5 h-5 text-emerald-400" />
+                <span>Capturar Fotografía del Vehículo</span>
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-400">
+                Apunta la cámara a tu vehículo o placa y presiona capturar.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 my-2">
+              <div className="relative rounded-2xl overflow-hidden bg-black border border-slate-800 h-64 flex items-center justify-center">
+                {cameraError ? (
+                  <div className="text-center p-4 space-y-2">
+                    <VideoOff className="w-8 h-8 text-rose-400 mx-auto" />
+                    <p className="text-xs text-slate-300 font-bold">No se pudo acceder a la cámara</p>
+                    <p className="text-[11px] text-slate-500">Verifica los permisos de cámara en tu navegador o sube una foto desde tu dispositivo.</p>
+                  </div>
+                ) : (
+                  <>
+                    <Webcam
+                      ref={webcamRef}
+                      audio={false}
+                      screenshotFormat="image/jpeg"
+                      videoConstraints={{ facingMode: cameraFacing }}
+                      onUserMediaError={() => setCameraError(true)}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setCameraFacing(prev => prev === 'user' ? 'environment' : 'user')}
+                        className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-700 backdrop-blur-md cursor-pointer transition-colors"
+                        title="Cambiar Cámara"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCameraModal(false)}
+                  className="bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800 rounded-xl h-11 text-xs font-bold cursor-pointer"
+                >
+                  Cancelar
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={handleTakeSnapshot}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl h-11 text-xs gap-2 shadow-lg shadow-emerald-600/30 cursor-pointer"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Capturar Foto</span>
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       )}

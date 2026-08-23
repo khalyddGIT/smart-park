@@ -217,35 +217,39 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       {/* =========================================================================
           ENCABEZADO PRINCIPAL & ACCIONES
           ========================================================================= */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="flex items-center space-x-3.5">
-          <div className="p-3 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-200 shadow-xs">
-            <CalendarCheck className="w-6 h-6" />
+      {/* Header Banner Ultra-Premium */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 p-6 sm:p-7 rounded-3xl border border-slate-800/80 shadow-2xl text-white flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="absolute top-0 right-1/3 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 right-10 w-60 h-60 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-slate-950 flex items-center justify-center font-black shadow-lg shadow-emerald-500/20 shrink-0">
+            <CalendarCheck className="w-6 h-6 stroke-[2.2]" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                 {role === 'user' ? 'Mis Reservas & Pases Digitales' : 'Centro de Reservas & Garita'}
               </h1>
-              <span className="bg-slate-100 text-slate-700 font-mono text-[11px] font-bold px-2 py-0.5 rounded-lg border border-slate-200">
-                {filteredReservations.length} {filteredReservations.length === 1 ? 'registro' : 'registros'}
+              <span className="bg-emerald-500/20 text-emerald-300 font-mono text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                {filteredReservations.length} {filteredReservations.length === 1 ? 'reserva' : 'reservas'}
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-400 mt-1 font-medium max-w-xl">
               {role === 'user' 
-                ? 'Monitorea tus estancias en tiempo real, descarga tus pases QR y gestiona tus horarios.' 
-                : 'Control operativo de entradas, salidas, emisión de tickets y auditoría de plazas.'}
+                ? 'Monitorea tus estancias en tiempo real, descarga tus pases QR con token único y gestiona tus horarios de parqueo.' 
+                : 'Control operativo de entradas, salidas LPR, emisión de tickets e inspección de plazas en tiempo real.'}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+        <div className="relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto shrink-0">
           {role === 'user' && onNavigateToBooking && (
             <Button
               onClick={onNavigateToBooking}
-              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-2 rounded-xl shadow-md shadow-emerald-600/20 h-10 px-4 justify-center cursor-pointer"
+              className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs gap-2 rounded-2xl shadow-lg shadow-emerald-500/25 h-11 px-5 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02]"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>Nueva Reserva en Mapa</span>
             </Button>
           )}
@@ -258,9 +262,9 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                 }
                 setShowCreateModal(true);
               }}
-              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs gap-2 rounded-xl shadow-md shadow-slate-900/20 h-10 px-4 justify-center cursor-pointer"
+              className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs gap-2 rounded-2xl shadow-lg shadow-emerald-500/25 h-11 px-5 justify-center cursor-pointer transition-all duration-200"
             >
-              <Plus className="w-4 h-4 text-emerald-400" />
+              <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>Emitir Ticket en Garita</span>
             </Button>
           )}
@@ -269,80 +273,81 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
 
       {/* Feedback Toast */}
       {feedbackMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl text-xs font-bold flex items-center justify-between shadow-xs animate-in fade-in">
-          <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+        <div className="p-4 bg-emerald-950/90 border border-emerald-500/40 text-emerald-200 rounded-2xl text-xs font-bold flex items-center justify-between shadow-xl animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 stroke-[2.2]" />
             <span>{feedbackMessage}</span>
           </div>
-          <button onClick={() => setFeedbackMessage('')} className="text-emerald-600 hover:text-emerald-800">
+          <button onClick={() => setFeedbackMessage('')} className="text-emerald-400 hover:text-emerald-200 cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
       {/* =========================================================================
-          TARJETAS KPI & MÉTRICAS EN TIEMPO REAL
+          TARJETAS KPI & MÉTRICAS EXECUTIVE HIGH-CONTRAST
           ========================================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* Total */}
-        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
+        {/* Total Reservas */}
+        <Card className="p-4 sm:p-5 rounded-3xl border-slate-200/90 shadow-sm bg-white hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Reservas</span>
-            <span className="p-2 rounded-xl bg-slate-100 text-slate-600">
-              <CalendarCheck className="w-4 h-4" />
-            </span>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Reservas</span>
+            <div className="p-2.5 rounded-2xl bg-slate-100 text-slate-700 group-hover:scale-110 transition-transform">
+              <CalendarCheck className="w-5 h-5 stroke-[2]" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-slate-900">{totalReservations}</span>
-            <span className="text-[11px] text-slate-500 font-medium">Histórico general</span>
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-black font-mono text-slate-900 tracking-tight">{totalReservations}</span>
+            <span className="text-xs text-slate-500 font-bold bg-slate-100 px-2.5 py-1 rounded-xl">Histórico</span>
           </div>
         </Card>
 
-        {/* En Curso */}
-        <Card className="p-4 rounded-3xl border-emerald-200 shadow-xs bg-gradient-to-br from-emerald-50/60 to-emerald-50/20 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              En Estancia (Activas)
+        {/* En Curso / Activas */}
+        <Card className="p-4 sm:p-5 rounded-3xl border-emerald-300/80 shadow-md bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-900 text-white flex flex-col justify-between group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-300 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              En Estancia
             </span>
-            <span className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
-              <Car className="w-4 h-4" />
-            </span>
+            <div className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 group-hover:scale-110 transition-transform">
+              <Car className="w-5 h-5 stroke-[2]" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-emerald-700">{activeCount}</span>
-            <span className="text-[11px] text-emerald-800 font-bold">Ocupando plaza</span>
+          <div className="mt-4 flex items-baseline justify-between relative z-10">
+            <span className="text-3xl font-black font-mono text-emerald-300 tracking-tight">{activeCount}</span>
+            <span className="text-xs text-emerald-300 font-extrabold bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1 rounded-xl">En Plaza</span>
           </div>
         </Card>
 
         {/* Programadas */}
-        <Card className="p-4 rounded-3xl border-cyan-200 shadow-xs bg-gradient-to-br from-cyan-50/60 to-cyan-50/20 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800">Programadas</span>
-            <span className="p-2 rounded-xl bg-cyan-100 text-cyan-700">
-              <Clock className="w-4 h-4" />
-            </span>
+        <Card className="p-4 sm:p-5 rounded-3xl border-cyan-300/80 shadow-md bg-gradient-to-br from-cyan-950 via-slate-900 to-slate-950 text-white flex flex-col justify-between group relative overflow-hidden">
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-cyan-300">Programadas</span>
+            <div className="p-2.5 rounded-2xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 group-hover:scale-110 transition-transform">
+              <Clock className="w-5 h-5 stroke-[2]" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-cyan-800">{scheduledCount}</span>
-            <span className="text-[11px] text-cyan-700 font-medium">Por ingresar</span>
+          <div className="mt-4 flex items-baseline justify-between relative z-10">
+            <span className="text-3xl font-black font-mono text-cyan-300 tracking-tight">{scheduledCount}</span>
+            <span className="text-xs text-cyan-300 font-extrabold bg-cyan-500/20 border border-cyan-500/30 px-2.5 py-1 rounded-xl">Por Ingresar</span>
           </div>
         </Card>
 
         {/* Recaudación o Gasto Total */}
-        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
+        <Card className="p-4 sm:p-5 rounded-3xl border-slate-900 shadow-md bg-slate-900 text-white flex flex-col justify-between group">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
               {role === 'user' ? 'Gasto Total Estimado' : 'Recaudación Bruta'}
             </span>
-            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700 font-black text-xs">
+            <div className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-black text-xs">
               S/
-            </span>
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-emerald-700">S/ {totalRevenue.toFixed(2)}</span>
-            <span className="text-[11px] text-slate-500 font-medium font-mono">
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-black font-mono text-emerald-400 tracking-tight">S/ {totalRevenue.toFixed(2)}</span>
+            <span className="text-xs text-slate-400 font-bold bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-xl">
               {role === 'user' ? `Activas: S/ ${todayRevenue.toFixed(2)}` : `Hoy: S/ ${todayRevenue.toFixed(2)}`}
             </span>
           </div>

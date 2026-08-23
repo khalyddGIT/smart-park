@@ -155,23 +155,22 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
         </div>
 
         {/* Footer del Sidebar Desktop Profesional y Limpio */}
-        <div className="p-2 border-t border-slate-100 bg-slate-50/70 space-y-1.5">
+        <div className="p-2 border-t border-slate-100 bg-slate-50/70 space-y-1">
           <button
             type="button"
             onClick={onOpenTerms}
-            className="w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium rounded-xl hover:bg-white hover:shadow-xs transition cursor-pointer group"
+            className="w-full flex items-center space-x-2 px-2.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-semibold rounded-xl hover:bg-slate-100 transition cursor-pointer group"
           >
-            <Scale className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
-            <span className="text-[11px] font-medium tracking-tight truncate">Términos Legales</span>
+            <Scale className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+            <span className="text-xs font-semibold tracking-tight truncate">Términos Legales</span>
           </button>
 
-          <div className="flex items-center justify-between px-2 py-1 bg-white/80 rounded-xl border border-slate-200/60 text-[11px]">
-            <div className="flex items-center space-x-1.5 min-w-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="text-slate-500 text-[10px]">Rol:</span>
-              <strong className="text-slate-800 font-bold capitalize text-[10px] truncate">{role}</strong>
-            </div>
-            <span className="text-[9px] font-mono text-slate-400 font-medium shrink-0">v2.4</span>
+          <div className="flex items-center space-x-2 px-2.5 py-1.5 rounded-xl text-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+            <span className="text-slate-500 text-xs font-medium">Rol:</span>
+            <strong className="text-slate-800 font-bold capitalize text-xs truncate">
+              {role === 'user' ? 'Conductor' : role === 'local' ? 'Garita' : 'Admin'}
+            </strong>
           </div>
         </div>
       </aside>

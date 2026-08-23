@@ -285,32 +285,32 @@ export const LandingPage = ({
         >
           
           {/* Titular Principal Centrado con Escala Adaptativa */}
-          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display text-[#002B29] tracking-tight max-w-4xl mx-auto leading-[1.08] sm:leading-[1.06]">
-            La infraestructura de estacionamiento para <span className="font-editorial italic font-normal text-[#004D49]">Ayacucho</span>.
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] font-display text-[#002B29] tracking-[-0.03em] max-w-4xl mx-auto leading-[1.08] sm:leading-[1.02]">
+            La infraestructura de estacionamiento para <span className="font-editorial italic font-normal text-[#004D49] tracking-[-0.02em]">Ayacucho</span>.
           </h1>
 
           {/* Subtítulo Centrado */}
-          <p className="text-sm sm:text-base md:text-lg text-[#003835] max-w-2xl mx-auto font-medium leading-relaxed text-center px-2">
+          <p className="text-sm sm:text-[15px] md:text-lg text-[#003835]/80 max-w-2xl mx-auto font-medium leading-relaxed text-center px-2 tracking-[-0.01em]">
             Consulte la disponibilidad en tiempo real, seleccione su plaza en el plano topográfico 2D del estacionamiento y acceda mediante reconocimiento de placa ANPR.
           </p>
 
           {/* Botones Centrados */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-md sm:max-w-none">
+          <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-md sm:max-w-none">
             <motion.a
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
               href="#mapa"
-              className="w-full sm:w-auto px-7 py-3 bg-[#004D49] hover:bg-[#003835] text-white text-xs font-medium rounded-md transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-[0_6px_18px_rgba(0,77,73,0.3)]"
+              className="w-full sm:w-auto px-7 py-3.5 bg-[#004D49] hover:bg-[#003835] text-white text-xs font-bold tracking-wide rounded-xl transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#004D49]/20 hover:shadow-xl hover:shadow-[#004D49]/30"
             >
               <span>Consultar Mapa en Vivo</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-4 h-4 shrink-0" />
             </motion.a>
 
             <motion.button
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="w-full sm:w-auto px-6 py-3 bg-white/90 hover:bg-white text-[#004D49] text-xs font-semibold rounded-md border border-white/60 shadow-xs transition-colors duration-200 cursor-pointer backdrop-blur-xs"
+              className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-white text-[#004D49] text-xs font-bold tracking-wide rounded-xl border border-[#004D49]/10 shadow-sm hover:shadow-md hover:border-[#004D49]/20 transition-all duration-200 cursor-pointer"
             >
               Afiliar Establecimiento
             </motion.button>
@@ -323,34 +323,34 @@ export const LandingPage = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2, ease: FLUID_EASE }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 pt-6 sm:pt-8 border-t border-[#004D49]/20 text-center"
+          className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-8 sm:pt-10 border-t border-[#004D49]/10 text-center"
         >
-          <div className="space-y-1 bg-white/50 backdrop-blur-xs p-3.5 sm:p-4 rounded-xl border border-white/50 shadow-2xs">
-            <span className="font-mono text-xl sm:text-2xl md:text-3xl font-bold text-[#002B29] block">
+          <div className="bg-white/60 backdrop-blur-sm p-4 sm:p-5 rounded-2xl border border-white/60 shadow-sm hover:shadow-md hover:bg-white/80 transition-all duration-300 group">
+            <span className="font-mono text-2xl sm:text-3xl font-black text-[#002B29] block tracking-tight group-hover:scale-105 transition-transform">
               {establishments.length}
             </span>
-            <span className="text-[11px] sm:text-xs text-[#004D49] font-medium block">Cocheras conectadas</span>
+            <span className="text-[11px] sm:text-xs text-[#004D49]/70 font-bold tracking-wide uppercase block mt-1">Cocheras conectadas</span>
           </div>
 
-          <div className="space-y-1 bg-white/50 backdrop-blur-xs p-3.5 sm:p-4 rounded-xl border border-white/50 shadow-2xs">
-            <span className="font-mono text-xl sm:text-2xl md:text-3xl font-bold text-[#00605B] block">
+          <div className="bg-white/60 backdrop-blur-sm p-4 sm:p-5 rounded-2xl border border-white/60 shadow-sm hover:shadow-md hover:bg-white/80 transition-all duration-300 group">
+            <span className="font-mono text-2xl sm:text-3xl font-black text-emerald-700 block tracking-tight group-hover:scale-105 transition-transform">
               {totalFreeSlots}
             </span>
-            <span className="text-[11px] sm:text-xs text-[#004D49] font-medium block">Plazas libres ahora</span>
+            <span className="text-[11px] sm:text-xs text-[#004D49]/70 font-bold tracking-wide uppercase block mt-1">Plazas libres ahora</span>
           </div>
 
-          <div className="space-y-1 bg-white/50 backdrop-blur-xs p-3.5 sm:p-4 rounded-xl border border-white/50 shadow-2xs">
-            <span className="font-mono text-xl sm:text-2xl md:text-3xl font-bold text-[#002B29] block">
+          <div className="bg-white/60 backdrop-blur-sm p-4 sm:p-5 rounded-2xl border border-white/60 shadow-sm hover:shadow-md hover:bg-white/80 transition-all duration-300 group">
+            <span className="font-mono text-2xl sm:text-3xl font-black text-[#002B29] block tracking-tight group-hover:scale-105 transition-transform">
               &lt; 0.2s
             </span>
-            <span className="text-[11px] sm:text-xs text-[#004D49] font-medium block">Lectura de placa ANPR</span>
+            <span className="text-[11px] sm:text-xs text-[#004D49]/70 font-bold tracking-wide uppercase block mt-1">Lectura de placa ANPR</span>
           </div>
 
-          <div className="space-y-1 bg-white/50 backdrop-blur-xs p-3.5 sm:p-4 rounded-xl border border-white/50 shadow-2xs">
-            <span className="font-mono text-xl sm:text-2xl md:text-3xl font-bold text-[#002B29] block">
+          <div className="bg-white/60 backdrop-blur-sm p-4 sm:p-5 rounded-2xl border border-white/60 shadow-sm hover:shadow-md hover:bg-white/80 transition-all duration-300 group">
+            <span className="font-mono text-2xl sm:text-3xl font-black text-[#002B29] block tracking-tight group-hover:scale-105 transition-transform">
               S/ 4.00
             </span>
-            <span className="text-[11px] sm:text-xs text-[#004D49] font-medium block">Tarifa base promedio</span>
+            <span className="text-[11px] sm:text-xs text-[#004D49]/70 font-bold tracking-wide uppercase block mt-1">Tarifa base promedio</span>
           </div>
         </motion.div>
 

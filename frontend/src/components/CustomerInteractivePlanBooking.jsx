@@ -476,22 +476,27 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
           </div>
         </div>
 
-        {/* PANEL LATERAL DE RESERVA Y CHECKOUT */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-5">
+        {/* PANEL LATERAL DE RESERVA Y CHECKOUT — ESTÉTICA ULTRA-PREMIUM */}
+        <div className="bg-slate-900/90 backdrop-blur-xl p-6 rounded-3xl border border-slate-800 shadow-2xl flex flex-col justify-between space-y-5 text-white">
           <div className="space-y-4">
             <div>
-              <h3 className="text-base font-black text-slate-900 mb-0.5">Confirmar Reserva de Plaza</h3>
-              <p className="text-xs text-slate-500">Selecciona tu cajón en el plano o en la lista rápida.</p>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-base font-extrabold text-white tracking-tight">Confirmar Reserva de Plaza</h3>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono font-bold border border-emerald-500/30">
+                  PASO FINAL
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">Selecciona tu cajón en el plano o en la lista rápida inferior.</p>
             </div>
 
             {/* Selector Rápido de Cajones Libres */}
             <div>
-              <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5 font-mono">
+              <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-2 font-mono">
                 Selector Rápido de Cajones Libres ({freeSlots.length})
               </label>
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-2 bg-slate-950 rounded-2xl border border-slate-800">
                 {freeSlots.length === 0 && (
-                  <span className="text-xs text-slate-500 font-semibold p-2">
+                  <span className="text-xs text-slate-400 font-semibold p-2">
                     {planStatus === 'ready' ? 'Actualmente no hay cajones libres en esta cochera según el servidor.' : 'Sin cajones libres para mostrar.'}
                   </span>
                 )}
@@ -502,13 +507,14 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       key={s.id || s.code}
                       type="button"
                       onClick={() => setSelectedSlot(s)}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold transition cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1 ${
                         isCurSelected 
-                          ? 'bg-emerald-600 text-white shadow-xs scale-105' 
-                          : 'bg-white text-slate-700 border border-slate-200 hover:border-emerald-400'
+                          ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25 scale-105 font-extrabold' 
+                          : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-emerald-500/60 hover:text-white'
                       }`}
                     >
-                      {s.code} {s.slotType === 'pmr' ? '♿' : s.shaded ? '⛱️' : ''}
+                      <span>{s.code}</span>
+                      <span>{s.slotType === 'pmr' ? '♿' : s.shaded ? '⛱️' : ''}</span>
                     </button>
                   );
                 })}
@@ -517,27 +523,30 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
             {/* Tarjeta de Cajón Seleccionado */}
             {selectedSlot && (
-              <div className="bg-emerald-50 border-2 border-emerald-500 p-4 rounded-2xl flex items-center justify-between shadow-xs">
+              <div className="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-950 border-2 border-emerald-500/80 p-4 rounded-2xl flex items-center justify-between shadow-lg glow-emerald">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-emerald-800 block">Cajón Seleccionado</span>
-                  <span className="text-2xl font-mono font-black text-emerald-950">{selectedSlot.code}</span>
+                  <span className="text-[10px] uppercase font-bold text-emerald-400 block font-mono">CAJÓN SELECCIONADO</span>
+                  <span className="text-3xl font-mono font-extrabold text-white tracking-tight">{selectedSlot.code}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-lg block font-mono">
+                  <span className="text-xs font-bold text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-xl block font-mono border border-emerald-500/30">
                     {selectedSlot.slotType === 'pmr' ? '♿ PMR Inclusivo' : selectedSlot.shaded ? '⛱️ Techado' : '🚗 Estándar'}
                   </span>
-                  <span className="text-[10px] text-emerald-700 font-medium mt-0.5 block">Listo para reservar</span>
+                  <span className="text-[10px] text-emerald-400 font-bold mt-1 block flex items-center justify-end gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Listo para reservar
+                  </span>
                 </div>
               </div>
             )}
 
             {/* Selección de Vehículo */}
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Vehículo a Ingresar</label>
+              <label className="text-xs font-extrabold text-slate-300 block mb-1.5">Vehículo a Ingresar</label>
               <select 
                 value={selectedPlate} 
                 onChange={(e) => setSelectedPlate(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 cursor-pointer"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-white cursor-pointer focus:outline-none focus:border-emerald-500"
               >
                 <option>ABC-123 (Toyota Corolla Blanco)</option>
                 <option>XYZ-789 (Hyundai Tucson Gris)</option>
@@ -547,17 +556,17 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
             {/* Selector de Duración */}
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Tiempo de Permanencia Estimado</label>
-              <div className="grid grid-cols-4 gap-1.5">
+              <label className="text-xs font-extrabold text-slate-300 block mb-1.5">Tiempo de Permanencia Estimado</label>
+              <div className="grid grid-cols-4 gap-2">
                 {[1, 2, 3, 4].map(h => (
                   <button
                     key={h}
                     type="button"
                     onClick={() => setHours(h)}
-                    className={`py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    className={`py-2.5 rounded-xl text-xs font-bold transition cursor-pointer font-mono ${
                       hours === h 
-                        ? 'bg-slate-900 text-white font-black shadow-xs' 
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-emerald-500 text-slate-950 font-extrabold shadow-md shadow-emerald-500/20' 
+                        : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                     }`}
                   >
                     {h} {h === 1 ? 'Hora' : 'Horas'}
@@ -567,37 +576,37 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             </div>
 
             {/* Desglose de Pago */}
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1.5 text-xs font-mono">
-              <div className="flex justify-between text-slate-600">
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs font-mono">
+              <div className="flex justify-between text-slate-400">
                 <span>Tarifa Base:</span>
-                <span>S/ {(parking?.rate || 5.0).toFixed(2)} × {hours}h</span>
+                <span className="text-slate-200">S/ {(parking?.rate || 5.0).toFixed(2)} × {hours}h</span>
               </div>
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between text-slate-400">
                 <span>Tolerancia de Gracia:</span>
-                <span className="text-emerald-700 font-bold">15 min gratis</span>
+                <span className="text-emerald-400 font-bold">15 min gratis</span>
               </div>
-              <div className="h-px bg-slate-200 my-1" />
-              <div className="flex justify-between text-sm font-black text-slate-900">
+              <div className="h-px bg-slate-800 my-1" />
+              <div className="flex justify-between text-sm font-extrabold text-white">
                 <span>Total a Liquidar:</span>
-                <span className="text-emerald-700 font-mono text-base">S/ {((parking?.rate || 5.0) * hours).toFixed(2)}</span>
+                <span className="text-emerald-400 font-mono text-base font-extrabold">S/ {((parking?.rate || 5.0) * hours).toFixed(2)}</span>
               </div>
             </div>
           </div>
 
-          {/* BOTÓN DE ACCIÓN — Reserva sin cobro (el pago se realiza al salir, según tiempo real) */}
+          {/* BOTÓN DE ACCIÓN — Reserva sin cobro */}
           <div className="space-y-2 pt-1">
             <Button
               type="button"
               variant="default"
               onClick={handleDirectReservation}
               disabled={!selectedSlot}
-              className="w-full py-4 text-xs font-black gap-2 shadow-md bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl cursor-pointer"
+              className="w-full py-4 text-xs font-extrabold gap-2 shadow-lg shadow-emerald-500/25 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-2xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <QrCode className="w-4 h-4" />
               <span>Reservar Cajón — Pagarás al salir (S/ {(parking?.rate || 5.0).toFixed(2)}/h)</span>
-              <ChevronRight className="w-4 h-4 text-emerald-200" />
+              <ChevronRight className="w-4 h-4 text-slate-950" />
             </Button>
-            <p className="text-[11px] text-slate-500 text-center font-medium">
+            <p className="text-[11px] text-slate-400 text-center font-medium">
               Tu pase QR quedará activo. El cobro se calculará al salir según el tiempo real de estancia.
             </p>
           </div>

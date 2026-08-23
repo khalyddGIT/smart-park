@@ -167,7 +167,7 @@ class FloorPlanElementResponse(FloorPlanElementBase):
         from_attributes = True
 
 class FloorPlanSyncRequest(BaseModel):
-    parking_id: int
+    parking_id: Optional[int] = None
     slots: List[SlotBase]
     elements: List[FloorPlanElementBase]
 

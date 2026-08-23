@@ -597,7 +597,7 @@ export const EstablishmentProvider = ({ children }) => {
       try {
         const slots = elements.filter(e=>e.type==='slot').map(s=>({ code: s.code, floor_level: 'Piso 1', slot_type: s.slotType || 'auto', status: s.status || 'free', pos_x: s.x||0, pos_y: s.y||0, width: s.w||60, height: s.h||100, rotation: s.rot||0 }));
         const elems = elements.filter(e=>e.type!=='slot').map(e=>({ element_type: e.type, pos_x: e.x||0, pos_y: e.y||0, width: e.w||100, height: e.h||20, rotation: e.rot||0, z_index: 1, properties_json: null }));
-        await api.post(`/parkings/${numId}/floor-plan/sync`, { slots, elements: elems });
+        await api.post(`/parkings/${numId}/floor-plan/sync`, { parking_id: numId, slots, elements: elems });
       } catch (e) { console.warn('sync floor-plan fail', e.response?.data); }
     }
   };

@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.models.models import Reservation, Slot, Parking
 from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationResponse
 from app.core.security import get_current_user, require_role
+from app.core.realtime import realtime
 from app.models.models import User
 
 # Normaliza datetimes a UTC naive para compatibilidad con columnas DateTime sin zona horaria
@@ -121,6 +122,10 @@ async def create_reservation(
 
     db.add(db_res)
     await db.commit()
+    try:
+        await realtime.broadcast("reservations:updated")
+    except Exception:
+        pass
     await db.refresh(db_res)
 
     return ReservationResponse.model_validate(db_res)
@@ -146,6 +151,10 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
         slot.status = "free"
 
     await db.commit()
+    try:
+        await realtime.broadcast("reservations:updated")
+    except Exception:
+        pass
     await db.refresh(reservation)
     return ReservationResponse.model_validate(reservation)
 
@@ -167,6 +176,10 @@ async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncS
     reservation.total_cost = round(reservation.total_cost + (hours * rate), 2)
 
     await db.commit()
+    try:
+        await realtime.broadcast("reservations:updated")
+    except Exception:
+        pass
     await db.refresh(reservation)
     return ReservationResponse.model_validate(reservation)
 
@@ -192,6 +205,10 @@ async def check_in_reservation(reservation_id: int, db: AsyncSession = Depends(g
         slot.status = "occupied"
 
     await db.commit()
+    try:
+        await realtime.broadcast("reservations:updated")
+    except Exception:
+        pass
     await db.refresh(reservation)
     return ReservationResponse.model_validate(reservation)
 
@@ -217,6 +234,10 @@ async def check_out_reservation(reservation_id: int, db: AsyncSession = Depends(
         slot.status = "free"
 
     await db.commit()
+    try:
+        await realtime.broadcast("reservations:updated")
+    except Exception:
+        pass
     await db.refresh(reservation)
     return ReservationResponse.model_validate(reservation)
 
@@ -237,4 +258,8 @@ async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get
 
     await db.delete(reservation)
     await db.commit()
+    try:
+        await realtime.broadcast("reservations:updated")
+    except Exception:
+        pass
     return {"status": "success", "message": f"Reserva {reservation_id} eliminada exitosamente"}

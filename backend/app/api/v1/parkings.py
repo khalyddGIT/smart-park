@@ -10,6 +10,7 @@ from app.schemas.schemas import (
     FloorPlanElementBase, FloorPlanElementCreate, FloorPlanElementResponse, FloorPlanSyncRequest
 )
 from app.core.security import require_role
+from app.core.realtime import realtime
 
 
 router = APIRouter(prefix="/parkings", tags=["Estacionamientos, Cajones & Planos CAD"])
@@ -82,6 +83,7 @@ async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(g
     db.add(db_parking)
     await db.commit()
     await db.refresh(db_parking)
+    await realtime.broadcast("parkings:updated", {"parking_id": db_parking.id})
     return ParkingResponse.model_validate(db_parking)
 
 @router.put("/{parking_id}", response_model=ParkingResponse)
@@ -97,6 +99,7 @@ async def update_parking(parking_id: int, parking_in: ParkingUpdate, db: AsyncSe
     
     await db.commit()
     await db.refresh(parking)
+    await realtime.broadcast("parkings:updated", {"parking_id": parking.id})
     return ParkingResponse.model_validate(parking)
 
 @router.delete("/{parking_id}", status_code=status.HTTP_200_OK)
@@ -108,6 +111,7 @@ async def delete_parking(parking_id: int, db: AsyncSession = Depends(get_db), cu
     
     await db.delete(parking)
     await db.commit()
+    await realtime.broadcast("parkings:updated", {"parking_id": parking_id})
     return {"status": "success", "message": f"Estacionamiento {parking_id} eliminado exitosamente"}
 
 # =======================================================
@@ -239,6 +243,7 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
     ]
     db.add_all(new_elems)
     await db.commit()
+    await realtime.broadcast("parkings:updated", {"parking_id": parking_id})
     # Contar total actual
     final_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
     total = len(final_res.scalars().all())

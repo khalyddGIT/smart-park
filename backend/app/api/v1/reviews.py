@@ -6,6 +6,7 @@ from app.db.session import get_db
 from app.models.models import Review, Parking, User
 from app.schemas.schemas import ReviewCreate, ReviewReply, ReviewResponse
 from app.core.security import get_current_user, require_role
+from app.core.realtime import realtime
 
 router = APIRouter(prefix="/reviews", tags=["Reseñas & Calificaciones"])
 
@@ -51,6 +52,10 @@ async def create_review(
     )
     db.add(db_review)
     await db.commit()
+    try:
+        await realtime.broadcast("reviews:updated")
+    except Exception:
+        pass
     await db.refresh(db_review)
     return ReviewResponse.model_validate(db_review)
 
@@ -68,6 +73,10 @@ async def reply_review(
 
     review.response = reply_in.response
     await db.commit()
+    try:
+        await realtime.broadcast("reviews:updated")
+    except Exception:
+        pass
     await db.refresh(review)
     return ReviewResponse.model_validate(review)
 
@@ -87,4 +96,8 @@ async def delete_review(
 
     await db.delete(review)
     await db.commit()
+    try:
+        await realtime.broadcast("reviews:updated")
+    except Exception:
+        pass
     return {"status": "success", "message": f"Reseña {review_id} eliminada"}

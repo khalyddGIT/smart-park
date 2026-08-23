@@ -8,6 +8,8 @@ from app.db.session import engine, Base
 from app.models.models import User, Parking, Slot, FloorPlanElement, Vehicle, Incident
 from app.api.v1 import auth, parkings, reservations, anpr, vehicles, staff, users, reviews, incidents, payments, finances
 from app.core.security import get_password_hash, hash_pin
+from app.core.realtime import realtime
+from fastapi import WebSocket, WebSocketDisconnect
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -162,6 +164,20 @@ app.include_router(reviews.router, prefix=settings.API_V1_STR)
 app.include_router(incidents.router, prefix=settings.API_V1_STR)
 app.include_router(payments.router, prefix=settings.API_V1_STR)
 app.include_router(finances.router, prefix=settings.API_V1_STR)
+
+# Canal WebSocket en tiempo real (mismo origen, sin servicio extra)
+@app.websocket("/api/v1/ws")
+async def realtime_ws(ws: WebSocket):
+    await realtime.connect(ws)
+    try:
+        while True:
+            # Mantener la conexión viva; el cliente puede enviar ping
+            await ws.receive_text()
+            await ws.send_text('{"event":"pong"}')
+    except WebSocketDisconnect:
+        await realtime.disconnect(ws)
+    except Exception:
+        await realtime.disconnect(ws)
 
 STATIC_DIR = os.getenv("STATIC_DIR", "")
 

@@ -7,6 +7,7 @@ from app.db.session import get_db
 from app.models.models import Incident, Parking, User
 from app.schemas.schemas import IncidentCreate, IncidentResolve, IncidentResponse
 from app.core.security import get_current_user, require_role
+from app.core.realtime import realtime
 
 router = APIRouter(prefix="/incidents", tags=["Incidencias & Asistencia"])
 
@@ -34,6 +35,10 @@ async def create_incident(
     )
     db.add(db_incident)
     await db.commit()
+    try:
+        await realtime.broadcast("incidents:updated")
+    except Exception:
+        pass
     await db.refresh(db_incident)
     return IncidentResponse.model_validate(db_incident)
 
@@ -93,5 +98,9 @@ async def resolve_incident(
     incident.resolution_note = resolve_in.resolution_note
     incident.resolved_at = datetime.utcnow()
     await db.commit()
+    try:
+        await realtime.broadcast("incidents:updated")
+    except Exception:
+        pass
     await db.refresh(incident)
     return IncidentResponse.model_validate(incident)

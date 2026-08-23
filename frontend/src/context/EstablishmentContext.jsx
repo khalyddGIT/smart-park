@@ -429,11 +429,43 @@ export const EstablishmentProvider = ({ children }) => {
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
 
+    // WebSocket en tiempo real: notificaciones push del servidor (misma URL que la API)
+    let ws = null;
+    let wsReconnectTimer = null;
+    const getWsUrl = () => {
+      const envUrl = import.meta.env.VITE_WS_URL;
+      if (envUrl) return envUrl;
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return `${proto}//127.0.0.1:8000/api/v1/ws`;
+      return `${proto}//${window.location.host}/api/v1/ws`;
+    };
+    const connectWs = () => {
+      try {
+        ws = new WebSocket(getWsUrl());
+        ws.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data);
+            if (msg.event === 'pong') return;
+            if (msg.event === 'parkings:updated' || msg.event === 'refresh') fetchParkings();
+            if (msg.event === 'reservations:updated' || msg.event === 'refresh') { if (getAccessToken()) refreshMyReservations(); }
+            if (msg.event === 'incidents:updated' || msg.event === 'reviews:updated') { /* NotificationContext hace su propio polling; el WS sirve como hint adicional si se desea */ }
+          } catch {}
+        };
+        ws.onclose = () => { wsReconnectTimer = setTimeout(connectWs, 3000); };
+        ws.onerror = () => { try { ws.close(); } catch {} };
+        const ping = setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) try { ws.send('ping'); } catch {} }, 25000);
+        ws.addEventListener('close', () => clearInterval(ping));
+      } catch {}
+    };
+    connectWs();
+
     return () => {
       clearInterval(parkingsInterval);
       clearInterval(reservationsInterval);
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
+      clearTimeout(wsReconnectTimer);
+      try { ws && ws.close(); } catch {}
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

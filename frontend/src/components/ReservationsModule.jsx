@@ -330,17 +330,21 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           </div>
         </Card>
 
-        {/* Recaudación */}
+        {/* Recaudación o Gasto Total */}
         <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Recaudación Bruta</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              {role === 'user' ? 'Gasto Total Estimado' : 'Recaudación Bruta'}
+            </span>
             <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700 font-black text-xs">
               S/
             </span>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <span className="text-2xl font-black font-mono text-emerald-700">S/ {totalRevenue.toFixed(2)}</span>
-            <span className="text-[11px] text-slate-500 font-medium font-mono">Hoy: S/ {todayRevenue.toFixed(2)}</span>
+            <span className="text-[11px] text-slate-500 font-medium font-mono">
+              {role === 'user' ? `Activas: S/ ${todayRevenue.toFixed(2)}` : `Hoy: S/ ${todayRevenue.toFixed(2)}`}
+            </span>
           </div>
         </Card>
 
@@ -584,11 +588,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                         {/* Ver Pase Digital QR */}
                         <Button
                           onClick={() => handleOpenPass(res)}
-                          variant="outline"
                           size="sm"
-                          className="rounded-xl text-xs font-bold gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 h-9"
+                          className="rounded-xl text-xs font-black gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm h-9 px-3.5 cursor-pointer"
                         >
-                          <QrCode className="w-4 h-4 shrink-0 text-emerald-600" />
+                          <QrCode className="w-4 h-4 shrink-0 text-emerald-400" />
                           <span>Pase QR</span>
                         </Button>
 
@@ -597,10 +600,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                           onClick={() => handlePrintReceipt(res)}
                           variant="outline"
                           size="sm"
-                          className="rounded-xl text-xs font-bold gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 h-9"
+                          className="rounded-xl text-xs font-bold gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border-slate-200 h-9 px-3 cursor-pointer"
                           title="Imprimir Comprobante"
                         >
-                          <Printer className="w-4 h-4 shrink-0 text-slate-600" />
+                          <Printer className="w-4 h-4 shrink-0 text-slate-500" />
                           <span className="hidden sm:inline">Ticket</span>
                         </Button>
 

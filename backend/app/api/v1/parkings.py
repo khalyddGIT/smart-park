@@ -190,31 +190,27 @@ async def get_floor_plan(parking_id: int, db: AsyncSession = Depends(get_db)):
 @router.post("/{parking_id}/floor-plan/sync", status_code=status.HTTP_200_OK)
 async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
     from sqlalchemy import delete
-    # Cajones con reservas activas/programadas no pueden eliminarse (FK); el resto sí
+    # Cajones con CUALQUIER reserva histórica no pueden eliminarse (FK); solo se actualizan
     existing_slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
     existing_slots = existing_slots_res.scalars().all()
-    incoming_codes = {s.code for s in sync_in.slots}
-    # IDs de cajones que tienen reservas no canceladas/completadas
-    from app.models.models import Reservation
-    active_slot_ids = set()
+    # IDs de cajones que tienen al menos una reserva (cualquier estado)
+    reserved_slot_ids = set()
     if existing_slots:
         slot_ids = [s.id for s in existing_slots]
-        res = await db.execute(select(Reservation.slot_id).where(Reservation.slot_id.in_(slot_ids), Reservation.status.notin_(["cancelled", "completed"])))
-        active_slot_ids = {row[0] for row in res.all()}
+        res = await db.execute(select(Reservation.slot_id).where(Reservation.slot_id.in_(slot_ids)))
+        reserved_slot_ids = {row[0] for row in res.all()}
 
-    # Eliminar solo elementos no referenciados; los activos se preservan y se actualizarán por código
     await db.execute(delete(FloorPlanElement).where(FloorPlanElement.parking_id == parking_id))
-    # Borrar cajones sin reservas activas y cuyo código ya no viene en el nuevo plano
+    # Borrar solo cajones huérfanos (sin reservas) cuyo código ya no viene en el nuevo plano
+    incoming_codes = {s.code for s in sync_in.slots}
     for slot in existing_slots:
-        if slot.id not in active_slot_ids and slot.code not in incoming_codes:
+        if slot.id not in reserved_slot_ids and slot.code not in incoming_codes:
             await db.execute(delete(Slot).where(Slot.id == slot.id))
-    # Upsert por código: actualizar existentes, crear nuevos
+    # Upsert por código: actualizar existentes (incluidos los reservados, solo geometría), crear nuevos
     existing_by_code = {s.code: s for s in existing_slots}
-    new_count = 0
     for s in sync_in.slots:
         existing = existing_by_code.get(s.code)
-        if existing and existing.id not in active_slot_ids:
-            # Actualizar geometría/tipo del cajón libre
+        if existing:
             existing.floor_level = s.floor_level
             existing.slot_type = s.slot_type
             existing.pos_x = s.pos_x
@@ -222,25 +218,17 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
             existing.width = s.width
             existing.height = s.height
             existing.rotation = s.rotation
-            # No pisar estado occupied/reserved de cajones con reserva activa
+            # No pisar estado occupied/reserved (tiene reserva activa)
             if existing.status not in ("occupied", "reserved"):
                 existing.status = s.status or "free"
-        elif existing and existing.id in active_slot_ids:
-            # Cajón con reserva activa: solo actualizar geometría, nunca borrar ni cambiar estado
-            existing.floor_level = s.floor_level
-            existing.slot_type = s.slot_type
-            existing.pos_x = s.pos_x
-            existing.pos_y = s.pos_y
-            existing.width = s.width
-            existing.height = s.height
-            existing.rotation = s.rotation
-        elif not existing:
-            db.add(Slot(
-                parking_id=parking_id, code=s.code, floor_level=s.floor_level,
-                slot_type=s.slot_type, status=s.status or "free",
-                pos_x=s.pos_x, pos_y=s.pos_y, width=s.width, height=s.height, rotation=s.rotation
-            ))
-            new_count += 1
+        else:
+            # Nuevo cajón: verificar que el código no colisione con uno reservado que fue preservado
+            if s.code not in existing_by_code:
+                db.add(Slot(
+                    parking_id=parking_id, code=s.code, floor_level=s.floor_level,
+                    slot_type=s.slot_type, status=s.status or "free",
+                    pos_x=s.pos_x, pos_y=s.pos_y, width=s.width, height=s.height, rotation=s.rotation
+                ))
 
     new_elems = [
         FloorPlanElement(

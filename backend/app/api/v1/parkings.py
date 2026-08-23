@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import Parking, Slot, FloorPlanElement
+from app.models.models import Parking, Slot, FloorPlanElement, Reservation
 from app.schemas.schemas import (
     ParkingCreate, ParkingUpdate, ParkingResponse,
     SlotBase, SlotCreate, SlotUpdate, SlotResponse,

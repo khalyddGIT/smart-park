@@ -397,24 +397,44 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Sincronización Supabase: parkings siempre (global), reservas solo con token
   // El panel del usuario siempre lee del servidor — no se usa caché local para datos de cocheras
-  useEffect(() => {
-    api.get('/parkings').then(res => {
+  // Polling + refetch al enfocar la pestaña para que cambios de otros usuarios se vean sin recargar
+  const fetchParkings = async () => {
+    try {
+      const res = await api.get('/parkings');
       if (Array.isArray(res.data) && res.data.length > 0) {
         const mappedParkings = res.data.map(p => ({
           id: String(p.id), name: p.name, address: p.address, city: p.city, latitude: p.latitude, longitude: p.longitude, rate: p.hourly_rate, status: p.status === 'active' ? 'Operativo' : p.status, image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', totalSlots: p.total_capacity, available_slots: p.available_slots, description: p.description || '', phone: p.phone || '', email: p.email || '', reference: p.reference || '', level: p.level || '', elements: null, _needsFloorPlan: true
         }));
         setEstablishments(prev => {
-          // Preservar cocheras locales "EST-*" aún no migradas al servidor
           const localOnly = prev.filter(e => String(e.id).startsWith('EST-'));
           const serverIds = new Set(mappedParkings.map(m => m.id));
           const preservedLocal = localOnly.filter(l => !serverIds.has(String(l.id)));
           return [...mappedParkings, ...preservedLocal];
         });
       }
-    }).catch(()=>{});
-    // La verdad de las reservas es el servidor: localStorage queda solo como caché de lectura
-    if (!getAccessToken()) return;
-    refreshMyReservations();
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchParkings();
+    if (getAccessToken()) refreshMyReservations();
+
+    // Polling ligero: cocheras cada 20s, reservas cada 15s (solo con sesión)
+    const parkingsInterval = setInterval(fetchParkings, 20000);
+    const reservationsInterval = setInterval(() => { if (getAccessToken()) refreshMyReservations(); }, 15000);
+
+    // Refetch inmediato al volver a la pestaña (cambio de rol, edición en otra pestaña, etc.)
+    const onFocus = () => { fetchParkings(); if (getAccessToken()) refreshMyReservations(); };
+    const onVisibility = () => { if (document.visibilityState === 'visible') onFocus(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      clearInterval(parkingsInterval);
+      clearInterval(reservationsInterval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

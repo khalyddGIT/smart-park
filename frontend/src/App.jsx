@@ -256,7 +256,7 @@ export const App = () => {
             setAuthModalMode('login');
             setShowAuthModal(true);
           } else {
-            setActiveTab('profile');
+            setActiveTab(prev => prev === 'profile' ? 'dashboard' : 'profile');
           }
         }} 
         onNavigateTab={handleTabNavigation}
@@ -508,7 +508,7 @@ export const App = () => {
                 />
               )}
 
-              {activeTab === 'profile' && <UserProfileModule />}
+              {activeTab === 'profile' && <UserProfileModule onBack={() => setActiveTab('dashboard')} />}
               {activeTab === 'vehicles' && <VehiclesModule />}
               {activeTab === 'payments' && <PaymentsModule />}
               {activeTab === 'incidents' && <IncidentsModule />}

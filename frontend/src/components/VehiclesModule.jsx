@@ -552,73 +552,111 @@ export const VehiclesModule = () => {
   );
 
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="space-y-6 animate-in fade-in duration-300">
       
+      {/* Toast Alert */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold animate-bounce">
-          <Check className="w-4 h-4 text-emerald-400" />
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900/95 backdrop-blur-md border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 text-xs font-bold animate-in slide-in-from-bottom-5">
+          <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <Check className="w-3.5 h-3.5" />
+          </div>
           <span>{notification}</span>
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-        <div className="flex items-center space-x-3.5">
-          <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 shrink-0">
-            <Car className="w-6 h-6" />
+      {/* Header Banner */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white p-6 sm:p-7 rounded-3xl border border-slate-800 shadow-xl">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="flex items-start sm:items-center space-x-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+              <Car className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Gestión de Mis Vehículos
+                </h1>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-black uppercase">
+                  ANPR Live
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1 max-w-xl">
+                Placas vehiculares registradas para ingreso automatizado por lectura óptica en todas las sedes y garitas inteligentes.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-              Gestión de Mis Vehículos
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Administra tus placas autorizadas para el acceso automático por reconocimiento ANPR en garitas.
-            </p>
-          </div>
-        </div>
 
-        <Button 
-          onClick={handleOpenAdd} 
-          className="gap-2 font-bold text-xs rounded-xl shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white h-10 px-4 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Registrar Nuevo Vehículo</span>
-        </Button>
+          <Button 
+            onClick={handleOpenAdd} 
+            className="gap-2 font-black text-xs rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 h-11 px-5 shadow-lg shadow-emerald-500/20 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>Registrar Nuevo Vehículo</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Vehículos Registrados</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-slate-900">{vehicles.length}</span>
-            <span className="text-xs text-emerald-700 font-bold">
-              Activos para Reserva
+      {/* Tarjetas KPI Ejecutivas */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        
+        {/* KPI 1 */}
+        <div className="p-5 rounded-3xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Vehículos</span>
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+              <Car className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-3xl font-black font-mono text-slate-900">{vehicles.length}</span>
+            <span className="text-xs text-emerald-700 font-extrabold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Habilitados
             </span>
           </div>
+          <p className="text-[11px] text-slate-400 mt-1 font-medium">Listos para reserva y acceso</p>
         </div>
 
-        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Reconocimiento LPR / ANPR</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-sm font-black text-emerald-700 font-mono">100% HABILITADO</span>
-            <span className="text-xs text-slate-400">Apertura automática</span>
+        {/* KPI 2 */}
+        <div className="p-5 rounded-3xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Reconocimiento LPR</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
           </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-lg font-black text-emerald-700 font-mono">100% OPERATIVO</span>
+            <span className="flex items-center gap-1.5 text-xs text-slate-500 font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Garitas
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 font-medium">Apertura automática sin ticket físico</p>
         </div>
 
-        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Vehículo Predeterminado</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-sm font-black text-slate-900 font-mono">
+        {/* KPI 3 */}
+        <div className="p-5 rounded-3xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Vehículo Principal</span>
+            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-xl font-black text-slate-900 font-mono tracking-wider">
               {vehicles.find(v => v.isDefault)?.license_plate || 'Ninguno'}
             </span>
-            <span className="text-xs text-amber-700 font-bold">Principal</span>
+            <span className="text-xs text-amber-700 font-extrabold">Predeterminado</span>
           </div>
+          <p className="text-[11px] text-slate-400 mt-1 font-medium">Prioridad en reservas automáticas</p>
         </div>
+
       </div>
 
-      {/* Buscador y Filtros */}
-      <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col md:flex-row items-center justify-between gap-3">
+      {/* Barra de Filtros y Búsqueda */}
+      <div className="p-3.5 sm:p-4 rounded-3xl border border-slate-200/80 bg-white shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
@@ -626,123 +664,212 @@ export const VehiclesModule = () => {
             placeholder="Buscar por placa, marca o modelo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-xs font-semibold"
+            className="pl-10 h-10 rounded-2xl bg-slate-50/80 border-slate-200/90 text-xs font-semibold placeholder:text-slate-400 focus:bg-white"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs cursor-pointer">✕</button>
+            <button 
+              onClick={() => setSearch('')} 
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs cursor-pointer p-1"
+            >
+              ✕
+            </button>
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
-          {['ALL', 'auto', 'suv', 'moto'].map(t => (
-            <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                typeFilter === t 
-                  ? 'bg-slate-900 text-white shadow-xs font-black' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {t === 'ALL' ? 'Todos' : t.toUpperCase()}
-            </button>
-          ))}
+        {/* Filtros de Categoría */}
+        <div className="flex items-center space-x-1.5 p-1 bg-slate-100 rounded-2xl w-full md:w-auto overflow-x-auto">
+          {[
+            { id: 'ALL', label: 'Todos', count: vehicles.length },
+            { id: 'suv', label: 'SUV', count: vehicles.filter(v => (v.vehicle_type || '').toLowerCase() === 'suv').length },
+            { id: 'auto', label: 'Sedán', count: vehicles.filter(v => (v.vehicle_type || '').toLowerCase() === 'auto').length },
+            { id: 'moto', label: 'Moto', count: vehicles.filter(v => (v.vehicle_type || '').toLowerCase() === 'moto').length }
+          ].map(t => {
+            const isSelected = typeFilter === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTypeFilter(t.id)}
+                className={`flex-1 md:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5 ${
+                  isSelected 
+                    ? 'bg-white text-slate-900 shadow-xs font-black' 
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+              >
+                <span>{t.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  isSelected ? 'bg-slate-900 text-white font-bold' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {t.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Grid de Vehículos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredVehicles.map((v) => (
-          <div key={v.id} className="overflow-hidden border border-slate-200 shadow-2xs flex flex-col justify-between hover:shadow-xs transition rounded-2xl bg-white group">
-            <div>
-              {/* Foto del Vehículo */}
-              <div className="h-44 bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                <img 
-                  src={v.imageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800'} 
-                  alt={`${v.brand} ${v.model}`} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                  onError={(e) => {
-                    e.target.src = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800';
-                  }}
-                />
-                
-                <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold text-emerald-400 border border-slate-700">
-                  ANPR ACTIVO
-                </div>
+      {filteredVehicles.length === 0 ? (
+        <div className="bg-white border border-slate-200/80 rounded-3xl p-12 text-center shadow-xs space-y-4">
+          <div className="w-16 h-16 rounded-3xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+            <Car className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-base font-extrabold text-slate-900">No se encontraron vehículos</h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              {search ? 'No hay vehículos que coincidan con los términos de búsqueda.' : 'Aún no has registrado ningún vehículo en tu cuenta.'}
+            </p>
+          </div>
+          <Button
+            onClick={handleOpenAdd}
+            className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 px-5 gap-2 cursor-pointer shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Registrar Primer Vehículo</span>
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredVehicles.map((v) => (
+            <div 
+              key={v.id} 
+              className={`overflow-hidden border transition-all duration-300 rounded-3xl bg-white flex flex-col justify-between group hover:shadow-xl hover:-translate-y-0.5 ${
+                v.isDefault ? 'border-amber-400/80 shadow-md ring-2 ring-amber-400/20' : 'border-slate-200/90 shadow-xs'
+              }`}
+            >
+              <div>
+                {/* Foto del Vehículo con Overlay */}
+                <div className="h-48 bg-slate-950 relative overflow-hidden flex items-center justify-center">
+                  <img 
+                    src={v.imageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800'} 
+                    alt={`${v.brand} ${v.model}`} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    onError={(e) => {
+                      e.target.src = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800';
+                    }}
+                  />
+                  
+                  {/* Gradiente en la parte inferior de la imagen */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/30 pointer-events-none" />
 
-                {v.isDefault && (
-                  <div className="absolute top-3 right-3 bg-amber-500 text-slate-950 px-2 py-0.5 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-xs">
-                    <Star className="w-3.5 h-3.5 shrink-0 fill-slate-950" />
-                    <span>PREDETERMINADO</span>
+                  {/* ANPR Status Tag */}
+                  <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-xl text-[10px] font-mono font-extrabold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-lg">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    <span>LPR ACTIVO</span>
                   </div>
-                )}
-              </div>
 
-              <div className="p-4 space-y-3">
-                {/* Placa Estilo Matrícula Oficial */}
-                <div className="bg-slate-950 text-white font-mono p-2.5 rounded-xl text-center shadow-inner border border-slate-800 flex items-center justify-between px-4">
-                  <span className="text-[10px] text-slate-400 font-sans font-bold uppercase tracking-widest">🇵🇪 PERÚ</span>
-                  <span className="text-lg font-black text-amber-400 tracking-widest">{v.license_plate}</span>
-                  <span className="text-[10px] text-emerald-400 font-bold">ONLINE</span>
-                </div>
-
-                <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 font-bold">Modelo:</span>
-                    <span className="font-extrabold text-slate-900">{v.brand} {v.model} {v.year ? `(${v.year})` : ''}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 font-bold">Categoría:</span>
-                    <span className="font-medium text-slate-700 capitalize">{v.vehicle_type || 'Automóvil'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 font-bold">Color:</span>
-                    <span className="font-medium text-slate-700">{v.color || 'No especificado'}</span>
-                  </div>
-                  {v.notes && (
-                    <div className="pt-1 border-t border-slate-200/60 text-[11px] text-slate-500">
-                      <span className="font-bold text-slate-600">Nota: </span>
-                      <span>{v.notes}</span>
+                  {/* Tag Predeterminado */}
+                  {v.isDefault && (
+                    <div className="absolute top-3 right-3 bg-amber-400 text-slate-950 px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center gap-1 shadow-lg">
+                      <Star className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
+                      <span>PRINCIPAL</span>
                     </div>
                   )}
+
+                  {/* Nombre y Modelo superpuesto sobre la foto */}
+                  <div className="absolute bottom-3 left-4 right-4 text-white">
+                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block font-tech">
+                      {v.vehicle_type === 'suv' ? 'Camioneta SUV' : v.vehicle_type === 'moto' ? 'Motocicleta' : v.vehicle_type === 'truck' ? 'Camión' : 'Automóvil'}
+                    </span>
+                    <h3 className="text-base font-black text-white tracking-tight truncate drop-shadow-sm">
+                      {v.brand || 'Vehículo'} {v.model || ''} {v.year ? `(${v.year})` : ''}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-5 space-y-4">
+                  {/* Placa Estilo Matrícula Oficial Peruana con Relieve */}
+                  <div className="relative rounded-2xl bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 border-2 border-slate-800 p-3 shadow-inner text-white">
+                    {/* Tornillos de fijación decorativos */}
+                    <div className="absolute top-2 left-2 w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-500/80 shadow-xs" />
+                    <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-500/80 shadow-xs" />
+                    <div className="absolute bottom-2 left-2 w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-500/80 shadow-xs" />
+                    <div className="absolute bottom-2 right-2 w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-500/80 shadow-xs" />
+
+                    <div className="flex items-center justify-between px-3">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-xs">🇵🇪</span>
+                        <span className="text-[10px] font-extrabold text-slate-300 font-sans tracking-widest">PERÚ</span>
+                      </div>
+                      
+                      <div className="font-mono text-xl font-black tracking-[0.22em] text-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                        {v.license_plate}
+                      </div>
+
+                      <div className="flex items-center space-x-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span className="text-[9px] font-mono font-bold text-emerald-400">SYNC</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ficha Técnica Compacta */}
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Color</span>
+                      <span className="font-extrabold text-slate-800 truncate block mt-0.5">
+                        {v.color || 'Gris'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Año Modelo</span>
+                      <span className="font-extrabold text-slate-800 font-mono block mt-0.5">
+                        {v.year || '2023'}
+                      </span>
+                    </div>
+                    {v.notes && (
+                      <div className="col-span-2 pt-2 border-t border-slate-200/60">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Observaciones</span>
+                        <p className="text-[11px] text-slate-600 italic mt-0.5 line-clamp-2">
+                          "{v.notes}"
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Acciones */}
-            <div className="px-4 pb-4 pt-0 flex items-center space-x-2 border-t border-slate-100 pt-3">
-              {!v.isDefault && (
+              {/* Acciones */}
+              <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-0 flex items-center space-x-2 border-t border-slate-100 pt-3.5">
+                {!v.isDefault ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSetDefault(v.id)}
+                    className="h-10 px-3 font-bold text-xs text-slate-600 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50/50 rounded-xl transition-colors cursor-pointer"
+                    title="Marcar como vehículo principal"
+                  >
+                    <Star className="w-4 h-4 shrink-0" />
+                  </Button>
+                ) : (
+                  <div className="h-10 px-3 flex items-center justify-center rounded-xl bg-amber-50 border border-amber-200 text-amber-700" title="Vehículo principal">
+                    <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                  </div>
+                )}
+                
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleSetDefault(v.id)}
-                  className="text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl h-9 cursor-pointer"
-                  title="Marcar como vehículo predeterminado"
+                  onClick={() => handleOpenEdit(v)}
+                  className="flex-1 h-10 font-extrabold text-xs gap-1.5 text-slate-700 hover:text-emerald-700 hover:border-emerald-200 hover:bg-emerald-50/50 rounded-xl transition-colors cursor-pointer"
                 >
-                  <Star className="w-4 h-4 shrink-0" />
+                  <Edit3 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <span>Editar Ficha</span>
                 </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleOpenEdit(v)}
-                className="flex-1 font-bold text-xs gap-1.5 text-slate-700 hover:bg-slate-100 rounded-xl h-9 cursor-pointer"
-              >
-                <Edit3 className="w-4 h-4 shrink-0 text-emerald-600" />
-                <span>Editar</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDelete(v.id, v.license_plate)}
-                className="font-bold text-xs text-rose-600 hover:bg-rose-50 border-rose-200 rounded-xl h-9 px-3 cursor-pointer"
-              >
-                <Trash2 className="w-4 h-4 shrink-0" />
-              </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDelete(v.id, v.license_plate)}
+                  className="h-10 px-3.5 font-bold text-xs text-rose-600 hover:bg-rose-50 hover:border-rose-300 border-rose-100 rounded-xl transition-colors cursor-pointer"
+                  title="Eliminar vehículo"
+                >
+                  <Trash2 className="w-4 h-4 shrink-0" />
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Modal Registrar Nuevo Vehículo */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>

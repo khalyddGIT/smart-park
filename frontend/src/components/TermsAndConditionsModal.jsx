@@ -116,7 +116,7 @@ Smart-Park no es propietario de los inmuebles físicos de estacionamiento (salvo
                 onClick={handlePrint}
                 className="text-xs font-bold text-slate-700 rounded-xl gap-1.5 cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5 text-slate-500" />
+                <Printer className="w-4 h-4 shrink-0 text-slate-500" />
                 <span>Imprimir / PDF</span>
               </Button>
             </div>

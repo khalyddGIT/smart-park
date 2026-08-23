@@ -33,7 +33,7 @@ const DEFAULT_FALLBACK_ELEMENTS = [
   { id: 7, type: 'gate', x: 40, y: 300, w: 30, h: 100, rot: 0, label: 'ACCESO GARITA ANPR' },
   
   // Fila Superior
-  { id: 8, type: 'slot', x: 60, y: 60, w: 85, h: 160, rot: 0, code: 'A-01', status: 'free', slotType: 'pmr', shaded: true },
+  { id: 8, type: 'slot', x: 60, y: 60, w: 85, h: 160, rot: 0, code: 'A-01', status: 'free', slotType: 'standard', shaded: true },
   { id: 9, type: 'slot', x: 155, y: 60, w: 85, h: 160, rot: 0, code: 'A-02', status: 'free', slotType: 'standard', shaded: true },
   { id: 10, type: 'slot', x: 250, y: 60, w: 85, h: 160, rot: 0, code: 'A-03', status: 'occupied', slotType: 'standard', plate: 'XYZ-789', shaded: true },
   { id: 11, type: 'slot', x: 345, y: 60, w: 85, h: 160, rot: 0, code: 'A-04', status: 'free', slotType: 'standard', shaded: true },
@@ -45,7 +45,7 @@ const DEFAULT_FALLBACK_ELEMENTS = [
   { id: 17, type: 'slot', x: 915, y: 60, w: 85, h: 160, rot: 0, code: 'A-10', status: 'free', slotType: 'moto', shaded: true },
 
   // Fila Inferior
-  { id: 18, type: 'slot', x: 60, y: 470, w: 85, h: 160, rot: 0, code: 'B-01', status: 'free', slotType: 'pmr', shaded: false },
+  { id: 18, type: 'slot', x: 60, y: 470, w: 85, h: 160, rot: 0, code: 'B-01', status: 'free', slotType: 'standard', shaded: false },
   { id: 19, type: 'slot', x: 155, y: 470, w: 85, h: 160, rot: 0, code: 'B-02', status: 'free', slotType: 'standard', shaded: false },
   { id: 20, type: 'slot', x: 250, y: 470, w: 85, h: 160, rot: 0, code: 'B-03', status: 'occupied', slotType: 'standard', plate: 'W1P-404', shaded: false },
   { id: 21, type: 'slot', x: 345, y: 470, w: 85, h: 160, rot: 0, code: 'B-04', status: 'free', slotType: 'standard', shaded: false },
@@ -233,7 +233,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{parking?.name || 'Smart Park Central'}</h2>
           <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-            <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> 
+            <MapPin className="w-4 h-4 shrink-0 text-emerald-600 shrink-0" /> 
             <span>{parking?.address || 'Portal Unión 42, Centro Histórico'}, {parking?.city || 'Ayacucho - Huamanga'}</span>
           </p>
         </div>
@@ -256,19 +256,19 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
         <div className="flex items-center space-x-4 flex-wrap gap-y-1">
           <span className="text-slate-400 font-bold uppercase text-[10px]">Leyenda:</span>
           <div className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded-md bg-emerald-500 shadow-sm" />
+            <span className="w-4 h-4 shrink-0 rounded-md bg-emerald-500 shadow-sm" />
             <span>Disponible</span>
           </div>
           <div className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded-md bg-rose-500" />
+            <span className="w-4 h-4 shrink-0 rounded-md bg-rose-500" />
             <span className="text-slate-400">Ocupado</span>
           </div>
           <div className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded-md bg-blue-500" />
+            <span className="w-4 h-4 shrink-0 rounded-md bg-blue-500" />
             <span>Preferencial</span>
           </div>
           <div className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded-md bg-amber-600" />
+            <span className="w-4 h-4 shrink-0 rounded-md bg-amber-600" />
             <span>Techado</span>
           </div>
         </div>
@@ -355,19 +355,16 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
                     <div className="flex items-center justify-between text-[10px] font-mono font-black z-10 leading-none pr-2">
                       <span className="text-white drop-shadow-sm">{el.code}</span>
-                      {isPMR && <span className="text-blue-400 font-bold text-[7px] bg-blue-950 px-1 rounded border border-blue-800">♿ PMR</span>}
                       {isShaded && <span className="text-amber-300 text-[7px] font-bold bg-amber-950 px-1 rounded border border-amber-800">⛱️ TECH</span>}
                       {isMoto && <span className="text-orange-300 font-bold text-[7px] bg-orange-950 px-1 rounded border border-orange-800">🏍️ MOTO</span>}
                     </div>
 
                     {/* Stencil Icono */}
                     <div className="flex items-center justify-center my-auto py-0.5 pointer-events-none z-10">
-                      {isPMR ? (
-                        <Accessibility className="w-4 h-4 text-blue-400/40" />
-                      ) : isMoto ? (
-                        <Bike className="w-3.5 h-3.5 text-orange-400/40" />
+                      {isMoto ? (
+                        <Bike className="w-4 h-4 shrink-0 text-orange-400/40" />
                       ) : (
-                        <Car className="w-3.5 h-3.5 text-emerald-400/30" />
+                        <Car className="w-4 h-4 shrink-0 text-emerald-400/30" />
                       )}
                     </div>
 
@@ -514,7 +511,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       }`}
                     >
                       <span>{s.code}</span>
-                      <span>{s.slotType === 'pmr' ? '♿' : s.shaded ? '⛱️' : ''}</span>
+                      <span>{s.shaded ? '⛱️' : ''}</span>
                     </button>
                   );
                 })}
@@ -530,7 +527,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 </div>
                 <div className="text-right">
                   <span className="text-xs font-bold text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-xl block font-mono border border-emerald-500/30">
-                    {selectedSlot.slotType === 'pmr' ? '♿ Preferencial' : selectedSlot.shaded ? '⛱️ Techado' : '🚗 Estándar'}
+                    {selectedSlot.shaded ? '⛱️ Techado' : '🚗 Estándar'}
                   </span>
                   <span className="text-[10px] text-emerald-400 font-bold mt-1 block flex items-center justify-end gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -554,24 +551,63 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </select>
             </div>
 
-            {/* Selector de Duración */}
+            {/* Selector de Duración Personalizable */}
             <div>
-              <label className="text-xs font-extrabold text-slate-300 block mb-1.5">Tiempo de Permanencia Estimado</label>
-              <div className="grid grid-cols-4 gap-2">
-                {[1, 2, 3, 4].map(h => (
+              <label className="text-xs font-bold text-slate-300 block mb-1.5 flex items-center justify-between">
+                <span>Duración Estimada (Horas)</span>
+                <span className="text-[10px] text-slate-500 font-mono">Personalizable</span>
+              </label>
+              <div className="flex items-center gap-2">
+                {/* Stepper + Input Numérico para ingresar cualquier hora */}
+                <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl overflow-hidden h-10 px-1 shrink-0">
                   <button
-                    key={h}
                     type="button"
-                    onClick={() => setHours(h)}
-                    className={`py-2.5 rounded-xl text-xs font-bold transition cursor-pointer font-mono ${
-                      hours === h 
-                        ? 'bg-emerald-500 text-slate-950 font-extrabold shadow-md shadow-emerald-500/20' 
-                        : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
+                    onClick={() => setHours(prev => Math.max(1, (Number(prev) || 1) - 1))}
+                    className="w-8 h-8 flex items-center justify-center text-slate-300 hover:bg-slate-800 rounded-lg text-sm font-bold transition cursor-pointer"
+                    title="Restar 1 hora"
                   >
-                    {h} {h === 1 ? 'Hora' : 'Horas'}
+                    -
                   </button>
-                ))}
+                  <input
+                    type="number"
+                    min="1"
+                    max="168"
+                    value={hours}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val >= 1) setHours(val);
+                      else if (e.target.value === '') setHours('');
+                    }}
+                    className="w-12 text-center bg-transparent text-xs font-mono font-bold text-white outline-none"
+                    placeholder="1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setHours(prev => Math.min(168, (Number(prev) || 1) + 1))}
+                    className="w-8 h-8 flex items-center justify-center text-slate-300 hover:bg-slate-800 rounded-lg text-sm font-bold transition cursor-pointer"
+                    title="Sumar 1 hora"
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Sugerencias Rápidas */}
+                <div className="flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-none">
+                  {[1, 2, 4, 8, 12, 24].map(h => (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={() => setHours(h)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer font-mono shrink-0 ${
+                        Number(hours) === h 
+                          ? 'bg-slate-800 text-white font-extrabold border border-slate-700 shadow-xs' 
+                          : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      {h}h
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -579,7 +615,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
                 <span>Tarifa Base:</span>
-                <span className="text-slate-200">S/ {(parking?.rate || 5.0).toFixed(2)} × {hours}h</span>
+                <span className="text-slate-200">S/ {(parking?.rate || 5.0).toFixed(2)} × {hours || 1}h</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Tolerancia de Gracia:</span>
@@ -588,7 +624,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               <div className="h-px bg-slate-800 my-1" />
               <div className="flex justify-between text-sm font-extrabold text-white">
                 <span>Total a Liquidar:</span>
-                <span className="text-emerald-400 font-mono text-base font-extrabold">S/ {((parking?.rate || 5.0) * hours).toFixed(2)}</span>
+                <span className="text-emerald-400 font-mono text-base font-extrabold">S/ {((parking?.rate || 5.0) * (Number(hours) || 1)).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -606,9 +642,6 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               <span>Reservar Cajón — Pagarás al salir (S/ {(parking?.rate || 5.0).toFixed(2)}/h)</span>
               <ChevronRight className="w-4 h-4 text-slate-950" />
             </Button>
-            <p className="text-[11px] text-slate-400 text-center font-medium">
-              Tu pase QR quedará activo. El cobro se calculará al salir según el tiempo real de estancia.
-            </p>
           </div>
         </div>
       </div>

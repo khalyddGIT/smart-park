@@ -589,7 +589,7 @@ export const PlatformSettingsModule = () => {
               onClick={() => setShowBroadcastModal(true)}
               className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl h-9 px-4 cursor-pointer gap-1.5"
             >
-              <Send className="w-3.5 h-3.5" />
+              <Send className="w-4 h-4 shrink-0" />
               <span>Nuevo Comunicado</span>
             </Button>
           </div>
@@ -623,7 +623,7 @@ export const PlatformSettingsModule = () => {
                         className="text-slate-300 hover:text-rose-600 p-1 rounded-lg transition cursor-pointer"
                         title="Eliminar registro"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4 shrink-0" />
                       </button>
                     </div>
                   </div>

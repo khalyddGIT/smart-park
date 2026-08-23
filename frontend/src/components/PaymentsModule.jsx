@@ -380,7 +380,7 @@ export const PaymentsModule = () => {
                   onClick={() => openReceipt(t)} 
                   className="font-bold text-xs gap-1.5 border-slate-300 rounded-xl h-9 hover:bg-slate-50"
                 >
-                  <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                  <FileText className="w-4 h-4 shrink-0 text-emerald-600" />
                   <span>Ver Boleta</span>
                 </Button>
               </div>

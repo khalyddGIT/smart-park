@@ -278,7 +278,7 @@ export const CulqiPaymentModal = ({
         {/* Cabecera Culqi */}
         <DialogHeader className="border-b border-slate-100 pb-3 space-y-1">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2.5">
+            <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm">
                 C
               </div>
@@ -302,7 +302,7 @@ export const CulqiPaymentModal = ({
           <div className="py-2 space-y-4 animate-in fade-in">
             <div className="text-center space-y-1.5">
               <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
-                <CheckCircle2 className="w-7 h-7" />
+                <CheckCircle2 className="w-7 h-7 shrink-0" />
               </div>
               <h3 className="text-lg font-black text-slate-900">¡Pago Aprobado por Culqi!</h3>
               <p className="text-xs text-slate-500">Tu transacción fue autorizada satisfactoriamente.</p>
@@ -362,7 +362,7 @@ export const CulqiPaymentModal = ({
                 onClick={() => window.print()}
                 className="flex-1 py-3 text-xs font-bold gap-1.5 rounded-2xl border-slate-300 cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5 text-slate-600" />
+                <Printer className="w-4 h-4 shrink-0 text-slate-600" />
                 <span>Imprimir Voucher</span>
               </Button>
               <Button
@@ -386,7 +386,7 @@ export const CulqiPaymentModal = ({
                   activeMethod === 'card' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                <CreditCard className="w-4 h-4 shrink-0 text-emerald-600" />
                 <span>Tarjeta</span>
               </button>
 
@@ -397,7 +397,7 @@ export const CulqiPaymentModal = ({
                   activeMethod === 'yape' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                 }}`}
               >
-                <Smartphone className="w-3.5 h-3.5 text-purple-600" />
+                <Smartphone className="w-4 h-4 shrink-0 text-purple-600" />
                 <span>Yape</span>
               </button>
 
@@ -408,7 +408,7 @@ export const CulqiPaymentModal = ({
                   activeMethod === 'plin' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                 }}`}
               >
-                <QrCode className="w-3.5 h-3.5 text-sky-600" />
+                <QrCode className="w-4 h-4 shrink-0 text-sky-600" />
                 <span>Plin</span>
               </button>
 
@@ -419,7 +419,7 @@ export const CulqiPaymentModal = ({
                   activeMethod === 'pagoefectivo' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                 }}`}
               >
-                <Building className="w-3.5 h-3.5 text-amber-600" />
+                <Building className="w-4 h-4 shrink-0 text-amber-600" />
                 <span>Agentes CIP</span>
               </button>
             </div>
@@ -441,8 +441,8 @@ export const CulqiPaymentModal = ({
                       {getCardBrand(cardNumber)}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-7 h-5 rounded bg-amber-400/80 border border-amber-300 flex items-center justify-center">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-5 shrink-0 rounded bg-amber-400/80 border border-amber-300 flex items-center justify-center">
                       <div className="w-4 h-3 border border-amber-600 rounded-xs opacity-60" />
                     </div>
                     <span className="text-xs font-mono text-slate-400">••••</span>
@@ -486,7 +486,7 @@ export const CulqiPaymentModal = ({
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Número de Tarjeta *</label>
                     <div className="relative">
-                      <CreditCard className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                      <CreditCard className="w-4 h-4 shrink-0 absolute left-3 top-3 text-slate-400" />
                       <Input
                         type="text"
                         placeholder="4242 4242 4242 4242"
@@ -527,7 +527,7 @@ export const CulqiPaymentModal = ({
                           onClick={() => setShowCVV(!showCVV)}
                           className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
                         >
-                          {showCVV ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          {showCVV ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
                         </button>
                       </div>
                     </div>
@@ -559,13 +559,13 @@ export const CulqiPaymentModal = ({
                         <option value={6}>6 Cuotas</option>
                       </select>
                     </div>
-                    <div className="flex items-center space-x-2 pt-4">
+                    <div className="flex items-center gap-2 pt-4">
                       <input
                         type="checkbox"
                         id="saveCard"
                         checked={saveCard}
                         onChange={(e) => setSaveCard(e.target.checked)}
-                        className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                        className="w-4 h-4 shrink-0 accent-emerald-600 rounded cursor-pointer"
                       />
                       <label htmlFor="saveCard" className="text-xs text-slate-700 font-medium cursor-pointer">
                         Recordar para 1-clic
@@ -580,14 +580,14 @@ export const CulqiPaymentModal = ({
                   >
                     {isProcessing ? (
                       <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <RefreshCw className="w-4 h-4 shrink-0 animate-spin" />
                         <span>{processingStep}</span>
                       </>
                     ) : (
                       <>
-                        <Lock className="w-4 h-4 text-emerald-200" />
+                        <Lock className="w-4 h-4 shrink-0 text-emerald-200" />
                         <span>Pagar S/ {Number(amount).toFixed(2)} con Culqi</span>
-                        <ArrowRight className="w-4 h-4 text-emerald-200" />
+                        <ArrowRight className="w-4 h-4 shrink-0 text-emerald-200" />
                       </>
                     )}
                   </Button>
@@ -616,7 +616,7 @@ export const CulqiPaymentModal = ({
                   </div>
                 </div>
                 <Button type="button" onClick={handleProcessPayment} disabled={isProcessing} className="w-full py-4 text-xs font-black bg-purple-700 hover:bg-purple-600 text-white rounded-2xl cursor-pointer shadow-md gap-2">
-                  <AlertCircle className="w-4 h-4" />
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>Intentar cobro Yape (mostrará error honesto)</span>
                 </Button>
               </div>
@@ -631,12 +631,12 @@ export const CulqiPaymentModal = ({
                   <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border-2 border-sky-300 shadow-md flex items-center justify-center relative opacity-50">
                     <QrCode className="w-28 h-28 text-slate-800" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-7 h-7 bg-sky-600 text-white font-black text-[10px] rounded-lg flex items-center justify-center">PLIN</div>
+                      <div className="w-7 h-7 shrink-0 bg-sky-600 text-white font-black text-[10px] rounded-lg flex items-center justify-center">PLIN</div>
                     </div>
                   </div>
                 </div>
                 <Button type="button" onClick={handleProcessPayment} disabled={isProcessing} className="w-full py-4 text-xs font-black bg-sky-600 hover:bg-sky-500 text-white rounded-2xl cursor-pointer shadow-md gap-2">
-                  <AlertCircle className="w-4 h-4" />
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>Intentar cobro Plin (mostrará error honesto)</span>
                 </Button>
               </div>
@@ -657,13 +657,13 @@ export const CulqiPaymentModal = ({
                       <span className="text-lg font-black text-slate-900 tracking-wider">{cipCode}</span>
                     </div>
                     <button type="button" onClick={handleCopyCIP} className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold rounded-xl flex items-center gap-1 cursor-pointer transition">
-                      {copiedCIP ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedCIP ? <Check className="w-4 h-4 shrink-0 text-emerald-600" /> : <Copy className="w-4 h-4 shrink-0" />}
                       <span>{copiedCIP ? 'Copiado' : 'Copiar'}</span>
                     </button>
                   </div>
                 </div>
                 <Button type="button" onClick={handleProcessPayment} disabled={isProcessing} className="w-full py-4 text-xs font-black bg-amber-600 hover:bg-amber-500 text-white rounded-2xl cursor-pointer shadow-md gap-2">
-                  <AlertCircle className="w-4 h-4" />
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>Intentar validación (mostrará error honesto)</span>
                 </Button>
               </div>
@@ -671,7 +671,7 @@ export const CulqiPaymentModal = ({
 
             {/* Footer de Seguridad */}
             <div className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1.5 pt-1 border-t border-slate-100">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>Transacción cifrada con Culqi v4 • pk_test_W5Sh… (el secreto nunca se expone en el cliente)</span>
             </div>
 

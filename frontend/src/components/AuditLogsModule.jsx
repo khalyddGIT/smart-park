@@ -214,19 +214,19 @@ export const AuditLogsModule = () => {
                 <th onClick={() => handleSort('id')} className="p-3.5 cursor-pointer select-none hover:text-slate-900">
                   <div className="flex items-center gap-1">
                     <span>ID Log</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                    <ArrowUpDown className="w-4 h-4 shrink-0 text-slate-400" />
                   </div>
                 </th>
                 <th onClick={() => handleSort('timestamp')} className="p-3.5 cursor-pointer select-none hover:text-slate-900">
                   <div className="flex items-center gap-1">
                     <span>Fecha & Hora</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                    <ArrowUpDown className="w-4 h-4 shrink-0 text-slate-400" />
                   </div>
                 </th>
                 <th onClick={() => handleSort('operator')} className="p-3.5 cursor-pointer select-none hover:text-slate-900">
                   <div className="flex items-center gap-1">
                     <span>Operador / Origen</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                    <ArrowUpDown className="w-4 h-4 shrink-0 text-slate-400" />
                   </div>
                 </th>
                 <th className="p-3.5">Acción Ejecutada</th>
@@ -234,7 +234,7 @@ export const AuditLogsModule = () => {
                 <th onClick={() => handleSort('severity')} className="p-3.5 cursor-pointer select-none hover:text-slate-900">
                   <div className="flex items-center gap-1">
                     <span>Nivel</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                    <ArrowUpDown className="w-4 h-4 shrink-0 text-slate-400" />
                   </div>
                 </th>
                 <th className="p-3.5">Terminal / IP</th>
@@ -276,7 +276,7 @@ export const AuditLogsModule = () => {
               variant="outline"
               className="h-8 px-2.5 text-xs gap-1"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="w-4 h-4 shrink-0" />
               <span>Anterior</span>
             </Button>
             <Button
@@ -287,7 +287,7 @@ export const AuditLogsModule = () => {
               className="h-8 px-2.5 text-xs gap-1"
             >
               <span>Siguiente</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-4 h-4 shrink-0" />
             </Button>
           </div>
         </div>

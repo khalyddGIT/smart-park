@@ -220,7 +220,7 @@ export const AffiliatedParkingsModule = () => {
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Building2 className="w-3.5 h-3.5" />
+            <Building2 className="w-4 h-4 shrink-0" />
             <span>Sedes Activas ({establishments.length})</span>
           </button>
           <button
@@ -231,7 +231,7 @@ export const AffiliatedParkingsModule = () => {
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Inbox className="w-3.5 h-3.5" />
+            <Inbox className="w-4 h-4 shrink-0" />
             <span>Solicitudes de Afiliación</span>
             {pendingRequestsCount > 0 && (
               <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center animate-pulse">
@@ -261,7 +261,7 @@ export const AffiliatedParkingsModule = () => {
                 <option value="mantenimiento">En Mantenimiento</option>
               </select>
               <div className="relative flex-1 sm:w-64">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 shrink-0 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <Input
                   type="text"
                   placeholder="Buscar sede o dirección..."
@@ -300,7 +300,7 @@ export const AffiliatedParkingsModule = () => {
 
                     <h3 className="font-extrabold text-slate-900 text-base mb-1">{p.name}</h3>
                     <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <MapPin className="w-4 h-4 shrink-0 text-slate-400 shrink-0" />
                       <span className="truncate">{p.city || 'Ayacucho'} • {p.address}</span>
                     </p>
 
@@ -320,7 +320,7 @@ export const AffiliatedParkingsModule = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 pt-3 border-t border-slate-100">
+                  <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                     <Button 
                       onClick={() => toggleStatus(p.id)} 
                       variant="outline" 
@@ -394,9 +394,9 @@ export const AffiliatedParkingsModule = () => {
                             ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                             : 'bg-rose-100 text-rose-800 border border-rose-300'
                         }`}>
-                          {isPending && <Clock className="w-3 h-3" />}
-                          {isApproved && <CheckCircle2 className="w-3 h-3" />}
-                          {!isPending && !isApproved && <XCircle className="w-3 h-3" />}
+                          {isPending && <Clock className="w-4 h-4 shrink-0" />}
+                          {isApproved && <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                          {!isPending && !isApproved && <XCircle className="w-4 h-4 shrink-0" />}
                           <span>{req.status === 'PENDING' ? 'Pendiente de Aprobación' : req.status === 'APPROVED' ? 'Aprobada & Activa' : 'Rechazada'}</span>
                         </span>
 

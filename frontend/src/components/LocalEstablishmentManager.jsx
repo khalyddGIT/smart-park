@@ -125,7 +125,7 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords }) => {
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs">
         <span className="font-bold text-slate-700 flex items-center gap-1.5">
-          <Navigation className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+          <Navigation className="w-4 h-4 shrink-0 text-emerald-600 animate-pulse" />
           <span>Fijar punto en el mapa de Ayacucho (Haz clic en cualquier calle o arrastra el pin):</span>
         </span>
         <span className="font-mono text-[11px] text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg font-bold border border-slate-200">
@@ -465,8 +465,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold animate-bounce">
-          <Check className="w-4 h-4 text-emerald-400" />
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-bounce">
+          <Check className="w-4 h-4 shrink-0 text-emerald-400" />
           <span>{notification}</span>
         </div>
       )}
@@ -481,7 +481,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5 leading-tight">
                 <span className="p-2 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20 shrink-0">
-                  <Building2 className="w-5 h-5" />
+                  <Building2 className="w-5 h-5 shrink-0" />
                 </span>
                 <span className="truncate">Gestión de Sedes & Establecimientos</span>
               </h1>
@@ -562,7 +562,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       <div>
                         <h3 className="font-extrabold text-slate-900 text-base leading-tight">{est.name}</h3>
                         <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                          <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
                           <span className="truncate">{est.address} {est.reference ? `(${est.reference})` : ''}</span>
                         </p>
                       </div>
@@ -570,7 +570,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       {/* Coordenadas & Enlace de Mapa */}
                       <div className={`flex items-center justify-between gap-2 text-[11px] p-2.5 rounded-xl border font-mono ${est.latitude ? 'bg-blue-50/50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
                         <span className={`flex items-center gap-1.5 truncate ${est.latitude ? 'text-slate-700' : 'text-slate-400'}`}>
-                          <Navigation className={`w-3.5 h-3.5 shrink-0 ${est.latitude ? 'text-blue-600' : 'text-slate-400'}`} />
+                          <Navigation className={`w-4 h-4 shrink-0 ${est.latitude ? 'text-blue-600' : 'text-slate-400'}`} />
                           <span className="truncate">{est.latitude ? `${Number(est.latitude).toFixed(4)}, ${Number(est.longitude).toFixed(4)}` : 'Sin GPS configurado'}</span>
                         </span>
                         {est.latitude ? (
@@ -581,7 +581,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 shrink-0 bg-white px-2 py-1 rounded-lg border border-emerald-200 hover:bg-emerald-50 transition whitespace-nowrap"
                           >
                             <span>Maps</span>
-                            <ExternalLink className="w-3 h-3" />
+                            <ExternalLink className="w-4 h-4 shrink-0" />
                           </a>
                         ) : (
                           <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg font-bold whitespace-nowrap">Configurar</span>
@@ -598,13 +598,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-[11px] hover:bg-emerald-700 transition shadow-sm"
                             >
-                              <MessageSquare className="w-3 h-3" />
+                              <MessageSquare className="w-4 h-4 shrink-0" />
                               <span>WhatsApp</span>
                             </a>
                           )}
                           {est.phone && (
                             <span className="inline-flex items-center gap-1.5 text-slate-700 text-[11px] font-mono bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl">
-                              <Phone className="w-3 h-3 text-slate-500 shrink-0" />
+                              <Phone className="w-4 h-4 shrink-0 text-slate-500" />
                               <span>{est.phone}</span>
                             </span>
                           )}
@@ -667,14 +667,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       {activeViewMode === 'viewer_2d' && selectedEstablishment && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveViewMode('list')}
                 className="font-bold text-xs gap-1.5 rounded-xl"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-4 h-4 shrink-0" />
                 <span>Volver al Padrón</span>
               </Button>
               <div>
@@ -687,7 +687,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               onClick={() => setActiveViewMode('editor_cad')}
               className="bg-slate-900 hover:bg-slate-800 text-white font-black text-xs gap-1.5 shadow-sm rounded-xl"
             >
-              <Grid className="w-3.5 h-3.5 text-emerald-400" />
+              <Grid className="w-4 h-4 shrink-0 text-emerald-400" />
               <span>Abrir en Modo Edición CAD</span>
             </Button>
           </div>
@@ -704,14 +704,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       {activeViewMode === 'editor_cad' && selectedEstablishment && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveViewMode('list')}
                 className="font-bold text-xs gap-1.5 rounded-xl"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-4 h-4 shrink-0" />
                 <span>Volver al Padrón</span>
               </Button>
               <div>
@@ -738,19 +738,19 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           
           {/* Header Superior */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveViewMode('list')}
                 className="font-bold text-xs gap-1.5 rounded-xl h-9 text-slate-700"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-4 h-4 shrink-0" />
                 <span>Volver al Padrón</span>
               </Button>
               <div>
                 <h1 className="text-xl font-black text-slate-900 leading-tight flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-emerald-600" />
+                  <Building2 className="w-5 h-5 shrink-0 text-emerald-600" />
                   <span>{isEditingNew ? 'Registrar Nueva Sede' : `Editar Sede: ${formData.name || 'Establecimiento'}`}</span>
                 </h1>
                 <p className="text-xs text-slate-500">
@@ -759,7 +759,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -773,14 +773,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 onClick={handleSaveForm}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl h-9 px-5 gap-1.5 shadow-md shadow-emerald-600/20"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-4 h-4 shrink-0" />
                 <span>{isEditingNew ? 'Guardar Nueva Sede' : 'Guardar Todos los Cambios'}</span>
               </Button>
             </div>
           </div>
 
           {/* Navegación por Secciones (Solo las 4 pedidas) */}
-          <div className="flex items-center space-x-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveTabSection('general')}
@@ -790,7 +790,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Building2 className="w-4 h-4 text-emerald-600" />
+              <Building2 className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>1. Datos del Local & Tarifas</span>
             </button>
 
@@ -803,7 +803,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <ImageIcon className="w-4 h-4 text-emerald-600" />
+              <ImageIcon className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>2. Imagen del Local</span>
             </button>
 
@@ -816,7 +816,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <MapPin className="w-4 h-4 text-emerald-600" />
+              <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>3. Ubicación & Coordenadas en Mapa</span>
             </button>
 
@@ -829,7 +829,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Share2 className="w-4 h-4 text-emerald-600" />
+              <Share2 className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>4. Redes Sociales & Contacto</span>
             </button>
           </div>
@@ -989,7 +989,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-5">
                       <span className="text-white text-xs font-bold drop-shadow-md flex items-center gap-1.5">
-                        <ImageIcon className="w-4 h-4 text-emerald-400" />
+                        <ImageIcon className="w-4 h-4 shrink-0 text-emerald-400" />
                         <span>Vista previa de la foto</span>
                       </span>
                     </div>
@@ -997,9 +997,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                   {/* Carga de archivo desde PC */}
                   <div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-2">
                       <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                        <Upload className="w-6 h-6" />
+                        <Upload className="w-6 h-6 shrink-0" />
                       </div>
                       <div>
                         <p className="text-xs font-extrabold text-slate-900">Cargar foto desde tu dispositivo</p>
@@ -1055,7 +1055,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           <img src={img.url} alt={img.label} className="w-full h-full object-cover group-hover:scale-110 transition" />
                           {formData.image === img.url && (
                             <div className="absolute inset-0 bg-emerald-600/40 flex items-center justify-center">
-                              <Check className="w-5 h-5 text-white" />
+                              <Check className="w-5 h-5 shrink-0 text-white" />
                             </div>
                           )}
                         </button>
@@ -1076,7 +1076,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   {/* Pegar enlace de Google Maps */}
                   <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl space-y-2">
                     <label className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
-                      <Globe className="w-4 h-4 text-emerald-600" />
+                      <Globe className="w-4 h-4 shrink-0 text-emerald-600" />
                       <span>Pegar Enlace de Google Maps (Extrae las coordenadas automáticamente):</span>
                     </label>
                     <Input
@@ -1118,7 +1118,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         disabled={gpsLocating}
                         className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl h-10 gap-1.5"
                       >
-                        <LocateFixed className={`w-3.5 h-3.5 text-emerald-400 ${gpsLocating ? 'animate-spin' : ''}`} />
+                        <LocateFixed className={`w-4 h-4 shrink-0 text-emerald-400 ${gpsLocating ? 'animate-spin' : ''}`} />
                         <span>{gpsLocating ? 'Detectando GPS...' : '📍 Detectar GPS Actual'}</span>
                       </Button>
                     </div>
@@ -1144,7 +1144,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           }}
                           className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 border border-slate-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                         >
-                          <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                          <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
                           <span>{loc.name}</span>
                         </button>
                       ))}
@@ -1179,7 +1179,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     <div>
                       <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono Fijo o Celular</label>
                       <div className="relative">
-                        <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                        <Phone className="w-4 h-4 shrink-0 text-slate-400 absolute left-3.5 top-3" />
                         <Input
                           placeholder="+51 966 123 456"
                           value={formData.phone}
@@ -1192,7 +1192,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     <div>
                       <label className="text-xs font-bold text-slate-700 block mb-1">Número de WhatsApp (Consultas)</label>
                       <div className="relative">
-                        <MessageSquare className="w-4 h-4 text-emerald-600 absolute left-3.5 top-3" />
+                        <MessageSquare className="w-4 h-4 shrink-0 text-emerald-600 absolute left-3.5 top-3" />
                         <Input
                           placeholder="51966123456"
                           value={formData.whatsapp}
@@ -1206,7 +1206,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Correo Electrónico de Contacto</label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                      <Mail className="w-4 h-4 shrink-0 text-slate-400 absolute left-3.5 top-3" />
                       <Input
                         type="email"
                         placeholder="contacto@cochera.pe"
@@ -1219,7 +1219,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                   <div className="border-t border-slate-100 pt-4 space-y-4">
                     <h4 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
-                      <Share2 className="w-4 h-4 text-emerald-600" />
+                      <Share2 className="w-4 h-4 shrink-0 text-emerald-600" />
                       <span>Redes Sociales & Enlaces</span>
                     </h4>
 
@@ -1295,7 +1295,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   onClick={handleSaveForm} 
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl px-6 h-10 shadow-md shadow-emerald-600/20 gap-2"
                 >
-                  <Save className="w-4 h-4" />
+                  <Save className="w-4 h-4 shrink-0" />
                   <span>{isEditingNew ? 'Registrar Sede' : 'Guardar Ficha Completa'}</span>
                 </Button>
               </div>
@@ -1340,7 +1340,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         {formData.name || 'Nombre del Estacionamiento'}
                       </h3>
                       <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> 
+                        <MapPin className="w-4 h-4 shrink-0 text-emerald-600" /> 
                         <span className="truncate">{formData.address || 'Dirección en Huamanga'} {formData.reference ? `(${formData.reference})` : ''}</span>
                       </p>
                     </div>
@@ -1349,7 +1349,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     {formData.whatsapp && (
                       <div className="pt-0.5">
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                          <MessageSquare className="w-3 h-3 text-emerald-600" />
+                          <MessageSquare className="w-4 h-4 shrink-0 text-emerald-600" />
                           <span>WhatsApp: {formData.whatsapp}</span>
                         </span>
                       </div>
@@ -1360,7 +1360,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 <div className="p-5 pt-0">
                   <div className="w-full py-2.5 text-center font-bold text-xs bg-slate-900 text-white rounded-xl shadow-sm flex items-center justify-center gap-1.5">
                     <span>Ver Plano & Reservar Plaza</span>
-                    <ChevronRight className="w-4 h-4 text-emerald-400" />
+                    <ChevronRight className="w-4 h-4 shrink-0 text-emerald-400" />
                   </div>
                 </div>
               </Card>

@@ -864,8 +864,8 @@ export const InteractiveFloorPlanDrawingStudio = ({
         
         {/* Presets de Terreno */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center space-x-1.5 bg-slate-800/80 px-3 py-1.5 rounded-2xl border border-slate-700">
-            <Layers className="w-4 h-4 text-emerald-400" />
+          <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-2xl border border-slate-700">
+            <Layers className="w-4 h-4 shrink-0 text-emerald-400" />
             <span className="text-xs font-bold font-tech uppercase text-slate-300">Lote:</span>
           </div>
 
@@ -898,7 +898,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
             className="rounded-2xl border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-bold gap-1.5 h-8"
             title="Renumera automáticamente todas las plazas en orden espacial"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <Sparkles className="w-4 h-4 shrink-0 text-amber-400" />
             <span>Auto-Numerar</span>
           </Button>
         </div>
@@ -913,7 +913,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
               className="p-1.5 hover:bg-slate-800 rounded-xl disabled:opacity-30 text-slate-300 transition"
               title="Deshacer"
             >
-              <Undo className="w-4 h-4" />
+              <Undo className="w-4 h-4 shrink-0" />
             </button>
             <button
               onClick={handleRedo}
@@ -921,36 +921,36 @@ export const InteractiveFloorPlanDrawingStudio = ({
               className="p-1.5 hover:bg-slate-800 rounded-xl disabled:opacity-30 text-slate-300 transition"
               title="Rehacer"
             >
-              <Redo className="w-4 h-4" />
+              <Redo className="w-4 h-4 shrink-0" />
             </button>
           </div>
 
           {/* Toggle de Imantación (Snap to Grid) */}
           <button
             onClick={() => setSnapToGrid(!snapToGrid)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold border transition ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl text-xs font-bold border transition ${
               snapToGrid 
                 ? 'bg-emerald-950/70 text-emerald-400 border-emerald-700 shadow-sm' 
                 : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
             }`}
             title="Activar o desactivar imantación a cuadrícula (20px)"
           >
-            <Magnet className="w-3.5 h-3.5" />
+            <Magnet className="w-4 h-4 shrink-0" />
             <span>Snap Rejilla</span>
           </button>
 
           {/* Controles Profesionales de Zoom */}
-          <div className="flex items-center bg-slate-950/80 px-2 py-1 rounded-2xl border border-slate-800 text-xs font-tech text-slate-300 space-x-1 shadow-inner">
+          <div className="flex items-center bg-slate-950/80 px-2 py-1 rounded-2xl border border-slate-800 text-xs font-tech text-slate-300 gap-2 shadow-inner">
             <button 
               onClick={() => setZoom(Math.max(40, zoom - 10))} 
               className="p-1 hover:bg-slate-800 rounded-lg text-slate-300 transition hover:text-white"
               title="Alejar Zoom (Ctrl + Scroll Abajo)"
             >
-              <ZoomOut className="w-3.5 h-3.5" />
+              <ZoomOut className="w-4 h-4 shrink-0" />
             </button>
 
             {/* Presets Rápidos de Zoom */}
-            <div className="flex items-center space-x-0.5 px-1 font-mono font-bold">
+            <div className="flex items-center gap-2 px-1 font-mono font-bold">
               {[50, 75, 100, 125].map((z) => (
                 <button
                   key={z}
@@ -971,15 +971,15 @@ export const InteractiveFloorPlanDrawingStudio = ({
               className="p-1 hover:bg-slate-800 rounded-lg text-slate-300 transition hover:text-white"
               title="Acercar Zoom (Ctrl + Scroll Arriba)"
             >
-              <ZoomIn className="w-3.5 h-3.5" />
+              <ZoomIn className="w-4 h-4 shrink-0" />
             </button>
 
             <button 
               onClick={handleFitToScreen} 
-              className="px-2 py-1 bg-slate-800/90 hover:bg-emerald-950 hover:text-emerald-300 rounded-xl text-emerald-400 font-bold text-[10px] flex items-center space-x-1 border border-slate-700 transition ml-1"
+              className="px-2 py-1 bg-slate-800/90 hover:bg-emerald-950 hover:text-emerald-300 rounded-xl text-emerald-400 font-bold text-[10px] flex items-center gap-2 border border-slate-700 transition ml-1"
               title="Ajustar plano a la pantalla"
             >
-              <Maximize2 className="w-3 h-3" />
+              <Maximize2 className="w-4 h-4 shrink-0" />
               <span>Ajustar</span>
             </button>
           </div>
@@ -992,7 +992,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
             </span>
           ) : (
             <span className="text-[11px] font-tech font-bold text-emerald-400 flex items-center gap-1.5 bg-emerald-950/50 px-2.5 py-1.5 rounded-2xl border border-emerald-800/80">
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <Check className="w-4 h-4 shrink-0 text-emerald-400" />
               <span>Sincronizado</span>
             </span>
           )}
@@ -1004,7 +1004,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
               size="sm"
               className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs gap-1.5 px-4 h-9 rounded-2xl shadow-lg shadow-emerald-500/20"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-4 h-4 shrink-0" />
               <span>Guardar Cambios</span>
             </Button>
           )}
@@ -1021,14 +1021,14 @@ export const InteractiveFloorPlanDrawingStudio = ({
             {/* Modo Selección */}
             <button
               onClick={() => setActiveTool('select')}
-              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                 activeTool === 'select' 
                   ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black ring-2 ring-cyan-400' 
                   : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'
               }`}
               title="Seleccionar y mover elementos"
             >
-              <MousePointer className="w-4 h-4" />
+              <MousePointer className="w-4 h-4 shrink-0" />
               <span>Seleccionar</span>
             </button>
 
@@ -1040,53 +1040,53 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
               <button
                 onClick={() => setActiveTool('slot_auto')}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                   activeTool === 'slot_auto' 
                     ? 'bg-emerald-500 text-slate-950 shadow-md font-black ring-2 ring-emerald-400' 
                     : 'bg-emerald-950/50 text-emerald-300 hover:bg-emerald-900/70 border border-emerald-800/60'
                 }`}
                 title="Añadir plaza estándar de auto"
               >
-                <Car className="w-3.5 h-3.5" />
+                <Car className="w-4 h-4 shrink-0" />
                 <span>+ Auto</span>
               </button>
 
               <button
                 onClick={() => setActiveTool('slot_shaded')}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                   activeTool === 'slot_shaded' 
                     ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-2 ring-amber-400' 
                     : 'bg-amber-950/50 text-amber-300 hover:bg-amber-900/70 border border-amber-800/60'
                 }`}
                 title="Añadir plaza con cubierta tensada"
               >
-                <Umbrella className="w-3.5 h-3.5" />
+                <Umbrella className="w-4 h-4 shrink-0" />
                 <span>+ Techado</span>
               </button>
 
               <button
                 onClick={() => setActiveTool('slot_moto')}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                   activeTool === 'slot_moto' 
                     ? 'bg-orange-500 text-slate-950 shadow-md font-black ring-2 ring-orange-400' 
                     : 'bg-orange-950/50 text-orange-300 hover:bg-orange-900/70 border border-orange-800/60'
                 }`}
                 title="Añadir plaza de moto"
               >
-                <Bike className="w-3.5 h-3.5" />
+                <Bike className="w-4 h-4 shrink-0" />
                 <span>+ Moto</span>
               </button>
 
               <button
                 onClick={() => setActiveTool('draw_row')}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                   activeTool === 'draw_row' 
                     ? 'bg-cyan-500 text-slate-950 shadow-md font-black ring-2 ring-cyan-400' 
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
                 }`}
                 title="Trazar batería de 5 plazas en fila con un clic"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <Sparkles className="w-4 h-4 shrink-0 text-amber-400" />
                 <span>+ Fila Rápida</span>
               </button>
             </div>
@@ -1099,79 +1099,79 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
               <button
                 onClick={() => setActiveTool('add_entry')}
-                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
                   activeTool === 'add_entry' 
                     ? 'bg-emerald-500 text-slate-950 shadow-md font-black ring-2 ring-emerald-400' 
                     : 'bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/60 border border-emerald-800/50'
                 }`}
                 title="Añadir punto de ENTRADA con cámara LPR"
               >
-                <LogIn className="w-3.5 h-3.5" />
+                <LogIn className="w-4 h-4 shrink-0" />
                 <span>+ Entrada</span>
               </button>
 
               <button
                 onClick={() => setActiveTool('add_exit')}
-                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
                   activeTool === 'add_exit' 
                     ? 'bg-rose-500 text-slate-950 shadow-md font-black ring-2 ring-rose-400' 
                     : 'bg-rose-950/40 text-rose-400 hover:bg-rose-900/60 border border-rose-800/50'
                 }`}
                 title="Añadir punto de SALIDA con validación POS"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-4 h-4 shrink-0" />
                 <span>+ Salida</span>
               </button>
 
               <button
                 onClick={() => setActiveTool('add_road')}
-                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
                   activeTool === 'add_road' 
                     ? 'bg-amber-500 text-slate-950 shadow-md font-black' 
                     : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700'
                 }`}
                 title="Añadir carril vial de circulación"
               >
-                <Navigation className="w-3.5 h-3.5 text-amber-400" />
+                <Navigation className="w-4 h-4 shrink-0 text-amber-400" />
                 <span>Carril</span>
               </button>
 
               <button
                 onClick={() => setActiveTool('add_wall')}
-                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
                   activeTool === 'add_wall' 
                     ? 'bg-slate-300 text-slate-950 shadow-md font-black' 
                     : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700'
                 }`}
                 title="Añadir muro perimétrico de hormigón"
               >
-                <Square className="w-3.5 h-3.5 text-slate-400" />
+                <Square className="w-4 h-4 shrink-0 text-slate-400" />
                 <span>Muro</span>
               </button>
 
               <button
                 onClick={() => setActiveTool('add_crosswalk')}
-                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
                   activeTool === 'add_crosswalk' 
                     ? 'bg-slate-200 text-slate-950 shadow-md font-black' 
                     : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700'
                 }`}
                 title="Añadir paso de cebra peatonal"
               >
-                <Footprints className="w-3.5 h-3.5 text-slate-400" />
+                <Footprints className="w-4 h-4 shrink-0 text-slate-400" />
                 <span>Cruce</span>
               </button>
 
               <button
                 onClick={() => setActiveTool('add_garden')}
-                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
                   activeTool === 'add_garden' 
                     ? 'bg-emerald-500 text-slate-950 shadow-md font-black' 
                     : 'bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60 border border-emerald-800/50'
                 }`}
                 title="Añadir área verde o jardín ornamental"
               >
-                <TreeIcon className="w-3.5 h-3.5 text-emerald-400" />
+                <TreeIcon className="w-4 h-4 shrink-0 text-emerald-400" />
                 <span>Jardín</span>
               </button>
             </div>
@@ -1180,14 +1180,14 @@ export const InteractiveFloorPlanDrawingStudio = ({
           {/* Borrador */}
           <button
             onClick={() => setActiveTool('eraser')}
-            className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold transition ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition ${
               activeTool === 'eraser' 
                 ? 'bg-rose-500 text-slate-950 shadow-md font-black ring-2 ring-rose-400' 
                 : 'bg-rose-950/50 text-rose-300 hover:bg-rose-900/70 border border-rose-800/60'
             }`}
             title="Borrar elementos al hacer clic sobre ellos"
           >
-            <Trash2 className="w-4 h-4 text-rose-400" />
+            <Trash2 className="w-4 h-4 shrink-0 text-rose-400" />
             <span>Borrador</span>
           </button>
         </div>
@@ -1196,8 +1196,8 @@ export const InteractiveFloorPlanDrawingStudio = ({
       {/* Mensaje de Feedback */}
       {message && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-xl text-xs font-semibold flex items-center justify-between animate-fade-in">
-          <div className="flex items-center space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
             <span>{message}</span>
           </div>
           <button onClick={() => setMessage('')} className="text-slate-400 hover:text-slate-600">✕</button>
@@ -1291,7 +1291,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     )}
 
                     {/* Sensor LED Cenital Inteligente */}
-                    <div className="absolute top-1 right-1.5 flex items-center space-x-1 z-20 pointer-events-none">
+                    <div className="absolute top-1 right-1.5 flex items-center gap-2 z-20 pointer-events-none">
                       <div className={`w-2 h-2 rounded-full shadow-sm ${
                         isFree 
                           ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse' 
@@ -1311,19 +1311,19 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     <div className="flex flex-col items-center justify-center my-auto py-0.5 z-10 pointer-events-none">
                       {isFree ? (
                         isPMR ? (
-                          <Accessibility className="w-5 h-5 text-blue-400/40" />
+                          <Accessibility className="w-5 h-5 shrink-0 text-blue-400/40" />
                         ) : isMoto ? (
-                          <Bike className="w-4 h-4 text-orange-400/40" />
+                          <Bike className="w-4 h-4 shrink-0 text-orange-400/40" />
                         ) : (
                           <div className="w-6 h-9 rounded-lg border border-dashed border-emerald-400/30 flex flex-col items-center justify-around py-1">
                             <div className="w-4 h-1 bg-emerald-400/30 rounded-xs" />
-                            <Car className="w-3.5 h-3.5 text-emerald-400/40" />
+                            <Car className="w-4 h-4 shrink-0 text-emerald-400/40" />
                             <div className="w-4 h-1 bg-emerald-400/30 rounded-xs" />
                           </div>
                         )
                       ) : (
                         <div className="w-full flex flex-col items-center bg-slate-950/90 p-1 rounded-lg border border-slate-700 shadow-inner">
-                          <Car className="w-4 h-4 text-rose-400 mb-0.5 animate-pulse" />
+                          <Car className="w-4 h-4 shrink-0 text-rose-400 mb-0.5 animate-pulse" />
                           <span className="text-[8px] font-mono font-black text-white uppercase tracking-wider bg-slate-800 px-1 rounded">
                             {el.plate || 'OCUPADO'}
                           </span>
@@ -1391,7 +1391,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                   >
                     {/* Línea Divisoria Central con Flechas Direccionales */}
                     <div className="w-full flex items-center justify-around px-4 pointer-events-none opacity-80">
-                      <span className="text-[10px] font-mono font-black text-amber-400/70 tracking-widest flex items-center space-x-2">
+                      <span className="text-[10px] font-mono font-black text-amber-400/70 tracking-widest flex items-center gap-2">
                         <span>━►</span>
                         <span>{el.label || 'CARRIL VIAL DE CIRCULACIÓN'}</span>
                         <span>━►</span>
@@ -1459,7 +1459,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     }`}
                   >
                     {/* Indicador LED y Sensor ANPR */}
-                    <div className="flex items-center space-x-1.5 w-full justify-center">
+                    <div className="flex items-center gap-2 w-full justify-center">
                       <div className={`w-2.5 h-2.5 rounded-full animate-ping ${
                         isEntry ? 'bg-emerald-400 shadow-[0_0_10px_#34d399]' : 'bg-rose-400 shadow-[0_0_10px_#f43f5e]'
                       }`} />
@@ -1504,7 +1504,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     }`}
                   >
                     <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,rgba(52,211,153,0.15),transparent_70%)] flex flex-col items-center justify-center">
-                      <TreeIcon className="w-7 h-7 text-emerald-400 drop-shadow-md mb-1 animate-bounce" style={{ animationDuration: '3s' }} />
+                      <TreeIcon className="w-7 h-7 shrink-0 text-emerald-400 drop-shadow-md mb-1 animate-bounce" style={{ animationDuration: '3s' }} />
                       <span className="text-[10px] font-black uppercase tracking-wider text-emerald-200 drop-shadow">
                         {el.label || 'ÁREA VERDE'}
                       </span>
@@ -1559,7 +1559,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
               >
                 {/* Micro-Barra Flotante sobre el elemento seleccionado */}
                 <div 
-                  className="absolute -top-11 left-1/2 -translate-x-1/2 bg-slate-950/95 backdrop-blur-md border border-slate-700 text-white px-2 py-1 rounded-xl shadow-xl flex items-center space-x-1 pointer-events-auto select-none"
+                  className="absolute -top-11 left-1/2 -translate-x-1/2 bg-slate-950/95 backdrop-blur-md border border-slate-700 text-white px-2 py-1 rounded-xl shadow-xl flex items-center gap-2 pointer-events-auto select-none"
                   onMouseDown={(e) => e.stopPropagation()}
                 >
                   <button 
@@ -1567,14 +1567,14 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     className="p-1 hover:bg-slate-800 rounded text-emerald-400 text-xs font-bold flex items-center" 
                     title="Agrandar (+10px)"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-4 h-4 shrink-0" />
                   </button>
                   <button 
                     onClick={() => handleQuickResize(-10, -10)} 
                     className="p-1 hover:bg-slate-800 rounded text-amber-400 text-xs font-bold flex items-center" 
                     title="Reducir (-10px)"
                   >
-                    <Minus className="w-3.5 h-3.5" />
+                    <Minus className="w-4 h-4 shrink-0" />
                   </button>
                   <div className="w-px h-3.5 bg-slate-700 mx-0.5" />
                   <button 
@@ -1582,21 +1582,21 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     className="p-1 hover:bg-slate-800 rounded text-slate-300 text-xs" 
                     title="Girar 90° (R)"
                   >
-                    <RotateCw className="w-3.5 h-3.5" />
+                    <RotateCw className="w-4 h-4 shrink-0" />
                   </button>
                   <button 
                     onClick={handleDuplicateSelected} 
                     className="p-1 hover:bg-slate-800 rounded text-slate-300 text-xs" 
                     title="Duplicar (Ctrl+D)"
                   >
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-4 h-4 shrink-0" />
                   </button>
                   <button 
                     onClick={handleDeleteSelected} 
                     className="p-1 hover:bg-rose-900/60 text-rose-400 rounded text-xs" 
                     title="Eliminar (Supr)"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4 shrink-0" />
                   </button>
                 </div>
 
@@ -1606,29 +1606,29 @@ export const InteractiveFloorPlanDrawingStudio = ({
                   onMouseDown={handleRotateKnobDown}
                   title="Arrastra para rotar libremente"
                 >
-                  <div className="w-3.5 h-3.5 rounded-full bg-cyan-400 border-2 border-white shadow-lg" />
+                  <div className="w-4 h-4 shrink-0 rounded-full bg-cyan-400 border-2 border-white shadow-lg" />
                   <div className="w-0.5 h-3.5 bg-cyan-400" />
                 </div>
 
                 {/* Tiradores de Esquinas (Resize) */}
                 <div 
                   onMouseDown={(e) => handleResizeHandleDown(e, 'tl')}
-                  className="absolute -top-2 -left-2 w-4 h-4 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nwse-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  className="absolute -top-2 -left-2 w-4 h-4 shrink-0 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nwse-resize pointer-events-auto hover:scale-125 transition-transform" 
                   title="Agrandar / Reducir esquina"
                 />
                 <div 
                   onMouseDown={(e) => handleResizeHandleDown(e, 'tr')}
-                  className="absolute -top-2 -right-2 w-4 h-4 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nesw-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  className="absolute -top-2 -right-2 w-4 h-4 shrink-0 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nesw-resize pointer-events-auto hover:scale-125 transition-transform" 
                   title="Agrandar / Reducir esquina"
                 />
                 <div 
                   onMouseDown={(e) => handleResizeHandleDown(e, 'bl')}
-                  className="absolute -bottom-2 -left-2 w-4 h-4 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nesw-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  className="absolute -bottom-2 -left-2 w-4 h-4 shrink-0 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nesw-resize pointer-events-auto hover:scale-125 transition-transform" 
                   title="Agrandar / Reducir esquina"
                 />
                 <div 
                   onMouseDown={(e) => handleResizeHandleDown(e, 'br')}
-                  className="absolute -bottom-2 -right-2 w-4 h-4 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nwse-resize pointer-events-auto hover:scale-125 transition-transform" 
+                  className="absolute -bottom-2 -right-2 w-4 h-4 shrink-0 bg-white border-2 border-cyan-500 rounded-sm shadow-md cursor-nwse-resize pointer-events-auto hover:scale-125 transition-transform" 
                   title="Agrandar / Reducir esquina"
                 />
 
@@ -1674,8 +1674,8 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
       {/* Barra de Estado CAD Inferior */}
       <div className="px-4 py-2 bg-slate-950/90 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2 shadow-md">
-        <div className="flex items-center space-x-3">
-          <span className="flex items-center space-x-1.5 text-slate-300">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-2 text-slate-300">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-bold text-white">HERRAMIENTA:</span>
             <span className="uppercase text-cyan-400 font-bold">{activeTool.replace('_', ' ')}</span>
@@ -1690,7 +1690,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
           </span>
         </div>
 
-        <div className="flex items-center space-x-3 text-[10px] text-slate-400">
+        <div className="flex items-center gap-2 text-[10px] text-slate-400">
           <span>Zoom: <strong className="text-emerald-400">{zoom}%</strong></span>
         </div>
       </div>
@@ -1702,8 +1702,8 @@ export const InteractiveFloorPlanDrawingStudio = ({
     <div className="lg:col-span-1 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xl space-y-4 max-h-[800px] overflow-y-auto custom-scrollbar">
           
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center space-x-2">
-              <Sliders className="w-5 h-5 text-emerald-600" />
+            <div className="flex items-center gap-2">
+              <Sliders className="w-5 h-5 shrink-0 text-emerald-600" />
               <h3 className="font-bold text-slate-900 text-sm">Propiedades</h3>
             </div>
             {selectedElement && (
@@ -1721,20 +1721,20 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[11px] font-bold uppercase text-slate-400 font-tech">Código de Plaza</label>
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center gap-2">
                       <button 
                         onClick={handleDuplicateSelected} 
                         className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg text-xs" 
                         title="Duplicar (Ctrl+D)"
                       >
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-4 h-4 shrink-0" />
                       </button>
                       <button 
                         onClick={handleDeleteSelected} 
                         className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg text-xs" 
                         title="Eliminar (Supr)"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4 shrink-0" />
                       </button>
                     </div>
                   </div>
@@ -1755,7 +1755,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
               <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase text-slate-500 font-tech flex items-center gap-1">
-                    <Scaling className="w-3.5 h-3.5 text-emerald-600" /> Tamaño del Elemento
+                    <Scaling className="w-4 h-4 shrink-0 text-emerald-600" /> Tamaño del Elemento
                   </span>
                   <span className="font-mono font-bold text-xs text-slate-800">
                     {selectedElement.w} × {selectedElement.h} px
@@ -1769,7 +1769,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     size="sm" 
                     className="h-8 text-xs font-bold gap-1 bg-white hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300"
                   >
-                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    <Plus className="w-4 h-4 shrink-0 text-emerald-600" />
                     <span>Agrandar (+10px)</span>
                   </Button>
                   <Button 
@@ -1778,7 +1778,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     size="sm" 
                     className="h-8 text-xs font-bold gap-1 bg-white hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300"
                   >
-                    <Minus className="w-3.5 h-3.5 text-amber-600" />
+                    <Minus className="w-4 h-4 shrink-0 text-amber-600" />
                     <span>Reducir (-10px)</span>
                   </Button>
                 </div>
@@ -1826,7 +1826,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                               : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
-                          <Icon className={`w-4 h-4 mb-1 ${isCurrent ? 'text-emerald-400' : 'text-slate-500'}`} />
+                          <Icon className={`w-4 h-4 shrink-0 mb-1 ${isCurrent ? 'text-emerald-400' : 'text-slate-500'}`} />
                           <span>{t.label}</span>
                         </button>
                       );
@@ -1834,7 +1834,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                   </div>
 
                   {/* Switch de Techado */}
-                  <label className="flex items-center space-x-2 p-2.5 bg-amber-50/80 border border-amber-200/80 rounded-xl cursor-pointer select-none">
+                  <label className="flex items-center gap-2 p-2.5 bg-amber-50/80 border border-amber-200/80 rounded-xl cursor-pointer select-none">
                     <input 
                       type="checkbox" 
                       checked={!!selectedElement.shaded}
@@ -1843,7 +1843,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                         setElements(prev => prev.map(el => el.id === selectedId ? { ...el, shaded: val } : el));
                         setHasUnsavedChanges(true);
                       }}
-                      className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+                      className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4 shrink-0 cursor-pointer"
                     />
                     <span className="text-xs font-bold text-amber-950">Plaza con Cubierta (Techada)</span>
                   </label>
@@ -1860,7 +1860,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                         setElements(prev => prev.map(el => el.id === selectedId ? { ...el, status: 'free', plate: undefined } : el));
                         setHasUnsavedChanges(true);
                       }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
                         selectedElement.status === 'free' 
                           ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300' 
                           : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
@@ -1875,7 +1875,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                         setElements(prev => prev.map(el => el.id === selectedId ? { ...el, status: 'occupied', plate: el.plate || 'ABC-123' } : el));
                         setHasUnsavedChanges(true);
                       }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
                         selectedElement.status === 'occupied' 
                           ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-300' 
                           : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
@@ -1915,13 +1915,13 @@ export const InteractiveFloorPlanDrawingStudio = ({
                         setElements(prev => prev.map(el => el.id === selectedId ? { ...el, gateType: 'entry', label: 'ENTRADA LPR' } : el));
                         setHasUnsavedChanges(true);
                       }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
                         (selectedElement.gateType === 'entry' || (selectedElement.label && selectedElement.label.toUpperCase().includes('ENTRADA')))
                           ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300'
                           : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
                       }`}
                     >
-                      <LogIn className="w-3.5 h-3.5 text-emerald-300" />
+                      <LogIn className="w-4 h-4 shrink-0 text-emerald-300" />
                       <span>ENTRADA</span>
                     </button>
 
@@ -1930,13 +1930,13 @@ export const InteractiveFloorPlanDrawingStudio = ({
                         setElements(prev => prev.map(el => el.id === selectedId ? { ...el, gateType: 'exit', label: 'SALIDA CONTROL' } : el));
                         setHasUnsavedChanges(true);
                       }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
                         (selectedElement.gateType === 'exit' || (selectedElement.label && selectedElement.label.toUpperCase().includes('SALIDA')))
                           ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-300'
                           : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
                       }`}
                     >
-                      <LogOut className="w-3.5 h-3.5 text-rose-300" />
+                      <LogOut className="w-4 h-4 shrink-0 text-rose-300" />
                       <span>SALIDA</span>
                     </button>
                   </div>
@@ -1964,7 +1964,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
               <div className="space-y-2 pt-2 border-t border-slate-100">
                 <div className="flex items-center justify-between text-xs font-bold">
                   <span className="text-[11px] font-bold uppercase text-slate-400 font-tech flex items-center gap-1">
-                    <Compass className="w-3.5 h-3.5" /> Giro / Ángulo
+                    <Compass className="w-4 h-4 shrink-0" /> Giro / Ángulo
                   </span>
                   <span className="font-mono text-emerald-600 font-bold">{selectedElement.rot || 0}°</span>
                 </div>
@@ -2022,7 +2022,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                   size="sm" 
                   className="w-full text-xs font-bold gap-1.5 rounded-xl border-slate-300 hover:bg-slate-100"
                 >
-                  <Copy className="w-3.5 h-3.5" />
+                  <Copy className="w-4 h-4 shrink-0" />
                   <span>Duplicar Elemento (Ctrl+D)</span>
                 </Button>
                 <Button 
@@ -2031,7 +2031,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                   size="sm" 
                   className="w-full text-xs font-bold gap-1.5 rounded-xl"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4 shrink-0" />
                   <span>Eliminar Elemento (Supr)</span>
                 </Button>
               </div>
@@ -2042,7 +2042,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
             <div className="space-y-4">
               <div className="text-center py-4 text-slate-400 space-y-1.5 border-b border-slate-100">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
-                  <MousePointer className="w-6 h-6" />
+                  <MousePointer className="w-6 h-6 shrink-0" />
                 </div>
                 <p className="text-xs font-bold text-slate-800">Selecciona un elemento para editar</p>
                 <p className="text-[11px] text-slate-400">Haz clic sobre cualquier cajón, muro o vía en el plano.</p>

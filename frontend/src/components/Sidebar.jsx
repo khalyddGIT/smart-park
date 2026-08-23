@@ -161,7 +161,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
             onClick={onOpenTerms}
             className="w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium rounded-xl hover:bg-white hover:shadow-xs transition cursor-pointer group"
           >
-            <Scale className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
+            <Scale className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
             <span className="text-[11px] font-medium tracking-tight truncate">Términos Legales</span>
           </button>
 

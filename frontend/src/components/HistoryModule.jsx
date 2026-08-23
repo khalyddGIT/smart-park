@@ -244,11 +244,11 @@ export const HistoryModule = () => {
 
                   <p className="text-xs text-slate-500 flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-600" /> 
+                      <Calendar className="w-4 h-4 shrink-0 text-emerald-600" /> 
                       <strong>{h.date}</strong>
                     </span>
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" /> 
+                      <Clock className="w-4 h-4 shrink-0 text-slate-400" /> 
                       {h.time} ({h.duration})
                     </span>
                     <span className="font-mono text-slate-600 font-medium">
@@ -271,7 +271,7 @@ export const HistoryModule = () => {
                   size="sm"
                   className="rounded-xl text-xs font-bold gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 h-9"
                 >
-                  <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                  <Receipt className="w-4 h-4 shrink-0 text-emerald-600" />
                   <span>Ver Boleta</span>
                 </Button>
               </div>
@@ -335,7 +335,7 @@ export const HistoryModule = () => {
                 onClick={() => window.print()}
                 className="flex-1 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white gap-1.5"
               >
-                <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                <Printer className="w-4 h-4 shrink-0 text-emerald-400" />
                 <span>Imprimir Boleta</span>
               </Button>
             </div>

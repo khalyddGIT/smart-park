@@ -359,7 +359,7 @@ export const UserRolesModule = () => {
                           className="p-1 hover:bg-slate-200 rounded text-slate-500 transition cursor-pointer"
                           title="Cambiar PIN"
                         >
-                          <KeyRound className="w-3.5 h-3.5" />
+                          <KeyRound className="w-4 h-4 shrink-0" />
                         </button>
                       </div>
                     </td>
@@ -441,7 +441,7 @@ export const UserRolesModule = () => {
               />
             </div>
             <div className="flex items-start gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-100 text-[11px] text-slate-500">
-              <Info className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" />
+              <Info className="w-4 h-4 shrink-0 mt-0.5 text-slate-400 shrink-0" />
               <span>
                 Los nuevos usuarios se crean siempre con rol <strong>Conductor (user)</strong>.
                 Usa el selector de la tabla para promoverlos a Operador o Super Admin después del registro.

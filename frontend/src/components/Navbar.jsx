@@ -134,7 +134,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
               onClick={() => onOpenAuthModal && onOpenAuthModal('login')}
               className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-md shadow-slate-900/20 cursor-pointer"
             >
-              <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+              <LogIn className="w-4 h-4 shrink-0 text-emerald-400" />
               <span>Ingresar / Registrarse</span>
             </button>
           </div>
@@ -232,7 +232,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                         className="text-[10px] text-slate-400 hover:text-rose-600 font-bold transition flex items-center gap-1 cursor-pointer"
                         title="Limpiar todas las notificaciones de este rol"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-4 h-4 shrink-0" />
                         <span>Limpiar</span>
                       </button>
                     )}
@@ -282,7 +282,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                                     className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-0.5 cursor-pointer"
                                   >
                                     <span>Ver detalle</span>
-                                    <ChevronRight className="w-3 h-3" />
+                                    <ChevronRight className="w-4 h-4 shrink-0" />
                                   </button>
                                 ) : (
                                   <span />
@@ -293,7 +293,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                                   title="Eliminar notificación"
                                   className="text-slate-300 hover:text-rose-500 p-0.5 rounded cursor-pointer"
                                 >
-                                  <X className="w-3 h-3" />
+                                  <X className="w-4 h-4 shrink-0" />
                                 </button>
                               </div>
                             </div>
@@ -329,7 +329,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                 <img src={user.avatar} alt={user.name} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-7 h-7 rounded-xl object-cover shrink-0 shadow-sm ring-1 ring-slate-200 bg-white" onError={(e)=>{e.currentTarget.style.display='none'; if(e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display='flex';}} />
               ) : null}
               <div className={`w-7 h-7 rounded-xl bg-slate-900 text-emerald-400 items-center justify-center font-bold shrink-0 shadow-sm ring-1 ring-slate-200 ${user?.avatar ? 'hidden' : 'flex'}`} style={{display: user?.avatar ? 'none' : 'flex'}}>
-                <User className="w-3.5 h-3.5" />
+                <User className="w-4 h-4 shrink-0" />
               </div>
               <div className="hidden sm:block text-left min-w-0 pr-1">
                 <span className="text-xs font-black text-slate-900 block leading-tight tracking-tight truncate max-w-[90px]">

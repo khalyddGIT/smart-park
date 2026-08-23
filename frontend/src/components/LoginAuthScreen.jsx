@@ -131,16 +131,6 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
   const screenContent = (
     <div className={`${isModal ? 'w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6' : 'min-h-screen p-4 sm:p-6 lg:p-8'} bg-slate-50/70 text-slate-800 flex flex-col justify-between items-center relative overflow-hidden font-sans selection:bg-emerald-500 selection:text-white`}>
       
-      {/* Botón de cerrar modal si está en modo modal */}
-      {isModal && onClose && (
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition cursor-pointer"
-          title="Cerrar ventana"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      )}
 
       {/* Fondo con brillo sutil */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-emerald-100/60 via-slate-100/40 to-transparent rounded-full blur-[100px] pointer-events-none" />
@@ -168,16 +158,16 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       <main className="w-full max-w-[440px] my-auto relative z-10 py-4">
         <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xl shadow-slate-200/60 space-y-5">
           
-          {/* Tabs principales: Iniciar Sesión | Crear Cuenta | Afiliar Cochera */}
-          {authMode !== 'forgot_password' && (
-            <div className="grid grid-cols-3 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-[11px] font-bold">
+          {/* Tabs principales para Conductor/Usuario: Iniciar Sesión | Crear Cuenta */}
+          {(authMode === 'login' || authMode === 'register') && (
+            <div className="grid grid-cols-2 p-1 bg-slate-100/90 rounded-2xl border border-slate-200 text-xs font-bold shadow-inner">
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
-                className={`py-2 rounded-xl transition-all duration-150 ${
+                className={`py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
                   authMode === 'login'
-                    ? 'bg-white text-slate-900 shadow-xs font-extrabold'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-white text-slate-900 shadow-md font-extrabold scale-[1.02]'
+                    : 'text-slate-500 hover:text-slate-800 font-semibold'
                 }`}
               >
                 Iniciar Sesión
@@ -185,25 +175,13 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
               <button
                 type="button"
                 onClick={() => { setAuthMode('register'); setErrorMsg(''); }}
-                className={`py-2 rounded-xl transition-all duration-150 ${
+                className={`py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
                   authMode === 'register'
-                    ? 'bg-white text-slate-900 shadow-xs font-extrabold'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-white text-slate-900 shadow-md font-extrabold scale-[1.02]'
+                    : 'text-slate-500 hover:text-slate-800 font-semibold'
                 }`}
               >
                 Crear Cuenta
-              </button>
-              <button
-                type="button"
-                onClick={() => { setAuthMode('affiliation'); setErrorMsg(''); }}
-                className={`py-2 rounded-xl transition-all duration-150 flex items-center justify-center space-x-1 ${
-                  authMode === 'affiliation'
-                    ? 'bg-emerald-600 text-white shadow-xs font-extrabold'
-                    : 'text-emerald-700 hover:text-emerald-900 font-extrabold'
-                }`}
-              >
-                <Building2 className="w-3 h-3" />
-                <span>Afiliar Cochera</span>
               </button>
             </div>
           )}
@@ -291,7 +269,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                     >
-                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {showPassword ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
                     </button>
                   </div>
                 </div>
@@ -585,7 +563,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
                 className="w-full text-center text-xs text-slate-500 hover:text-slate-900 flex items-center justify-center gap-1.5 pt-1 transition cursor-pointer"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-4 h-4 shrink-0" />
                 <span>Volver a Iniciar Sesión</span>
               </button>
             </div>

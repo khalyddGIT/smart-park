@@ -191,16 +191,16 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
       <div className="flex flex-wrap items-center gap-2 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2">Agregar a Escala:</span>
         <Button onClick={() => handleAddMetricSlot('auto')} variant="outline" size="sm" className="font-bold text-xs gap-1">
-          <Car className="w-3.5 h-3.5 text-emerald-600" /> Cajón Auto (2.5m × 5.0m)
+          <Car className="w-4 h-4 shrink-0 text-emerald-600" /> Cajón Auto (2.5m × 5.0m)
         </Button>
         <Button onClick={() => handleAddMetricSlot('pmr')} variant="outline" size="sm" className="font-bold text-xs gap-1">
-          <Accessibility className="w-3.5 h-3.5 text-blue-600" /> Plaza PMR (3.8m × 5.0m)
+          <Accessibility className="w-4 h-4 shrink-0 text-blue-600" /> Plaza PMR (3.8m × 5.0m)
         </Button>
         <Button onClick={() => handleAddMetricSlot('moto')} variant="outline" size="sm" className="font-bold text-xs gap-1">
-          <Bike className="w-3.5 h-3.5 text-amber-600" /> Moto (1.2m × 2.5m)
+          <Bike className="w-4 h-4 shrink-0 text-amber-600" /> Moto (1.2m × 2.5m)
         </Button>
         <Button onClick={() => handleAddMetricSlot('ev')} variant="outline" size="sm" className="font-bold text-xs gap-1">
-          <Zap className="w-3.5 h-3.5 text-teal-600" /> Carga EV (2.5m × 5.0m)
+          <Zap className="w-4 h-4 shrink-0 text-teal-600" /> Carga EV (2.5m × 5.0m)
         </Button>
       </div>
 
@@ -350,11 +350,11 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
           <div className="flex items-center space-x-2 mt-1">
             {pmrCompliant ? (
               <span className="flex items-center gap-1 font-bold text-xs text-emerald-600">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Cumple ({pmrCount} plazas)
+                <CheckCircle2 className="w-4 h-4 shrink-0" /> Cumple ({pmrCount} plazas)
               </span>
             ) : (
               <span className="flex items-center gap-1 font-bold text-xs text-rose-600">
-                <AlertTriangle className="w-3.5 h-3.5" /> Requiere {Math.max(1, Math.ceil(totalStalls * 0.04))} PMR
+                <AlertTriangle className="w-4 h-4 shrink-0" /> Requiere {Math.max(1, Math.ceil(totalStalls * 0.04))} PMR
               </span>
             )}
           </div>

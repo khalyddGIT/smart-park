@@ -135,7 +135,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="space-y-2 relative z-10">
-          <div className="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-mono font-bold">
+          <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-mono font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             <span>Red Multi-Tenant Ayacucho • Uptime 99.98%</span>
           </div>
@@ -153,7 +153,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
             onClick={() => onNavigateTab && onNavigateTab('finances')}
             className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-2xl shadow-md gap-1.5 py-5"
           >
-            <Wallet className="w-4 h-4" />
+            <Wallet className="w-4 h-4 shrink-0" />
             <span>Liquidar Fondos</span>
           </Button>
 
@@ -162,7 +162,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
             variant="outline"
             className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-bold text-xs rounded-2xl gap-1.5 py-5"
           >
-            <Building2 className="w-4 h-4 text-emerald-400" />
+            <Building2 className="w-4 h-4 shrink-0 text-emerald-400" />
             <span>Ver Sedes ({totalBranches})</span>
           </Button>
 
@@ -171,7 +171,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
             variant="outline"
             className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-bold text-xs rounded-2xl gap-1.5 py-5"
           >
-            <Send className="w-4 h-4 text-cyan-400" />
+            <Send className="w-4 h-4 shrink-0 text-cyan-400" />
             <span>Emitir Comunicado</span>
           </Button>
         </div>
@@ -180,9 +180,9 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
       {/* Alerta de Solicitudes de Afiliación Pendientes */}
       {pendingRequests > 0 && (
         <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shadow-xs">
-          <div className="flex items-center space-x-3 text-amber-900 text-xs">
+          <div className="flex items-center gap-2 text-amber-900 text-xs">
             <div className="w-9 h-9 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black shrink-0 shadow-xs">
-              <Building2 className="w-5 h-5" />
+              <Building2 className="w-5 h-5 shrink-0" />
             </div>
             <div>
               <strong className="text-sm font-black block">¡Tienes {pendingRequests} solicitud(es) de afiliación de cocheras pendientes!</strong>
@@ -213,8 +213,8 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Recaudación Hoy</span>
-              <div className="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-                <TrendingUp className="w-3.5 h-3.5" />
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
@@ -222,7 +222,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                 S/ {grossRevenueToday.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
               </h3>
               <span className="inline-flex items-center text-[10px] font-bold text-emerald-600 gap-0.5 mt-0.5">
-                <ArrowUpRight className="w-3 h-3" /> +14.2% vs ayer
+                <ArrowUpRight className="w-4 h-4 shrink-0" /> +14.2% vs ayer
               </span>
             </div>
           </Card>
@@ -231,8 +231,8 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           <Card className="p-4 border-emerald-200 rounded-3xl bg-emerald-50/50 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-emerald-800 tracking-wider">Comisión Neta (12%)</span>
-              <div className="w-7 h-7 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center">
-                <Percent className="w-3.5 h-3.5" />
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center">
+                <Percent className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
@@ -247,8 +247,8 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Locales Afiliados</span>
-              <div className="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-                <Building2 className="w-3.5 h-3.5" />
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                <Building2 className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
@@ -263,8 +263,8 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Ocupación Red</span>
-              <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Activity className="w-3.5 h-3.5" />
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <Activity className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
@@ -281,8 +281,8 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Estancias en Curso</span>
-              <div className="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-                <Car className="w-3.5 h-3.5" />
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                <Car className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
@@ -297,8 +297,8 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Calificación Red</span>
-              <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
-                <Sparkles className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 shrink-0 fill-amber-400 text-amber-400" />
               </div>
             </div>
             <div className="mt-2.5">
@@ -320,13 +320,13 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div>
               <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-emerald-600" />
+                <BarChart3 className="w-5 h-5 shrink-0 text-emerald-600" />
                 <span>Volumen de Recaudación & Comisiones Semanales</span>
               </h2>
               <p className="text-xs text-slate-500">Curva diaria de dinero bruto procesado vs. comisión líquida retenida por Smart-Park.</p>
             </div>
 
-            <div className="flex items-center space-x-1 text-xs font-bold bg-slate-100 p-1 rounded-xl">
+            <div className="flex items-center gap-2 text-xs font-bold bg-slate-100 p-1 rounded-xl">
               <button
                 onClick={() => handleTimeRangeChange('hoy')}
                 className={`px-2.5 py-0.5 rounded-lg transition cursor-pointer ${
@@ -392,7 +392,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
         <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4 flex flex-col justify-between">
           <div className="border-b border-slate-100 pb-3">
             <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-emerald-600" />
+              <CreditCard className="w-5 h-5 shrink-0 text-emerald-600" />
               <span>Medios de Pago</span>
             </h2>
             <p className="text-xs text-slate-500">Distribución de cobros en Ayacucho.</p>
@@ -427,7 +427,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           <div className="space-y-2 pt-2 border-t border-slate-100 text-xs">
             {PAYMENT_METHODS_DATA.map((p, idx) => (
               <div key={idx} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
                   <span className="text-slate-700 font-medium">{p.name}</span>
                 </div>
@@ -446,7 +446,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
               <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-emerald-600" />
+                <Building2 className="w-5 h-5 shrink-0 text-emerald-600" />
                 <span>Monitor de Cocheras de la Red ({establishments.length})</span>
               </h2>
               <p className="text-xs text-slate-500">Estado operativo, aforo y recaudación de cada establecimiento.</p>
@@ -465,7 +465,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
             {branchPerformance.map((b) => (
               <div key={b.id} className="p-4 rounded-2xl border border-slate-100 hover:border-slate-300 bg-slate-50/50 hover:bg-white transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <span className="font-extrabold text-slate-900 text-sm">{b.name}</span>
                     <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.2 rounded-md flex items-center gap-1 font-mono">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -473,12 +473,12 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-slate-400" />
+                    <MapPin className="w-4 h-4 shrink-0 text-slate-400" />
                     <span>{b.address}</span>
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-4 self-end sm:self-auto">
+                <div className="flex items-center gap-2 self-end sm:self-auto">
                   {/* Barra de Aforo */}
                   <div className="text-right w-28">
                     <div className="flex justify-between text-[11px] font-mono mb-1">
@@ -509,7 +509,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
             <div>
               <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
+                <Radio className="w-4 h-4 shrink-0 text-emerald-600 animate-pulse" />
                 <span>Live Feed de la Red</span>
               </h2>
               <p className="text-xs text-slate-500">Transacciones e ingresos en vivo.</p>

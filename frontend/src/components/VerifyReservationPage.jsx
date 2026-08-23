@@ -77,24 +77,24 @@ export const VerifyReservationPage = () => {
 
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="bg-white p-3 rounded-2xl border border-slate-200">
-              <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Hash className="w-3 h-3" />Código</p>
+              <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Hash className="w-4 h-4 shrink-0" />Código</p>
               <p className="font-mono font-black text-slate-900 mt-1">{data.code}</p>
               <p className="font-mono text-[11px] text-slate-500 break-all">{data.qr_code}</p>
             </div>
             <div className="bg-white p-3 rounded-2xl border border-slate-200">
-              <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Car className="w-3 h-3" />Placa</p>
+              <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Car className="w-4 h-4 shrink-0" />Placa</p>
               <p className="font-mono font-black text-slate-900 mt-1">{data.license_plate}</p>
             </div>
             <div className="bg-white p-3 rounded-2xl border border-slate-200 col-span-2">
-              <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><MapPin className="w-3 h-3" />Sede / Cajón</p>
+              <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><MapPin className="w-4 h-4 shrink-0" />Sede / Cajón</p>
               <p className="font-bold text-slate-900 mt-1">{data.parking_name} — {data.slot_code}</p>
             </div>
             <div className="bg-white p-3 rounded-2xl border border-slate-200">
-              <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3" />Ingreso</p>
+              <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Calendar className="w-4 h-4 shrink-0" />Ingreso</p>
               <p className="font-bold text-slate-900 mt-1">{new Date(data.start_time).toLocaleString('es-PE')}</p>
             </div>
             <div className="bg-white p-3 rounded-2xl border border-slate-200">
-              <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />Vence</p>
+              <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Clock className="w-4 h-4 shrink-0" />Vence</p>
               <p className="font-bold text-slate-900 mt-1">{new Date(data.end_time).toLocaleString('es-PE')}</p>
             </div>
           </div>

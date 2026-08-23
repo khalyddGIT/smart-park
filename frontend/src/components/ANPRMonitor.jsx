@@ -277,7 +277,7 @@ export const ANPRMonitor = () => {
             {/* Barra de Estado de la Cámara */}
             <div className="p-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full ${barrierOpen ? 'bg-emerald-400 animate-ping' : 'bg-slate-400'}`} />
+                <div className={`w-4 h-4 shrink-0 rounded-full ${barrierOpen ? 'bg-emerald-400 animate-ping' : 'bg-slate-400'}`} />
                 <div>
                   <span className="text-xs font-black uppercase text-slate-200">
                     {activeScannerTab === 'lpr' ? 'Cámara Garita Entrada 01' : 'Lector Óptico de Pases QR'}
@@ -293,7 +293,7 @@ export const ANPRMonitor = () => {
                   variant="outline"
                   className="text-xs font-bold border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 gap-1.5"
                 >
-                  {useRealWebcam ? <VideoOff className="w-3.5 h-3.5 text-rose-400" /> : <Video className="w-3.5 h-3.5 text-emerald-400" />}
+                  {useRealWebcam ? <VideoOff className="w-4 h-4 shrink-0 text-rose-400" /> : <Video className="w-4 h-4 shrink-0 text-emerald-400" />}
                   <span>{useRealWebcam ? 'Usar Simulación CCTV' : 'Activar WebCam Local'}</span>
                 </Button>
               )}
@@ -376,7 +376,7 @@ export const ANPRMonitor = () => {
                     disabled={loading}
                     className="flex-1 sm:flex-none font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5 shadow-md"
                   >
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-4 h-4 shrink-0" />
                     <span>Verificar Ingreso</span>
                   </Button>
                   <Button
@@ -469,7 +469,7 @@ export const ANPRMonitor = () => {
           {/* Historial de Lecturas Recientes */}
           <Card className="p-4 border-slate-200 shadow-sm bg-white">
             <h3 className="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <Clock className="w-4 h-4 shrink-0 text-slate-400" />
               <span>Bitácora de Paso Reciente</span>
             </h3>
 

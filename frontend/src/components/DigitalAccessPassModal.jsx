@@ -103,7 +103,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
               </span>
               <h2 className="text-base sm:text-lg font-black text-white leading-tight mt-0.5">{passData.parkingName}</h2>
               <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> 
+                <MapPin className="w-4 h-4 shrink-0 text-slate-400 shrink-0" /> 
                 <span className="truncate">Ayacucho - Huamanga</span>
               </p>
             </div>
@@ -141,11 +141,11 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
           {/* Ficha de Detalles de la Reserva */}
           <div className="grid grid-cols-2 gap-2.5">
             {/* Cajón Reservado */}
-            <div className="bg-white p-3 rounded-2xl border border-slate-200">
+            <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
               <span className="text-[9px] font-bold text-slate-400 uppercase block font-mono">Cajón Reservado</span>
               <div className="flex items-center space-x-2 mt-1">
-                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono font-black text-xs shrink-0">
-                  P
+                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-mono font-black text-xs shrink-0">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-mono font-black text-slate-900 leading-tight truncate">{passData.slotCode}</p>
@@ -155,11 +155,11 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
             </div>
 
             {/* Vehículo / Placa */}
-            <div className="bg-white p-3 rounded-2xl border border-slate-200">
+            <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
               <span className="text-[9px] font-bold text-slate-400 uppercase block font-mono">Vehículo / Placa</span>
               <div className="flex items-center space-x-2 mt-1">
                 <div className="w-7 h-7 rounded-lg bg-slate-900 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs shrink-0">
-                  <Car className="w-3.5 h-3.5" />
+                  <Car className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-mono font-black text-slate-900 leading-tight truncate">{passData.plate}</p>
@@ -169,85 +169,60 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
             </div>
 
             {/* Código Reserva */}
-            <div className="bg-white p-3 rounded-2xl border border-slate-200">
+            <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
               <span className="text-[9px] font-bold text-slate-400 uppercase block font-mono">Código Reserva</span>
               <p className="text-xs font-mono font-black text-slate-800 mt-1">{passData.id}</p>
               <p className="text-[10px] text-slate-500">Identificador</p>
             </div>
 
             {/* Tiempo Restante */}
-            <div className="bg-white p-3 rounded-2xl border border-slate-200">
+            <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
               <span className="text-[9px] font-bold text-slate-400 uppercase block font-mono">Tiempo Restante</span>
               <p className="text-xs font-mono font-black text-emerald-600 mt-1">{timeLeft || '--:--:--'}</p>
               <p className="text-[10px] text-slate-500">{passData.hours} horas</p>
             </div>
           </div>
 
-          {/* Desglose de Costo */}
-          <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-2xl text-xs">
-            <span className="font-bold text-emerald-900">Total Liquidado:</span>
-            <span className="text-base font-black text-emerald-800 font-mono">
+          {/* Desglose de Costo Ejecutivo */}
+          <div className="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-2xl text-xs shadow-xs">
+            <span className="font-bold text-slate-300">Total Estimado:</span>
+            <span className="text-base font-black text-emerald-400 font-mono">
               S/ {passData.cost.toFixed(2)}
             </span>
           </div>
 
-          {/* Rutas GPS Directas para Llegar a la Cochera */}
-          <div className="space-y-1.5 pt-1">
-            <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider block text-center">
-              Navegación GPS hacia la Cochera:
-            </span>
-            <div className="flex items-center gap-2">
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(passData.parkingName + ' Ayacucho')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border border-slate-200"
+          {/* Acciones de Pase Limpias y Alineadas */}
+          <div className="space-y-2 pt-1">
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                onClick={handleCopyCode}
+                variant="outline"
+                className="w-full text-xs font-bold gap-1.5 border-slate-200 bg-white hover:bg-slate-100 text-slate-800 rounded-xl h-10 cursor-pointer shadow-2xs justify-center"
               >
-                <span>📍 Google Maps</span>
-              </a>
-              <a
-                href={`https://waze.com/ul?q=${encodeURIComponent(passData.parkingName + ' Ayacucho')}&navigate=yes`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border border-blue-200"
+                {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-600" />}
+                <span>{copied ? '¡Copiado!' : 'Copiar Token'}</span>
+              </Button>
+
+              <Button
+                type="button"
+                onClick={handlePrintPass}
+                variant="outline"
+                className="w-full text-xs font-bold gap-1.5 border-slate-200 bg-white hover:bg-slate-100 text-slate-800 rounded-xl h-10 cursor-pointer shadow-2xs justify-center"
               >
-                <span>🚗 Waze</span>
-              </a>
+                <Printer className="w-4 h-4 text-slate-600" />
+                <span>Imprimir Pase</span>
+              </Button>
             </div>
-          </div>
-
-          {/* Acciones */}
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              onClick={handleCopyCode}
-              variant="outline"
-              size="sm"
-              className="flex-1 text-xs font-bold gap-1.5 border-slate-300 rounded-xl cursor-pointer hover:bg-slate-100"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-600" />}
-              <span>{copied ? 'Copiado' : 'Copiar Token'}</span>
-            </Button>
 
             <Button
               type="button"
-              onClick={handlePrintPass}
-              variant="outline"
-              size="sm"
-              className="flex-1 text-xs font-bold gap-1.5 border-slate-300 rounded-xl cursor-pointer hover:bg-slate-100"
+              onClick={onClose}
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold h-11 rounded-xl shadow-md cursor-pointer text-xs justify-center"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-600" />
-              <span>Imprimir</span>
+              Entendido / Cerrar
             </Button>
           </div>
-
-          <Button
-            type="button"
-            onClick={onClose}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl shadow-md cursor-pointer text-xs"
-          >
-            Listo, Entendido
-          </Button>
 
         </div>
       </DialogContent>

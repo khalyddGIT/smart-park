@@ -15,12 +15,13 @@ import {
   Bell, 
   MapPin, 
   ShieldCheck, 
-  Check 
+  Check,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
 
-export const UserProfileModule = () => {
+export const UserProfileModule = ({ onBack }) => {
   const { user, setUser, role } = useAuth();
   const { reservations } = useEstablishments();
 
@@ -87,7 +88,7 @@ export const UserProfileModule = () => {
             
             {/* Icono de Usuario Limpio */}
             <div className="w-16 h-16 rounded-2xl bg-slate-900 text-emerald-400 flex items-center justify-center font-black text-xl shadow-md border border-slate-800 shrink-0">
-              <User className="w-8 h-8" />
+              <User className="w-8 h-8 stroke-[2.2]" />
             </div>
 
             {/* Info Básica */}
@@ -100,7 +101,6 @@ export const UserProfileModule = () => {
               </div>
               <p className="text-xs text-slate-500 font-mono mt-0.5 flex items-center gap-2">
                 <span>{formData.email}</span>
-                <span>•</span>
                 <span className="font-bold text-slate-700 capitalize">Rol: {role}</span>
               </p>
               <div className="flex items-center gap-3 mt-2 text-xs text-slate-600">
@@ -110,13 +110,27 @@ export const UserProfileModule = () => {
 
           </div>
 
-          <Button
-            onClick={handleSaveProfile}
-            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 rounded-xl shadow-md shadow-emerald-600/20 h-10 px-5 cursor-pointer justify-center"
-          >
-            <Save className="w-4 h-4" />
-            <span>Guardar Cambios</span>
-          </Button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {onBack && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onBack}
+                className="flex-1 sm:flex-none border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs gap-1.5 rounded-xl h-10 px-4 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-slate-600" />
+                <span>Volver</span>
+              </Button>
+            )}
+
+            <Button
+              onClick={handleSaveProfile}
+              className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 rounded-xl shadow-md shadow-emerald-600/20 h-10 px-5 cursor-pointer justify-center"
+            >
+              <Save className="w-4 h-4" />
+              <span>Guardar Cambios</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -200,54 +214,65 @@ export const UserProfileModule = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo *</label>
-                    <div className="relative">
-                      <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <Input
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl focus-within:border-slate-800 transition">
+                      <User className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
+                      <input
+                        type="text"
                         required
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="pl-10 text-xs h-10 font-bold"
+                        className="w-full bg-transparent text-xs font-bold text-slate-900 outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Documento de Identidad (DNI / CE) *</label>
-                    <Input
-                      required
-                      value={formData.dni}
-                      onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
-                      className="text-xs font-mono font-bold h-10"
-                      placeholder="72458912"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-700">Documento de Identidad (DNI / CE) *</label>
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">🔒 Protegido</span>
+                    </div>
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed opacity-80">
+                      <ShieldCheck className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
+                      <input
+                        type="text"
+                        readOnly
+                        disabled
+                        value={formData.dni}
+                        className="w-full bg-transparent text-xs font-mono font-bold text-slate-700 outline-none cursor-not-allowed"
+                        placeholder="72458912"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Correo Electrónico *</label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <Input
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-700">Correo Electrónico *</label>
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">🔒 Protegido</span>
+                    </div>
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed opacity-80">
+                      <Mail className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
+                      <input
                         type="email"
-                        required
+                        readOnly
+                        disabled
                         value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="pl-10 text-xs h-10 font-mono"
+                        className="w-full bg-transparent text-xs font-mono font-bold text-slate-700 outline-none cursor-not-allowed"
                       />
                     </div>
                   </div>
 
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono / WhatsApp *</label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <Input
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl focus-within:border-slate-800 transition">
+                      <Phone className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
+                      <input
                         type="tel"
                         required
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="pl-10 text-xs font-mono h-10"
+                        className="w-full bg-transparent text-xs font-mono text-slate-900 outline-none"
                       />
                     </div>
                   </div>
@@ -256,25 +281,31 @@ export const UserProfileModule = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Dirección Habitual</label>
-                    <div className="relative">
-                      <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <Input
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl focus-within:border-slate-800 transition">
+                      <MapPin className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
+                      <input
+                        type="text"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="pl-10 text-xs h-10"
+                        className="w-full bg-transparent text-xs text-slate-900 outline-none"
                         placeholder="Jr. 28 de Julio 340, Huamanga"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Placa Vehicular Principal</label>
-                    <div className="relative">
-                      <Car className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <Input
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-700">Placa Vehicular Principal</label>
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">🔒 Gestionar en Vehículos</span>
+                    </div>
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed opacity-80">
+                      <Car className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
+                      <input
+                        type="text"
+                        readOnly
+                        disabled
                         value={formData.plate}
-                        onChange={(e) => setFormData({ ...formData, plate: e.target.value.toUpperCase() })}
-                        className="pl-10 text-xs font-mono font-black h-10 uppercase"
+                        className="w-full bg-transparent text-xs font-mono font-black text-slate-800 outline-none uppercase cursor-not-allowed"
                         placeholder="ABC-123"
                       />
                     </div>

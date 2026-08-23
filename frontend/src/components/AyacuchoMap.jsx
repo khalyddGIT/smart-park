@@ -240,7 +240,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
           html: `
             <div class="relative flex items-center justify-center">
               <span class="animate-ping absolute inline-flex h-6 w-6 rounded-full bg-black opacity-30"></span>
-              <div class="w-3.5 h-3.5 bg-[#111111] border-2 border-white rounded-full shadow-md"></div>
+              <div class="w-4 h-4 shrink-0 bg-[#111111] border-2 border-white rounded-full shadow-md"></div>
             </div>
           `,
           iconSize: [24, 24],

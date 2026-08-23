@@ -396,14 +396,20 @@ export const EstablishmentProvider = ({ children }) => {
   }, [reservations]);
 
   // Sincronización Supabase: parkings siempre (global), reservas solo con token
+  // El panel del usuario siempre lee del servidor — no se usa caché local para datos de cocheras
   useEffect(() => {
-    // Parkings globales Supabase (compartidos) - sin token también para que se vean en Gestión de Sedes
     api.get('/parkings').then(res => {
       if (Array.isArray(res.data) && res.data.length > 0) {
         const mappedParkings = res.data.map(p => ({
-          id: String(p.id), name: p.name, address: p.address, city: p.city, latitude: p.latitude, longitude: p.longitude, rate: p.hourly_rate, status: p.status === 'active' ? 'Operativo' : p.status, image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', totalSlots: p.total_capacity, available_slots: p.available_slots, elements: Array.from({length: p.total_capacity || 0}, (_,i)=>({id: i+10, type:'slot', code: `P-${String(i+1).padStart(2,'0')}`, slotType:'auto', x:0,y:0,w:56,h:96, status: i < (p.available_slots||0) ? 'free' : 'occupied'}))
+          id: String(p.id), name: p.name, address: p.address, city: p.city, latitude: p.latitude, longitude: p.longitude, rate: p.hourly_rate, status: p.status === 'active' ? 'Operativo' : p.status, image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', totalSlots: p.total_capacity, available_slots: p.available_slots, description: p.description || '', phone: p.phone || '', email: p.email || '', reference: p.reference || '', level: p.level || '', elements: null, _needsFloorPlan: true
         }));
-        if (mappedParkings.length >= 2) setEstablishments(mappedParkings);
+        setEstablishments(prev => {
+          // Preservar cocheras locales "EST-*" aún no migradas al servidor
+          const localOnly = prev.filter(e => String(e.id).startsWith('EST-'));
+          const serverIds = new Set(mappedParkings.map(m => m.id));
+          const preservedLocal = localOnly.filter(l => !serverIds.has(String(l.id)));
+          return [...mappedParkings, ...preservedLocal];
+        });
       }
     }).catch(()=>{});
     // La verdad de las reservas es el servidor: localStorage queda solo como caché de lectura
@@ -571,6 +577,13 @@ export const EstablishmentProvider = ({ children }) => {
         if (updatedFields.rate) payload.hourly_rate = Number(updatedFields.rate);
         if (updatedFields.status) payload.status = updatedFields.status === 'Operativo' ? 'active' : updatedFields.status;
         if (updatedFields.image) payload.image_url = updatedFields.image;
+        if (updatedFields.description !== undefined) payload.description = updatedFields.description;
+        if (updatedFields.phone !== undefined) payload.phone = updatedFields.phone;
+        if (updatedFields.email !== undefined) payload.email = updatedFields.email;
+        if (updatedFields.reference !== undefined) payload.reference = updatedFields.reference;
+        if (updatedFields.level !== undefined) payload.level = updatedFields.level;
+        if (updatedFields.latitude) payload.latitude = Number(updatedFields.latitude);
+        if (updatedFields.longitude) payload.longitude = Number(updatedFields.longitude);
         if (Object.keys(payload).length) await api.put(`/parkings/${numId}`, payload);
       } catch (e) { console.warn('updateEstablishment backend fail', e.response?.data); }
     }

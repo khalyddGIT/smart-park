@@ -72,6 +72,12 @@ class Parking(Base):
     status = Column(String(20), default="active")
     total_capacity = Column(Integer, default=30)
     image_url = Column(String(255), nullable=True)
+    # Campos visibles en el panel del conductor (antes solo vivían en localStorage del admin)
+    description = Column(Text, nullable=True)
+    phone = Column(String(30), nullable=True)
+    email = Column(String(150), nullable=True)
+    reference = Column(String(255), nullable=True)
+    level = Column(String(100), nullable=True)
 
     slots = relationship("Slot", back_populates="parking", cascade="all, delete-orphan")
     elements = relationship("FloorPlanElement", back_populates="parking", cascade="all, delete-orphan")

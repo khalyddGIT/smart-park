@@ -81,6 +81,11 @@ class ParkingBase(BaseModel):
     status: Optional[str] = "active"
     total_capacity: int = 30
     image_url: Optional[str] = None
+    description: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    reference: Optional[str] = None
+    level: Optional[str] = None
 
 class ParkingCreate(ParkingBase):
     pass
@@ -96,6 +101,11 @@ class ParkingUpdate(BaseModel):
     status: Optional[str] = None
     total_capacity: Optional[int] = None
     image_url: Optional[str] = None
+    description: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    reference: Optional[str] = None
+    level: Optional[str] = None
 
 class ParkingResponse(ParkingBase):
     id: int

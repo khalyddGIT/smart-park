@@ -42,6 +42,19 @@ async def startup_db():
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            # Migración ligera: columnas añadidas después del despliegue inicial
+            from sqlalchemy import text as _text
+            for ddl in [
+                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS description TEXT",
+                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS phone VARCHAR(30)",
+                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS email VARCHAR(150)",
+                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS reference VARCHAR(255)",
+                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS level VARCHAR(100)",
+            ]:
+                try:
+                    await conn.execute(_text(ddl))
+                except Exception:
+                    pass
     except Exception as e:
         import logging
         logging.warning(f"[smart-park] startup_db: no se pudo inicializar DB remota, continuando en modo degradado: {e}")

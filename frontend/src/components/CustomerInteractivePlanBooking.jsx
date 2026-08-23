@@ -265,7 +265,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
           </div>
           <div className="flex items-center space-x-1.5">
             <span className="w-3 h-3 rounded-md bg-blue-500" />
-            <span>PMR Inclusivo</span>
+            <span>Preferencial</span>
           </div>
           <div className="flex items-center space-x-1.5">
             <span className="w-3 h-3 rounded-md bg-amber-600" />
@@ -530,7 +530,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 </div>
                 <div className="text-right">
                   <span className="text-xs font-bold text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-xl block font-mono border border-emerald-500/30">
-                    {selectedSlot.slotType === 'pmr' ? '♿ PMR Inclusivo' : selectedSlot.shaded ? '⛱️ Techado' : '🚗 Estándar'}
+                    {selectedSlot.slotType === 'pmr' ? '♿ Preferencial' : selectedSlot.shaded ? '⛱️ Techado' : '🚗 Estándar'}
                   </span>
                   <span className="text-[10px] text-emerald-400 font-bold mt-1 block flex items-center justify-end gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

@@ -300,7 +300,7 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
                   </div>
 
                   <div className="text-center text-[10px] font-black">
-                    {isPMR && 'PMR Inclusivo'}
+                    {isPMR && 'Preferencial'}
                     {isEV && 'Punto Carga EV'}
                     {isMoto && 'Espacio Moto'}
                     {!isPMR && !isEV && !isMoto && (isFree ? 'LIBRE' : 'OCUPADO')}

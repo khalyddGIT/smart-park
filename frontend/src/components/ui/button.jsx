@@ -3,28 +3,41 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva } from "class-variance-authority"
 import { cn } from "../../lib/utils"
 
+/**
+ * Sistema de botones — 3 variantes × 2 tamaños
+ * Variantes: primary (default), secondary, ghost
+ *           + destructive (semántica), link (casos puntuales)
+ * Tamaños:  sm (h-8) y md (h-10, default) — múltiplos de 4px
+ * Estados:  hover, active (scale-95), focus (ring esmeralda), disabled
+ */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:pointer-events-none disabled:opacity-50 active:scale-95 shadow-sm",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-xs font-bold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97] [&_svg]:w-5 [&_svg]:h-5 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20 shadow-md",
-        destructive: "bg-rose-500 text-white hover:bg-rose-600 shadow-rose-500/20 shadow-md",
-        outline: "border border-slate-200 bg-white hover:bg-slate-100 text-slate-800",
-        secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200 border border-slate-200/80",
-        ghost: "hover:bg-slate-100 hover:text-slate-900 shadow-none",
-        link: "text-emerald-700 underline-offset-4 hover:underline shadow-none",
+        // Primary — acción principal (emerald)
+        primary: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-600/20",
+        default: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-600/20",
+        // Secondary — acción secundaria (borde + fondo claro)
+        secondary: "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 hover:border-slate-300 shadow-sm",
+        outline: "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 hover:border-slate-300 shadow-sm",
+        // Ghost — acción terciaria / icono
+        ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900 shadow-none",
+        // Semánticas
+        destructive: "bg-rose-500 text-white hover:bg-rose-600 shadow-sm shadow-rose-500/20",
+        link: "text-emerald-700 underline-offset-4 hover:underline shadow-none h-auto p-0",
       },
       size: {
+        sm: "h-8 px-3 rounded-lg text-xs",
+        md: "h-10 px-4 py-2",
         default: "h-10 px-4 py-2",
-        sm: "h-8 rounded-lg px-3 text-xs",
-        lg: "h-12 rounded-2xl px-6 text-sm",
-        icon: "h-9 w-9 p-0",
+        lg: "h-12 px-6 text-sm rounded-2xl",
+        icon: "h-10 w-10 p-0",
       },
     },
     defaultVariants: {
-      variant: "default",
-      size: "default",
+      variant: "primary",
+      size: "md",
     },
   }
 )

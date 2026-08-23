@@ -1,184 +1,248 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import api, { getAccessToken } from '../services/api';
 
 const NotificationContext = createContext();
 
 const STORAGE_KEY = 'smart_park_notifications_v2';
+const POLL_INTERVAL_MS = 60 * 1000;
 
-const INITIAL_NOTIFICATIONS = [
-  // NOTIFICACIONES ROL CONDUCTOR (USER)
-  {
-    id: 'NOTIF-U1',
-    role: 'user',
-    title: 'Reserva Confirmada',
-    message: 'Tu plaza A-01 en Smart Park Plaza Mayor está reservada. Pase QR activo.',
-    time: 'Hace 5 min',
-    timestamp: Date.now() - 5 * 60 * 1000,
-    read: false,
-    type: 'success', // 'info' | 'success' | 'warning' | 'alert'
-    targetTab: 'reservations'
-  },
-  {
-    id: 'NOTIF-U2',
-    role: 'user',
-    title: 'Detección ANPR en Garita',
-    message: 'Vehículo placa ABC-123 detectado. Barrera de acceso abierta automáticamente.',
-    time: 'Hace 25 min',
-    timestamp: Date.now() - 25 * 60 * 1000,
-    read: false,
-    type: 'info',
-    targetTab: 'vehicles'
-  },
-  {
-    id: 'NOTIF-U3',
-    role: 'user',
-    title: 'Comprobante Electrónico Emitido',
-    message: 'Tu boleta de venta B001-004291 por S/ 17.00 ya está disponible para descarga.',
-    time: 'Ayer',
-    timestamp: Date.now() - 24 * 60 * 60 * 1000,
-    read: true,
-    type: 'success',
-    targetTab: 'history'
-  },
+// Formato honesto igual que ReviewsModule.jsx — sin inventar tiempo relativo
+const formatDate = (iso) => {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (diffDays <= 0) return 'Hoy';
+    if (diffDays === 1) return 'Ayer';
+    if (diffDays < 7) return `Hace ${diffDays} días`;
+    return d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (e) { return ''; }
+};
 
-  // NOTIFICACIONES ROL ADMIN LOCAL (LOCAL)
-  {
-    id: 'NOTIF-L1',
-    role: 'local',
-    title: 'Nuevo Ingreso Vehicular',
-    message: 'Vehículo placa AYC-501 ingresó a la plaza B-01. Registro automático completado.',
-    time: 'Hace 3 min',
-    timestamp: Date.now() - 3 * 60 * 1000,
-    read: false,
-    type: 'info',
-    targetTab: 'reservations'
-  },
-  {
-    id: 'NOTIF-L2',
-    role: 'local',
-    title: 'Incidencia Operativa Reportada',
-    message: 'Reporte de vehículo fuera de línea en plaza B-04. Pendiente de revisión.',
-    time: 'Hace 18 min',
-    timestamp: Date.now() - 18 * 60 * 1000,
-    read: false,
-    type: 'warning',
-    targetTab: 'incidents'
-  },
-  {
-    id: 'NOTIF-L3',
-    role: 'local',
-    title: 'Alerta de Alta Ocupación',
-    message: 'Cochera al 85% de capacidad total. Quedan 3 plazas disponibles en planta baja.',
-    time: 'Hace 1 hora',
-    timestamp: Date.now() - 60 * 60 * 1000,
-    read: false,
-    type: 'warning',
-    targetTab: 'dashboard'
-  },
-  {
-    id: 'NOTIF-L4',
-    role: 'local',
-    title: 'Salida Registrada & Plaza Liberada',
-    message: 'Placa W1P-404 completó Check-Out. Cajón A-04 disponible inmediatamente.',
-    time: 'Hace 2 horas',
-    timestamp: Date.now() - 120 * 60 * 1000,
-    read: true,
-    type: 'success',
-    targetTab: 'dashboard'
-  },
+const getReadCache = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      // Migración: array legacy de notificaciones -> mapa id->read
+      const map = {};
+      parsed.forEach((n) => { if (n && n.id) map[n.id] = !!n.read; });
+      return map;
+    }
+    if (parsed && typeof parsed === 'object') {
+      const vals = Object.values(parsed);
+      // mapa booleano esperado
+      if (vals.length === 0 || vals.every((v) => typeof v === 'boolean')) return parsed;
+      // formato inesperado: ignorar
+      return {};
+    }
+    return {};
+  } catch { return {}; }
+};
 
-  // NOTIFICACIONES ROL SUPER ADMIN (PLATFORM)
-  {
-    id: 'NOTIF-P1',
-    role: 'platform',
-    title: 'Nueva Solicitud de Afiliación',
-    message: 'La cochera "Cochera San Blas Ayacucho" ha solicitado afiliarse a la red.',
-    time: 'Hace 12 min',
-    timestamp: Date.now() - 12 * 60 * 1000,
-    read: false,
-    type: 'info',
-    targetTab: 'affiliates'
-  },
-  {
-    id: 'NOTIF-P2',
-    role: 'platform',
-    title: 'Liquidación Financiera Diaria',
-    message: 'Cierre de transacciones consolidado: S/ 1,480.00 procesados en la red hoy.',
-    time: 'Hace 45 min',
-    timestamp: Date.now() - 45 * 60 * 1000,
-    read: false,
-    type: 'success',
-    targetTab: 'finances'
-  },
-  {
-    id: 'NOTIF-P3',
-    role: 'platform',
-    title: 'Monitoreo de Servidores & Telemetría',
-    message: 'Servidor WebSocket y API FastAPI operando con 100% de disponibilidad.',
-    time: 'Hace 3 horas',
-    timestamp: Date.now() - 180 * 60 * 1000,
-    read: true,
-    type: 'info',
-    targetTab: 'resiliency'
-  },
-  {
-    id: 'NOTIF-P4',
-    role: 'platform',
-    title: 'Auditoría de Seguridad',
-    message: 'Se actualizó la tarifa por hora en el establecimiento Plaza Mayor.',
-    time: 'Ayer',
-    timestamp: Date.now() - 24 * 60 * 60 * 1000,
-    read: true,
-    type: 'warning',
-    targetTab: 'audit'
-  }
-];
+const setReadCache = (map) => {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); } catch {}
+};
 
 export const NotificationProvider = ({ children }) => {
-  const { role } = useAuth();
-  
-  const [notifications, setNotifications] = useState(() => {
+  const { role, user } = useAuth();
+
+  // Fuente de verdad: derivada de APIs reales. Vacía hasta que el polling responda (vacío honesto).
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDerived = useCallback(async () => {
+    const derived = [];
+    const currentRole = role;
+
+    // Todos: GET /incidents (RBAC servidor: user ve propias, local/platform todas). Si 401, se ignora.
+    let incidents = [];
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      const res = await api.get('/incidents');
+      incidents = Array.isArray(res.data) ? res.data : [];
+    } catch (e) {
+      const status = e?.response?.status;
+      if (status !== 401) {
+        // error no-auth se silencia; otros se ignoran también para no romper polling
       }
-    } catch (e) {}
-    return INITIAL_NOTIFICATIONS;
-  });
+      incidents = [];
+    }
+
+    incidents.forEach((inc) => {
+      const isResolved = inc.status === 'resolved';
+      const title = isResolved ? 'Incidencia resuelta' : 'Incidencia reportada';
+      // Mensaje honesto con datos reales: categoría + descripción + cochera
+      const desc = (inc.description || '').slice(0, 90);
+      const parkingInfo = inc.parking_id ? `Cochera #${inc.parking_id}` : 'Cochera';
+      derived.push({
+        id: `real-incident-${inc.id}`,
+        role: currentRole,
+        title,
+        message: `${inc.category || 'general'}: ${desc}${desc.length >= 90 ? '…' : ''} — ${parkingInfo}${isResolved && inc.resolution_note ? ` · Resp.: ${inc.resolution_note.slice(0,60)}` : ''}`,
+        time: formatDate(inc.created_at),
+        timestamp: inc.created_at ? Date.parse(inc.created_at) : Date.now(),
+        read: false,
+        type: isResolved ? 'success' : inc.status === 'reported' ? 'warning' : 'info',
+        targetTab: 'incidents',
+      });
+    });
+
+    // Platform: además GET /reviews (últimas 5) -> "Nueva reseña de X en Y"
+    if (currentRole === 'platform') {
+      try {
+        const res = await api.get('/reviews');
+        const reviews = Array.isArray(res.data) ? res.data : [];
+        reviews.slice(0, 5).forEach((r) => {
+          derived.push({
+            id: `real-review-${r.id}`,
+            role: 'platform',
+            title: `Nueva reseña de ${r.user_name || 'usuario'}`,
+            message: `"${(r.comment || '').slice(0, 70)}${(r.comment || '').length > 70 ? '…' : ''}" en Cochera #${r.parking_id} · ${r.rating}★`,
+            time: formatDate(r.created_at),
+            timestamp: r.created_at ? Date.parse(r.created_at) : Date.now(),
+            read: false,
+            type: r.rating >= 4 ? 'success' : r.rating <= 2 ? 'warning' : 'info',
+            targetTab: 'reviews',
+          });
+        });
+      } catch (e) {
+        // GET /reviews es público; si falla se ignora y queda vacío honesto
+      }
+    }
+
+    // Conductor: GET /reservations/my-reservations -> "Tu reserva #id vence en..."
+    if (currentRole === 'user') {
+      try {
+        // Solo si hay JWT, el backend responde 401 sin token
+        const token = getAccessToken();
+        if (token) {
+          const res = await api.get('/reservations/my-reservations');
+          const reservations = Array.isArray(res.data) ? res.data : [];
+          reservations.forEach((r) => {
+            // Solo notificar reservas vigentes; canceladas/completadas no generan ruido
+            if (r.status === 'cancelled' || r.status === 'completed') return;
+            const end = r.end_time ? new Date(r.end_time) : null;
+            const start = r.start_time ? new Date(r.start_time) : null;
+            let message = '';
+            let title = `Reserva ${r.code || `#${r.id}`}`;
+            let type = 'info';
+            if (r.status === 'active' && end) {
+              const diffMs = end.getTime() - Date.now();
+              const diffMin = Math.ceil(diffMs / 60000);
+              if (diffMs <= 0) {
+                message = `Tu reserva ${r.code} vencida — realiza check-out. Placa ${r.license_plate}`;
+                type = 'alert';
+              } else if (diffMin <= 120) {
+                message = `Tu reserva ${r.code} vence en ${diffMin} min. Placa ${r.license_plate} · Cochera #${r.parking_id}`;
+                type = 'warning';
+              } else {
+                message = `Reserva activa ${r.code} hasta ${formatDate(r.end_time)} · Placa ${r.license_plate}`;
+                type = 'info';
+              }
+            } else if (r.status === 'scheduled' && start) {
+              message = `Tu reserva ${r.code} programada para ${formatDate(r.start_time)} · Placa ${r.license_plate}`;
+              type = 'success';
+            } else {
+              message = `Reserva ${r.code} · ${r.license_plate} · Cochera #${r.parking_id} · ${r.status}`;
+            }
+            derived.push({
+              id: `real-reservation-${r.id}`,
+              role: 'user',
+              title,
+              message,
+              time: formatDate(r.end_time || r.start_time),
+              timestamp: r.end_time ? Date.parse(r.end_time) : (r.start_time ? Date.parse(r.start_time) : Date.now()),
+              read: false,
+              type,
+              targetTab: 'reservations',
+            });
+          });
+        }
+      } catch (e) {
+        const status = e?.response?.status;
+        if (status !== 401) {
+          // silenciar; lista queda vacía honesta
+        }
+      }
+    }
+
+    // Merge preservando flag read del caché localStorage (no fuente de verdad)
+    const cache = getReadCache();
+    const merged = derived.map((n) => ({ ...n, read: !!cache[n.id] }));
+    // Orden descendente por timestamp (más reciente primero)
+    merged.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    return merged;
+  }, [role]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
-    } catch (e) {}
-  }, [notifications]);
+    let cancelled = false;
+    let intervalId = null;
 
-  // Notificaciones filtradas según el rol activo
-  const currentRoleNotifications = notifications.filter(n => n.role === role);
-  const unreadCount = currentRoleNotifications.filter(n => !n.read).length;
+    const run = async (isInitial) => {
+      if (isInitial) setLoading(true);
+      const merged = await fetchDerived();
+      if (!cancelled) {
+        setNotifications(merged);
+        if (isInitial) setLoading(false);
+      }
+    };
 
-  // Marcar una como leída
+    run(true);
+    intervalId = setInterval(() => run(false), POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [fetchDerived, role, user?.id]);
+
+  // Reacciona a cambios de storage externos (otro tab marca leído) — opcional honesto
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === STORAGE_KEY) {
+        const cache = getReadCache();
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: !!cache[n.id] })));
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  // Notificaciones filtradas según el rol activo (compatibilidad API)
+  const currentRoleNotifications = notifications.filter((n) => n.role === role);
+  const unreadCount = currentRoleNotifications.filter((n) => !n.read).length;
+
+  // Marcar una como leída — persiste solo el flag en caché
   const markAsRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    const cache = getReadCache();
+    cache[id] = true;
+    setReadCache(cache);
   };
 
   // Marcar todas las del rol como leídas
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => n.role === role ? { ...n, read: true } : n));
+    const ids = notifications.filter((n) => n.role === role).map((n) => n.id);
+    setNotifications((prev) => prev.map((n) => (n.role === role ? { ...n, read: true } : n)));
+    const cache = getReadCache();
+    ids.forEach((id) => { cache[id] = true; });
+    setReadCache(cache);
   };
 
-  // Limpiar / Eliminar una notificación
+  // Limpiar / Eliminar una notificación (solo en memoria; reaparece si el dato real sigue en el servidor)
   const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
-  // Limpiar todas las notificaciones del rol
+  // Limpiar todas las notificaciones del rol (en memoria)
   const clearRoleNotifications = () => {
-    setNotifications(prev => prev.filter(n => n.role !== role));
+    setNotifications((prev) => prev.filter((n) => n.role !== role));
   };
 
-  // Agregar nueva notificación dinámica
+  // Agregar nueva notificación dinámica (compatibilidad; se marca no leída)
   const addNotification = (notif) => {
     const newNotif = {
       id: `NOTIF-${Date.now()}`,
@@ -189,20 +253,21 @@ export const NotificationProvider = ({ children }) => {
       timestamp: Date.now(),
       read: false,
       type: notif.type || 'info',
-      targetTab: notif.targetTab || 'dashboard'
+      targetTab: notif.targetTab || 'dashboard',
     };
-    setNotifications(prev => [newNotif, ...prev]);
+    setNotifications((prev) => [newNotif, ...prev]);
   };
 
   return (
     <NotificationContext.Provider value={{
       notifications: currentRoleNotifications,
       unreadCount,
+      loading,
       markAsRead,
       markAllAsRead,
       removeNotification,
       clearRoleNotifications,
-      addNotification
+      addNotification,
     }}>
       {children}
     </NotificationContext.Provider>

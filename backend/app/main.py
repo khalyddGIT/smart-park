@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from app.core.config import settings
 from app.db.session import engine, Base
 from app.models.models import User, Parking, Slot, FloorPlanElement, Vehicle, Incident
-from app.api.v1 import auth, parkings, reservations, anpr, vehicles, staff, users, reviews, incidents, payments
+from app.api.v1 import auth, parkings, reservations, anpr, vehicles, staff, users, reviews, incidents, payments, finances
 from app.core.security import get_password_hash, hash_pin
 
 app = FastAPI(
@@ -148,6 +148,7 @@ app.include_router(users.router, prefix=settings.API_V1_STR)
 app.include_router(reviews.router, prefix=settings.API_V1_STR)
 app.include_router(incidents.router, prefix=settings.API_V1_STR)
 app.include_router(payments.router, prefix=settings.API_V1_STR)
+app.include_router(finances.router, prefix=settings.API_V1_STR)
 
 STATIC_DIR = os.getenv("STATIC_DIR", "")
 

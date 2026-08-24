@@ -473,28 +473,22 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
           </div>
         </div>
 
-        {/* PANEL LATERAL DE RESERVA Y CHECKOUT — ESTÉTICA ULTRA-PREMIUM */}
-        <div className="bg-slate-900/90 backdrop-blur-xl p-6 rounded-3xl border border-slate-800 shadow-2xl flex flex-col justify-between space-y-5 text-white">
-          <div className="space-y-4">
+        {/* PANEL LATERAL DE RESERVA Y CHECKOUT */}
+        <div className="bg-slate-900/90 backdrop-blur-xl p-5 rounded-3xl border border-slate-800 shadow-xl flex flex-col justify-between space-y-4 text-white">
+          <div className="space-y-3.5">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-base font-extrabold text-white tracking-tight">Confirmar Reserva de Plaza</h3>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono font-bold border border-emerald-500/30">
-                  PASO FINAL
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">Selecciona tu cajón en el plano o en la lista rápida inferior.</p>
+              <h3 className="text-sm font-bold text-white tracking-tight">Confirmar Reserva</h3>
             </div>
 
-            {/* Selector Rápido de Cajones Libres */}
+            {/* Selector de Cajones Libres */}
             <div>
-              <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-2 font-mono">
-                Selector Rápido de Cajones Libres ({freeSlots.length})
+              <label className="text-[11px] font-semibold text-slate-400 block mb-1.5">
+                Cajones disponibles ({freeSlots.length})
               </label>
               <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-2 bg-slate-950 rounded-2xl border border-slate-800">
                 {freeSlots.length === 0 && (
-                  <span className="text-xs text-slate-400 font-semibold p-2">
-                    {planStatus === 'ready' ? 'Actualmente no hay cajones libres en esta cochera según el servidor.' : 'Sin cajones libres para mostrar.'}
+                  <span className="text-xs text-slate-400 font-medium p-1">
+                    No hay cajones libres en este momento.
                   </span>
                 )}
                 {freeSlots.map((s) => {
@@ -506,7 +500,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       onClick={() => setSelectedSlot(s)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1 ${
                         isCurSelected 
-                          ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25 scale-105 font-extrabold' 
+                          ? 'bg-emerald-500 text-slate-950 shadow-md font-bold' 
                           : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-emerald-500/60 hover:text-white'
                       }`}
                     >
@@ -520,18 +514,14 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
             {/* Tarjeta de Cajón Seleccionado */}
             {selectedSlot && (
-              <div className="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-950 border-2 border-emerald-500/80 p-4 rounded-2xl flex items-center justify-between shadow-lg glow-emerald">
+              <div className="bg-slate-950 border border-emerald-500/60 p-3.5 rounded-2xl flex items-center justify-between shadow-xs">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-emerald-400 block font-mono">CAJÓN SELECCIONADO</span>
-                  <span className="text-3xl font-mono font-extrabold text-white tracking-tight">{selectedSlot.code}</span>
+                  <span className="text-[10px] uppercase font-semibold text-emerald-400 block font-mono">Cajón</span>
+                  <span className="text-2xl font-mono font-bold text-white tracking-tight">{selectedSlot.code}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-bold text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-xl block font-mono border border-emerald-500/30">
-                    {selectedSlot.shaded ? '⛱️ Techado' : '🚗 Estándar'}
-                  </span>
-                  <span className="text-[10px] text-emerald-400 font-bold mt-1 block flex items-center justify-end gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Listo para reservar
+                  <span className="text-xs font-semibold text-slate-300 font-mono">
+                    {selectedSlot.shaded ? 'Techado' : 'Estándar'}
                   </span>
                 </div>
               </div>
@@ -539,11 +529,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
             {/* Selección de Vehículo */}
             <div>
-              <label className="text-xs font-extrabold text-slate-300 block mb-1.5">Vehículo a Ingresar</label>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Vehículo</label>
               <select 
                 value={selectedPlate} 
                 onChange={(e) => setSelectedPlate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-white cursor-pointer focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white cursor-pointer focus:outline-none focus:border-emerald-500"
               >
                 <option>ABC-123 (Toyota Corolla Blanco)</option>
                 <option>XYZ-789 (Hyundai Tucson Gris)</option>
@@ -551,20 +541,17 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </select>
             </div>
 
-            {/* Selector de Duración Personalizable */}
+            {/* Selector de Duración */}
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1.5 flex items-center justify-between">
-                <span>Duración Estimada (Horas)</span>
-                <span className="text-[10px] text-slate-500 font-mono">Personalizable</span>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">
+                Duración estimada
               </label>
               <div className="flex items-center gap-2">
-                {/* Stepper + Input Numérico para ingresar cualquier hora */}
-                <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl overflow-hidden h-10 px-1 shrink-0">
+                <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl overflow-hidden h-9 px-1 shrink-0">
                   <button
                     type="button"
                     onClick={() => setHours(prev => Math.max(1, (Number(prev) || 1) - 1))}
-                    className="w-8 h-8 flex items-center justify-center text-slate-300 hover:bg-slate-800 rounded-lg text-sm font-bold transition cursor-pointer"
-                    title="Restar 1 hora"
+                    className="w-7 h-7 flex items-center justify-center text-slate-300 hover:bg-slate-800 rounded text-sm font-bold transition cursor-pointer"
                   >
                     -
                   </button>
@@ -578,29 +565,27 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       if (!isNaN(val) && val >= 1) setHours(val);
                       else if (e.target.value === '') setHours('');
                     }}
-                    className="w-12 text-center bg-transparent text-xs font-mono font-bold text-white outline-none"
+                    className="w-10 text-center bg-transparent text-xs font-mono font-bold text-white outline-none"
                     placeholder="1"
                   />
                   <button
                     type="button"
                     onClick={() => setHours(prev => Math.min(168, (Number(prev) || 1) + 1))}
-                    className="w-8 h-8 flex items-center justify-center text-slate-300 hover:bg-slate-800 rounded-lg text-sm font-bold transition cursor-pointer"
-                    title="Sumar 1 hora"
+                    className="w-7 h-7 flex items-center justify-center text-slate-300 hover:bg-slate-800 rounded text-sm font-bold transition cursor-pointer"
                   >
                     +
                   </button>
                 </div>
 
-                {/* Sugerencias Rápidas */}
-                <div className="flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-none">
-                  {[1, 2, 4, 8, 12, 24].map(h => (
+                <div className="flex items-center gap-1 flex-1 overflow-x-auto scrollbar-none">
+                  {[1, 2, 4, 8].map(h => (
                     <button
                       key={h}
                       type="button"
                       onClick={() => setHours(h)}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer font-mono shrink-0 ${
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer font-mono shrink-0 ${
                         Number(hours) === h 
-                          ? 'bg-slate-800 text-white font-extrabold border border-slate-700 shadow-xs' 
+                          ? 'bg-slate-800 text-white font-bold border border-slate-700' 
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                       }`}
                     >
@@ -612,34 +597,36 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             </div>
 
             {/* Desglose de Pago */}
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs font-mono">
+            <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
-                <span>Tarifa Base:</span>
+                <span>Tarifa:</span>
                 <span className="text-slate-200">S/ {(parking?.rate || 5.0).toFixed(2)} × {hours || 1}h</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>Tolerancia de Gracia:</span>
-                <span className="text-emerald-400 font-bold">15 min gratis</span>
+                <span>Tolerancia:</span>
+                <span className="text-emerald-400 font-semibold">15 min gratis</span>
               </div>
               <div className="h-px bg-slate-800 my-1" />
-              <div className="flex justify-between text-sm font-extrabold text-white">
-                <span>Total a Liquidar:</span>
-                <span className="text-emerald-400 font-mono text-base font-extrabold">S/ {((parking?.rate || 5.0) * (Number(hours) || 1)).toFixed(2)}</span>
+              <div className="flex justify-between font-bold text-white">
+                <span>Total:</span>
+                <span className="text-emerald-400 font-mono text-sm font-bold">
+                  S/ {((parking?.rate || 5.0) * (Number(hours) || 1)).toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* BOTÓN DE ACCIÓN — Reserva sin cobro */}
-          <div className="space-y-2 pt-1">
+          {/* BOTÓN DE ACCIÓN */}
+          <div className="pt-1">
             <Button
               type="button"
               variant="default"
               onClick={handleDirectReservation}
               disabled={!selectedSlot}
-              className="w-full py-4 text-xs font-extrabold gap-2 shadow-lg shadow-emerald-500/25 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-2xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full py-3 text-xs font-bold gap-1.5 shadow-md bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <QrCode className="w-4 h-4" />
-              <span>Reservar Cajón — Pagarás al salir (S/ {(parking?.rate || 5.0).toFixed(2)}/h)</span>
+              <span>Confirmar Reserva</span>
               <ChevronRight className="w-4 h-4 text-slate-950" />
             </Button>
           </div>

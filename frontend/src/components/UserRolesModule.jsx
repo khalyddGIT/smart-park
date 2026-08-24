@@ -410,7 +410,7 @@ export const UserRolesModule = () => {
               <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo *</label>
               <Input
                 type="text"
-                placeholder="Ej. Juan Pérez"
+                placeholder="Nombres y Apellidos"
                 value={formData.full_name}
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 required
@@ -421,7 +421,7 @@ export const UserRolesModule = () => {
               <label className="text-xs font-bold text-slate-700 block mb-1">Correo Electrónico *</label>
               <Input
                 type="email"
-                placeholder="juan.perez@empresa.com"
+                placeholder="usuario@correo.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required

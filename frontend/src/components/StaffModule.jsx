@@ -296,7 +296,7 @@ export const StaffModule = () => {
           <form onSubmit={handleCreate} className="flex flex-col gap-4 my-2">
             <div className="flex flex-col gap-2">
               <label className="block text-xs font-bold text-slate-700">Nombre y Apellidos *</label>
-              <Input type="text" placeholder="Juan Pérez" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} required />
+              <Input type="text" placeholder="Nombres y Apellidos" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} required />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">

@@ -324,7 +324,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     <Input
                       type="text"
                       required
-                      placeholder="Ej. Juan Pérez"
+                      placeholder="Nombres y Apellidos"
                       value={driverName}
                       onChange={(e) => setDriverName(e.target.value)}
                       className="pl-10 bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
@@ -339,7 +339,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     <Input
                       type="email"
                       required
-                      placeholder="correo@ejemplo.com"
+                      placeholder="usuario@correo.com"
                       value={driverEmail}
                       onChange={(e) => setDriverEmail(e.target.value)}
                       className="pl-10 bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
@@ -424,7 +424,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     <Input
                       type="text"
                       required
-                      placeholder="Ej. Cochera San Cristóbal"
+                      placeholder="Nombre del Establecimiento"
                       value={reqParkingName}
                       onChange={(e) => setReqParkingName(e.target.value)}
                       className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
@@ -437,7 +437,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       <Input
                         type="text"
                         required
-                        placeholder="Ej. Roberto Quispe"
+                        placeholder="Nombres y Apellidos"
                         value={reqOwnerName}
                         onChange={(e) => setReqOwnerName(e.target.value)}
                         className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"

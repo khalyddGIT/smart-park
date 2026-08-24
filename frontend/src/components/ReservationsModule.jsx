@@ -757,7 +757,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                   <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Conductor</label>
                   <Input
                     type="text"
-                    placeholder="Ej. Juan Quispe"
+                    placeholder="Nombres y Apellidos"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     className="text-xs h-10"

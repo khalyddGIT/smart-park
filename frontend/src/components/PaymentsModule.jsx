@@ -503,7 +503,7 @@ export const PaymentsModule = () => {
               <label className="block text-xs font-bold text-slate-700 mb-1">Nombre del Titular (Como figura en la tarjeta) *</label>
               <Input
                 type="text"
-                placeholder="JUAN PEREZ ROJAS"
+                placeholder="NOMBRE Y APELLIDOS DEL TITULAR"
                 value={newCard.name}
                 onChange={(e) => setNewCard({ ...newCard, name: e.target.value.toUpperCase() })}
                 className="text-xs uppercase font-bold h-10 bg-slate-50 border-slate-200"

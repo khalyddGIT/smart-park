@@ -354,7 +354,7 @@ export const IncidentsModule = () => {
       </div>
 
       {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 h-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 h-full">
         <Card className="h-full flex flex-col gap-4 p-6 border-slate-200 bg-white">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Reportes</span>
           <div className="flex items-baseline justify-between gap-2">

@@ -215,7 +215,7 @@ export const PaymentsModule = () => {
       </div>
 
       {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
 
         <div className="p-5 rounded-3xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">

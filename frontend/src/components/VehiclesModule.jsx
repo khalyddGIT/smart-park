@@ -60,6 +60,8 @@ const getVehiclesKey = () => {
   return `${VEHICLES_STORAGE_KEY_BASE}_guest`;
 };
 
+const COLOR_PALETTE = ['Negro', 'Blanco', 'Gris Plata', 'Rojo', 'Azul', 'Verde', 'Beige'];
+
 const getDefaultCarImage = (type = 'auto') => {
   const t = (type || '').toLowerCase();
   if (t === 'suv') return 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80';

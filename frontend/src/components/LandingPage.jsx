@@ -255,7 +255,7 @@ export const LandingPage = ({
         <div className="max-w-6xl mx-auto bg-[#002624]/90 backdrop-blur-xl border border-[#005e58]/50 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgba(0,38,36,0.35)] flex items-center justify-between text-white relative">
           
           {/* Logo y Denominación */}
-          <BrandLogo className="h-8 sm:h-9 w-auto" dark={true} subtitle="AYACUCHO • HUAMANGA" />
+          <BrandLogo className="h-8 sm:h-9 w-auto" dark={true} />
 
           {/* Navegación Tipográfica en Escritorio */}
           <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 text-xs font-semibold">

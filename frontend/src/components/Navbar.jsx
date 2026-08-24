@@ -111,7 +111,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
       <header className="glass-panel sticky top-0 z-40 px-3 sm:px-4 md:px-6 py-2.5 flex items-center justify-between border-b border-slate-200/90 bg-white/95 backdrop-blur-md select-none">
         
         {/* Brand Logo */}
-        <BrandLogo className="h-8 sm:h-9 w-auto" subtitle="AYACUCHO" />
+        <BrandLogo className="h-8 sm:h-9 w-auto" />
 
         {/* Controles de Usuario / Visitante */}
         {!user ? (

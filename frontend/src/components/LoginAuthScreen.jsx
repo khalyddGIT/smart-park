@@ -148,9 +148,9 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
       {/* Header / Brand */}
       <header className="relative z-10 pt-2 sm:pt-4 flex flex-col items-center text-center space-y-1">
-        <BrandLogo className="h-10 sm:h-11 w-auto" subtitle="PLATAFORMA INTELIGENTE" />
+        <BrandLogo className="h-10 sm:h-11 w-auto" />
         <p className="text-xs text-slate-500 font-medium pt-1">
-          Gestión y Reserva de Estacionamientos en Ayacucho
+          Gestión y Reserva de Estacionamientos
         </p>
       </header>
 

@@ -362,14 +362,14 @@ export const LandingPage = ({
           className="space-y-5 sm:space-y-6 flex flex-col items-center transform-gpu will-change-transform"
         >
           
-          {/* Titular Principal Centrado con Escala Display Ultra-Bold */}
+          {/* Titular Principal Centrado con Escala Proporcional y Equilibrada */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: FLUID_EASE }}
-            className="font-display font-extrabold uppercase text-3xl sm:text-5xl md:text-6xl lg:text-[68px] text-[#002B29] tracking-[-0.02em] max-w-4xl mx-auto leading-[1.08] sm:leading-[1.02]"
+            className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] text-[#002B29] tracking-[-0.03em] max-w-3xl mx-auto leading-[1.12] sm:leading-[1.08]"
           >
-            Ecosistema Inteligente de Estacionamientos en <span className="text-emerald-600 bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">Ayacucho</span>.
+            Ecosistema Inteligente de Estacionamientos en <span className="text-[#004D49] font-black">Ayacucho.</span>
           </motion.h1>
 
           {/* Subtítulo Centrado */}
@@ -494,8 +494,8 @@ export const LandingPage = ({
         
         {/* Encabezado Centrado */}
         <div className="max-w-3xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold uppercase text-[#002B29] tracking-tight">
-            Estacionamientos Conectados en <span className="text-emerald-700">Huamanga</span>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
+            Estacionamientos Conectados en <span className="text-[#004D49]">Huamanga</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#004D49] max-w-md mx-auto font-medium">
             Consulta disponibilidad en vivo, precios por hora y navega directamente a la cochera.
@@ -574,8 +574,8 @@ export const LandingPage = ({
         
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold uppercase text-[#002B29] tracking-tight">
-            Estaciona rápido y <span className="text-emerald-700">sin complicaciones</span>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
+            Estaciona rápido y <span className="text-[#004D49]">sin complicaciones</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#004D49] max-w-lg mx-auto font-medium">
             Sin descargar aplicaciones pesadas. Todo funciona directo y seguro desde tu celular.
@@ -712,7 +712,7 @@ export const LandingPage = ({
         >
           
           <div className="max-w-2xl space-y-3 px-2">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold uppercase tracking-tight text-white">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold tracking-tight text-white">
               Digitalice la operación de <span className="text-emerald-300">su cochera</span>
             </h2>
             <p className="text-xs sm:text-sm text-[#D1FAE5] leading-relaxed max-w-xl mx-auto">
@@ -751,8 +751,8 @@ export const LandingPage = ({
         
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold uppercase text-[#002B29] tracking-tight">
-            Preguntas <span className="text-emerald-700">Frecuentes</span>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
+            Preguntas <span className="text-[#004D49]">Frecuentes</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#004D49] font-medium">
             Respuestas a las dudas principales sobre el funcionamiento del sistema.

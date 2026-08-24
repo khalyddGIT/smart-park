@@ -45,7 +45,8 @@ import {
   Accessibility,
   Umbrella,
   Crown,
-  Bike
+  Bike,
+  ArrowLeft
 } from 'lucide-react';
 
 import { Card, CardDescription } from './components/ui/card';
@@ -376,18 +377,31 @@ export const App = () => {
                           <span>{bookingFeedback}</span>
                         </div>
                       )}
-                      <div className="flex justify-between items-center bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => setSelectedParkingId(null)}
-                          className="text-xs font-bold text-slate-600 hover:text-slate-900 gap-1.5 cursor-pointer"
-                        >
-                          ← Volver al Listado de Todas las Sedes
-                        </Button>
-                        <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
-                          Sede Activa: {selectedParking.name}
-                        </span>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+                        <div className="flex items-center space-x-3">
+                          <button 
+                            type="button"
+                            onClick={() => setSelectedParkingId(null)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold transition cursor-pointer"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Volver</span>
+                          </button>
+                          <div>
+                            <h2 className="text-sm font-bold text-slate-900 leading-tight">
+                              {selectedParking.name}
+                            </h2>
+                            <p className="text-[11px] text-slate-500 font-medium truncate max-w-xs sm:max-w-md">
+                              {selectedParking.address || 'Ayacucho - Huamanga'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="text-xs font-bold text-emerald-700 font-mono">
+                            S/ {(selectedParking.hourly_rate || selectedParking.rate || 5.0).toFixed(2)} / hora
+                          </span>
+                        </div>
                       </div>
 
                       <CustomerInteractivePlanBooking 

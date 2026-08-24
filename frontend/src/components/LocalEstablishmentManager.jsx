@@ -581,48 +581,48 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     </div>
                   </div>
 
-                  {/* Acciones */}
-                  <div className="p-4 pt-0 space-y-2 border-t border-slate-100 pt-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        type="button"
-                        onClick={() => handleOpenPlan(est, 'viewer_2d')}
-                        variant="outline"
-                        className="w-full h-8 font-semibold text-xs gap-1.5 text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl px-2 flex items-center justify-center cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-                        <span className="truncate">Ver Plano</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleOpenPlan(est, 'editor_cad')}
-                        className="w-full h-8 font-semibold text-xs bg-slate-900 hover:bg-slate-800 text-white gap-1.5 rounded-xl px-2 flex items-center justify-center cursor-pointer"
-                      >
-                        <Grid className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span className="truncate">Editar CAD</span>
-                      </Button>
-                    </div>
+                  {/* Acciones en Una Sola Fila Limpia y Equilibrada */}
+                  <div className="p-3.5 pt-2.5 border-t border-slate-100 flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      onClick={() => handleOpenPlan(est, 'editor_cad')}
+                      className="flex-1 h-8.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold gap-1.5 rounded-xl shadow-xs cursor-pointer"
+                    >
+                      <Grid className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Plano CAD</span>
+                    </Button>
 
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        onClick={() => handleOpenEdit(est)}
-                        variant="outline"
-                        className="flex-1 min-w-0 h-8 text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold gap-1.5 rounded-xl px-2.5 flex items-center justify-center cursor-pointer"
-                      >
-                        <Edit3 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span className="truncate">Editar Sede</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleDelete(est.id, est.name)}
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl shrink-0 flex items-center justify-center cursor-pointer"
-                        title="Eliminar Sede"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                      </Button>
-                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => handleOpenPlan(est, 'viewer_2d')}
+                      variant="outline"
+                      className="h-8.5 px-2.5 text-slate-700 bg-white hover:bg-slate-50 border-slate-200 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
+                      title="Ver Plano 2D"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>Ver</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      onClick={() => handleOpenEdit(est)}
+                      variant="outline"
+                      className="h-8.5 px-2.5 text-slate-700 bg-white hover:bg-slate-50 border-slate-200 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
+                      title="Editar información de la sede"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>Editar</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      onClick={() => handleDelete(est.id, est.name)}
+                      variant="ghost"
+                      className="h-8.5 w-8.5 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl shrink-0 flex items-center justify-center cursor-pointer transition-colors"
+                      title="Eliminar Sede"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                    </Button>
                   </div>
                 </div>
               );

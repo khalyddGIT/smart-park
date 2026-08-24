@@ -15,12 +15,10 @@ import {
   Smartphone, 
   LogIn,
   Filter,
-  Check,
   Layers,
   Clock,
   Zap,
   Globe,
-  Sparkles,
   Menu,
   X
 } from 'lucide-react';
@@ -483,31 +481,6 @@ export const LandingPage = ({
             </motion.div>
 
           </motion.div>
-
-          {/* Captura real del producto en marco de navegador */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.65, ease: FLUID_EASE }}
-            className="w-full max-w-4xl mx-auto pt-6"
-          >
-            <div className="rounded-2xl overflow-hidden border border-[#004D49]/15 shadow-[0_32px_70px_-20px_rgba(0,77,73,0.35)] bg-white">
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-[#F0F7F6] border-b border-[#D4E8E7]">
-                <span className="w-3 h-3 rounded-full bg-[#004D49]/25" />
-                <span className="w-3 h-3 rounded-full bg-[#004D49]/15" />
-                <span className="w-3 h-3 rounded-full bg-emerald-400/60" />
-                <span className="ml-3 flex-1 max-w-xs truncate rounded-md bg-white/80 border border-[#D4E8E7] px-3 py-1 text-left font-mono text-[10px] text-[#004D49]/80">
-                  smart-park.pe — Reserva tu plaza en el plano
-                </span>
-              </div>
-              <img
-                src="/screenshots/conductor_plano_booking.png"
-                alt="Interfaz de reserva de plaza en el plano interactivo de Smart-Park"
-                loading="lazy"
-                className="w-full h-auto block"
-              />
-            </div>
-          </motion.div>
         </motion.div>
 
       </section>
@@ -752,195 +725,6 @@ export const LandingPage = ({
           </motion.div>
         </div>
 
-      </CinematicScrollSection>
-
-      {/* =========================================================================
-          5. TESTIMONIOS (PRUEBA SOCIAL)
-          ========================================================================= */}
-      <CinematicScrollSection className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8 sm:space-y-10">
-        <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display text-[#002B29] tracking-tight">
-            Quienes ya lo usan, lo recomiendan
-          </h2>
-          <p className="text-xs sm:text-sm text-[#004D49] max-w-lg mx-auto font-medium">
-            Conductores que estacionan sin vueltas y propietarios que llenaron sus plazas.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {[
-            {
-              quote: 'Llego al centro, abro el mapa y ya sé dónde hay plaza libre. El pase QR me abrió el portón sin bajarme del auto.',
-              name: 'Renzo Quispe',
-              role: 'Conductor · Huamanga',
-              initials: 'RQ'
-            },
-            {
-              quote: 'Antes anotaba las placas en un cuaderno. Ahora el sistema registra cada ingreso solo y veo mi caja diaria desde el celular.',
-              name: 'María Cárdenas',
-              role: 'Propietaria · Cochera Los Andes',
-              initials: 'MC'
-            },
-            {
-              quote: 'Reservé desde casa para el partido, pagué con Yape y mi espacio A-03 estaba esperándome con letrero digital incluido.',
-              name: 'Diego Pariona',
-              role: 'Conductor · Plaza Mayor',
-              initials: 'DP'
-            }
-          ].map((t, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-30px' }}
-              transition={{ duration: 0.5, delay: i * 0.08, ease: FLUID_EASE }}
-              className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl border border-[#004D49]/10 shadow-sm flex flex-col justify-between space-y-5"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center gap-1 text-amber-400" aria-label="Calificación de 5 estrellas">
-                  {[...Array(5)].map((_, s) => (
-                    <Sparkles key={s} className="w-3.5 h-3.5 fill-current" />
-                  ))}
-                </div>
-                <p className="text-sm text-[#003835] leading-relaxed">“{t.quote}”</p>
-              </div>
-              <div className="flex items-center gap-3 pt-2 border-t border-[#004D49]/10">
-                <span className="w-9 h-9 rounded-full bg-[#004D49] text-white text-xs font-black flex items-center justify-center shadow-xs">
-                  {t.initials}
-                </span>
-                <div>
-                  <p className="text-xs font-black text-[#002B29]">{t.name}</p>
-                  <p className="text-[10px] text-[#004D49]/70 font-semibold">{t.role}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </CinematicScrollSection>
-
-      {/* =========================================================================
-          5.5 PLANES PARA PROPIETARIOS (PRICING)
-          ========================================================================= */}
-      <CinematicScrollSection id="planes" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8 sm:space-y-10">
-        <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display text-[#002B29] tracking-tight">
-            Planes para tu cochera
-          </h2>
-          <p className="text-xs sm:text-sm text-[#004D49] max-w-lg mx-auto font-medium">
-            Sin costo de instalación. Elige el plan y empieza a recibir reservas este mes.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-
-          {/* Plan Básico */}
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-30px' }}
-            transition={{ duration: 0.5, ease: FLUID_EASE }}
-            className="bg-white/90 backdrop-blur-sm p-7 rounded-3xl border border-[#004D49]/10 shadow-sm flex flex-col space-y-5"
-          >
-            <div className="space-y-1">
-              <h3 className="text-sm font-black uppercase tracking-wide text-[#004D49]">Básico</h3>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-display font-bold text-[#002B29] tracking-tight">S/ 49</span>
-                <span className="text-xs text-[#004D49]/60 font-semibold">/mes</span>
-              </div>
-              <p className="text-xs text-[#003835]/70">Para cocheras pequeñas que recién se digitalizan.</p>
-            </div>
-            <ul className="space-y-2.5 text-xs text-[#003835] flex-1">
-              {['Plano digital interactivo', 'Hasta 30 plazas registradas', 'Reservas online ilimitadas', 'Caja y comprobantes digitales'].map((f, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <Check className="w-3.5 h-3.5 mt-0.5 text-emerald-600 shrink-0 stroke-[3]" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <button
-              onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="w-full py-3 rounded-xl border border-[#004D49]/25 text-[#004D49] hover:bg-[#004D49] hover:text-white text-xs font-bold transition-all duration-200 cursor-pointer"
-            >
-              Empezar con Básico
-            </button>
-          </motion.div>
-
-          {/* Plan Pro — Destacado */}
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-30px' }}
-            transition={{ duration: 0.55, delay: 0.08, ease: FLUID_EASE }}
-            className="relative bg-[#002B29] p-7 rounded-3xl border border-emerald-400/40 shadow-[0_24px_50px_-15px_rgba(0,43,41,0.55)] flex flex-col space-y-5 md:-translate-y-2"
-          >
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-md whitespace-nowrap">
-              Más elegido
-            </span>
-            <img
-              src="/screenshots/garita_lpr_cctv.png"
-              alt="Monitor de garita LPR en operación"
-              loading="lazy"
-              className="rounded-xl border border-white/10 h-28 w-full object-cover object-top"
-            />
-            <div className="space-y-1">
-              <h3 className="text-sm font-black uppercase tracking-wide text-emerald-300">Pro con LPR</h3>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-display font-bold text-white tracking-tight">S/ 149</span>
-                <span className="text-xs text-emerald-200/70 font-semibold">/mes</span>
-              </div>
-              <p className="text-xs text-[#D1FAE5]/80">Garita automatizada con reconocimiento de placas.</p>
-            </div>
-            <ul className="space-y-2.5 text-xs text-[#EAFDF7] flex-1">
-              {['Todo lo del plan Básico', 'Cámara LPR: barrera automática', 'Hasta 120 plazas', 'Pases QR + token ANPR'].map((f, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <Check className="w-3.5 h-3.5 mt-0.5 text-emerald-400 shrink-0 stroke-[3]" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <button
-              onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 text-xs font-black transition-all duration-200 cursor-pointer shadow-md shadow-emerald-400/25 hover:brightness-105"
-            >
-              Solicitar Pro con LPR
-            </button>
-          </motion.div>
-
-          {/* Plan Enterprise */}
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-30px' }}
-            transition={{ duration: 0.5, delay: 0.16, ease: FLUID_EASE }}
-            className="bg-white/90 backdrop-blur-sm p-7 rounded-3xl border border-[#004D49]/10 shadow-sm flex flex-col space-y-5"
-          >
-            <div className="space-y-1">
-              <h3 className="text-sm font-black uppercase tracking-wide text-[#004D49]">Enterprise</h3>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-display font-bold text-[#002B29] tracking-tight">S/ 299</span>
-                <span className="text-xs text-[#004D49]/60 font-semibold">/mes</span>
-              </div>
-              <p className="text-xs text-[#003835]/70">Para redes de sedes y operaciones grandes.</p>
-            </div>
-            <ul className="space-y-2.5 text-xs text-[#003835] flex-1">
-              {['Todo lo del plan Pro', 'Múltiples sedes centralizadas', 'Personal y turnos ilimitados', 'Soporte prioritario WhatsApp'].map((f, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <Check className="w-3.5 h-3.5 mt-0.5 text-emerald-600 shrink-0 stroke-[3]" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <a
-              href="https://wa.me/51966000000?text=Hola,%20me%20interesa%20el%20plan%20Enterprise%20para%20mi%20cochera"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-3 rounded-xl border border-[#004D49]/25 text-[#004D49] hover:bg-[#004D49] hover:text-white text-xs font-bold transition-all duration-200 text-center"
-            >
-              Hablar con Ventas
-            </a>
-          </motion.div>
-
-        </div>
       </CinematicScrollSection>
 
       {/* =========================================================================

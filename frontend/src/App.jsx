@@ -194,6 +194,16 @@ export const App = () => {
     setSelectedParkingId(parking.id);
   };
 
+  // Redirección inmediata a Landing Page y reseteo completo de estados al cerrar sesión
+  useEffect(() => {
+    if (!user) {
+      setSelectedParkingId(null);
+      setActiveTab('dashboard');
+      setShowAuthModal(false);
+      setPendingParkingForBooking(null);
+    }
+  }, [user]);
+
   // Cerrar modal de autenticación inmediatamente al autenticarse y reanudar selección si aplica
   useEffect(() => {
     if (user) {
@@ -214,8 +224,8 @@ export const App = () => {
     setActiveTab(tab);
   };
 
-  // Si el usuario no ha iniciado sesión, mostrar la Landing Page de última generación
-  if (!user && !selectedParkingId) {
+  // Si el usuario no ha iniciado sesión, mostrar SIEMPRE la Landing Page de inicio
+  if (!user) {
     return (
       <div className="w-full bg-[#FBFBFA] text-[#191919] font-sans antialiased selection:bg-[#EAEAEA] selection:text-black">
         <Toaster position="top-right" toastOptions={{ duration: 3500, style: { borderRadius: '14px', background: '#0f172a', color: '#fff', fontSize: '13px' } }} />

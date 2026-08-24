@@ -58,9 +58,11 @@ async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
     parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
     parking = parking_res.scalars().first()
     return {
+        "id": reservation.id,
         "code": reservation.code,
         "qr_code": reservation.qr_code,
         "license_plate": reservation.license_plate,
+        "parking_id": reservation.parking_id,
         "parking_name": parking.name if parking else f"Sede #{reservation.parking_id}",
         "slot_code": slot.code if slot else f"#{reservation.slot_id}",
         "status": reservation.status,

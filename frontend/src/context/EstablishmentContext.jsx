@@ -277,6 +277,52 @@ export const INITIAL_RESERVATIONS = [
   }
 ];
 
+// Sanitizador de coordenadas: asegura que cualquier cochera tenga coordenadas y datos válidos en Ayacucho
+export const sanitizeEstablishment = (est, idx = 0) => {
+  let lat = Number(est.latitude);
+  let lng = Number(est.longitude);
+  let name = est.name || '';
+  let address = est.address || '';
+  let reference = est.reference || '';
+
+  // Limpieza de nombres y direcciones de Lima heredados
+  if (name.includes('San Isidro') || address.includes('Javier Prado')) {
+    name = 'Smart Park Plaza Mayor - Planta Baja';
+    address = 'Portal Unión 42, Centro Histórico';
+    reference = 'Frente a la Catedral de Huamanga';
+    lat = -13.1604;
+    lng = -74.2259;
+  } else if (name.includes('Miraflores') || address.includes('Shell')) {
+    name = 'Smart Park Jr. Bellido Colonial';
+    address = 'Jr. Bellido 240, Centro Histórico';
+    reference = 'A 2 cuadras de la Plaza Mayor';
+    lat = -13.1631;
+    lng = -74.2236;
+  }
+
+  // Si las coordenadas están fuera del rango de Ayacucho (ej. -12.x o -77.x de Lima), reasignar a Ayacucho
+  if (isNaN(lat) || isNaN(lng) || lat > -13.0 || lat < -13.3 || lng > -74.0 || lng < -74.4) {
+    const defaultCoords = [
+      [-13.1604, -74.2259],
+      [-13.1631, -74.2236],
+      [-13.1565, -74.2215],
+      [-13.1718, -74.2210]
+    ];
+    const fallback = defaultCoords[idx % defaultCoords.length];
+    lat = fallback[0];
+    lng = fallback[1];
+  }
+  return { 
+    ...est, 
+    name,
+    address,
+    reference,
+    latitude: lat, 
+    longitude: lng, 
+    city: est.city && est.city.includes('Ayacucho') ? est.city : 'Ayacucho - Huamanga' 
+  };
+};
+
 const EstablishmentContext = createContext();
 
 export const EstablishmentProvider = ({ children }) => {
@@ -286,13 +332,13 @@ export const EstablishmentProvider = ({ children }) => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.map((e, idx) => sanitizeEstablishment(e, idx));
         }
       }
     } catch (e) {
       console.error('Error reading establishments from storage:', e);
     }
-    return INITIAL_ESTABLISHMENTS;
+    return INITIAL_ESTABLISHMENTS.map((e, idx) => sanitizeEstablishment(e, idx));
   });
 
   const [reservations, setReservations] = useState(() => {
@@ -444,30 +490,6 @@ export const EstablishmentProvider = ({ children }) => {
     const est = establishments.find(e => String(e.id) === String(id));
     if (est && est.elements === null) return hydrateFloorPlan(id);
   };
-
-// Sanitizador de coordenadas: asegura que cualquier cochera tenga coordenadas válidas en Ayacucho
-const sanitizeEstablishment = (est, idx = 0) => {
-  let lat = Number(est.latitude);
-  let lng = Number(est.longitude);
-  // Si las coordenadas están fuera del rango de Ayacucho (ej. -12.x o -77.x de Lima), reasignar a Ayacucho
-  if (isNaN(lat) || isNaN(lng) || lat > -13.0 || lat < -13.3 || lng > -74.0 || lng < -74.4) {
-    const defaultCoords = [
-      [-13.1604, -74.2259],
-      [-13.1631, -74.2236],
-      [-13.1565, -74.2215],
-      [-13.1718, -74.2210]
-    ];
-    const fallback = defaultCoords[idx % defaultCoords.length];
-    lat = fallback[0];
-    lng = fallback[1];
-  }
-  return { 
-    ...est, 
-    latitude: lat, 
-    longitude: lng, 
-    city: est.city && est.city.includes('Ayacucho') ? est.city : 'Ayacucho - Huamanga' 
-  };
-};
 
   const fetchParkings = async () => {
     try {

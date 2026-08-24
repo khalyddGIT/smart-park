@@ -191,7 +191,10 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       marker.bindPopup(popupHtml, {
         className: 'custom-leaflet-popup',
         closeButton: false,
-        offset: [0, -28]
+        offset: [0, -28],
+        autoPan: true,
+        autoPanPaddingTopLeft: [20, 80],
+        autoPanPaddingBottomRight: [20, 20]
       });
 
       marker.on('popupopen', () => {
@@ -204,12 +207,29 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       });
 
       marker.on('click', () => {
-        map.setView(coords, 16, { animate: true });
+        // Desplazamiento inteligente: sube la latitud un poco (+0.0016) para que el popup entre holgado sin cortarse arriba
+        map.flyTo([coords[0] + 0.0016, coords[1]], 16, { animate: true, duration: 0.6 });
       });
 
       markersRef.current[p.id] = marker;
     });
   }, [parkings, selectedParkingId, onSelectParking]);
+
+  // Centrar y abrir popup si cambia selectedParkingId externamente (desde listado o buscador)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !selectedParkingId) return;
+    const marker = markersRef.current[selectedParkingId];
+    if (marker) {
+      const latLng = marker.getLatLng();
+      mapInstanceRef.current.flyTo([latLng.lat + 0.0016, latLng.lng], 16, {
+        animate: true,
+        duration: 0.6
+      });
+      setTimeout(() => {
+        marker.openPopup();
+      }, 300);
+    }
+  }, [selectedParkingId]);
 
   // Re-centrar en el Centro Histórico
   const handleRecenterAyacucho = () => {

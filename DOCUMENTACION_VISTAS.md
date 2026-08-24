@@ -1,13 +1,13 @@
-# 🅿️ Smart Park Ayacucho — Documentación Integral de Vistas del Sistema
+# 🅿️ Smart Park Ayacucho — Documentación Gráfica e Integral de Vistas
 
-Documento técnico y operativo que detalla la arquitectura, roles de usuario, vistas, componentes y funcionalidades de la plataforma **Smart Park Enterprise**.
+Documento técnico y visual que detalla la arquitectura, roles de usuario, vistas, componentes y funcionalidades de la plataforma **Smart Park Enterprise**, incluyendo capturas reales de cada módulo.
 
 ---
 
 ## 📑 Tabla de Contenidos
 1. [Arquitectura de Roles y Accesos](#1-arquitectura-de-roles-y-accesos)
 2. [Vistas Públicas (Sin Autenticación)](#2-vistas-públicas-sin-autenticación)
-   - 2.1. Landing Page Principal
+   - 2.1. Landing Page Principal (Hero, Red de Cocheras, Mapa y Footer)
    - 2.2. Modal de Autenticación & Acceso Rápido
    - 2.3. Verificación Pública de Pases QR (`/verify/:id`)
 3. [Vistas del Rol Conductor (Usuario / Cliente)](#3-vistas-del-rol-conductor-usuario--cliente)
@@ -57,6 +57,20 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - **Pilares Tecnológicos:** Secciones explicativas sobre lectura automática de placas LPR, pagos sin contacto y seguridad 24/7.
   - **Footer Institucional:** Enlaces directos a Términos y Condiciones Legales, contacto y soporte por WhatsApp.
 
+#### 📸 Capturas de la Landing Page:
+
+**Hero Principal & Buscador:**
+![Landing Page Hero](docs/screenshots/landing_hero.png)
+
+**Red de Cocheras & Mapa Interactivo en Ayacucho:**
+![Mapa y Red de Estacionamientos](docs/screenshots/landing_map_network.png)
+
+**Pilares Tecnológicos & Beneficios:**
+![Características del Sistema](docs/screenshots/landing_features.png)
+
+**Preguntas Frecuentes & Pie de Página Institucional:**
+![Footer y Preguntas Frecuentes](docs/screenshots/landing_footer.png)
+
 ---
 
 ### 2.2. Modal de Autenticación & Acceso Rápido (`LoginAuthScreen.jsx`)
@@ -65,6 +79,9 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - **Google One-Tap / OAuth:** Inicio de sesión en 1 clic mediante credencial JWT oficial.
   - **Acceso Tradicional:** Correo electrónico y contraseña con validación contra el servidor backend Supabase/FastAPI.
   - **Selector Rápido de Roles (Desarrollo/Demo):** Botones directos para alternar entre *Conductor*, *Administrador Local* y *Super Admin*.
+
+#### 📸 Captura del Modal de Autenticación:
+![Modal de Autenticación](docs/screenshots/auth_modal.png)
 
 ---
 
@@ -99,6 +116,9 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
     - Cyan Pulsante: *Seleccionado por el usuario*.
   - **Panel Lateral de Reserva:** Selector de vehículo registrado, duración estimada en horas (`1h`, `2h`, `4h`, `8h`), cálculo de tarifa y botón `[ Confirmar Reserva ]`.
 
+#### 📸 Captura del Plano Topográfico Interactivo:
+![Reserva Interactiva sobre Plano](docs/screenshots/conductor_plano_booking.png)
+
 ---
 
 ### 3.3. Pase de Acceso Digital QR (`DigitalAccessPassModal.jsx`)
@@ -109,6 +129,9 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - Datos clave: Código de reserva (`RSV-XXXX`), Placa (`ABC-123`), Cajón (`A-01`) y Tarifa.
   - Botón directo para imprimir o descargar el comprobante.
 
+#### 📸 Captura del Pase Digital QR:
+![Pase de Acceso Digital QR](docs/screenshots/conductor_pase_qr.png)
+
 ---
 
 ### 3.4. Padrón de Mis Reservas (`ReservationsModule.jsx`)
@@ -117,6 +140,9 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - Pestañas de estado: `Todas`, `En Estancia (Activas)`, `Programadas`, `Finalizadas`, `Canceladas`.
   - Barra de progreso de tiempo transcurrido para estancias en curso.
   - Acceso inmediato al **Pase QR**, **Impresión de Ticket** o **Cancelación**.
+
+#### 📸 Captura del Módulo de Reservas:
+![Listado de Reservas del Conductor](docs/screenshots/conductor_reservas.png)
 
 ---
 
@@ -128,6 +154,9 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - Opción de capturar foto con la cámara del dispositivo o subir desde la galería.
   - Selector de vehículo predeterminado para reservas rápidas.
 
+#### 📸 Captura del Módulo de Vehículos:
+![Padrón de Vehículos](docs/screenshots/conductor_vehiculos.png)
+
 ---
 
 ### 3.6. Métodos de Pago & Billeteras Digitales (`PaymentsModule.jsx`)
@@ -136,6 +165,9 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - **Billeteras Móviles (Yape & Plin):** Cobro instantáneo mediante código QR sin comisión.
   - **Tarjetas Tokenizadas (Visa / Mastercard):** Guardado seguro con tokenización.
   - **Comprobantes Electrónicos:** Registro de boletas y facturas emitidas bajo normativa SUNAT con botón para visualizar e imprimir comprobante.
+
+#### 📸 Captura de Métodos de Pago en Móvil:
+![Métodos de Pago](docs/screenshots/pagos_mobile.png)
 
 ---
 
@@ -179,6 +211,13 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
    - Teléfono de atención, número de WhatsApp para reservas, correo electrónico y enlace de Google Maps / Waze.
    - Botones interactivos `[ Probar enlace ]` que abren chats reales de WhatsApp o páginas web en nuevas pestañas.
 
+#### 📸 Capturas de Edición de Sede y Selector GPS:
+**Pestañas de Edición de Sede:**
+![Pestañas de Edición de Sede](docs/screenshots/editar_sede_tabs.png)
+
+**Selector de Coordenadas GPS en Mapa Satelital:**
+![Selector de Ubicación en Mapa](docs/screenshots/location_picker_map.png)
+
 ---
 
 ### 4.2. Estudio de Dibujo y Edición del Plano (`InteractiveFloorPlanDrawingStudio.jsx`)
@@ -189,6 +228,9 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
   - Dibujar Carriles Viales de circulación con flechas direccionales.
   - Colocar Pasos Peatonales tipo cebra.
   - Guardado y persistencia en tiempo real en la base de datos de la cochera.
+
+#### 📸 Captura del CAD Drawing Studio:
+![Editor de Plano Topográfico](docs/screenshots/cad_floor_plan_studio.png)
 
 ---
 
@@ -201,6 +243,9 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
   - **Emisión Rápida de Tickets Presenciales:** Emite ticket con plaza asignada en 1 clic para clientes sin reserva previa.
   - **Monitor de Vehículos en Cochera:** Lista en tiempo real de los autos estacionados con su tiempo de estancia y botón de `Salida`.
   - **Bitácora de Accesos:** Registro cronológico de ingresos, salidas, placas y montos recaudados con exportación a CSV.
+
+#### 📸 Captura de la Consola de Garita LPR:
+![Consola Garita y Reconocimiento LPR](docs/screenshots/garita_lpr_cctv.png)
 
 ---
 

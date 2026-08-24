@@ -71,6 +71,8 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Respuesta inválida del servidor de autenticación');
     }
     setAccessToken(data.access_token);
+    // Disparar la carga inmediata de datos del usuario (reservas, etc.) sin esperar el polling de 15s
+    window.dispatchEvent(new Event('focus'));
     const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, avatar: null, role: data.user.role || explicitRole || 'user', isGoogleAuth: false };
     setUser(u); setRole(u.role); return u;
   };

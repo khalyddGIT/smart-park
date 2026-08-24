@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api, { getAccessToken } from '../services/api';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
@@ -90,7 +91,24 @@ export const PaymentsModule = () => {
   const [activeTab, setActiveTab] = useState('cards'); // 'cards' | 'history'
   const [toast, setToast] = useState(null);
 
-  const transactions = [];
+  // Transacciones reales desde el servidor (GET /payments/my)
+  const [transactions, setTransactions] = useState([]);
+  useEffect(() => {
+    if (!getAccessToken()) return;
+    api.get('/payments/my').then(r => {
+      const rows = (Array.isArray(r.data) ? r.data : []).map(p => ({
+        id: p.id,
+        date: p.created_at ? p.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+        description: p.description || 'Reserva Smart Park',
+        reservationCode: p.reservation_id ? `#${p.reservation_id}` : '—',
+        amount: Number(p.amount) || 0,
+        method: p.method === 'card' ? 'Tarjeta (Culqi)' : (p.method || 'Tarjeta'),
+        status: p.status === 'succeeded' ? 'Pagado' : (p.status || 'Pagado'),
+        chargeId: p.culqi_charge_id || ''
+      }));
+      setTransactions(rows);
+    }).catch(() => {});
+  }, []);
 
   const notify = (msg) => {
     setToast(msg);

@@ -10,9 +10,13 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
 from app.core.config import settings
 from app.core.security import get_current_user
-from app.models.models import User
+from app.db.session import get_db
+from app.models.models import User, Payment
 
 router = APIRouter(prefix="/payments", tags=["Pagos Culqi"])
 
@@ -51,9 +55,10 @@ async def payments_status():
 @router.post("/charge")
 async def create_charge(
     body: ChargeRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Cobra un token Culqi contra la API real de Culqi."""
+    """Cobra un token Culqi contra la API real de Culqi y persiste el pago."""
     # Validaciones basicas
     if body.amount_cents <= 0:
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0")
@@ -114,6 +119,23 @@ async def create_charge(
         outcome = data.get("outcome", {}) if isinstance(data, dict) else {}
         # Algunos charges vienen con outcome.type == venta_exitosa
         if outcome.get("type") == "venta_exitosa" or data.get("outcome") is None and resp.status_code == 201:
+            # Persistir el pago para historial/comprobantes y trazabilidad de la reserva
+            payment = Payment(
+                reservation_id=body.reservation_id,
+                user_id=current_user.id,
+                amount_cents=body.amount_cents,
+                currency=currency_code,
+                status="succeeded",
+                method="card",
+                culqi_charge_id=str(data.get("id", ""))[:100] if isinstance(data, dict) else None,
+                description=body.description[:200],
+            )
+            db.add(payment)
+            await db.commit()
+            await db.refresh(payment)
+            if isinstance(data, dict):
+                data["payment_id"] = payment.id
+                data["reservation_paid"] = bool(body.reservation_id)
             return data
         # Si vino 200/201 pero outcome no es exito, tratarlo como declinado y propagar mensaje
         if outcome.get("type") != "venta_exitosa" and outcome:
@@ -137,3 +159,32 @@ async def create_charge(
     if resp.status_code in (400, 402):
         raise HTTPException(status_code=402, detail=detail)
     raise HTTPException(status_code=resp.status_code if 400 <= resp.status_code < 600 else 502, detail=detail)
+
+
+@router.get("/my")
+async def list_my_payments(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Historial de pagos del usuario autenticado (para comprobantes y estado de reserva pagada)."""
+    result = await db.execute(
+        select(Payment)
+        .where(Payment.user_id == current_user.id)
+        .order_by(Payment.id.desc())
+    )
+    payments = result.scalars().all()
+    return [
+        {
+            "id": p.id,
+            "reservation_id": p.reservation_id,
+            "amount": round(p.amount_cents / 100, 2),
+            "amount_cents": p.amount_cents,
+            "currency": p.currency,
+            "status": p.status,
+            "method": p.method,
+            "culqi_charge_id": p.culqi_charge_id,
+            "description": p.description,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        }
+        for p in payments
+    ]

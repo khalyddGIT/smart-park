@@ -187,3 +187,19 @@ Resena = Review
 Incidente = Incident
 
 
+
+class Payment(Base):
+    __tablename__ = "pagos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reservation_id = Column(Integer, ForeignKey("reservas.id"), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False, index=True)
+    amount_cents = Column(Integer, nullable=False)
+    currency = Column(String(10), default="PEN")
+    status = Column(String(20), default="succeeded")
+    method = Column(String(30), default="card")
+    culqi_charge_id = Column(String(100), nullable=True)
+    description = Column(String(200), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+Pago = Payment

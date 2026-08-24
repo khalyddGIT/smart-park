@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
+import api, { getAccessToken } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
 import { 
@@ -52,6 +53,20 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
 
   // Vista activa: 'list' | 'analytics'
   const [activeSubView, setActiveSubView] = useState('list');
+
+  // Pagos: reservas ya pagadas (según servidor) y reserva en proceso de pago
+  const [paidIds, setPaidIds] = useState(new Set());
+  const [payTarget, setPayTarget] = useState(null);
+
+  useEffect(() => {
+    if (!getAccessToken()) return;
+    api.get('/payments/my').then(r => {
+      const ids = new Set((Array.isArray(r.data) ? r.data : [])
+        .filter(p => p.status === 'succeeded' && p.reservation_id)
+        .map(p => Number(p.reservation_id)));
+      setPaidIds(ids);
+    }).catch(() => {});
+  }, [reservations.length]);
 
   // Estados de búsqueda y filtrado
   const [searchTerm, setSearchTerm] = useState('');
@@ -434,6 +449,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             const isActive = res.status === 'ACTIVE';
             const isCompleted = res.status === 'COMPLETED';
             const isCancelled = res.status === 'CANCELLED';
+            const isPaid = paidIds.has(Number(res.id));
 
             const progress = calculateTimeProgress(res.startTime, res.expiresAt);
             const remainingText = getRemainingTimeText(res.expiresAt, res.status);
@@ -562,6 +578,26 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                     {/* Botones de Acción */}
                     <div className="flex items-center gap-1.5">
                       
+                      {/* Pagar reserva pendiente */}
+                      {isScheduled && !isPaid && (
+                        <Button
+                          onClick={() => setPayTarget(res)}
+                          size="sm"
+                          className="rounded-lg text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs h-8 px-3 cursor-pointer"
+                        >
+                          <CreditCard className="w-3.5 h-3.5 shrink-0" />
+                          <span>Pagar</span>
+                        </Button>
+                      )}
+
+                      {/* Sello pagado */}
+                      {isPaid && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg uppercase tracking-wide">
+                          <CheckCircle2 className="w-3 h-3 shrink-0" />
+                          Pagado
+                        </span>
+                      )}
+
                       {/* Ver Pase Digital QR */}
                       <Button
                         onClick={() => handleOpenPass(res)}
@@ -896,6 +932,26 @@ ESTADO: AUTORIZADO`}
           />
         );
       })()}
+
+      {/* Pago de reserva programada desde la vista del conductor */}
+      <CulqiPaymentModal
+        isOpen={!!payTarget}
+        onClose={() => setPayTarget(null)}
+        amount={Number(payTarget?.cost ?? 0)}
+        concept={`Reserva ${payTarget?.code || ''} — Plaza ${payTarget?.slot || ''} en ${payTarget?.parking || 'Smart Park'}`}
+        parkingName={String(payTarget?.parking || 'Smart Park')}
+        slotCode={String(payTarget?.slot || '')}
+        customerEmail="conductor@smartpark.com"
+        reservationId={payTarget?.id ? Number(payTarget.id) : null}
+        onPaymentSuccess={() => {
+          if (payTarget?.id) {
+            setPaidIds(prev => new Set([...prev, Number(payTarget.id)]));
+          }
+          setFeedbackMessage(`✓ Pago de S/ ${Number(payTarget?.cost ?? 0).toFixed(2)} confirmado para la reserva ${payTarget?.code}.`);
+          setTimeout(() => setFeedbackMessage(''), 5000);
+          setPayTarget(null);
+        }}
+      />
 
     </div>
   );

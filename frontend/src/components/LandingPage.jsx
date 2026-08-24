@@ -22,7 +22,10 @@ import {
   Menu,
   X,
   Sparkles,
-  ShieldAlert
+  ShieldAlert,
+  Lock,
+  MessageCircle,
+  FileText
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -836,119 +839,111 @@ export const LandingPage = ({
       </CinematicScrollSection>
 
       {/* =========================================================================
-          8. FOOTER ULTRA-PREMIUM MULTI-COLUMNA (DARK EMERALD THEME)
+          8. FOOTER CORPORATIVO PROFESIONAL (DARK EMERALD CON ICONOGRAFÍA VECTORIAL SVG)
           ========================================================================= */}
-      <footer className="bg-gradient-to-b from-[#00211F] to-[#001413] text-white border-t border-[#004D49]/40 pt-16 pb-12 px-4 sm:px-6 lg:px-12 relative z-10 overflow-hidden">
-        {/* Glow de fondo */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[200px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
-
-        <div className="max-w-6xl mx-auto space-y-12 relative z-10">
+      <footer className="bg-[#001B19] text-white border-t border-[#004D49]/50 pt-16 pb-12 px-4 sm:px-6 lg:px-12 relative z-10">
+        <div className="max-w-6xl mx-auto space-y-12">
           
-          {/* Fila Principal de 4 Columnas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
+          {/* Fila Principal de Columnas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8">
             
-            {/* Columna 1 & 2: Identidad & Estado de Red */}
-            <div className="lg:col-span-2 space-y-4">
+            {/* Columna 1: Identidad Institucional (4 cols) */}
+            <div className="lg:col-span-4 space-y-4">
               <div className="flex items-center space-x-3">
                 <BrandLogo className="h-8 w-auto" dark={true} />
               </div>
               
-              <p className="text-xs text-emerald-100/70 leading-relaxed max-w-sm font-sans">
-                La primera red inteligente de estacionamientos en Ayacucho. Automatización de acceso vehicular con reconocimiento de placas y pagos digitales en tiempo real.
+              <p className="text-xs text-slate-300 leading-relaxed max-w-sm font-sans">
+                Plataforma de infraestructura y reservas para la red de estacionamientos de Ayacucho. Automatización de acceso vehicular con reconocimiento de placas y procesamiento digital de pagos.
               </p>
 
-              {/* Status Pill en Vivo */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-[11px] font-mono text-emerald-300 shadow-inner">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span>Red Huamanga: 100% Operativa</span>
+              <div className="flex items-center gap-2 pt-2 text-xs text-emerald-400 font-medium">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Infraestructura Segura con Cifrado SSL de 256 bits</span>
               </div>
             </div>
 
-            {/* Columna 3: Para Conductores */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 font-display">
+            {/* Columna 2: Servicios para Conductores (3 cols) */}
+            <div className="lg:col-span-3 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 font-display">
                 Conductores
               </h4>
-              <ul className="space-y-2 text-xs text-emerald-100/70">
+              <ul className="space-y-2.5 text-xs text-slate-300">
                 <li>
-                  <a href="#mapa" className="hover:text-white hover:underline transition">
-                    Mapa de Cocheras
+                  <a href="#mapa" className="hover:text-white transition flex items-center gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Directorio de Cocheras en Huamanga</span>
                   </a>
                 </li>
                 <li>
-                  <a href="#mapa" className="hover:text-white hover:underline transition">
-                    Buscar Disponibilidad
+                  <a href="#mapa" className="hover:text-white transition flex items-center gap-2">
+                    <Search className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Consulta de Espacios Libres</span>
                   </a>
                 </li>
                 <li>
-                  <a href="#sistema" className="hover:text-white hover:underline transition">
-                    Pase Digital QR
+                  <a href="#sistema" className="hover:text-white transition flex items-center gap-2">
+                    <QrCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Pase Digital y Reconocimiento</span>
                   </a>
                 </li>
                 <li>
-                  <span className="text-emerald-300 font-mono text-[11px]">
-                    ⏱️ 15 min de cortesía
-                  </span>
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Tolerancia de 15 minutos en reservas</span>
+                  </div>
                 </li>
               </ul>
             </div>
 
-            {/* Columna 4: Para Propietarios */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 font-display">
+            {/* Columna 3: Servicios para Propietarios (3 cols) */}
+            <div className="lg:col-span-3 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 font-display">
                 Propietarios
               </h4>
-              <ul className="space-y-2 text-xs text-emerald-100/70">
+              <ul className="space-y-2.5 text-xs text-slate-300">
                 <li>
                   <button 
                     onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                    className="hover:text-white hover:underline transition text-left cursor-pointer"
+                    className="hover:text-white transition flex items-center gap-2 text-left cursor-pointer"
                   >
-                    Afiliar mi Cochera
+                    <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Afiliación de Estacionamientos</span>
                   </button>
                 </li>
                 <li>
                   <button 
                     onClick={() => onOpenAuth && onOpenAuth('login')}
-                    className="hover:text-white hover:underline transition text-left cursor-pointer"
+                    className="hover:text-white transition flex items-center gap-2 text-left cursor-pointer"
                   >
-                    Panel de Administración
+                    <Layers className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Panel de Control y Métricas</span>
                   </button>
                 </li>
                 <li>
-                  <a href="#afiliacion" className="hover:text-white hover:underline transition">
-                    Digitalización & ANPR
+                  <a href="#afiliacion" className="hover:text-white transition flex items-center gap-2">
+                    <Camera className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Tecnología LPR y Apertura Automática</span>
                   </a>
-                </li>
-                <li>
-                  <span className="text-emerald-300 font-mono text-[11px]">
-                    🚀 Sin costo de alta
-                  </span>
                 </li>
               </ul>
             </div>
 
-            {/* Columna 5: Métodos de Pago & Contacto */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 font-display">
-                Pagos Seguros
+            {/* Columna 4: Medios de Pago y Soporte (2 cols) */}
+            <div className="lg:col-span-2 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 font-display">
+                Pasarelas & Soporte
               </h4>
-              <div className="flex flex-wrap gap-1.5">
-                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-200 text-[10px] font-bold border border-white/10">
-                  PayPal
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-200 text-[10px] font-bold border border-white/10">
-                  Yape
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-200 text-[10px] font-bold border border-white/10">
-                  Plin
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-200 text-[10px] font-bold border border-white/10">
-                  Visa / MC
-                </span>
+              
+              <div className="space-y-2 text-xs text-slate-300">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>PayPal, Culqi, Yape y Plin</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Pagos Seguros Certificados</span>
+                </div>
               </div>
 
               <div className="pt-2">
@@ -956,10 +951,10 @@ export const LandingPage = ({
                   href="https://wa.me/51966000000?text=Hola,%20tengo%20una%20consulta%20sobre%20Smart-Park"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold border border-emerald-500/30 transition w-full justify-center shadow-xs"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#004D49] hover:bg-[#003835] text-white text-xs font-medium border border-[#00605B] transition w-full justify-center shadow-xs"
                 >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  <span>Soporte WhatsApp 24/7</span>
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Atención al Cliente</span>
                 </a>
               </div>
             </div>
@@ -967,25 +962,25 @@ export const LandingPage = ({
           </div>
 
           {/* Línea Divisoria y Sub-Footer */}
-          <div className="pt-8 border-t border-emerald-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-emerald-100/60 font-sans">
+          <div className="pt-8 border-t border-[#004D49]/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-sans">
             <div className="flex items-center space-x-2">
-              <span>© {new Date().getFullYear()} Smart-Park Ayacucho.</span>
-              <span className="hidden sm:inline">•</span>
-              <span className="text-emerald-400/80">Hecho en Huamanga, Perú</span>
+              <span>© {new Date().getFullYear()} Smart-Park Ayacucho. Todos los derechos reservados.</span>
             </div>
 
             <div className="flex items-center space-x-6">
               <button
                 onClick={onOpenTerms}
-                className="hover:text-white transition-colors duration-200 underline cursor-pointer font-medium"
+                className="hover:text-white transition-colors duration-200 cursor-pointer flex items-center gap-1.5"
               >
-                Términos y Condiciones
+                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                <span>Términos y Condiciones</span>
               </button>
               <button
                 onClick={onOpenTerms}
-                className="hover:text-white transition-colors duration-200 hover:underline cursor-pointer font-medium"
+                className="hover:text-white transition-colors duration-200 cursor-pointer flex items-center gap-1.5"
               >
-                Privacidad de Datos
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+                <span>Privacidad de Datos</span>
               </button>
             </div>
           </div>

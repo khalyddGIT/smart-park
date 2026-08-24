@@ -860,16 +860,11 @@ export const InteractiveFloorPlanDrawingStudio = ({
       {/* ============================================================
           BARRA DE CONTROL SUPERIOR — PRESETS, VISTA Y GUARDADO
           ============================================================ */}
-      <div className="bg-slate-900 text-white p-4 rounded-3xl border border-slate-800 shadow-xl flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+      <div className="bg-slate-900 text-white p-3 sm:p-4 rounded-2xl border border-slate-800 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         
-        {/* Presets de Terreno */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-2xl border border-slate-700">
-            <Layers className="w-4 h-4 shrink-0 text-emerald-400" />
-            <span className="text-xs font-bold font-tech uppercase text-slate-300">Lote:</span>
-          </div>
-
-          <div className="flex flex-wrap items-center bg-slate-950/70 p-1 rounded-2xl border border-slate-800 gap-1">
+        {/* Presets de Terreno y Auto-numerar */}
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
             {[
               { id: 'rectangular', label: 'Rectangular' },
               { id: 'l_shape', label: "Forma en 'L'" },
@@ -880,10 +875,10 @@ export const InteractiveFloorPlanDrawingStudio = ({
               <button
                 key={p.id}
                 onClick={() => handlePresetChange(p.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
                   lotShape === p.id 
-                    ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    ? 'bg-slate-800 text-white font-bold' 
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {p.label}
@@ -895,299 +890,249 @@ export const InteractiveFloorPlanDrawingStudio = ({
             onClick={handleAutoNumber}
             variant="outline" 
             size="sm"
-            className="rounded-2xl border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-bold gap-1.5 h-8"
+            className="rounded-xl border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold gap-1.5 h-8 px-2.5 shrink-0 cursor-pointer"
             title="Renumera automáticamente todas las plazas en orden espacial"
           >
-            <Sparkles className="w-4 h-4 shrink-0 text-amber-400" />
+            <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-400" />
             <span>Auto-Numerar</span>
           </Button>
         </div>
 
         {/* Controles de Zoom, Snapping y Guardar */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center justify-between lg:justify-end gap-2 overflow-x-auto scrollbar-none">
           {/* Deshacer / Rehacer */}
-          <div className="flex items-center bg-slate-950/70 p-1 rounded-2xl border border-slate-800">
+          <div className="flex items-center bg-slate-950 p-0.5 rounded-xl border border-slate-800 shrink-0">
             <button
               onClick={handleUndo}
               disabled={historyIndex <= 0}
-              className="p-1.5 hover:bg-slate-800 rounded-xl disabled:opacity-30 text-slate-300 transition"
+              className="p-1.5 hover:bg-slate-800 rounded-lg disabled:opacity-30 text-slate-300 transition cursor-pointer"
               title="Deshacer"
             >
-              <Undo className="w-4 h-4 shrink-0" />
+              <Undo className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleRedo}
               disabled={historyIndex >= history.length - 1}
-              className="p-1.5 hover:bg-slate-800 rounded-xl disabled:opacity-30 text-slate-300 transition"
+              className="p-1.5 hover:bg-slate-800 rounded-lg disabled:opacity-30 text-slate-300 transition cursor-pointer"
               title="Rehacer"
             >
-              <Redo className="w-4 h-4 shrink-0" />
+              <Redo className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* Toggle de Imantación (Snap to Grid) */}
+          {/* Toggle de Imantación */}
           <button
             onClick={() => setSnapToGrid(!snapToGrid)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl text-xs font-bold border transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition shrink-0 cursor-pointer ${
               snapToGrid 
-                ? 'bg-emerald-950/70 text-emerald-400 border-emerald-700 shadow-sm' 
+                ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800' 
                 : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
             }`}
-            title="Activar o desactivar imantación a cuadrícula (20px)"
           >
-            <Magnet className="w-4 h-4 shrink-0" />
-            <span>Snap Rejilla</span>
+            <Magnet className="w-3.5 h-3.5" />
+            <span>Rejilla</span>
           </button>
 
-          {/* Controles Profesionales de Zoom */}
-          <div className="flex items-center bg-slate-950/80 px-2 py-1 rounded-2xl border border-slate-800 text-xs font-tech text-slate-300 gap-2 shadow-inner">
+          {/* Controles de Zoom */}
+          <div className="flex items-center bg-slate-950 px-1.5 py-1 rounded-xl border border-slate-800 text-xs text-slate-300 gap-1.5 shrink-0">
             <button 
               onClick={() => setZoom(Math.max(40, zoom - 10))} 
-              className="p-1 hover:bg-slate-800 rounded-lg text-slate-300 transition hover:text-white"
-              title="Alejar Zoom (Ctrl + Scroll Abajo)"
+              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white cursor-pointer"
+              title="Alejar Zoom"
             >
-              <ZoomOut className="w-4 h-4 shrink-0" />
+              <ZoomOut className="w-3.5 h-3.5" />
             </button>
 
-            {/* Presets Rápidos de Zoom */}
-            <div className="flex items-center gap-2 px-1 font-mono font-bold">
-              {[50, 75, 100, 125].map((z) => (
-                <button
-                  key={z}
-                  onClick={() => setZoom(z)}
-                  className={`px-1.5 py-0.5 rounded text-[10px] transition ${
-                    zoom === z 
-                      ? 'bg-emerald-500 text-slate-950 font-black' 
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  {z}%
-                </button>
-              ))}
-            </div>
+            <span className="font-mono text-[11px] font-bold text-slate-300 px-1">{zoom}%</span>
 
             <button 
               onClick={() => setZoom(Math.min(200, zoom + 10))} 
-              className="p-1 hover:bg-slate-800 rounded-lg text-slate-300 transition hover:text-white"
-              title="Acercar Zoom (Ctrl + Scroll Arriba)"
+              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white cursor-pointer"
+              title="Acercar Zoom"
             >
-              <ZoomIn className="w-4 h-4 shrink-0" />
+              <ZoomIn className="w-3.5 h-3.5" />
             </button>
 
             <button 
               onClick={handleFitToScreen} 
-              className="px-2 py-1 bg-slate-800/90 hover:bg-emerald-950 hover:text-emerald-300 rounded-xl text-emerald-400 font-bold text-[10px] flex items-center gap-2 border border-slate-700 transition ml-1"
-              title="Ajustar plano a la pantalla"
+              className="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-emerald-400 font-bold text-[10px] cursor-pointer"
+              title="Ajustar plano"
             >
-              <Maximize2 className="w-4 h-4 shrink-0" />
-              <span>Ajustar</span>
+              Ajustar
             </button>
           </div>
-
-          {/* Estado de sincronización */}
-          {hasUnsavedChanges ? (
-            <span className="text-[11px] font-tech font-bold text-amber-400 flex items-center gap-1.5 bg-amber-950/50 px-2.5 py-1.5 rounded-2xl border border-amber-800/80">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-              <span>Pendiente</span>
-            </span>
-          ) : (
-            <span className="text-[11px] font-tech font-bold text-emerald-400 flex items-center gap-1.5 bg-emerald-950/50 px-2.5 py-1.5 rounded-2xl border border-emerald-800/80">
-              <Check className="w-4 h-4 shrink-0 text-emerald-400" />
-              <span>Sincronizado</span>
-            </span>
-          )}
 
           {/* Guardar Cambios */}
           {!readOnly && (
             <Button 
               onClick={handleSave} 
               size="sm"
-              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs gap-1.5 px-4 h-9 rounded-2xl shadow-lg shadow-emerald-500/20"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 px-3 h-8 rounded-xl shadow-sm shrink-0 cursor-pointer"
             >
-              <Save className="w-4 h-4 shrink-0" />
-              <span>Guardar Cambios</span>
+              <Save className="w-3.5 h-3.5" />
+              <span>Guardar</span>
             </Button>
           )}
         </div>
       </div>
 
       {/* ============================================================
-          PALETA DE HERRAMIENTAS DE DIBUJO RÁPIDO (CATEGORIZADA Y FLUIDA)
+          PALETA DE HERRAMIENTAS DE DIBUJO (BARRA HORIZONTAL COMPACTA)
           ============================================================ */}
       {!readOnly && (
-        <div className="bg-slate-900/95 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border border-slate-800 shadow-xl flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <div className="bg-slate-900 p-2 rounded-2xl border border-slate-800 shadow-sm flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-1.5 shrink-0">
             
             {/* Modo Selección */}
             <button
               onClick={() => setActiveTool('select')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 activeTool === 'select' 
-                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black ring-2 ring-cyan-400' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'
+                  ? 'bg-emerald-500 text-slate-950 font-black shadow-xs' 
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/80'
               }`}
-              title="Seleccionar y mover elementos"
             >
-              <MousePointer className="w-4 h-4 shrink-0" />
+              <MousePointer className="w-3.5 h-3.5" />
               <span>Seleccionar</span>
             </button>
 
-            <div className="h-6 w-px bg-slate-800 mx-1 hidden md:block" />
+            <div className="h-5 w-px bg-slate-800 mx-0.5" />
 
-            {/* Grupo Plazas de Estacionamiento */}
-            <div className="flex items-center bg-slate-950/60 p-1 rounded-xl border border-slate-800/80 gap-1">
-              <span className="text-[10px] font-bold uppercase text-slate-400 px-1.5 font-tech hidden lg:inline">Plazas:</span>
+            {/* Plazas */}
+            <button
+              onClick={() => setActiveTool('slot_auto')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'slot_auto' 
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+            >
+              <Car className="w-3.5 h-3.5 text-emerald-400" />
+              <span>+ Auto</span>
+            </button>
 
-              <button
-                onClick={() => setActiveTool('slot_auto')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTool === 'slot_auto' 
-                    ? 'bg-emerald-500 text-slate-950 shadow-md font-black ring-2 ring-emerald-400' 
-                    : 'bg-emerald-950/50 text-emerald-300 hover:bg-emerald-900/70 border border-emerald-800/60'
-                }`}
-                title="Añadir plaza estándar de auto"
-              >
-                <Car className="w-4 h-4 shrink-0" />
-                <span>+ Auto</span>
-              </button>
+            <button
+              onClick={() => setActiveTool('slot_shaded')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'slot_shaded' 
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+            >
+              <Umbrella className="w-3.5 h-3.5 text-amber-400" />
+              <span>+ Techado</span>
+            </button>
 
-              <button
-                onClick={() => setActiveTool('slot_shaded')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTool === 'slot_shaded' 
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-2 ring-amber-400' 
-                    : 'bg-amber-950/50 text-amber-300 hover:bg-amber-900/70 border border-amber-800/60'
-                }`}
-                title="Añadir plaza con cubierta tensada"
-              >
-                <Umbrella className="w-4 h-4 shrink-0" />
-                <span>+ Techado</span>
-              </button>
+            <button
+              onClick={() => setActiveTool('slot_moto')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'slot_moto' 
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+            >
+              <Bike className="w-3.5 h-3.5 text-orange-400" />
+              <span>+ Moto</span>
+            </button>
 
-              <button
-                onClick={() => setActiveTool('slot_moto')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTool === 'slot_moto' 
-                    ? 'bg-orange-500 text-slate-950 shadow-md font-black ring-2 ring-orange-400' 
-                    : 'bg-orange-950/50 text-orange-300 hover:bg-orange-900/70 border border-orange-800/60'
-                }`}
-                title="Añadir plaza de moto"
-              >
-                <Bike className="w-4 h-4 shrink-0" />
-                <span>+ Moto</span>
-              </button>
+            <button
+              onClick={() => setActiveTool('draw_row')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'draw_row' 
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>+ Fila</span>
+            </button>
 
-              <button
-                onClick={() => setActiveTool('draw_row')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTool === 'draw_row' 
-                    ? 'bg-cyan-500 text-slate-950 shadow-md font-black ring-2 ring-cyan-400' 
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
-                }`}
-                title="Trazar batería de 5 plazas en fila con un clic"
-              >
-                <Sparkles className="w-4 h-4 shrink-0 text-amber-400" />
-                <span>+ Fila Rápida</span>
-              </button>
-            </div>
+            <div className="h-5 w-px bg-slate-800 mx-0.5" />
 
-            <div className="h-6 w-px bg-slate-800 mx-1 hidden md:block" />
+            {/* Accesos & Vías */}
+            <button
+              onClick={() => setActiveTool('add_entry')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'add_entry' 
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+            >
+              <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+              <span>+ Entrada</span>
+            </button>
 
-            {/* Grupo Accesos & Vías */}
-            <div className="flex items-center bg-slate-950/60 p-1 rounded-xl border border-slate-800/80 gap-1">
-              <span className="text-[10px] font-bold uppercase text-slate-400 px-1.5 font-tech hidden lg:inline">Accesos & Vías:</span>
+            <button
+              onClick={() => setActiveTool('add_exit')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'add_exit' 
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-400" />
+              <span>+ Salida</span>
+            </button>
 
-              <button
-                onClick={() => setActiveTool('add_entry')}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTool === 'add_entry' 
-                    ? 'bg-emerald-500 text-slate-950 shadow-md font-black ring-2 ring-emerald-400' 
-                    : 'bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/60 border border-emerald-800/50'
-                }`}
-                title="Añadir punto de ENTRADA con cámara LPR"
-              >
-                <LogIn className="w-4 h-4 shrink-0" />
-                <span>+ Entrada</span>
-              </button>
+            <button
+              onClick={() => setActiveTool('add_road')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'add_road' 
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+            >
+              <Navigation className="w-3.5 h-3.5 text-amber-400" />
+              <span>Carril</span>
+            </button>
 
-              <button
-                onClick={() => setActiveTool('add_exit')}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTool === 'add_exit' 
-                    ? 'bg-rose-500 text-slate-950 shadow-md font-black ring-2 ring-rose-400' 
-                    : 'bg-rose-950/40 text-rose-400 hover:bg-rose-900/60 border border-rose-800/50'
-                }`}
-                title="Añadir punto de SALIDA con validación POS"
-              >
-                <LogOut className="w-4 h-4 shrink-0" />
-                <span>+ Salida</span>
-              </button>
+            <button
+              onClick={() => setActiveTool('add_wall')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'add_wall' 
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+            >
+              <Square className="w-3.5 h-3.5 text-slate-400" />
+              <span>Muro</span>
+            </button>
 
-              <button
-                onClick={() => setActiveTool('add_road')}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTool === 'add_road' 
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-black' 
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700'
-                }`}
-                title="Añadir carril vial de circulación"
-              >
-                <Navigation className="w-4 h-4 shrink-0 text-amber-400" />
-                <span>Carril</span>
-              </button>
+            <button
+              onClick={() => setActiveTool('add_crosswalk')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'add_crosswalk' 
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+            >
+              <Footprints className="w-3.5 h-3.5 text-slate-300" />
+              <span>Cruce</span>
+            </button>
 
-              <button
-                onClick={() => setActiveTool('add_wall')}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTool === 'add_wall' 
-                    ? 'bg-slate-300 text-slate-950 shadow-md font-black' 
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700'
-                }`}
-                title="Añadir muro perimétrico de hormigón"
-              >
-                <Square className="w-4 h-4 shrink-0 text-slate-400" />
-                <span>Muro</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTool('add_crosswalk')}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTool === 'add_crosswalk' 
-                    ? 'bg-slate-200 text-slate-950 shadow-md font-black' 
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700'
-                }`}
-                title="Añadir paso de cebra peatonal"
-              >
-                <Footprints className="w-4 h-4 shrink-0 text-slate-400" />
-                <span>Cruce</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTool('add_garden')}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTool === 'add_garden' 
-                    ? 'bg-emerald-500 text-slate-950 shadow-md font-black' 
-                    : 'bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60 border border-emerald-800/50'
-                }`}
-                title="Añadir área verde o jardín ornamental"
-              >
-                <TreeIcon className="w-4 h-4 shrink-0 text-emerald-400" />
-                <span>Jardín</span>
-              </button>
-            </div>
+            <button
+              onClick={() => setActiveTool('add_garden')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'add_garden' 
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+            >
+              <TreeIcon className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Jardín</span>
+            </button>
           </div>
 
           {/* Borrador */}
           <button
             onClick={() => setActiveTool('eraser')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
               activeTool === 'eraser' 
-                ? 'bg-rose-500 text-slate-950 shadow-md font-black ring-2 ring-rose-400' 
-                : 'bg-rose-950/50 text-rose-300 hover:bg-rose-900/70 border border-rose-800/60'
+                ? 'bg-rose-600 text-white font-bold shadow-xs' 
+                : 'bg-slate-800/80 text-rose-300 hover:bg-rose-950/60 border border-rose-900/50'
             }`}
-            title="Borrar elementos al hacer clic sobre ellos"
           >
-            <Trash2 className="w-4 h-4 shrink-0 text-rose-400" />
+            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
             <span>Borrador</span>
           </button>
         </div>
@@ -1209,11 +1154,11 @@ export const InteractiveFloorPlanDrawingStudio = ({
           ============================================================ */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
         
-        {/* COLUMNA DEL LIENZO CAD + BARRA DE ESTADO */}
+        {/* COLUMNA DEL LIENZO + BARRA DE ESTADO */}
         <div className="lg:col-span-3 flex flex-col space-y-2.5">
           <div 
             ref={containerRef}
-            className="bg-[#0d1117] rounded-3xl p-4 sm:p-6 border border-slate-800 shadow-2xl overflow-auto custom-scrollbar flex min-h-[580px] max-h-[750px]"
+            className="bg-[#0d1117] rounded-2xl sm:rounded-3xl p-2 sm:p-6 border border-slate-800 shadow-xl overflow-auto custom-scrollbar flex min-h-[420px] sm:min-h-[580px] max-h-[750px]"
           >
             {/* Viewport Contenedor Escalado */}
             <div

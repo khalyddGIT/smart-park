@@ -52,11 +52,14 @@ const AYACUCHO_PRESET_LOCATIONS = [
   { name: 'San Juan Bautista (Av. Cusco)', lat: -13.1675, lng: -74.2180, address: 'Av. Cusco 180' }
 ];
 
-// Mini-mapa selector de coordenadas integrado en la vista completa
-const LocationPickerMap = ({ latitude, longitude, onChangeCoords }) => {
+// Mini-mapa interactivo y selector de coordenadas en Ayacucho
+const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddress }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
+  const layerGroupRef = useRef(null);
+  const [mapLayer, setMapLayer] = useState('streets'); // 'streets' | 'satellite'
+  const [mapSearchQuery, setMapSearchQuery] = useState('');
 
   useEffect(() => {
     if (!window.L || !mapContainerRef.current) return;
@@ -68,15 +71,22 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords }) => {
     if (!mapRef.current) {
       const map = L.map(mapContainerRef.current, {
         center: [lat, lng],
-        zoom: 15,
+        zoom: 16,
         zoomControl: false,
         attributionControl: false
       });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         maxZoom: 19,
         subdomains: 'abcd'
-      }).addTo(map);
+      });
+
+      const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19
+      });
+
+      streetLayer.addTo(map);
+      layerGroupRef.current = { streetLayer, satLayer };
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -84,8 +94,8 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords }) => {
         className: 'picker-pin',
         html: `
           <div style="transform: translate(-50%, -100%); cursor: grab;">
-            <div style="background: #0f172a; color: #34d399; padding: 6px 12px; border-radius: 14px; font-weight: 800; font-size: 11px; box-shadow: 0 10px 20px -3px rgba(0,0,0,0.4); border: 2px solid #34d399; display: flex; align-items: center; gap: 5px; white-space: nowrap;">
-              <span>📍 Pin de tu Cochera</span>
+            <div style="background: #0f172a; color: #10b981; padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 11px; box-shadow: 0 10px 25px -3px rgba(0,0,0,0.5); border: 2px solid #10b981; display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+              <span>📍 Ubicación de la Cochera</span>
             </div>
             <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #0f172a; margin: 0 auto;"></div>
           </div>
@@ -120,21 +130,122 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords }) => {
     }
   }, [latitude, longitude, onChangeCoords]);
 
+  // Cambiar capa Calles / Satélite
+  const handleToggleLayer = (layerType) => {
+    if (!mapRef.current || !layerGroupRef.current) return;
+    const { streetLayer, satLayer } = layerGroupRef.current;
+    if (layerType === 'satellite') {
+      mapRef.current.removeLayer(streetLayer);
+      satLayer.addTo(mapRef.current);
+    } else {
+      mapRef.current.removeLayer(satLayer);
+      streetLayer.addTo(mapRef.current);
+    }
+    setMapLayer(layerType);
+  };
+
+  // Buscar ubicación en Ayacucho
+  const handleSearchLocation = (e) => {
+    e.preventDefault();
+    if (!mapSearchQuery.trim()) return;
+
+    // Buscar en presets locales primero
+    const foundPreset = AYACUCHO_PRESET_LOCATIONS.find(loc => 
+      loc.name.toLowerCase().includes(mapSearchQuery.toLowerCase()) ||
+      loc.address.toLowerCase().includes(mapSearchQuery.toLowerCase())
+    );
+
+    if (foundPreset) {
+      if (mapRef.current && markerRef.current) {
+        mapRef.current.setView([foundPreset.lat, foundPreset.lng], 17, { animate: true });
+        markerRef.current.setLatLng([foundPreset.lat, foundPreset.lng]);
+      }
+      onChangeCoords(foundPreset.lat, foundPreset.lng);
+      if (onSelectAddress) onSelectAddress(foundPreset.address);
+      return;
+    }
+
+    // Geocodificación OSM Nominatim para Ayacucho
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(mapSearchQuery + ', Huamanga, Ayacucho, Peru')}&limit=1`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lng = parseFloat(data[0].lon);
+          if (mapRef.current && markerRef.current) {
+            mapRef.current.setView([lat, lng], 17, { animate: true });
+            markerRef.current.setLatLng([lat, lng]);
+          }
+          onChangeCoords(Number(lat.toFixed(6)), Number(lng.toFixed(6)));
+          if (onSelectAddress && data[0].display_name) {
+            const shortAddr = data[0].display_name.split(',').slice(0, 2).join(',');
+            onSelectAddress(shortAddr);
+          }
+        }
+      })
+      .catch(() => {});
+  };
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <span className="font-bold text-slate-700 flex items-center gap-1.5">
-          <Navigation className="w-4 h-4 shrink-0 text-emerald-600 animate-pulse" />
-          <span>Fijar punto en el mapa de Ayacucho (Haz clic en cualquier calle o arrastra el pin):</span>
-        </span>
-        <span className="font-mono text-[11px] text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg font-bold border border-slate-200">
-          Lat: {Number(latitude).toFixed(5)} | Lng: {Number(longitude).toFixed(5)}
-        </span>
+    <div className="space-y-2.5">
+      {/* Barra de Búsqueda sobre el Mapa y Controles de Capa */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+        <form onSubmit={handleSearchLocation} className="flex-1 relative flex items-center">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+          <Input
+            type="text"
+            placeholder="Buscar calle, jirón o lugar en Ayacucho (ej. Jr. Bellido, Mariscal Cáceres)..."
+            value={mapSearchQuery}
+            onChange={(e) => setMapSearchQuery(e.target.value)}
+            className="pl-9 pr-20 h-9 text-xs bg-white border-slate-200 rounded-xl w-full"
+          />
+          <button
+            type="submit"
+            className="absolute right-1.5 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-semibold cursor-pointer"
+          >
+            Buscar
+          </button>
+        </form>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="bg-slate-100 p-0.5 rounded-xl flex items-center border border-slate-200">
+            <button
+              type="button"
+              onClick={() => handleToggleLayer('streets')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
+                mapLayer === 'streets' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Calles
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleLayer('satellite')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
+                mapLayer === 'satellite' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Satélite
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Contenedor del Mapa Leaflet */}
       <div 
         ref={mapContainerRef} 
-        className="w-full h-64 sm:h-72 rounded-2xl overflow-hidden border border-slate-300 shadow-inner z-0"
+        className="w-full h-72 sm:h-80 rounded-2xl overflow-hidden border border-slate-200 shadow-xs z-0"
       />
+
+      <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+        <span className="flex items-center gap-1.5">
+          <Navigation className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Haz clic en cualquier calle o arrastra el marcador para fijar la cochera.</span>
+        </span>
+        <span className="font-mono text-[11px] font-semibold text-slate-700">
+          {Number(latitude).toFixed(5)}, {Number(longitude).toFixed(5)}
+        </span>
+      </div>
     </div>
   );
 };
@@ -702,27 +813,26 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           VISTA 4: FORMULARIO DE EDICIÓN COMPLETA (NO MODAL)
           ========================================================================= */}
       {activeViewMode === 'edit_form' && (
-        <div className="space-y-6 animate-in fade-in">
+        <div className="space-y-5 animate-in fade-in">
           
-          {/* Header Superior */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2">
+          {/* Header Superior Limpio */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+            <div className="flex items-center gap-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveViewMode('list')}
-                className="font-bold text-xs gap-1.5 rounded-xl h-9 text-slate-700"
+                className="font-bold text-xs gap-1.5 rounded-xl h-8.5 text-slate-700 bg-slate-50 hover:bg-slate-100 border-slate-200 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4 shrink-0" />
-                <span>Volver al Padrón</span>
+                <span>Volver</span>
               </Button>
               <div>
-                <h1 className="text-xl font-black text-slate-900 leading-tight flex items-center gap-2">
-                  <Building2 className="w-5 h-5 shrink-0 text-emerald-600" />
-                  <span>{isEditingNew ? 'Registrar Nueva Sede' : `Editar Sede: ${formData.name || 'Establecimiento'}`}</span>
+                <h1 className="text-base font-bold text-slate-900 leading-tight">
+                  {isEditingNew ? 'Registrar Nueva Sede' : `Editar Sede: ${formData.name || 'Establecimiento'}`}
                 </h1>
-                <p className="text-xs text-slate-500">
-                  Edita fotografía, coordenadas en mapa, enlaces y redes sociales.
+                <p className="text-xs text-slate-500 font-medium">
+                  Actualiza información general, fotografía, mapa y datos de contacto.
                 </p>
               </div>
             </div>
@@ -732,131 +842,131 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 type="button"
                 variant="outline"
                 onClick={() => setActiveViewMode('list')}
-                className="text-xs font-bold rounded-xl h-9"
+                className="text-xs font-semibold rounded-xl h-8.5 px-3 cursor-pointer"
               >
                 Cancelar
               </Button>
               <Button
                 type="button"
                 onClick={handleSaveForm}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl h-9 px-5 gap-1.5 shadow-md shadow-emerald-600/20"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl h-8.5 px-4 gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
               >
-                <Save className="w-4 h-4 shrink-0" />
-                <span>{isEditingNew ? 'Guardar Nueva Sede' : 'Guardar Todos los Cambios'}</span>
+                <Save className="w-3.5 h-3.5 shrink-0" />
+                <span>{isEditingNew ? 'Registrar Sede' : 'Guardar Cambios'}</span>
               </Button>
             </div>
           </div>
 
-          {/* Navegación por Secciones (Solo las 4 pedidas) */}
-          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-none">
+          {/* Navegación por Pestañas */}
+          <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/80 overflow-x-auto scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveTabSection('general')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'general'
-                  ? 'bg-white text-slate-900 shadow-sm font-black'
+                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Building2 className="w-4 h-4 shrink-0 text-emerald-600" />
-              <span>1. Datos del Local & Tarifas</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTabSection('image')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                activeTabSection === 'image'
-                  ? 'bg-white text-slate-900 shadow-sm font-black'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <ImageIcon className="w-4 h-4 shrink-0 text-emerald-600" />
-              <span>2. Imagen del Local</span>
+              <Building2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+              <span>1. Datos Generales & Tarifas</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTabSection('location')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'location'
-                  ? 'bg-white text-slate-900 shadow-sm font-black'
+                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
-              <span>3. Ubicación & Coordenadas en Mapa</span>
+              <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+              <span>2. Ubicación & Mapa Interactivo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTabSection('image')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTabSection === 'image'
+                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+              <span>3. Fotografía de la Sede</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTabSection('social')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'social'
-                  ? 'bg-white text-slate-900 shadow-sm font-black'
+                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Share2 className="w-4 h-4 shrink-0 text-emerald-600" />
-              <span>4. Redes Sociales & Contacto</span>
+              <Share2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+              <span>4. Contacto & Redes</span>
             </button>
           </div>
 
           {/* Formulario + Preview en Vivo */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             
             {/* Columna Izquierda: Formulario */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-5">
               
               {/* SECCIÓN 1: DATOS DEL LOCAL */}
               {activeTabSection === 'general' && (
-                <Card className="p-6 bg-white rounded-3xl border-slate-200 shadow-sm space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h3 className="text-base font-black text-slate-900">Datos Generales del Establecimiento</h3>
-                    <p className="text-xs text-slate-500">Información comercial de la cochera.</p>
+                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                  <div className="border-b border-slate-100 pb-2.5">
+                    <h3 className="text-sm font-bold text-slate-900">Datos Generales del Establecimiento</h3>
+                    <p className="text-xs text-slate-500 font-medium">Información comercial y administrativa de la cochera.</p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3.5">
                     <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Comercial de la Sede / Cochera *</label>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Nombre Comercial de la Sede *</label>
                       <Input
                         required
                         placeholder="Ej. Smart Park Jr. Bellido - Planta Baja"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="text-xs h-10"
+                        className="text-xs h-9.5 bg-white border-slate-200"
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-slate-700 block mb-1">Dirección Exacta *</label>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Dirección Exacta *</label>
                         <Input
                           required
                           placeholder="Ej. Jr. Bellido 240"
                           value={formData.address}
                           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                          className="text-xs h-10"
+                          className="text-xs h-9.5 bg-white border-slate-200"
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-slate-700 block mb-1">Referencia</label>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Referencia</label>
                         <Input
                           placeholder="Ej. Frente a la Iglesia San Blas"
                           value={formData.reference}
                           onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                          className="text-xs h-10"
+                          className="text-xs h-9.5 bg-white border-slate-200"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-slate-700 block mb-1">Nivel / Planta</label>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Nivel / Planta</label>
                         <select
                           value={formData.level}
                           onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800"
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
                         >
                           <option>Nivel 1 - Superficie</option>
                           <option>Sótano -1</option>
@@ -867,23 +977,23 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
 
                       <div>
-                        <label className="text-xs font-bold text-slate-700 block mb-1">Tarifa por Hora (S/) *</label>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Tarifa por Hora (S/) *</label>
                         <Input
                           type="number"
                           step="0.50"
                           min="1.00"
                           value={formData.rate}
                           onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-                          className="text-xs font-mono font-bold h-10"
+                          className="text-xs font-mono font-bold h-9.5 bg-white border-slate-200"
                         />
                       </div>
 
                       <div>
-                        <label className="text-xs font-bold text-slate-700 block mb-1">Estado Operativo</label>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Estado Operativo</label>
                         <select
                           value={formData.status}
                           onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800"
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
                         >
                           <option value="Operativo">Operativo (Abierto)</option>
                           <option value="Mantenimiento">En Mantenimiento</option>
@@ -892,191 +1002,73 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-slate-700 block mb-1">Titular / Razón Social</label>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Titular / Razón Social</label>
                         <Input
                           placeholder="Ej. Inversiones Huamanga S.A.C."
                           value={formData.owner}
                           onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
-                          className="text-xs h-10"
+                          className="text-xs h-9.5 bg-white border-slate-200"
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-slate-700 block mb-1">RUC o DNI del Titular</label>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">RUC o DNI del Titular</label>
                         <Input
                           placeholder="Ej. 20601234567"
                           value={formData.ruc}
                           onChange={(e) => setFormData({ ...formData, ruc: e.target.value })}
-                          className="text-xs font-mono h-10"
+                          className="text-xs font-mono h-9.5 bg-white border-slate-200"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Horario de Atención</label>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Horario de Atención</label>
                       <Input
                         placeholder="Ej. Lunes a Domingo: 24 Horas (Abierto 24/7)"
                         value={formData.schedule}
                         onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
-                        className="text-xs h-10"
+                        className="text-xs h-9.5 bg-white border-slate-200"
                       />
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Descripción / Indicaciones</label>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Descripción / Indicaciones de Acceso</label>
                       <textarea
-                        rows={3}
+                        rows={2}
                         placeholder="Describe los accesos y características de la cochera..."
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-2xl p-3 text-xs text-slate-800 focus:outline-none"
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                       />
                     </div>
                   </div>
-                </Card>
+                </div>
               )}
 
-              {/* SECCIÓN 2: IMAGEN DEL LOCAL */}
-              {activeTabSection === 'image' && (
-                <Card className="p-6 bg-white rounded-3xl border-slate-200 shadow-sm space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h3 className="text-base font-black text-slate-900">Imagen de la Cochera</h3>
-                    <p className="text-xs text-slate-500">Foto que verán los conductores en el mapa y en el catálogo.</p>
-                  </div>
-
-                  {/* Previsualización */}
-                  <div className="relative w-full h-56 sm:h-72 rounded-3xl overflow-hidden border-2 border-slate-300 bg-slate-100 shadow-inner group">
-                    <img 
-                      src={formData.image} 
-                      alt="Vista previa de la cochera" 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.src = 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-5">
-                      <span className="text-white text-xs font-bold drop-shadow-md flex items-center gap-1.5">
-                        <ImageIcon className="w-4 h-4 shrink-0 text-emerald-400" />
-                        <span>Vista previa de la foto</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Carga de archivo desde PC */}
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                        <Upload className="w-6 h-6 shrink-0" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-extrabold text-slate-900">Cargar foto desde tu dispositivo</p>
-                        <p className="text-[10px] text-slate-500">Formatos JPG, PNG o WebP (Hasta 6MB)</p>
-                      </div>
-                    </div>
-                    <div>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleImageFileUpload} 
-                        accept="image/*" 
-                        className="hidden" 
-                      />
-                      <Button 
-                        type="button" 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl h-10 px-4"
-                      >
-                        Examinar Archivo...
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* URL Externa */}
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">O ingresa un enlace / URL de imagen:</label>
-                    <Input
-                      placeholder="https://ejemplo.com/foto-estacionamiento.jpg"
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                      className="text-xs h-10"
-                    />
-                  </div>
-
-                  {/* Presets sugeridos */}
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-2">Fotos sugeridas:</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-                      {PRESET_IMAGES.map((img, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => {
-                            setFormData({ ...formData, image: img.url });
-                            showToast(`Foto "${img.label}" seleccionada.`);
-                          }}
-                          className={`group relative h-20 rounded-2xl overflow-hidden border-2 transition cursor-pointer ${
-                            formData.image === img.url ? 'border-emerald-500 ring-2 ring-emerald-400' : 'border-slate-200 hover:border-slate-400'
-                          }`}
-                          title={img.label}
-                        >
-                          <img src={img.url} alt={img.label} className="w-full h-full object-cover group-hover:scale-110 transition" />
-                          {formData.image === img.url && (
-                            <div className="absolute inset-0 bg-emerald-600/40 flex items-center justify-center">
-                              <Check className="w-5 h-5 shrink-0 text-white" />
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              {/* SECCIÓN 3: MAPA & COORDENADAS */}
+              {/* SECCIÓN 2: MAPA & UBICACIÓN INTELIGENTE */}
               {activeTabSection === 'location' && (
-                <Card className="p-6 bg-white rounded-3xl border-slate-200 shadow-sm space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h3 className="text-base font-black text-slate-900">Ubicación & Coordenadas en el Mapa</h3>
-                    <p className="text-xs text-slate-500">Coordenadas y enlace de Google Maps para visualizar en el mapa de Ayacucho.</p>
+                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                  <div className="border-b border-slate-100 pb-2.5">
+                    <h3 className="text-sm font-bold text-slate-900">Ubicación & Coordenadas en el Mapa</h3>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Ubica con precisión la cochera usando el buscador de calles, el mapa interactivo o pegando un enlace de Google Maps.
+                    </p>
                   </div>
 
-                  {/* Pegar enlace de Google Maps */}
-                  <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl space-y-2">
-                    <label className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
-                      <Globe className="w-4 h-4 shrink-0 text-emerald-600" />
-                      <span>Pegar Enlace de Google Maps (Extrae las coordenadas automáticamente):</span>
-                    </label>
-                    <Input
-                      placeholder="Ej. https://maps.app.goo.gl/... o https://maps.google.com/?q=-13.1604,-74.2259"
-                      value={formData.mapsUrl}
-                      onChange={(e) => handleParseMapsUrl(e.target.value)}
-                      className="text-xs bg-white h-10"
-                    />
-                  </div>
-
-                  {/* Campos Latitud, Longitud y Botón GPS */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Latitud GPS</label>
+                  {/* Herramienta 1: Pegar enlace de Google Maps o Detectar GPS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <div className="sm:col-span-2 space-y-1">
+                      <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Pegar enlace de Google Maps (Extrae coordenadas):</span>
+                      </label>
                       <Input
-                        type="number"
-                        step="any"
-                        required
-                        value={formData.latitude}
-                        onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
-                        className="text-xs font-mono font-bold h-10"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Longitud GPS</label>
-                      <Input
-                        type="number"
-                        step="any"
-                        required
-                        value={formData.longitude}
-                        onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
-                        className="text-xs font-mono font-bold h-10"
+                        placeholder="https://maps.app.goo.gl/... o https://maps.google.com/?q=-13.1604,-74.2259"
+                        value={formData.mapsUrl}
+                        onChange={(e) => handleParseMapsUrl(e.target.value)}
+                        className="text-xs bg-white h-9 border-slate-200"
                       />
                     </div>
                     <div>
@@ -1084,18 +1076,19 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         type="button"
                         onClick={handleGetDeviceLocation}
                         disabled={gpsLocating}
-                        className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl h-10 gap-1.5"
+                        variant="outline"
+                        className="w-full bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl h-9 gap-1.5 border-slate-200 cursor-pointer"
                       >
-                        <LocateFixed className={`w-4 h-4 shrink-0 text-emerald-400 ${gpsLocating ? 'animate-spin' : ''}`} />
-                        <span>{gpsLocating ? 'Detectando GPS...' : '📍 Detectar GPS Actual'}</span>
+                        <LocateFixed className={`w-3.5 h-3.5 text-emerald-600 ${gpsLocating ? 'animate-spin' : ''}`} />
+                        <span>{gpsLocating ? 'Detectando...' : 'Mi GPS Actual'}</span>
                       </Button>
                     </div>
                   </div>
 
-                  {/* Presets Rápidos */}
+                  {/* Herramienta 2: Puntos Rápidos de Referencia en Huamanga */}
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-2">Ubicaciones rápidas en Ayacucho:</label>
-                    <div className="flex flex-wrap gap-2">
+                    <label className="text-xs font-semibold text-slate-600 block mb-1.5">Zonas rápidas de Ayacucho:</label>
+                    <div className="flex flex-wrap gap-1.5">
                       {AYACUCHO_PRESET_LOCATIONS.map((loc, idx) => (
                         <button
                           key={idx}
@@ -1110,19 +1103,22 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             }));
                             showToast(`📍 Fijado en ${loc.name}`);
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 border border-slate-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 border border-slate-200 text-xs font-medium transition flex items-center gap-1 cursor-pointer"
                         >
-                          <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
+                          <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
                           <span>{loc.name}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Mini-mapa interactivo */}
+                  {/* Herramienta 3: Mini-mapa Interactivo */}
                   <LocationPickerMap
                     latitude={formData.latitude}
                     longitude={formData.longitude}
+                    onSelectAddress={(addr) => {
+                      if (!formData.address) setFormData(prev => ({ ...prev, address: addr }));
+                    }}
                     onChangeCoords={(newLat, newLng) => {
                       setFormData(prev => ({
                         ...prev,
@@ -1132,94 +1128,211 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       }));
                     }}
                   />
-                </Card>
+
+                  {/* Campos Numéricos de Coordenadas */}
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Latitud GPS</label>
+                      <Input
+                        type="number"
+                        step="any"
+                        required
+                        value={formData.latitude}
+                        onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
+                        className="text-xs font-mono font-semibold h-9 bg-white border-slate-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Longitud GPS</label>
+                      <Input
+                        type="number"
+                        step="any"
+                        required
+                        value={formData.longitude}
+                        onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
+                        className="text-xs font-mono font-semibold h-9 bg-white border-slate-200"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SECCIÓN 3: IMAGEN DEL LOCAL */}
+              {activeTabSection === 'image' && (
+                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                  <div className="border-b border-slate-100 pb-2.5">
+                    <h3 className="text-sm font-bold text-slate-900">Fotografía del Establecimiento</h3>
+                    <p className="text-xs text-slate-500 font-medium">Foto visible para los conductores en el mapa y en la lista de sedes.</p>
+                  </div>
+
+                  {/* Previsualización Limpia */}
+                  <div className="relative w-full h-52 sm:h-64 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-inner">
+                    <img 
+                      src={formData.image} 
+                      alt="Vista previa de la cochera" 
+                      className="w-full h-full object-cover object-center"
+                      onError={(e) => {
+                        e.target.src = 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800';
+                      }}
+                    />
+                  </div>
+
+                  {/* Carga de archivo desde dispositivo */}
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-dashed border-slate-300 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <Upload className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-900">Subir foto desde tu equipo</p>
+                        <p className="text-[11px] text-slate-500">Formatos JPG, PNG o WebP (Máx. 6MB)</p>
+                      </div>
+                    </div>
+                    <div>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleImageFileUpload} 
+                        accept="image/*" 
+                        className="hidden" 
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold rounded-xl h-8.5 px-3.5 border-slate-200 cursor-pointer"
+                      >
+                        Examinar Foto...
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* URL Externa */}
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">O ingresa un enlace / URL de imagen:</label>
+                    <Input
+                      placeholder="https://ejemplo.com/foto-cochera.jpg"
+                      value={formData.image}
+                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                      className="text-xs h-9 bg-white border-slate-200"
+                    />
+                  </div>
+
+                  {/* Galería sugerida */}
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600 block mb-2">Galería de fotos sugeridas:</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                      {PRESET_IMAGES.map((img, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, image: img.url });
+                            showToast(`Foto seleccionada.`);
+                          }}
+                          className={`group relative h-16 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
+                            formData.image === img.url ? 'border-emerald-500 ring-2 ring-emerald-400' : 'border-slate-200 hover:border-slate-300'
+                          }`}
+                          title={img.label}
+                        >
+                          <img src={img.url} alt={img.label} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          {formData.image === img.url && (
+                            <div className="absolute inset-0 bg-emerald-600/40 flex items-center justify-center">
+                              <Check className="w-4 h-4 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* SECCIÓN 4: REDES SOCIALES & CONTACTO */}
               {activeTabSection === 'social' && (
-                <Card className="p-6 bg-white rounded-3xl border-slate-200 shadow-sm space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h3 className="text-base font-black text-slate-900">Contacto & Redes Sociales</h3>
-                    <p className="text-xs text-slate-500">Datos de atención y canales oficiales.</p>
+                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                  <div className="border-b border-slate-100 pb-2.5">
+                    <h3 className="text-sm font-bold text-slate-900">Contacto & Canales Oficiales</h3>
+                    <p className="text-xs text-slate-500 font-medium">Canales directos para que los clientes se comuniquen con la administración.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono Fijo o Celular</label>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Teléfono Fijo / Celular</label>
                       <div className="relative">
-                        <Phone className="w-4 h-4 shrink-0 text-slate-400 absolute left-3.5 top-3" />
+                        <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
                         <Input
                           placeholder="+51 966 123 456"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          className="pl-10 text-xs font-mono h-10"
+                          className="pl-9 text-xs font-mono h-9 bg-white border-slate-200"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Número de WhatsApp (Consultas)</label>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">WhatsApp de Atención</label>
                       <div className="relative">
-                        <MessageSquare className="w-4 h-4 shrink-0 text-emerald-600 absolute left-3.5 top-3" />
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-600 absolute left-3 top-3" />
                         <Input
                           placeholder="51966123456"
                           value={formData.whatsapp}
                           onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                          className="pl-10 text-xs font-mono h-10"
+                          className="pl-9 text-xs font-mono h-9 bg-white border-slate-200"
                         />
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Correo Electrónico de Contacto</label>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Correo Electrónico de Contacto</label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 shrink-0 text-slate-400 absolute left-3.5 top-3" />
+                      <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
                       <Input
                         type="email"
                         placeholder="contacto@cochera.pe"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="pl-10 text-xs h-10"
+                        className="pl-9 text-xs h-9 bg-white border-slate-200"
                       />
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-100 pt-4 space-y-4">
-                    <h4 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
-                      <Share2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <div className="border-t border-slate-100 pt-3 space-y-3">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <Share2 className="w-3.5 h-3.5 text-emerald-600" />
                       <span>Redes Sociales & Enlaces</span>
                     </h4>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-bold text-slate-600 block mb-1">Página de Facebook</label>
+                        <label className="text-[11px] font-semibold text-slate-600 block mb-1">Página de Facebook</label>
                         <Input
-                          placeholder="https://facebook.com/CocheraAyacucho"
+                          placeholder="https://facebook.com/Cochera"
                           value={formData.socials?.facebook || ''}
                           onChange={(e) => setFormData({
                             ...formData,
                             socials: { ...formData.socials, facebook: e.target.value }
                           })}
-                          className="text-xs h-10"
+                          className="text-xs h-9 bg-white border-slate-200"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-bold text-slate-600 block mb-1">Perfil de Instagram</label>
+                        <label className="text-[11px] font-semibold text-slate-600 block mb-1">Perfil de Instagram</label>
                         <Input
-                          placeholder="https://instagram.com/cochera o @usuario"
+                          placeholder="https://instagram.com/cochera"
                           value={formData.socials?.instagram || ''}
                           onChange={(e) => setFormData({
                             ...formData,
                             socials: { ...formData.socials, instagram: e.target.value }
                           })}
-                          className="text-xs h-10"
+                          className="text-xs h-9 bg-white border-slate-200"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-bold text-slate-600 block mb-1">Cuenta de TikTok</label>
+                        <label className="text-[11px] font-semibold text-slate-600 block mb-1">Cuenta de TikTok</label>
                         <Input
                           placeholder="https://tiktok.com/@cochera"
                           value={formData.socials?.tiktok || ''}
@@ -1227,125 +1340,120 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             ...formData,
                             socials: { ...formData.socials, tiktok: e.target.value }
                           })}
-                          className="text-xs h-10"
+                          className="text-xs h-9 bg-white border-slate-200"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-bold text-slate-600 block mb-1">Sitio Web Oficial</label>
+                        <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sitio Web Oficial</label>
                         <Input
-                          placeholder="https://smartpark.pe/sede"
+                          placeholder="https://smartpark.pe"
                           value={formData.socials?.website || ''}
                           onChange={(e) => setFormData({
                             ...formData,
                             socials: { ...formData.socials, website: e.target.value }
                           })}
-                          className="text-xs h-10"
+                          className="text-xs h-9 bg-white border-slate-200"
                         />
                       </div>
                     </div>
                   </div>
-                </Card>
+                </div>
               )}
 
-              {/* Barra Inferior de Guardado */}
-              <div className="flex justify-between items-center bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+              {/* Botones de Acción al Pie del Formulario */}
+              <div className="flex justify-between items-center bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={() => setActiveViewMode('list')} 
-                  className="text-xs rounded-xl h-10 font-bold"
+                  className="text-xs rounded-xl h-8.5 font-semibold text-slate-700 cursor-pointer"
                 >
-                  Volver sin Guardar
+                  Cancelar
                 </Button>
                 <Button 
                   type="button" 
                   onClick={handleSaveForm} 
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl px-6 h-10 shadow-md shadow-emerald-600/20 gap-2"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl px-5 h-8.5 shadow-md shadow-emerald-600/20 gap-1.5 cursor-pointer"
                 >
-                  <Save className="w-4 h-4 shrink-0" />
-                  <span>{isEditingNew ? 'Registrar Sede' : 'Guardar Ficha Completa'}</span>
+                  <Save className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isEditingNew ? 'Registrar Sede' : 'Guardar Sede'}</span>
                 </Button>
               </div>
             </div>
 
-            {/* Columna Derecha: Previsualización en Vivo */}
-            <div className="space-y-4">
-              <div className="bg-slate-900 text-white px-4 py-2.5 rounded-2xl text-xs font-mono font-bold flex items-center justify-between">
-                <span>PREVIEW EN VIVO</span>
-                <span className="text-emerald-400 flex items-center gap-1 text-[10px]">
+            {/* Columna Derecha: Previsualización en Vivo de la Tarjeta */}
+            <div className="space-y-3.5">
+              <div className="bg-slate-900 text-white px-3.5 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-between">
+                <span>VISTA PREVIA EN VIVO</span>
+                <span className="text-emerald-400 text-[11px] font-sans font-semibold flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                   Sincronizado
                 </span>
               </div>
 
-              {/* Tarjeta simulada */}
-              <Card className="overflow-hidden border-slate-200 shadow-md rounded-3xl bg-white flex flex-col justify-between">
+              {/* Tarjeta idéntica a la vista padrón */}
+              <div className="border border-slate-200/90 shadow-2xs rounded-2xl bg-white flex flex-col justify-between overflow-hidden">
                 <div>
                   <div className="h-44 relative bg-slate-100 overflow-hidden">
                     <img 
                       src={formData.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
                       alt={formData.name || 'Preview'} 
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-center"
                       onError={(e) => {
                         e.target.src = 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800';
                       }}
                     />
-                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-emerald-800 shadow-sm border border-slate-200 font-mono">
-                      S/ {Number(formData.rate || 5).toFixed(2)}/h
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
-                      Disponibilidad en Vivo
-                    </div>
-                    <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
-                      {formData.level}
-                    </div>
                   </div>
 
-                  <div className="p-5 space-y-3">
+                  <div className="p-4 space-y-3">
                     <div>
-                      <h3 className="font-extrabold text-slate-900 text-base leading-tight">
-                        {formData.name || 'Nombre del Estacionamiento'}
-                      </h3>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-bold text-slate-900 text-sm leading-tight">
+                          {formData.name || 'Nombre de la Sede'}
+                        </h3>
+                        <span className="font-mono font-bold text-emerald-700 text-xs shrink-0">
+                          S/ {Number(formData.rate || 5).toFixed(2)}/h
+                        </span>
+                      </div>
                       <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                        <MapPin className="w-4 h-4 shrink-0 text-emerald-600" /> 
+                        <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600" /> 
                         <span className="truncate">{formData.address || 'Dirección en Huamanga'} {formData.reference ? `(${formData.reference})` : ''}</span>
                       </p>
                     </div>
 
-                    {/* WhatsApp en Preview */}
-                    {formData.whatsapp && (
-                      <div className="pt-0.5">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                          <MessageSquare className="w-4 h-4 shrink-0 text-emerald-600" />
-                          <span>WhatsApp: {formData.whatsapp}</span>
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                      <span className="font-medium">{formData.level}</span>
+                      <span className="text-emerald-700 font-semibold">{formData.status}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 text-xs p-2.5 rounded-xl border border-slate-100 bg-slate-50 font-mono">
+                      <span className="flex items-center gap-1.5 truncate text-slate-600">
+                        <Navigation className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                        <span className="truncate">{Number(formData.latitude).toFixed(4)}, {Number(formData.longitude).toFixed(4)}</span>
+                      </span>
+                      <span className="text-emerald-700 font-semibold text-[11px] bg-white px-2 py-0.5 rounded-lg border border-slate-200">
+                        Maps
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="p-5 pt-0">
-                  <div className="w-full py-2.5 text-center font-bold text-xs bg-slate-900 text-white rounded-xl shadow-sm flex items-center justify-center gap-1.5">
-                    <span>Ver Plano & Reservar Plaza</span>
-                    <ChevronRight className="w-4 h-4 shrink-0 text-emerald-400" />
+                <div className="p-4 pt-0 border-t border-slate-100 pt-3">
+                  <div className="w-full py-2 text-center font-bold text-xs bg-slate-900 text-white rounded-xl shadow-xs flex items-center justify-center gap-1.5">
+                    <span>Plano</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-emerald-400" />
                   </div>
                 </div>
-              </Card>
+              </div>
 
-              {/* Pin del Mapa en Preview */}
-              <div className="bg-slate-50 p-4 rounded-3xl border border-slate-200 space-y-2 text-xs">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
-                  📍 Estado del Pin en el Mapa
+              {/* Información sobre el Marcador */}
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1.5 text-xs text-slate-600">
+                <span className="text-[11px] font-bold text-slate-700 block">
+                  📍 Marcador GPS para Conductores
                 </span>
-                <p className="text-slate-800 font-bold">
-                  Latitud: <span className="font-mono text-emerald-700">{Number(formData.latitude).toFixed(5)}</span>
-                </p>
-                <p className="text-slate-800 font-bold">
-                  Longitud: <span className="font-mono text-emerald-700">{Number(formData.longitude).toFixed(5)}</span>
-                </p>
-                <p className="text-slate-500 text-[11px]">
-                  Al guardar, este marcador aparecerá en el mapa interactivo de Ayacucho para los conductores.
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Esta ubicación aparecerá exactamente en las coordenadas <strong className="font-mono text-slate-800">{Number(formData.latitude).toFixed(5)}, {Number(formData.longitude).toFixed(5)}</strong> en el mapa satelital de Ayacucho.
                 </p>
               </div>
             </div>

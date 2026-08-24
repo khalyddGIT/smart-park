@@ -160,42 +160,39 @@ export const PaymentsModule = () => {
       )}
 
       {/* Header Banner Ejecutivo */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white p-6 sm:p-7 rounded-3xl border border-slate-800 shadow-xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-md">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-          <div className="flex items-start sm:items-center space-x-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
-              <CreditCard className="w-6 h-6" />
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+              <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  Métodos de Pago & Facturación
-                </h1>
-                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-black uppercase">
-                  PCI-DSS
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-1 max-w-xl">
-                Billeteras móviles (Yape / Plin), tarjetas bancarias tokenizadas y emisión de comprobantes electrónicos SUNAT.
+              <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                Métodos de Pago
+              </h1>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Tarjetas tokenizadas, billeteras móviles y comprobantes.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2.5 shrink-0">
-            <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
               <button
                 onClick={() => setActiveTab('cards')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeTab === 'cards' ? 'bg-slate-800 text-white shadow-xs font-black' : 'text-slate-400 hover:text-white'
-                  }`}
+                className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  activeTab === 'cards' ? 'bg-slate-800 text-white shadow-xs font-bold' : 'text-slate-400 hover:text-white'
+                }`}
               >
                 Tarjetas & QR
               </button>
               <button
                 onClick={() => setActiveTab('history')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeTab === 'history' ? 'bg-slate-800 text-white shadow-xs font-black' : 'text-slate-400 hover:text-white'
-                  }`}
+                className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  activeTab === 'history' ? 'bg-slate-800 text-white shadow-xs font-bold' : 'text-slate-400 hover:text-white'
+                }`}
               >
                 Comprobantes
               </button>
@@ -204,7 +201,7 @@ export const PaymentsModule = () => {
             {activeTab === 'cards' && (
               <Button
                 onClick={() => setShowAddModal(true)}
-                className="gap-2 font-black text-xs rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 h-10 px-4 shadow-lg shadow-emerald-500/20 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full sm:w-auto justify-center gap-1.5 font-bold text-xs rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 h-8.5 px-3.5 shadow-sm cursor-pointer transition-all"
               >
                 <Plus className="w-4 h-4 stroke-[3]" />
                 <span>Vincular Tarjeta</span>
@@ -215,65 +212,57 @@ export const PaymentsModule = () => {
       </div>
 
       {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
-        <div className="p-5 rounded-3xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-shadow">
+        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tarjetas Activas</span>
-            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-              <CreditCard className="w-4 h-4" />
-            </div>
+            <span className="text-[11px] font-semibold text-slate-500">Tarjetas Activas</span>
+            <CreditCard className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-black font-mono text-slate-900">{cards.length}</span>
-            <span className="text-xs text-emerald-700 font-extrabold flex items-center gap-1">
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-bold font-mono text-slate-900">{cards.length}</span>
+            <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
               Tokenizadas
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 font-medium">Encriptación bancaria AES-256</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Seguridad bancaria AES-256</p>
         </div>
 
-        <div className="p-5 rounded-3xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-shadow">
+        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Billeteras Móviles</span>
-            <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
-              <Smartphone className="w-4 h-4" />
-            </div>
+            <span className="text-[11px] font-semibold text-slate-500">Billeteras Móviles</span>
+            <Smartphone className="w-4 h-4 text-teal-600" />
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-base font-black text-slate-900 font-mono">YAPE & PLIN</span>
-            <span className="text-xs text-emerald-700 font-extrabold">0% Comisión</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-base font-bold text-slate-900 font-mono">YAPE & PLIN</span>
+            <span className="text-xs text-emerald-700 font-semibold">0% Comisión</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 font-medium">Cobro instantáneo por código QR</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Cobro instantáneo QR</p>
         </div>
 
-        <div className="p-5 rounded-3xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-shadow">
+        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Gasto Facturado</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-              <DollarSign className="w-4 h-4" />
-            </div>
+            <span className="text-[11px] font-semibold text-slate-500">Gasto Facturado</span>
+            <DollarSign className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-emerald-700">S/ {totalSpent.toFixed(2)}</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-xl font-bold font-mono text-emerald-700">S/ {totalSpent.toFixed(2)}</span>
             <span className="text-xs text-slate-400 font-mono">PEN</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 font-medium">Acumulado mes en curso</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Acumulado del mes</p>
         </div>
 
-        <div className="p-5 rounded-3xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-shadow">
+        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Comprobantes</span>
-            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-              <Receipt className="w-4 h-4" />
-            </div>
+            <span className="text-[11px] font-semibold text-slate-500">Comprobantes</span>
+            <Receipt className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-black font-mono text-slate-900">{transactions.length}</span>
-            <span className="text-xs text-emerald-700 font-extrabold">SUNAT OK</span>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-bold font-mono text-slate-900">{transactions.length}</span>
+            <span className="text-xs text-emerald-700 font-semibold">SUNAT OK</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 font-medium">Boletas y facturas electrónicas</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Boletas y facturas</p>
         </div>
 
       </div>

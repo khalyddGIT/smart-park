@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ExternalLink
 } from 'lucide-react';
+import { FALLBACK_PARKING_IMAGE } from './LocalEstablishmentManager';
 
 // Coordenadas base de referencia en Ayacucho (Huamanga)
 const DEFAULT_COORDS = {
@@ -147,9 +148,16 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       // Popup Minimalista Editorial
       const popupHtml = `
         <div style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; min-width: 250px; max-width: 280px; padding: 4px;">
-          ${p.image ? `
+          ${(p.image || FALLBACK_PARKING_IMAGE) ? `
             <div style="width: 100%; height: 110px; border-radius: 8px; overflow: hidden; margin-bottom: 10px; position: relative; background: #F7F6F3;">
-              <img src="${p.image}" alt="${p.name}" style="width: 100%; height: 100%; object-fit: cover;" />
+              <img 
+                src="${p.image || FALLBACK_PARKING_IMAGE}" 
+                alt="${p.name}" 
+                referrerpolicy="no-referrer"
+                crossorigin="anonymous"
+                onerror="this.onerror=null;this.src='${FALLBACK_PARKING_IMAGE}'"
+                style="width: 100%; height: 100%; object-fit: cover;" 
+              />
               <div style="position: absolute; top: 6px; right: 6px; background: rgba(17,17,17,0.9); color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-family: monospace; font-weight: bold;">
                 ${rateFormatted}/h
               </div>

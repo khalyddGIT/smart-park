@@ -4,7 +4,7 @@ import { useAuth } from './context/AuthContext';
 import { useEstablishments } from './context/EstablishmentContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
-import { LocalEstablishmentManager } from './components/LocalEstablishmentManager';
+import { LocalEstablishmentManager, FALLBACK_PARKING_IMAGE } from './components/LocalEstablishmentManager';
 import { ANPRMonitor } from './components/ANPRMonitor';
 import { PaymentsModule } from './components/PaymentsModule';
 import { VehiclesModule } from './components/VehiclesModule';
@@ -448,9 +448,16 @@ export const App = () => {
                                 <div>
                                   <div className="h-44 relative overflow-hidden bg-slate-100">
                                     <img 
-                                      src={p.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
+                                      src={p.image || FALLBACK_PARKING_IMAGE} 
                                       alt={p.name} 
+                                      referrerPolicy="no-referrer"
+                                      crossOrigin="anonymous"
                                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                                      loading="lazy"
+                                      onError={(e) => {
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.src = FALLBACK_PARKING_IMAGE;
+                                      }}
                                     />
                                     <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-emerald-800 shadow-sm border border-slate-200">
                                       S/ {Number(p.rate).toFixed(2)}/h

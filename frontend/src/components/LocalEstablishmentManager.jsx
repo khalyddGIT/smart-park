@@ -32,14 +32,17 @@ import {
 import { InteractiveFloorPlanDrawingStudio } from './InteractiveFloorPlanDrawingStudio';
 import { useEstablishments } from '../context/EstablishmentContext';
 
+// Imagen de respaldo SVG ultra confiable para cuando la red no tenga acceso a Unsplash
+export const FALLBACK_PARKING_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500' width='800' height='500'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230f172a'/%3E%3Cstop offset='100%25' stop-color='%231e293b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3Ccircle cx='400' cy='210' r='85' fill='%2310b981' fill-opacity='0.15'/%3E%3Cpath d='M345 250 L455 250 L430 175 L370 175 Z' fill='%2310b981' fill-opacity='0.6'/%3E%3Crect x='330' y='250' width='140' height='40' rx='10' fill='%2310b981'/%3E%3Ccircle cx='365' cy='290' r='14' fill='%230f172a'/%3E%3Ccircle cx='435' cy='290' r='14' fill='%230f172a'/%3E%3Ctext x='400' y='370' font-family='system-ui, sans-serif' font-size='22' font-weight='bold' fill='%23f8fafc' text-anchor='middle'%3ESmart Park Huamanga%3C/text%3E%3Ctext x='400' y='402' font-family='system-ui, sans-serif' font-size='14' fill='%2394a3b8' text-anchor='middle'%3EEstacionamiento Seguro y Conectado%3C/text%3E%3C/svg%3E";
+
 // Fotos predeterminadas para cocheras
 const PRESET_IMAGES = [
-  { label: 'Cochera Moderna Centro', url: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800' },
-  { label: 'Estacionamiento Subterráneo', url: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800' },
-  { label: 'Playa Abierta Asfaltada', url: 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800' },
-  { label: 'Terminal / Zona Amplia', url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800' },
-  { label: 'Garita & Barrera Automatizada', url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800' },
-  { label: 'Edificio de Estacionamiento', url: 'https://images.unsplash.com/photo-1520105072000-f44fc083e508?w=800' }
+  { label: 'Cochera Moderna Centro', url: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Estacionamiento Subterráneo', url: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Playa Abierta Asfaltada', url: 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Terminal / Zona Amplia', url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Garita & Barrera Automatizada', url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Edificio de Estacionamiento', url: 'https://images.unsplash.com/photo-1520105072000-f44fc083e508?auto=format&fit=crop&w=800&q=80' }
 ];
 
 // Puntos de referencia y coordenadas de Huamanga / Ayacucho
@@ -681,10 +684,16 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     {/* Imagen Limpia del Local (Sin Badges Flotantes) */}
                     <div className="h-44 relative bg-slate-100 overflow-hidden">
                       <img 
-                        src={est.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
+                        src={est.image || FALLBACK_PARKING_IMAGE} 
                         alt={est.name} 
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
                         className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-500"
                         loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = FALLBACK_PARKING_IMAGE;
+                        }}
                       />
                     </div>
 
@@ -1266,11 +1275,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   {/* Previsualización Limpia */}
                   <div className="relative w-full h-52 sm:h-64 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-inner">
                     <img 
-                      src={formData.image} 
+                      src={formData.image || FALLBACK_PARKING_IMAGE} 
                       alt="Vista previa de la cochera" 
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                       className="w-full h-full object-cover object-center"
                       onError={(e) => {
-                        e.target.src = 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800';
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = FALLBACK_PARKING_IMAGE;
                       }}
                     />
                   </div>
@@ -1333,7 +1345,17 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           }`}
                           title={img.label}
                         >
-                          <img src={img.url} alt={img.label} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition" />
+                          <img 
+                            src={img.url} 
+                            alt={img.label} 
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition" 
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = FALLBACK_PARKING_IMAGE;
+                            }}
+                          />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
                           <span className="relative z-10 text-[9px] font-bold text-white truncate leading-tight">
                             {img.label}
@@ -1548,11 +1570,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 <div>
                   <div className="h-44 relative bg-slate-100 overflow-hidden">
                     <img 
-                      src={formData.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'} 
+                      src={formData.image || FALLBACK_PARKING_IMAGE} 
                       alt={formData.name || 'Preview'} 
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                       className="w-full h-full object-cover object-center"
                       onError={(e) => {
-                        e.target.src = 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800';
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = FALLBACK_PARKING_IMAGE;
                       }}
                     />
                   </div>

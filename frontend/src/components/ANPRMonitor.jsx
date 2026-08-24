@@ -703,9 +703,17 @@ export const ANPRMonitor = () => {
   // VALIDACIÓN DE CÓDIGO QR / PISTOLA BARCODE
   const handleQRValidation = async (rawCode) => {
     if (!rawCode) return;
-    const clean = rawCode.trim();
+    let clean = rawCode.trim();
 
-    // 1. Buscar en reservas por token o código
+    // El pase digital codifica una URL /verify/{code}: extraer el código final
+    if (/^https?:\/\//i.test(clean)) {
+      try {
+        const u = new URL(clean);
+        clean = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || clean);
+      } catch {}
+    }
+
+    // 1. Buscar en reservas propias por token o código
     const foundRes = reservations.find(r => 
       r.token === clean || 
       r.code === clean || 
@@ -753,25 +761,95 @@ export const ANPRMonitor = () => {
         source: 'WALK_IN'
       });
     } else {
-      setScanResult({
-        type: 'QR_INVALID',
-        matched: false,
-        actionType: 'ENTRY',
-        code: clean,
-        message: `Código QR o pase "${clean}" no válido o no encontrado en el sistema.`,
-        timestamp: new Date().toISOString()
-      });
+      // 3. Verificación pública en el servidor: pases de cualquier conductor
+      try {
+        const v = await api.get(`/reservations/verify/${encodeURIComponent(clean)}`);
+        const d = v.data;
+        if (d?.status === 'scheduled') {
+          // Registrar ingreso real en el servidor (rol local/platform autorizado)
+          try { await api.put(`/reservations/${d.id}/check-in`); } catch {}
+          occupySlot(selectedEstId, d.slot_code, d.license_plate);
 
-      playAccessAudio(false);
+          setScanResult({
+            type: 'QR_RESERVATION',
+            matched: true,
+            actionType: 'ENTRY',
+            code: d.license_plate,
+            reservationCode: d.code,
+            slot: d.slot_code,
+            driverName: 'Cliente Digital',
+            confidence: 100,
+            message: `Pase digital ${d.code} validado. Acceso a plaza ${d.slot_code}.`,
+            timestamp: new Date().toISOString()
+          });
 
-      addAuditLog({
-        type: 'QR',
-        action: 'QR_INVALIDO',
-        plate: clean,
-        slot: 'N/A',
-        status: 'DENEGADO',
-        detail: `Código no reconocido en la base de datos.`
-      });
+          triggerBarrierOpen();
+          playAccessAudio(true);
+
+          addAuditLog({
+            type: 'QR',
+            action: 'INGRESO_PASE_DIGITAL',
+            plate: d.license_plate,
+            slot: d.slot_code,
+            status: 'AUTORIZADO',
+            detail: `Pase QR ${d.code} verificado contra el servidor.`
+          });
+        } else if (d?.status === 'active') {
+          setScanResult({
+            type: 'QR_RESERVATION',
+            matched: true,
+            actionType: 'ENTRY',
+            code: d.license_plate,
+            reservationCode: d.code,
+            slot: d.slot_code,
+            driverName: 'Cliente Digital',
+            confidence: 100,
+            message: `El vehículo ${d.license_plate} ya registró su ingreso (plaza ${d.slot_code}).`,
+            timestamp: new Date().toISOString()
+          });
+          triggerBarrierOpen();
+          playAccessAudio(true);
+        } else {
+          setScanResult({
+            type: 'QR_INVALID',
+            matched: false,
+            actionType: 'ENTRY',
+            code: clean,
+            message: `El pase ${clean} está ${d?.status === 'completed' ? 'finalizado' : 'cancelado'} y ya no es válido.`,
+            timestamp: new Date().toISOString()
+          });
+          playAccessAudio(false);
+          addAuditLog({
+            type: 'QR',
+            action: 'QR_INVALIDO',
+            plate: clean,
+            slot: 'N/A',
+            status: 'DENEGADO',
+            detail: `Pase con estado ${d?.status || 'desconocido'}.`
+          });
+        }
+      } catch (e) {
+        const notFound = e?.response?.status === 404;
+        setScanResult({
+          type: 'QR_INVALID',
+          matched: false,
+          actionType: 'ENTRY',
+          code: clean,
+          message: notFound
+            ? `Código QR o pase "${clean}" no válido o no encontrado en el sistema.`
+            : 'No se pudo validar el pase contra el servidor. Intenta de nuevo.',
+          timestamp: new Date().toISOString()
+        });
+        playAccessAudio(false);
+        addAuditLog({
+          type: 'QR',
+          action: 'QR_INVALIDO',
+          plate: clean,
+          slot: 'N/A',
+          status: 'DENEGADO',
+          detail: notFound ? 'Código no reconocido en la base de datos.' : 'Error de comunicación con el servidor.'
+        });
+      }
     }
   };
 

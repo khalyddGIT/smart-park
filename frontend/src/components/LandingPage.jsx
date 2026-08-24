@@ -142,6 +142,51 @@ const LazyMapSection = ({ parkings, onSelectParking }) => {
   );
 };
 
+// Componente de Tipificación con Gradiente Dinámico
+const GradientTypewriter = () => {
+  const dynamicWords = useMemo(() => [
+    'Ayacucho',
+    'Huamanga',
+    'Tiempo Real',
+    'tu Celular'
+  ], []);
+
+  const [wordIndex, setWordIndex] = useState(0);
+  const [currentText, setCurrentText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const word = dynamicWords[wordIndex];
+    const typingSpeed = isDeleting ? 45 : 95;
+
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        setCurrentText(word.substring(0, currentText.length + 1));
+        if (currentText === word) {
+          setTimeout(() => setIsDeleting(true), 2600);
+        }
+      } else {
+        setCurrentText(word.substring(0, currentText.length - 1));
+        if (currentText === '') {
+          setIsDeleting(false);
+          setWordIndex((prev) => (prev + 1) % dynamicWords.length);
+        }
+      }
+    }, typingSpeed);
+
+    return () => clearTimeout(timeout);
+  }, [currentText, isDeleting, wordIndex, dynamicWords]);
+
+  return (
+    <span className="inline-block relative">
+      <span className="bg-gradient-to-r from-emerald-600 via-teal-400 to-emerald-500 bg-clip-text text-transparent animate-gradient-flow font-black">
+        {currentText || '\u00A0'}
+      </span>
+      <span className="inline-block w-[3px] sm:w-[4px] h-[0.85em] ml-1 bg-gradient-to-b from-emerald-500 to-teal-400 align-middle rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.7)]" />
+    </span>
+  );
+};
+
 export const LandingPage = ({ 
   establishments = [], 
   onOpenAuth, 
@@ -403,14 +448,17 @@ export const LandingPage = ({
           className="space-y-5 sm:space-y-6 flex flex-col items-center transform-gpu will-change-transform"
         >
           
-          {/* Titular Principal Centrado con Escala Proporcional y Equilibrada */}
+          {/* Titular Principal Centrado con Efecto de Tipificación con Gradiente Dinámico */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: FLUID_EASE }}
-            className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] text-[#002B29] tracking-[-0.03em] max-w-3xl mx-auto leading-[1.12] sm:leading-[1.08] drop-shadow-xs"
+            className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] tracking-[-0.03em] max-w-3xl mx-auto leading-[1.14] sm:leading-[1.08] drop-shadow-xs"
           >
-            Ecosistema Inteligente de Estacionamientos en <span className="text-[#004D49] font-black">Ayacucho</span>
+            <span className="bg-gradient-to-r from-[#002B29] via-[#004D49] to-[#002B29] bg-clip-text text-transparent animate-gradient-flow">
+              Ecosistema Inteligente de Estacionamientos en{' '}
+            </span>
+            <GradientTypewriter />
           </motion.h1>
 
           {/* Subtítulo Centrado */}

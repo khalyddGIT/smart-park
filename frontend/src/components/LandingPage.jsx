@@ -20,7 +20,9 @@ import {
   Zap,
   Globe,
   Menu,
-  X
+  X,
+  Sparkles,
+  ShieldAlert
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -30,7 +32,7 @@ import { BrandLogo } from './BrandLogo';
 // Curva elástica ultra fluida acelerada por hardware (GPU)
 const FLUID_EASE = [0.16, 1, 0.3, 1];
 
-// Componente de Sección con física cinemática — entrada por stagger + parallax sutil
+// Componente de Sección con física cinemática y profundidad espacial
 const CinematicScrollSection = ({ children, className = '', id = '' }) => {
   const sectionRef = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -39,12 +41,12 @@ const CinematicScrollSection = ({ children, className = '', id = '' }) => {
   });
 
   const opacity = useTransform(scrollYProgress, [0, 0.15, 0.85, 1], [0, 1, 1, 0.85]);
-  const scale = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.96, 1, 1, 0.97]);
-  const y = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [24, 0, 0, -20]);
+  const scale = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.97, 1, 1, 0.98]);
+  const y = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [30, 0, 0, -25]);
 
-  const smoothScale = useSpring(scale, { stiffness: 220, damping: 30, mass: 0.6 });
-  const smoothY = useSpring(y, { stiffness: 220, damping: 30, mass: 0.6 });
-  const smoothOpacity = useSpring(opacity, { stiffness: 200, damping: 30 });
+  const smoothScale = useSpring(scale, { stiffness: 200, damping: 28, mass: 0.6 });
+  const smoothY = useSpring(y, { stiffness: 200, damping: 28, mass: 0.6 });
+  const smoothOpacity = useSpring(opacity, { stiffness: 180, damping: 28 });
 
   return (
     <motion.section
@@ -55,14 +57,14 @@ const CinematicScrollSection = ({ children, className = '', id = '' }) => {
         scale: smoothScale,
         y: smoothY
       }}
-      className={`transform-gpu will-change-transform ${className}`}
+      className={`transform-gpu will-change-transform relative z-10 ${className}`}
     >
       {children}
     </motion.section>
   );
 };
 
-// Tarjeta con Inercia Interactiva Suave y Detección de Dispositivo Táctil
+// Tarjeta con Inercia Interactiva 3D Suave y Detección de Dispositivo Táctil
 const DynamicTiltCard = ({ children, className = '' }) => {
   const cardRef = useRef(null);
   const mouseX = useMotionValue(0);
@@ -73,8 +75,8 @@ const DynamicTiltCard = ({ children, className = '' }) => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
   }, []);
 
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), { stiffness: 280, damping: 26 });
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-6, 6]), { stiffness: 280, damping: 26 });
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [7, -7]), { stiffness: 260, damping: 24 });
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-7, 7]), { stiffness: 260, damping: 24 });
 
   const handleMouseMove = (e) => {
     if (isTouchDevice || !cardRef.current) return;
@@ -103,7 +105,7 @@ const DynamicTiltCard = ({ children, className = '' }) => {
   );
 };
 
-// Carga diferida del mapa Leaflet: solo monta cuando entra al viewport (mejora LCP móvil)
+// Carga diferida del mapa Leaflet: solo monta cuando entra al viewport
 const LazyMapSection = ({ parkings, onSelectParking }) => {
   const containerRef = useRef(null);
   const [shouldLoad, setShouldLoad] = useState(false);
@@ -124,13 +126,13 @@ const LazyMapSection = ({ parkings, onSelectParking }) => {
   }, [shouldLoad]);
 
   return (
-    <div ref={containerRef} className="relative isolate z-0 rounded-3xl overflow-hidden shadow-2xl bg-white transition-shadow duration-300 min-h-[420px]">
+    <div ref={containerRef} className="relative isolate z-0 rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,77,73,0.18)] border border-[#004D49]/15 bg-white transition-shadow duration-300 min-h-[420px]">
       {shouldLoad ? (
         <AyacuchoMap parkings={parkings} onSelectParking={onSelectParking} />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#EAF4F2]">
           <div className="w-9 h-9 rounded-full border-[3px] border-[#004D49]/20 border-t-[#004D49] animate-spin" />
-          <p className="text-xs font-bold text-[#004D49]/70">Cargando mapa en vivo…</p>
+          <p className="text-xs font-bold text-[#004D49]/70 font-sans">Cargando mapa en vivo de Ayacucho…</p>
         </div>
       )}
     </div>
@@ -148,9 +150,10 @@ export const LandingPage = ({
   const [activeFaq, setActiveFaq] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Referencias para Parallax
+  // Referencias para Parallax Global
   const heroRef = useRef(null);
   const mockupSectionRef = useRef(null);
+  const containerRef = useRef(null);
 
   // Barra elástica de progreso de lectura superior
   const { scrollYProgress } = useScroll();
@@ -160,18 +163,30 @@ export const LandingPage = ({
     restDelta: 0.001
   });
 
-  // Parallax del Hero con Física Liviana y Alto Rendimiento
+  // Parallax del Fondo Global (Capas Atmosféricas de Profundidad)
+  const bgOrb1Y = useTransform(scrollYProgress, [0, 1], [0, 280]);
+  const bgOrb2Y = useTransform(scrollYProgress, [0, 1], [0, -320]);
+  const bgOrb3Y = useTransform(scrollYProgress, [0, 1], [0, 180]);
+  const smoothBgOrb1 = useSpring(bgOrb1Y, { stiffness: 100, damping: 25 });
+  const smoothBgOrb2 = useSpring(bgOrb2Y, { stiffness: 100, damping: 25 });
+  const smoothBgOrb3 = useSpring(bgOrb3Y, { stiffness: 100, damping: 25 });
+
+  // Parallax del Hero con Física de Profundidad
   const { scrollYProgress: heroScrollProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start']
   });
 
-  const heroHeadlineY = useTransform(heroScrollProgress, [0, 1], [0, -40]);
-  const heroOpacity = useTransform(heroScrollProgress, [0, 0.85], [1, 0.25]);
-  const heroScale = useTransform(heroScrollProgress, [0, 1], [1, 0.97]);
+  const heroHeadlineY = useTransform(heroScrollProgress, [0, 1], [0, -55]);
+  const heroBadgeLeftY = useTransform(heroScrollProgress, [0, 1], [0, -90]);
+  const heroBadgeRightY = useTransform(heroScrollProgress, [0, 1], [0, -110]);
+  const heroOpacity = useTransform(heroScrollProgress, [0, 0.85], [1, 0.2]);
+  const heroScale = useTransform(heroScrollProgress, [0, 1], [1, 0.96]);
 
   const smoothHeroHeadlineY = useSpring(heroHeadlineY, { stiffness: 180, damping: 26, mass: 0.7 });
   const smoothHeroScale = useSpring(heroScale, { stiffness: 180, damping: 26, mass: 0.7 });
+  const smoothBadgeLeftY = useSpring(heroBadgeLeftY, { stiffness: 140, damping: 20 });
+  const smoothBadgeRightY = useSpring(heroBadgeRightY, { stiffness: 140, damping: 20 });
 
   // Transformación 3D Suave del Mockup Faux-OS
   const { scrollYProgress: mockupScrollProgress } = useScroll({
@@ -179,8 +194,8 @@ export const LandingPage = ({
     offset: ['start end', 'center center']
   });
 
-  const mockupRotateX = useTransform(mockupScrollProgress, [0, 1], [12, 0]);
-  const mockupScale = useTransform(mockupScrollProgress, [0, 1], [0.93, 1]);
+  const mockupRotateX = useTransform(mockupScrollProgress, [0, 1], [14, 0]);
+  const mockupScale = useTransform(mockupScrollProgress, [0, 1], [0.92, 1]);
   const mockupOpacity = useTransform(mockupScrollProgress, [0, 0.45], [0.5, 1]);
   const smoothMockupRotateX = useSpring(mockupRotateX, { stiffness: 140, damping: 22 });
   const smoothMockupScale = useSpring(mockupScale, { stiffness: 140, damping: 22 });
@@ -223,7 +238,7 @@ export const LandingPage = ({
     },
     {
       q: '¿Cuáles son los canales de pago habilitados?',
-      a: 'Puedes pagar de forma fácil con Yape, Plin y tarjetas de débito o crédito con total seguridad.'
+      a: 'Puedes pagar de forma fácil con PayPal, Yape, Plin y tarjetas de débito o crédito con total seguridad.'
     },
     {
       q: '¿Existe tolerancia de tiempo ante eventualidades de tráfico?',
@@ -237,19 +252,46 @@ export const LandingPage = ({
 
   return (
     <div 
+      ref={containerRef}
       style={{
-        background: 'linear-gradient(180deg, #F4F9F8 0%, #FBFDFC 45%, #EEF6F5 100%)'
+        background: 'linear-gradient(180deg, #F4F9F8 0%, #FBFDFC 35%, #F0F7F6 70%, #E8F4F2 100%)'
       }}
       className="w-full min-h-screen text-[#111111] font-sans antialiased selection:bg-[#00827C] selection:text-white relative overflow-x-hidden"
     >
+      {/* =========================================================================
+          CAPAS DE PROFUNDIDAD ATMOSFÉRICA & PARALLAX FLOTANTE (SPATIAL LAYERS)
+          ========================================================================= */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Orbe 1: Esmeralda Superior */}
+        <motion.div 
+          style={{ y: smoothBgOrb1 }}
+          className="absolute -top-32 -right-32 w-[550px] h-[550px] bg-gradient-to-br from-emerald-400/15 via-teal-300/10 to-transparent rounded-full blur-[140px] transform-gpu will-change-transform"
+        />
+
+        {/* Orbe 2: Cyan Medio Izquierdo */}
+        <motion.div 
+          style={{ y: smoothBgOrb2 }}
+          className="absolute top-[40%] -left-40 w-[600px] h-[600px] bg-gradient-to-tr from-cyan-400/10 via-emerald-300/10 to-transparent rounded-full blur-[160px] transform-gpu will-change-transform"
+        />
+
+        {/* Orbe 3: Esmeralda Profundo Inferior */}
+        <motion.div 
+          style={{ y: smoothBgOrb3 }}
+          className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-gradient-to-tl from-[#004D49]/12 via-teal-400/8 to-transparent rounded-full blur-[150px] transform-gpu will-change-transform"
+        />
+
+        {/* Cuadrícula sutil de ingeniería espacial */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#004D49_1px,transparent_1px),linear-gradient(to_bottom,#004D49_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.025]" />
+      </div>
+
       {/* Indicador elástico superior de scroll */}
       <motion.div 
-        className="fixed top-0 left-0 right-0 h-[3px] bg-[#004D49] z-[100] origin-left"
+        className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-400 to-[#004D49] z-[100] origin-left shadow-[0_0_10px_rgba(16,185,129,0.5)]"
         style={{ scaleX }}
       />
 
       {/* =========================================================================
-          1. HEADER FLOTANTE ULTRA-PREMIUM (GLASSMORPHISM RESPONSIVE)
+          1. HEADER FLOTANTE ULTRA-PREMIUM (GLASSMORPHISM CON ELEVACIÓN)
           ========================================================================= */}
       <header className="sticky top-0 z-50 px-3 sm:px-6 lg:px-10 pt-2 sm:pt-3 pb-2 transition-all duration-300">
         <div className="max-w-6xl mx-auto bg-[#002624]/90 backdrop-blur-xl border border-[#005e58]/50 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgba(0,38,36,0.35)] flex items-center justify-between text-white relative">
@@ -346,17 +388,35 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION CON RESPONSIVE DESIGN FLUIDO
+          2. HERO SECTION CON MULTI-LAYER PARALLAX & BADGES FLOTANTES
           ========================================================================= */}
-      <section ref={heroRef} className="pt-16 sm:pt-24 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto space-y-10 sm:space-y-12 text-center">
+      <section ref={heroRef} className="pt-16 sm:pt-24 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto space-y-10 sm:space-y-12 text-center relative z-10">
         
+        {/* Floating Depth Badge Izquierdo (Parallax Opuesto) */}
+        <motion.div 
+          style={{ y: smoothBadgeLeftY }}
+          className="hidden xl:flex absolute left-[-4rem] top-28 items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/80 backdrop-blur-md border border-emerald-500/20 shadow-lg text-[11px] font-bold text-slate-800 pointer-events-none transform-gpu will-change-transform"
+        >
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+          <span>LPR Reconocimiento 99.8%</span>
+        </motion.div>
+
+        {/* Floating Depth Badge Derecho (Parallax Opuesto) */}
+        <motion.div 
+          style={{ y: smoothBadgeRightY }}
+          className="hidden xl:flex absolute right-[-4rem] top-36 items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/80 backdrop-blur-md border border-[#004D49]/20 shadow-lg text-[11px] font-bold text-[#004D49] pointer-events-none transform-gpu will-change-transform"
+        >
+          <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+          <span>15 min cortesía garantizada</span>
+        </motion.div>
+
         <motion.div 
           style={{ 
             y: smoothHeroHeadlineY, 
             opacity: heroOpacity,
             scale: smoothHeroScale
           }}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: FLUID_EASE }}
           className="space-y-5 sm:space-y-6 flex flex-col items-center transform-gpu will-change-transform"
@@ -367,7 +427,7 @@ export const LandingPage = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: FLUID_EASE }}
-            className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] text-[#002B29] tracking-[-0.03em] max-w-3xl mx-auto leading-[1.12] sm:leading-[1.08]"
+            className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] text-[#002B29] tracking-[-0.03em] max-w-3xl mx-auto leading-[1.12] sm:leading-[1.08] drop-shadow-xs"
           >
             Ecosistema Inteligente de Estacionamientos en <span className="text-[#004D49] font-black">Ayacucho.</span>
           </motion.h1>
@@ -382,75 +442,71 @@ export const LandingPage = ({
             Conectamos a conductores en Ayacucho con estacionamientos disponibles en tiempo real, facilitando la reserva de tu sitio e ingreso directo.
           </motion.p>
 
-          {/* LAS 2 OPCIONES PRINCIPALES DEL SISTEMA */}
+          {/* LAS 2 OPCIONES PRINCIPALES DEL SISTEMA (3D TILT CARDS) */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.5, ease: FLUID_EASE }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mx-auto pt-4 text-left"
           >
             
             {/* OPCIÓN 1: CONDUCTORES / USUARIOS */}
-            <motion.div
-              whileHover={{ y: -4, scale: 1.01 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white/90 backdrop-blur-md p-6 rounded-3xl border border-emerald-500/30 shadow-xl shadow-emerald-950/5 space-y-4 flex flex-col justify-between group hover:border-emerald-600/60 transition"
-            >
-              <div className="space-y-3">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 flex items-center justify-center font-bold shadow-xs">
-                  <Car className="w-6 h-6 text-emerald-700" />
+            <DynamicTiltCard className="h-full">
+              <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-emerald-500/30 shadow-xl shadow-emerald-950/5 space-y-4 flex flex-col justify-between h-full group hover:border-emerald-600/60 transition-all duration-300">
+                <div className="space-y-3">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 flex items-center justify-center font-bold shadow-xs">
+                    <Car className="w-6 h-6 text-emerald-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-emerald-800 transition">
+                      Buscar & Reservar Plazas
+                    </h3>
+                    <p className="text-xs text-slate-600 leading-relaxed mt-1 font-sans">
+                      Encuentra cocheras en Huamanga, elige tu sitio preferido en el mapa y accede directo reconociendo tu placa sin tickets.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-emerald-800 transition">
-                    Buscar & Reservar Plazas
-                  </h3>
-                  <p className="text-xs text-slate-600 leading-relaxed mt-1">
-                    Encuentra cocheras en Huamanga, elige tu sitio preferido en el mapa y accede directo reconociendo tu placa sin tickets.
-                  </p>
-                </div>
-              </div>
 
-              <motion.a
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                href="#mapa"
-                className="w-full py-3 bg-[#004D49] hover:bg-[#003835] text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#004D49]/20"
-              >
-                <span>Consultar Cocheras en Vivo</span>
-                <ArrowRight className="w-4 h-4 text-emerald-400" />
-              </motion.a>
-            </motion.div>
+                <motion.a
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  href="#mapa"
+                  className="w-full py-3 bg-[#004D49] hover:bg-[#003835] text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#004D49]/20 mt-3"
+                >
+                  <span>Consultar Cocheras en Vivo</span>
+                  <ArrowRight className="w-4 h-4 text-emerald-400" />
+                </motion.a>
+              </div>
+            </DynamicTiltCard>
 
             {/* OPCIÓN 2: PROPIETARIOS DE COCHERAS */}
-            <motion.div
-              whileHover={{ y: -4, scale: 1.01 }}
-              transition={{ duration: 0.2 }}
-              className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl shadow-slate-950/20 space-y-4 flex flex-col justify-between group hover:border-emerald-500/50 transition"
-            >
-              <div className="space-y-3">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-400/20 border border-emerald-400/30 text-emerald-400 flex items-center justify-center font-bold shadow-xs">
-                  <Building2 className="w-6 h-6 text-emerald-400" />
+            <DynamicTiltCard className="h-full">
+              <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl shadow-slate-950/20 space-y-4 flex flex-col justify-between h-full group hover:border-emerald-500/50 transition-all duration-300">
+                <div className="space-y-3">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-400/20 border border-emerald-400/30 text-emerald-400 flex items-center justify-center font-bold shadow-xs">
+                    <Building2 className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white tracking-tight group-hover:text-emerald-300 transition">
+                      Afiliar mi Estacionamiento
+                    </h3>
+                    <p className="text-xs text-slate-300 leading-relaxed mt-1 font-sans">
+                      Registra tu cochera, organiza tus espacios en el mapa digital, recibe reservas online y automatiza el cobro sin costo inicial.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-black text-white tracking-tight group-hover:text-emerald-300 transition">
-                    Afiliar mi Estacionamiento
-                  </h3>
-                  <p className="text-xs text-slate-300 leading-relaxed mt-1">
-                    Registra tu cochera, organiza tus espacios en el mapa digital, recibe reservas online y automatiza el cobro sin costo inicial.
-                  </p>
-                </div>
-              </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                className="w-full py-3 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 text-xs font-black rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-400/20"
-              >
-                <Building2 className="w-4 h-4 text-slate-950" />
-                <span>Solicitar Afiliación de Cochera</span>
-              </motion.button>
-            </motion.div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onOpenAuth && onOpenAuth('affiliation')}
+                  className="w-full py-3 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 text-xs font-black rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-400/20 mt-3"
+                >
+                  <Building2 className="w-4 h-4 text-slate-950" />
+                  <span>Solicitar Afiliación de Cochera</span>
+                </motion.button>
+              </div>
+            </DynamicTiltCard>
 
           </motion.div>
         </motion.div>
@@ -458,10 +514,10 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          2.5 BANDA DE MÉTRICAS EN VIVO (PRUEBA SOCIAL)
+          2.5 BANDA DE MÉTRICAS EN VIVO CON GLASS ELEVATION
           ========================================================================= */}
       <CinematicScrollSection className="py-8 sm:py-10 px-4 sm:px-6 lg:px-12">
-        <div className="max-w-5xl mx-auto bg-white/80 backdrop-blur-md border border-[#004D49]/10 rounded-3xl shadow-sm grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-[#004D49]/10 overflow-hidden">
+        <div className="max-w-5xl mx-auto bg-white/85 backdrop-blur-xl border border-[#004D49]/15 rounded-3xl shadow-[0_20px_45px_rgba(0,77,73,0.08)] grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-[#004D49]/10 overflow-hidden">
           {[
             { value: `${Math.max(establishments.length, 0)}`, suffix: '', label: 'Cocheras conectadas en vivo' },
             { value: `${totalFreeSlots}`, suffix: '', label: 'Plazas libres ahora mismo' },
@@ -470,16 +526,16 @@ export const LandingPage = ({
           ].map((m, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.45, delay: i * 0.07, ease: FLUID_EASE }}
-              className="p-5 sm:p-6 text-center"
+              className="p-5 sm:p-6 text-center group hover:bg-emerald-50/30 transition duration-300"
             >
-              <div className="text-2xl sm:text-4xl font-display font-bold text-[#002B29] tracking-tight">
+              <div className="text-2xl sm:text-4xl font-display font-black text-[#002B29] tracking-tight">
                 {m.value}<span className="text-[#004D49]">{m.suffix}</span>
               </div>
-              <div className="mt-1 text-[10px] sm:text-xs text-[#004D49]/70 font-semibold uppercase tracking-wide">
+              <div className="mt-1 text-[10px] sm:text-xs text-[#004D49]/70 font-bold uppercase tracking-wide">
                 {m.label}
               </div>
             </motion.div>
@@ -488,7 +544,7 @@ export const LandingPage = ({
       </CinematicScrollSection>
 
       {/* =========================================================================
-          3. DIRECTORIO Y MAPA EN VIVO
+          3. DIRECTORIO Y MAPA EN VIVO CON PERSPECTIVA
           ========================================================================= */}
       <CinematicScrollSection id="mapa" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
         
@@ -511,7 +567,7 @@ export const LandingPage = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nombre, dirección o referencia…"
-              className="w-full h-12 pl-11 pr-10 rounded-2xl bg-white border border-[#004D49]/15 text-sm font-medium text-[#002B29] placeholder:text-[#004D49]/40 shadow-sm focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/50 transition"
+              className="w-full h-12 pl-11 pr-10 rounded-2xl bg-white/95 backdrop-blur-md border border-[#004D49]/15 text-sm font-medium text-[#002B29] placeholder:text-[#004D49]/40 shadow-sm focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/50 transition"
             />
             {searchQuery && (
               <button
@@ -537,7 +593,7 @@ export const LandingPage = ({
                 className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer ${
                   categoryFilter === cat.id
                     ? 'bg-[#004D49] text-white border-[#004D49] shadow-md shadow-[#004D49]/20'
-                    : 'bg-white/80 text-[#004D49] border-[#004D49]/15 hover:border-emerald-500/50 hover:bg-white'
+                    : 'bg-white/85 text-[#004D49] border-[#004D49]/15 hover:border-emerald-500/50 hover:bg-white'
                 }`}
               >
                 {cat.label}
@@ -557,7 +613,7 @@ export const LandingPage = ({
           </div>
         </div>
 
-        {/* Mapa Leaflet Interactivo (lazy-load al entrar en viewport) */}
+        {/* Mapa Leaflet Interactivo con Sombras y Parallax */}
         <LazyMapSection
           parkings={filteredParkings}
           onSelectParking={(p) => {
@@ -568,7 +624,7 @@ export const LandingPage = ({
       </CinematicScrollSection>
 
       {/* =========================================================================
-          4. CÓMO FUNCIONA — EXPERIENCIA ÁGIL DESPUÉS DEL MAPA
+          4. CÓMO FUNCIONA — EXPERIENCIA 3D EN FAUX-OS WINDOW
           ========================================================================= */}
       <CinematicScrollSection id="sistema" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8 sm:space-y-10">
         
@@ -582,7 +638,7 @@ export const LandingPage = ({
           </p>
         </div>
 
-        {/* Contenedor Faux-OS Window Chrome de Alta Definición */}
+        {/* Contenedor Faux-OS Window Chrome de Alta Definición con Inercia 3D */}
         <div ref={mockupSectionRef} style={{ perspective: 1200 }}>
           <motion.div 
             style={{ 
@@ -614,7 +670,7 @@ export const LandingPage = ({
               <div className="space-y-5 md:col-span-1 md:border-r border-slate-200/80 md:pr-8">
                 
                 {/* Paso 1 */}
-                <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 transition space-y-1.5 group">
+                <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition space-y-1.5 group">
                   <div className="flex items-center space-x-2">
                     <span className="w-6 h-6 rounded-lg bg-[#004D49] text-white font-mono text-xs font-black flex items-center justify-center shadow-xs">
                       1
@@ -629,7 +685,7 @@ export const LandingPage = ({
                 </div>
 
                 {/* Paso 2 */}
-                <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 transition space-y-1.5 group">
+                <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition space-y-1.5 group">
                   <div className="flex items-center space-x-2">
                     <span className="w-6 h-6 rounded-lg bg-[#004D49] text-white font-mono text-xs font-black flex items-center justify-center shadow-xs">
                       2
@@ -644,7 +700,7 @@ export const LandingPage = ({
                 </div>
 
                 {/* Paso 3 */}
-                <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 transition space-y-1.5 group">
+                <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition space-y-1.5 group">
                   <div className="flex items-center space-x-2">
                     <span className="w-6 h-6 rounded-lg bg-[#004D49] text-white font-mono text-xs font-black flex items-center justify-center shadow-xs">
                       3
@@ -700,7 +756,7 @@ export const LandingPage = ({
       </CinematicScrollSection>
 
       {/* =========================================================================
-          6. SECCIÓN PROPIETARIOS
+          6. SECCIÓN PROPIETARIOS CON PROFUNDIDAD Y ELEVACIÓN
           ========================================================================= */}
       <CinematicScrollSection id="afiliacion" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto">
         <motion.div 
@@ -708,10 +764,12 @@ export const LandingPage = ({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-20px' }}
           transition={{ duration: 0.6, ease: FLUID_EASE }}
-          className="bg-[#002B29] text-white rounded-xl p-6 sm:p-10 md:p-14 space-y-6 flex flex-col items-center text-center border border-[#004D49] shadow-[0_24px_60px_-10px_rgba(0,43,41,0.5)]"
+          className="bg-gradient-to-b from-[#002B29] to-[#001D1B] text-white rounded-3xl p-6 sm:p-10 md:p-14 space-y-6 flex flex-col items-center text-center border border-[#005e58]/50 shadow-[0_24px_60px_-10px_rgba(0,43,41,0.5)] relative overflow-hidden"
         >
+          {/* Luz ambiental de fondo */}
+          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
           
-          <div className="max-w-2xl space-y-3 px-2">
+          <div className="max-w-2xl space-y-3 px-2 relative z-10">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold tracking-tight text-white">
               Digitalice la operación de <span className="text-emerald-300">su cochera</span>
             </h2>
@@ -720,12 +778,12 @@ export const LandingPage = ({
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto pt-2 relative z-10">
             <motion.button
               whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#EAEAEA] text-[#002B29] text-xs font-bold rounded transition-all duration-200 cursor-pointer shadow-[0_4px_12px_rgba(255,255,255,0.2)]"
+              className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-[#EAEAEA] text-[#002B29] text-xs font-black rounded-xl transition-all duration-200 cursor-pointer shadow-[0_4px_20px_rgba(255,255,255,0.25)]"
             >
               Solicitar Afiliación
             </motion.button>
@@ -735,7 +793,7 @@ export const LandingPage = ({
               href="https://wa.me/51966000000?text=Hola,%20deseo%20afiliar%20mi%20cochera%20en%20Ayacucho"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto px-6 py-3 bg-[#004D49] hover:bg-[#003835] text-white text-xs font-medium rounded border border-[#00605B] transition-colors duration-200 text-center"
+              className="w-full sm:w-auto px-6 py-3.5 bg-[#004D49] hover:bg-[#003835] text-white text-xs font-bold rounded-xl border border-[#00605B] transition-colors duration-200 text-center shadow-md"
             >
               Contacto Directo
             </motion.a>
@@ -759,7 +817,7 @@ export const LandingPage = ({
           </p>
         </div>
 
-        <div className="divide-y divide-[#004D49]/20 border-y border-[#004D49]/20 bg-white/70 backdrop-blur-md rounded-xl p-4 sm:p-6 shadow-sm">
+        <div className="divide-y divide-[#004D49]/15 border border-[#004D49]/15 bg-white/85 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-sm">
           {faqs.map((faq, idx) => (
             <motion.div 
               key={idx} 
@@ -771,7 +829,7 @@ export const LandingPage = ({
             >
               <button
                 onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                className="w-full text-left font-semibold text-xs sm:text-sm text-[#002B29] flex items-center justify-between hover:text-[#004D49] transition-colors duration-200 cursor-pointer gap-2"
+                className="w-full text-left font-bold text-xs sm:text-sm text-[#002B29] flex items-center justify-between hover:text-[#004D49] transition-colors duration-200 cursor-pointer gap-2"
               >
                 <span>{faq.q}</span>
                 <span className="font-mono text-base text-[#004D49] shrink-0">
@@ -802,7 +860,7 @@ export const LandingPage = ({
       {/* =========================================================================
           8. FOOTER DOCUMENTAL TRASLÚCIDO (RESPONSIVE)
           ========================================================================= */}
-      <footer className="bg-white/85 backdrop-blur-md border-t border-white/50 py-8 sm:py-12 px-4 sm:px-6 lg:px-12 text-xs text-[#004D49] shadow-[0_-2px_10px_-2px_rgba(0,0,0,0.02)]">
+      <footer className="bg-white/90 backdrop-blur-md border-t border-white/60 py-8 sm:py-12 px-4 sm:px-6 lg:px-12 text-xs text-[#004D49] shadow-[0_-2px_10px_-2px_rgba(0,0,0,0.02)] relative z-10">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 text-center sm:text-left">
           <div className="flex items-center space-x-3">
             <BrandLogo className="h-6 w-auto" subtitle="" showSubtitle={false} />

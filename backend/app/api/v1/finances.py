@@ -53,6 +53,13 @@ async def finances_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(platform_required),
 ):
+    # Cache del resumen (agregación costosa): TTL 60s, invalidado en check-in/out de reservas
+    from app.core.cache import cache_get_json, cache_set_json
+    FINANCES_CACHE_KEY = "finances:summary"
+    cached = await cache_get_json(FINANCES_CACHE_KEY)
+    if cached is not None:
+        return SummaryResponse.model_validate(cached)
+
     # Traer todos los parkings y todas las reservas sin filtro de usuario (solo platform)
     park_res = await db.execute(select(Parking).order_by(Parking.id.asc()))
     parkings: List[Parking] = park_res.scalars().all()
@@ -125,7 +132,7 @@ async def finances_summary(
     total_reservas_global = sum(s.total_reservas for s in por_sede)
     pendiente_bruta = round(bruta_global - liquidados_global, 2)
 
-    return SummaryResponse(
+    summary = SummaryResponse(
         por_sede=por_sede,
         totales=TotalesGlobales(
             recaudacion_bruta_global=bruta_global,
@@ -138,3 +145,5 @@ async def finances_summary(
         ),
         nota="Datos bancarios (RUC/CCI/cuenta) aún sin tabla en BD; se muestran como pendiente de completar. Comisión fija 12%. Canceladas excluidas. Liquidación bancaria fuera de plataforma.",
     )
+    await cache_set_json(FINANCES_CACHE_KEY, summary.model_dump(mode="json"), ttl=60)
+    return summary

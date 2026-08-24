@@ -41,6 +41,9 @@ app.add_middleware(
 # Inicialización de tablas y datos semilla - resiliente en Vercel Serverless (no tumbar lambda si DB no conecta)
 @app.on_event("startup")
 async def startup_db():
+    # Listener Redis Pub/Sub para fan-out de eventos WS entre réplicas (no-op sin REDIS_URL)
+    from app.core.cache import _ensure_listener
+    _ensure_listener()
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

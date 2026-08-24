@@ -11,6 +11,13 @@ from app.schemas.schemas import (
 )
 from app.core.security import require_role
 from app.core.realtime import realtime
+from app.core.cache import cache_get_json, cache_set_json, cache_delete
+
+PARKINGS_CACHE_KEY = "parkings:all"
+
+
+async def invalidate_parkings_cache():
+    await cache_delete(PARKINGS_CACHE_KEY)
 
 
 router = APIRouter(prefix="/parkings", tags=["Estacionamientos, Cajones & Planos CAD"])
@@ -28,6 +35,12 @@ async def list_parkings(
     status_filter: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
+    # Cache solo del listado completo (la llamada caliente del mapa); filtros van a DB
+    if not query and not city and not status_filter:
+        cached = await cache_get_json(PARKINGS_CACHE_KEY)
+        if cached is not None:
+            return cached
+
     stmt = select(Parking)
     if query:
         stmt = stmt.where(Parking.name.ilike(f"%{query}%") | Parking.address.ilike(f"%{query}%"))
@@ -48,6 +61,9 @@ async def list_parkings(
         p_dict = ParkingResponse.model_validate(p)
         p_dict.available_slots = free_count
         response.append(p_dict)
+
+    if not query and not city and not status_filter:
+        await cache_set_json(PARKINGS_CACHE_KEY, [r.model_dump(mode="json") for r in response], ttl=5)
 
     return response
 
@@ -83,6 +99,7 @@ async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(g
     db.add(db_parking)
     await db.commit()
     await db.refresh(db_parking)
+    await invalidate_parkings_cache()
     await realtime.broadcast("parkings:updated", {"parking_id": db_parking.id})
     return ParkingResponse.model_validate(db_parking)
 
@@ -99,6 +116,7 @@ async def update_parking(parking_id: int, parking_in: ParkingUpdate, db: AsyncSe
     
     await db.commit()
     await db.refresh(parking)
+    await invalidate_parkings_cache()
     await realtime.broadcast("parkings:updated", {"parking_id": parking.id})
     return ParkingResponse.model_validate(parking)
 
@@ -111,6 +129,7 @@ async def delete_parking(parking_id: int, db: AsyncSession = Depends(get_db), cu
     
     await db.delete(parking)
     await db.commit()
+    await invalidate_parkings_cache()
     await realtime.broadcast("parkings:updated", {"parking_id": parking_id})
     return {"status": "success", "message": f"Estacionamiento {parking_id} eliminado exitosamente"}
 
@@ -243,6 +262,7 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
     ]
     db.add_all(new_elems)
     await db.commit()
+    await invalidate_parkings_cache()
     await realtime.broadcast("parkings:updated", {"parking_id": parking_id})
     # Contar total actual
     final_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))

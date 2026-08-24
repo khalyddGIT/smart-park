@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     # Culqi - secreto solo en servidor, nunca en el frontend
     CULQI_SECRET_KEY: str = os.getenv("CULQI_SECRET_KEY", "")
 
+    # Redis opcional: cache de lecturas calientes + Pub/Sub para WebSocket multi-réplica.
+    # Sin REDIS_URL el sistema funciona igual que hoy (degradación elegante, fail-open).
+    REDIS_URL: str = os.getenv("REDIS_URL", "")
+
     # Conexión a Base de Datos (Soporta DATABASE_URL de Supabase / PostgreSQL o SQLite en /tmp para Vercel)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     USE_SQLITE: bool = os.getenv("USE_SQLITE", "True" if not os.getenv("DATABASE_URL") else "False") == "True"

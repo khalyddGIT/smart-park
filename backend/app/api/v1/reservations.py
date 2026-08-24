@@ -9,7 +9,17 @@ from app.models.models import Reservation, Slot, Parking
 from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationResponse
 from app.core.security import get_current_user, require_role
 from app.core.realtime import realtime
+from app.core.cache import cache_delete
 from app.models.models import User
+
+PARKINGS_CACHE_KEY = "parkings:all"
+FINANCES_CACHE_KEY = "finances:summary"
+
+async def invalidate_parkings_cache():
+    await cache_delete(PARKINGS_CACHE_KEY)
+
+async def invalidate_finances_cache():
+    await cache_delete(FINANCES_CACHE_KEY)
 
 # Normaliza datetimes a UTC naive para compatibilidad con columnas DateTime sin zona horaria
 def _naive_utc(dt: datetime) -> datetime:
@@ -208,6 +218,8 @@ async def check_in_reservation(reservation_id: int, db: AsyncSession = Depends(g
 
     await db.commit()
     try:
+        await invalidate_parkings_cache()
+        await invalidate_finances_cache()
         await realtime.broadcast("reservations:updated")
     except Exception:
         pass
@@ -237,6 +249,8 @@ async def check_out_reservation(reservation_id: int, db: AsyncSession = Depends(
 
     await db.commit()
     try:
+        await invalidate_parkings_cache()
+        await invalidate_finances_cache()
         await realtime.broadcast("reservations:updated")
     except Exception:
         pass

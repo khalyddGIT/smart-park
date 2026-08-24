@@ -367,25 +367,55 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     );
   };
 
-  // Carga de archivo de imagen
+  // Carga y compresión optimizada de archivo de imagen (Canvas WebP/JPEG)
   const handleImageFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 6 * 1024 * 1024) {
-      alert('La imagen no debe superar los 6MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('La imagen no debe superar los 10MB.');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const base64Url = event.target?.result;
-      if (base64Url) {
-        setFormData(prev => ({ ...prev, image: base64Url }));
-        showToast('Foto cargada exitosamente.');
-      }
+      const rawData = event.target?.result;
+      if (!rawData) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1280;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convertir a JPEG optimizado (calidad 85% - tamaño súper ligero ~100KB)
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        setFormData(prev => ({ ...prev, image: compressedBase64 }));
+        showToast('✓ Fotografía cargada y optimizada con éxito.');
+      };
+      img.src = rawData;
     };
     reader.readAsDataURL(file);
+    e.target.value = ''; // Permitir volver a seleccionar el mismo archivo
   };
 
   // Abrir vista para crear

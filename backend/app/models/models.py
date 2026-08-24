@@ -71,7 +71,7 @@ class Parking(Base):
     tolerance_minutes = Column(Integer, default=15)
     status = Column(String(20), default="active")
     total_capacity = Column(Integer, default=30)
-    image_url = Column(String(255), nullable=True)
+    image_url = Column(Text, nullable=True)
     # Campos visibles en el panel del conductor (antes solo vivían en localStorage del admin)
     description = Column(Text, nullable=True)
     phone = Column(String(30), nullable=True)

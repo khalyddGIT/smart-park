@@ -309,16 +309,22 @@ export const ANPRMonitor = () => {
 
     let backendMatched = false;
     let apiMsg = '';
-    try {
-      const res = await api.post('/anpr/simulate-scan', {
-        parking_id: selectedEstId,
-        license_plate: formatted,
-        gate_type: gateAction
-      });
-      backendMatched = res.data.matched ?? false;
-      apiMsg = res.data.message || '';
-    } catch {
-      backendMatched = false;
+    let backendData = null;
+    // El backend exige parking_id numérico; las sedes demo "EST-*" solo aplican matching local
+    const numericEstId = Number(selectedEstId);
+    if (!isNaN(numericEstId)) {
+      try {
+        const res = await api.post('/anpr/simulate-scan', {
+          parking_id: numericEstId,
+          license_plate: formatted,
+          gate_type: gateAction
+        });
+        backendData = res.data;
+        backendMatched = res.data.matched ?? false;
+        apiMsg = res.data.message || '';
+      } catch {
+        backendMatched = false;
+      }
     }
 
     const t1 = performance.now();
@@ -371,6 +377,46 @@ export const ANPRMonitor = () => {
           slot: targetSlot,
           status: 'AUTORIZADO',
           detail: `Reserva ${matchedReservation.code} validada con éxito.`
+        });
+
+      } else if (backendMatched && backendData?.reservation_code) {
+        // Reserva de un cliente validada por el servidor (el backend ya activó el ingreso y ocupó el cajón)
+        let serverSlot = 'POR_ASIGNAR';
+        let serverPlate = formatted;
+        try {
+          const v = await api.get(`/reservations/verify/${backendData.reservation_code}`);
+          serverSlot = v.data?.slot_code || serverSlot;
+          serverPlate = v.data?.license_plate || serverPlate;
+        } catch {}
+        occupySlot(selectedEstId, serverSlot, serverPlate);
+
+        resultPayload = {
+          type: 'LPR_RESERVATION',
+          matched: true,
+          actionType: 'ENTRY',
+          code: formatted,
+          rawCode: corrected,
+          driverName: 'Conductor con Reserva Digital',
+          phone: 'N/A',
+          reservationCode: backendData.reservation_code,
+          slot: serverSlot,
+          vehicleType: tipo === 'moto' ? 'Motocicleta (L3)' : 'Automóvil Particular (M1)',
+          rate: currentEst?.rate || 5.0,
+          confidence: confidenceScore,
+          message: apiMsg || `Reserva ${backendData.reservation_code} validada en servidor. Plaza ${serverSlot}.`,
+          timestamp: new Date().toISOString()
+        };
+
+        if (barrierAutoMode) triggerBarrierOpen();
+        playAccessAudio(true);
+
+        addAuditLog({
+          type: 'LPR',
+          action: 'INGRESO_RESERVA',
+          plate: formatted,
+          slot: serverSlot,
+          status: 'AUTORIZADO',
+          detail: `Reserva ${backendData.reservation_code} validada por el servidor (LPR).`
         });
 
       } else {
@@ -452,6 +498,43 @@ export const ANPRMonitor = () => {
           slot: targetSlot,
           status: 'COMPLETADO',
           detail: `Salida procesada. Total liquidado S/ ${totalCost.toFixed(2)}.`
+        });
+      } else if (backendMatched && backendData?.reservation_code) {
+        // Salida validada por el servidor (el backend ya completó la estancia y liberó el cajón)
+        let serverSlot = 'N/A';
+        try {
+          const v = await api.get(`/reservations/verify/${backendData.reservation_code}`);
+          serverSlot = v.data?.slot_code || serverSlot;
+        } catch {}
+        freeSlot(selectedEstId, serverSlot);
+
+        resultPayload = {
+          type: 'LPR_RESERVATION',
+          matched: true,
+          actionType: 'EXIT',
+          code: formatted,
+          rawCode: corrected,
+          driverName: 'Salida Validada en Servidor',
+          phone: 'N/A',
+          reservationCode: backendData.reservation_code,
+          slot: serverSlot,
+          vehicleType: tipo === 'moto' ? 'Motocicleta (L3)' : 'Automóvil Particular (M1)',
+          rate: currentEst?.rate || 5.0,
+          confidence: confidenceScore,
+          message: apiMsg || `Salida de ${formatted} registrada. Estancia completada.`,
+          timestamp: new Date().toISOString()
+        };
+
+        if (barrierAutoMode) triggerBarrierOpen();
+        playAccessAudio(true);
+
+        addAuditLog({
+          type: 'LPR',
+          action: 'SALIDA_REGISTRADA',
+          plate: formatted,
+          slot: serverSlot,
+          status: 'COMPLETADO',
+          detail: `Salida validada por el servidor (LPR). Reserva ${backendData.reservation_code}.`
         });
       } else {
         resultPayload = {

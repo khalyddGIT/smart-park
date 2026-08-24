@@ -220,7 +220,7 @@ El proyecto se despliega como **un solo contenedor Docker multi-stage** (`Docker
 ```bash
 railway up   # despliegue directo con la CLI
 ```
-*Guía completa paso a paso: [RAILWAY_DEPLOY.md](RAILWAY_DEPLOY.md)*
+*Guía completa paso a paso: [docs/RAILWAY_DEPLOY.md](docs/RAILWAY_DEPLOY.md)*
 
 ---
 
@@ -278,13 +278,13 @@ smart-park/
 │   │   └── services/          # Cliente Axios hacia la API
 │   └── package.json
 ├── supabase/migrations/        # SQL de esquema inicial versionado
-├── Sistema de Estacionamiento/ # Documentación de diseño: requerimientos, casos de uso,
-│                               #   arquitectura C4, esquema BD, especificación API y roadmap
+├── docs/                       # Toda la documentación del proyecto (índice: docs/README.md)
+│   ├── sistema-de-estacionamiento/  # Diseño: requerimientos, casos de uso, arquitectura C4,
+│   │                                #   esquema BD, especificación API y roadmap
+│   └── *.md                    # Guías e informes (deploy Railway, BD, avances, vistas)
 ├── Dockerfile                  # Build multi-stage: compila frontend y sirve desde FastAPI
 ├── docker-compose.yml          # Entorno local completo (Postgres + backend + frontend)
 ├── railway.json                # Configuración de despliegue Railway (builder DOCKERFILE)
-├── RAILWAY_DEPLOY.md           # Guía de despliegue en producción
-├── PROYECTO.md                 # Especificación funcional maestra (agnóstica al stack)
 └── README.md
 ```
 

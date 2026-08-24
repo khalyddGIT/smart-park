@@ -874,6 +874,26 @@ export const ANPRMonitor = () => {
                     type="button"
                     size="sm"
                     variant="outline"
+                    onClick={() => {
+                      if (barrierOpen) triggerBarrierClose();
+                      else {
+                        triggerBarrierOpen();
+                        playAccessAudio(true);
+                      }
+                    }}
+                    className={`text-xs font-semibold h-7.5 px-2.5 rounded-lg cursor-pointer gap-1.5 ${
+                      barrierOpen 
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold' 
+                        : 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700'
+                    }`}
+                  >
+                    <span>{barrierOpen ? 'Barrera Abierta' : 'Abrir Barrera'}</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
                     onClick={() => setUseRealWebcam(!useRealWebcam)}
                     className="text-xs font-semibold border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 h-7.5 px-2.5 rounded-lg cursor-pointer gap-1.5"
                   >
@@ -1054,109 +1074,96 @@ export const ANPRMonitor = () => {
             )}
           </div>
 
-          {/* LADO DERECHO: PANEL DE BARRERA Y ACCIONES COMPACTO */}
+          {/* LADO DERECHO: PANEL OPERATIVO DE GARITA (SIN DIBUJO DE BARRERA) */}
           <div className="lg:col-span-4 space-y-3.5">
             
-            {/* Tarjeta Unificada de Barrera */}
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3.5">
+            {/* Panel de Emisión Directa de Ticket */}
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <span className="text-xs font-bold text-slate-800">
-                  Barrera de Acceso
+                <span className="text-xs font-bold text-slate-900">
+                  Ingreso Presencial
                 </span>
-                <span className={`text-xs font-bold font-mono ${barrierOpen ? 'text-emerald-600' : 'text-slate-500'}`}>
-                  ● {barrierOpen ? 'Abierta' : 'Cerrada'}
+                <span className="text-[11px] font-mono text-emerald-700 font-semibold">
+                  {freeSlotsCount} plazas libres
                 </span>
               </div>
 
-              {/* Simulación Compacta de Barrera */}
-              <div className="h-24 bg-slate-100 rounded-xl flex items-end justify-center p-3 relative overflow-hidden border border-slate-200">
-                <div className="w-5 h-14 bg-slate-800 rounded-t-md z-10 relative flex flex-col items-center justify-center gap-1">
-                  <div className={`w-2 h-2 rounded-full ${barrierOpen ? 'bg-emerald-400' : 'bg-rose-500'}`} />
-                </div>
-
-                <div
-                  style={{
-                    transformOrigin: 'left bottom',
-                    transform: `rotate(${barrierAngle}deg)`,
-                    transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                  className="w-40 h-2.5 bg-gradient-to-r from-red-600 via-white to-red-600 rounded-r-md shadow-xs absolute left-1/2 -ml-2.5 bottom-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  onClick={() => {
-                    triggerBarrierOpen();
-                    playAccessAudio(true);
-                  }}
-                  disabled={barrierOpen}
-                  className="w-full font-bold text-xs bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-8.5 cursor-pointer"
-                >
-                  Abrir
-                </Button>
-
-                <Button
-                  type="button"
-                  onClick={triggerBarrierClose}
-                  disabled={!barrierOpen}
-                  variant="outline"
-                  className="w-full font-semibold text-xs border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl h-8.5 cursor-pointer"
-                >
-                  Cerrar
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
-                <span className="text-slate-500">Auto-apertura LPR:</span>
-                <button
-                  type="button"
-                  onClick={() => setBarrierAutoMode(!barrierAutoMode)}
-                  className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition cursor-pointer border ${
-                    barrierAutoMode 
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-bold' 
-                      : 'bg-slate-100 text-slate-600 border-slate-200'
-                  }`}
-                >
-                  {barrierAutoMode ? 'Activado' : 'Manual'}
-                </button>
-              </div>
-            </div>
-
-            {/* Acciones Rápidas */}
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
-              <span className="text-xs font-bold text-slate-800 block mb-1">
-                Acciones
-              </span>
+              <p className="text-xs text-slate-500">
+                Para vehículos sin reserva previa que ingresan directamente a la cochera.
+              </p>
 
               <Button
                 type="button"
                 onClick={() => handleIssueWalkInTicket()}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl h-8.5 justify-start px-3 gap-2 cursor-pointer"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl h-9 justify-center gap-2 shadow-xs cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Emitir Ticket Rápido</span>
+                <Plus className="w-4 h-4 shrink-0" />
+                <span>Emitir Ticket & Abrir Barrera</span>
               </Button>
+            </div>
 
+            {/* Vehículos Actualmente en Cochera (Resumen en Vivo) */}
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <span className="text-xs font-bold text-slate-900">
+                  En Cochera ({vehiclesInside.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('vehicles')}
+                  className="text-[11px] text-slate-600 hover:text-slate-900 font-semibold cursor-pointer"
+                >
+                  Ver todos →
+                </button>
+              </div>
+
+              {vehiclesInside.length === 0 ? (
+                <p className="text-xs text-slate-400 py-2 text-center">
+                  Cochera vacía en este momento.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-0.5">
+                  {vehiclesInside.slice(0, 4).map(veh => (
+                    <div key={veh.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-mono font-bold text-slate-900 block">{veh.plate}</span>
+                        <span className="text-[10px] text-slate-500">{veh.slot} • {veh.driverName}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleProcessExitForVehicle(veh)}
+                        className="h-7 text-[11px] font-semibold px-2.5 rounded-lg border-slate-200 hover:bg-white cursor-pointer"
+                      >
+                        Salida
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Accesos a Pases y Bitácora */}
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setActiveTab('vehicles')}
-                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl h-8.5 justify-start px-3 gap-2 border-slate-200 cursor-pointer"
+                onClick={() => setActiveTab('qr')}
+                className="bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl h-8.5 border-slate-200 cursor-pointer"
               >
-                <Car className="w-3.5 h-3.5 text-slate-400" />
-                <span>Vehículos en Cochera ({vehiclesInside.length})</span>
+                <QrCode className="w-3.5 h-3.5 text-blue-600" />
+                <span>Pases QR</span>
               </Button>
 
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setActiveTab('audit')}
-                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl h-8.5 justify-start px-3 gap-2 border-slate-200 cursor-pointer"
+                className="bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl h-8.5 border-slate-200 cursor-pointer"
               >
-                <FileText className="w-3.5 h-3.5 text-slate-400" />
-                <span>Bitácora ({auditLogs.length})</span>
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
+                <span>Bitácora</span>
               </Button>
             </div>
           </div>

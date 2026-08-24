@@ -589,7 +589,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       className="flex-1 h-8.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold gap-1.5 rounded-xl shadow-xs cursor-pointer"
                     >
                       <Grid className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span>Plano CAD</span>
+                      <span>Plano</span>
                     </Button>
 
                     <Button
@@ -656,7 +656,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               className="bg-slate-900 hover:bg-slate-800 text-white font-black text-xs gap-1.5 shadow-sm rounded-xl"
             >
               <Grid className="w-4 h-4 shrink-0 text-emerald-400" />
-              <span>Abrir en Modo Edición CAD</span>
+              <span>Editar Plano</span>
             </Button>
           </div>
 

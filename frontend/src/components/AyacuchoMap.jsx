@@ -102,9 +102,13 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
     markersRef.current = {};
 
     parkings.forEach((p, idx) => {
-      let coords = p.latitude && p.longitude 
-        ? [p.latitude, p.longitude] 
-        : DEFAULT_COORDS[p.id];
+      const lat = Number(p.latitude);
+      const lng = Number(p.longitude);
+      const isAyacuchoCoords = !isNaN(lat) && !isNaN(lng) && lat <= -13.0 && lat >= -13.35 && lng <= -74.0 && lng >= -74.4;
+
+      let coords = isAyacuchoCoords 
+        ? [lat, lng] 
+        : (DEFAULT_COORDS[p.id] || null);
 
       if (!coords) {
         const angle = (idx * (2 * Math.PI)) / Math.max(1, parkings.length);
@@ -115,7 +119,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       const elements = p.elements || [];
       const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
       const totalSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
-      const isSelected = selectedParkingId === p.id;
+      const isSelected = String(selectedParkingId) === String(p.id);
       const rateFormatted = `S/ ${Number(p.rate || 4).toFixed(2)}`;
 
       // Pin minimalista estilo Airbnb / Linear con precio y disponibilidad tipográfica

@@ -445,13 +445,54 @@ export const EstablishmentProvider = ({ children }) => {
     if (est && est.elements === null) return hydrateFloorPlan(id);
   };
 
+// Sanitizador de coordenadas: asegura que cualquier cochera tenga coordenadas válidas en Ayacucho
+const sanitizeEstablishment = (est, idx = 0) => {
+  let lat = Number(est.latitude);
+  let lng = Number(est.longitude);
+  // Si las coordenadas están fuera del rango de Ayacucho (ej. -12.x o -77.x de Lima), reasignar a Ayacucho
+  if (isNaN(lat) || isNaN(lng) || lat > -13.0 || lat < -13.3 || lng > -74.0 || lng < -74.4) {
+    const defaultCoords = [
+      [-13.1604, -74.2259],
+      [-13.1631, -74.2236],
+      [-13.1565, -74.2215],
+      [-13.1718, -74.2210]
+    ];
+    const fallback = defaultCoords[idx % defaultCoords.length];
+    lat = fallback[0];
+    lng = fallback[1];
+  }
+  return { 
+    ...est, 
+    latitude: lat, 
+    longitude: lng, 
+    city: est.city && est.city.includes('Ayacucho') ? est.city : 'Ayacucho - Huamanga' 
+  };
+};
+
   const fetchParkings = async () => {
     try {
       const res = await api.get('/parkings');
       if (Array.isArray(res.data) && res.data.length > 0) {
-        const mappedParkings = res.data.map(p => ({
-          id: String(p.id), name: p.name, address: p.address, city: p.city, latitude: p.latitude, longitude: p.longitude, rate: p.hourly_rate, status: p.status === 'active' ? 'Operativo' : p.status, image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', totalSlots: p.total_capacity, available_slots: p.available_slots, description: p.description || '', phone: p.phone || '', email: p.email || '', reference: p.reference || '', level: p.level || '', elements: null, _needsFloorPlan: true
-        }));
+        const mappedParkings = res.data.map((p, idx) => sanitizeEstablishment({
+          id: String(p.id), 
+          name: p.name, 
+          address: p.address, 
+          city: p.city || 'Ayacucho - Huamanga', 
+          latitude: Number(p.latitude), 
+          longitude: Number(p.longitude), 
+          rate: Number(p.hourly_rate) || 5.00, 
+          status: p.status === 'active' ? 'Operativo' : p.status, 
+          image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', 
+          totalSlots: p.total_capacity, 
+          available_slots: p.available_slots, 
+          description: p.description || '', 
+          phone: p.phone || '', 
+          email: p.email || '', 
+          reference: p.reference || '', 
+          level: p.level || '', 
+          elements: null, 
+          _needsFloorPlan: true
+        }, idx));
         const pendingHydration = [];
         setEstablishments(prev => {
           const localOnly = prev.filter(e => String(e.id).startsWith('EST-'));
@@ -465,7 +506,7 @@ export const EstablishmentProvider = ({ children }) => {
             pendingHydration.push(m.id);
             return m;
           });
-          return [...merged, ...preservedLocal];
+          return [...merged, ...preservedLocal].map((e, idx) => sanitizeEstablishment(e, idx));
         });
         pendingHydration.forEach(id => hydrateFloorPlan(id));
       }
@@ -675,14 +716,14 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Actualizar datos de un establecimiento - persistente
   const updateEstablishment = async (id, updatedFields) => {
-    setEstablishments(prev => prev.map(est => est.id === id ? { ...est, ...updatedFields } : est));
+    setEstablishments(prev => prev.map(est => String(est.id) === String(id) ? sanitizeEstablishment({ ...est, ...updatedFields }) : est));
     const numId = Number(id);
     if (!isNaN(numId)) {
       try {
         const payload = {};
         if (updatedFields.name) payload.name = updatedFields.name;
         if (updatedFields.address) payload.address = updatedFields.address;
-        if (updatedFields.city) payload.city = updatedFields.city;
+        if (updatedFields.city) payload.city = updatedFields.city || 'Ayacucho - Huamanga';
         if (updatedFields.rate) payload.hourly_rate = Number(updatedFields.rate);
         if (updatedFields.status) payload.status = updatedFields.status === 'Operativo' ? 'active' : updatedFields.status;
         if (updatedFields.image) payload.image_url = updatedFields.image;
@@ -700,7 +741,7 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Actualizar plano topográfico - persistente via sync
   const updateEstablishmentPlan = async (id, elements) => {
-    setEstablishments(prev => prev.map(est => est.id === id ? { ...est, elements } : est));
+    setEstablishments(prev => prev.map(est => String(est.id) === String(id) ? { ...est, elements } : est));
     const numId = Number(id);
     if (!isNaN(numId) && Array.isArray(elements)) {
       try {
@@ -713,7 +754,7 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Eliminar establecimiento - persistente
   const deleteEstablishment = async (id) => {
-    setEstablishments(prev => prev.filter(est => est.id !== id));
+    setEstablishments(prev => prev.filter(est => String(est.id) !== String(id)));
     const numId = Number(id);
     if (!isNaN(numId)) {
       try { await api.delete(`/parkings/${numId}`); } catch (e) { console.warn('delete backend fail', e.response?.data); }

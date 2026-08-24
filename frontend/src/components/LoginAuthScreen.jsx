@@ -75,7 +75,9 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       return;
     }
     setErrorMsg('');
-    loginWithEmail(loginEmail.trim(), loginPassword);
+    loginWithEmail(loginEmail.trim(), loginPassword).catch(err => {
+      setErrorMsg(err?.message || 'No se pudo iniciar sesión');
+    });
   };
 
   // Submit Registro Conductor
@@ -96,6 +98,8 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       phone: driverPhone.trim() || '+51 966 000 000',
       plate: (driverPlate.trim() || 'ABC-123').toUpperCase(),
       password: driverPassword
+    }).catch(err => {
+      setErrorMsg(err?.message || 'No se pudo completar el registro');
     });
   };
 

@@ -64,6 +64,7 @@ export const AuthProvider = ({ children }) => {
       data = await apiLogin({ email, password, full_name: email.split('@')[0], phone: '' });
     } catch (err) {
       if (err?.response?.status === 401) throw new Error(err.response.data?.detail || 'Credenciales incorrectas');
+      if (err?.response?.status === 422) throw new Error('La contraseña debe tener al menos 8 caracteres.');
       throw new Error('Servidor no disponible. Intenta más tarde.');
     }
     if (!data?.access_token || !data?.user) {

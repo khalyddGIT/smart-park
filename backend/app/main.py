@@ -68,28 +68,39 @@ async def startup_db():
             res = await session.execute(select(Parking))
             if not res.scalars().first():
                 p1 = Parking(
-                    name="Smart Park Central San Isidro",
-                    address="Av. Javier Prado Este 456",
-                    city="San Isidro",
-                    latitude=-12.089,
-                    longitude=-77.032,
-                    hourly_rate=8.50,
+                    name="Smart Park Plaza Mayor - Planta Baja",
+                    address="Portal Unión 42, Centro Histórico",
+                    city="Ayacucho",
+                    latitude=-13.1604,
+                    longitude=-74.2259,
+                    hourly_rate=5.00,
                     tolerance_minutes=15,
                     total_capacity=20,
                     image_url="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800"
                 )
                 p2 = Parking(
-                    name="Smart Park Miraflores Kennedy",
-                    address="Calle Shell 230",
-                    city="Miraflores",
-                    latitude=-12.121,
-                    longitude=-77.029,
-                    hourly_rate=10.00,
+                    name="Smart Park Jr. Bellido Colonial",
+                    address="Jr. Bellido 240, Centro Histórico",
+                    city="Ayacucho",
+                    latitude=-13.1631,
+                    longitude=-74.2236,
+                    hourly_rate=4.50,
                     tolerance_minutes=10,
                     total_capacity=15,
                     image_url="https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800"
                 )
-                session.add_all([p1, p2])
+                p3 = Parking(
+                    name="Smart Park Mercado Mariscal Cáceres",
+                    address="Av. Mariscal Cáceres 450",
+                    city="Ayacucho",
+                    latitude=-13.1565,
+                    longitude=-74.2215,
+                    hourly_rate=3.50,
+                    tolerance_minutes=15,
+                    total_capacity=25,
+                    image_url="https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800"
+                )
+                session.add_all([p1, p2, p3])
                 await session.commit()
                 await session.refresh(p1)
                 slots = [

@@ -757,31 +757,30 @@ export const ANPRMonitor = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5">
+    <div className="max-w-7xl mx-auto space-y-4">
       
-      {/* 1. ENCABEZADO EJECUTIVO & SELECTOR DE SEDE */}
-      <div className="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-emerald-600 shrink-0" />
-            <h1 className="text-lg font-bold text-slate-900 leading-tight">
-              Control de Garita & Lector LPR Inteligente
+      {/* 1. ENCABEZADO MINIMALISTA & SELECTOR DE SEDE */}
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <Shield className="w-5 h-5 text-emerald-600 shrink-0" />
+          <div>
+            <h1 className="text-base font-bold text-slate-900 leading-none">
+              Control de Garita
             </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Reconocimiento LPR, pases QR y barrera vehicular
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Terminal operativo de control vehicular, reconocimiento de placas y telemetría de barrera.
-          </p>
         </div>
 
-        {/* Selector de Sede Activa */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Selector de Sede y Tarifa */}
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
-            <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-            <label className="text-[11px] font-semibold text-slate-600 whitespace-nowrap">Sede Activa:</label>
+            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <select
               value={selectedEstId}
               onChange={(e) => setSelectedEstId(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer max-w-[220px] truncate"
+              className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer max-w-[200px] truncate"
             >
               {establishments.map(est => (
                 <option key={est.id} value={est.id}>
@@ -791,115 +790,95 @@ export const ANPRMonitor = () => {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-mono">
-            <span className="text-slate-400">Tarifa:</span>
-            <span className="font-bold text-emerald-400">S/ {Number(currentEst?.rate || 5).toFixed(2)}/h</span>
+          <div className="bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-mono font-bold">
+            <span className="text-emerald-400">S/ {Number(currentEst?.rate || 5).toFixed(2)}/h</span>
           </div>
         </div>
       </div>
 
-      {/* 2. BARRA DE MÉTRICAS DE CAPACIDAD EN VIVO (SIN BADGES) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-500 block">Capacidad Total</span>
-          <p className="text-lg font-mono font-black text-slate-900 mt-0.5">{totalSlotsCount} Plazas</p>
+      {/* 2. PESTAÑAS DE NAVEGACIÓN Y MÉTRICAS COMPACTAS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white p-2 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+          <button
+            type="button"
+            onClick={() => setActiveTab('lpr')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'lpr' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>Lector LPR</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('qr')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'qr' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <QrCode className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <span>Pases QR</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('vehicles')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'vehicles' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Car className="w-3.5 h-3.5 shrink-0" />
+            <span>Vehículos ({vehiclesInside.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('audit')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'audit' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5 shrink-0" />
+            <span>Bitácora ({auditLogs.length})</span>
+          </button>
         </div>
 
-        <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-500 block">Vehículos Dentro</span>
-          <p className="text-lg font-mono font-black text-blue-700 mt-0.5">{vehiclesInside.length} Autos</p>
-        </div>
-
-        <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-500 block">Plazas Disponibles</span>
-          <p className="text-lg font-mono font-black text-emerald-700 mt-0.5">{freeSlotsCount} Libres</p>
-        </div>
-
-        <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-500 block">Estado de Barrera</span>
-          <p className={`text-sm font-mono font-bold mt-1 ${barrierOpen ? 'text-emerald-600' : 'text-slate-700'}`}>
-            ● {barrierOpen ? 'LEVANTADA (90°)' : 'CERRADA (0°)'}
-          </p>
+        {/* Métricas en línea */}
+        <div className="flex items-center gap-3 text-xs px-2 font-mono text-slate-600 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+          <span>Capacidad: <strong className="text-slate-900">{totalSlotsCount}</strong></span>
+          <span>Dentro: <strong className="text-blue-700">{vehiclesInside.length}</strong></span>
+          <span>Libres: <strong className="text-emerald-700">{freeSlotsCount}</strong></span>
         </div>
       </div>
 
-      {/* 3. NAVEGACIÓN PRINCIPAL DE GARITA */}
-      <div className="flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-none">
-        <button
-          type="button"
-          onClick={() => setActiveTab('lpr')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'lpr' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Camera className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-          <span>Lector LPR de Placas</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('qr')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'qr' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <QrCode className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-          <span>Escáner de Pases QR</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('vehicles')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'vehicles' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Car className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-          <span>Vehículos en Cochera ({vehiclesInside.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('audit')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'audit' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-          <span>Bitácora de Garita ({auditLogs.length})</span>
-        </button>
-      </div>
-
-      {/* 4. CONTENIDO POR PESTAÑA */}
+      {/* 3. VISTA PRINCIPAL: LECTOR LPR */}
       {activeTab === 'lpr' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
-          {/* Cámara y Estación LPR */}
-          <div className="lg:col-span-8 space-y-4">
-            <div className="bg-slate-950 text-white rounded-2xl border border-slate-800 shadow-lg overflow-hidden relative">
+          {/* LADO IZQUIERDO: VISOR DE CÁMARA */}
+          <div className="lg:col-span-8 space-y-3.5">
+            <div className="bg-slate-950 text-white rounded-2xl border border-slate-800 shadow-md overflow-hidden relative">
               
-              {/* Barra Superior del Stream */}
-              <div className="p-3.5 bg-slate-900/95 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-3 h-3 rounded-full ${barrierOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
-                  <div>
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
-                      Cámara Garita Principal • {currentEst?.name || 'Sede'}
-                    </span>
-                    <p className="text-[10px] text-slate-400 font-mono">Stream 1080p HD • LPR Ready</p>
-                  </div>
+              {/* Barra superior de cámara limpia */}
+              <div className="p-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${barrierOpen ? 'bg-emerald-400 animate-pulse' : 'bg-emerald-500'}`} />
+                  <span className="text-xs font-semibold text-slate-200">
+                    Cámara de Garita
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => setUseRealWebcam(!useRealWebcam)}
-                    className="text-xs font-bold border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 gap-1.5 h-8 cursor-pointer"
+                    className="text-xs font-semibold border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 h-7.5 px-2.5 rounded-lg cursor-pointer gap-1.5"
                   >
-                    {useRealWebcam ? <VideoOff className="w-3.5 h-3.5 text-rose-400" /> : <Video className="w-3.5 h-3.5 text-emerald-400" />}
-                    <span>{useRealWebcam ? 'Desactivar WebCam' : 'Activar WebCam Local'}</span>
+                    {useRealWebcam ? <VideoOff className="w-3 h-3 text-rose-400" /> : <Video className="w-3 h-3 text-emerald-400" />}
+                    <span>{useRealWebcam ? 'Apagar WebCam' : 'Activar WebCam'}</span>
                   </Button>
 
                   <input 
@@ -914,39 +893,37 @@ export const ANPRMonitor = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-xs font-bold border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 gap-1.5 h-8 cursor-pointer"
-                    title="Subir foto de vehículo para analizar placa"
+                    className="text-xs font-semibold border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 h-7.5 px-2.5 rounded-lg cursor-pointer gap-1.5"
                   >
-                    <Camera className="w-3.5 h-3.5 text-blue-400" />
+                    <Camera className="w-3 h-3 text-blue-400" />
                     <span>Subir Foto</span>
                   </Button>
                 </div>
               </div>
 
-              {/* Visor de Cámara */}
-              <div className="relative min-h-[340px] bg-slate-900 flex items-center justify-center overflow-hidden">
+              {/* Visor de Video */}
+              <div className="relative min-h-[300px] sm:min-h-[340px] bg-slate-900 flex items-center justify-center overflow-hidden">
                 {useRealWebcam ? (
                   <Webcam
                     ref={webcamRef}
                     audio={false}
                     screenshotFormat="image/jpeg"
                     videoConstraints={{ deviceId: selectedCameraDeviceId ? { exact: selectedCameraDeviceId } : undefined }}
-                    className="w-full h-full object-cover min-h-[340px]"
+                    className="w-full h-full object-cover min-h-[300px] sm:min-h-[340px]"
                   />
                 ) : (
-                  <div className="relative w-full h-[340px] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center p-6">
+                  <div className="relative w-full h-[300px] sm:h-[340px] bg-slate-950 flex flex-col items-center justify-center p-6">
                     <img 
                       src={capturedSnapshot || currentEst?.image || "https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800"} 
                       alt="CCTV Garita" 
-                      className="absolute inset-0 w-full h-full object-cover opacity-25 filter grayscale"
+                      className="absolute inset-0 w-full h-full object-cover opacity-20 filter grayscale"
                     />
                     
-                    {/* Retícula de Enfoque LPR */}
-                    <div className="relative z-10 w-80 h-36 border-2 border-dashed border-emerald-400/80 rounded-2xl flex flex-col items-center justify-center bg-slate-950/75 backdrop-blur-xs shadow-2xl p-4">
-                      <Scan className="w-8 h-8 text-emerald-400 animate-pulse mb-1.5" />
-                      <span className="text-[10px] font-mono uppercase font-black text-emerald-300">ÁREA DE DETECCIÓN LPR</span>
-                      <div className="bg-white text-slate-900 font-mono font-black text-base px-4 py-1 rounded-lg border border-slate-900 shadow-md mt-1.5">
-                        {plateInput ? formatearPlacaConGuion(plateInput) : 'INGRESAR PLACA'}
+                    {/* Retícula Minimalista LPR */}
+                    <div className="relative z-10 w-64 sm:w-72 h-28 border border-emerald-400/60 rounded-xl flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-xs p-3">
+                      <Scan className="w-6 h-6 text-emerald-400 mb-1" />
+                      <div className="bg-white text-slate-900 font-mono font-black text-sm px-3.5 py-0.5 rounded-lg border border-slate-900 shadow-xs">
+                        {plateInput ? formatearPlacaConGuion(plateInput) : '--- ---'}
                       </div>
                     </div>
                   </div>
@@ -954,17 +931,17 @@ export const ANPRMonitor = () => {
 
                 {/* Banner de Barrera Abierta */}
                 {barrierOpen && (
-                  <div className="absolute top-3 right-3 bg-emerald-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl shadow-xl flex items-center gap-1.5 animate-bounce">
-                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    <span>PASO AUTORIZADO (90°)</span>
+                  <div className="absolute top-3 right-3 bg-emerald-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-xl shadow-lg flex items-center gap-1.5 animate-bounce">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Paso Libre (90°)</span>
                   </div>
                 )}
               </div>
 
               {/* Barra Inferior de Acción y Entrada de Placa */}
-              <div className="p-4 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="p-3 sm:p-3.5 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <span className="text-xs font-bold text-slate-400">Placa:</span>
+                  <span className="text-xs font-semibold text-slate-400">Placa:</span>
                   <Input
                     type="text"
                     placeholder="ABC-123"
@@ -973,7 +950,7 @@ export const ANPRMonitor = () => {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleVerifyPlate(plateInput, 'entry');
                     }}
-                    className="w-36 bg-slate-800 border-slate-700 font-mono font-black text-white text-center text-sm uppercase h-9.5 rounded-xl"
+                    className="w-32 bg-slate-800 border-slate-700 font-mono font-black text-white text-center text-sm uppercase h-9 rounded-xl"
                   />
                   {plateInput && (
                     <button
@@ -981,7 +958,7 @@ export const ANPRMonitor = () => {
                       onClick={() => setPlateInput('')}
                       className="text-slate-500 hover:text-slate-300 p-1 cursor-pointer"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
@@ -991,10 +968,10 @@ export const ANPRMonitor = () => {
                     type="button"
                     onClick={() => handleVerifyPlate(plateInput, 'entry')}
                     disabled={loading || !plateInput}
-                    className="flex-1 sm:flex-none font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5 h-9.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 cursor-pointer"
+                    className="flex-1 sm:flex-none font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5 h-9 px-4 rounded-xl shadow-xs cursor-pointer"
                   >
-                    <ArrowRight className="w-4 h-4 shrink-0" />
-                    <span>{loading ? 'Verificando...' : 'Verificar Ingreso'}</span>
+                    <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                    <span>{loading ? 'Verificando...' : 'Ingreso'}</span>
                   </Button>
 
                   <Button
@@ -1002,9 +979,9 @@ export const ANPRMonitor = () => {
                     onClick={() => handleVerifyPlate(plateInput, 'exit')}
                     disabled={loading || !plateInput}
                     variant="outline"
-                    className="flex-1 sm:flex-none font-bold text-xs border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 h-9.5 px-3.5 rounded-xl cursor-pointer"
+                    className="flex-1 sm:flex-none font-semibold text-xs border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 h-9 px-3.5 rounded-xl cursor-pointer"
                   >
-                    <span>Verificar Salida</span>
+                    <span>Salida</span>
                   </Button>
                 </div>
               </div>
@@ -1012,64 +989,64 @@ export const ANPRMonitor = () => {
 
             {/* Resultado de la Verificación LPR */}
             {scanResult && (
-              <div className={`p-4.5 rounded-2xl border shadow-2xs space-y-3 ${
+              <div className={`p-4 rounded-2xl border shadow-2xs space-y-3 ${
                 scanResult.matched ? 'bg-emerald-50/70 border-emerald-300' : 'bg-slate-50 border-slate-300'
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {scanResult.matched ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     ) : (
-                      <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                     )}
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">
+                      <h3 className="text-xs font-bold text-slate-900">
                         {scanResult.matched 
-                          ? (scanResult.actionType === 'ENTRY' ? 'Acceso de Ingreso Autorizado' : 'Salida de Vehículo Autorizada')
-                          : 'Vehículo Sin Reserva Previa'
+                          ? (scanResult.actionType === 'ENTRY' ? 'Acceso Autorizado' : 'Salida Procesada')
+                          : 'Sin Reserva Previa'
                         }
                       </h3>
-                      <p className="text-xs text-slate-600 font-medium">{scanResult.message}</p>
+                      <p className="text-[11px] text-slate-600">{scanResult.message}</p>
                     </div>
                   </div>
 
-                  <span className="font-mono text-xs font-bold bg-white px-2 py-0.5 rounded-md border border-slate-200 text-slate-700">
+                  <span className="font-mono text-[11px] font-bold bg-white px-2 py-0.5 rounded-md border border-slate-200 text-slate-700">
                     {ocrStats.ms}ms
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono bg-white p-3 rounded-xl border border-slate-200">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono bg-white p-2.5 rounded-xl border border-slate-200">
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-sans">Placa Detectada</span>
-                    <span className="font-black text-slate-900 text-sm">{scanResult.code}</span>
+                    <span className="text-[10px] text-slate-400 block font-sans">Placa</span>
+                    <span className="font-bold text-slate-900">{scanResult.code}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-sans">Cajón / Plaza</span>
+                    <span className="text-[10px] text-slate-400 block font-sans">Plaza</span>
                     <span className="font-bold text-emerald-700">{scanResult.slot || 'A-01'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-sans">Conductor / Código</span>
-                    <span className="font-bold text-slate-800 truncate block">{scanResult.reservationCode || scanResult.driverName}</span>
+                    <span className="text-[10px] text-slate-400 block font-sans">Referencia</span>
+                    <span className="font-semibold text-slate-800 truncate block">{scanResult.reservationCode || scanResult.driverName}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-sans">Tarifa Aplicable</span>
-                    <span className="font-bold text-slate-800">S/ {Number(scanResult.rate || currentEst?.rate || 5).toFixed(2)}/h</span>
+                    <span className="text-[10px] text-slate-400 block font-sans">Tarifa</span>
+                    <span className="font-semibold text-slate-800">S/ {Number(scanResult.rate || currentEst?.rate || 5).toFixed(2)}/h</span>
                   </div>
                 </div>
 
-                {/* Si no tiene reserva previa, ofrecer emitir ticket manual instantáneo */}
+                {/* Acción para vehículo sin reserva previa */}
                 {!scanResult.matched && scanResult.actionType === 'ENTRY' && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-amber-50/80 p-3 rounded-xl border border-amber-200">
-                    <div className="text-xs text-amber-900 font-medium">
-                      ¿Deseas registrar el ingreso presencial de la placa <strong>{scanResult.code}</strong> y abrir la barrera?
-                    </div>
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-amber-50/80 p-2.5 rounded-xl border border-amber-200">
+                    <span className="text-xs text-amber-900">
+                      ¿Emitir ticket para placa <strong>{scanResult.code}</strong>?
+                    </span>
                     <Button
                       type="button"
                       onClick={() => handleIssueWalkInTicket(scanResult.code)}
-                      className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl h-8.5 px-3.5 gap-1.5 cursor-pointer whitespace-nowrap"
+                      className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl h-8 px-3 gap-1.5 cursor-pointer whitespace-nowrap"
                     >
-                      <Plus className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Emitir Ticket & Abrir Barrera</span>
+                      <Plus className="w-3 h-3 text-emerald-400" />
+                      <span>Emitir Ticket</span>
                     </Button>
                   </div>
                 )}
@@ -1077,36 +1054,33 @@ export const ANPRMonitor = () => {
             )}
           </div>
 
-          {/* Panel Lateral: Control de Barrera & Telemetría */}
-          <div className="lg:col-span-4 space-y-4">
+          {/* LADO DERECHO: PANEL DE BARRERA Y ACCIONES COMPACTO */}
+          <div className="lg:col-span-4 space-y-3.5">
             
-            {/* Control Angular de Barrera */}
-            <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <span className="text-xs font-bold text-slate-900 uppercase font-mono tracking-wider">
-                  Mando de Barrera Física
+            {/* Tarjeta Unificada de Barrera */}
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3.5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <span className="text-xs font-bold text-slate-800">
+                  Barrera de Acceso
                 </span>
-                <span className={`font-mono text-xs font-bold ${barrierOpen ? 'text-emerald-600' : 'text-slate-500'}`}>
-                  ● {barrierOpen ? 'ABIERTA' : 'CERRADA'}
+                <span className={`text-xs font-bold font-mono ${barrierOpen ? 'text-emerald-600' : 'text-slate-500'}`}>
+                  ● {barrierOpen ? 'Abierta' : 'Cerrada'}
                 </span>
               </div>
 
-              {/* Simulación Gráfica de Barrera */}
-              <div className="h-32 bg-slate-100 rounded-2xl flex items-end justify-center p-4 relative overflow-hidden border border-slate-200 shadow-inner">
-                {/* Poste de la barrera */}
-                <div className="w-7 h-20 bg-slate-800 rounded-t-lg z-10 relative flex flex-col items-center justify-center gap-1 shadow-md">
-                  <div className={`w-3 h-3 rounded-full ${barrierOpen ? 'bg-emerald-400 shadow-lg shadow-emerald-400/50' : 'bg-rose-500'}`} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+              {/* Simulación Compacta de Barrera */}
+              <div className="h-24 bg-slate-100 rounded-xl flex items-end justify-center p-3 relative overflow-hidden border border-slate-200">
+                <div className="w-5 h-14 bg-slate-800 rounded-t-md z-10 relative flex flex-col items-center justify-center gap-1">
+                  <div className={`w-2 h-2 rounded-full ${barrierOpen ? 'bg-emerald-400' : 'bg-rose-500'}`} />
                 </div>
 
-                {/* Brazo abatible de la barrera */}
                 <div
                   style={{
                     transformOrigin: 'left bottom',
                     transform: `rotate(${barrierAngle}deg)`,
                     transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
-                  className="w-48 h-3.5 bg-gradient-to-r from-red-600 via-white to-red-600 rounded-r-md shadow-md absolute left-1/2 -ml-3.5 bottom-4 border border-slate-300"
+                  className="w-40 h-2.5 bg-gradient-to-r from-red-600 via-white to-red-600 rounded-r-md shadow-xs absolute left-1/2 -ml-2.5 bottom-3"
                 />
               </div>
 
@@ -1118,9 +1092,9 @@ export const ANPRMonitor = () => {
                     playAccessAudio(true);
                   }}
                   disabled={barrierOpen}
-                  className="w-full font-bold text-xs bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-9 cursor-pointer"
+                  className="w-full font-bold text-xs bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-8.5 cursor-pointer"
                 >
-                  Apertura Manual
+                  Abrir
                 </Button>
 
                 <Button
@@ -1128,84 +1102,63 @@ export const ANPRMonitor = () => {
                   onClick={triggerBarrierClose}
                   disabled={!barrierOpen}
                   variant="outline"
-                  className="w-full font-bold text-xs border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl h-9 cursor-pointer"
+                  className="w-full font-semibold text-xs border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl h-8.5 cursor-pointer"
                 >
-                  Cerrar Barrera
+                  Cerrar
                 </Button>
               </div>
 
-              {/* Interruptor de Modo Automático LPR */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                <span className="text-slate-600 font-medium">Modo Automático LPR:</span>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                <span className="text-slate-500">Auto-apertura LPR:</span>
                 <button
                   type="button"
                   onClick={() => setBarrierAutoMode(!barrierAutoMode)}
-                  className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer border ${
+                  className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition cursor-pointer border ${
                     barrierAutoMode 
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-bold' 
                       : 'bg-slate-100 text-slate-600 border-slate-200'
                   }`}
                 >
-                  {barrierAutoMode ? 'ACTIVADO (Auto-apertura)' : 'MANUAL (Requiere Click)'}
+                  {barrierAutoMode ? 'Activado' : 'Manual'}
                 </button>
               </div>
             </div>
 
-            {/* Accesos Rápidos de Garita */}
-            <div className="p-4.5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-              <span className="text-xs font-bold text-slate-900 block font-mono uppercase tracking-wider">
-                Operaciones Rápidas
+            {/* Acciones Rápidas */}
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+              <span className="text-xs font-bold text-slate-800 block mb-1">
+                Acciones
               </span>
 
-              <div className="space-y-2">
-                <Button
-                  type="button"
-                  onClick={() => handleIssueWalkInTicket()}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl h-9 justify-start px-3 gap-2 shadow-xs cursor-pointer"
-                >
-                  <Plus className="w-4 h-4 shrink-0" />
-                  <span>Emitir Ticket Rápido Presencial</span>
-                </Button>
+              <Button
+                type="button"
+                onClick={() => handleIssueWalkInTicket()}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl h-8.5 justify-start px-3 gap-2 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Emitir Ticket Rápido</span>
+              </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setActiveTab('vehicles')}
-                  className="w-full bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-semibold rounded-xl h-9 justify-start px-3 gap-2 border-slate-200 cursor-pointer"
-                >
-                  <Car className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span>Ver {vehiclesInside.length} Vehículos en Cochera</span>
-                </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setActiveTab('vehicles')}
+                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl h-8.5 justify-start px-3 gap-2 border-slate-200 cursor-pointer"
+              >
+                <Car className="w-3.5 h-3.5 text-slate-400" />
+                <span>Vehículos en Cochera ({vehiclesInside.length})</span>
+              </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setActiveTab('audit')}
-                  className="w-full bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-semibold rounded-xl h-9 justify-start px-3 gap-2 border-slate-200 cursor-pointer"
-                >
-                  <FileText className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span>Bitácora de Garita ({auditLogs.length})</span>
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setActiveTab('audit')}
+                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl h-8.5 justify-start px-3 gap-2 border-slate-200 cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                <span>Bitácora ({auditLogs.length})</span>
+              </Button>
             </div>
-
-            {/* Selector de Dispositivo de Video (Si hay múltiples cámaras) */}
-            {availableDevices.length > 1 && (
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1.5">
-                <span className="font-semibold text-slate-700 block">Cámara Conectada:</span>
-                <select
-                  value={selectedCameraDeviceId}
-                  onChange={(e) => setSelectedCameraDeviceId(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 outline-none"
-                >
-                  {availableDevices.map(dev => (
-                    <option key={dev.deviceId} value={dev.deviceId}>
-                      {dev.label || `Cámara ${dev.deviceId.slice(0, 5)}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
         </div>
       )}

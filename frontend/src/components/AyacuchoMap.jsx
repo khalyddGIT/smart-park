@@ -164,22 +164,14 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
             <strong style="color: #346538; font-weight: bold;">${freeSlots} de ${totalSlots} libres</strong>
           </div>
 
-          <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+          <div style="margin-bottom: 8px;">
             <a 
               href="https://www.google.com/maps/dir/?api=1&destination=${coords[0]},${coords[1]}" 
               target="_blank" 
               rel="noopener noreferrer" 
-              style="flex: 1; text-decoration: none; background: #FBFBFA; color: #111111; border: 1px solid #EAEAEA; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; text-align: center; display: block;"
+              style="width: 100%; text-decoration: none; background: #FBFBFA; color: #111111; border: 1px solid #EAEAEA; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; text-align: center; display: block; box-sizing: border-box;"
             >
               Google Maps
-            </a>
-            <a 
-              href="https://waze.com/ul?ll=${coords[0]},${coords[1]}&navigate=yes" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              style="flex: 1; text-decoration: none; background: #FBFBFA; color: #111111; border: 1px solid #EAEAEA; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; text-align: center; display: block;"
-            >
-              Waze
             </a>
           </div>
 
@@ -187,7 +179,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
             id="btn-select-${p.id}"
             style="width: 100%; background: #111111; color: #ffffff; border: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;"
           >
-            <span>Ver Plano 2D & Reservar</span>
+            <span>Ver Plano & Reservar</span>
           </button>
         </div>
       `;

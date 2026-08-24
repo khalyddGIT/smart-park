@@ -77,14 +77,21 @@ export const AuthProvider = ({ children }) => {
   // Registro de Conductor - persistente Supabase
   const registerUser = async (userData) => {
     try {
-      const data = await apiRegister({ full_name: userData.name, email: userData.email, phone: userData.phone || '', password: userData.password || userData.plate || 'password123', role: 'user' });
+      const data = await apiRegister({ full_name: userData.name, email: userData.email, phone: userData.phone || '', password: userData.password || 'password123', role: 'user' });
       if (data?.access_token && data?.user) {
         setAccessToken(data.access_token);
         const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, phone: data.user.phone, avatar: null, role: data.user.role || 'user', isGoogleAuth: false };
         setUser(u); setRole('user'); return u;
       }
     } catch (err) {
-      if (err?.response?.status === 400) throw new Error(err.response.data?.detail || 'Correo ya registrado');
+      const s = err?.response?.status;
+      if (s === 400) throw new Error(err.response.data?.detail || 'Correo ya registrado');
+      // 422 (validación: contraseña corta, email inválido, etc.) debe mostrarse, no fingir sesión local
+      if (s === 422) {
+        const d = err.response.data?.detail;
+        const first = Array.isArray(d) ? d[0]?.msg : d;
+        throw new Error(first ? String(first).replace('Value error, ', '') : 'Datos de registro inválidos.');
+      }
       console.warn('Register backend no disponible, fallback local', err.message);
     }
     const newUser = { id: Date.now(), name: userData.name, email: userData.email, phone: userData.phone, plate: userData.plate, avatar: null, role: 'user', isGoogleAuth: false };

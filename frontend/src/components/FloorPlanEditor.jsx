@@ -43,10 +43,10 @@ export const FloorPlanEditor = ({ masterElements, onMasterSavePlan }) => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Editor Topográfico & Distribución de Planos</h1>
-          <p className="text-xs text-slate-500">Diseño 2D de muros, carriles viales, pasos peatonales y cajones de parqueo.</p>
+          <p className="text-xs text-slate-500">Diseño de muros, carriles viales, pasos peatonales y cajones de parqueo.</p>
         </div>
 
-        {/* SELECTOR DE MODOS: DIBUJAR 2D | SATELITAL */}
+        {/* SELECTOR DE MODOS */}
         <div className="flex items-center space-x-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
           <button
             onClick={() => setActiveMode('draw')}
@@ -57,7 +57,7 @@ export const FloorPlanEditor = ({ masterElements, onMasterSavePlan }) => {
             }`}
           >
             <Edit3 className="w-4 h-4" />
-            <span>Estudio CAD 2D</span>
+            <span>Estudio de Plano</span>
           </button>
 
           <button

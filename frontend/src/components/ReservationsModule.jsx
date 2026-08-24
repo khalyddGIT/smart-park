@@ -157,7 +157,13 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
     setCustomerName('');
     setCustomerPhone('');
     setSelectedSlotCode('');
-    
+
+    if (!newRes) {
+      setFeedbackMessage('✕ No se pudo emitir el ticket: la cochera o el cajón no están registrados en el servidor.');
+      setTimeout(() => setFeedbackMessage(''), 5000);
+      return;
+    }
+
     // Abrir de inmediato el pase digital QR
     setSelectedReservationForPass(newRes);
     setShowPassModal(true);

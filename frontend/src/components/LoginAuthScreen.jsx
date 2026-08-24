@@ -85,12 +85,17 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       setErrorMsg('Por favor completa tu nombre y correo');
       return;
     }
+    if (!driverPassword || driverPassword.length < 8) {
+      setErrorMsg('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
     setErrorMsg('');
     registerUser({
       name: driverName.trim(),
       email: driverEmail.trim(),
       phone: driverPhone.trim() || '+51 966 000 000',
-      plate: (driverPlate.trim() || 'ABC-123').toUpperCase()
+      plate: (driverPlate.trim() || 'ABC-123').toUpperCase(),
+      password: driverPassword
     });
   };
 

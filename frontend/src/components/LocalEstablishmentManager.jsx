@@ -720,7 +720,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       onClick={() => handleOpenPlan(est, 'viewer_2d')}
                       variant="outline"
                       className="h-8.5 px-2.5 text-slate-700 bg-white hover:bg-slate-50 border-slate-200 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
-                      title="Ver Plano 2D"
+                      title="Ver Plano"
                     >
                       <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       <span>Ver</span>

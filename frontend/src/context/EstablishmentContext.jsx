@@ -833,7 +833,14 @@ export const EstablishmentProvider = ({ children }) => {
   const createReservation = (bookingData) => {
     const authed = !!getAccessToken();
     const parkingIdNum = Number(bookingData?.parkingId);
-    const slotIdNum = Number(bookingData?.slotId);
+    let slotIdNum = Number(bookingData?.slotId);
+
+    // Resolver slotId desde slotCode (flujo de ventanilla emite por código de cajón, no por id)
+    if (isNaN(slotIdNum) && bookingData?.slotCode) {
+      const est = establishments.find(e => Number(e.id) === Number(parkingIdNum) || String(e.id) === String(bookingData.parkingId));
+      const slot = (est?.elements || []).find(el => el.type === 'slot' && String(el.code) === String(bookingData.slotCode));
+      if (slot) slotIdNum = Number(slot.id);
+    }
 
     // IDs locales "EST-*" o cajón sin id real: bloquear en lugar de fingir reserva
     if (!authed || isNaN(parkingIdNum) || isNaN(slotIdNum)) {

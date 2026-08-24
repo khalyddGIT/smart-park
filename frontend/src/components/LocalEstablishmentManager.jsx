@@ -918,130 +918,186 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
             {/* Columna Izquierda: Formulario */}
             <div className="lg:col-span-2 space-y-5">
               
-              {/* SECCIÓN 1: DATOS DEL LOCAL */}
+              {/* SECCIÓN 1: DATOS DEL LOCAL & TARIFAS */}
               {activeTabSection === 'general' && (
                 <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                  <div className="border-b border-slate-100 pb-2.5">
-                    <h3 className="text-sm font-bold text-slate-900">Datos Generales del Establecimiento</h3>
-                    <p className="text-xs text-slate-500 font-medium">Información comercial y administrativa de la cochera.</p>
+                  <div className="border-b border-slate-100 pb-2.5 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Datos Generales & Tarifas</h3>
+                      <p className="text-xs text-slate-500 font-medium">Información comercial, estructura de costos y estado del local.</p>
+                    </div>
                   </div>
 
-                  <div className="space-y-3.5">
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">Nombre Comercial de la Sede *</label>
-                      <Input
-                        required
-                        placeholder="Ej. Smart Park Jr. Bellido - Planta Baja"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="text-xs h-9.5 bg-white border-slate-200"
-                      />
-                    </div>
+                  <div className="space-y-4">
+                    {/* Bloque 1: Identidad Comercial */}
+                    <div className="space-y-3">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
+                        Identidad de la Sede
+                      </span>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">Dirección Exacta *</label>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Nombre Comercial de la Sede *</label>
                         <Input
                           required
-                          placeholder="Ej. Jr. Bellido 240"
-                          value={formData.address}
-                          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                          placeholder="Ej. Smart Park Jr. Bellido - Planta Baja"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           className="text-xs h-9.5 bg-white border-slate-200"
                         />
                       </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">Nivel / Estructura</label>
+                          <select
+                            value={formData.level}
+                            onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
+                          >
+                            <option>Nivel 1 - Superficie</option>
+                            <option>Sótano -1</option>
+                            <option>Sótano -2</option>
+                            <option>Nivel 2 - Elevado</option>
+                            <option>Playa Abierta</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">Tarifa por Hora (S/) *</label>
+                          <Input
+                            type="number"
+                            step="0.50"
+                            min="1.00"
+                            value={formData.rate}
+                            onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
+                            className="text-xs font-mono font-bold h-9.5 bg-white border-slate-200"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">Estado de Operación</label>
+                          <select
+                            value={formData.status}
+                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
+                          >
+                            <option value="Operativo">● Operativo (Abierto)</option>
+                            <option value="Mantenimiento">● En Mantenimiento</option>
+                            <option value="Cerrado">● Cerrado Temporalmente</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Presets Rápidos de Tarifas */}
+                      <div className="flex items-center gap-1.5 pt-0.5">
+                        <span className="text-[11px] text-slate-400 font-medium">Sugerencias:</span>
+                        {[3.00, 5.00, 8.00, 10.00].map(val => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, rate: val })}
+                            className={`px-2 py-0.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer border ${
+                              Number(formData.rate) === val 
+                                ? 'bg-slate-900 text-white border-slate-900' 
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            S/ {val.toFixed(2)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Bloque 2: Ubicación Física & Horario */}
+                    <div className="border-t border-slate-100 pt-3.5 space-y-3">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
+                        Dirección & Horario
+                      </span>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">Dirección Exacta *</label>
+                          <Input
+                            required
+                            placeholder="Ej. Jr. Bellido 240, Huamanga"
+                            value={formData.address}
+                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                            className="text-xs h-9.5 bg-white border-slate-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">Referencia Urbana</label>
+                          <Input
+                            placeholder="Ej. Frente a la Iglesia San Blas"
+                            value={formData.reference}
+                            onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                            className="text-xs h-9.5 bg-white border-slate-200"
+                          />
+                        </div>
+                      </div>
+
                       <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">Referencia</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-slate-700">Horario de Atención</label>
+                          <div className="flex items-center gap-1">
+                            {['24/7 (24 Horas)', '06:00 AM - 10:00 PM', 'Lun a Sáb: 07:00 - 21:00'].map(h => (
+                              <button
+                                key={h}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, schedule: h })}
+                                className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium transition cursor-pointer"
+                              >
+                                {h.split(' ')[0]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                         <Input
-                          placeholder="Ej. Frente a la Iglesia San Blas"
-                          value={formData.reference}
-                          onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                          placeholder="Ej. Lunes a Domingo: 24 Horas (Abierto 24/7)"
+                          value={formData.schedule}
+                          onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
                           className="text-xs h-9.5 bg-white border-slate-200"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">Nivel / Planta</label>
-                        <select
-                          value={formData.level}
-                          onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                          className="w-full bg-white border border-slate-200 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
-                        >
-                          <option>Nivel 1 - Superficie</option>
-                          <option>Sótano -1</option>
-                          <option>Sótano -2</option>
-                          <option>Nivel 2 - Elevado</option>
-                          <option>Playa Abierta</option>
-                        </select>
+                    {/* Bloque 3: Datos de Titular & Accesos */}
+                    <div className="border-t border-slate-100 pt-3.5 space-y-3">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
+                        Titular & Indicaciones
+                      </span>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">Titular / Razón Social</label>
+                          <Input
+                            placeholder="Ej. Inversiones Huamanga S.A.C."
+                            value={formData.owner}
+                            onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
+                            className="text-xs h-9.5 bg-white border-slate-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">RUC o DNI del Titular</label>
+                          <Input
+                            placeholder="Ej. 20601234567"
+                            value={formData.ruc}
+                            onChange={(e) => setFormData({ ...formData, ruc: e.target.value })}
+                            className="text-xs font-mono h-9.5 bg-white border-slate-200"
+                          />
+                        </div>
                       </div>
 
                       <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">Tarifa por Hora (S/) *</label>
-                        <Input
-                          type="number"
-                          step="0.50"
-                          min="1.00"
-                          value={formData.rate}
-                          onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-                          className="text-xs font-mono font-bold h-9.5 bg-white border-slate-200"
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Indicaciones de Acceso para Conductores</label>
+                        <textarea
+                          rows={2}
+                          placeholder="Describe accesos viales, garitas, altura máxima o referencias para los clientes..."
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                         />
                       </div>
-
-                      <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">Estado Operativo</label>
-                        <select
-                          value={formData.status}
-                          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                          className="w-full bg-white border border-slate-200 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
-                        >
-                          <option value="Operativo">Operativo (Abierto)</option>
-                          <option value="Mantenimiento">En Mantenimiento</option>
-                          <option value="Cerrado">Cerrado Temporalmente</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">Titular / Razón Social</label>
-                        <Input
-                          placeholder="Ej. Inversiones Huamanga S.A.C."
-                          value={formData.owner}
-                          onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
-                          className="text-xs h-9.5 bg-white border-slate-200"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">RUC o DNI del Titular</label>
-                        <Input
-                          placeholder="Ej. 20601234567"
-                          value={formData.ruc}
-                          onChange={(e) => setFormData({ ...formData, ruc: e.target.value })}
-                          className="text-xs font-mono h-9.5 bg-white border-slate-200"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">Horario de Atención</label>
-                      <Input
-                        placeholder="Ej. Lunes a Domingo: 24 Horas (Abierto 24/7)"
-                        value={formData.schedule}
-                        onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
-                        className="text-xs h-9.5 bg-white border-slate-200"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">Descripción / Indicaciones de Acceso</label>
-                      <textarea
-                        rows={2}
-                        placeholder="Describe los accesos y características de la cochera..."
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
-                      />
                     </div>
                   </div>
                 </div>
@@ -1157,12 +1213,12 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 </div>
               )}
 
-              {/* SECCIÓN 3: IMAGEN DEL LOCAL */}
+              {/* SECCIÓN 3: FOTOGRAFÍA DE LA SEDE */}
               {activeTabSection === 'image' && (
                 <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
                   <div className="border-b border-slate-100 pb-2.5">
                     <h3 className="text-sm font-bold text-slate-900">Fotografía del Establecimiento</h3>
-                    <p className="text-xs text-slate-500 font-medium">Foto visible para los conductores en el mapa y en la lista de sedes.</p>
+                    <p className="text-xs text-slate-500 font-medium">Foto visible para los conductores en el mapa interactivo y en la búsqueda.</p>
                   </div>
 
                   {/* Previsualización Limpia */}
@@ -1185,7 +1241,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
                       <div>
                         <p className="text-xs font-bold text-slate-900">Subir foto desde tu equipo</p>
-                        <p className="text-[11px] text-slate-500">Formatos JPG, PNG o WebP (Máx. 6MB)</p>
+                        <p className="text-[11px] text-slate-500">Formatos JPG, PNG o WebP (Recomendado 1200x800, máx. 6MB)</p>
                       </div>
                     </div>
                     <div>
@@ -1220,7 +1276,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                   {/* Galería sugerida */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-600 block mb-2">Galería de fotos sugeridas:</label>
+                    <label className="text-xs font-semibold text-slate-600 block mb-2">Galería de fotos sugeridas para cocheras:</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                       {PRESET_IMAGES.map((img, idx) => (
                         <button
@@ -1228,17 +1284,21 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           type="button"
                           onClick={() => {
                             setFormData({ ...formData, image: img.url });
-                            showToast(`Foto seleccionada.`);
+                            showToast(`Foto "${img.label}" seleccionada.`);
                           }}
-                          className={`group relative h-16 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
+                          className={`group relative h-18 rounded-xl overflow-hidden border-2 transition cursor-pointer flex flex-col justify-end p-1.5 ${
                             formData.image === img.url ? 'border-emerald-500 ring-2 ring-emerald-400' : 'border-slate-200 hover:border-slate-300'
                           }`}
                           title={img.label}
                         >
-                          <img src={img.url} alt={img.label} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <img src={img.url} alt={img.label} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+                          <span className="relative z-10 text-[9px] font-bold text-white truncate leading-tight">
+                            {img.label}
+                          </span>
                           {formData.image === img.url && (
-                            <div className="absolute inset-0 bg-emerald-600/40 flex items-center justify-center">
-                              <Check className="w-4 h-4 text-white" />
+                            <div className="absolute top-1 right-1 z-10 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                              <Check className="w-2.5 h-2.5 text-white" />
                             </div>
                           )}
                         </button>
@@ -1256,57 +1316,82 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     <p className="text-xs text-slate-500 font-medium">Canales directos para que los clientes se comuniquen con la administración.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">Teléfono Fijo / Celular</label>
-                      <div className="relative">
-                        <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                        <Input
-                          placeholder="+51 966 123 456"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          className="pl-9 text-xs font-mono h-9 bg-white border-slate-200"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">WhatsApp de Atención</label>
-                      <div className="relative">
-                        <MessageSquare className="w-3.5 h-3.5 text-emerald-600 absolute left-3 top-3" />
-                        <Input
-                          placeholder="51966123456"
-                          value={formData.whatsapp}
-                          onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                          className="pl-9 text-xs font-mono h-9 bg-white border-slate-200"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Correo Electrónico de Contacto</label>
-                    <div className="relative">
-                      <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                      <Input
-                        type="email"
-                        placeholder="contacto@cochera.pe"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="pl-9 text-xs h-9 bg-white border-slate-200"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-100 pt-3 space-y-3">
-                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Share2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Redes Sociales & Enlaces</span>
-                    </h4>
+                  {/* Canales Directos */}
+                  <div className="space-y-3">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
+                      Comunicación Directa
+                    </span>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-600 block mb-1">Página de Facebook</label>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">WhatsApp de Atención al Cliente</label>
+                        <div className="relative flex items-center">
+                          <MessageSquare className="w-3.5 h-3.5 text-emerald-600 absolute left-3 pointer-events-none" />
+                          <Input
+                            placeholder="51966123456"
+                            value={formData.whatsapp}
+                            onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                            className="pl-9 pr-14 text-xs font-mono h-9 bg-white border-slate-200"
+                          />
+                          {formData.whatsapp && (
+                            <a
+                              href={`https://wa.me/${formData.whatsapp.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="absolute right-2 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200"
+                            >
+                              Probar
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Teléfono Garita / Central</label>
+                        <div className="relative">
+                          <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                          <Input
+                            placeholder="+51 966 123 456"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="pl-9 text-xs font-mono h-9 bg-white border-slate-200"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Correo Electrónico de Consultas</label>
+                      <div className="relative">
+                        <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                        <Input
+                          type="email"
+                          placeholder="contacto@cocherahuamanga.pe"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          className="pl-9 text-xs h-9 bg-white border-slate-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Redes Sociales */}
+                  <div className="border-t border-slate-100 pt-3.5 space-y-3">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
+                      Redes Sociales & Enlaces
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] font-semibold text-slate-600">Facebook</label>
+                          {formData.socials?.facebook && (
+                            <a href={formData.socials.facebook} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 hover:underline flex items-center gap-0.5">
+                              <span>Abrir</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
+                        </div>
                         <Input
                           placeholder="https://facebook.com/Cochera"
                           value={formData.socials?.facebook || ''}
@@ -1319,7 +1404,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-600 block mb-1">Perfil de Instagram</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] font-semibold text-slate-600">Instagram</label>
+                          {formData.socials?.instagram && (
+                            <a href={formData.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-[10px] text-pink-600 hover:underline flex items-center gap-0.5">
+                              <span>Abrir</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
+                        </div>
                         <Input
                           placeholder="https://instagram.com/cochera"
                           value={formData.socials?.instagram || ''}
@@ -1332,7 +1425,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-600 block mb-1">Cuenta de TikTok</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] font-semibold text-slate-600">TikTok</label>
+                          {formData.socials?.tiktok && (
+                            <a href={formData.socials.tiktok} target="_blank" rel="noopener noreferrer" className="text-[10px] text-slate-700 hover:underline flex items-center gap-0.5">
+                              <span>Abrir</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
+                        </div>
                         <Input
                           placeholder="https://tiktok.com/@cochera"
                           value={formData.socials?.tiktok || ''}
@@ -1345,7 +1446,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sitio Web Oficial</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] font-semibold text-slate-600">Sitio Web Oficial</label>
+                          {formData.socials?.website && (
+                            <a href={formData.socials.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-emerald-600 hover:underline flex items-center gap-0.5">
+                              <span>Abrir</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
+                        </div>
                         <Input
                           placeholder="https://smartpark.pe"
                           value={formData.socials?.website || ''}

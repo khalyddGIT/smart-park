@@ -94,16 +94,17 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       const customIcon = L.divIcon({
-        className: 'picker-pin',
+        className: 'custom-picker-pin',
         html: `
-          <div style="transform: translate(-50%, -100%); cursor: grab;">
-            <div style="background: #0f172a; color: #10b981; padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 11px; box-shadow: 0 10px 25px -3px rgba(0,0,0,0.5); border: 2px solid #10b981; display: flex; align-items: center; gap: 5px; white-space: nowrap;">
-              <span>📍 Ubicación de la Cochera</span>
+          <div style="transform: translate(-50%, -100%); cursor: grab; display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 28px; height: 28px; background: #0f172a; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #10b981; box-shadow: 0 6px 16px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
+              <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; transform: rotate(45deg);"></div>
             </div>
-            <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #0f172a; margin: 0 auto;"></div>
+            <div style="width: 12px; height: 3px; background: rgba(15,23,42,0.25); border-radius: 50%; margin-top: 1px; filter: blur(1px);"></div>
           </div>
         `,
-        iconSize: [0, 0]
+        iconSize: [28, 34],
+        iconAnchor: [14, 34]
       });
 
       const marker = L.marker([lat, lng], { icon: customIcon, draggable: true }).addTo(map);

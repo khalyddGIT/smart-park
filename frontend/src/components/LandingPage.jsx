@@ -836,31 +836,160 @@ export const LandingPage = ({
       </CinematicScrollSection>
 
       {/* =========================================================================
-          8. FOOTER DOCUMENTAL TRASLÚCIDO (RESPONSIVE)
+          8. FOOTER ULTRA-PREMIUM MULTI-COLUMNA (DARK EMERALD THEME)
           ========================================================================= */}
-      <footer className="bg-white/90 backdrop-blur-md border-t border-white/60 py-8 sm:py-12 px-4 sm:px-6 lg:px-12 text-xs text-[#004D49] shadow-[0_-2px_10px_-2px_rgba(0,0,0,0.02)] relative z-10">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 text-center sm:text-left">
-          <div className="flex items-center space-x-3">
-            <BrandLogo className="h-6 w-auto" subtitle="" showSubtitle={false} />
-            <span className="text-[11px] font-mono text-[#004D49]">• © 2026</span>
+      <footer className="bg-gradient-to-b from-[#00211F] to-[#001413] text-white border-t border-[#004D49]/40 pt-16 pb-12 px-4 sm:px-6 lg:px-12 relative z-10 overflow-hidden">
+        {/* Glow de fondo */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[200px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto space-y-12 relative z-10">
+          
+          {/* Fila Principal de 4 Columnas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
+            
+            {/* Columna 1 & 2: Identidad & Estado de Red */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center space-x-3">
+                <BrandLogo className="h-8 w-auto" dark={true} />
+              </div>
+              
+              <p className="text-xs text-emerald-100/70 leading-relaxed max-w-sm font-sans">
+                La primera red inteligente de estacionamientos en Ayacucho. Automatización de acceso vehicular con reconocimiento de placas y pagos digitales en tiempo real.
+              </p>
+
+              {/* Status Pill en Vivo */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-[11px] font-mono text-emerald-300 shadow-inner">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span>Red Huamanga: 100% Operativa</span>
+              </div>
+            </div>
+
+            {/* Columna 3: Para Conductores */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 font-display">
+                Conductores
+              </h4>
+              <ul className="space-y-2 text-xs text-emerald-100/70">
+                <li>
+                  <a href="#mapa" className="hover:text-white hover:underline transition">
+                    Mapa de Cocheras
+                  </a>
+                </li>
+                <li>
+                  <a href="#mapa" className="hover:text-white hover:underline transition">
+                    Buscar Disponibilidad
+                  </a>
+                </li>
+                <li>
+                  <a href="#sistema" className="hover:text-white hover:underline transition">
+                    Pase Digital QR
+                  </a>
+                </li>
+                <li>
+                  <span className="text-emerald-300 font-mono text-[11px]">
+                    ⏱️ 15 min de cortesía
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Columna 4: Para Propietarios */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 font-display">
+                Propietarios
+              </h4>
+              <ul className="space-y-2 text-xs text-emerald-100/70">
+                <li>
+                  <button 
+                    onClick={() => onOpenAuth && onOpenAuth('affiliation')}
+                    className="hover:text-white hover:underline transition text-left cursor-pointer"
+                  >
+                    Afiliar mi Cochera
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => onOpenAuth && onOpenAuth('login')}
+                    className="hover:text-white hover:underline transition text-left cursor-pointer"
+                  >
+                    Panel de Administración
+                  </button>
+                </li>
+                <li>
+                  <a href="#afiliacion" className="hover:text-white hover:underline transition">
+                    Digitalización & ANPR
+                  </a>
+                </li>
+                <li>
+                  <span className="text-emerald-300 font-mono text-[11px]">
+                    🚀 Sin costo de alta
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Columna 5: Métodos de Pago & Contacto */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 font-display">
+                Pagos Seguros
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-200 text-[10px] font-bold border border-white/10">
+                  PayPal
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-200 text-[10px] font-bold border border-white/10">
+                  Yape
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-200 text-[10px] font-bold border border-white/10">
+                  Plin
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-200 text-[10px] font-bold border border-white/10">
+                  Visa / MC
+                </span>
+              </div>
+
+              <div className="pt-2">
+                <a
+                  href="https://wa.me/51966000000?text=Hola,%20tengo%20una%20consulta%20sobre%20Smart-Park"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold border border-emerald-500/30 transition w-full justify-center shadow-xs"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Soporte WhatsApp 24/7</span>
+                </a>
+              </div>
+            </div>
+
           </div>
 
-          <div className="flex items-center space-x-6">
-            <button
-              onClick={onOpenTerms}
-              className="hover:text-[#002B29] transition-colors duration-200 underline cursor-pointer font-medium"
-            >
-              Términos de Servicio
-            </button>
-            <a
-              href="https://wa.me/51966000000"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#002B29] transition-colors duration-200 font-medium"
-            >
-              Soporte WhatsApp
-            </a>
+          {/* Línea Divisoria y Sub-Footer */}
+          <div className="pt-8 border-t border-emerald-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-emerald-100/60 font-sans">
+            <div className="flex items-center space-x-2">
+              <span>© {new Date().getFullYear()} Smart-Park Ayacucho.</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="text-emerald-400/80">Hecho en Huamanga, Perú</span>
+            </div>
+
+            <div className="flex items-center space-x-6">
+              <button
+                onClick={onOpenTerms}
+                className="hover:text-white transition-colors duration-200 underline cursor-pointer font-medium"
+              >
+                Términos y Condiciones
+              </button>
+              <button
+                onClick={onOpenTerms}
+                className="hover:text-white transition-colors duration-200 hover:underline cursor-pointer font-medium"
+              >
+                Privacidad de Datos
+              </button>
+            </div>
           </div>
+
         </div>
       </footer>
 

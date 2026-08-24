@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { 
-  Plus, 
-  CreditCard, 
-  Trash2, 
-  CheckCircle2, 
-  ShieldCheck, 
-  QrCode, 
-  Lock, 
-  Receipt, 
-  FileText, 
-  Check, 
+import {
+  Plus,
+  CreditCard,
+  Trash2,
+  CheckCircle2,
+  ShieldCheck,
+  QrCode,
+  Lock,
+  Receipt,
+  FileText,
+  Check,
   DollarSign,
   Smartphone,
   Star,
@@ -34,7 +34,7 @@ const getCardsKey = () => {
       const u = JSON.parse(saved);
       return `${CARDS_STORAGE_KEY_BASE}_${u?.id || u?.email || 'guest'}`;
     }
-  } catch {}
+  } catch { }
   return `${CARDS_STORAGE_KEY_BASE}_guest`;
 };
 
@@ -47,7 +47,7 @@ export const PaymentsModule = () => {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
       }
-    } catch (e) {}
+    } catch (e) { }
     return [];
   });
 
@@ -80,7 +80,7 @@ export const PaymentsModule = () => {
     try {
       const key = getCardsKey();
       if (!key.endsWith('_guest')) localStorage.setItem(key, JSON.stringify(cards));
-    } catch (e) {}
+    } catch (e) { }
   }, [cards]);
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -100,7 +100,7 @@ export const PaymentsModule = () => {
   const handleAddCard = (e) => {
     e.preventDefault();
     if (!newCard.number || !newCard.name || !newCard.expiry) return;
-    
+
     // Detectar tipo de tarjeta
     const cleanNum = newCard.number.replace(/\s+/g, '');
     let cardType = 'Visa';
@@ -148,7 +148,7 @@ export const PaymentsModule = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      
+
       {/* Toast Alert */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900/95 backdrop-blur-md border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 text-xs font-bold animate-in slide-in-from-bottom-5">
@@ -162,7 +162,7 @@ export const PaymentsModule = () => {
       {/* Header Banner Ejecutivo */}
       <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white p-6 sm:p-7 rounded-3xl border border-slate-800 shadow-xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-        
+
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
           <div className="flex items-start sm:items-center space-x-4">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
@@ -187,25 +187,23 @@ export const PaymentsModule = () => {
             <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800">
               <button
                 onClick={() => setActiveTab('cards')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'cards' ? 'bg-slate-800 text-white shadow-xs font-black' : 'text-slate-400 hover:text-white'
-                }`}
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeTab === 'cards' ? 'bg-slate-800 text-white shadow-xs font-black' : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 Tarjetas & QR
               </button>
               <button
                 onClick={() => setActiveTab('history')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'history' ? 'bg-slate-800 text-white shadow-xs font-black' : 'text-slate-400 hover:text-white'
-                }`}
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeTab === 'history' ? 'bg-slate-800 text-white shadow-xs font-black' : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 Comprobantes
               </button>
             </div>
 
             {activeTab === 'cards' && (
-              <Button 
-                onClick={() => setShowAddModal(true)} 
+              <Button
+                onClick={() => setShowAddModal(true)}
                 className="gap-2 font-black text-xs rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 h-10 px-4 shadow-lg shadow-emerald-500/20 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Plus className="w-4 h-4 stroke-[3]" />
@@ -218,7 +216,7 @@ export const PaymentsModule = () => {
 
       {/* Tarjetas KPI */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        
+
         <div className="p-5 rounded-3xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tarjetas Activas</span>
@@ -284,7 +282,7 @@ export const PaymentsModule = () => {
       {activeTab === 'cards' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
+
             {/* Tarjeta de Billetera Digital Interoperable */}
             <div className="p-6 border border-slate-200/90 shadow-xs bg-gradient-to-br from-white via-slate-50/50 to-emerald-50/20 flex flex-col justify-between rounded-3xl group hover:shadow-md transition-all">
               <div>
@@ -316,8 +314,8 @@ export const PaymentsModule = () => {
 
             {/* Listado de Tarjetas Bancarias */}
             {cards.map((card) => (
-              <div 
-                key={card.id} 
+              <div
+                key={card.id}
                 className="relative h-60 rounded-3xl p-6 text-white overflow-hidden shadow-xl flex flex-col justify-between group transition-all duration-300 hover:scale-[1.02] border border-white/10"
                 style={{
                   background: card.type === 'Visa'
@@ -422,10 +420,10 @@ export const PaymentsModule = () => {
 
                 <div className="flex items-center space-x-4 justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
                   <span className="text-lg font-black text-slate-900 font-mono">S/ {t.amount.toFixed(2)}</span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => openReceipt(t)} 
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openReceipt(t)}
                     className="font-bold text-xs gap-1.5 rounded-xl h-9"
                   >
                     <FileText className="w-3.5 h-3.5" />
@@ -504,8 +502,8 @@ export const PaymentsModule = () => {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full font-extrabold h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md cursor-pointer transition-colors"
             >
               Guardar y Tokenizar Tarjeta

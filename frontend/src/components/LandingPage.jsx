@@ -379,17 +379,6 @@ export const LandingPage = ({
           className="space-y-5 sm:space-y-6 flex flex-col items-center transform-gpu will-change-transform"
         >
           
-          {/* Badge superior con entrada anticipada */}
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1, ease: FLUID_EASE }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-[11px] font-bold tracking-wide uppercase text-emerald-700"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Sistema de estacionamiento inteligente en Ayacucho
-          </motion.div>
-
           {/* Titular Principal Centrado con Escala Adaptativa */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}

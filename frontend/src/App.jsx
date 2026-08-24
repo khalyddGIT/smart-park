@@ -283,20 +283,14 @@ export const App = () => {
               {activeTab === 'dashboard' && (
                 <>
                   {/* Banner de Búsqueda Inteligente */}
-                  <Card className="p-5 sm:p-6 border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/40 shadow-sm relative overflow-hidden">
-                    <div className="mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div>
-                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                          Estacionamientos Inteligentes en Ayacucho
-                        </h1>
-                        <p className="text-xs text-slate-500 font-medium">
-                          Explora en vivo, consulta tarifas y reserva tu plaza en segundos
-                        </p>
-                      </div>
-                      <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-200 text-xs font-bold font-mono self-start sm:self-auto shadow-2xs">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                        <span>{totalFreeSlots} plazas libres en Huamanga</span>
-                      </div>
+                  <Card className="p-4 sm:p-5 border-slate-200 bg-white shadow-2xs relative overflow-hidden rounded-2xl">
+                    <div className="mb-3">
+                      <h1 className="text-lg font-bold text-slate-900 tracking-tight">
+                        Estacionamientos Inteligentes en Ayacucho
+                      </h1>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5">
+                        Explora en vivo, consulta tarifas y reserva tu plaza en segundos
+                      </p>
                     </div>
                     
                     {/* Barra de Búsqueda y Filtros de Categoría */}

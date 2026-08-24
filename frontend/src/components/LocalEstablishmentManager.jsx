@@ -96,15 +96,18 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
       const customIcon = L.divIcon({
         className: 'custom-picker-pin',
         html: `
-          <div style="transform: translate(-50%, -100%); cursor: grab; display: flex; flex-direction: column; align-items: center;">
-            <div style="width: 28px; height: 28px; background: #0f172a; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #10b981; box-shadow: 0 6px 16px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
-              <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; transform: rotate(45deg);"></div>
-            </div>
-            <div style="width: 12px; height: 3px; background: rgba(15,23,42,0.25); border-radius: 50%; margin-top: 1px; filter: blur(1px);"></div>
+          <div style="position: relative; width: 34px; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; cursor: grab; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.35));">
+            <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17 0C7.61116 0 0 7.61116 0 17C0 27.2 14.5 40.5 16.1 41.9C16.6 42.3 17.4 42.3 17.9 41.9C19.5 40.5 34 27.2 34 17C34 7.61116 26.3888 0 17 0Z" fill="#0F172A"/>
+              <circle cx="17" cy="17" r="13" fill="#10B981" fill-opacity="0.25"/>
+              <circle cx="17" cy="17" r="9" fill="#10B981"/>
+              <circle cx="17" cy="17" r="4" fill="#FFFFFF"/>
+            </svg>
+            <div style="width: 14px; height: 4px; background: rgba(15,23,42,0.3); border-radius: 50%; filter: blur(1.5px); margin-top: -2px;"></div>
           </div>
         `,
-        iconSize: [28, 34],
-        iconAnchor: [14, 34]
+        iconSize: [34, 44],
+        iconAnchor: [17, 42]
       });
 
       const marker = L.marker([lat, lng], { icon: customIcon, draggable: true }).addTo(map);

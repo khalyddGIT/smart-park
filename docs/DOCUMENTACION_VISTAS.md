@@ -18,17 +18,22 @@ Documento técnico y visual que detalla la arquitectura, roles de usuario, vista
    - 3.5. Mis Vehículos & Reconocimiento LPR
    - 3.6. Métodos de Pago & Billeteras Digitales
    - 3.7. Reporte de Incidencias & Asistencia
-   - 3.8. Perfil de Usuario & Preferencias
+   - 3.8. Historial de Estancias & Descarga de Boletas
+   - 3.9. Reseñas y Calificaciones de Cocheras
+   - 3.10. Perfil de Usuario & Preferencias
 4. [Vistas del Rol Administrador de Cochera (Garita / Local)](#4-vistas-del-rol-administrador-de-cochera-garita--local)
    - 4.1. Panel de Espacios & Edición de Sede (4 Pestañas)
    - 4.2. Estudio de Dibujo y Edición del Plano (CAD Studio)
    - 4.3. Control de Garita & Lector LPR Inteligente
-   - 4.4. Directorio de Personal
+   - 4.4. Directorio de Personal & Turnos
    - 4.5. Reportes de Ocupación & Rendimiento
+   - 4.6. Diagnóstico y Resiliencia de Servicios
 5. [Vistas del Rol Super Administrador de Plataforma (Platform)](#5-vistas-del-rol-super-administrador-de-plataforma-platform)
    - 5.1. Dashboard Global de la Red
    - 5.2. Finanzas & Liquidaciones por Sede
    - 5.3. Afiliación & Auditoría de Sedes
+   - 5.4. Gestión de Usuarios & Permisos RBAC
+   - 5.5. Ajustes Globales de Plataforma
 6. [Diseño Responsivo & Reglas de Estilo](#6-diseño-responsivo--reglas-de-estilo)
 
 ---
@@ -39,9 +44,9 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
 
 | Rol | Identificador | Público Objetivo | Capacidades Principales |
 | :--- | :---: | :--- | :--- |
-| **Conductor** | `user` | Clientes y conductores en Ayacucho | Buscar cocheras, ver mapa satelital, elegir cajón en plano, reservar, emitir pases QR, gestionar vehículos y pagar con Yape/Plin/Tarjeta. |
-| **Administrador de Cochera** | `local` | Dueños de garita y operadores | Editar sede (datos, fotos, mapa, redes), diseñar plano arquitectónico, monitorear cámara LPR, abrir barrera y emitir tickets presenciales. |
-| **Super Administrador** | `platform` | Administradores de la red Smart Park | Supervisión de todas las sedes en Ayacucho, recaudación financiera global, métricas de ocupación, personal y auditoría. |
+| **Conductor** | `user` | Clientes y conductores en Ayacucho | Buscar cocheras, ver mapa satelital, elegir cajón en plano, reservar, emitir pases QR, gestionar vehículos, pagar con Yape/Plin/Tarjeta y reportar incidencias. |
+| **Administrador de Cochera** | `local` | Dueños de garita y operadores | Editar sede (datos, fotos, mapa, redes), diseñar plano arquitectónico, monitorear cámara LPR, abrir barrera, emitir tickets presenciales y gestionar personal. |
+| **Super Administrador** | `platform` | Administradores de la red Smart Park | Supervisión de todas las sedes en Ayacucho, recaudación financiera global, métricas de ocupación, comisiones, personal y auditoría. |
 
 ---
 
@@ -60,16 +65,16 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
 #### 📸 Capturas de la Landing Page:
 
 **Hero Principal & Buscador:**
-![Landing Page Hero](docs/screenshots/landing_hero.png)
+![Landing Page Hero](screenshots/landing_hero.png)
 
 **Red de Cocheras & Mapa Interactivo en Ayacucho:**
-![Mapa y Red de Estacionamientos](docs/screenshots/landing_map_network.png)
+![Mapa y Red de Estacionamientos](screenshots/landing_map_network.png)
 
 **Pilares Tecnológicos & Beneficios:**
-![Características del Sistema](docs/screenshots/landing_features.png)
+![Características del Sistema](screenshots/landing_features.png)
 
 **Preguntas Frecuentes & Pie de Página Institucional:**
-![Footer y Preguntas Frecuentes](docs/screenshots/landing_footer.png)
+![Footer y Preguntas Frecuentes](screenshots/landing_footer.png)
 
 ---
 
@@ -81,7 +86,7 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - **Selector Rápido de Roles (Desarrollo/Demo):** Botones directos para alternar entre *Conductor*, *Administrador Local* y *Super Admin*.
 
 #### 📸 Captura del Modal de Autenticación:
-![Modal de Autenticación](docs/screenshots/auth_modal.png)
+![Modal de Autenticación](screenshots/auth_modal.png)
 
 ---
 
@@ -117,7 +122,7 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - **Panel Lateral de Reserva:** Selector de vehículo registrado, duración estimada en horas (`1h`, `2h`, `4h`, `8h`), cálculo de tarifa y botón `[ Confirmar Reserva ]`.
 
 #### 📸 Captura del Plano Topográfico Interactivo:
-![Reserva Interactiva sobre Plano](docs/screenshots/conductor_plano_booking.png)
+![Reserva Interactiva sobre Plano](screenshots/conductor_plano_booking.png)
 
 ---
 
@@ -130,7 +135,7 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - Botón directo para imprimir o descargar el comprobante.
 
 #### 📸 Captura del Pase Digital QR:
-![Pase de Acceso Digital QR](docs/screenshots/conductor_pase_qr.png)
+![Pase de Acceso Digital QR](screenshots/conductor_pase_qr.png)
 
 ---
 
@@ -142,7 +147,7 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - Acceso inmediato al **Pase QR**, **Impresión de Ticket** o **Cancelación**.
 
 #### 📸 Captura del Módulo de Reservas:
-![Listado de Reservas del Conductor](docs/screenshots/conductor_reservas.png)
+![Listado de Reservas del Conductor](screenshots/conductor_reservas.png)
 
 ---
 
@@ -155,7 +160,7 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - Selector de vehículo predeterminado para reservas rápidas.
 
 #### 📸 Captura del Módulo de Vehículos:
-![Padrón de Vehículos](docs/screenshots/conductor_vehiculos.png)
+![Padrón de Vehículos](screenshots/conductor_vehiculos.png)
 
 ---
 
@@ -167,7 +172,7 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
   - **Comprobantes Electrónicos:** Registro de boletas y facturas emitidas bajo normativa SUNAT con botón para visualizar e imprimir comprobante.
 
 #### 📸 Captura de Métodos de Pago en Móvil:
-![Métodos de Pago](docs/screenshots/pagos_mobile.png)
+![Métodos de Pago](screenshots/pagos_mobile.png)
 
 ---
 
@@ -178,7 +183,17 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
 
 ---
 
-### 3.8. Perfil de Usuario & Preferencias (`UserProfileModule.jsx`)
+### 3.8. Historial de Estancias & Descarga de Boletas (`HistoryModule.jsx`)
+* **Propósito:** Padrón cronológico completo de todas las visitas realizadas con detalle de horas, montos pagados y comprobantes electrónicos PDF.
+
+---
+
+### 3.9. Reseñas y Calificaciones de Cocheras (`ReviewsModule.jsx`)
+* **Propósito:** Evaluación de 1 a 5 estrellas y comentarios sobre la seguridad, limpieza y atención recibida en cada cochera.
+
+---
+
+### 3.10. Perfil de Usuario & Preferencias (`UserProfileModule.jsx`)
 * **Propósito:** Actualización de datos de contacto, documento de identidad (DNI/RUC), configuración de notificaciones por WhatsApp/Email y gestión de seguridad.
 
 ---
@@ -213,10 +228,10 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
 
 #### 📸 Capturas de Edición de Sede y Selector GPS:
 **Pestañas de Edición de Sede:**
-![Pestañas de Edición de Sede](docs/screenshots/editar_sede_tabs.png)
+![Pestañas de Edición de Sede](screenshots/editar_sede_tabs.png)
 
 **Selector de Coordenadas GPS en Mapa Satelital:**
-![Selector de Ubicación en Mapa](docs/screenshots/location_picker_map.png)
+![Selector de Ubicación en Mapa](screenshots/location_picker_map.png)
 
 ---
 
@@ -230,7 +245,7 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
   - Guardado y persistencia en tiempo real en la base de datos de la cochera.
 
 #### 📸 Captura del CAD Drawing Studio:
-![Editor de Plano Topográfico](docs/screenshots/cad_floor_plan_studio.png)
+![Editor de Plano Topográfico](screenshots/cad_floor_plan_studio.png)
 
 ---
 
@@ -245,17 +260,22 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
   - **Bitácora de Accesos:** Registro cronológico de ingresos, salidas, placas y montos recaudados con exportación a CSV.
 
 #### 📸 Captura de la Consola de Garita LPR:
-![Consola Garita y Reconocimiento LPR](docs/screenshots/garita_lpr_cctv.png)
+![Consola Garita y Reconocimiento LPR](screenshots/garita_lpr_cctv.png)
 
 ---
 
-### 4.4. Directorio de Personal (`StaffModule.jsx`)
+### 4.4. Directorio de Personal & Turnos (`StaffModule.jsx`)
 * **Propósito:** Asignación de roles de operadores de garita, guardias de seguridad y supervisores con sus respectivos turnos y teléfonos de contacto.
 
 ---
 
 ### 4.5. Reportes de Ocupación & Rendimiento (`AnalyticsGlobalModule.jsx`)
 * **Propósito:** Gráficos analíticos de afluencia vehicular por horas pico, tasa de rotación de cajones e ingresos acumulados en Nuevos Soles.
+
+---
+
+### 4.6. Diagnóstico y Resiliencia de Servicios (`ResiliencySimModule.jsx`)
+* **Propósito:** Monitoreo del estado de salud de la base de datos, servidores de OCR y tolerancia a cortes de red en garita.
 
 ---
 
@@ -272,8 +292,18 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
 
 ---
 
-### 5.3. Afiliación & Auditoría de Sedes (`AffiliatedParkingsModule.jsx` & `UserRolesModule.jsx`)
-* **Propósito:** Aprobación de nuevas playas de estacionamiento, asignación de permisos RBAC y auditoría de eventos de seguridad.
+### 5.3. Afiliación & Auditoría de Sedes (`AffiliatedParkingsModule.jsx`)
+* **Propósito:** Aprobación de nuevas playas de estacionamiento, supervisión de licencias municipales y estado de afiliación en Ayacucho.
+
+---
+
+### 5.4. Gestión de Usuarios & Permisos RBAC (`UserRolesModule.jsx`)
+* **Propósito:** Administración de accesos, bloqueo preventivo y asignación de privilegios para administradores y cajeros.
+
+---
+
+### 5.5. Ajustes Globales de Plataforma (`PlatformSettingsModule.jsx`)
+* **Propósito:** Configuración de parámetros globales del sistema, pasarelas de pago, tarifas base y políticas del servicio.
 
 ---
 

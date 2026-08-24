@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { getAccessToken, listMyReservations, createReservationApi, cancelReservationApi } from '../services/api';
 import api from '../services/api';
 
@@ -398,6 +398,53 @@ export const EstablishmentProvider = ({ children }) => {
   // Sincronización Supabase: parkings siempre (global), reservas solo con token
   // El panel del usuario siempre lee del servidor — no se usa caché local para datos de cocheras
   // Polling + refetch al enfocar la pestaña para que cambios de otros usuarios se vean sin recargar
+
+  // Convierte un slot del backend (snake_case) al formato interno del plano (camelCase corto)
+  const mapServerSlot = (s) => ({
+    id: s.id, type: 'slot', code: s.code, status: s.status || 'free',
+    slotType: s.slot_type || 'auto', shaded: false,
+    x: s.pos_x || 0, y: s.pos_y || 0, w: s.width || 60, h: s.height || 100, rot: s.rotation || 0
+  });
+
+  // Convierte los elementos decorativos del backend (muros, garita, accesos...)
+  const mapServerElement = (e) => {
+    let extra = {};
+    try { if (e.properties_json) extra = JSON.parse(e.properties_json) || {}; } catch {}
+    return {
+      id: `el-${e.id}`, type: e.element_type,
+      x: e.pos_x || 0, y: e.pos_y || 0, w: e.width || 100, h: e.height || 20,
+      rot: e.rotation || 0, label: extra.label
+    };
+  };
+
+  // Evita re-hidratar en cada ciclo de polling las cocheras cuyo plano es legítimamente vacío
+  const hydratedPlansRef = useRef(new Set());
+
+  // Carga el plano real (plazas + muros) desde GET /parkings/{id}/floor-plan y lo fusiona en el estado
+  const hydrateFloorPlan = async (id) => {
+    const key = String(id);
+    const numId = Number(key);
+    if (isNaN(numId) || hydratedPlansRef.current.has(key)) return;
+    hydratedPlansRef.current.add(key);
+    try {
+      const res = await api.get(`/parkings/${numId}/floor-plan`);
+      const slots = (Array.isArray(res.data?.slots) ? res.data.slots : []).map(mapServerSlot);
+      const elements = (Array.isArray(res.data?.elements) ? res.data.elements : []).map(mapServerElement);
+      setEstablishments(prev => prev.map(est => String(est.id) === key
+        ? { ...est, elements: [...elements, ...slots], _needsFloorPlan: false }
+        : est
+      ));
+    } catch {
+      hydratedPlansRef.current.delete(key);
+    }
+  };
+
+  // Garantiza que un establecimiento tenga su plano cargado antes de abrirlo (uso desde UI)
+  const ensureFloorPlan = (id) => {
+    const est = establishments.find(e => String(e.id) === String(id));
+    if (est && est.elements === null) return hydrateFloorPlan(id);
+  };
+
   const fetchParkings = async () => {
     try {
       const res = await api.get('/parkings');
@@ -405,12 +452,22 @@ export const EstablishmentProvider = ({ children }) => {
         const mappedParkings = res.data.map(p => ({
           id: String(p.id), name: p.name, address: p.address, city: p.city, latitude: p.latitude, longitude: p.longitude, rate: p.hourly_rate, status: p.status === 'active' ? 'Operativo' : p.status, image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', totalSlots: p.total_capacity, available_slots: p.available_slots, description: p.description || '', phone: p.phone || '', email: p.email || '', reference: p.reference || '', level: p.level || '', elements: null, _needsFloorPlan: true
         }));
+        const pendingHydration = [];
         setEstablishments(prev => {
           const localOnly = prev.filter(e => String(e.id).startsWith('EST-'));
           const serverIds = new Set(mappedParkings.map(m => m.id));
           const preservedLocal = localOnly.filter(l => !serverIds.has(String(l.id)));
-          return [...mappedParkings, ...preservedLocal];
+          // Preservar el plano ya hidratado de la carga anterior (el polling no debe borrarlo)
+          const prevMap = new Map(prev.map(e => [String(e.id), e]));
+          const merged = mappedParkings.map(m => {
+            const before = prevMap.get(m.id);
+            if (Array.isArray(before?.elements)) return { ...m, elements: before.elements };
+            pendingHydration.push(m.id);
+            return m;
+          });
+          return [...merged, ...preservedLocal];
         });
+        pendingHydration.forEach(id => hydrateFloorPlan(id));
       }
     } catch {}
   };
@@ -980,6 +1037,7 @@ export const EstablishmentProvider = ({ children }) => {
       addEstablishment,
       updateEstablishment,
       updateEstablishmentPlan,
+      ensureFloorPlan,
       deleteEstablishment,
       occupySlot,
       freeSlot,

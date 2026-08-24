@@ -256,6 +256,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     addEstablishment, 
     updateEstablishment, 
     updateEstablishmentPlan, 
+    ensureFloorPlan,
     deleteEstablishment 
   } = useEstablishments();
 
@@ -542,10 +543,21 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     showToast(`Sede "${name}" eliminada.`);
   };
 
+  // Cuando el plano hidrata desde el servidor (elements pasa de null a array), reflejarlo en la vista abierta
+  useEffect(() => {
+    if (!selectedEstablishment || activeViewMode === 'list') return;
+    const fresh = establishments.find(e => String(e.id) === String(selectedEstablishment.id));
+    if (fresh && Array.isArray(fresh.elements)) {
+      setCurrentPlanElements(fresh.elements);
+    }
+  }, [establishments, selectedEstablishment, activeViewMode]);
+
   // Abrir plano
   const handleOpenPlan = (est, mode) => {
     setSelectedEstablishment(est);
     setCurrentPlanElements(est.elements || []);
+    // Red de seguridad: si el plano aún no llegó del servidor, hidratarlo ahora
+    if (est.elements === null) ensureFloorPlan(est.id);
     setActiveViewMode(mode);
   };
 

@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     # Culqi - secreto solo en servidor, nunca en el frontend
     CULQI_SECRET_KEY: str = os.getenv("CULQI_SECRET_KEY", "")
 
+    # PayPal Sandbox / Live - secretos solo en servidor
+    PAYPAL_CLIENT_ID: str = os.getenv("PAYPAL_CLIENT_ID", "BAADoNYpVsJd20zFA2pZHva0nt7lYj4GnPqKFDFI_7Cdta0qd-FqG4g8wmndZYuPPcEAmSO-ukcu2mJDR0")
+    PAYPAL_CLIENT_SECRET: str = os.getenv("PAYPAL_CLIENT_SECRET", "EG6JQ_9HLl1G26MWDdPo1WnYsnn2pfscl0heKWCU35qpU9ZrDEcY5KZwhM6TZUHee5GBVnnWZH-PLCBE")
+    PAYPAL_MODE: str = os.getenv("PAYPAL_MODE", "sandbox") # "sandbox" | "live"
+    PAYPAL_EXCHANGE_RATE_PEN_TO_USD: float = float(os.getenv("PAYPAL_EXCHANGE_RATE_PEN_TO_USD", "0.27"))
+
+    @property
+    def PAYPAL_API_BASE_URL(self) -> str:
+        return "https://api-m.paypal.com" if self.PAYPAL_MODE == "live" else "https://api-m.sandbox.paypal.com"
+
     # Redis opcional: cache de lecturas calientes + Pub/Sub para WebSocket multi-réplica.
     # Sin REDIS_URL el sistema funciona igual que hoy (degradación elegante, fail-open).
     REDIS_URL: str = os.getenv("REDIS_URL", "")

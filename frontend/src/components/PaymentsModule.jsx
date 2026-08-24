@@ -102,7 +102,7 @@ export const PaymentsModule = () => {
         description: p.description || 'Reserva Smart Park',
         reservationCode: p.reservation_id ? `#${p.reservation_id}` : '—',
         amount: Number(p.amount) || 0,
-        method: p.method === 'card' ? 'Tarjeta (Culqi)' : (p.method || 'Tarjeta'),
+        method: p.method === 'paypal' ? 'PayPal (Express)' : p.method === 'card' ? 'Tarjeta (Culqi)' : (p.method || 'Tarjeta'),
         status: p.status === 'succeeded' ? 'Pagado' : (p.status || 'Pagado'),
         chargeId: p.culqi_charge_id || ''
       }));
@@ -315,6 +315,35 @@ export const PaymentsModule = () => {
                 </div>
                 <div className="flex items-center gap-2 pt-1 font-mono text-[11px] font-bold text-slate-600">
                   <span>YAPE</span> • <span>PLIN</span> • <span>CULQI</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tarjeta de PayPal Express Wallet */}
+            <div className="p-6 border border-blue-200/80 shadow-xs bg-gradient-to-br from-white via-blue-50/30 to-[#003087]/5 flex flex-col justify-between rounded-3xl group hover:shadow-md transition-all">
+              <div>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#003087] text-white flex items-center justify-center font-black shadow-sm">
+                    <span className="font-serif text-lg italic font-black tracking-tighter">PP</span>
+                  </div>
+                  <span className="text-[10px] font-extrabold text-blue-700 uppercase font-mono bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200">
+                    ● ACTIVO SANDBOX
+                  </span>
+                </div>
+
+                <h3 className="font-extrabold text-slate-900 text-base">PayPal Express Checkout</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Paga reservas y salidas con tu saldo PayPal o tarjetas internacionales con protección al comprador.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-blue-100 space-y-2 mt-4">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                  <span>Conversión Automática:</span>
+                  <span className="font-mono font-black text-blue-700">PEN / USD (1 S/ = $0.27)</span>
+                </div>
+                <div className="flex items-center gap-2 pt-1 font-mono text-[11px] font-bold text-slate-600">
+                  <span>SMART BUTTONS</span> • <span>REST API v2</span>
                 </div>
               </div>
             </div>

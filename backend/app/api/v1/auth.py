@@ -1,18 +1,36 @@
 import os
 import secrets
+from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import User
 from app.schemas.schemas import UserCreate, UserResponse, Token, PinVerify
+from app.core.config import settings
 from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user, verify_pin_hash, is_pin_hashed, hash_pin
+from app.core.cache import rate_limit_hit, blacklist_token
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
+
+# Rate limit anti fuerza bruta en login: 5 intentos por minuto por IP (fail-open sin Redis)
+LOGIN_RATE_LIMIT = 5
+LOGIN_RATE_WINDOW = 60
+_bearer_auto = HTTPBearer(auto_error=False)
+
+
+def _client_ip(request: Request) -> str:
+    # Detrás del proxy de Railway la IP real viene en X-Forwarded-For
+    fwd = request.headers.get("x-forwarded-for", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "desconocida"
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
@@ -49,7 +67,12 @@ async def register_user(user_in: UserCreate, db: AsyncSession = Depends(get_db))
     }
 
 @router.post("/login", response_model=Token)
-async def login_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+async def login_user(user_in: UserCreate, request: Request, db: AsyncSession = Depends(get_db)):
+    # Rate limit anti fuerza bruta por IP (fail-open sin Redis)
+    allowed, attempts = await rate_limit_hit(f"ratelimit:login:{_client_ip(request)}", LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW)
+    if not allowed:
+        raise HTTPException(status_code=429, detail="Demasiados intentos de inicio de sesión. Espera un minuto e inténtalo de nuevo.")
+
     result = await db.execute(select(User).where(User.email == user_in.email))
     user = result.scalars().first()
     if not user or not verify_password(user_in.password, user.hashed_password):
@@ -61,6 +84,29 @@ async def login_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
         "token_type": "bearer",
         "user": user
     }
+
+
+@router.post("/logout")
+async def logout(credentials: HTTPAuthorizationCredentials = Depends(_bearer_auto)):
+    """Logout real: revoca el token actual (blacklist en Redis hasta su expiración natural)."""
+    token = credentials.credentials if credentials else ""
+    if not token:
+        return {"status": "success", "message": "Sesión cerrada"}
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except JWTError:
+        return {"status": "success", "message": "Sesión cerrada"}
+
+    jti = payload.get("jti")
+    exp = payload.get("exp")
+    if jti and exp:
+        ttl = max(1, int(exp - datetime.utcnow().timestamp()))
+        revoked = await blacklist_token(jti, ttl)
+        return {
+            "status": "success",
+            "message": "Sesión cerrada y token revocado" if revoked else "Sesión cerrada (revocación no disponible: Redis sin configurar)"
+        }
+    return {"status": "success", "message": "Sesión cerrada"}
 
 @router.post("/google", response_model=Token)
 async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(get_db)):

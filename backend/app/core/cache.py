@@ -89,6 +89,55 @@ async def cache_delete(*keys: str) -> None:
 
 
 # ------------------------------------------------------------------
+# Rate limiting (anti fuerza bruta) — fail-open: sin Redis siempre permite
+# ------------------------------------------------------------------
+
+async def rate_limit_hit(key: str, limit: int, window: int = 60):
+    """Incrementa un contador con ventana deslizante simple.
+    Devuelve (permitido: bool, intentos: int). Sin Redis siempre permite."""
+    client = get_client()
+    if not client:
+        return True, 0
+    try:
+        count = await client.incr(key)
+        if count == 1:
+            await client.expire(key, window)
+        return count <= limit, count
+    except Exception as exc:
+        logger.warning(f"[ratelimit] {key} falló (fail-open): {exc}")
+        return True, 0
+
+
+# ------------------------------------------------------------------
+# Blacklist de JWT (logout real) — fail-open: sin Redis los tokens siguen válidos
+# ------------------------------------------------------------------
+
+async def blacklist_token(jti: str, ttl_seconds: int) -> bool:
+    """Revoca un token guardando su jti hasta su expiración natural."""
+    client = get_client()
+    if not client or not jti:
+        return False
+    try:
+        await client.set(f"bl:{jti}", "1", ex=max(1, int(ttl_seconds)))
+        return True
+    except Exception as exc:
+        logger.warning(f"[blacklist] SET {jti} falló (fail-open): {exc}")
+        return False
+
+
+async def is_blacklisted(jti: str) -> bool:
+    """True si el jti fue revocado. Sin Redis devuelve False (fail-open)."""
+    client = get_client()
+    if not client or not jti:
+        return False
+    try:
+        return await client.exists(f"bl:{jti}") == 1
+    except Exception as exc:
+        logger.warning(f"[blacklist] EXISTS {jti} falló (fail-open): {exc}")
+        return False
+
+
+# ------------------------------------------------------------------
 # Pub/Sub para fan-out de eventos entre réplicas
 # ------------------------------------------------------------------
 

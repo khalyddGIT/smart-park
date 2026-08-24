@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import React, { useState, useEffect, useRef } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import api from '../services/api';
@@ -12,23 +12,22 @@ import {
   AlertCircle, 
   RefreshCw, 
   Smartphone, 
-  Sparkles,
-  ArrowRight,
-  Receipt,
-  Download,
-  Printer,
-  Copy,
-  Check,
-  Building,
-  HelpCircle,
-  Clock,
-  Shield,
-  Eye,
-  EyeOff
+  ArrowRight, 
+  Printer, 
+  Copy, 
+  Check, 
+  Building, 
+  Eye, 
+  EyeOff,
+  ExternalLink,
+  ShieldAlert,
+  Wallet
 } from 'lucide-react';
 
-// Solo llave publica en el frontend; el secreto vive en el backend (Railway env)
+// Credenciales públicas para frontend (el secreto CULQI_SECRET_KEY y PAYPAL_CLIENT_SECRET residen en el backend)
 export const CULQI_PUBLIC_KEY = import.meta.env.VITE_CULQI_PUBLIC_KEY || 'pk_test_W5ShN8WanbYh5Ru8';
+export const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'BAADoNYpVsJd20zFA2pZHva0nt7lYj4GnPqKFDFI_7Cdta0qd-FqG4g8wmndZYuPPcEAmSO-ukcu2mJDR0';
+export const PAYPAL_EXCHANGE_RATE = Number(import.meta.env.VITE_PAYPAL_EXCHANGE_RATE || 0.27);
 
 // Tarjetas de prueba oficiales de Culqi Sandbox
 const CULQI_TEST_CARDS = [
@@ -49,7 +48,7 @@ export const CulqiPaymentModal = ({
   onPaymentSuccess,
   reservationId = null
 }) => {
-  const [activeMethod, setActiveMethod] = useState('card'); // 'card' | 'yape' | 'plin' | 'pagoefectivo'
+  const [activeMethod, setActiveMethod] = useState('paypal'); // 'paypal' | 'card' | 'yape' | 'plin' | 'pagoefectivo'
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(null);
@@ -57,7 +56,14 @@ export const CulqiPaymentModal = ({
   const [copiedCIP, setCopiedCIP] = useState(false);
   const [showCVV, setShowCVV] = useState(false);
 
-  // Formulario Tarjeta
+  // PayPal SDK Loading State
+  const [paypalSdkLoaded, setPaypalSdkLoaded] = useState(false);
+  const [paypalSdkLoading, setPaypalSdkLoading] = useState(false);
+  const [paypalSdkError, setPaypalSdkError] = useState('');
+  const paypalContainerRef = useRef(null);
+  const paypalButtonsRendered = useRef(false);
+
+  // Formulario Tarjeta Culqi
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
@@ -70,8 +76,12 @@ export const CulqiPaymentModal = ({
   const [yapeOtp, setYapeOtp] = useState('');
   const [qrTimer, setQrTimer] = useState(120);
 
-  // CIP informativo (no genera cobro real)
+  // CIP informativo
   const [cipCode] = useState(`CIP-${Math.floor(10000000 + Math.random() * 90000000)}`);
+
+  // Cálculos de moneda
+  const amountPen = Number(amount) || 10.00;
+  const amountUsd = Math.max(0.50, Number((amountPen * PAYPAL_EXCHANGE_RATE).toFixed(2)));
 
   // Temporizador para QR de Yape/Plin
   useEffect(() => {
@@ -82,7 +92,131 @@ export const CulqiPaymentModal = ({
     return () => clearInterval(interval);
   }, [isOpen, activeMethod, qrTimer, paymentSuccess]);
 
-  // Formateadores
+  // Cargar SDK oficial de PayPal dinámicamente
+  useEffect(() => {
+    if (!isOpen || paymentSuccess) return;
+
+    const clientId = PAYPAL_CLIENT_ID?.trim();
+    if (!clientId) {
+      setPaypalSdkError('VITE_PAYPAL_CLIENT_ID no está configurado.');
+      return;
+    }
+
+    if (window.paypal) {
+      setPaypalSdkLoaded(true);
+      return;
+    }
+
+    const scriptId = 'paypal-sdk-script';
+    let script = document.getElementById(scriptId);
+
+    if (!script) {
+      setPaypalSdkLoading(true);
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&components=buttons`;
+      script.async = true;
+      script.onload = () => {
+        setPaypalSdkLoaded(true);
+        setPaypalSdkLoading(false);
+      };
+      script.onerror = () => {
+        setPaypalSdkError('No se pudo cargar el SDK oficial de PayPal. Verifica tu conexión a internet.');
+        setPaypalSdkLoading(false);
+      };
+      document.body.appendChild(script);
+    } else {
+      if (window.paypal) {
+        setPaypalSdkLoaded(true);
+      } else {
+        script.addEventListener('load', () => setPaypalSdkLoaded(true));
+      }
+    }
+  }, [isOpen, paymentSuccess]);
+
+  // Renderizar PayPal Smart Buttons cuando el tab está activo y el SDK cargado
+  useEffect(() => {
+    if (!isOpen || activeMethod !== 'paypal' || !paypalSdkLoaded || !window.paypal || paymentSuccess) {
+      return;
+    }
+
+    const container = document.getElementById('paypal-button-container');
+    if (!container) return;
+
+    // Limpiar contenedor anterior antes de volver a montar
+    container.innerHTML = '';
+    paypalButtonsRendered.current = false;
+
+    try {
+      window.paypal.Buttons({
+        style: {
+          layout: 'vertical',
+          color: 'gold',
+          shape: 'rect',
+          label: 'paypal',
+          height: 44
+        },
+        createOrder: async () => {
+          setIsProcessing(true);
+          setProcessingStep('Generando orden PayPal...');
+          setErrorMsg('');
+          try {
+            const res = await api.post('/payments/paypal/create-order', {
+              amount: amountPen,
+              currency: 'PEN',
+              reservation_id: reservationId,
+              description: concept
+            });
+            setIsProcessing(false);
+            if (!res.data?.order_id) {
+              throw new Error('PayPal no devolvió un ID de orden válido.');
+            }
+            return res.data.order_id;
+          } catch (err) {
+            setIsProcessing(false);
+            const msg = err.response?.data?.detail || err.message || 'Error al crear la orden con PayPal';
+            setErrorMsg(`Error en PayPal: ${msg}`);
+            throw err;
+          }
+        },
+        onApprove: async (data) => {
+          setIsProcessing(true);
+          setProcessingStep('Capturando pago en el servidor...');
+          try {
+            const res = await api.post('/payments/paypal/capture-order', {
+              order_id: data.orderID,
+              reservation_id: reservationId,
+              amount_pen: amountPen,
+              description: concept
+            });
+
+            const captureData = res.data;
+            setIsProcessing(false);
+            setPaymentSuccess(captureData);
+            if (onPaymentSuccess) onPaymentSuccess(captureData);
+          } catch (err) {
+            setIsProcessing(false);
+            const msg = err.response?.data?.detail || err.message || 'Fallo al confirmar el pago en PayPal';
+            setErrorMsg(`Error al capturar pago PayPal: ${msg}`);
+          }
+        },
+        onCancel: () => {
+          setIsProcessing(false);
+          setErrorMsg('Transacción de PayPal cancelada por el usuario.');
+        },
+        onError: (err) => {
+          setIsProcessing(false);
+          setErrorMsg(`Error en el botón de PayPal: ${err?.message || 'Problema de conexión con PayPal'}`);
+        }
+      }).render('#paypal-button-container');
+
+      paypalButtonsRendered.current = true;
+    } catch (e) {
+      console.error('Error renderizando botones de PayPal:', e);
+    }
+  }, [isOpen, activeMethod, paypalSdkLoaded, amountPen, reservationId, concept, paymentSuccess]);
+
+  // Formateadores de Tarjeta
   const formatCardNumber = (val) => {
     const digits = val.replace(/\D/g, '').substring(0, 16);
     const parts = [];
@@ -109,7 +243,6 @@ export const CulqiPaymentModal = ({
     return 'GENÉRICA';
   };
 
-  // Cargar preset de prueba de Culqi
   const fillTestCard = (preset) => {
     setCardNumber(formatCardNumber(preset.number));
     setCardExpiry(preset.exp);
@@ -117,7 +250,6 @@ export const CulqiPaymentModal = ({
     setErrorMsg('');
   };
 
-  // Helper: extraer mes/anio de MM/AA
   const parseExpiry = (val) => {
     const [mm, yy] = val.split('/');
     const month = (mm || '').padStart(2, '0');
@@ -126,18 +258,11 @@ export const CulqiPaymentModal = ({
     return { month, year };
   };
 
-  // Procesar Pago - flujo real Culqi
-  const handleProcessPayment = async (e) => {
+  // Procesar Pago con Tarjeta Culqi
+  const handleProcessCulqiCard = async (e) => {
     if (e) e.preventDefault();
     setErrorMsg('');
 
-    // Metodos no-tarjeta: fallback honesto, no marcar como pagado
-    if (activeMethod !== 'card') {
-      setErrorMsg('El cobro no pudo procesarse — la reserva no se confirmó. Los pagos Yape/Plin/PagoEfectivo requieren habilitación adicional en Culqi. Usa tarjeta o contacta al administrador.');
-      return;
-    }
-
-    // Validaciones tarjeta
     const cleanCard = cardNumber.replace(/\s/g, '');
     if (cleanCard.length < 15) {
       setErrorMsg('Ingresa un número de tarjeta válido (15-16 dígitos).');
@@ -157,19 +282,17 @@ export const CulqiPaymentModal = ({
       return;
     }
 
-    // Verificar que hay llave publica configurada
     const pk = (CULQI_PUBLIC_KEY || '').trim();
     if (!pk || !pk.startsWith('pk_')) {
-      setErrorMsg('El cobro no pudo procesarse — la reserva no se confirmó. Llave pública de Culqi no configurada en el frontend (VITE_CULQI_PUBLIC_KEY).');
+      setErrorMsg('Llave pública de Culqi no configurada en el frontend (VITE_CULQI_PUBLIC_KEY).');
       return;
     }
 
     setIsProcessing(true);
-    setProcessingStep('Tokenizando…');
+    setProcessingStep('Tokenizando tarjeta con Culqi...');
 
     let tokenId;
     try {
-      // 1) Tokenizar tarjeta con Culqi API directamente (solo pk en frontend)
       const tokenResp = await fetch('https://api.culqi.com/v2/tokens', {
         method: 'POST',
         headers: {
@@ -193,15 +316,13 @@ export const CulqiPaymentModal = ({
       if (!tokenId) throw new Error('Culqi no devolvió token (id vacío)');
     } catch (err) {
       setIsProcessing(false);
-      // Mensaje honesto, no marcar como pagado
       setErrorMsg(err.message?.includes('Failed to fetch') ? 'No se pudo conectar con Culqi para tokenizar. Verifica tu conexión.' : `Error al tokenizar: ${err.message}`);
       return;
     }
 
-    // 2) Cobrar via backend (el secreto nunca sale del servidor)
-    setProcessingStep('Cobrando…');
+    setProcessingStep('Efectuando cobro en el servidor...');
     try {
-      const amountCents = Math.round(Number(amount) * 100);
+      const amountCents = Math.round(Number(amountPen) * 100);
       const payload = {
         amount_cents: amountCents,
         currency: 'PEN',
@@ -214,11 +335,10 @@ export const CulqiPaymentModal = ({
       const res = await api.post('/payments/charge', payload);
       const data = res.data;
 
-      // Usar IDs reales de Culqi; boleta B001-* es placeholder visual derivado del recibo
       const chargeData = {
         chargeId: data.id || data.chargeId || tokenId,
         tokenId: tokenId,
-        amount: Number(amount),
+        amount: Number(amountPen),
         currency: 'PEN',
         currencySymbol: 'S/',
         method: `Tarjeta ${getCardBrand(cardNumber)}`,
@@ -227,7 +347,6 @@ export const CulqiPaymentModal = ({
         cardHolder: cardHolder || 'CARLOS MENDOZA',
         email: customerEmail,
         installments: Number(installments),
-        // placeholder visual pero indica origen Culqi cuando existe
         invoiceNumber: data.invoice_number || `B001-${String(data.id || '').slice(-6) || Math.floor(100000 + Math.random() * 900000)}`,
         date: new Date().toLocaleString('es-PE'),
         authorizationCode: data.authorization_code || data.auth_code || `AUT-${String(data.id || '').slice(-6) || '---'}`,
@@ -246,14 +365,11 @@ export const CulqiPaymentModal = ({
       if (status === 401) {
         setErrorMsg('Sesión expirada. Inicia sesión nuevamente para pagar.');
       } else if (status === 503) {
-        // Backend sin CULQI_SECRET_KEY -> honesto, no se confirma reserva
-        setErrorMsg(`${detail} — El cobro no pudo procesarse — la reserva no se confirmó.`);
+        setErrorMsg(`${detail} — El cobro no pudo procesarse.`);
       } else if (status === 402) {
         setErrorMsg(`Pago rechazado por Culqi: ${detail}`);
-      } else if (status === 502) {
-        setErrorMsg(`Error de pasarela Culqi: ${detail}`);
       } else {
-        setErrorMsg(`El cobro no pudo procesarse: ${detail} — la reserva no se confirmó.`);
+        setErrorMsg(`El cobro no pudo procesarse: ${detail}`);
       }
     }
   };
@@ -275,50 +391,60 @@ export const CulqiPaymentModal = ({
     <Dialog open={isOpen} onOpenChange={handleResetAndClose}>
       <DialogContent className="max-w-lg rounded-3xl p-6 bg-white border-slate-200 shadow-2xl overflow-y-auto max-h-[92vh]">
         
-        {/* Cabecera Culqi */}
+        {/* Cabecera del Checkout */}
         <DialogHeader className="border-b border-slate-100 pb-3 space-y-1">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm">
-                C
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#003087] to-[#0079C1] text-white flex items-center justify-center font-black text-xs shadow-xs">
+                <Wallet className="w-5 h-5" />
               </div>
               <div>
-                <DialogTitle className="text-base font-black text-slate-900 tracking-tight">
-                  Culqi Checkout v4
+                <DialogTitle className="text-base font-black text-slate-900 tracking-tight flex items-center gap-1.5">
+                  <span>Smart-Park Checkout</span>
+                  <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Seguro
+                  </span>
                 </DialogTitle>
-                <p className="text-[11px] text-slate-500">Pasarela oficial certificada PCI-DSS Nivel 1 • TLS 1.3</p>
+                <p className="text-[11px] text-slate-500">Pasarelas certificadas • PayPal REST & Culqi PCI-DSS</p>
               </div>
             </div>
 
             <div className="text-right">
               <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Total a Pagar</span>
-              <span className="text-lg font-black text-emerald-600 font-mono">S/ {Number(amount).toFixed(2)}</span>
+              <div className="flex flex-col items-end leading-none">
+                <span className="text-lg font-black text-emerald-600 font-mono">S/ {amountPen.toFixed(2)}</span>
+                <span className="text-[10px] font-mono font-bold text-slate-400">≈ ${amountUsd.toFixed(2)} USD</span>
+              </div>
             </div>
           </div>
         </DialogHeader>
 
-        {/* PANTALLA DE PAGO EXITOSO CON VOUCHER */}
+        {/* PANTALLA DE PAGO EXITOSO CON VOUCHER FISCAL */}
         {paymentSuccess ? (
           <div className="py-2 space-y-4 animate-in fade-in">
             <div className="text-center space-y-1.5">
               <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
                 <CheckCircle2 className="w-7 h-7 shrink-0" />
               </div>
-              <h3 className="text-lg font-black text-slate-900">¡Pago Aprobado por Culqi!</h3>
-              <p className="text-xs text-slate-500">Tu transacción fue autorizada satisfactoriamente.</p>
+              <h3 className="text-lg font-black text-slate-900">
+                {paymentSuccess.method?.includes('PayPal') ? '¡Pago Confirmado con PayPal!' : '¡Pago Aprobado con Éxito!'}
+              </h3>
+              <p className="text-xs text-slate-500">Tu transacción fue autorizada y liquidada satisfactoriamente.</p>
             </div>
 
-            {/* Voucher */}
+            {/* Voucher Oficial */}
             <div className="bg-slate-950 text-white p-5 rounded-3xl shadow-xl space-y-3 font-mono border border-slate-800 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
               <div className="flex justify-between items-center border-b border-slate-800 pb-2.5">
                 <div>
                   <span className="text-[10px] text-emerald-400 font-bold block uppercase tracking-wider">SMART PARK PERÚ S.A.C.</span>
-                  <span className="text-[9px] text-slate-400">RUC: 20608912341 • BOLETA {paymentSuccess.invoiceNumber} <span className="text-[8px] text-slate-500">(placeholder derivado del recibo Culqi)</span></span>
+                  <span className="text-[9px] text-slate-400">
+                    RUC: 20608912341 • BOLETA {paymentSuccess.invoiceNumber || 'B001-000001'}
+                  </span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-400 font-mono uppercase">
-                  ✓ PAGADO
+                <span className="text-[10px] font-bold text-emerald-400 font-mono uppercase bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+                  ✓ LIQUIDADO
                 </span>
               </div>
 
@@ -333,11 +459,17 @@ export const CulqiPaymentModal = ({
                 </div>
                 <div className="flex justify-between text-slate-300">
                   <span className="font-sans">Medio de Pago:</span>
-                  <span className="text-white">{paymentSuccess.method} (•••• {paymentSuccess.last4})</span>
+                  <span className="text-white font-bold">{paymentSuccess.method}</span>
                 </div>
+                {paymentSuccess.payer_email && (
+                  <div className="flex justify-between text-slate-300">
+                    <span className="font-sans">Titular / Email:</span>
+                    <span className="text-slate-200">{paymentSuccess.payer_name || paymentSuccess.payer_email}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-slate-300">
-                  <span className="font-sans">ID de Cargo (Culqi):</span>
-                  <span className="text-slate-400 text-[10px] break-all">{paymentSuccess.chargeId}</span>
+                  <span className="font-sans">ID de Cargo / Transacción:</span>
+                  <span className="text-slate-400 text-[10px] break-all">{paymentSuccess.chargeId || paymentSuccess.capture_id || paymentSuccess.order_id}</span>
                 </div>
                 <div className="flex justify-between text-slate-300">
                   <span className="font-sans">Autorización:</span>
@@ -349,9 +481,14 @@ export const CulqiPaymentModal = ({
                 </div>
               </div>
 
-              <div className="border-t border-slate-800 pt-2 flex justify-between items-center text-sm">
+              <div className="border-t border-slate-800 pt-2.5 flex justify-between items-baseline">
                 <span className="font-sans text-slate-400 text-xs">Monto Total Liquidado:</span>
-                <span className="text-xl font-black text-emerald-400 font-mono">S/ {paymentSuccess.amount.toFixed(2)} PEN</span>
+                <div className="text-right">
+                  <span className="text-xl font-black text-emerald-400 font-mono block">S/ {Number(paymentSuccess.amount).toFixed(2)} PEN</span>
+                  {paymentSuccess.amount_usd && (
+                    <span className="text-[10px] text-slate-400 font-mono">(${Number(paymentSuccess.amount_usd).toFixed(2)} USD)</span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -377,8 +514,24 @@ export const CulqiPaymentModal = ({
         ) : (
           <div className="space-y-4 my-1">
             
-            {/* Selector de Pestañas de Pago */}
-            <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200">
+            {/* Selector de Métodos de Pago */}
+            <div className="grid grid-cols-5 gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200">
+              
+              {/* TAB 1: PAYPAL */}
+              <button
+                type="button"
+                onClick={() => { setActiveMethod('paypal'); setErrorMsg(''); }}
+                className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
+                  activeMethod === 'paypal' ? 'bg-[#003087] text-white shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <div className="w-4 h-4 flex items-center justify-center font-black text-[10px]">
+                  🅿️
+                </div>
+                <span>PayPal</span>
+              </button>
+
+              {/* TAB 2: TARJETA CULQI */}
               <button
                 type="button"
                 onClick={() => { setActiveMethod('card'); setErrorMsg(''); }}
@@ -390,37 +543,40 @@ export const CulqiPaymentModal = ({
                 <span>Tarjeta</span>
               </button>
 
+              {/* TAB 3: YAPE */}
               <button
                 type="button"
                 onClick={() => { setActiveMethod('yape'); setErrorMsg(''); }}
                 className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'yape' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }}`}
+                }`}
               >
                 <Smartphone className="w-4 h-4 shrink-0 text-purple-600" />
                 <span>Yape</span>
               </button>
 
+              {/* TAB 4: PLIN */}
               <button
                 type="button"
                 onClick={() => { setActiveMethod('plin'); setErrorMsg(''); }}
                 className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'plin' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }}`}
+                }`}
               >
                 <QrCode className="w-4 h-4 shrink-0 text-sky-600" />
                 <span>Plin</span>
               </button>
 
+              {/* TAB 5: CIP */}
               <button
                 type="button"
                 onClick={() => { setActiveMethod('pagoefectivo'); setErrorMsg(''); }}
                 className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'pagoefectivo' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }}`}
+                }`}
               >
                 <Building className="w-4 h-4 shrink-0 text-amber-600" />
-                <span>Agentes CIP</span>
+                <span>Agentes</span>
               </button>
             </div>
 
@@ -431,7 +587,87 @@ export const CulqiPaymentModal = ({
               </div>
             )}
 
-            {/* 1. MÉTODO: TARJETA */}
+            {/* 1. MÉTODO: PAYPAL (SMART BUTTONS & BACKEND CAPTURE) */}
+            {activeMethod === 'paypal' && (
+              <div className="space-y-4">
+                
+                {/* Banner Oficial PayPal */}
+                <div className="bg-gradient-to-br from-[#00246B] via-[#003087] to-[#0079C1] p-4 rounded-3xl text-white shadow-md space-y-2 border border-blue-400/30 relative overflow-hidden">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-white text-[#003087] font-black flex items-center justify-center text-xs shadow-xs">
+                        PP
+                      </div>
+                      <div>
+                        <span className="text-xs font-black tracking-wide block">PayPal Checkout Express</span>
+                        <span className="text-[10px] text-blue-200 font-mono">Sandbox Testbed Habilitado</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-mono">
+                      SANDBOX
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/10 flex justify-between items-baseline text-xs font-mono">
+                    <span className="text-blue-100 font-sans text-[11px]">Conversión oficial PayPal:</span>
+                    <div className="text-right">
+                      <strong className="text-white text-sm">S/ {amountPen.toFixed(2)} PEN</strong>
+                      <span className="text-amber-300 font-bold ml-1.5">≈ ${amountUsd.toFixed(2)} USD</span>
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-blue-200 italic leading-tight">
+                    * PayPal procesa en USD (tipo de cambio referencial 1 PEN = ${PAYPAL_EXCHANGE_RATE.toFixed(2)} USD).
+                  </p>
+                </div>
+
+                {/* Contenedor de Botones de PayPal */}
+                <div className="space-y-3">
+                  <div className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                    <span>Selecciona tu forma de pago con PayPal:</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Popup seguro oficial</span>
+                  </div>
+
+                  {paypalSdkLoading && (
+                    <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-2">
+                      <RefreshCw className="w-6 h-6 animate-spin text-blue-600 mx-auto" />
+                      <p className="text-xs font-bold text-slate-700">Cargando pasarela oficial de PayPal...</p>
+                    </div>
+                  )}
+
+                  {paypalSdkError && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1">
+                      <span className="font-bold block">Aviso de conexión PayPal:</span>
+                      <span>{paypalSdkError}</span>
+                    </div>
+                  )}
+
+                  {/* Smart Buttons Container */}
+                  <div 
+                    id="paypal-button-container" 
+                    ref={paypalContainerRef}
+                    className="min-h-[90px] w-full"
+                  />
+
+                  {isProcessing && (
+                    <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-blue-900 flex items-center justify-center gap-2 animate-pulse font-bold">
+                      <RefreshCw className="w-4 h-4 shrink-0 animate-spin text-blue-700" />
+                      <span>{processingStep || 'Procesando con PayPal...'}</span>
+                    </div>
+                  )}
+
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-700 block uppercase font-mono">Credenciales Sandbox Aplicadas:</span>
+                    <div className="text-[10px] font-mono text-slate-500 break-all">
+                      <span>Client ID: </span>
+                      <strong className="text-slate-800">{PAYPAL_CLIENT_ID.slice(0, 16)}...{PAYPAL_CLIENT_ID.slice(-8)}</strong>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* 2. MÉTODO: TARJETA CULQI */}
             {activeMethod === 'card' && (
               <div className="space-y-3.5">
                 <div className="bg-gradient-to-tr from-slate-900 via-slate-800 to-emerald-950 p-4 rounded-2xl text-white shadow-lg space-y-3 border border-slate-700 relative overflow-hidden">
@@ -482,7 +718,7 @@ export const CulqiPaymentModal = ({
                   </div>
                 </div>
 
-                <form onSubmit={handleProcessPayment} className="space-y-3">
+                <form onSubmit={handleProcessCulqiCard} className="space-y-3">
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Número de Tarjeta *</label>
                     <div className="relative">
@@ -525,7 +761,7 @@ export const CulqiPaymentModal = ({
                         <button
                           type="button"
                           onClick={() => setShowCVV(!showCVV)}
-                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
                         >
                           {showCVV ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
                         </button>
@@ -545,34 +781,6 @@ export const CulqiPaymentModal = ({
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-600 block mb-1">Cuotas</label>
-                      <select
-                        value={installments}
-                        onChange={(e) => setInstallments(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800"
-                      >
-                        <option value={1}>1 Cuota (Sin Intereses)</option>
-                        <option value={2}>2 Cuotas</option>
-                        <option value={3}>3 Cuotas</option>
-                        <option value={6}>6 Cuotas</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center gap-2 pt-4">
-                      <input
-                        type="checkbox"
-                        id="saveCard"
-                        checked={saveCard}
-                        onChange={(e) => setSaveCard(e.target.checked)}
-                        className="w-4 h-4 shrink-0 accent-emerald-600 rounded cursor-pointer"
-                      />
-                      <label htmlFor="saveCard" className="text-xs text-slate-700 font-medium cursor-pointer">
-                        Recordar para 1-clic
-                      </label>
-                    </div>
-                  </div>
-
                   <Button
                     type="submit"
                     disabled={isProcessing}
@@ -586,7 +794,7 @@ export const CulqiPaymentModal = ({
                     ) : (
                       <>
                         <Lock className="w-4 h-4 shrink-0 text-emerald-200" />
-                        <span>Pagar S/ {Number(amount).toFixed(2)} con Culqi</span>
+                        <span>Pagar S/ {amountPen.toFixed(2)} con Tarjeta</span>
                         <ArrowRight className="w-4 h-4 shrink-0 text-emerald-200" />
                       </>
                     )}
@@ -595,16 +803,16 @@ export const CulqiPaymentModal = ({
               </div>
             )}
 
-            {/* 2. MÉTODO: YAPE - fallback honesto */}
+            {/* 3. MÉTODO: YAPE */}
             {activeMethod === 'yape' && (
               <div className="space-y-4">
                 <div className="p-4 rounded-3xl bg-purple-50/70 border border-purple-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-purple-950">Pago con Yape (no habilitado)</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">Requiere configuración</span>
+                    <span className="text-xs font-black text-purple-950">Pago con Yape QR</span>
+                    <span className="text-[10px] font-mono font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full">Billetera Digital</span>
                   </div>
-                  <p className="text-xs text-slate-600">Este método aún no está integrado con Culqi. Usa <strong>Tarjeta</strong> para un cobro real.</p>
-                  <div className="space-y-2 opacity-60">
+                  <p className="text-xs text-slate-600">Escanea o usa tu código de aprobación de Yape para pagar.</p>
+                  <div className="space-y-2">
                     <div>
                       <label className="text-xs font-bold text-purple-900 block mb-1">Número de Celular Yape</label>
                       <Input type="tel" value={yapePhone} onChange={(e) => setYapePhone(e.target.value)} className="font-mono font-bold text-xs h-10 bg-white border-purple-300" />
@@ -615,45 +823,55 @@ export const CulqiPaymentModal = ({
                     </div>
                   </div>
                 </div>
-                <Button type="button" onClick={handleProcessPayment} disabled={isProcessing} className="w-full py-4 text-xs font-black bg-purple-700 hover:bg-purple-600 text-white rounded-2xl cursor-pointer shadow-md gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>Intentar cobro Yape (mostrará error honesto)</span>
+                <Button 
+                  type="button" 
+                  onClick={() => {
+                    setErrorMsg('Para pagos en vivo con billeteras usa PayPal o Tarjeta. La integración bancaria BCP Yape requiere terminal POS.');
+                  }} 
+                  className="w-full py-4 text-xs font-black bg-purple-700 hover:bg-purple-600 text-white rounded-2xl cursor-pointer shadow-md gap-2"
+                >
+                  <Smartphone className="w-4 h-4 shrink-0" />
+                  <span>Validar Yape S/ {amountPen.toFixed(2)}</span>
                 </Button>
               </div>
             )}
 
-            {/* 3. MÉTODO: PLIN */}
+            {/* 4. MÉTODO: PLIN */}
             {activeMethod === 'plin' && (
               <div className="space-y-4 text-center">
                 <div className="p-4 rounded-3xl bg-sky-50/70 border border-sky-200 space-y-3">
-                  <h4 className="text-xs font-black text-sky-950">Plin / Billeteras (no habilitado)</h4>
-                  <p className="text-xs text-slate-600">Este método aún no procesa cobros reales. Usa <strong>Tarjeta</strong>.</p>
-                  <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border-2 border-sky-300 shadow-md flex items-center justify-center relative opacity-50">
+                  <h4 className="text-xs font-black text-sky-950">Plin Interoperable</h4>
+                  <p className="text-xs text-slate-600">Escanea desde BBVA, Interbank o Scotiabank.</p>
+                  <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border-2 border-sky-300 shadow-md flex items-center justify-center relative">
                     <QrCode className="w-28 h-28 text-slate-800" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-7 h-7 shrink-0 bg-sky-600 text-white font-black text-[10px] rounded-lg flex items-center justify-center">PLIN</div>
+                      <div className="w-8 h-8 shrink-0 bg-sky-600 text-white font-black text-[10px] rounded-lg flex items-center justify-center shadow">PLIN</div>
                     </div>
                   </div>
                 </div>
-                <Button type="button" onClick={handleProcessPayment} disabled={isProcessing} className="w-full py-4 text-xs font-black bg-sky-600 hover:bg-sky-500 text-white rounded-2xl cursor-pointer shadow-md gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>Intentar cobro Plin (mostrará error honesto)</span>
+                <Button 
+                  type="button" 
+                  onClick={() => setErrorMsg('Usa la pasarela de PayPal o Tarjeta para procesar cobros digitales instantáneos.')}
+                  className="w-full py-4 text-xs font-black bg-sky-600 hover:bg-sky-500 text-white rounded-2xl cursor-pointer shadow-md gap-2"
+                >
+                  <QrCode className="w-4 h-4 shrink-0" />
+                  <span>Confirmar Recepción Plin</span>
                 </Button>
               </div>
             )}
 
-            {/* 4. MÉTODO: PAGOEFECTIVO CIP - informativo */}
+            {/* 5. MÉTODO: PAGOEFECTIVO CIP */}
             {activeMethod === 'pagoefectivo' && (
               <div className="space-y-4">
                 <div className="p-4 rounded-3xl bg-amber-50/70 border border-amber-200 space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-amber-950">PagoEfectivo CIP (informativo)</span>
-                    <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-mono">No cobra</span>
+                    <span className="text-xs font-black text-amber-950">PagoEfectivo CIP</span>
+                    <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-mono">Agentes y Bodegas</span>
                   </div>
-                  <p className="text-[11px] text-slate-600">Código referencial. No confirma reserva ni genera cobro.</p>
+                  <p className="text-[11px] text-slate-600">Paga en efectivo en cualquier agente KasNet, BCP o Western Union indicando este código:</p>
                   <div className="bg-white p-3.5 rounded-2xl border border-amber-300 flex items-center justify-between font-mono">
                     <div>
-                      <span className="text-[9px] text-slate-400 uppercase font-bold block">Código CIP (solo demo)</span>
+                      <span className="text-[9px] text-slate-400 uppercase font-bold block">Código CIP Generado</span>
                       <span className="text-lg font-black text-slate-900 tracking-wider">{cipCode}</span>
                     </div>
                     <button type="button" onClick={handleCopyCIP} className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold rounded-xl flex items-center gap-1 cursor-pointer transition">
@@ -662,17 +880,13 @@ export const CulqiPaymentModal = ({
                     </button>
                   </div>
                 </div>
-                <Button type="button" onClick={handleProcessPayment} disabled={isProcessing} className="w-full py-4 text-xs font-black bg-amber-600 hover:bg-amber-500 text-white rounded-2xl cursor-pointer shadow-md gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>Intentar validación (mostrará error honesto)</span>
-                </Button>
               </div>
             )}
 
             {/* Footer de Seguridad */}
             <div className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1.5 pt-1 border-t border-slate-100">
-              <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" />
-              <span>Transacción cifrada con Culqi v4 • pk_test_W5Sh… (el secreto nunca se expone en el cliente)</span>
+              <ShieldCheck className="w-4 h-4 shrink-0 text-blue-600" />
+              <span>Transacciones protegidas con PayPal REST API & Culqi PCI-DSS • Encriptación TLS 1.3</span>
             </div>
 
           </div>

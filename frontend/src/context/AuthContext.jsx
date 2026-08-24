@@ -122,6 +122,12 @@ export const AuthProvider = ({ children }) => {
 
   // Cerrar Sesión Definitivo
   const logout = () => {
+    // Revocar el token en el servidor (blacklist Redis) antes de limpiar la sesión local.
+    // Fire-and-forget: si falla o no hay token, el cierre local procede igual.
+    const token = localStorage.getItem('smart_park_access_token');
+    if (token) {
+      api.post('/auth/logout', {}, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+    }
     setUser(null);
     setRole('user');
     setPinVerified(false);

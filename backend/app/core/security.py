@@ -52,12 +52,14 @@ def is_pin_hashed(stored_pin: str) -> bool:
     return bool(stored_pin) and stored_pin.startswith(("pbkdf2_sha256$", "bcrypt$", "$2"))
 
 def create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    import uuid
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    to_encode = {"exp": expire, "sub": str(subject)}
+    # jti: identificador único del token, permite revocarlo (blacklist en Redis) al hacer logout
+    to_encode = {"exp": expire, "sub": str(subject), "jti": str(uuid.uuid4())}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
@@ -75,6 +77,14 @@ async def get_current_user(
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido o expirado")
+
+    # Logout real: si el jti del token fue revocado, rechazar (fail-open sin Redis)
+    jti = payload.get("jti")
+    if jti:
+        from app.core.cache import is_blacklisted
+        if await is_blacklisted(jti):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revocado: la sesión fue cerrada")
+
     # Import here to avoid circular
     from app.models.models import User
     result = await db.execute(select(User).where(User.id == int(user_id)))

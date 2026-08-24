@@ -201,8 +201,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
         closeButton: false,
         offset: [0, -28],
         autoPan: true,
-        autoPanPaddingTopLeft: [20, 80],
-        autoPanPaddingBottomRight: [20, 20]
+        autoPanPadding: [30, 30]
       });
 
       marker.on('popupopen', () => {
@@ -215,27 +214,42 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       });
 
       marker.on('click', () => {
-        // Desplazamiento inteligente: sube la latitud un poco (+0.0016) para que el popup entre holgado sin cortarse arriba
-        map.flyTo([coords[0] + 0.0016, coords[1]], 16, { animate: true, duration: 0.6 });
+        centerOnMarker(coords, 16);
       });
 
       markersRef.current[p.id] = marker;
     });
   }, [parkings, selectedParkingId, onSelectParking]);
 
+  // Centrado matemático perfecto de pin y popup en el visor
+  const centerOnMarker = (coords, zoom = 16) => {
+    if (!mapInstanceRef.current || !window.L) return;
+    const L = window.L;
+    const map = mapInstanceRef.current;
+    const targetZoom = zoom || map.getZoom();
+
+    // Proyectar coordenadas a píxeles y desplazar 115px arriba para centrar la tarjeta de popup completa en el contenedor
+    const point = map.project(coords, targetZoom);
+    const targetPoint = L.point(point.x, point.y - 115);
+    const targetLatLng = map.unproject(targetPoint, targetZoom);
+
+    map.flyTo(targetLatLng, targetZoom, {
+      animate: true,
+      duration: 0.6,
+      easeLinearity: 0.25
+    });
+  };
+
   // Centrar y abrir popup si cambia selectedParkingId externamente (desde listado o buscador)
   useEffect(() => {
-    if (!mapInstanceRef.current || !selectedParkingId) return;
+    if (!mapInstanceRef.current || !selectedParkingId || !window.L) return;
     const marker = markersRef.current[selectedParkingId];
     if (marker) {
       const latLng = marker.getLatLng();
-      mapInstanceRef.current.flyTo([latLng.lat + 0.0016, latLng.lng], 16, {
-        animate: true,
-        duration: 0.6
-      });
+      centerOnMarker([latLng.lat, latLng.lng], 16);
       setTimeout(() => {
         marker.openPopup();
-      }, 300);
+      }, 250);
     }
   }, [selectedParkingId]);
 
@@ -285,7 +299,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
   };
 
   return (
-    <div className="relative isolate z-0 w-full h-[420px] sm:h-[480px] bg-[#FBFBFA] overflow-hidden rounded-xl">
+    <div className="relative isolate z-0 w-full h-[460px] sm:h-[520px] bg-[#FBFBFA] overflow-hidden rounded-xl">
       
       {/* Contenedor del Mapa Leaflet Scoped */}
       <div 

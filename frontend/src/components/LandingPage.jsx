@@ -25,6 +25,7 @@ import {
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { AyacuchoMap } from './AyacuchoMap';
+import { BrandLogo } from './BrandLogo';
 
 // Curva elástica ultra fluida acelerada por hardware (GPU)
 const FLUID_EASE = [0.16, 1, 0.3, 1];
@@ -254,25 +255,7 @@ export const LandingPage = ({
         <div className="max-w-6xl mx-auto bg-[#002624]/90 backdrop-blur-xl border border-[#005e58]/50 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgba(0,38,36,0.35)] flex items-center justify-between text-white relative">
           
           {/* Logo y Denominación */}
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-slate-950 flex items-center justify-center font-black shadow-lg shadow-emerald-500/20 transform transition-transform duration-200 hover:scale-105">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950">
-                <path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-            </div>
-            <div className="leading-none">
-              <div className="flex items-center space-x-1.5">
-                <span className="text-sm sm:text-base font-black tracking-tight text-white font-mono">
-                  SMART-PARK
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]" />
-              </div>
-              <span className="text-[10px] text-emerald-300/80 font-mono block mt-0.5 font-bold tracking-wider">
-                AYACUCHO • HUAMANGA
-              </span>
-            </div>
-          </div>
+          <BrandLogo className="h-8 sm:h-9 w-auto" dark={true} subtitle="AYACUCHO • HUAMANGA" />
 
           {/* Navegación Tipográfica en Escritorio */}
           <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 text-xs font-semibold">
@@ -822,14 +805,8 @@ export const LandingPage = ({
       <footer className="bg-white/85 backdrop-blur-md border-t border-white/50 py-8 sm:py-12 px-4 sm:px-6 lg:px-12 text-xs text-[#004D49] shadow-[0_-2px_10px_-2px_rgba(0,0,0,0.02)]">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 text-center sm:text-left">
           <div className="flex items-center space-x-3">
-            <div className="w-6 h-6 rounded bg-[#004D49] text-white flex items-center justify-center font-bold text-[10px] shadow-xs">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 shrink-0">
-                <path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-            </div>
-            <span className="font-bold text-[#002B29] font-mono">SMART-PARK AYACUCHO</span>
-            <span>• © 2026</span>
+            <BrandLogo className="h-6 w-auto" subtitle="" showSubtitle={false} />
+            <span className="text-[11px] font-mono text-[#004D49]">• © 2026</span>
           </div>
 
           <div className="flex items-center space-x-6">

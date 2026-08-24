@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { BrandLogo } from './BrandLogo';
 import { TermsAndConditionsModal } from './TermsAndConditionsModal';
 
 export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMode = 'login' }) => {
@@ -146,20 +147,10 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       <div className="absolute -bottom-32 right-1/4 w-[400px] h-[200px] bg-teal-100/40 rounded-full blur-[90px] pointer-events-none" />
 
       {/* Header / Brand */}
-      <header className="relative z-10 pt-2 sm:pt-4 flex flex-col items-center text-center space-y-1.5">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 flex items-center justify-center shadow-md">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
-              <path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
-              <circle cx="12" cy="12" r="10" />
-            </svg>
-          </div>
-          <span className="text-lg font-black tracking-tight text-slate-900 font-tech uppercase">
-            SMART-PARK
-          </span>
-        </div>
-        <p className="text-xs text-slate-500 font-medium">
-          Plataforma Integral de Gestión y Reserva de Estacionamientos
+      <header className="relative z-10 pt-2 sm:pt-4 flex flex-col items-center text-center space-y-1">
+        <BrandLogo className="h-10 sm:h-11 w-auto" subtitle="PLATAFORMA INTELIGENTE" />
+        <p className="text-xs text-slate-500 font-medium pt-1">
+          Gestión y Reserva de Estacionamientos en Ayacucho
         </p>
       </header>
 

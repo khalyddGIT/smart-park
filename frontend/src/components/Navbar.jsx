@@ -18,6 +18,7 @@ import {
   LogIn
 } from 'lucide-react';
 import { KeypadModal } from './KeypadModal';
+import { BrandLogo } from './BrandLogo';
 
 const getIconForType = (type) => {
   switch (type) {
@@ -110,22 +111,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
       <header className="glass-panel sticky top-0 z-40 px-3 sm:px-4 md:px-6 py-2.5 flex items-center justify-between border-b border-slate-200/90 bg-white/95 backdrop-blur-md select-none">
         
         {/* Brand Logo */}
-        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shadow-sm border border-slate-800 shrink-0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 sm:w-5 sm:h-5">
-              <path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
-              <circle cx="12" cy="12" r="10" />
-            </svg>
-          </div>
-          <div>
-            <span className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight font-tech block leading-none">
-              SMART-PARK
-            </span>
-            <span className="text-[9px] font-mono text-emerald-700 font-extrabold block leading-none mt-0.5">
-              AYACUCHO
-            </span>
-          </div>
-        </div>
+        <BrandLogo className="h-8 sm:h-9 w-auto" subtitle="AYACUCHO" />
 
         {/* Controles de Usuario / Visitante */}
         {!user ? (

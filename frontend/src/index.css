@@ -62,7 +62,7 @@
 @layer base {
   :root {
     --font-sans: 'Plus Jakarta Sans', var(--font-suisseintl), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --font-serif: 'Instrument Serif', var(--font-lyon-display), Georgia, Cambria, serif;
+    --font-serif: 'Instrument Serif', 'Playfair Display', Georgia, Cambria, serif;
     --font-mono: 'JetBrains Mono', var(--font-roboto-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --ease-fluid: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);

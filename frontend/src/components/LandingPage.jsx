@@ -362,14 +362,14 @@ export const LandingPage = ({
           className="space-y-5 sm:space-y-6 flex flex-col items-center transform-gpu will-change-transform"
         >
           
-          {/* Titular Principal Centrado con Escala Adaptativa */}
+          {/* Titular Principal Centrado con Escala Adaptativa — Editorial Premium */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: FLUID_EASE }}
-            className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] font-display text-[#002B29] tracking-[-0.03em] max-w-4xl mx-auto leading-[1.08] sm:leading-[1.02]"
+            className="text-4xl sm:text-6xl md:text-7xl lg:text-[84px] font-serif text-[#002B29] tracking-[-0.015em] max-w-4xl mx-auto leading-[1.04] sm:leading-[0.98] font-normal"
           >
-            Ecosistema Inteligente de Estacionamientos en <span className="font-editorial italic font-normal text-[#004D49] tracking-[-0.02em]">Ayacucho</span>.
+            Ecosistema Inteligente de Estacionamientos en <span className="italic text-[#004D49] tracking-normal font-normal">Ayacucho.</span>
           </motion.h1>
 
           {/* Subtítulo Centrado */}
@@ -494,8 +494,8 @@ export const LandingPage = ({
         
         {/* Encabezado Centrado */}
         <div className="max-w-3xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display text-[#002B29] tracking-tight">
-            Estacionamientos Conectados en Huamanga
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-[#002B29] tracking-tight font-normal leading-[1.1]">
+            Estacionamientos Conectados en <span className="italic text-[#004D49]">Huamanga</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#004D49] max-w-md mx-auto font-medium">
             Consulta disponibilidad en vivo, precios por hora y navega directamente a la cochera.
@@ -574,8 +574,8 @@ export const LandingPage = ({
         
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display text-[#002B29] tracking-tight">
-            Estaciona rápido y sin complicaciones
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-[#002B29] tracking-tight font-normal leading-[1.1]">
+            Estaciona rápido y <span className="italic text-[#004D49]">sin complicaciones</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#004D49] max-w-lg mx-auto font-medium">
             Sin descargar aplicaciones pesadas. Todo funciona directo y seguro desde tu celular.
@@ -712,8 +712,8 @@ export const LandingPage = ({
         >
           
           <div className="max-w-2xl space-y-3 px-2">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display tracking-tight text-white">
-              Digitalice la operación de su cochera
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif tracking-tight text-white font-normal leading-[1.1]">
+              Digitalice la operación de <span className="italic text-[#A7F3D0]">su cochera</span>
             </h2>
             <p className="text-xs sm:text-sm text-[#D1FAE5] leading-relaxed max-w-xl mx-auto">
               Creamos un mapa digital interactivo de tu local, automatizamos la entrada de vehículos y conectamos tu estacionamiento con conductores de la ciudad.
@@ -751,8 +751,8 @@ export const LandingPage = ({
         
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display text-[#002B29] tracking-tight">
-            Preguntas Frecuentes
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-[#002B29] tracking-tight font-normal leading-[1.1]">
+            Preguntas <span className="italic text-[#004D49]">Frecuentes</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#004D49] font-medium">
             Respuestas a las dudas principales sobre el funcionamiento del sistema.

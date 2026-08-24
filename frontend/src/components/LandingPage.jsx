@@ -178,15 +178,11 @@ export const LandingPage = ({
   });
 
   const heroHeadlineY = useTransform(heroScrollProgress, [0, 1], [0, -55]);
-  const heroBadgeLeftY = useTransform(heroScrollProgress, [0, 1], [0, -90]);
-  const heroBadgeRightY = useTransform(heroScrollProgress, [0, 1], [0, -110]);
   const heroOpacity = useTransform(heroScrollProgress, [0, 0.85], [1, 0.2]);
   const heroScale = useTransform(heroScrollProgress, [0, 1], [1, 0.96]);
 
   const smoothHeroHeadlineY = useSpring(heroHeadlineY, { stiffness: 180, damping: 26, mass: 0.7 });
   const smoothHeroScale = useSpring(heroScale, { stiffness: 180, damping: 26, mass: 0.7 });
-  const smoothBadgeLeftY = useSpring(heroBadgeLeftY, { stiffness: 140, damping: 20 });
-  const smoothBadgeRightY = useSpring(heroBadgeRightY, { stiffness: 140, damping: 20 });
 
   // Transformación 3D Suave del Mockup Faux-OS
   const { scrollYProgress: mockupScrollProgress } = useScroll({
@@ -388,28 +384,10 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION CON MULTI-LAYER PARALLAX & BADGES FLOTANTES
+          2. HERO SECTION CON PROFUNDIDAD Y RESPONSIVE FLUIDO
           ========================================================================= */}
       <section ref={heroRef} className="pt-16 sm:pt-24 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto space-y-10 sm:space-y-12 text-center relative z-10">
         
-        {/* Floating Depth Badge Izquierdo (Parallax Opuesto) */}
-        <motion.div 
-          style={{ y: smoothBadgeLeftY }}
-          className="hidden xl:flex absolute left-[-4rem] top-28 items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/80 backdrop-blur-md border border-emerald-500/20 shadow-lg text-[11px] font-bold text-slate-800 pointer-events-none transform-gpu will-change-transform"
-        >
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-          <span>LPR Reconocimiento 99.8%</span>
-        </motion.div>
-
-        {/* Floating Depth Badge Derecho (Parallax Opuesto) */}
-        <motion.div 
-          style={{ y: smoothBadgeRightY }}
-          className="hidden xl:flex absolute right-[-4rem] top-36 items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/80 backdrop-blur-md border border-[#004D49]/20 shadow-lg text-[11px] font-bold text-[#004D49] pointer-events-none transform-gpu will-change-transform"
-        >
-          <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-          <span>15 min cortesía garantizada</span>
-        </motion.div>
-
         <motion.div 
           style={{ 
             y: smoothHeroHeadlineY, 
@@ -429,7 +407,7 @@ export const LandingPage = ({
             transition={{ duration: 0.6, delay: 0.2, ease: FLUID_EASE }}
             className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] text-[#002B29] tracking-[-0.03em] max-w-3xl mx-auto leading-[1.12] sm:leading-[1.08] drop-shadow-xs"
           >
-            Ecosistema Inteligente de Estacionamientos en <span className="text-[#004D49] font-black">Ayacucho.</span>
+            Ecosistema Inteligente de Estacionamientos en <span className="text-[#004D49] font-black">Ayacucho</span>
           </motion.h1>
 
           {/* Subtítulo Centrado */}

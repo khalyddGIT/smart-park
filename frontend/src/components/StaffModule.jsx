@@ -775,30 +775,16 @@ export const StaffModule = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-300 block mb-1">PIN Garita / ANPR (4 dígitos)</label>
-                  <Input 
-                    type="password" 
-                    maxLength={4} 
-                    placeholder="1234" 
-                    value={formData.security_pin} 
-                    onChange={(e) => setFormData({ ...formData, security_pin: e.target.value.replace(/\D/g, '') })} 
-                    className="text-center font-mono font-bold tracking-widest text-xs h-10 rounded-xl bg-slate-800/90 border-slate-700 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-slate-300 block mb-1">Rol en Sistema</label>
-                  <select 
-                    value={formData.system_role} 
-                    onChange={(e) => setFormData({ ...formData, system_role: e.target.value })} 
-                    className="h-10 w-full bg-slate-800 border border-slate-700 rounded-xl px-3 text-xs font-bold text-emerald-400 focus:outline-none"
-                  >
-                    <option value="local">Operador de Garita (local)</option>
-                    <option value="platform">Super Admin (platform)</option>
-                  </select>
-                </div>
+              <div className="pt-1">
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">PIN Garita / ANPR (4 dígitos)</label>
+                <Input 
+                  type="password" 
+                  maxLength={4} 
+                  placeholder="1234" 
+                  value={formData.security_pin} 
+                  onChange={(e) => setFormData({ ...formData, security_pin: e.target.value.replace(/\D/g, '') })} 
+                  className="font-mono font-bold tracking-widest text-xs h-10 rounded-xl bg-slate-800/90 border-slate-700 text-white"
+                />
               </div>
 
               <p className="text-[10px] text-slate-400 leading-relaxed pt-1">
@@ -948,30 +934,16 @@ export const StaffModule = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-300 block mb-1">Nuevo PIN (4 dígitos)</label>
-                  <Input 
-                    type="password" 
-                    maxLength={4} 
-                    placeholder="••••" 
-                    value={formData.security_pin} 
-                    onChange={(e) => setFormData({ ...formData, security_pin: e.target.value.replace(/\D/g, '') })} 
-                    className="text-center font-mono font-bold text-xs h-10 rounded-xl bg-slate-800 border-slate-700 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-slate-300 block mb-1">Rol Sistema</label>
-                  <select 
-                    value={formData.system_role} 
-                    onChange={(e) => setFormData({ ...formData, system_role: e.target.value })} 
-                    className="h-10 w-full bg-slate-800 border border-slate-700 rounded-xl px-3 text-xs font-bold text-emerald-400 focus:outline-none"
-                  >
-                    <option value="local">Operador Garita (local)</option>
-                    <option value="platform">Super Admin (platform)</option>
-                  </select>
-                </div>
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">Nuevo PIN (4 dígitos)</label>
+                <Input 
+                  type="password" 
+                  maxLength={4} 
+                  placeholder="••••" 
+                  value={formData.security_pin} 
+                  onChange={(e) => setFormData({ ...formData, security_pin: e.target.value.replace(/\D/g, '') })} 
+                  className="font-mono font-bold text-xs h-10 rounded-xl bg-slate-800 border-slate-700 text-white"
+                />
               </div>
             </div>
 
@@ -1063,30 +1035,16 @@ export const StaffModule = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">PIN Garita (4 dígitos)</label>
-                <Input 
-                  type="password" 
-                  maxLength={4} 
-                  placeholder="••••" 
-                  value={credsData.security_pin} 
-                  onChange={(e) => setCredsData({ ...credsData, security_pin: e.target.value.replace(/\D/g, '') })} 
-                  className="text-center font-mono font-bold text-xs h-10 rounded-xl"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Rol Sistema</label>
-                <select 
-                  value={credsData.system_role} 
-                  onChange={(e) => setCredsData({ ...credsData, system_role: e.target.value })} 
-                  className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800"
-                >
-                  <option value="local">Operador (local)</option>
-                  <option value="platform">Super Admin (platform)</option>
-                </select>
-              </div>
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">PIN Garita (4 dígitos)</label>
+              <Input 
+                type="password" 
+                maxLength={4} 
+                placeholder="••••" 
+                value={credsData.security_pin} 
+                onChange={(e) => setCredsData({ ...credsData, security_pin: e.target.value.replace(/\D/g, '') })} 
+                className="font-mono font-bold text-xs h-10 rounded-xl"
+              />
             </div>
 
             <div className="pt-2">

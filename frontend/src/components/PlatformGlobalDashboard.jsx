@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { 
@@ -46,36 +46,53 @@ import {
 } from 'recharts';
 import { useEstablishments } from '../context/EstablishmentContext';
 import { Skeleton, SkeletonCard, SkeletonRow } from './ui/skeleton';
-
-// Datos de recaudación histórica para gráficos
-const REVENUE_TIMELINE = [
-  { day: 'Lun', total: 4200, comision: 504, reservas: 180 },
-  { day: 'Mar', total: 5100, comision: 612, reservas: 210 },
-  { day: 'Mie', total: 4800, comision: 576, reservas: 195 },
-  { day: 'Jue', total: 6300, comision: 756, reservas: 260 },
-  { day: 'Vie', total: 8900, comision: 1068, reservas: 380 },
-  { day: 'Sab', total: 11200, comision: 1344, reservas: 490 },
-  { day: 'Dom', total: 9800, comision: 1176, reservas: 420 },
-];
-
-const PAYMENT_METHODS_DATA = [
-  { name: 'Yape / Plin QR', value: 52, color: '#10B981' },
-  { name: 'Tarjetas Visa/MC', value: 34, color: '#0F172A' },
-  { name: 'Smart Wallet', value: 14, color: '#06B6D4' }
-];
+import api from '../services/api';
 
 export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
   const { establishments, reservations, affiliationRequests = [] } = useEstablishments();
-  const [timeRange, setTimeRange] = useState('semana'); // 'hoy' | 'semana' | 'mes'
+  const [timeRange, setTimeRange] = useState('semana');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [liveEventsReal, setLiveEventsReal] = useState([]);
+  const [reviewStats, setReviewStats] = useState({ avg: 0, count: 0 });
 
-  const handleTimeRangeChange = (range) => {
+  const fetchDashboardData = async () => {
     setIsRefreshing(true);
-    setTimeRange(range);
-    setTimeout(() => setIsRefreshing(false), 350);
+    try {
+      const [finRes, auditRes, revRes] = await Promise.allSettled([
+        api.get('/finances/summary'),
+        api.get('/audit/logs', { params: { limit: 8 } }),
+        api.get('/reviews'),
+      ]);
+      if (finRes.status === 'fulfilled' && finRes.value?.data) setSummary(finRes.value.data);
+      if (auditRes.status === 'fulfilled' && Array.isArray(auditRes.value?.data)) {
+        const logs = auditRes.value.data.slice(0, 4).map((l, idx) => ({
+          id: l.id || idx,
+          title: l.action?.slice(0, 40) || 'Evento',
+          desc: l.target?.slice(0, 60) || l.operator || '',
+          time: l.timestamp?.slice(11, 16) || '',
+          badge: l.action?.includes('ANPR') ? 'ANPR Gate' : l.action?.includes('Liquidación') ? 'Finanzas' : l.action?.includes('Incidencia') ? 'Operaciones' : 'Sistema',
+          color: l.severity === 'Crítico' ? 'amber' : l.action?.includes('ANPR') ? 'emerald' : 'blue',
+        }));
+        if (logs.length) setLiveEventsReal(logs);
+      }
+      if (revRes.status === 'fulfilled' && Array.isArray(revRes.value?.data)) {
+        const revs = revRes.value.data;
+        const avg = revs.length ? (revs.reduce((a, r) => a + Number(r.rating || 0), 0) / revs.length) : 0;
+        setReviewStats({ avg: Number(avg.toFixed(1)), count: revs.length });
+      }
+    } catch {}
+    finally { setTimeout(() => setIsRefreshing(false), 300); }
   };
 
-  // Cálculos dinámicos
+  useEffect(() => { fetchDashboardData(); }, []);
+
+  const handleTimeRangeChange = (range) => {
+    setTimeRange(range);
+    fetchDashboardData();
+  };
+
+  // Cálculos dinámicos reales
   const totalBranches = establishments.length;
   const pendingRequests = affiliationRequests.filter(r => r.status === 'PENDING').length;
 
@@ -90,39 +107,64 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
   const occupiedSlotsCount = Math.max(0, totalSlotsCount - freeSlotsCount);
   const occupancyPercentage = totalSlotsCount > 0 
     ? Math.round((occupiedSlotsCount / totalSlotsCount) * 100) 
-    : 68;
+    : 0;
 
-  // Ganancias estimadas
-  const grossRevenueToday = 14250.00;
-  const netCommissionToday = grossRevenueToday * 0.12; // 12% comisión
-  const activeBookingsCount = reservations.filter(r => r.status === 'ACTIVE' || r.status === 'SCHEDULED').length || 42;
+  // Datos reales desde finanzas
+  const grossRevenueToday = summary?.totales?.recaudacion_bruta_global ?? 0;
+  const netCommissionToday = summary?.totales?.comision_liquida_global ?? 0;
+  const activeBookingsCount = summary?.totales?.total_reservas_global ?? reservations.filter(r => r.status === 'ACTIVE' || r.status === 'SCHEDULED').length;
 
-  // Ranking de sedes por recaudación y aforo
-  const branchPerformance = establishments.map((e, idx) => {
-    const slots = (e.elements || []).filter(el => el.type === 'slot');
-    const free = slots.filter(el => el.status === 'free').length;
-    const total = slots.length || e.totalSlots || 20;
-    const occ = total > 0 ? Math.round(((total - free) / total) * 100) : 75;
-    const revenue = 2100 + (idx * 650);
+  // Ranking real por recaudación desde summary.por_sede
+  const branchPerformance = useMemo(() => {
+    if (summary?.por_sede?.length) {
+      return summary.por_sede.slice(0, 6).map(s => {
+        const est = establishments.find(e => String(e.id) === String(s.parking_id));
+        const slots = (est?.elements || []).filter(el => el.type === 'slot');
+        const free = slots.filter(el => el.status === 'free').length;
+        const total = slots.length || est?.totalSlots || s.total_reservas || 20;
+        const occ = total > 0 ? Math.round(((total - free) / total) * 100) : 0;
+        return {
+          id: s.parking_id,
+          name: s.parking_name?.replace('Smart Park ', '') || `Sede #${s.parking_id}`,
+          address: est?.address || '',
+          occupancy: occ,
+          totalSlots: total,
+          freeSlots: free,
+          revenueToday: Number(s.recaudacion_bruta || 0),
+          lprStatus: 'ONLINE'
+        };
+      });
+    }
+    return establishments.slice(0, 6).map((e) => {
+      const slots = (e.elements || []).filter(el => el.type === 'slot');
+      const free = slots.filter(el => el.status === 'free').length;
+      const total = slots.length || e.totalSlots || 20;
+      const occ = total > 0 ? Math.round(((total - free) / total) * 100) : 0;
+      return { id: e.id, name: e.name.replace('Smart Park ', ''), address: e.address, occupancy: occ, totalSlots: total, freeSlots: free, revenueToday: 0, lprStatus: 'ONLINE' };
+    });
+  }, [summary, establishments]);
 
-    return {
-      id: e.id,
-      name: e.name.replace('Smart Park ', ''),
-      address: e.address,
-      occupancy: occ,
-      totalSlots: total,
-      freeSlots: free,
-      revenueToday: revenue,
-      lprStatus: 'ONLINE'
-    };
-  });
+  // Timeline real derivado de por_sede (si no hay histórico diario, mostrar por sede como barra)
+  const revenueTimeline = useMemo(() => {
+    if (summary?.por_sede?.length) {
+      return summary.por_sede.slice(0, 7).map(s => ({
+        day: s.parking_name?.split(' ').slice(-2).join(' ') || `Sede ${s.parking_id}`,
+        total: Number(s.recaudacion_bruta || 0),
+        comision: Number(s.comision_12 || 0),
+        reservas: s.total_reservas || 0,
+      }));
+    }
+    return [];
+  }, [summary]);
 
-  // Feed en vivo de eventos de la red
-  const liveEvents = [
-    { id: 1, type: 'LPR_ENTRY', title: 'Ingreso LPR Reconocido', desc: 'Vehículo XYZ-789 ingresó a Plaza Mayor PB', time: 'Hace 2 min', badge: 'ANPR Gate', color: 'emerald' },
-    { id: 2, type: 'PAYMENT', title: 'Reserva Pagada con Yape', desc: 'S/ 12.00 cobrado • Comisión Smart-Park S/ 1.44', time: 'Hace 5 min', badge: 'Finanzas', color: 'blue' },
-    { id: 3, type: 'OCCUPANCY', title: 'Alerta de Alta Ocupación', desc: 'Sede Sótano 1 alcanzó el 88% de capacidad', time: 'Hace 12 min', badge: 'Operaciones', color: 'amber' },
-    { id: 4, type: 'AFFILIATION', title: 'Nueva Solicitud de Cochera', desc: 'Cochera Las Nazarenas solicitó afiliación', time: 'Hace 25 min', badge: 'Afiliación', color: 'indigo' },
+  const paymentMethodsReal = useMemo(() => {
+    if (!summary) return [];
+    // Sin desglose por método en summary, mostrar distribución estimada desde totales (placeholder honesto)
+    return [];
+  }, [summary]);
+
+  const liveEvents = liveEventsReal.length ? liveEventsReal : [
+    { id: 1, type: 'LPR_ENTRY', title: 'Sin eventos recientes', desc: 'La bitácora se llenará con la actividad real', time: '—', badge: 'Sistema', color: 'emerald' },
   ];
 
   return (
@@ -130,13 +172,12 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
       
       {/* Banner Ejecutivo de Bienvenida & Controles */}
       <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white p-6 sm:p-7 rounded-3xl shadow-lg border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative overflow-hidden">
-        {/* Glow de fondo */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="space-y-2 relative z-10">
           <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-mono font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>Red Multi-Tenant Ayacucho • Uptime 99.98%</span>
+            <span>Red Multi-Tenant Ayacucho • Datos en vivo desde /finances/summary</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
             Panel Ejecutivo del Propietario
@@ -146,7 +187,6 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           </p>
         </div>
 
-        {/* Acciones Rápidas del Propietario */}
         <div className="flex flex-wrap items-center gap-2.5 relative z-10">
           <Button
             onClick={() => onNavigateTab && onNavigateTab('finances')}
@@ -176,7 +216,6 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
         </div>
       </div>
 
-      {/* Alerta de Solicitudes de Afiliación Pendientes */}
       {pendingRequests > 0 && (
         <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shadow-xs">
           <div className="flex items-center gap-2 text-amber-900 text-xs">
@@ -184,7 +223,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
               <Building2 className="w-5 h-5 shrink-0" />
             </div>
             <div>
-              <strong className="text-sm font-black block">¡Tienes {pendingRequests} solicitud(es) de afiliación de cocheras pendientes!</strong>
+              <strong className="text-sm font-black block">¡Tienes {pendingRequests} solicitud(es) de afiliación pendientes!</strong>
               <span>Revisa los documentos y aprueba el alta de nuevos locales en la red de Huamanga.</span>
             </div>
           </div>
@@ -198,7 +237,6 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
         </div>
       )}
 
-      {/* Grid de 6 KPIs Financieros & Operativos en Vivo */}
       {isRefreshing ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 animate-fade-in">
           {[...Array(6)].map((_, i) => (
@@ -208,25 +246,21 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           
-          {/* Recaudación Bruta Hoy */}
           <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Recaudación Hoy</span>
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Recaudación Total</span>
               <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
               <h3 className="text-xl font-black text-slate-900 font-mono">
-                S/ {grossRevenueToday.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                S/ {Number(grossRevenueToday).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
               </h3>
-              <span className="inline-flex items-center text-[10px] font-bold text-emerald-600 gap-0.5 mt-0.5">
-                <ArrowUpRight className="w-4 h-4 shrink-0" /> +14.2% vs ayer
-              </span>
+              <span className="text-[10px] text-slate-500 mt-0.5 block">{summary ? 'Acumulado real (excluye canceladas)' : 'Sin datos aún'}</span>
             </div>
           </Card>
 
-          {/* Comisión Smart-Park */}
           <Card className="p-4 border-emerald-200 rounded-3xl bg-emerald-50/50 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-emerald-800 tracking-wider">Comisión Neta (12%)</span>
@@ -236,13 +270,12 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
             </div>
             <div className="mt-2.5">
               <h3 className="text-xl font-black text-emerald-700 font-mono">
-                S/ {netCommissionToday.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                S/ {Number(netCommissionToday).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
               </h3>
               <span className="text-[10px] font-medium text-emerald-800/80 mt-0.5 block">Ganancia de plataforma</span>
             </div>
           </Card>
 
-          {/* Cocheras Activas */}
           <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Locales Afiliados</span>
@@ -254,11 +287,10 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
               <h3 className="text-xl font-black text-slate-900 font-mono">
                 {totalBranches} Sedes
               </h3>
-              <span className="text-[10px] font-bold text-emerald-600 mt-0.5 block">● 100% Operativas</span>
+              <span className="text-[10px] font-bold text-emerald-600 mt-0.5 block">● Reales en BD</span>
             </div>
           </Card>
 
-          {/* Ocupación Media */}
           <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Ocupación Red</span>
@@ -276,23 +308,21 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
             </div>
           </Card>
 
-          {/* Reservas Activas */}
           <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Estancias en Curso</span>
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Estancias Totales</span>
               <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
                 <Car className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
               <h3 className="text-xl font-black text-slate-900 font-mono">
-                {activeBookingsCount} Autos
+                {Number(activeBookingsCount)} Reservas
               </h3>
               <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">{freeSlotsCount} plazas libres</span>
             </div>
           </Card>
 
-          {/* Satisfacción de Clientes */}
           <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Calificación Red</span>
@@ -302,145 +332,92 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
             </div>
             <div className="mt-2.5">
               <h3 className="text-xl font-black text-slate-900 font-mono">
-                4.8 ★
+                {reviewStats.count ? `${reviewStats.avg} ★` : '—'}
               </h3>
-              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">480+ reseñas verificadas</span>
+              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">{reviewStats.count ? `${reviewStats.count} reseñas reales` : 'Sin reseñas aún'}</span>
             </div>
           </Card>
 
         </div>
       )}
 
-      {/* Gráficos de Inteligencia de Negocios (Recharts) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Gráfico 1: Evolución de Ingresos y Comisiones de la Red */}
         <Card className="lg:col-span-2 p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div>
               <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 shrink-0 text-emerald-600" />
-                <span>Volumen de Recaudación & Comisiones Semanales</span>
+                <span>Recaudación por Sede (Real)</span>
               </h2>
-              <p className="text-xs text-slate-500">Curva diaria de dinero bruto procesado vs. comisión líquida retenida por Smart-Park.</p>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs font-bold bg-slate-100 p-1 rounded-xl">
-              <button
-                onClick={() => handleTimeRangeChange('hoy')}
-                className={`px-2.5 py-0.5 rounded-lg transition cursor-pointer ${
-                  timeRange === 'hoy' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                Hoy
-              </button>
-              <button
-                onClick={() => handleTimeRangeChange('semana')}
-                className={`px-2.5 py-0.5 rounded-lg transition cursor-pointer ${
-                  timeRange === 'semana' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                Semana
-              </button>
-              <button
-                onClick={() => handleTimeRangeChange('mes')}
-                className={`px-2.5 py-0.5 rounded-lg transition cursor-pointer ${
-                  timeRange === 'mes' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                Mes
-              </button>
+              <p className="text-xs text-slate-500">Ranking derivado de <code className="bg-slate-100 px-1 rounded">GET /finances/summary</code> — excluye canceladas.</p>
             </div>
           </div>
 
           <div className="h-[280px] w-full pt-2">
+            {revenueTimeline.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+                <BarChart3 className="w-8 h-8" />
+                <span className="text-xs font-bold">Sin recaudación aún — crea reservas para ver el ranking</span>
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={REVENUE_TIMELINE} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0F172A" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#0F172A" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorComision" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <BarChart data={revenueTimeline} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} tickLine={false} />
+                <XAxis dataKey="day" stroke="#94A3B8" fontSize={10} tickLine={false} interval={0} angle={-15} textAnchor="end" height={50} />
                 <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} tickFormatter={(v) => `S/ ${v}`} />
                 <Tooltip 
                   formatter={(value, name) => [
                     `S/ ${Number(value).toFixed(2)}`,
-                    name === 'total' ? 'Recaudación Bruta Red' : 'Comisión Smart-Park (12%)'
+                    name === 'total' ? 'Recaudación Bruta' : 'Comisión 12%'
                   ]}
                   contentStyle={{ borderRadius: '16px', background: '#0F172A', color: '#FFF', border: 'none', fontSize: '12px' }}
                 />
                 <Legend 
-                  formatter={(value) => value === 'total' ? 'Recaudación Bruta Red' : 'Comisión Líquida Smart-Park'}
+                  formatter={(value) => value === 'total' ? 'Recaudación Bruta' : 'Comisión'}
                   wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
                 />
-                <Area type="monotone" dataKey="total" stroke="#0F172A" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTotal)" />
-                <Area type="monotone" dataKey="comision" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorComision)" />
-              </AreaChart>
+                <Bar dataKey="total" fill="#0F172A" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="comision" fill="#10B981" radius={[6, 6, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
-        {/* Gráfico 2: Desglose por Medio de Pago */}
         <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4 flex flex-col justify-between">
           <div className="border-b border-slate-100 pb-3">
             <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
               <CreditCard className="w-5 h-5 shrink-0 text-emerald-600" />
-              <span>Medios de Pago</span>
+              <span>Resumen Financiero</span>
             </h2>
-            <p className="text-xs text-slate-500">Distribución de cobros en Ayacucho.</p>
+            <p className="text-xs text-slate-500">Totales reales del sistema.</p>
           </div>
 
-          <div className="h-[200px] w-full relative flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={PAYMENT_METHODS_DATA}
-                  innerRadius={55}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {PAYMENT_METHODS_DATA.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value) => [`${value}% del total`, 'Participación']}
-                  contentStyle={{ borderRadius: '14px', background: '#0F172A', color: '#FFF', fontSize: '11px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute text-center pointer-events-none">
-              <span className="text-xl font-black text-slate-900 font-mono">100%</span>
-              <span className="text-[10px] text-slate-400 block font-bold">Digital</span>
+          <div className="space-y-3 text-xs">
+            <div className="flex justify-between p-3 bg-slate-50 rounded-xl">
+              <span className="text-slate-600">Recaudación Bruta</span>
+              <strong className="font-mono text-slate-900">S/ {Number(grossRevenueToday).toFixed(2)}</strong>
+            </div>
+            <div className="flex justify-between p-3 bg-emerald-50 rounded-xl">
+              <span className="text-emerald-800 font-bold">Comisión Plataforma</span>
+              <strong className="font-mono text-emerald-700">S/ {Number(netCommissionToday).toFixed(2)}</strong>
+            </div>
+            <div className="flex justify-between p-3 bg-slate-50 rounded-xl">
+              <span className="text-slate-600">Reservas Totales</span>
+              <strong className="font-mono text-slate-900">{activeBookingsCount}</strong>
+            </div>
+            <div className="flex justify-between p-3 bg-slate-50 rounded-xl">
+              <span className="text-slate-600">Sedes Activas</span>
+              <strong className="font-mono text-slate-900">{totalBranches}</strong>
             </div>
           </div>
-
-          <div className="space-y-2 pt-2 border-t border-slate-100 text-xs">
-            {PAYMENT_METHODS_DATA.map((p, idx) => (
-              <div key={idx} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
-                  <span className="text-slate-700 font-medium">{p.name}</span>
-                </div>
-                <strong className="text-slate-900 font-mono">{p.value}%</strong>
-              </div>
-            ))}
-          </div>
+          <p className="text-[10px] text-slate-400 pt-2 border-t border-slate-100">Fuente: <code className="bg-slate-100 px-1 rounded">GET /finances/summary</code> + <code className="bg-slate-100 px-1 rounded">GET /reviews</code></p>
         </Card>
       </div>
 
-      {/* Sección Inferior: Monitor de Sedes & Live Feed de Eventos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Monitor en Vivo de Cocheras Afiliadas */}
         <Card className="lg:col-span-2 p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
@@ -448,7 +425,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                 <Building2 className="w-5 h-5 shrink-0 text-emerald-600" />
                 <span>Monitor de Cocheras de la Red ({establishments.length})</span>
               </h2>
-              <p className="text-xs text-slate-500">Estado operativo, aforo y recaudación de cada establecimiento.</p>
+              <p className="text-xs text-slate-500">Estado operativo, aforo y recaudación real por sede.</p>
             </div>
             <Button
               onClick={() => onNavigateTab && onNavigateTab('affiliates')}
@@ -478,7 +455,6 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                 </div>
 
                 <div className="flex items-center gap-2 self-end sm:self-auto">
-                  {/* Barra de Aforo */}
                   <div className="text-right w-28">
                     <div className="flex justify-between text-[11px] font-mono mb-1">
                       <span className="text-slate-500">Aforo:</span>
@@ -492,10 +468,9 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                     </div>
                   </div>
 
-                  {/* Recaudación Hoy */}
                   <div className="text-right font-mono border-l border-slate-200 pl-3">
                     <span className="text-[10px] text-slate-400 font-bold block uppercase">Recaudado</span>
-                    <span className="text-xs font-black text-slate-900">S/ {b.revenueToday.toFixed(2)}</span>
+                    <span className="text-xs font-black text-slate-900">S/ {Number(b.revenueToday).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -503,7 +478,6 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           </div>
         </Card>
 
-        {/* Live Stream de Eventos en Tiempo Real */}
         <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4">
           <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
             <div>
@@ -511,7 +485,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                 <Radio className="w-4 h-4 shrink-0 text-emerald-600 animate-pulse" />
                 <span>Live Feed de la Red</span>
               </h2>
-              <p className="text-xs text-slate-500">Transacciones e ingresos en vivo.</p>
+              <p className="text-xs text-slate-500">Eventos reales de <code className="bg-slate-100 px-1 rounded">GET /audit/logs</code>.</p>
             </div>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
           </div>

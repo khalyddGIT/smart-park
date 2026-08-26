@@ -1,53 +1,104 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { ShieldCheck, ShieldAlert, Radio, Server, RefreshCw, CheckCircle2, AlertTriangle, ArrowRight, Zap, Database, Activity, Cpu } from 'lucide-react';
+import { ShieldCheck, Radio, Server, RefreshCw, CheckCircle2, AlertTriangle, ArrowRight, Zap, Database, Activity, Cpu } from 'lucide-react';
+import api from '../services/api';
 
 export const ResiliencySimModule = () => {
-  const [circuitStatus, setCircuitStatus] = useState('ONLINE'); // 'ONLINE' o 'DEGRADED'
-  const [queueDepth, setQueueDepth] = useState(0);
+  const [diag, setDiag] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [logs, setLogs] = useState([
-    { id: 1, text: 'Cluster RabbitMQ: Broker conectado en amqp://localhost:5672 (Canal Activo).', time: '14:20:00', type: 'info' },
-    { id: 2, text: 'Idempotency Key Verifier: 1,420 transacciones procesadas con hash SHA-256 único.', time: '14:21:15', type: 'success' },
-    { id: 3, text: 'Heartbeat de Gateway Local: Latencia 12ms | Reconciliación en segundo plano activa.', time: '14:22:05', type: 'info' },
+    { id: 1, text: 'Iniciando diagnóstico del sistema...', time: new Date().toLocaleTimeString(), type: 'info' },
   ]);
-  const [latency, setLatency] = useState(14);
 
-  const toggleCircuit = () => {
-    if (circuitStatus === 'ONLINE') {
-      setCircuitStatus('DEGRADED');
-      setLatency(450);
-      setLogs(prev => [
-        { id: Date.now(), text: 'ALERTA DE SISTEMA: Interrupción de Enlace Wan detectada. Activando Modo Edge Autónomo (Circuit Breaker ABIERTO).', time: new Date().toLocaleTimeString(), type: 'alert' },
-        ...prev
-      ]);
-    } else {
-      setCircuitStatus('ONLINE');
-      setLatency(14);
-      setLogs(prev => [
-        { id: Date.now(), text: 'RESTAURACIÓN DE ENLACE: Conexión recuperada. Vaciando cola de reconciliación hacia el clúster central...', time: new Date().toLocaleTimeString(), type: 'success' },
-        { id: Date.now() + 1, text: `Sincronización completa: ${queueDepth} eventos encolados fueron persistidos con éxito.`, time: new Date().toLocaleTimeString(), type: 'info' },
-        ...prev
-      ]);
-      setQueueDepth(0);
+  const fetchDiag = useCallback(async () => {
+    try {
+      const res = await api.get('/diagnostics/status');
+      setDiag(res.data);
+    } catch {
+      setDiag(prev => prev || { overall: 'DEGRADED', circuit_status: 'DEGRADED', db: { ok: false }, redis: { ok: false, detail: 'No disponible' }, broker: { mode: 'desconocido', queue_depth: 0, processed_count: 0 }, websocket: { connections: 0 }, latency_ms: 0, idempotency_rate: 0 });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDiag();
+    const id = setInterval(fetchDiag, 10000);
+    return () => clearInterval(id);
+  }, [fetchDiag]);
+
+  const circuitStatus = diag?.circuit_status || 'ONLINE';
+  const queueDepth = diag?.broker?.queue_depth ?? 0;
+  const latency = diag?.latency_ms ?? 14;
+  const brokerMode = diag?.broker?.mode || 'memoria';
+  const idempotency = diag?.idempotency_rate ?? 100.0;
+  const dbOk = diag?.db?.ok ?? true;
+  const redisOk = diag?.redis?.ok ?? false;
+
+  const toggleCircuit = async () => {
+    setActionLoading(true);
+    try {
+      const res = await api.post('/diagnostics/circuit/toggle');
+      const nxt = res.data.circuit_status;
+      await fetchDiag();
+      if (nxt === 'DEGRADED') {
+        setLogs(prev => [
+          { id: Date.now(), text: 'ALERTA: Circuit breaker ABIERTO (persistido en Redis 24h). Entrada en modo degradado.', time: new Date().toLocaleTimeString(), type: 'alert' },
+          ...prev
+        ]);
+      } else {
+        setLogs(prev => [
+          { id: Date.now(), text: 'RESTAURACIÓN: Circuit breaker CERRADO. Sincronización con clúster central reanudada.', time: new Date().toLocaleTimeString(), type: 'success' },
+          ...prev
+        ]);
+      }
+    } catch {
+      setLogs(prev => [{ id: Date.now(), text: 'No se pudo conmutar el circuit breaker (sin conexión al servidor).', time: new Date().toLocaleTimeString(), type: 'alert' }, ...prev]);
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const dispatchEvent = () => {
-    const eventId = 'EVT-' + Math.floor(100000 + Math.random() * 900000);
-    if (circuitStatus === 'DEGRADED') {
-      setQueueDepth(prev => prev + 1);
-      setLogs(prev => [
-        { id: Date.now(), text: `Transacción [${eventId}] retenida en Buffer Local Seguro (IndexedDB/Cache Edge). Pendiente de ACK central.`, time: new Date().toLocaleTimeString(), type: 'warn' },
-        ...prev
-      ]);
-    } else {
-      setLogs(prev => [
-        { id: Date.now(), text: `Transacción [${eventId}] procesada y confirmada en tiempo real por el clúster central (ACK 200).`, time: new Date().toLocaleTimeString(), type: 'success' },
-        ...prev
-      ]);
+  const dispatchEvent = async () => {
+    setActionLoading(true);
+    try {
+      const res = await api.post('/diagnostics/test-event');
+      const eid = res.data.event_id || 'EVT-?';
+      const via = res.data.via || 'desconocido';
+      if (circuitStatus === 'DEGRADED') {
+        setLogs(prev => [
+          { id: Date.now(), text: `Transacción [${eid}] encolada en broker ${via} (circuito DEGRADED). Pendiente de ACK central.`, time: new Date().toLocaleTimeString(), type: 'warn' },
+          ...prev
+        ]);
+      } else {
+        setLogs(prev => [
+          { id: Date.now(), text: `Transacción [${eid}] encolada vía ${via} y confirmada por el broker central.`, time: new Date().toLocaleTimeString(), type: 'success' },
+          ...prev
+        ]);
+      }
+      await fetchDiag();
+    } catch {
+      const eid = 'EVT-' + Math.floor(100000 + Math.random() * 900000);
+      if (circuitStatus === 'DEGRADED') {
+        setLogs(prev => [{ id: Date.now(), text: `Transacción [${eid}] retenida localmente (circuito DEGRADED, sin broker).`, time: new Date().toLocaleTimeString(), type: 'warn' }, ...prev]);
+      } else {
+        setLogs(prev => [{ id: Date.now(), text: `Transacción [${eid}] procesada localmente (fallback sin broker).`, time: new Date().toLocaleTimeString(), type: 'success' }, ...prev]);
+      }
+    } finally {
+      setActionLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-12 text-center">
+        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+        <p className="text-xs text-slate-500 mt-2">Cargando diagnóstico en vivo...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -59,12 +110,18 @@ export const ResiliencySimModule = () => {
             <span>Diagnóstico de Conectividad y Servicios</span>
           </h1>
           <p className="text-xs text-slate-500">
-            Monitoreo del estado de conexión, sincronización y respaldo de operaciones.
+            Estado real del servidor, base de datos, Redis y broker. Sin simulación.
+            <span className={`ml-2 font-bold ${brokerMode === 'redis' ? 'text-emerald-600' : 'text-amber-600'}`}>Broker: {brokerMode}</span>
+            <span className="ml-2">· WS: {diag?.websocket?.connections ?? 0} conectados</span>
           </p>
         </div>
         <div className="flex items-center space-x-3">
           <span className={`text-xs font-bold ${circuitStatus === 'ONLINE' ? 'text-emerald-600' : 'text-rose-600'}`}>
             ● {circuitStatus === 'ONLINE' ? 'Servicio En Línea' : 'Modo Desconectado'}
+          </span>
+          {!dbOk && <span className="text-xs font-bold text-rose-600 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> DB caída</span>}
+          <span className={`text-[10px] px-2 py-1 rounded-lg border font-mono ${redisOk ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+            Redis: {redisOk ? `${diag?.redis?.latency_ms ?? 0}ms` : (diag?.redis?.detail || 'degradado')}
           </span>
         </div>
       </div>
@@ -75,12 +132,12 @@ export const ResiliencySimModule = () => {
         <Card className="p-5 border-slate-200 shadow-sm bg-white">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold uppercase text-slate-400">Estado del Servidor</span>
-            <Zap className={`w-4 h-4 ${circuitStatus === 'ONLINE' ? 'text-emerald-500' : 'text-rose-500'}`} />
+            <Zap className={`w-4 h-4 ${circuitStatus === 'ONLINE' && dbOk ? 'text-emerald-500' : 'text-rose-500'}`} />
           </div>
-          <p className={`text-xl font-black ${circuitStatus === 'ONLINE' ? 'text-emerald-700' : 'text-rose-600'}`}>
-            {circuitStatus === 'ONLINE' ? 'Operativo' : 'Desconectado'}
+          <p className={`text-xl font-black ${circuitStatus === 'ONLINE' && dbOk ? 'text-emerald-700' : 'text-rose-600'}`}>
+            {circuitStatus === 'ONLINE' && dbOk ? 'Operativo' : 'Degradado'}
           </p>
-          <span className="text-[10px] text-slate-500 mt-1 block">Comunicación con la base central</span>
+          <span className="text-[10px] text-slate-500 mt-1 block">DB: {dbOk ? 'conectada' : 'no disponible'} · {diag?.db?.latency_ms ?? '-'}ms</span>
         </Card>
 
         <Card className="p-5 border-slate-200 shadow-sm bg-white">
@@ -89,7 +146,7 @@ export const ResiliencySimModule = () => {
             <Database className="w-4 h-4 text-teal-600" />
           </div>
           <p className="text-xl font-black font-mono text-slate-900">{queueDepth}</p>
-          <span className="text-[10px] text-slate-500 mt-1 block">Registros guardados en cola local</span>
+          <span className="text-[10px] text-slate-500 mt-1 block">En cola broker ({brokerMode}) · {diag?.broker?.processed_count ?? 0} procesados</span>
         </Card>
 
 
@@ -99,7 +156,7 @@ export const ResiliencySimModule = () => {
             <Activity className="w-4 h-4 text-indigo-600" />
           </div>
           <p className="text-xl font-black font-mono text-indigo-700">{latency} ms</p>
-          <span className="text-[10px] text-slate-500 mt-1 block">Tiempo de ida y vuelta (RTT)</span>
+          <span className="text-[10px] text-slate-500 mt-1 block">DB {diag?.db?.latency_ms ?? '-'}ms · Redis {diag?.redis?.latency_ms ?? '-'}ms</span>
         </Card>
 
         <Card className="p-5 border-slate-200 shadow-sm bg-white">
@@ -107,8 +164,8 @@ export const ResiliencySimModule = () => {
             <span className="text-[10px] font-black uppercase text-slate-400">Tasa de Idempotencia</span>
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-xl font-black font-mono text-emerald-600">100.0%</p>
-          <span className="text-[10px] text-slate-500 mt-1 block">Prevención de duplicidad de transacciones</span>
+          <p className="text-xl font-black font-mono text-emerald-600">{Number(idempotency).toFixed(1)}%</p>
+          <span className="text-[10px] text-slate-500 mt-1 block">Deduplicación por event_id en {brokerMode}</span>
         </Card>
       </div>
 
@@ -118,22 +175,24 @@ export const ResiliencySimModule = () => {
           <Card className="p-6 border-slate-200 shadow-sm bg-white space-y-4">
             <h2 className="text-base font-extrabold text-slate-900">Control de Contingencia de Red</h2>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Permite auditar el comportamiento del sistema cuando se produce una desconexión en garita o sobrecarga de tráfico.
+              El circuit breaker real está persistido en Redis (<code className="bg-slate-100 px-1 rounded">diagnostics:circuit</code> 24h). Sin Redis, el toggle es solo local.
             </p>
 
             <div className="space-y-3 pt-2">
               <Button
                 onClick={toggleCircuit}
+                disabled={actionLoading}
                 className={`w-full font-black text-xs py-5 ${
                   circuitStatus === 'ONLINE' ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                 }`}
               >
-                <RefreshCw className="w-4 h-4 mr-1.5" />
+                <RefreshCw className={`w-4 h-4 mr-1.5 ${actionLoading ? 'animate-spin' : ''}`} />
                 <span>{circuitStatus === 'ONLINE' ? 'Forzar Corte de Conectividad WAN' : 'Restablecer Conexión Central'}</span>
               </Button>
 
               <Button
                 onClick={dispatchEvent}
+                disabled={actionLoading}
                 variant="outline"
                 className="w-full font-bold text-xs py-5 border-slate-300 text-slate-700 hover:bg-slate-50"
               >
@@ -144,9 +203,9 @@ export const ResiliencySimModule = () => {
 
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-1.5 text-slate-600">
               <p className="font-bold text-slate-900">Comportamiento en Estado Degradado:</p>
-              <p>1. La garita no interrumpe el paso vehicular.</p>
-              <p>2. Los eventos se almacenan cifrados en el buffer local.</p>
-              <p>3. Al reanudar el enlace, se ejecutan reintentos con backoff exponencial.</p>
+              <p>1. La garita no interrumpe el paso vehicular (fail-open).</p>
+              <p>2. Los eventos se encolan en Redis (o memoria si Redis cae).</p>
+              <p>3. Al reanudar, el broker drena con idempotencia por event_id.</p>
             </div>
           </Card>
         </div>
@@ -158,8 +217,11 @@ export const ResiliencySimModule = () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-300 flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-emerald-400" />
-                  <span>Registro de Eventos y Auditoría</span>
+                  <span>Registro de Eventos y Auditoría (tiempo real)</span>
                 </h2>
+                <button onClick={fetchDiag} className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1">
+                  <RefreshCw className="w-3 h-3" /> Actualizar
+                </button>
               </div>
 
 

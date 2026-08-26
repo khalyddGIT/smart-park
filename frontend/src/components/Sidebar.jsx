@@ -51,9 +51,8 @@ const SECTIONS_BY_ROLE = {
         { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
         { id: 'staff', label: 'Personal', shortLabel: 'Personal', icon: Users },
         { id: 'reports', label: 'Reportes', shortLabel: 'Reportes', icon: BarChart3 },
-        { id: 'audit', label: 'Accesos', shortLabel: 'Accesos', icon: ShieldCheck },
+        { id: 'audit', label: 'Auditoría Local', shortLabel: 'Auditoría', icon: ShieldCheck },
         { id: 'reviews', label: 'Reseñas', shortLabel: 'Reseñas', icon: Star },
-        { id: 'resiliency', label: 'Diagnóstico', shortLabel: 'Servidor', icon: Radio },
       ]
     }
   ],

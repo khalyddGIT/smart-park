@@ -178,6 +178,8 @@ app.include_router(reviews.router, prefix=settings.API_V1_STR)
 app.include_router(incidents.router, prefix=settings.API_V1_STR)
 app.include_router(payments.router, prefix=settings.API_V1_STR)
 app.include_router(finances.router, prefix=settings.API_V1_STR)
+from app.api.v1 import diagnostics as diagnostics_router
+app.include_router(diagnostics_router.router, prefix=settings.API_V1_STR)
 
 # Canal WebSocket en tiempo real (mismo origen, sin servicio extra)
 @app.websocket("/api/v1/ws")

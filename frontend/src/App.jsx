@@ -69,7 +69,7 @@ export const App = () => {
   useEffect(() => {
     const validTabsByRole = {
       user: ['dashboard', 'reservations', 'profile', 'vehicles', 'payments', 'incidents', 'history', 'reviews'],
-      local: ['dashboard', 'editor', 'reservations', 'profile', 'anpr', 'garita', 'incidents', 'staff', 'reports', 'audit', 'reviews', 'resiliency'],
+      local: ['dashboard', 'editor', 'reservations', 'profile', 'anpr', 'garita', 'incidents', 'staff', 'reports', 'audit', 'reviews'],
       platform: ['dashboard', 'profile', 'finances', 'settings', 'affiliates', 'reservations', 'analytics', 'incidents', 'audit', 'users', 'staff', 'reviews', 'resiliency']
     };
     if (!validTabsByRole[role]?.includes(activeTab)) {

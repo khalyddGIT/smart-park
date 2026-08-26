@@ -46,6 +46,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
     establishments, 
     reservations, 
     createReservation, 
+    bookingError,
     updateReservationStatus, 
     cancelReservation, 
     completeReservation 
@@ -137,8 +138,8 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
     .filter(r => new Date(r.startTime).toDateString() === new Date().toDateString())
     .reduce((acc, r) => acc + (Number(r.cost) || 0), 0);
 
-  // Manejar creación de reserva manual
-  const handleCreateSubmit = (e) => {
+  // Manejar creación de reserva manual — 100% servidor, sin optimismo
+  const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!plate.trim()) {
       alert('Por favor ingresa la placa del vehículo.');
@@ -148,12 +149,17 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       alert('Por favor selecciona un cajón disponible.');
       return;
     }
+    if (String(activeEstablishment?.id || '').startsWith('EST-')) {
+      setFeedbackMessage('✕ No se puede emitir ticket: esta sede aún es demo y no está registrada en el servidor. Crea la sede primero.');
+      setTimeout(() => setFeedbackMessage(''), 5000);
+      return;
+    }
 
     const rate = Number(activeEstablishment?.rate || 5.0);
     const totalCost = rate * Number(hours);
     const now = new Date();
 
-    const newRes = createReservation({
+    const newRes = await createReservation({
       parkingId: activeEstablishment.id,
       parkingName: activeEstablishment.name,
       slotCode: selectedSlotCode,
@@ -167,19 +173,20 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       expiresAt: new Date(now.getTime() + Number(hours) * 60 * 60 * 1000).toISOString()
     });
 
+    if (!newRes) {
+      // El error detallado ya está en bookingError (cajón ocupado, validación, etc.)
+      setFeedbackMessage(`✕ No se pudo emitir el ticket. ${bookingError || 'Verifica que el cajón esté libre y la sede sea real.'}`);
+      setTimeout(() => setFeedbackMessage(''), 5000);
+      return;
+    }
+
     setShowCreateModal(false);
     setPlate('');
     setCustomerName('');
     setCustomerPhone('');
     setSelectedSlotCode('');
 
-    if (!newRes) {
-      setFeedbackMessage('✕ No se pudo emitir el ticket: la cochera o el cajón no están registrados en el servidor.');
-      setTimeout(() => setFeedbackMessage(''), 5000);
-      return;
-    }
-
-    // Abrir de inmediato el pase digital QR
+    // Pase real con code/qr_code/total_cost del servidor
     setSelectedReservationForPass(newRes);
     setShowPassModal(true);
 

@@ -890,76 +890,55 @@ export const EstablishmentProvider = ({ children }) => {
     }
   };
 
-  // Crear nueva reserva: POST real con parking_id y slot_id numéricos reales.
-  // Devuelve el objeto optimista para no romper a quienes llaman de forma síncrona;
-  // al confirmar el servidor se sincroniza el estado desde my-reservations.
-  const createReservation = (bookingData) => {
+  // Crear nueva reserva: POST real. Solo retorna éxito tras 201 del servidor (sin optimismo local).
+  const createReservation = async (bookingData) => {
     const authed = !!getAccessToken();
     const parkingIdNum = Number(bookingData?.parkingId);
     let slotIdNum = Number(bookingData?.slotId);
 
-    // Resolver slotId desde slotCode (flujo de ventanilla emite por código de cajón, no por id)
     if (isNaN(slotIdNum) && bookingData?.slotCode) {
       const est = establishments.find(e => Number(e.id) === Number(parkingIdNum) || String(e.id) === String(bookingData.parkingId));
       const slot = (est?.elements || []).find(el => el.type === 'slot' && String(el.code) === String(bookingData.slotCode));
       if (slot) slotIdNum = Number(slot.id);
     }
 
-    // IDs locales "EST-*" o cajón sin id real: bloquear en lugar de fingir reserva
     if (!authed || isNaN(parkingIdNum) || isNaN(slotIdNum)) {
-      console.warn('Reserva bloqueada: esta cochera aún no está registrada en el servidor o falta seleccionar un cajón válido.');
+      const msg = 'Esta cochera aún no está registrada en el servidor o falta seleccionar un cajón válido.';
+      console.warn('Reserva bloqueada: ' + msg);
+      setBookingError(msg);
       return null;
     }
 
-    const code = bookingData.code || `RSV-${Math.floor(1000 + Math.random() * 9000)}`;
-    const token = bookingData.token || `SPK-AYC${code.replace('RSV-', '')}-7B2F9A`;
-    const tempId = Date.now();
-    const newReservation = {
-      id: tempId,
-      pendingSync: true,
-      code,
-      token,
-      parkingId: bookingData.parkingId,
-      parkingName: bookingData.parkingName || bookingData.parking || 'Smart Park Plaza Mayor',
-      parking: bookingData.parkingName || bookingData.parking || 'Smart Park Plaza Mayor',
-      slotId: slotIdNum,
-      slot: bookingData.slotCode || bookingData.slot || 'A-01',
-      customerName: bookingData.customerName || 'Conductor Registrado',
-      customerPhone: bookingData.customerPhone || '+51 966 000 000',
-      plate: (bookingData.plate || 'ABC-123').toUpperCase(),
-      cost: Number(bookingData.totalCost || bookingData.cost || 10.0),
-      hours: Number(bookingData.hours || 2),
-      ratePerHour: Number(bookingData.rate || 5.0),
-      status: 'SCHEDULED',
-      startTime: bookingData.startTime instanceof Date ? bookingData.startTime.toISOString() : (bookingData.startTime || new Date().toISOString()),
-      expiresAt: bookingData.expiresAt instanceof Date ? bookingData.expiresAt.toISOString() : (bookingData.expiresAt || new Date(Date.now() + (Number(bookingData.hours || 2)) * 60 * 60 * 1000).toISOString()),
-      createdAt: new Date().toISOString()
-    };
-    occupySlot(newReservation.parkingId, newReservation.slot, newReservation.plate);
-    saveReservations([newReservation, ...reservations]);
+    // Validar EST-* explícitamente (nunca persistible)
+    if (String(bookingData.parkingId).startsWith('EST-')) {
+      const msg = 'No se puede emitir ticket sobre una sede demo (EST-*). Registra la sede en el servidor primero.';
+      setBookingError(msg);
+      return null;
+    }
 
-    // Persistir en el servidor con los IDs reales; luego la lista se reconstruye desde la API
-    (async () => {
-      try {
-        await createReservationApi({
-          parking_id: parkingIdNum,
-          slot_id: slotIdNum,
-          license_plate: newReservation.plate,
-          start_time: newReservation.startTime,
-          end_time: newReservation.expiresAt
-        });
-        setBookingError(null);
-        await refreshMyReservations();
-      } catch (e) {
-        // Rollback del registro optimista si el servidor rechaza (cajón ocupado, etc.)
-        console.error('Error creando reserva en el servidor', e?.response?.data || e);
-        setBookingError(e?.response?.data?.detail || 'No se pudo registrar la reserva en el servidor.');
-        setReservations(prev => prev.filter(r => r.id !== tempId));
-        freeSlot(newReservation.parkingId, newReservation.slot);
-      }
-    })();
+    const plate = (bookingData.plate || 'ABC-123').toUpperCase();
+    const startISO = bookingData.startTime instanceof Date ? bookingData.startTime.toISOString() : (bookingData.startTime || new Date().toISOString());
+    const endISO = bookingData.expiresAt instanceof Date ? bookingData.expiresAt.toISOString() : (bookingData.expiresAt || new Date(Date.now() + (Number(bookingData.hours || 2)) * 60 * 60 * 1000).toISOString());
 
-    return newReservation;
+    try {
+      const serverRes = await createReservationApi({
+        parking_id: parkingIdNum,
+        slot_id: slotIdNum,
+        license_plate: plate,
+        start_time: startISO,
+        end_time: endISO
+      });
+      setBookingError(null);
+      const mapped = mapServerReservation(serverRes);
+      // Refrescar lista completa desde el servidor (fuente de verdad)
+      await refreshMyReservations();
+      return mapped;
+    } catch (e) {
+      const detail = e?.response?.data?.detail || 'No se pudo registrar la reserva en el servidor (cajón ocupado o datos inválidos).';
+      console.error('Error creando reserva en el servidor', e?.response?.data || e);
+      setBookingError(detail);
+      return null;
+    }
   };
 
   // Cancelar reserva: PUT /reservations/{id}/cancel cuando existe en el servidor

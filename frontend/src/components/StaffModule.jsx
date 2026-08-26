@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useEstablishments } from '../context/EstablishmentContext';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -63,6 +64,9 @@ export const StaffModule = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showQuickPassword, setShowQuickPassword] = useState(false);
 
+  const { establishments } = useEstablishments();
+  const defaultParkingId = Number(establishments?.[0]?.id) || 1;
+
   // Estados de formularios
   const [formData, setFormData] = useState({
     full_name: '',
@@ -70,7 +74,7 @@ export const StaffModule = () => {
     position: 'Operador de Garita',
     shift: 'Mañana (07:00 - 15:00)',
     status: 'Activo',
-    parking_id: 1,
+    parking_id: defaultParkingId,
     email: '',
     password: '',
     security_pin: '',
@@ -86,6 +90,13 @@ export const StaffModule = () => {
   });
 
   const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (establishments.length && formData.parking_id === 1) {
+      const firstId = Number(establishments[0].id);
+      if (!isNaN(firstId) && firstId !== 1) setFormData(prev => ({ ...prev, parking_id: firstId }));
+    }
+  }, [establishments]);
 
   const notify = (msg) => {
     setToast(msg);
@@ -713,6 +724,21 @@ export const StaffModule = () => {
                     <option value="Inactivo">Inactivo</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Sede / Cochera Asignada *</label>
+                <select
+                  value={formData.parking_id}
+                  onChange={(e) => setFormData({ ...formData, parking_id: Number(e.target.value) })}
+                  className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white"
+                >
+                  {establishments.map(est => (
+                    <option key={est.id} value={est.id}>
+                      {est.name} — {est.address?.slice(0, 40) || 'Sede'}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

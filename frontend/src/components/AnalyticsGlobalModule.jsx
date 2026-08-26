@@ -69,6 +69,7 @@ export const AnalyticsGlobalModule = () => {
   const [reviews, setReviews] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [revenueScopeNote, setRevenueScopeNote] = useState('');
+  const [financesSummary, setFinancesSummary] = useState(null);
   const [floorOccupancy, setFloorOccupancy] = useState({}); // parking_id -> { total, free, occupied }
 
   const notify = (msg) => {
@@ -82,6 +83,18 @@ export const AnalyticsGlobalModule = () => {
 
     const fetchAll = async () => {
       setLoading(true);
+      // Finanzas reales para platform (corrige limitación my-reservations)
+      if (role === 'platform') {
+        try {
+          const f = await api.get('/finances/summary');
+          if (!cancelled && f.data) {
+            setFinancesSummary(f.data);
+            setRevenueScopeNote('Datos reales desde GET /finances/summary (global, excluye canceladas, 12% comisión).');
+          }
+        } catch {}
+      } else {
+        setFinancesSummary(null);
+      }
       const results = await Promise.allSettled([
         api.get('/parkings'),
         api.get('/reviews'),
@@ -198,12 +211,16 @@ export const AnalyticsGlobalModule = () => {
     return reservations;
   }, [reservations, timeRange]);
 
-  // Recaudación: suma total_cost de reservas no canceladas dentro del rango
+  // Recaudación: para platform usa /finances/summary (global real), sino suma my-reservations
   const revenueStats = useMemo(() => {
+    if (role === 'platform' && financesSummary?.totales) {
+      const t = financesSummary.totales;
+      return { total: Number(t.recaudacion_bruta_global || 0), count: Number(t.total_reservas_global || 0), cancelled: 0, netCommission: Number(t.comision_liquida_global || 0) };
+    }
     const valid = filteredReservations.filter((r) => r.status !== 'cancelled');
     const total = valid.reduce((acc, r) => acc + (Number(r.total_cost) || 0), 0);
     return { total, count: valid.length, cancelled: filteredReservations.length - valid.length };
-  }, [filteredReservations]);
+  }, [filteredReservations, financesSummary, role]);
 
   // Ocupación por sede: prioriza floor-plan (conteo real de slots), fallback a available_slots/total_capacity
   const ocupacionPorSede = useMemo(() => {
@@ -236,8 +253,16 @@ export const AnalyticsGlobalModule = () => {
     });
   }, [parkings, floorOccupancy]);
 
-  // Recaudación por sede (barras): agrupa filteredReservations por parking_id
+  // Recaudación por sede (barras): platform usa /finances/summary real, resto agrupa my-reservations
   const recaudacionPorSede = useMemo(() => {
+    if (role === 'platform' && financesSummary?.por_sede?.length) {
+      return financesSummary.por_sede.map(s => ({
+        sede: s.parking_name || `Sede #${s.parking_id}`,
+        recaudacion: Number(s.recaudacion_bruta || 0),
+        estancias: Number(s.total_reservas || 0),
+        parking_id: s.parking_id,
+      }));
+    }
     const map = new Map();
     parkings.forEach((p) => map.set(p.id, { sede: p.name, recaudacion: 0, estancias: 0, parking_id: p.id }));
     filteredReservations.forEach((r) => {
@@ -247,12 +272,11 @@ export const AnalyticsGlobalModule = () => {
         entry.recaudacion += Number(r.total_cost) || 0;
         entry.estancias += 1;
       } else {
-        // Reserva de parking no listado (honesto: crea fila)
         map.set(r.parking_id, { sede: `Cochera #${r.parking_id}`, recaudacion: Number(r.total_cost) || 0, estancias: 1, parking_id: r.parking_id });
       }
     });
     return Array.from(map.values());
-  }, [parkings, filteredReservations]);
+  }, [parkings, filteredReservations, financesSummary, role]);
 
   // Reseñas: promedio y distribución por estrellas
   const reviewStats = useMemo(() => {

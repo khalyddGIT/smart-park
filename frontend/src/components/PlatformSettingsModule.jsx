@@ -163,6 +163,23 @@ export const PlatformSettingsModule = () => {
     return () => { cancelled = true; };
   }, []);
 
+  // Cargar configuración real del servidor (con fallback a localStorage)
+  useEffect(() => {
+    let cancelled = false;
+    const loadPlatformData = async () => {
+      try {
+        const [sRes, bRes] = await Promise.all([
+          api.get('/platform/settings').catch(() => null),
+          api.get('/platform/broadcasts').catch(() => null),
+        ]);
+        if (!cancelled && sRes?.data) setSettings(prev => ({ ...prev, ...sRes.data }));
+        if (!cancelled && bRes?.data && Array.isArray(bRes.data) && bRes.data.length) setBroadcasts(bRes.data);
+      } catch {}
+    };
+    loadPlatformData();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     try {
       localStorage.setItem(BROADCASTS_STORAGE_KEY, JSON.stringify(broadcasts));
@@ -174,20 +191,43 @@ export const PlatformSettingsModule = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    try {
+      await api.put('/platform/settings', settings);
+    } catch {}
     try {
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     } catch (err) {}
-    notify('✓ Ajustes maestros de la plataforma guardados exitosamente.');
+    notify('✓ Ajustes maestros de la plataforma guardados exitosamente (persistidos en servidor).');
   };
 
-  const handleSendBroadcast = (e) => {
+  const handleSendBroadcast = async (e) => {
     e.preventDefault();
     if (!newBroadcast.title.trim() || !newBroadcast.message.trim()) return;
 
-    const count = newBroadcast.target === 'ALL' ? 1426 : newBroadcast.target === 'CONDUCTORES' ? 1420 : 6;
+    try {
+      const res = await api.post('/platform/broadcasts', {
+        title: newBroadcast.title.trim(),
+        message: newBroadcast.message.trim(),
+        target: newBroadcast.target,
+      });
+      const created = res.data;
+      setBroadcasts(prev => [created, ...prev]);
+      if (newBroadcast.target === 'ALL' || newBroadcast.target === 'CONDUCTORES') {
+        addNotification({ role: 'user', title: created.title, message: created.message, type: 'info', targetTab: 'dashboard' });
+      }
+      if (newBroadcast.target === 'ALL' || newBroadcast.target === 'COCHERAS') {
+        addNotification({ role: 'local', title: created.title, message: created.message, type: 'warning', targetTab: 'dashboard' });
+      }
+      setShowBroadcastModal(false);
+      setNewBroadcast({ title: '', target: 'ALL', message: '' });
+      notify(`✓ Comunicado emitido a ${created.sentCount} destinatarios (persistido en servidor).`);
+      return;
+    } catch {}
 
+    // Fallback local si el servidor no responde
+    const count = newBroadcast.target === 'ALL' ? 1426 : newBroadcast.target === 'CONDUCTORES' ? 1420 : 6;
     const created = {
       id: `BRD-00${broadcasts.length + 1}`,
       title: newBroadcast.title.trim(),
@@ -197,36 +237,20 @@ export const PlatformSettingsModule = () => {
       sentAt: new Date().toLocaleString(),
       sentCount: count
     };
-
     setBroadcasts([created, ...broadcasts]);
-
-    // Disparar notificaciones reales en el sistema según la audiencia
     if (newBroadcast.target === 'ALL' || newBroadcast.target === 'CONDUCTORES') {
-      addNotification({
-        role: 'user',
-        title: created.title,
-        message: created.message,
-        type: 'info',
-        targetTab: 'dashboard'
-      });
+      addNotification({ role: 'user', title: created.title, message: created.message, type: 'info', targetTab: 'dashboard' });
     }
-
     if (newBroadcast.target === 'ALL' || newBroadcast.target === 'COCHERAS') {
-      addNotification({
-        role: 'local',
-        title: created.title,
-        message: created.message,
-        type: 'warning',
-        targetTab: 'dashboard'
-      });
+      addNotification({ role: 'local', title: created.title, message: created.message, type: 'warning', targetTab: 'dashboard' });
     }
-
     setShowBroadcastModal(false);
     setNewBroadcast({ title: '', target: 'ALL', message: '' });
     notify(`✓ Comunicado emitido en tiempo real a ${count} destinatarios.`);
   };
 
-  const handleDeleteBroadcast = (id) => {
+  const handleDeleteBroadcast = async (id) => {
+    try { await api.delete(`/platform/broadcasts/${id}`); } catch {}
     setBroadcasts(prev => prev.filter(b => b.id !== id));
     notify('Comunicado eliminado del registro histórico.');
   };

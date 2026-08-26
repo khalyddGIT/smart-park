@@ -26,7 +26,8 @@ import {
   UserX,
   Radio,
   BadgeCheck,
-  Building2
+  Building2,
+  Lightbulb
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -787,8 +788,9 @@ export const StaffModule = () => {
                 />
               </div>
 
-              <p className="text-[10px] text-slate-400 leading-relaxed pt-1">
-                💡 El trabajador podrá acceder al sistema ingresando su correo y contraseña en la pantalla de <strong>Iniciar Sesión</strong>.
+              <p className="text-[10px] text-slate-400 leading-relaxed pt-1 flex items-start gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <span>El trabajador podrá acceder al sistema ingresando su correo y contraseña en la pantalla de <strong>Iniciar Sesión</strong>.</span>
               </p>
             </div>
 

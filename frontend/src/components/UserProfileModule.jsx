@@ -229,7 +229,10 @@ export const UserProfileModule = ({ onBack }) => {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-bold text-slate-700">Documento de Identidad (DNI / CE) *</label>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">🔒 Protegido</span>
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5 shrink-0" />
+                        <span>Protegido</span>
+                      </span>
                     </div>
                     <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed opacity-80">
                       <ShieldCheck className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
@@ -249,7 +252,10 @@ export const UserProfileModule = ({ onBack }) => {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-bold text-slate-700">Correo Electrónico *</label>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">🔒 Protegido</span>
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5 shrink-0" />
+                        <span>Protegido</span>
+                      </span>
                     </div>
                     <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed opacity-80">
                       <Mail className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
@@ -296,7 +302,10 @@ export const UserProfileModule = ({ onBack }) => {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-bold text-slate-700">Placa Vehicular Principal</label>
-                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">🔒 Gestionar en Vehículos</span>
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5 shrink-0" />
+                        <span>Gestionar en Vehículos</span>
+                      </span>
                     </div>
                     <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed opacity-80">
                       <Car className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />

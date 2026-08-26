@@ -41,7 +41,17 @@ import {
   Scaling,
   Expand,
   LogIn,
-  LogOut
+  LogOut,
+  Lock,
+  Info,
+  Lightbulb,
+  Camera,
+  CreditCard,
+  ArrowUp,
+  ArrowDown,
+  ArrowRight,
+  ArrowUpDown,
+  ArrowLeftRight
 } from 'lucide-react';
 
 import { Card } from './ui/card';
@@ -1438,8 +1448,11 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     </div>
 
                     {/* Sensor / Cámara LPR */}
-                    <div className="w-full flex items-center justify-between text-[7px] font-mono font-bold text-slate-300 bg-slate-900/80 px-1 py-0.5 rounded border border-slate-800">
-                      <span>{isEntry ? '📷 ANPR' : '💳 POS'}</span>
+                    <div className="w-full flex items-center justify-between text-[7px] font-mono font-bold text-slate-300 bg-slate-900/80 px-1.5 py-0.5 rounded border border-slate-800">
+                      <span className="flex items-center gap-1">
+                        {isEntry ? <Camera className="w-2.5 h-2.5 text-emerald-400" /> : <CreditCard className="w-2.5 h-2.5 text-rose-400" />}
+                        <span>{isEntry ? 'ANPR' : 'POS'}</span>
+                      </span>
                       <span className="text-amber-300">AUTO</span>
                     </div>
 
@@ -1739,12 +1752,13 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     <>
                       <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
                         <span className="text-slate-500 font-medium">Estado:</span>
-                        <span className={`font-bold px-2.5 py-0.5 rounded-lg text-[11px] ${
+                        <span className={`font-bold px-2.5 py-0.5 rounded-lg text-[11px] flex items-center gap-1.5 ${
                           selectedElement.status === 'occupied'
                             ? 'bg-rose-100 text-rose-800 border border-rose-200'
                             : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                         }`}>
-                          {selectedElement.status === 'occupied' ? '🔴 OCUPADO' : '🟢 LIBRE'}
+                          <span className={`w-2 h-2 rounded-full ${selectedElement.status === 'occupied' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                          <span>{selectedElement.status === 'occupied' ? 'OCUPADO' : 'LIBRE'}</span>
                         </span>
                       </div>
 
@@ -1785,8 +1799,8 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 </div>
 
                 {/* Aviso informativo de edición */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] text-slate-600 flex items-start gap-2">
-                  <span className="text-base shrink-0">🔒</span>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] text-slate-600 flex items-start gap-2.5">
+                  <Lock className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
                   <p className="leading-snug">
                     Estás en modo de visualización. Para modificar dimensiones, rotación, nombres o reubicar plazas, hazlo desde <strong>Editar Plano</strong>.
                   </p>
@@ -1828,7 +1842,10 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
                 {/* Nota informativa */}
                 <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5 text-[11px] text-slate-600">
-                  <span className="font-bold text-slate-800 block text-xs">ℹ️ Modo Solo Lectura</span>
+                  <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                    <Info className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Modo Solo Lectura</span>
+                  </span>
                   <p className="text-slate-500 leading-relaxed">
                     En esta vista puedes explorar la distribución y estado de los espacios sin riesgo de modificarlos. Las ediciones se realizan en <strong>Editar Plano</strong>.
                   </p>
@@ -2118,23 +2135,23 @@ export const InteractiveFloorPlanDrawingStudio = ({
               <div className="space-y-1.5 pt-2 border-t border-slate-100">
                 <label className="text-[11px] font-bold uppercase text-slate-400 font-tech block">Alinear en el Lote</label>
                 <div className="grid grid-cols-3 gap-1 text-[10px] font-bold">
-                  <Button onClick={() => handleAlignSelected('top')} variant="outline" size="sm" className="h-7 text-[10px]">
-                    ⬆️ Arriba
+                  <Button onClick={() => handleAlignSelected('top')} variant="outline" size="sm" className="h-7 text-[10px] gap-1">
+                    <ArrowUp className="w-3 h-3" /> Arriba
                   </Button>
-                  <Button onClick={() => handleAlignSelected('center-v')} variant="outline" size="sm" className="h-7 text-[10px]">
-                    ↕️ Centro
+                  <Button onClick={() => handleAlignSelected('center-v')} variant="outline" size="sm" className="h-7 text-[10px] gap-1">
+                    <ArrowUpDown className="w-3 h-3" /> Centro
                   </Button>
-                  <Button onClick={() => handleAlignSelected('bottom')} variant="outline" size="sm" className="h-7 text-[10px]">
-                    ⬇️ Abajo
+                  <Button onClick={() => handleAlignSelected('bottom')} variant="outline" size="sm" className="h-7 text-[10px] gap-1">
+                    <ArrowDown className="w-3 h-3" /> Abajo
                   </Button>
-                  <Button onClick={() => handleAlignSelected('left')} variant="outline" size="sm" className="h-7 text-[10px]">
-                    ⬅️ Izq.
+                  <Button onClick={() => handleAlignSelected('left')} variant="outline" size="sm" className="h-7 text-[10px] gap-1">
+                    <ArrowLeft className="w-3 h-3" /> Izq.
                   </Button>
-                  <Button onClick={() => handleAlignSelected('center-h')} variant="outline" size="sm" className="h-7 text-[10px]">
-                    ↔️ Centro
+                  <Button onClick={() => handleAlignSelected('center-h')} variant="outline" size="sm" className="h-7 text-[10px] gap-1">
+                    <ArrowLeftRight className="w-3 h-3" /> Centro
                   </Button>
-                  <Button onClick={() => handleAlignSelected('right')} variant="outline" size="sm" className="h-7 text-[10px]">
-                    ➡️ Der.
+                  <Button onClick={() => handleAlignSelected('right')} variant="outline" size="sm" className="h-7 text-[10px] gap-1">
+                    <ArrowRight className="w-3 h-3" /> Der.
                   </Button>
                 </div>
               </div>
@@ -2198,7 +2215,10 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
               {/* Consejos de Edición */}
               <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-[11px] text-slate-600">
-                <span className="font-bold text-slate-800 block text-xs">💡 Ayuda de Edición</span>
+                <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>Ayuda de Edición</span>
+                </span>
                 <ul className="space-y-1 text-slate-500 list-disc list-inside">
                   <li>Haz clic en cualquier elemento para editarlo o cambiar su tamaño.</li>
                   <li>Arrastra libremente para moverlo por el plano.</li>

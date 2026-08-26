@@ -1,18 +1,18 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, useScroll, useSpring, useTransform, useMotionValue, AnimatePresence } from 'framer-motion';
-import { 
-  Search, 
-  MapPin, 
-  Car, 
-  ShieldCheck, 
-  QrCode, 
-  ChevronRight, 
-  Building2, 
-  ArrowRight, 
-  Navigation, 
-  Camera, 
-  CreditCard, 
-  Smartphone, 
+import {
+  Search,
+  MapPin,
+  Car,
+  ShieldCheck,
+  QrCode,
+  ChevronRight,
+  Building2,
+  ArrowRight,
+  Navigation,
+  Camera,
+  CreditCard,
+  Smartphone,
   LogIn,
   Filter,
   Layers,
@@ -187,11 +187,11 @@ const GradientTypewriter = () => {
   );
 };
 
-export const LandingPage = ({ 
-  establishments = [], 
-  onOpenAuth, 
-  onSelectParking, 
-  onOpenTerms 
+export const LandingPage = ({
+  establishments = [],
+  onOpenAuth,
+  onSelectParking,
+  onOpenTerms
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('todos');
@@ -247,7 +247,7 @@ export const LandingPage = ({
   // Filtrado de cocheras
   const filteredParkings = useMemo(() => {
     return establishments.filter((p) => {
-      const matchesSearch = 
+      const matchesSearch =
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.reference && p.reference.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -295,7 +295,7 @@ export const LandingPage = ({
   ];
 
   return (
-    <div 
+    <div
       ref={containerRef}
       style={{
         background: 'linear-gradient(180deg, #F4F9F8 0%, #FBFDFC 35%, #F0F7F6 70%, #E8F4F2 100%)'
@@ -307,19 +307,19 @@ export const LandingPage = ({
           ========================================================================= */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         {/* Orbe 1: Esmeralda Superior */}
-        <motion.div 
+        <motion.div
           style={{ y: smoothBgOrb1 }}
           className="absolute -top-32 -right-32 w-[550px] h-[550px] bg-gradient-to-br from-emerald-400/15 via-teal-300/10 to-transparent rounded-full blur-[140px] transform-gpu will-change-transform"
         />
 
         {/* Orbe 2: Cyan Medio Izquierdo */}
-        <motion.div 
+        <motion.div
           style={{ y: smoothBgOrb2 }}
           className="absolute top-[40%] -left-40 w-[600px] h-[600px] bg-gradient-to-tr from-cyan-400/10 via-emerald-300/10 to-transparent rounded-full blur-[160px] transform-gpu will-change-transform"
         />
 
         {/* Orbe 3: Esmeralda Profundo Inferior */}
-        <motion.div 
+        <motion.div
           style={{ y: smoothBgOrb3 }}
           className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-gradient-to-tl from-[#004D49]/12 via-teal-400/8 to-transparent rounded-full blur-[150px] transform-gpu will-change-transform"
         />
@@ -329,7 +329,7 @@ export const LandingPage = ({
       </div>
 
       {/* Indicador elástico superior de scroll */}
-      <motion.div 
+      <motion.div
         className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-400 to-[#004D49] z-[100] origin-left shadow-[0_0_10px_rgba(16,185,129,0.5)]"
         style={{ scaleX }}
       />
@@ -339,7 +339,7 @@ export const LandingPage = ({
           ========================================================================= */}
       <header className="sticky top-0 z-50 px-3 sm:px-6 lg:px-10 pt-2 sm:pt-3 pb-2 transition-all duration-300">
         <div className="max-w-6xl mx-auto bg-[#002624]/90 backdrop-blur-xl border border-[#005e58]/50 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgba(0,38,36,0.35)] flex items-center justify-between text-white relative">
-          
+
           {/* Logo y Denominación */}
           <BrandLogo className="h-8 sm:h-9 w-auto" dark={true} />
 
@@ -397,22 +397,22 @@ export const LandingPage = ({
               transition={{ duration: 0.2, ease: FLUID_EASE }}
               className="md:hidden mt-2 max-w-6xl mx-auto bg-[#002624]/95 backdrop-blur-xl border border-[#005e58]/50 p-4 rounded-2xl shadow-2xl space-y-2 text-xs font-bold text-emerald-100"
             >
-              <a 
-                href="#mapa" 
+              <a
+                href="#mapa"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition"
               >
                 Directorio de Cocheras
               </a>
-              <a 
-                href="#sistema" 
+              <a
+                href="#sistema"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition"
               >
                 Funcionamiento
               </a>
-              <a 
-                href="#afiliacion" 
+              <a
+                href="#afiliacion"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition"
               >
@@ -435,10 +435,10 @@ export const LandingPage = ({
           2. HERO SECTION CON PROFUNDIDAD Y RESPONSIVE FLUIDO
           ========================================================================= */}
       <section ref={heroRef} className="pt-16 sm:pt-24 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto space-y-10 sm:space-y-12 text-center relative z-10">
-        
-        <motion.div 
-          style={{ 
-            y: smoothHeroHeadlineY, 
+
+        <motion.div
+          style={{
+            y: smoothHeroHeadlineY,
             opacity: heroOpacity,
             scale: smoothHeroScale
           }}
@@ -447,7 +447,7 @@ export const LandingPage = ({
           transition={{ duration: 0.7, ease: FLUID_EASE }}
           className="space-y-5 sm:space-y-6 flex flex-col items-center transform-gpu will-change-transform"
         >
-          
+
           {/* Titular Principal Centrado con Efecto de Tipificación con Gradiente Dinámico */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -478,7 +478,7 @@ export const LandingPage = ({
             transition={{ duration: 0.5, delay: 0.5, ease: FLUID_EASE }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mx-auto pt-4 text-left"
           >
-            
+
             {/* OPCIÓN 1: CONDUCTORES / USUARIOS */}
             <DynamicTiltCard className="h-full">
               <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-emerald-500/30 shadow-xl shadow-emerald-950/5 space-y-4 flex flex-col justify-between h-full group hover:border-emerald-600/60 transition-all duration-300">
@@ -576,7 +576,7 @@ export const LandingPage = ({
           3. DIRECTORIO Y MAPA EN VIVO CON PERSPECTIVA
           ========================================================================= */}
       <CinematicScrollSection id="mapa" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
-        
+
         {/* Encabezado Centrado */}
         <div className="max-w-3xl mx-auto text-center space-y-2 px-2">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
@@ -619,11 +619,10 @@ export const LandingPage = ({
               <button
                 key={cat.id}
                 onClick={() => setCategoryFilter(cat.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer ${
-                  categoryFilter === cat.id
+                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer ${categoryFilter === cat.id
                     ? 'bg-[#004D49] text-white border-[#004D49] shadow-md shadow-[#004D49]/20'
                     : 'bg-white/85 text-[#004D49] border-[#004D49]/15 hover:border-emerald-500/50 hover:bg-white'
-                }`}
+                  }`}
               >
                 {cat.label}
               </button>
@@ -656,7 +655,7 @@ export const LandingPage = ({
           4. CÓMO FUNCIONA — EXPERIENCIA 3D EN FAUX-OS WINDOW
           ========================================================================= */}
       <CinematicScrollSection id="sistema" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8 sm:space-y-10">
-        
+
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
@@ -669,8 +668,8 @@ export const LandingPage = ({
 
         {/* Contenedor Faux-OS Window Chrome de Alta Definición con Inercia 3D */}
         <div ref={mockupSectionRef} style={{ perspective: 1200 }}>
-          <motion.div 
-            style={{ 
+          <motion.div
+            style={{
               rotateX: smoothMockupRotateX,
               scale: smoothMockupScale,
               opacity: mockupOpacity,
@@ -678,7 +677,7 @@ export const LandingPage = ({
             }}
             className="rounded-3xl border border-white/80 bg-white/95 backdrop-blur-xl shadow-[0_24px_60px_-15px_rgba(0,77,73,0.22)] overflow-hidden transition-all duration-300 transform-gpu will-change-transform"
           >
-            
+
             {/* Barra Superior estilo Navegador Móvil Premium */}
             <div className="px-4 sm:px-6 py-3 bg-[#F0F7F6] border-b border-[#D4E8E7] flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -694,10 +693,10 @@ export const LandingPage = ({
 
             {/* Cuerpo de la Experiencia */}
             <div className="p-6 sm:p-10 lg:p-12 grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-white/95">
-              
+
               {/* Pasos a la Izquierda */}
               <div className="space-y-5 md:col-span-1 md:border-r border-slate-200/80 md:pr-8">
-                
+
                 {/* Paso 1 */}
                 <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition space-y-1.5 group">
                   <div className="flex items-center space-x-2">
@@ -747,7 +746,7 @@ export const LandingPage = ({
 
               {/* Ficha Interactiva de Pase Digital en Vivo a la Derecha */}
               <div className="md:col-span-2 bg-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-5">
-                
+
                 <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                   <div className="space-y-1">
                     <h4 className="font-extrabold text-sm sm:text-base text-white">Smart Park Plaza Mayor</h4>
@@ -788,7 +787,7 @@ export const LandingPage = ({
           6. SECCIÓN PROPIETARIOS CON PROFUNDIDAD Y ELEVACIÓN
           ========================================================================= */}
       <CinematicScrollSection id="afiliacion" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 25 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-20px' }}
@@ -797,7 +796,7 @@ export const LandingPage = ({
         >
           {/* Luz ambiental de fondo */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-          
+
           <div className="max-w-2xl space-y-3 px-2 relative z-10">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold tracking-tight text-white">
               Digitalice la operación de <span className="text-emerald-300">su cochera</span>
@@ -835,7 +834,7 @@ export const LandingPage = ({
           7. PREGUNTAS FRECUENTES (FAQ)
           ========================================================================= */}
       <CinematicScrollSection className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-4xl mx-auto space-y-8 sm:space-y-10">
-        
+
         {/* Encabezado Centrado */}
         <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
@@ -848,8 +847,8 @@ export const LandingPage = ({
 
         <div className="divide-y divide-[#004D49]/15 border border-[#004D49]/15 bg-white/85 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-sm">
           {faqs.map((faq, idx) => (
-            <motion.div 
-              key={idx} 
+            <motion.div
+              key={idx}
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-15px' }}
@@ -891,16 +890,16 @@ export const LandingPage = ({
           ========================================================================= */}
       <footer className="bg-[#001B19] text-white border-t border-[#004D49]/50 pt-16 pb-12 px-4 sm:px-6 lg:px-12 relative z-10">
         <div className="max-w-6xl mx-auto space-y-12">
-          
+
           {/* Fila Principal de Columnas */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8">
-            
+
             {/* Columna 1: Identidad Institucional (4 cols) */}
             <div className="lg:col-span-4 space-y-4">
               <div className="flex items-center space-x-3">
                 <BrandLogo className="h-8 w-auto" dark={true} />
               </div>
-              
+
               <p className="text-xs text-slate-300 leading-relaxed max-w-sm font-sans">
                 Plataforma de infraestructura y reservas para la red de estacionamientos de Ayacucho. Automatización de acceso vehicular con reconocimiento de placas y procesamiento digital de pagos.
               </p>
@@ -951,7 +950,7 @@ export const LandingPage = ({
               </h4>
               <ul className="space-y-2.5 text-xs text-slate-300">
                 <li>
-                  <button 
+                  <button
                     onClick={() => onOpenAuth && onOpenAuth('affiliation')}
                     className="hover:text-white transition flex items-center gap-2 text-left cursor-pointer"
                   >
@@ -960,7 +959,7 @@ export const LandingPage = ({
                   </button>
                 </li>
                 <li>
-                  <button 
+                  <button
                     onClick={() => onOpenAuth && onOpenAuth('login')}
                     className="hover:text-white transition flex items-center gap-2 text-left cursor-pointer"
                   >
@@ -982,7 +981,7 @@ export const LandingPage = ({
               <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 font-display">
                 Pasarelas & Soporte
               </h4>
-              
+
               <div className="space-y-2 text-xs text-slate-300">
                 <div className="flex items-center gap-2">
                   <CreditCard className="w-3.5 h-3.5 text-emerald-400 shrink-0" />

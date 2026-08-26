@@ -264,8 +264,13 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
 
 ---
 
-### 4.4. Directorio de Personal & Turnos (`StaffModule.jsx`)
-* **Propósito:** Asignación de roles de operadores de garita, guardias de seguridad y supervisores con sus respectivos turnos y teléfonos de contacto.
+### 4.4. Directorio de Personal & Credenciales de Acceso (`StaffModule.jsx`)
+* **Propósito:** Administración integral de la nómina de colaboradores, operadores de garita, guardias de seguridad y supervisores del establecimiento.
+* **Capacidades Principales:**
+  - **Asignación de Credenciales de Acceso:** Configuración directa de correo electrónico / usuario de acceso y contraseña (con opción de generación automática segura) para que los trabajadores inicien sesión en el sistema.
+  - **Control de Turnos & Roles:** Gestión de turnos (*Mañana, Tarde, Noche, Rotativo 24/7*), cargos operativos y PIN rápido de 4 dígitos para apertura de barrera ANPR.
+  - **Gestión Rápida de Claves & Estados:** Modales interactivos para restablecer contraseñas de trabajadores al instante y suspender o reactivar accesos con un clic.
+  - **Exportación de Nómina:** Descarga de reportes en formato CSV con el estado de credenciales activas.
 
 ---
 

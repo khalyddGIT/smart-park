@@ -182,6 +182,7 @@ class StaffBase(BaseModel):
     status: Optional[str] = "active"
     email: Optional[str] = None
     security_pin: Optional[str] = "1234"
+    system_role: Optional[str] = "local"
 
 class StaffCreate(StaffBase):
     parking_id: int
@@ -195,6 +196,8 @@ class StaffUpdate(BaseModel):
     status: Optional[str] = None
     email: Optional[str] = None
     security_pin: Optional[str] = None
+    password: Optional[str] = None
+    system_role: Optional[str] = None
 
 class StaffResponse(BaseModel):
     # Sin security_pin: el PIN nunca debe salir de la API (se almacena hasheado)
@@ -207,6 +210,8 @@ class StaffResponse(BaseModel):
     id: int
     parking_id: int
     created_at: datetime
+    has_account: Optional[bool] = False
+    system_role: Optional[str] = "local"
     class Config:
         from_attributes = True
 

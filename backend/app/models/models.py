@@ -202,4 +202,30 @@ class Payment(Base):
     description = Column(String(200), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class AffiliationRequest(Base):
+    __tablename__ = "solicitudes_afiliacion"
+
+    id = Column(Integer, primary_key=True, index=True)
+    parking_name = Column(String(150), nullable=False)
+    owner_name = Column(String(150), nullable=False)
+    email = Column(String(150), nullable=False)
+    phone = Column(String(50), nullable=True)
+    address = Column(String(255), nullable=True)
+    city = Column(String(100), nullable=True)
+    capacity = Column(Integer, nullable=True)
+    rate = Column(Float, nullable=True)
+    notes = Column(Text, nullable=True)
+    status = Column(String(20), default="pending")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PlatformSettings(Base):
+    __tablename__ = "configuracion_plataforma"
+
+    id = Column(Integer, primary_key=True)
+    data = Column(Text, nullable=False)  # JSON string
+
+
 Pago = Payment
+SolicitudAfiliacion = AffiliationRequest
+ConfigPlataforma = PlatformSettings

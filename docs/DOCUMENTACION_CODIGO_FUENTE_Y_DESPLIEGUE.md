@@ -1,17 +1,15 @@
 # Smart-Park — Informe Técnico de Código Fuente y Despliegue
 
-**Proyecto:** Smart-Park · Plataforma Enterprise & Marketplace Multi-Tenant de Gestión de Estacionamientos
-**Fecha del informe:** 23 de agosto de 2026
-**Repositorio:** https://github.com/khalyddGIT/smart-park
-**Producción:** https://smart-park-web-production.up.railway.app
+**Proyecto:** Smart-Park · Plataforma Enterprise & Marketplace Multi-Tenant de Gestión de Estacionamientos  
+**Fecha del informe:** 26 de agosto de 2026  
+**Repositorio:** https://github.com/khalyddGIT/smart-park  
+**Producción:** https://smart-park-web-production.up.railway.app  
 
 ---
 
 ## Introducción
 
-El presente documento constituye el informe técnico integral del proyecto Smart-Park. Su propósito es doble: por un lado, describir en detalle la arquitectura y organización del código fuente que compone la plataforma; por otro, documentar de manera completa el proceso de despliegue en producción, incluyendo un episodio crítico ocurrido durante esta sesión en el que los cambios subidos a GitHub no se reflejaban en el entorno productivo, así como el diagnóstico realizado y la solución definitiva aplicada.
-
-Este informe está dirigido tanto al equipo de desarrollo como a cualquier persona técnica que necesite comprender cómo funciona el sistema por dentro y cómo viaja el código desde la máquina del desarrollador hasta producción.
+El presente documento constituye el informe técnico integral del proyecto Smart-Park. Su propósito es doble: por un lado, describir en detalle la arquitectura y organización del código fuente que compone la plataforma; por otro, documentar de manera completa el proceso de despliegue en producción, incluyendo la estandarización continua en Railway, la gestión de credenciales operativas y la protección de vistas críticas en solo lectura.
 
 ---
 
@@ -51,7 +49,7 @@ smart-park/
 └── *.md                        # README, guías de deploy e informes de avance
 ```
 
-Esta disposición tiene una consecuencia importante para el despliegue (que se explica en la segunda sección): aunque son dos aplicaciones distintas, el `Dockerfile` las fusiona en **una sola imagen**, de modo que producción requiere un único servicio.
+Esta disposición tiene una consecuencia importante para el despliegue: aunque son dos aplicaciones distintas, el `Dockerfile` las fusiona en **una sola imagen**, de modo que producción requiere un único servicio.
 
 ## 3. Backend — API FastAPI
 
@@ -70,7 +68,7 @@ Los endpoints viven en `app/api/v1/` y están divididos por dominio de negocio, 
 | `vehicles.py` | Vehículos | CRUD de placas asociadas a cada conductor |
 | `parkings.py` | Estacionamientos | CRUD de sedes, plazas (`/slots`) y plano CAD (`/floor-plan`, `/sync`) |
 | `reservations.py` | Reservas | Crear reserva, listar propias, verificar pase QR `/verify/{code}` |
-| `staff.py` | Personal | Nómina de operadores de garita y turnos |
+| `staff.py` | Personal | Nómina de operadores de garita, asignación de turnos, alta de cuentas de usuario y reseteo de claves |
 | `reviews.py` | Reseñas | Calificaciones y réplicas oficiales |
 | `incidents.py` | Incidencias | Reporte, seguimiento y resolución |
 | `payments.py` | Pagos | Estado de pasarelas y cobros simulados |

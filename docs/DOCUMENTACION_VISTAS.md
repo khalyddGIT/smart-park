@@ -235,14 +235,19 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
 
 ---
 
-### 4.2. Estudio de Dibujo y Edición del Plano (`InteractiveFloorPlanDrawingStudio.jsx`)
-* **Propósito:** Herramienta CAD / Studio para diseñar y personalizar la distribución física de la cochera.
-* **Herramientas Disponibles:**
-  - Agregar Cajones de Estacionamiento (con rotación a 0°, 90°, 180°, 270° y opción de plaza techada).
-  - Trazar Muros y Límites perimetrales.
-  - Dibujar Carriles Viales de circulación con flechas direccionales.
-  - Colocar Pasos Peatonales tipo cebra.
-  - Guardado y persistencia en tiempo real en la base de datos de la cochera.
+### 4.2. Visualizador de Plano 2D vs. Estudio CAD (`InteractiveFloorPlanDrawingStudio.jsx`)
+* **Propósito:** Visualización e ingeniería topográfica digital de la distribución física de la cochera con modos estrictamente diferenciados.
+* **Modos de Operación:**
+  - **Modo Visualizador 2D ("Ver" - Solo Lectura):**
+    - Diseñado para inspección rápida sin riesgo de alterar o mover elementos accidentalmente.
+    - Oculta presets, auto-numeración, deshacer/rehacer, rejilla y herramientas de dibujo.
+    - Al seleccionar cualquier plaza, despliega una tarjeta de especificaciones de solo lectura (código, tipo auto/moto, techado, estado libre/ocupado, matrícula y dimensiones).
+    - Muestra métricas globales de la sede (total plazas, libres, ocupadas, motos y techadas).
+  - **Modo Editor CAD ("Editar Plano" - Totalmente Interactivo):**
+    - Herramienta completa de arquitectura y trazado: añadir cajones para autos, motos, discapacitados (PMR) y techadas.
+    - Trazado de muros perimetrales, carriles viales con flechas direccionales, pasos peatonales cebra, jardines y garitas con sensores ANPR.
+    - Auto-renumeración espacial inteligente, snapping a rejilla imantada, rotación libre en 360°, duplicación y alineación en el lote.
+    - Guardado y persistencia en tiempo real en la base de datos de la sede.
 
 #### 📸 Captura del CAD Drawing Studio:
 ![Editor de Plano Topográfico](screenshots/cad_floor_plan_studio.png)
@@ -267,9 +272,9 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
 ### 4.4. Directorio de Personal & Credenciales de Acceso (`StaffModule.jsx`)
 * **Propósito:** Administración integral de la nómina de colaboradores, operadores de garita, guardias de seguridad y supervisores del establecimiento.
 * **Capacidades Principales:**
-  - **Asignación de Credenciales de Acceso:** Configuración directa de correo electrónico / usuario de acceso y contraseña (con opción de generación automática segura) para que los trabajadores inicien sesión en el sistema.
-  - **Control de Turnos & Roles:** Gestión de turnos (*Mañana, Tarde, Noche, Rotativo 24/7*), cargos operativos y PIN rápido de 4 dígitos para apertura de barrera ANPR.
-  - **Gestión Rápida de Claves & Estados:** Modales interactivos para restablecer contraseñas de trabajadores al instante y suspender o reactivar accesos con un clic.
+  - **Asignación de Credenciales de Acceso:** Configuración directa de correo electrónico y contraseña segura (con visor de clave `Eye`/`EyeOff` y generador de claves de alta entropía) para que los trabajadores inicien sesión directamente con rol operativo local.
+  - **Control de Turnos & PIN de Garita:** Gestión de turnos (*Mañana, Tarde, Noche, Rotativo 24/7*), cargos operativos y PIN numérico de 4 dígitos para validación rápida en garita/ANPR.
+  - **Gestión Rápida de Claves & Estados:** Modales simplificados para restablecer contraseñas de trabajadores al instante y suspender o reactivar accesos con un clic (sin campos de rol confusos o redundantes).
   - **Exportación de Nómina:** Descarga de reportes en formato CSV con el estado de credenciales activas.
 
 ---

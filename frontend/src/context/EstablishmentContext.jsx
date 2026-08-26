@@ -602,113 +602,145 @@ export const EstablishmentProvider = ({ children }) => {
   };
 
   // Crear Solicitud de Afiliación de Cochera
-  const createAffiliationRequest = (requestData) => {
-    const newReq = {
-      id: `REQ-${Date.now().toString().slice(-4)}`,
+  // Carga real desde el servidor (con fallback a localStorage si no hay auth o falla)
+  useEffect(() => {
+    const loadAffiliations = async () => {
+      try {
+        const res = await api.get('/affiliation-requests');
+        if (Array.isArray(res.data)) {
+          const mapped = res.data.map(r => ({
+            id: r.id,
+            parkingName: r.parkingName,
+            ownerName: r.ownerName,
+            email: r.email,
+            phone: r.phone || '',
+            address: r.address || '',
+            city: r.city || '',
+            capacity: r.capacity,
+            rate: r.rate,
+            notes: r.notes || '',
+            status: String(r.status || 'pending').toUpperCase(),
+            createdAt: r.created_at || r.createdAt,
+          }));
+          setAffiliationRequests(mapped);
+        }
+      } catch {}
+    };
+    loadAffiliations();
+    const iv = setInterval(loadAffiliations, 15000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const createAffiliationRequest = async (requestData) => {
+    const payload = {
       parkingName: requestData.parkingName,
       ownerName: requestData.ownerName,
-      email: (requestData.email || '').trim().toLowerCase(),
+      email: requestData.email,
       phone: requestData.phone || '',
-      address: requestData.address || 'Centro Histórico',
+      address: requestData.address || '',
       city: requestData.city || 'Ayacucho - Huamanga',
       capacity: Number(requestData.capacity) || 20,
-      rate: Number(requestData.rate) || 5.00,
+      rate: Number(requestData.rate) || 5.0,
       notes: requestData.notes || '',
-      status: 'PENDING',
-      createdAt: new Date().toISOString()
     };
-
-    setAffiliationRequests(prev => [newReq, ...prev]);
-    return newReq;
+    try {
+      const res = await api.post('/affiliation-requests', payload);
+      const r = res.data;
+      const mapped = {
+        id: r.id,
+        parkingName: r.parkingName,
+        ownerName: r.ownerName,
+        email: r.email,
+        phone: r.phone || '',
+        address: r.address || '',
+        city: r.city || '',
+        capacity: r.capacity,
+        rate: r.rate,
+        notes: r.notes || '',
+        status: String(r.status || 'pending').toUpperCase(),
+        createdAt: r.created_at || new Date().toISOString(),
+      };
+      setAffiliationRequests(prev => [mapped, ...prev]);
+      return mapped;
+    } catch (e) {
+      // Fallback local si el servidor no responde (offline)
+      const fallback = {
+        id: `REQ-${Date.now().toString().slice(-4)}`,
+        parkingName: payload.parkingName,
+        ownerName: payload.ownerName,
+        email: payload.email.toLowerCase(),
+        phone: payload.phone,
+        address: payload.address || 'Centro Histórico',
+        city: payload.city,
+        capacity: payload.capacity,
+        rate: payload.rate,
+        notes: payload.notes,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+      };
+      setAffiliationRequests(prev => [fallback, ...prev]);
+      return fallback;
+    }
   };
 
-  // Aprobar Solicitud de Afiliación (Crea la Cochera y Habilita la Cuenta de Admin Local)
-  const approveAffiliationRequest = (requestId) => {
-    const req = affiliationRequests.find(r => r.id === requestId);
-    if (!req) return null;
-
-    const newEstId = `EST-${Date.now().toString().slice(-4)}`;
-    
-    // Crear el nuevo establecimiento con plano base
-    const newEstablishment = {
-      id: newEstId,
-      name: req.parkingName,
-      address: req.address || 'Jr. 28 de Julio 100',
-      reference: 'Centro Histórico',
-      city: req.city || 'Ayacucho - Huamanga',
-      level: 'Nivel 1 - Superficie',
-      rate: Number(req.rate) || 5.00,
-      status: 'Operativo',
-      owner: req.ownerName,
-      ruc: '20' + Math.floor(100000000 + Math.random() * 900000000),
-      phone: req.phone || '+51 966 000 000',
-      whatsapp: (req.phone || '').replace(/\D/g, '') || '51966000000',
-      email: req.email || 'cochera@smartpark.pe',
-      schedule: 'Lunes a Domingo: 24 Horas',
-      description: req.notes || 'Estacionamiento afiliado a la red oficial Smart Park con seguridad y atención continua.',
-      latitude: -13.1606 + (Math.random() - 0.5) * 0.008,
-      longitude: -74.2257 + (Math.random() - 0.5) * 0.008,
-      mapsUrl: `https://maps.google.com/?q=-13.1606,-74.2257`,
-      socials: {
-        facebook: '',
-        instagram: '',
-        tiktok: '',
-        website: ''
-      },
-      commission: '10%',
-      image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800',
-      elements: [
-        { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
-        { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
-        { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
-        { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
-        { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
-        { id: 6, type: 'crosswalk', x: 500, y: 250, w: 80, h: 200, rot: 0 },
-        { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'ACCESO GARITA ANPR' },
-        { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-        { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-        { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-        { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-        { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-        { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 145, y: 480, w: 38, h: 65, rot: 0, status: 'free' }
-      ]
-    };
-
-    // Agregar a establecimientos
-    setEstablishments(prev => [newEstablishment, ...prev]);
-
-    // Registrar como admin aprobado para permitir login con rol 'local'
-    const newAdmin = {
-      id: Date.now(),
-      name: req.ownerName,
-      email: req.email.toLowerCase(),
-      phone: req.phone,
-      establishmentId: newEstId,
-      establishmentName: req.parkingName,
-      role: 'local'
-    };
-
-    setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== req.email.toLowerCase())]);
-
-    // Actualizar estado de la solicitud
-    setAffiliationRequests(prev => prev.map(r => r.id === requestId ? {
-      ...r,
-      status: 'APPROVED',
-      approvedAt: new Date().toISOString(),
-      establishmentId: newEstId
-    } : r));
-
-    return { establishment: newEstablishment, admin: newAdmin };
+  // Aprobar: persiste en servidor (crea cochera real) y refresca lista
+  const approveAffiliationRequest = async (requestId) => {
+    try {
+      const res = await api.put(`/affiliation-requests/${requestId}/approve`);
+      await fetchParkings();
+      // Recargar solicitudes para reflejar APPROVED
+      try {
+        const r2 = await api.get('/affiliation-requests');
+        if (Array.isArray(r2.data)) {
+          setAffiliationRequests(r2.data.map(r => ({
+            id: r.id,
+            parkingName: r.parkingName,
+            ownerName: r.ownerName,
+            email: r.email,
+            phone: r.phone || '',
+            address: r.address || '',
+            city: r.city || '',
+            capacity: r.capacity,
+            rate: r.rate,
+            notes: r.notes || '',
+            status: String(r.status || 'pending').toUpperCase(),
+            createdAt: r.created_at || r.createdAt,
+          })));
+        }
+      } catch {}
+      return res.data;
+    } catch (e) {
+      console.warn('approve affiliation fallback local', e?.response?.data);
+      // Fallback local idéntico al anterior (mantiene compatibilidad offline)
+      const req = affiliationRequests.find(r => String(r.id) === String(requestId));
+      if (!req) return null;
+      const newEstId = `EST-${Date.now().toString().slice(-4)}`;
+      const newEstablishment = {
+        id: newEstId, name: req.parkingName, address: req.address || 'Jr. 28 de Julio 100', city: req.city || 'Ayacucho - Huamanga', level: 'Nivel 1 - Superficie', rate: Number(req.rate) || 5.0, status: 'Operativo', owner: req.ownerName, ruc: '20' + Math.floor(100000000 + Math.random() * 900000000), phone: req.phone || '+51 966 000 000', whatsapp: (req.phone || '').replace(/\D/g, '') || '51966000000', email: req.email || 'cochera@smartpark.pe', schedule: 'Lunes a Domingo: 24 Horas', description: req.notes || 'Estacionamiento afiliado', latitude: -13.1606 + (Math.random() - 0.5) * 0.008, longitude: -74.2257 + (Math.random() - 0.5) * 0.008, mapsUrl: `https://maps.google.com/?q=-13.1606,-74.2257`, socials: { facebook: '', instagram: '', tiktok: '', website: '' }, commission: '10%', image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', elements: [{ id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 }, { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 }, { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 }, { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 }, { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 }, { id: 6, type: 'crosswalk', x: 500, y: 250, w: 80, h: 200, rot: 0 }, { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'ACCESO GARITA ANPR' }, { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' }, { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 145, y: 480, w: 38, h: 65, rot: 0, status: 'free' }]
+      };
+      setEstablishments(prev => [newEstablishment, ...prev]);
+      const newAdmin = { id: Date.now(), name: req.ownerName, email: req.email.toLowerCase(), phone: req.phone, establishmentId: newEstId, establishmentName: req.parkingName, role: 'local' };
+      setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== req.email.toLowerCase())]);
+      setAffiliationRequests(prev => prev.map(r => String(r.id) === String(requestId) ? { ...r, status: 'APPROVED', approvedAt: new Date().toISOString(), establishmentId: newEstId } : r));
+      return { establishment: newEstablishment, admin: newAdmin };
+    }
   };
 
-  // Rechazar Solicitud
-  const rejectAffiliationRequest = (requestId, reason = '') => {
-    setAffiliationRequests(prev => prev.map(r => r.id === requestId ? {
-      ...r,
-      status: 'REJECTED',
-      rejectionReason: reason,
-      rejectedAt: new Date().toISOString()
-    } : r));
+  // Rechazar: persiste en servidor
+  const rejectAffiliationRequest = async (requestId, reason = '') => {
+    try {
+      await api.put(`/affiliation-requests/${requestId}/reject`);
+      const r2 = await api.get('/affiliation-requests');
+      if (Array.isArray(r2.data)) {
+        setAffiliationRequests(r2.data.map(r => ({
+          id: r.id, parkingName: r.parkingName, ownerName: r.ownerName, email: r.email, phone: r.phone || '', address: r.address || '', city: r.city || '', capacity: r.capacity, rate: r.rate, notes: r.notes || '', status: String(r.status || 'pending').toUpperCase(), createdAt: r.created_at || r.createdAt,
+        })));
+      }
+      return;
+    } catch (e) {
+      console.warn('reject affiliation fallback', e?.response?.data);
+    }
+    setAffiliationRequests(prev => prev.map(r => String(r.id) === String(requestId) ? { ...r, status: 'REJECTED', rejectionReason: reason, rejectedAt: new Date().toISOString() } : r));
   };
 
   // Verificar si un correo corresponde a un administrador de cochera aprobado

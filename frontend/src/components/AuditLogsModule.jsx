@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -7,107 +7,63 @@ import {
   Search, 
   Download, 
   ArrowUpDown, 
-  ArrowUp, 
-  ArrowDown, 
   ChevronLeft, 
   ChevronRight,
-  Filter,
-  FileSpreadsheet
+  RefreshCw,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useEstablishments } from '../context/EstablishmentContext';
+import api from '../services/api';
 
 export const AuditLogsModule = () => {
+  const { role } = useAuth();
+  const { establishments } = useEstablishments();
+
   const [globalFilter, setGlobalFilter] = useState('');
+  const [parkingFilter, setParkingFilter] = useState('ALL');
   const [sortField, setSortField] = useState('timestamp');
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
+  const [sortOrder, setSortOrder] = useState('desc');
   const [pageSize, setPageSize] = useState(6);
   const [pageIndex, setPageIndex] = useState(0);
+  const [rawData, setRawData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const rawData = useMemo(() => [
-    {
-      id: 'LOG-1094',
-      timestamp: '2026-08-18 14:32:10',
-      operator: 'Sistema ANPR / Garita 01',
-      action: 'Apertura de Barrera (Ingreso LPR)',
-      target: 'Placa ABC-123 / Cajón A-01',
-      severity: 'Info',
-      ip: '192.168.1.101'
-    },
-    {
-      id: 'LOG-1093',
-      timestamp: '2026-08-18 14:28:45',
-      operator: 'Tótem Óptico QR',
-      action: 'Validación de Pase Digital QR',
-      target: 'Reserva RSV-5541 / Cajón A-04',
-      severity: 'Info',
-      ip: '192.168.1.104'
-    },
-    {
-      id: 'LOG-1092',
-      timestamp: '2026-08-18 14:15:02',
-      operator: 'Operador: Juan Quispe',
-      action: 'Apertura Manual Forzada de Barrera',
-      target: 'Placa DEF-456 (Sin Reserva)',
-      severity: 'Advertencia',
-      ip: '192.168.1.102'
-    },
-    {
-      id: 'LOG-1091',
-      timestamp: '2026-08-18 13:50:22',
-      operator: 'Admin: Carlos Mendoza',
-      action: 'Modificación de Tarifa por Hora',
-      target: 'Sede Plaza Mayor: S/ 5.00 -> S/ 6.00',
-      severity: 'Advertencia',
-      ip: '190.235.44.12'
-    },
-    {
-      id: 'LOG-1090',
-      timestamp: '2026-08-18 12:40:11',
-      operator: 'Sistema de Pagos',
-      action: 'Liquidación Yape / Plin',
-      target: 'Transacción #8912 - S/ 10.00',
-      severity: 'Info',
-      ip: 'Gateway-01'
-    },
-    {
-      id: 'LOG-1089',
-      timestamp: '2026-08-18 11:20:00',
-      operator: 'Supervisor: Rosa Gutiérrez',
-      action: 'Registro de Incidencia',
-      target: 'Infracción: Bloqueo Rampa PMR',
-      severity: 'Crítico',
-      ip: '192.168.1.105'
-    },
-    {
-      id: 'LOG-1088',
-      timestamp: '2026-08-18 10:10:40',
-      operator: 'Admin: Carlos Mendoza',
-      action: 'Asignación de Rol de Seguridad',
-      target: 'Usuario ID #4 -> Operador Garita',
-      severity: 'Info',
-      ip: '190.235.44.12'
-    },
-    {
-      id: 'LOG-1087',
-      timestamp: '2026-08-18 09:05:15',
-      operator: 'Sistema ANPR / Garita 01',
-      action: 'Lectura Placa Autorizada',
-      target: 'Placa AYC-501 / Cajón B-01',
-      severity: 'Info',
-      ip: '192.168.1.101'
+  const fetchLogs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = { limit: 100 };
+      if (parkingFilter !== 'ALL') params.parking_id = Number(parkingFilter);
+      const res = await api.get('/audit/logs', { params });
+      if (Array.isArray(res.data)) setRawData(res.data);
+    } catch {
+      // Sin datos o sin auth: mantener vacío (se mostrará estado vacío, no mock)
+    } finally {
+      setLoading(false);
     }
-  ], []);
+  }, [parkingFilter]);
 
-  // Filtrado Global
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  // Auto-refresh cada 20s para auditoría en vivo
+  useEffect(() => {
+    const id = setInterval(fetchLogs, 20000);
+    return () => clearInterval(id);
+  }, [fetchLogs]);
+
+  // Filtrado Global (texto)
   const filteredData = useMemo(() => {
     if (!globalFilter) return rawData;
     const query = globalFilter.toLowerCase();
     return rawData.filter(d => 
-      d.id.toLowerCase().includes(query) ||
-      d.operator.toLowerCase().includes(query) ||
-      d.action.toLowerCase().includes(query) ||
-      d.target.toLowerCase().includes(query) ||
-      d.ip.toLowerCase().includes(query) ||
-      d.severity.toLowerCase().includes(query)
+      String(d.id).toLowerCase().includes(query) ||
+      String(d.operator).toLowerCase().includes(query) ||
+      String(d.action).toLowerCase().includes(query) ||
+      String(d.target).toLowerCase().includes(query) ||
+      String(d.ip).toLowerCase().includes(query) ||
+      String(d.severity).toLowerCase().includes(query) ||
+      String(d.parking_name || '').toLowerCase().includes(query)
     );
   }, [rawData, globalFilter]);
 
@@ -116,13 +72,14 @@ export const AuditLogsModule = () => {
     return [...filteredData].sort((a, b) => {
       let aVal = a[sortField];
       let bVal = b[sortField];
+      if (aVal == null) aVal = '';
+      if (bVal == null) bVal = '';
       if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
       return 0;
     });
   }, [filteredData, sortField, sortOrder]);
 
-  // Paginación
   const pageCount = Math.ceil(sortedData.length / pageSize) || 1;
   const paginatedData = useMemo(() => {
     const start = pageIndex * pageSize;
@@ -139,8 +96,8 @@ export const AuditLogsModule = () => {
   };
 
   const exportCSV = () => {
-    const headers = "ID,Timestamp,Operador,Accion,Detalle,Severidad,IP\n";
-    const rows = rawData.map(d => `${d.id},"${d.timestamp}","${d.operator}","${d.action}","${d.target}",${d.severity},${d.ip}`).join("\n");
+    const headers = "ID,Timestamp,Operador,Accion,Detalle,Severidad,IP,Cochera\n";
+    const rows = filteredData.map(d => `${d.id},"${d.timestamp}","${d.operator}","${d.action}","${String(d.target).replace(/"/g, '""')}",${d.severity},${d.ip},"${d.parking_name || ''}"`).join("\n");
     const blob = new Blob([headers + rows], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -149,41 +106,64 @@ export const AuditLogsModule = () => {
     a.click();
   };
 
+  const subtitle = role === 'local'
+    ? 'Eventos reales de tus sedes: ingresos ANPR, pagos, incidencias y reseñas (filtrado por cochera).'
+    : role === 'platform'
+    ? 'Bitácora global de todas las sedes: accesos, pagos e incidencias.'
+    : 'Tus acciones registradas en el sistema.';
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
             <ShieldCheck className="w-7 h-7 text-emerald-600" />
-            <span>Auditoría & Bitácora de Seguridad</span>
+            <span>{role === 'local' ? 'Auditoría Local' : 'Auditoría & Bitácora de Seguridad'}</span>
           </h1>
           <p className="text-xs text-slate-500">
-            Registro de accesos vehiculares, aperturas de barrera y cambios administrativos.
+            {subtitle}
+            <span className="ml-2 font-mono text-slate-400">{rawData.length} eventos</span>
           </p>
         </div>
 
-        <Button onClick={exportCSV} variant="outline" className="gap-2 font-bold text-xs">
-          <Download className="w-4 h-4 text-emerald-600" />
-          <span>Exportar Bitácora (CSV)</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={fetchLogs} variant="outline" size="sm" className="gap-1.5 text-xs font-bold h-9">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+          <Button onClick={exportCSV} variant="outline" className="gap-2 font-bold text-xs">
+            <Download className="w-4 h-4 text-emerald-600" />
+            <span>Exportar CSV</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Controles de Búsqueda y Paginación */}
       <Card className="p-4 border-slate-200 shadow-sm bg-white">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
-          <div className="flex items-center space-x-2 w-full sm:w-80">
-            <Search className="w-4 h-4 text-slate-400" />
-            <Input
-              type="text"
-              placeholder="Buscar por operador, placa, acción o IP..."
-              value={globalFilter}
-              onChange={e => {
-                setGlobalFilter(e.target.value);
-                setPageIndex(0);
-              }}
-              className="h-9 text-xs"
-            />
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
+            <div className="flex items-center space-x-2 w-full sm:w-80">
+              <Search className="w-4 h-4 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Buscar por operador, placa, acción o IP..."
+                value={globalFilter}
+                onChange={e => {
+                  setGlobalFilter(e.target.value);
+                  setPageIndex(0);
+                }}
+                className="h-9 text-xs"
+              />
+            </div>
+            <select
+              value={parkingFilter}
+              onChange={e => { setParkingFilter(e.target.value); setPageIndex(0); }}
+              className="h-9 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-700 min-w-[180px]"
+            >
+              <option value="ALL">Todas las cocheras</option>
+              {establishments.map(est => (
+                <option key={est.id} value={est.id}>{est.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-center space-x-2 text-xs text-slate-500">
@@ -196,7 +176,7 @@ export const AuditLogsModule = () => {
               }}
               className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-700"
             >
-              {[6, 10, 20].map(size => (
+              {[6, 10, 20, 50].map(size => (
                 <option key={size} value={size}>
                   {size} registros
                 </option>
@@ -205,7 +185,6 @@ export const AuditLogsModule = () => {
           </div>
         </div>
 
-        {/* Tabla */}
         <div className="overflow-x-auto rounded-2xl border border-slate-200">
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
@@ -240,7 +219,11 @@ export const AuditLogsModule = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {paginatedData.map(row => (
+              {loading ? (
+                <tr><td colSpan={7} className="p-8 text-center text-slate-400 font-mono text-xs">Cargando bitácora real...</td></tr>
+              ) : paginatedData.length === 0 ? (
+                <tr><td colSpan={7} className="p-8 text-center text-slate-500 text-xs">Sin registros para los filtros actuales. {role === 'local' ? 'Prueba con otra cochera o crea una reserva de prueba.' : ''}</td></tr>
+              ) : paginatedData.map(row => (
                 <tr key={row.id} className="hover:bg-slate-50/80 transition">
                   <td className="p-3.5 font-mono font-bold text-slate-500 text-xs">{row.id}</td>
                   <td className="p-3.5 font-mono text-xs text-slate-700">{row.timestamp}</td>
@@ -261,11 +244,10 @@ export const AuditLogsModule = () => {
           </table>
         </div>
 
-        {/* Paginador */}
         <div className="flex items-center justify-between pt-4 text-xs text-slate-600">
           <div>
             Página <span className="font-bold text-slate-900">{pageIndex + 1}</span> de{' '}
-            <span className="font-bold text-slate-900">{pageCount}</span> ({filteredData.length} registros filtrados)
+            <span className="font-bold text-slate-900">{pageCount}</span> ({filteredData.length} registros filtrados de {rawData.length} totales)
           </div>
           <div className="flex items-center space-x-2">
             <Button

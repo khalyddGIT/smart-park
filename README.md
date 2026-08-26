@@ -1,4 +1,4 @@
-# Smart-Park — Plataforma Multiestacionamiento & Marketplace y Gestión de Estacionamientos
+# Smart-Park — Plataforma Multi-Estacionamiento: Marketplace & Gestión Inteligente de Estacionamientos
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI%200.110+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)

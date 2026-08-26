@@ -97,7 +97,7 @@ export const VehiclesModule = () => {
     return [];
   });
 
-  // Sincronización Supabase: si hay token, traer del backend
+  // Sincronización con Backend: si hay token, traer del backend
   useEffect(() => {
     const token = getAccessToken();
     if (token) {

@@ -1,7 +1,6 @@
 .git
 .agents
 .npm-cache
-.vercel
 node_modules
 frontend/node_modules
 backend/venv
@@ -15,4 +14,3 @@ skills-lock.json
 *.log
 DOCUMENTACION_AVANCE_*.md
 Sistema de Estacionamiento/
-supabase/

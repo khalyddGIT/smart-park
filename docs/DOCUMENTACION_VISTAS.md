@@ -82,7 +82,7 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
 * **Propósito:** Acceso seguro con estándares modernos de autenticación.
 * **Características:**
   - **Google One-Tap / OAuth:** Inicio de sesión en 1 clic mediante credencial JWT oficial.
-  - **Acceso Tradicional:** Correo electrónico y contraseña con validación contra el servidor backend Supabase/FastAPI.
+  - **Acceso Tradicional:** Correo electrónico y contraseña con validación contra el servidor backend FastAPI / PostgreSQL (Railway).
   - **Selector Rápido de Roles (Desarrollo/Demo):** Botones directos para alternar entre *Conductor*, *Administrador Local* y *Super Admin*.
 
 #### 📸 Captura del Modal de Autenticación:

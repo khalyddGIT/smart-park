@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
     if (newRole === 'user') setPinVerified(false);
   };
 
-  // Autenticación con Google Real (JWT ID Token) - persistente Supabase
+  // Autenticación con Google Real (JWT ID Token) - persistente en Base de Datos
   const loginWithGoogle = async (credentialResponse) => {
     try {
       const idToken = credentialResponse.credential;
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
     } catch (e) { console.error('Error al procesar Google Auth:', e); throw e; }
   };
 
-  // Login tradicional con Correo - intenta backend Supabase, fallback local
+  // Login tradicional con Correo - autentica contra el backend de producción
   const loginWithEmail = async (email, password, explicitRole = null) => {
     // Autenticación SIEMPRE contra el backend: el rol lo define la base de datos, nunca el email
     let data;
@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }) => {
     setUser(u); setRole(u.role); return u;
   };
 
-  // Registro de Conductor - persistente Supabase
+  // Registro de Conductor - persistente en Base de Datos
   const registerUser = async (userData) => {
     try {
       const data = await apiRegister({ full_name: userData.name, email: userData.email, phone: userData.phone || '', password: userData.password || 'password123', role: 'user' });

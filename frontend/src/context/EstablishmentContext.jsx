@@ -441,7 +441,7 @@ export const EstablishmentProvider = ({ children }) => {
     } catch (e) {}
   }, [reservations]);
 
-  // Sincronización Supabase: parkings siempre (global), reservas solo con token
+  // Sincronización con Backend: parkings siempre (global), reservas solo con token
   // El panel del usuario siempre lee del servidor — no se usa caché local para datos de cocheras
   // Polling + refetch al enfocar la pestaña para que cambios de otros usuarios se vean sin recargar
 
@@ -718,7 +718,7 @@ export const EstablishmentProvider = ({ children }) => {
     return approvedAdmins.some(a => a.email === lower);
   };
 
-  // Agregar nuevo establecimiento manual - intenta Supabase primero
+  // Agregar nuevo establecimiento manual - intenta Backend API primero
   const addEstablishment = async (newEst) => {
     const token = getAccessToken();
     if (token || true) {

@@ -277,7 +277,6 @@ smart-park/
 │   │   ├── context/           # AuthContext & EstablishmentContext
 │   │   └── services/          # Cliente Axios hacia la API
 │   └── package.json
-├── supabase/migrations/        # SQL de esquema inicial versionado
 ├── docs/                       # Toda la documentación del proyecto (índice: docs/README.md)
 │   ├── sistema-de-estacionamiento/  # Diseño: requerimientos, casos de uso, arquitectura C4,
 │   │                                #   esquema BD, especificación API y roadmap

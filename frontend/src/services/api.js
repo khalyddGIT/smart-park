@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Base URL: local dev -> 8000, prod -> same origin /api (Vercel rewrites a /api/index.py)
+// Base URL: local dev -> 8000, prod -> Railway / same origin
 const API_BASE = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://127.0.0.1:8000' : '');
 
 const api = axios.create({

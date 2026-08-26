@@ -76,7 +76,6 @@ Thumbs.db
 *.sublime-project
 
 # --- Deployment Platforms & Caches ---
-.vercel
 .serverless/
 .npm-cache/
 .turbo/
@@ -86,6 +85,4 @@ Thumbs.db
 .agents/
 skills-lock.json
 
-# --- Estado local del CLI de Supabase (las migraciones SQL sí se versionan) ---
-supabase/.temp/
 *.log

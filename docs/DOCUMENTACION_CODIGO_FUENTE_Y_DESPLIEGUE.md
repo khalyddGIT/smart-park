@@ -45,7 +45,6 @@ smart-park/
 │       ├── context/            # AuthContext y EstablishmentContext
 │       ├── services/           # Cliente Axios hacia la API
 │       ├── lib/ · utils/ · assets/
-├── supabase/migrations/        # SQL versionado del esquema inicial
 ├── Dockerfile                  # Build multi-stage (frontend + backend)
 ├── docker-compose.yml          # Entorno local completo
 ├── railway.json                # Configuración as-code para Railway

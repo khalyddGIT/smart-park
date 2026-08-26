@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # Sin REDIS_URL el sistema funciona igual que hoy (degradación elegante, fail-open).
     REDIS_URL: str = os.getenv("REDIS_URL", "")
 
-    # Conexión a Base de Datos (Soporta DATABASE_URL de Supabase / PostgreSQL o SQLite en /tmp para Vercel)
+    # Conexión a Base de Datos (DATABASE_URL en Railway / PostgreSQL estándar o SQLite local)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     USE_SQLITE: bool = os.getenv("USE_SQLITE", "True" if not os.getenv("DATABASE_URL") else "False") == "True"
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
@@ -44,13 +44,6 @@ class Settings(BaseSettings):
     def ASYNC_DATABASE_URL(self) -> str:
         if self.DATABASE_URL:
             url = self.DATABASE_URL.strip()
-            # Vercel/Supabase: corregir puerto pooler 5432 -> 6543 para serverless
-            # asyncpg no soporta query ?pgbouncer=true (TypeError: unexpected kwarg), solo puerto 6543 indica transaction mode
-            if "pooler.supabase.com:5432" in url:
-                url = url.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
-            # Eliminar ?pgbouncer=true si existe (asyncpg no lo acepta)
-            if "pgbouncer=true" in url:
-                url = url.replace("?pgbouncer=true", "").replace("&pgbouncer=true", "").replace("pgbouncer=true", "")
             if url.startswith("postgres://"):
                 url = url.replace("postgres://", "postgresql+asyncpg://", 1)
             elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
@@ -58,9 +51,6 @@ class Settings(BaseSettings):
             return url
 
         if self.USE_SQLITE:
-            # En Vercel Serverless, solo /tmp tiene permisos de escritura
-            if os.getenv("VERCEL") or os.path.exists("/tmp"):
-                return "sqlite+aiosqlite:////tmp/smartpark_dev.db"
             return "sqlite+aiosqlite:///./smartpark_dev.db"
         
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"

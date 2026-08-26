@@ -38,7 +38,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Inicialización de tablas y datos semilla - resiliente en Vercel Serverless (no tumbar lambda si DB no conecta)
+# Inicialización de tablas y datos semilla al arrancar el servidor
 @app.on_event("startup")
 async def startup_db():
     # Listener Redis Pub/Sub para fan-out de eventos WS entre réplicas (no-op sin REDIS_URL)

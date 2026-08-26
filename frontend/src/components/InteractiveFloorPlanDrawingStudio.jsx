@@ -862,76 +862,95 @@ export const InteractiveFloorPlanDrawingStudio = ({
           ============================================================ */}
       <div className="bg-slate-900 text-white p-3 sm:p-4 rounded-2xl border border-slate-800 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         
-        {/* Presets de Terreno y Auto-numerar */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
-          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
-            {[
-              { id: 'rectangular', label: 'Rectangular' },
-              { id: 'l_shape', label: "Forma en 'L'" },
-              { id: 'diagonal', label: 'Diagonal 45°' },
-              { id: 'u_shape', label: "Forma en 'U'" },
-              { id: 'free', label: 'Lienzo Libre' }
-            ].map(p => (
-              <button
-                key={p.id}
-                onClick={() => handlePresetChange(p.id)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
-                  lotShape === p.id 
-                    ? 'bg-slate-800 text-white font-bold' 
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+        {/* Presets de Terreno y Auto-numerar (Solo en modo edición) */}
+        {!readOnly ? (
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+              {[
+                { id: 'rectangular', label: 'Rectangular' },
+                { id: 'l_shape', label: "Forma en 'L'" },
+                { id: 'diagonal', label: 'Diagonal 45°' },
+                { id: 'u_shape', label: "Forma en 'U'" },
+                { id: 'free', label: 'Lienzo Libre' }
+              ].map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => handlePresetChange(p.id)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
+                    lotShape === p.id 
+                      ? 'bg-slate-800 text-white font-bold' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
 
-          <Button 
-            onClick={handleAutoNumber}
-            variant="outline" 
-            size="sm"
-            className="rounded-xl border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold gap-1.5 h-8 px-2.5 shrink-0 cursor-pointer"
-            title="Renumera automáticamente todas las plazas en orden espacial"
-          >
-            <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-            <span>Auto-Numerar</span>
-          </Button>
-        </div>
+            <Button 
+              onClick={handleAutoNumber}
+              variant="outline" 
+              size="sm"
+              className="rounded-xl border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold gap-1.5 h-8 px-2.5 shrink-0 cursor-pointer"
+              title="Renumera automáticamente todas las plazas en orden espacial"
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+              <span>Auto-Numerar</span>
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <Eye className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="font-bold text-white">Visualizador de Plano 2D</span>
+              <span className="text-slate-500">•</span>
+              <span className="text-emerald-400 font-semibold">Solo Lectura</span>
+            </div>
+            <span className="hidden sm:inline-block text-xs text-slate-400 font-medium">
+              {parkingName}
+            </span>
+          </div>
+        )}
 
         {/* Controles de Zoom, Snapping y Guardar */}
         <div className="flex items-center justify-between lg:justify-end gap-2 overflow-x-auto scrollbar-none">
-          {/* Deshacer / Rehacer */}
-          <div className="flex items-center bg-slate-950 p-0.5 rounded-xl border border-slate-800 shrink-0">
-            <button
-              onClick={handleUndo}
-              disabled={historyIndex <= 0}
-              className="p-1.5 hover:bg-slate-800 rounded-lg disabled:opacity-30 text-slate-300 transition cursor-pointer"
-              title="Deshacer"
-            >
-              <Undo className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleRedo}
-              disabled={historyIndex >= history.length - 1}
-              className="p-1.5 hover:bg-slate-800 rounded-lg disabled:opacity-30 text-slate-300 transition cursor-pointer"
-              title="Rehacer"
-            >
-              <Redo className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          {/* Deshacer / Rehacer - Solo en modo edición */}
+          {!readOnly && (
+            <div className="flex items-center bg-slate-950 p-0.5 rounded-xl border border-slate-800 shrink-0">
+              <button
+                onClick={handleUndo}
+                disabled={historyIndex <= 0}
+                className="p-1.5 hover:bg-slate-800 rounded-lg disabled:opacity-30 text-slate-300 transition cursor-pointer"
+                title="Deshacer"
+              >
+                <Undo className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={handleRedo}
+                disabled={historyIndex >= history.length - 1}
+                className="p-1.5 hover:bg-slate-800 rounded-lg disabled:opacity-30 text-slate-300 transition cursor-pointer"
+                title="Rehacer"
+              >
+                <Redo className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
-          {/* Toggle de Imantación */}
-          <button
-            onClick={() => setSnapToGrid(!snapToGrid)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition shrink-0 cursor-pointer ${
-              snapToGrid 
-                ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800' 
-                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
-            }`}
-          >
-            <Magnet className="w-3.5 h-3.5" />
-            <span>Rejilla</span>
-          </button>
+          {/* Toggle de Imantación - Solo en modo edición */}
+          {!readOnly && (
+            <button
+              onClick={() => setSnapToGrid(!snapToGrid)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition shrink-0 cursor-pointer ${
+                snapToGrid 
+                  ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800' 
+                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+              }`}
+            >
+              <Magnet className="w-3.5 h-3.5" />
+              <span>Rejilla</span>
+            </button>
+          )}
 
           {/* Controles de Zoom */}
           <div className="flex items-center bg-slate-950 px-1.5 py-1 rounded-xl border border-slate-800 text-xs text-slate-300 gap-1.5 shrink-0">
@@ -1620,19 +1639,31 @@ export const InteractiveFloorPlanDrawingStudio = ({
       {/* Barra de Estado CAD Inferior */}
       <div className="px-4 py-2 bg-slate-950/90 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2 shadow-md">
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-2 text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-bold text-white">HERRAMIENTA:</span>
-            <span className="uppercase text-cyan-400 font-bold">{activeTool.replace('_', ' ')}</span>
-          </span>
+          {readOnly ? (
+            <span className="flex items-center gap-2 text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="font-bold text-white">MODO:</span>
+              <span className="uppercase text-emerald-400 font-bold">VISUALIZADOR 2D (SOLO LECTURA)</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-2 text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-bold text-white">HERRAMIENTA:</span>
+              <span className="uppercase text-cyan-400 font-bold">{activeTool.replace('_', ' ')}</span>
+            </span>
+          )}
           <span className="hidden sm:inline text-slate-600">|</span>
           <span className="hidden sm:inline">
             Plano: <strong className="text-white">{canvasWidth}×{canvasHeight}px</strong>
           </span>
-          <span className="hidden md:inline text-slate-600">|</span>
-          <span className="hidden md:inline">
-            Snap: <strong className={snapToGrid ? "text-emerald-400" : "text-slate-500"}>{snapToGrid ? "Activo (20px)" : "Inactivo"}</strong>
-          </span>
+          {!readOnly && (
+            <>
+              <span className="hidden md:inline text-slate-600">|</span>
+              <span className="hidden md:inline">
+                Snap: <strong className={snapToGrid ? "text-emerald-400" : "text-slate-500"}>{snapToGrid ? "Activo (20px)" : "Inactivo"}</strong>
+              </span>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2 text-[10px] text-slate-400">
@@ -1648,17 +1679,166 @@ export const InteractiveFloorPlanDrawingStudio = ({
           
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <Sliders className="w-5 h-5 shrink-0 text-emerald-600" />
-              <h3 className="font-bold text-slate-900 text-sm">Propiedades</h3>
+              {readOnly ? (
+                <Eye className="w-5 h-5 shrink-0 text-emerald-600" />
+              ) : (
+                <Sliders className="w-5 h-5 shrink-0 text-emerald-600" />
+              )}
+              <h3 className="font-bold text-slate-900 text-sm">
+                {readOnly ? (selectedElement ? 'Detalles de Plaza' : 'Métricas del Plano') : 'Propiedades'}
+              </h3>
             </div>
-            {selectedElement && (
-              <span className="font-mono text-[10px] uppercase font-bold text-slate-500">
-                {selectedElement.type}
+            {readOnly ? (
+              <span className="font-mono text-[10px] uppercase font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                Solo Lectura
               </span>
+            ) : (
+              selectedElement && (
+                <span className="font-mono text-[10px] uppercase font-bold text-slate-500">
+                  {selectedElement.type}
+                </span>
+              )
             )}
           </div>
 
-          {selectedElement ? (
+          {readOnly ? (
+            /* ============================================================
+               MODO SOLO LECTURA: DETALLES INFORMATIVOS (SIN EDICIÓN)
+               ============================================================ */
+            selectedElement ? (
+              <div className="space-y-4 animate-in fade-in">
+                {/* Header del elemento seleccionado en modo lectura */}
+                <div className="p-3.5 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 font-mono">
+                      {selectedElement.type === 'slot' ? 'Plaza de Estacionamiento' : selectedElement.type.toUpperCase()}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-bold">
+                      ID: #{selectedElement.id}
+                    </span>
+                  </div>
+                  <h4 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                    {selectedElement.type === 'slot' ? (
+                      <>
+                        <span>{selectedElement.code || 'Plaza'}</span>
+                        {selectedElement.slotType === 'moto' ? (
+                          <Bike className="w-4 h-4 text-orange-400" />
+                        ) : (
+                          <Car className="w-4 h-4 text-emerald-400" />
+                        )}
+                      </>
+                    ) : (
+                      <span>{selectedElement.label || selectedElement.type}</span>
+                    )}
+                  </h4>
+                </div>
+
+                {/* Tarjeta de Especificaciones de Solo Lectura */}
+                <div className="space-y-2.5 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs">
+                  {selectedElement.type === 'slot' && (
+                    <>
+                      <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                        <span className="text-slate-500 font-medium">Estado:</span>
+                        <span className={`font-bold px-2.5 py-0.5 rounded-lg text-[11px] ${
+                          selectedElement.status === 'occupied'
+                            ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        }`}>
+                          {selectedElement.status === 'occupied' ? '🔴 OCUPADO' : '🟢 LIBRE'}
+                        </span>
+                      </div>
+
+                      {selectedElement.status === 'occupied' && selectedElement.plate && (
+                        <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                          <span className="text-slate-500 font-medium">Vehículo / Placa:</span>
+                          <span className="font-mono font-black text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                            {selectedElement.plate}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                        <span className="text-slate-500 font-medium">Tipo:</span>
+                        <span className="font-bold text-slate-800 capitalize">
+                          {selectedElement.slotType === 'moto' ? 'Motocicleta' : 'Automóvil'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                        <span className="text-slate-500 font-medium">Cubierta:</span>
+                        <span className="font-bold text-slate-800">
+                          {selectedElement.shaded ? 'Plaza Techada' : 'Al Aire Libre'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                    <span className="text-slate-500 font-medium">Dimensiones:</span>
+                    <span className="font-mono font-bold text-slate-800">{selectedElement.w} × {selectedElement.h} px</span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-slate-500 font-medium">Orientación / Giro:</span>
+                    <span className="font-mono font-bold text-slate-800">{selectedElement.rot || 0}°</span>
+                  </div>
+                </div>
+
+                {/* Aviso informativo de edición */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] text-slate-600 flex items-start gap-2">
+                  <span className="text-base shrink-0">🔒</span>
+                  <p className="leading-snug">
+                    Estás en modo de visualización. Para modificar dimensiones, rotación, nombres o reubicar plazas, hazlo desde <strong>Editar Plano</strong>.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              /* Resumen Estadístico cuando no hay plaza seleccionada en modo lectura */
+              <div className="space-y-4 animate-in fade-in">
+                <div className="text-center py-3 text-slate-400 space-y-1.5 border-b border-slate-100">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+                    <Eye className="w-5 h-5 shrink-0" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-800">Visualizador de Plano 2D</p>
+                  <p className="text-[11px] text-slate-500">Haz clic sobre cualquier plaza o elemento para inspeccionar sus datos.</p>
+                </div>
+
+                {/* Métricas de la Sede */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold uppercase text-slate-400 font-tech block">Métricas de la Sede</span>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Total Plazas</span>
+                      <span className="text-xl font-bold font-mono text-slate-900">{totalSlots}</span>
+                    </div>
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                      <span className="text-[10px] text-emerald-700 font-bold block uppercase">Libres</span>
+                      <span className="text-xl font-bold font-mono text-emerald-800">{freeSlots}</span>
+                    </div>
+                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-2xl">
+                      <span className="text-[10px] text-orange-700 font-bold block uppercase">Motos</span>
+                      <span className="text-xl font-bold font-mono text-orange-800">{motoSlots}</span>
+                    </div>
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl">
+                      <span className="text-[10px] text-amber-700 font-bold block uppercase">Techadas</span>
+                      <span className="text-xl font-bold font-mono text-amber-800">{shadedSlots}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nota informativa */}
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5 text-[11px] text-slate-600">
+                  <span className="font-bold text-slate-800 block text-xs">ℹ️ Modo Solo Lectura</span>
+                  <p className="text-slate-500 leading-relaxed">
+                    En esta vista puedes explorar la distribución y estado de los espacios sin riesgo de modificarlos. Las ediciones se realizan en <strong>Editar Plano</strong>.
+                  </p>
+                </div>
+              </div>
+            )
+          ) : selectedElement ? (
+            /* ============================================================
+               MODO EDICIÓN: CONTROLES INTERACTIVOS COMPLETOS
+               ============================================================ */
             <div className="space-y-4">
               
               {/* Código y Acciones Rápidas */}
@@ -1983,7 +2163,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
             </div>
           ) : (
-            /* Estado cuando no hay elemento seleccionado: Dashboard Estadístico */
+            /* Estado cuando no hay elemento seleccionado en modo edición: Dashboard Estadístico */
             <div className="space-y-4">
               <div className="text-center py-4 text-slate-400 space-y-1.5 border-b border-slate-100">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">

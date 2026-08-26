@@ -38,6 +38,12 @@ async def simulate_anpr_scan(
             if slot:
                 slot.status = "occupied"
             await db.commit()
+            try:
+                from app.core.cache import occ_incr, cache_delete
+                await occ_incr(scan.parking_id, free_delta=-1, occupied_delta=1)
+                await cache_delete("parkings:all", "finances:summary")
+            except Exception:
+                pass
             return {
                 "matched": True,
                 "reservation_code": reservation.code,
@@ -51,6 +57,12 @@ async def simulate_anpr_scan(
             if slot:
                 slot.status = "free"
             await db.commit()
+            try:
+                from app.core.cache import occ_incr, cache_delete
+                await occ_incr(scan.parking_id, free_delta=1, occupied_delta=-1)
+                await cache_delete("parkings:all", "finances:summary")
+            except Exception:
+                pass
             return {
                 "matched": True,
                 "reservation_code": reservation.code,

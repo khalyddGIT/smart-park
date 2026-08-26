@@ -57,15 +57,51 @@ async def list_parkings(
         slots_stmt = select(Slot).where(Slot.parking_id == p.id, Slot.status == "free")
         free_slots_res = await db.execute(slots_stmt)
         free_count = len(free_slots_res.scalars().all())
-        
+        # Contadores totales para ocupación en vivo
+        all_slots_stmt = select(Slot).where(Slot.parking_id == p.id)
+        all_res = await db.execute(all_slots_stmt)
+        total_count = len(all_res.scalars().all())
+        occupied = max(0, total_count - free_count)
+
         p_dict = ParkingResponse.model_validate(p)
         p_dict.available_slots = free_count
         response.append(p_dict)
+
+        # Sincronizar contadores Redis en segundo plano (fail-open)
+        try:
+            from app.core.cache import occ_set
+            await occ_set(p.id, free_count, occupied, total_count)
+        except Exception:
+            pass
 
     if not query and not city and not status_filter:
         await cache_set_json(PARKINGS_CACHE_KEY, [r.model_dump(mode="json") for r in response], ttl=5)
 
     return response
+
+@router.get("/{parking_id}/occupancy")
+async def get_occupancy(parking_id: int, db: AsyncSession = Depends(get_db)):
+    """Ocupación en vivo: prioriza Redis INCR/DECR, fallback a BD."""
+    from app.core.cache import occ_get
+    cached = await occ_get(parking_id)
+    if cached is not None:
+        return {"parking_id": parking_id, **cached}
+    result = await db.execute(select(Parking).where(Parking.id == parking_id))
+    if not result.scalars().first():
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    free_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id, Slot.status == "free"))
+    occ_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id, Slot.status == "occupied"))
+    all_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
+    free = len(free_res.scalars().all())
+    occupied = len(occ_res.scalars().all())
+    total = len(all_res.scalars().all())
+    from app.core.cache import occ_set
+    try:
+        await occ_set(parking_id, free, occupied, total)
+    except Exception:
+        pass
+    return {"parking_id": parking_id, "free": free, "occupied": occupied, "total": total, "source": "db"}
+
 
 @router.get("/{parking_id}", response_model=ParkingResponse)
 async def get_parking(parking_id: int, db: AsyncSession = Depends(get_db)):
@@ -81,6 +117,7 @@ async def get_parking(parking_id: int, db: AsyncSession = Depends(get_db)):
     p_dict = ParkingResponse.model_validate(parking)
     p_dict.available_slots = free_count
     return p_dict
+
 
 @router.post("", response_model=ParkingResponse, status_code=status.HTTP_201_CREATED)
 async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
@@ -264,9 +301,17 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
     await db.commit()
     await invalidate_parkings_cache()
     await realtime.broadcast("parkings:updated", {"parking_id": parking_id})
-    # Contar total actual
+    # Contar total actual y sincronizar contadores Redis
     final_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
-    total = len(final_res.scalars().all())
+    all_slots = final_res.scalars().all()
+    total = len(all_slots)
+    free_c = sum(1 for s in all_slots if s.status == "free")
+    occ_c = sum(1 for s in all_slots if s.status == "occupied")
+    try:
+        from app.core.cache import occ_set
+        await occ_set(parking_id, free_c, occ_c, total)
+    except Exception:
+        pass
     return {
         "status": "success",
         "message": f"Plano CAD del estacionamiento {parking_id} sincronizado exitosamente",

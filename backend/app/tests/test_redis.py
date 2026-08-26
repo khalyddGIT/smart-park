@@ -3,8 +3,9 @@
 Monkeypatchean get_client() para ejercitar los caminos reales de Redis sin servidor.
 """
 import pytest
-from fastapi import HTTPException
+fakeredis = pytest.importorskip("fakeredis")
 from fakeredis import aioredis as fakeredis_aio
+from fastapi import HTTPException
 
 from app.core import cache
 from app.core.security import create_access_token

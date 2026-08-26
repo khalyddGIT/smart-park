@@ -218,6 +218,11 @@ async def check_in_reservation(reservation_id: int, db: AsyncSession = Depends(g
 
     await db.commit()
     try:
+        from app.core.cache import occ_incr
+        await occ_incr(reservation.parking_id, free_delta=-1, occupied_delta=1)
+    except Exception:
+        pass
+    try:
         await invalidate_parkings_cache()
         await invalidate_finances_cache()
         await realtime.broadcast("reservations:updated")
@@ -248,6 +253,11 @@ async def check_out_reservation(reservation_id: int, db: AsyncSession = Depends(
         slot.status = "free"
 
     await db.commit()
+    try:
+        from app.core.cache import occ_incr
+        await occ_incr(reservation.parking_id, free_delta=1, occupied_delta=-1)
+    except Exception:
+        pass
     try:
         await invalidate_parkings_cache()
         await invalidate_finances_cache()

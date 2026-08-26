@@ -138,6 +138,67 @@ async def is_blacklisted(jti: str) -> bool:
 
 
 # ------------------------------------------------------------------
+# Contadores de ocupación en vivo (INCR/DECR) — fail-open
+# ------------------------------------------------------------------
+
+def _occ_key(parking_id: int, field: str) -> str:
+    return f"occ:{int(parking_id)}:{field}"
+
+
+async def occ_set(parking_id: int, free: int, occupied: int, total: int, ttl: int = 300):
+    """Inicializa/sincroniza contadores desde la BD (usado tras lecturas completas)."""
+    client = get_client()
+    if not client:
+        return
+    try:
+        pipe = client.pipeline()
+        pipe.set(_occ_key(parking_id, "free"), int(free), ex=ttl)
+        pipe.set(_occ_key(parking_id, "occupied"), int(occupied), ex=ttl)
+        pipe.set(_occ_key(parking_id, "total"), int(total), ex=ttl)
+        await pipe.execute()
+    except Exception as exc:
+        logger.warning(f"[occ] SET {parking_id} falló (fail-open): {exc}")
+
+
+async def occ_incr(parking_id: int, free_delta: int = 0, occupied_delta: int = 0):
+    """Actualización atómica de contadores en check-in/out (INCRBY)."""
+    if free_delta == 0 and occupied_delta == 0:
+        return
+    client = get_client()
+    if not client:
+        return
+    try:
+        pipe = client.pipeline()
+        if free_delta != 0:
+            pipe.incrby(_occ_key(parking_id, "free"), free_delta)
+        if occupied_delta != 0:
+            pipe.incrby(_occ_key(parking_id, "occupied"), occupied_delta)
+        await pipe.execute()
+    except Exception as exc:
+        logger.warning(f"[occ] INCR {parking_id} falló (fail-open): {exc}")
+
+
+async def occ_get(parking_id: int):
+    """Lee contadores si existen en Redis, o None si no hay cache."""
+    client = get_client()
+    if not client:
+        return None
+    try:
+        vals = await client.mget(_occ_key(parking_id, "free"), _occ_key(parking_id, "occupied"), _occ_key(parking_id, "total"))
+        if vals[0] is None and vals[1] is None:
+            return None
+        return {
+            "free": int(vals[0]) if vals[0] is not None else None,
+            "occupied": int(vals[1]) if vals[1] is not None else None,
+            "total": int(vals[2]) if vals[2] is not None else None,
+            "source": "redis",
+        }
+    except Exception as exc:
+        logger.warning(f"[occ] GET {parking_id} falló (fail-open): {exc}")
+        return None
+
+
+# ------------------------------------------------------------------
 # Pub/Sub para fan-out de eventos entre réplicas
 # ------------------------------------------------------------------
 

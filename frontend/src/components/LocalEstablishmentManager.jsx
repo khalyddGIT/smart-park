@@ -615,10 +615,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       const fd = new FormData();
       fd.append('file', file);
       const res = await api.post(`/parkings/${numId}/camera/detect`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      showToast(`✓ Detección completada: ${res.data.updated} cajones actualizados de ${res.data.total}.`);
-      // Refrescar plano desde el servidor
+      showToast(`✓ Detección por cajón: ${res.data.updated} cajones actualizados de ${res.data.total}.`);
       ensureFloorPlan(String(numId));
-      // Forzar recarga del plano tras 800ms
       setTimeout(() => {
         const fresh = establishments.find(x => String(x.id) === String(numId));
         if (fresh?.elements) setCurrentPlanElements(fresh.elements);
@@ -626,6 +624,28 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     } catch (err) {
       const detail = err?.response?.data?.detail || 'No se pudo procesar la imagen.';
       showToast(`✕ ${detail}`);
+    } finally {
+      setCameraDetecting(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleCountCars = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedEstablishment) return;
+    const numId = Number(selectedEstablishment.id);
+    if (isNaN(numId)) {
+      showToast('Solo sedes reales.');
+      return;
+    }
+    setCameraDetecting(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post(`/parkings/${numId}/camera/count`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      showToast(`✓ Autos detectados en playón: ${res.data.count} vehículos.`);
+    } catch (err) {
+      showToast(`✕ ${err?.response?.data?.detail || 'No se pudo contar autos.'}`);
     } finally {
       setCameraDetecting(false);
       e.target.value = '';

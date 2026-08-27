@@ -189,6 +189,60 @@ async def detect_camera_occupancy(parking_id: int, file: UploadFile = File(...),
     return {"parking_id": parking_id, "updated": updated, "total": len(slots), "occupancy": occupancy}
 
 
+@router.post("/{parking_id}/camera/count")
+async def count_cars_simple(parking_id: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    """Cuenta autos en la foto sin necesidad de cajones definidos — ideal para prueba rápida de cámara cenital."""
+    result = await db.execute(select(Parking).where(Parking.id == parking_id))
+    if not result.scalars().first():
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    image_bytes = await file.read()
+    if len(image_bytes) < 100:
+        raise HTTPException(status_code=400, detail="Imagen vacía")
+    if len(image_bytes) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Imagen demasiado grande (máx 8MB)")
+    # Detección simple: YOLO car + fallback contornos
+    import cv2
+    import numpy as np
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise HTTPException(status_code=422, detail="No se pudo decodificar la imagen")
+    car_boxes = []
+    try:
+        from ultralytics import YOLO
+        import os
+        for _m in [os.getenv("YOLO_VEHICLE_MODEL", ""), "yolov8m.pt", "yolov8n.pt"]:
+            if not _m or not os.path.exists(_m):
+                continue
+            model = YOLO(_m)
+            res = model(img, verbose=False, conf=0.35)
+            for r in res:
+                for box in r.boxes:
+                    cls = int(box.cls[0]) if hasattr(box, 'cls') else -1
+                    if cls in (2, 3, 5, 7):
+                        car_boxes.append(list(map(int, box.xyxy[0].tolist())))
+            if car_boxes:
+                break
+    except Exception:
+        pass
+    if not car_boxes:
+        # Fallback contornos oscuros (autos) sobre asfalto claro
+        try:
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            _, thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            contours, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            h, w = gray.shape
+            for cnt in contours:
+                x, y, bw, bh = cv2.boundingRect(cnt)
+                area = bw*bh
+                if area < w*h*0.008 or area > w*h*0.25: continue
+                if 1.3 < bw/float(bh) < 3.5 and bh > 28:
+                    car_boxes.append([x, y, x+bw, y+bh])
+        except Exception:
+            pass
+    return {"parking_id": parking_id, "count": len(car_boxes), "total_detected": len(car_boxes), "boxes": car_boxes[:50]}
+
+
 @router.post("", response_model=ParkingResponse, status_code=status.HTTP_201_CREATED)
 async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
     db_parking = Parking(

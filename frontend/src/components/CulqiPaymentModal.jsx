@@ -21,7 +21,8 @@ import {
   EyeOff,
   ExternalLink,
   ShieldAlert,
-  Wallet
+  Wallet,
+  Sparkles
 } from 'lucide-react';
 
 // Credenciales públicas para frontend (el secreto CULQI_SECRET_KEY y PAYPAL_CLIENT_SECRET residen en el backend)
@@ -63,7 +64,11 @@ export const CulqiPaymentModal = ({
   const paypalContainerRef = useRef(null);
   const paypalButtonsRendered = useRef(false);
 
-  // Formulario Tarjeta Culqi
+  // Culqi Checkout v4 SDK Loading State
+  const [culqiSdkLoaded, setCulqiSdkLoaded] = useState(false);
+  const [useDirectForm, setUseDirectForm] = useState(false);
+
+  // Formulario Tarjeta Culqi Directo
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
@@ -82,6 +87,39 @@ export const CulqiPaymentModal = ({
   // Cálculos de moneda
   const amountPen = Number(amount) || 10.00;
   const amountUsd = Math.max(0.50, Number((amountPen * PAYPAL_EXCHANGE_RATE).toFixed(2)));
+
+  // Cargar SDK oficial de Culqi Checkout v4 dinámicamente
+  useEffect(() => {
+    if (!isOpen || paymentSuccess) return;
+
+    if (window.Culqi) {
+      setCulqiSdkLoaded(true);
+      return;
+    }
+
+    const scriptId = 'culqi-checkout-v4';
+    let script = document.getElementById(scriptId);
+
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://checkout.culqi.com/js/v4';
+      script.async = true;
+      script.onload = () => {
+        setCulqiSdkLoaded(true);
+      };
+      script.onerror = () => {
+        console.warn('No se pudo cargar https://checkout.culqi.com/js/v4');
+      };
+      document.body.appendChild(script);
+    } else {
+      if (window.Culqi) {
+        setCulqiSdkLoaded(true);
+      } else {
+        script.addEventListener('load', () => setCulqiSdkLoaded(true));
+      }
+    }
+  }, [isOpen, paymentSuccess]);
 
   // Temporizador para QR de Yape/Plin
   useEffect(() => {
@@ -258,7 +296,123 @@ export const CulqiPaymentModal = ({
     return { month, year };
   };
 
-  // Procesar Pago con Tarjeta Culqi
+  // Abrir Checkout Oficial de Culqi (Ventana Emergente Oficial de Culqi Perú)
+  const handleOpenCulqiCheckout = () => {
+    setErrorMsg('');
+    const pk = (CULQI_PUBLIC_KEY || '').trim();
+    if (!pk || !pk.startsWith('pk_')) {
+      setErrorMsg('Llave pública de Culqi no configurada en el frontend (VITE_CULQI_PUBLIC_KEY).');
+      return;
+    }
+
+    if (!window.Culqi) {
+      setErrorMsg('Cargando pasarela oficial de Culqi... Por favor, intenta de nuevo en unos segundos.');
+      return;
+    }
+
+    const amountCents = Math.round(Number(amountPen) * 100);
+
+    // Configurar Culqi v4
+    window.Culqi.publicKey = pk;
+
+    window.Culqi.settings({
+      title: 'Smart-Park Ayacucho',
+      currency: 'PEN',
+      amount: amountCents,
+      description: (concept || 'Reserva Smart-Park').slice(0, 80),
+      options: {
+        lang: 'es',
+        installments: true,
+        modal: true,
+        paymentMethods: {
+          tarjeta: true,
+          yape: true,
+          billetera: true,
+          bancaMovil: true,
+          agente: true,
+          cuotealo: false,
+        }
+      }
+    });
+
+    window.Culqi.options({
+      style: {
+        logo: 'https://smart-park-web-production.up.railway.app/favicon.ico',
+        bannerColor: '#0f172a',
+        buttonBackground: '#10b981',
+        menuColor: '#10b981',
+        linksColor: '#10b981',
+        priceColor: '#10b981'
+      }
+    });
+
+    // Callback global obligatorio de Culqi v4
+    window.culqi = async () => {
+      if (window.Culqi.token) {
+        const tokenId = window.Culqi.token.id;
+        const email = window.Culqi.token.email || customerEmail;
+        const cardBrand = window.Culqi.token.iin?.card_brand || window.Culqi.token.card_brand || 'VISA/MASTERCARD';
+        const last4 = window.Culqi.token.client?.card_number?.slice(-4) || window.Culqi.token.card_number?.slice(-4) || '****';
+
+        window.Culqi.close();
+        setIsProcessing(true);
+        setProcessingStep('Validando pago con Culqi en el servidor...');
+
+        try {
+          const payload = {
+            amount_cents: amountCents,
+            currency: 'PEN',
+            token_id: tokenId,
+            description: (concept || 'Reserva Smart Park').slice(0, 80),
+            email: email,
+          };
+          if (reservationId) payload.reservation_id = reservationId;
+
+          const res = await api.post('/payments/charge', payload);
+          const data = res.data;
+
+          const chargeData = {
+            chargeId: data.id || data.chargeId || tokenId,
+            tokenId: tokenId,
+            amount: Number(amountPen),
+            currency: 'PEN',
+            currencySymbol: 'S/',
+            method: `Tarjeta / Yape (${cardBrand})`,
+            cardBrand: cardBrand,
+            last4: last4,
+            cardHolder: window.Culqi.token.client?.first_name || cardHolder || 'CONDUCTOR SMART-PARK',
+            email: email,
+            installments: 1,
+            invoiceNumber: data.invoice_number || `B001-${String(data.id || '').slice(-6) || Math.floor(100000 + Math.random() * 900000)}`,
+            date: new Date().toLocaleString('es-PE'),
+            authorizationCode: data.authorization_code || data.auth_code || `AUT-${String(data.id || '').slice(-6) || '---'}`,
+            status: 'PAID',
+            gateway: 'CULQI CHECKOUT OFICIAL (PCI-DSS)',
+            raw: data,
+          };
+
+          setIsProcessing(false);
+          setPaymentSuccess(chargeData);
+          if (onPaymentSuccess) onPaymentSuccess(chargeData);
+        } catch (err) {
+          setIsProcessing(false);
+          const detail = err.response?.data?.detail || err.message || 'Error al procesar el cobro con Culqi';
+          setErrorMsg(`Pago rechazado por Culqi: ${detail}`);
+        }
+      } else if (window.Culqi.order) {
+        window.Culqi.close();
+        setIsProcessing(false);
+      } else if (window.Culqi.error) {
+        setIsProcessing(false);
+        const userMsg = window.Culqi.error.user_message || window.Culqi.error.merchant_message || window.Culqi.error.message;
+        if (userMsg) setErrorMsg(`Culqi: ${userMsg}`);
+      }
+    };
+
+    window.Culqi.open();
+  };
+
+  // Procesar Pago con Tarjeta Culqi Directo
   const handleProcessCulqiCard = async (e) => {
     if (e) e.preventDefault();
     setErrorMsg('');
@@ -669,137 +823,196 @@ export const CulqiPaymentModal = ({
 
             {/* 2. MÉTODO: TARJETA CULQI */}
             {activeMethod === 'card' && (
-              <div className="space-y-3.5">
-                <div className="bg-gradient-to-tr from-slate-900 via-slate-800 to-emerald-950 p-4 rounded-2xl text-white shadow-lg space-y-3 border border-slate-700 relative overflow-hidden">
+              <div className="space-y-4">
+                
+                {/* Botón Principal: Checkout Oficial Culqi v4 (Popup Nativo) */}
+                <div className="p-4 rounded-3xl bg-slate-900 text-white border border-emerald-500/40 shadow-xl space-y-3 relative overflow-hidden">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono tracking-widest text-emerald-400 font-bold">SMART-PARK CULQI PAY</span>
-                    <span className="text-xs font-black tracking-wider bg-white/10 px-2 py-0.5 rounded">
-                      {getCardBrand(cardNumber)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-5 shrink-0 rounded bg-amber-400/80 border border-amber-300 flex items-center justify-center">
-                      <div className="w-4 h-3 border border-amber-600 rounded-xs opacity-60" />
-                    </div>
-                    <span className="text-xs font-mono text-slate-400">••••</span>
-                  </div>
-                  <div className="font-mono text-sm tracking-widest font-black text-slate-100">
-                    {cardNumber || '•••• •••• •••• ••••'}
-                  </div>
-                  <div className="flex justify-between items-end text-[10px] font-mono text-slate-300">
-                    <div>
-                      <span className="text-[8px] text-slate-400 block uppercase">Titular</span>
-                      <span className="font-bold tracking-tight">{cardHolder || 'NOMBRE DEL TITULAR'}</span>
-                    </div>
-                    <div>
-                      <span className="text-[8px] text-slate-400 block uppercase">Vence</span>
-                      <span className="font-bold">{cardExpiry || 'MM/AA'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Tarjetas de Prueba Culqi (Sandbox):</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {CULQI_TEST_CARDS.map((tc, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => fillTestCard(tc)}
-                        className={`text-[10px] font-mono px-2 py-1 rounded-lg border font-bold transition cursor-pointer ${
-                          tc.type === 'success' 
-                            ? 'bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-500 hover:bg-emerald-50' 
-                            : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
-                        }`}
-                      >
-                        {tc.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <form onSubmit={handleProcessCulqiCard} className="space-y-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Número de Tarjeta *</label>
-                    <div className="relative">
-                      <CreditCard className="w-4 h-4 shrink-0 absolute left-3 top-3 text-slate-400" />
-                      <Input
-                        type="text"
-                        placeholder="4242 4242 4242 4242"
-                        value={cardNumber}
-                        onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                        className="pl-9 font-mono font-bold text-xs h-10 bg-slate-50/80 border-slate-300"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Vencimiento *</label>
-                      <Input
-                        type="text"
-                        placeholder="MM/AA"
-                        value={cardExpiry}
-                        onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                        className="font-mono font-bold text-xs h-10 bg-slate-50/80 border-slate-300 text-center"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">CVV *</label>
-                      <div className="relative">
-                        <Input
-                          type={showCVV ? "text" : "password"}
-                          placeholder="123"
-                          maxLength={4}
-                          value={cardCvv}
-                          onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
-                          className="font-mono font-bold text-xs h-10 bg-slate-50/80 border-slate-300 text-center pr-8"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowCVV(!showCVV)}
-                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
-                        >
-                          {showCVV ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
-                        </button>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-md">
+                        CQ
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black tracking-wide text-white">Culqi Checkout Oficial</h4>
+                        <span className="text-[10px] text-emerald-400 font-mono">Pasarela Bancaria PCI-DSS v4</span>
                       </div>
                     </div>
+                    <span className="text-[10px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-mono">
+                      SANDBOX EN VIVO
+                    </span>
                   </div>
 
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Nombre del Titular *</label>
-                    <Input
-                      type="text"
-                      placeholder="Como figura en el plástico"
-                      value={cardHolder}
-                      onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
-                      className="text-xs h-10 bg-slate-50/80 border-slate-300 uppercase font-mono"
-                      required
-                    />
-                  </div>
+                  <p className="text-[11px] text-slate-300 leading-snug">
+                    Abre la ventana flotante oficial certificada de <strong>Culqi Perú</strong> con soporte para todas las tarjetas Visa, Mastercard, AMEX y Diners.
+                  </p>
 
                   <Button
-                    type="submit"
+                    type="button"
+                    onClick={handleOpenCulqiCheckout}
                     disabled={isProcessing}
-                    className="w-full py-4 text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl cursor-pointer shadow-md gap-2 mt-2"
+                    className="w-full py-4 text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-2xl cursor-pointer shadow-lg gap-2 transition transform active:scale-95"
                   >
-                    {isProcessing ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 shrink-0 animate-spin" />
-                        <span>{processingStep}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4 shrink-0 text-emerald-200" />
-                        <span>Pagar S/ {amountPen.toFixed(2)} con Tarjeta</span>
-                        <ArrowRight className="w-4 h-4 shrink-0 text-emerald-200" />
-                      </>
-                    )}
+                    <Sparkles className="w-4 h-4 shrink-0 text-slate-950" />
+                    <span>Pagar con Checkout Oficial de Culqi (S/ {amountPen.toFixed(2)})</span>
+                    <ExternalLink className="w-4 h-4 shrink-0 text-slate-950" />
                   </Button>
-                </form>
+
+                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                    <span>Llave pública: {CULQI_PUBLIC_KEY.slice(0, 12)}...{CULQI_PUBLIC_KEY.slice(-4)}</span>
+                    <span className="text-emerald-400 font-bold">SSL 256-bit</span>
+                  </div>
+                </div>
+
+                {/* Toggle para Formulario Directo */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setUseDirectForm(!useDirectForm)}
+                    className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center justify-between w-full p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 transition cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-slate-500" />
+                      <span>{useDirectForm ? 'Ocultar formulario directo de tarjeta' : 'O pagar ingresando los datos directamente aquí'}</span>
+                    </span>
+                    <span className="text-[11px] text-emerald-700 font-bold">{useDirectForm ? '▲' : '▼'}</span>
+                  </button>
+                </div>
+
+                {useDirectForm && (
+                  <div className="space-y-3.5 pt-1 animate-in fade-in">
+                    <div className="bg-gradient-to-tr from-slate-900 via-slate-800 to-emerald-950 p-4 rounded-2xl text-white shadow-lg space-y-3 border border-slate-700 relative overflow-hidden">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-mono tracking-widest text-emerald-400 font-bold">SMART-PARK CULQI DIRECT</span>
+                        <span className="text-xs font-black tracking-wider bg-white/10 px-2 py-0.5 rounded">
+                          {getCardBrand(cardNumber)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-5 shrink-0 rounded bg-amber-400/80 border border-amber-300 flex items-center justify-center">
+                          <div className="w-4 h-3 border border-amber-600 rounded-xs opacity-60" />
+                        </div>
+                        <span className="text-xs font-mono text-slate-400">••••</span>
+                      </div>
+                      <div className="font-mono text-sm tracking-widest font-black text-slate-100">
+                        {cardNumber || '•••• •••• •••• ••••'}
+                      </div>
+                      <div className="flex justify-between items-end text-[10px] font-mono text-slate-300">
+                        <div>
+                          <span className="text-[8px] text-slate-400 block uppercase">Titular</span>
+                          <span className="font-bold tracking-tight">{cardHolder || 'NOMBRE DEL TITULAR'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[8px] text-slate-400 block uppercase">Vence</span>
+                          <span className="font-bold">{cardExpiry || 'MM/AA'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Tarjetas de Prueba Culqi (Sandbox):</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {CULQI_TEST_CARDS.map((tc, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => fillTestCard(tc)}
+                            className={`text-[10px] font-mono px-2 py-1 rounded-lg border font-bold transition cursor-pointer ${
+                              tc.type === 'success' 
+                                ? 'bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-500 hover:bg-emerald-50' 
+                                : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
+                            }`}
+                          >
+                            {tc.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleProcessCulqiCard} className="space-y-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 block mb-1">Número de Tarjeta *</label>
+                        <div className="relative">
+                          <CreditCard className="w-4 h-4 shrink-0 absolute left-3 top-3 text-slate-400" />
+                          <Input
+                            type="text"
+                            placeholder="4242 4242 4242 4242"
+                            value={cardNumber}
+                            onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                            className="pl-9 font-mono font-bold text-xs h-10 bg-slate-50/80 border-slate-300"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 block mb-1">Vencimiento *</label>
+                          <Input
+                            type="text"
+                            placeholder="MM/AA"
+                            value={cardExpiry}
+                            onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
+                            className="font-mono font-bold text-xs h-10 bg-slate-50/80 border-slate-300 text-center"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 block mb-1">CVV *</label>
+                          <div className="relative">
+                            <Input
+                              type={showCVV ? "text" : "password"}
+                              placeholder="123"
+                              maxLength={4}
+                              value={cardCvv}
+                              onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
+                              className="font-mono font-bold text-xs h-10 bg-slate-50/80 border-slate-300 text-center pr-8"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowCVV(!showCVV)}
+                              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                            >
+                              {showCVV ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 block mb-1">Nombre del Titular *</label>
+                        <Input
+                          type="text"
+                          placeholder="Como figura en el plástico"
+                          value={cardHolder}
+                          onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
+                          className="text-xs h-10 bg-slate-50/80 border-slate-300 uppercase font-mono"
+                          required
+                        />
+                      </div>
+
+                      <Button
+                        type="submit"
+                        disabled={isProcessing}
+                        className="w-full py-4 text-xs font-black bg-slate-900 hover:bg-slate-800 text-white rounded-2xl cursor-pointer shadow-md gap-2 mt-2"
+                      >
+                        {isProcessing ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 shrink-0 animate-spin" />
+                            <span>{processingStep}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4 shrink-0 text-emerald-400" />
+                            <span>Pagar S/ {amountPen.toFixed(2)} con Tarjeta Directa</span>
+                            <ArrowRight className="w-4 h-4 shrink-0 text-emerald-400" />
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </div>
+                )}
+
               </div>
             )}
 

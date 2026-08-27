@@ -389,10 +389,21 @@ async def scan_image_anpr(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Error en detección: {exc}")
 
-    # Validar que se haya detectado algo con confianza mínima
+    # Para pruebas: devolver siempre el mejor intento aunque sea corto/baja confianza, para corrección manual
     plate = (result.get("plate") or "").strip()
-    if not plate or len(plate.replace("-", "")) < 5:
-        raise HTTPException(status_code=422, detail="No se pudo detectar una placa válida en la imagen. Intenta con mejor iluminación y encuadre frontal.")
+    raw = (result.get("plate_raw") or "").strip()
+    corrected = (result.get("plate_corrected") or "").strip()
+    # Fallback: si plate vacío pero hay raw/corrected, usarlo con baja confianza
+    if not plate and raw:
+        plate = raw
+        result["confidence"] = min(int(result.get("confidence", 0) or 0), 35) or 25
+        result["plate"] = plate
+    if not plate and corrected and len(corrected) >= 4:
+        plate = corrected
+        result["confidence"] = min(int(result.get("confidence", 0) or 0), 40) or 30
+        result["plate"] = plate
+    if not plate or len(plate.replace("-", "").replace(" ", "")) < 3:
+        raise HTTPException(status_code=422, detail="No se detectó texto en la imagen. Recorta solo la placa y prueba de nuevo.")
 
     # Opcional: si se pasó parking_id, intentar cotejo inmediato contra reservas (mismo comportamiento que simulate-scan)
     matched_info = None

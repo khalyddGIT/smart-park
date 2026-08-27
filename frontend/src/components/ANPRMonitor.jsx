@@ -898,20 +898,24 @@ export const ANPRMonitor = () => {
           ? '/anpr/scan-image'
           : `/anpr/scan-image?parking_id=${numericId}&gate_type=entry`;
         const scanRes = await api.post(url, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-        const plate = scanRes.data?.plate || '';
+        const plate = scanRes.data?.plate || scanRes.data?.plate_raw || '';
+        const conf = scanRes.data?.confidence || 0;
         if (plate) {
           setPlateInput(plate);
           setOcrStats({
             ms: scanRes.data.ms || 0,
-            confidence: scanRes.data.confidence || 0,
+            confidence: conf,
             vehicleType: scanRes.data.vehicle_type || 'carro'
           });
+          if (conf > 0 && conf < 55) {
+            alert(`Placa detectada con baja confianza (${conf}%): ${plate} — verifica y corrige manual antes de verificar.`);
+          }
           await handleVerifyPlate(plate, 'entry');
           return;
         }
         // Fallback si no detecta placa: dejar que el operador corrija manual
         setPlateInput('');
-        alert(scanRes.data?.detail || 'No se detectó placa en la imagen. Ajusta iluminación y encuadre frontal.');
+        alert(scanRes.data?.detail || 'No se detectó texto en la imagen. Recorta solo la placa y prueba de nuevo.');
       } catch (err) {
         const detail = err?.response?.data?.detail || 'No se pudo procesar la imagen en el servidor.';
         // 503 = falta tesseract/opencv en servidor (fail-open honesto)

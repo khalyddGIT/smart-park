@@ -17,9 +17,8 @@ RUN npm run build
 # ---------- Stage 2: Backend FastAPI + estáticos ----------
 FROM python:3.11-slim
 
-# Dependencias del sistema para OpenCV (libGL) y Tesseract OCR (placas reales)
+# Dependencias del sistema para OpenCV (detección de ocupación por cajón)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tesseract-ocr \
     libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*

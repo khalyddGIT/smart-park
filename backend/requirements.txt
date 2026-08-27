@@ -17,6 +17,4 @@ redis>=5.0.0
 opencv-python-headless>=4.9.0
 Pillow>=10.0.0
 numpy>=1.24.0
-pytesseract>=0.3.10
-easyocr>=1.6.0
 ultralytics>=8.0.0

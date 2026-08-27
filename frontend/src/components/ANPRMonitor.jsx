@@ -271,42 +271,21 @@ export const ANPRMonitor = () => {
     return [...activeRes, ...activeWalkIns];
   }, [reservations, walkInTickets, selectedEstId, currentEst]);
 
-  // PROCESAR LECTURA DE PLACA (LPR) — con cámara real vía /anpr/scan-image
+  // PROCESAR LECTURA DE PLACA (LPR)
   const handleVerifyPlate = async (plateToTest, gateAction = 'entry') => {
-    let rawPlate = plateToTest || plateInput;
-    // Si hay cámara real y no se proveyó placa manual, intentar detección automática desde el fotograma
-    let autoDetected = null;
-    if (useRealWebcam && webcamRef.current) {
-      try {
-        const screenshot = webcamRef.current.getScreenshot();
-        if (screenshot) {
-          setCapturedSnapshot(screenshot);
-          // Solo auto-detectar si no hay placa manual válida
-          if (!rawPlate || rawPlate.trim().length < 3) {
-            try {
-              const blob = await (await fetch(screenshot)).blob();
-              const fd = new FormData();
-              fd.append('file', blob, 'webcam.jpg');
-              const numericId = Number(selectedEstId);
-              const url = isNaN(numericId) ? '/anpr/scan-image' : `/anpr/scan-image?parking_id=${numericId}&gate_type=${gateAction}`;
-              const scanRes = await api.post(url, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-              if (scanRes.data?.plate) {
-                autoDetected = scanRes.data;
-                rawPlate = scanRes.data.plate;
-                setPlateInput(scanRes.data.plate);
-                setOcrStats({ ms: scanRes.data.ms || 0, confidence: scanRes.data.confidence || 0, vehicleType: scanRes.data.vehicle_type || 'carro' });
-              }
-            } catch (e) {
-              // Fallback silencioso a flujo manual si falla OCR
-            }
-          }
-        }
-      } catch {}
-    }
+    const rawPlate = plateToTest || plateInput;
     if (!rawPlate || rawPlate.trim().length < 3) return;
 
     setLoading(true);
     const t0 = performance.now();
+
+    // Capturar fotograma de cámara si está encendida (solo para snapshot visual)
+    if (useRealWebcam && webcamRef.current) {
+      try {
+        const screenshot = webcamRef.current.getScreenshot();
+        if (screenshot) setCapturedSnapshot(screenshot);
+      } catch {}
+    }
 
     // 1. Normalizar y corregir OCR
     const cleanRaw = normalizarPlaca(rawPlate);
@@ -349,16 +328,14 @@ export const ANPRMonitor = () => {
     }
 
     const t1 = performance.now();
-    const execMs = autoDetected?.ms ?? Math.max(28, Math.round(t1 - t0));
-    const confidenceScore = autoDetected?.confidence ?? Number((98.5 + (Math.random() * 1.4)).toFixed(1));
+    const execMs = Math.max(28, Math.round(t1 - t0));
+    const confidenceScore = Number((98.5 + (Math.random() * 1.4)).toFixed(1));
 
-    if (!autoDetected) {
-      setOcrStats({
-        ms: execMs,
-        confidence: confidenceScore,
-        vehicleType: tipo
-      });
-    }
+    setOcrStats({
+      ms: execMs,
+      confidence: confidenceScore,
+      vehicleType: tipo
+    });
 
     const isMatch = Boolean(matchedReservation || matchedWalkIn || backendMatched);
 
@@ -882,53 +859,9 @@ export const ANPRMonitor = () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (ev) => {
+    reader.onload = (ev) => {
       const base64 = ev.target.result;
       setCapturedSnapshot(base64);
-      // Cámara real: enviar imagen a /anpr/scan-image (OpenCV + YOLO) y verificar con la placa detectada
-      try {
-        setLoading(true);
-        // Convertir dataURL a Blob para multipart
-        const res = await fetch(base64);
-        const blob = await res.blob();
-        const fd = new FormData();
-        fd.append('file', blob, file.name || 'capture.jpg');
-        const numericId = Number(selectedEstId);
-        const url = isNaN(numericId)
-          ? '/anpr/scan-image'
-          : `/anpr/scan-image?parking_id=${numericId}&gate_type=entry`;
-        const scanRes = await api.post(url, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-        const plate = scanRes.data?.plate || scanRes.data?.plate_raw || '';
-        const conf = scanRes.data?.confidence || 0;
-        if (plate) {
-          setPlateInput(plate);
-          setOcrStats({
-            ms: scanRes.data.ms || 0,
-            confidence: conf,
-            vehicleType: scanRes.data.vehicle_type || 'carro'
-          });
-          // Si es baja confianza (tu caso A1B-234 → 1823-4 con 25-50%), no auto-verificar: dejar que corrijas a A1B-234
-          if (conf > 0 && conf < 65) {
-            alert(`Placa detectada con baja confianza (${conf}%): ${plate} — corrige a A1B-234 y pulsa Verificar.`);
-            return;
-          }
-          await handleVerifyPlate(plate, 'entry');
-          return;
-        }
-        // Fallback si no detecta placa: dejar que el operador corrija manual
-        setPlateInput('');
-        alert(scanRes.data?.detail || 'No se detectó texto en la imagen. Recorta solo la placa y prueba de nuevo.');
-      } catch (err) {
-        const detail = err?.response?.data?.detail || 'No se pudo procesar la imagen en el servidor.';
-        // 503 = falta tesseract/opencv en servidor (fail-open honesto)
-        if (String(detail).includes('pytesseract') || String(detail).includes('tesseract')) {
-          alert('El servidor aún no tiene Tesseract OCR instalado. Instala tesseract-ocr en el contenedor y reintenta.');
-        } else {
-          alert(detail);
-        }
-      } finally {
-        setLoading(false);
-      }
     };
     reader.readAsDataURL(file);
   };

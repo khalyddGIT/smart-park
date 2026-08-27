@@ -27,23 +27,27 @@ def _detect_plate_opencv(image_bytes: bytes) -> dict:
     if img is None:
         raise ValueError("No se pudo decodificar la imagen")
 
-    # Preprocesado: gris + blur para reducir ruido
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    # Preprocesado base: gris + CLAHE para iluminación variable + blur
+    gray_full = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    try:
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        gray_full = clahe.apply(gray_full)
+    except Exception:
+        pass
+    gray = cv2.GaussianBlur(gray_full, (5, 5), 0)
+    h_img, w_img = gray.shape[:2]
 
-    # Intentar YOLO si está disponible (ultralytics opcional, no obligatorio)
+    # Intentar YOLO si está disponible (ultralytics opcional)
     yolo_plate = None
     yolo_conf = 0
+    yolo_roi = None
     try:
         from ultralytics import YOLO  # type: ignore
         import os
         model_path = os.getenv("YOLO_PLATE_MODEL", "yolov8n.pt")
-        # Solo si el modelo existe localmente; si no, se omite silenciosamente
         if os.path.exists(model_path):
             model = YOLO(model_path)
             results = model(gray, verbose=False)
-            # Tomar la detección con mayor confianza que parezca placa (clase 0 si modelo genérico)
-            best = None
             for r in results:
                 for box in r.boxes:
                     conf = float(box.conf[0]) if hasattr(box, 'conf') else 0
@@ -51,20 +55,18 @@ def _detect_plate_opencv(image_bytes: bytes) -> dict:
                         yolo_conf = conf
                         yolo_plate = box
             if yolo_plate is not None:
-                # Recortar ROI del YOLO y pasar a OCR
                 x1, y1, x2, y2 = map(int, yolo_plate.xyxy[0].tolist())
-                roi = gray[max(0, y1):y2, max(0, x1):x2]
+                roi = gray_full[max(0, y1):y2, max(0, x1):x2]
                 if roi.size > 0:
                     gray = roi
+                    yolo_roi = roi
     except Exception:
         pass
 
-    # Fallback OpenCV: buscar contornos con proporción de placa (2.0 - 5.5) y área significativa
-    plate_roi = None
+    # Fallback OpenCV: buscar contornos con proporción de placa (2.0 - 5.8) si YOLO no recortó
+    plate_roi = yolo_roi
     try:
-        # Umbral adaptativo + Canny para bordes
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        # Si YOLO ya recortó, no buscar contornos externos
         if yolo_plate is None:
             edges = cv2.Canny(thresh, 50, 150)
             contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -86,58 +88,141 @@ def _detect_plate_opencv(image_bytes: bytes) -> dict:
     except Exception:
         pass
 
-    # OCR: intentar pytesseract, sino heurística de corrección
+    # OCR robusto: múltiples preprocesados + PSM, corrección por posición (letras 0-2, dígitos 3-5)
+    import re
     raw_text = ""
     ocr_conf = 0
+    best_corrected = ""
+    best_score = -1
+
+    def _correct_by_position(s: str) -> str:
+        s = s.upper().replace(" ", "").replace("-", "")
+        if len(s) < 6:
+            return s
+        # Primeros 3: deben ser letras → dígitos comunes a letras
+        prefix = s[:3]
+        prefix = prefix.replace("0", "O").replace("1", "I").replace("5", "S").replace("8", "B").replace("6", "G")
+        # Últimos 3: deben ser dígitos → letras comunes a dígitos
+        suffix = s[3:6]
+        suffix = suffix.replace("O", "0").replace("I", "1").replace("S", "5").replace("B", "8").replace("Z", "2").replace("A", "4").replace("Q", "0").replace("D", "0")
+        # Si tiene 7 chars (moto), el último es letra, no corregir
+        if len(s) == 7:
+            return prefix + suffix[:2] + s[6]
+        return prefix + suffix
+
+    def _is_valid_plate(s: str) -> bool:
+        return bool(re.match(r"^[A-Z]{3}\d{3}$", s) or re.match(r"^[A-Z]{3}\d{2}[A-Z]$", s) or re.match(r"^[A-Z]{2}\d{4}$", s))
+
     try:
         import pytesseract  # type: ignore
-        # Configurar para placas: solo alfanumérico, una línea
-        config = "--oem 3 --psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"
-        # Escalar ROI para mejorar OCR
-        if gray.shape[0] < 60:
-            scale = 2.5
-            gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-        # Binarizar fuerte para OCR
-        _, ocr_img = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        data = pytesseract.image_to_data(ocr_img, config=config, output_type=pytesseract.Output.DICT)
-        # Tomar el texto con mayor confianza
-        best_idx = -1
-        best_conf = -1
-        for i, txt in enumerate(data.get("text", [])):
-            t = txt.strip().replace(" ", "").upper()
-            c = int(data["conf"][i]) if str(data["conf"][i]).lstrip("-").isdigit() else -1
-            if len(t) >= 5 and c > best_conf:
-                best_conf = c
-                best_idx = i
-                raw_text = t
-                ocr_conf = c
-        if best_idx == -1:
-            raw_text = pytesseract.image_to_string(ocr_img, config=config).strip().replace(" ", "").upper()
-            ocr_conf = 60
+
+        # Preparar 3 variantes de binarizado para probar
+        variants = []
+        # Variante 1: OTSU (ya calculado como thresh)
+        _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        # Si el fondo es oscuro (placa negra), invertir
+        if float((otsu == 0).sum()) / float(otsu.size or 1) > 0.55:
+            otsu = 255 - otsu
+        variants.append(otsu)
+        # Variante 2: Adaptativo
+        try:
+            adapt = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 10)
+            if float((adapt == 0).sum()) / float(adapt.size or 1) > 0.55:
+                adapt = 255 - adapt
+            variants.append(adapt)
+        except Exception:
+            pass
+        # Variante 3: CLAHE + OTSU invertido
+        try:
+            clahe2 = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8)).apply(gray)
+            _, clahe_thr = cv2.threshold(clahe2, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            if float((clahe_thr == 0).sum()) / float(clahe_thr.size or 1) > 0.55:
+                clahe_thr = 255 - clahe_thr
+            variants.append(clahe_thr)
+        except Exception:
+            pass
+
+        configs = [
+            "--oem 1 --psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
+            "--oem 1 --psm 7 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
+            "--oem 3 --psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
+        ]
+
+        for v_img in variants:
+            # Escalar si es pequeño
+            proc = v_img
+            if proc.shape[0] < 70:
+                scale = 2.2
+                proc = cv2.resize(proc, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+            # Dilatar leve para unir caracteres rotos
+            proc = cv2.medianBlur(proc, 3)
+            for cfg in configs:
+                try:
+                    data = pytesseract.image_to_data(proc, config=cfg, output_type=pytesseract.Output.DICT)
+                    for i, txt in enumerate(data.get("text", [])):
+                        t = txt.strip().replace(" ", "").upper()
+                        if len(t) < 5:
+                            continue
+                        c = int(data["conf"][i]) if str(data["conf"][i]).lstrip("-").isdigit() else -1
+                        corr = _correct_by_position(t)
+                        score = c + (30 if _is_valid_plate(corr) else 0) + (10 if len(corr) == 6 else 0)
+                        if score > best_score:
+                            best_score = score
+                            raw_text = t
+                            ocr_conf = c
+                            best_corrected = corr
+                    # También probar image_to_string como respaldo
+                    s = pytesseract.image_to_string(proc, config=cfg).strip().replace(" ", "").upper().replace("-", "")
+                    if s:
+                        corr2 = _correct_by_position(s)
+                        # Estimar confianza por validez
+                        sc2 = 55 + (25 if _is_valid_plate(corr2) else 0)
+                        if sc2 > best_score:
+                            best_score = sc2
+                            raw_text = s
+                            ocr_conf = sc2
+                            best_corrected = corr2
+                except Exception:
+                    continue
+            if best_corrected and _is_valid_plate(best_corrected) and ocr_conf >= 75:
+                break
+
+        if not best_corrected:
+            best_corrected = _correct_by_position(raw_text) if raw_text else ""
+
     except ImportError:
-        # Sin pytesseract: no se puede OCR real, se reporta como no detectado para forzar corrección manual
         raise ImportError("pytesseract no instalado: instala tesseract-ocr en el sistema y pip install pytesseract")
-    except Exception:
+    except Exception as e:
+        if "tesseract" in str(e).lower():
+            raise ImportError("tesseract-ocr no instalado en el sistema: instala tesseract-ocr y asegúrate que esté en PATH")
         pass
 
-    # Normalización y corrección (0↔O, 1↔I) igual que el frontend plateOcr.js
-    import re
-    corrected = raw_text.upper().replace(" ", "").replace("-", "")
-    # Correcciones comunes OCR
-    corrected = corrected.replace("0", "O") if re.match(r"^[A-Z]{3}O", corrected) else corrected
+    corrected = best_corrected or _correct_by_position(raw_text) if raw_text else ""
+    if not corrected:
+        corrected = raw_text.upper().replace(" ", "").replace("-", "") if raw_text else ""
+
     # Formateo con guion
     plate = corrected
     if re.match(r"^[A-Z]{3}\d{3}$", corrected):
         plate = f"{corrected[:3]}-{corrected[3:]}"
     elif re.match(r"^[A-Z]{3}\d{2}[A-Z]$", corrected):
         plate = f"{corrected[:3]}-{corrected[3:]}"
+    elif re.match(r"^[A-Z]{2}\d{4}$", corrected):
+        plate = f"{corrected[:2]}-{corrected[2:]}"
     elif len(corrected) >= 6:
         plate = f"{corrected[:3]}-{corrected[3:7]}"
 
     # Tipo de vehículo por patrón de placa peruana
     vehicle_type = "carro"
-    if re.match(r"^[A-Z]{2}\d{4}$", corrected) or "M" in corrected[:2]:
+    if re.match(r"^[A-Z]{2}\d{4}$", corrected) or re.match(r"^[A-Z]\d.*", corrected) and "M" in corrected[:2]:
         vehicle_type = "moto"
+    # Si no es válida pero tenemos texto, mantener el raw para que el operador corrija (no bloquear)
+    if not _is_valid_plate(corrected) and raw_text:
+        # Si la corrección no validó pero el raw tiene 6 alfanum, usar raw corregido igual
+        if len(corrected) >= 6:
+            plate = f"{corrected[:3]}-{corrected[3:]}"
+        else:
+            plate = corrected
 
     ms = int((time.perf_counter() - t0) * 1000)
     conf = max(0, min(99.9, float(ocr_conf) if ocr_conf else (yolo_conf * 100 if yolo_conf else 72.0)))

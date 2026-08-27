@@ -1,3 +1,4 @@
+import os
 import time
 import base64
 from datetime import datetime
@@ -37,17 +38,17 @@ def _detect_plate_opencv(image_bytes: bytes) -> dict:
     gray = cv2.GaussianBlur(gray_full, (5, 5), 0)
     h_img, w_img = gray.shape[:2]
 
-    # Intentar YOLO si está disponible (ultralytics opcional)
+    # Intentar YOLO best -> fast -> contornos (fail-open)
     yolo_plate = None
     yolo_conf = 0
     yolo_roi = None
-    try:
-        from ultralytics import YOLO  # type: ignore
-        import os
-        model_path = os.getenv("YOLO_PLATE_MODEL", "yolov8n.pt")
-        if os.path.exists(model_path):
-            model = YOLO(model_path)
-            results = model(gray, verbose=False)
+    for _model in [os.getenv("YOLO_PLATE_MODEL", ""), "yolov8m.pt", "yolov8n.pt"]:
+        if not _model or not os.path.exists(_model):
+            continue
+        try:
+            from ultralytics import YOLO  # type: ignore
+            model = YOLO(_model)
+            results = model(gray, verbose=False, conf=0.25)
             for r in results:
                 for box in r.boxes:
                     conf = float(box.conf[0]) if hasattr(box, 'conf') else 0
@@ -60,8 +61,9 @@ def _detect_plate_opencv(image_bytes: bytes) -> dict:
                 if roi.size > 0:
                     gray = roi
                     yolo_roi = roi
-    except Exception:
-        pass
+                break
+        except Exception:
+            continue
 
     # Fallback OpenCV: buscar contornos con proporción de placa (2.0 - 5.8) si YOLO no recortó
     plate_roi = yolo_roi
@@ -157,41 +159,105 @@ def _detect_plate_opencv(image_bytes: bytes) -> dict:
             return True
         return False
 
+    # Preparar 3 variantes de binarizado
+    variants = []
+    _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    if float((otsu == 0).sum()) / float(otsu.size or 1) > 0.55:
+        otsu = 255 - otsu
+    variants.append(otsu)
+    try:
+        adapt = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 10)
+        if float((adapt == 0).sum()) / float(adapt.size or 1) > 0.55:
+            adapt = 255 - adapt
+        variants.append(adapt)
+    except Exception:
+        pass
+    try:
+        clahe2 = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8)).apply(gray)
+        _, clahe_thr = cv2.threshold(clahe2, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if float((clahe_thr == 0).sum()) / float(clahe_thr.size or 1) > 0.55:
+            clahe_thr = 255 - clahe_thr
+        variants.append(clahe_thr)
+    except Exception:
+        pass
+
+    configs = [
+        "--oem 1 --psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
+        "--oem 1 --psm 7 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
+        "--oem 3 --psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
+    ]
+
+    # 1) PaddleOCR (best, si está instalado)
+    paddle_tried = False
+    try:
+        from paddleocr import PaddleOCR  # type: ignore
+        paddle_ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False, use_gpu=False)
+        paddle_tried = True
+        for v_img in variants:
+            proc = v_img
+            if proc.shape[0] < 70:
+                proc = cv2.resize(proc, None, fx=2.2, fy=2.2, interpolation=cv2.INTER_CUBIC)
+            proc = cv2.medianBlur(proc, 3)
+            try:
+                result = paddle_ocr.ocr(proc, cls=True)
+                # result es lista de [ [box, (text, conf)], ... ]
+                texts = []
+                if result and result[0]:
+                    for line in result[0]:
+                        if len(line) >= 2 and isinstance(line[1], (list, tuple)):
+                            txt, conf = line[1][0], float(line[1][1]) * 100
+                            t = str(txt).strip().replace(" ", "").upper()
+                            if len(t) >= 5:
+                                texts.append((t, conf))
+                for t, c in texts:
+                    corr = _correct_by_position(t)
+                    score = c + (35 if _is_valid_plate(corr) else 0) + (10 if len(corr) >= 6 else 0)
+                    if score > best_score:
+                        best_score = score
+                        raw_text = t
+                        ocr_conf = c
+                        best_corrected = corr
+            except Exception:
+                continue
+    except ImportError:
+        pass
+    except Exception:
+        pass
+
+    # 2) EasyOCR (segundo mejor, si Paddle no dio válido)
+    if not best_corrected or not _is_valid_plate(best_corrected) or ocr_conf < 70:
+        try:
+            import easyocr  # type: ignore
+            reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+            for v_img in variants:
+                proc = v_img
+                if proc.shape[0] < 70:
+                    proc = cv2.resize(proc, None, fx=2.2, fy=2.2, interpolation=cv2.INTER_CUBIC)
+                proc = cv2.medianBlur(proc, 3)
+                try:
+                    results = reader.readtext(proc, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-', paragraph=False)
+                    for (bbox, txt, conf) in results:
+                        t = str(txt).strip().replace(" ", "").upper()
+                        if len(t) < 5:
+                            continue
+                        c = float(conf) * 100 if conf <= 1 else float(conf)
+                        corr = _correct_by_position(t)
+                        score = c + (35 if _is_valid_plate(corr) else 0)
+                        if score > best_score:
+                            best_score = score
+                            raw_text = t
+                            ocr_conf = c
+                            best_corrected = corr
+                except Exception:
+                    continue
+        except ImportError:
+            pass
+        except Exception:
+            pass
+
+    # 3) Tesseract (fallback, siempre disponible en Docker)
     try:
         import pytesseract  # type: ignore
-
-        # Preparar 3 variantes de binarizado para probar
-        variants = []
-        # Variante 1: OTSU (ya calculado como thresh)
-        _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        # Si el fondo es oscuro (placa negra), invertir
-        if float((otsu == 0).sum()) / float(otsu.size or 1) > 0.55:
-            otsu = 255 - otsu
-        variants.append(otsu)
-        # Variante 2: Adaptativo
-        try:
-            adapt = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 10)
-            if float((adapt == 0).sum()) / float(adapt.size or 1) > 0.55:
-                adapt = 255 - adapt
-            variants.append(adapt)
-        except Exception:
-            pass
-        # Variante 3: CLAHE + OTSU invertido
-        try:
-            clahe2 = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8)).apply(gray)
-            _, clahe_thr = cv2.threshold(clahe2, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            if float((clahe_thr == 0).sum()) / float(clahe_thr.size or 1) > 0.55:
-                clahe_thr = 255 - clahe_thr
-            variants.append(clahe_thr)
-        except Exception:
-            pass
-
-        configs = [
-            "--oem 1 --psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
-            "--oem 1 --psm 7 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
-            "--oem 3 --psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
-        ]
-
         for v_img in variants:
             # Escalar si es pequeño
             proc = v_img

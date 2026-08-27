@@ -70,7 +70,7 @@ export const App = () => {
     const validTabsByRole = {
       user: ['dashboard', 'reservations', 'profile', 'vehicles', 'payments', 'incidents', 'history', 'reviews'],
       local: ['dashboard', 'editor', 'reservations', 'profile', 'anpr', 'garita', 'incidents', 'staff', 'reports', 'audit', 'reviews'],
-      platform: ['dashboard', 'profile', 'finances', 'settings', 'affiliates', 'reservations', 'analytics', 'incidents', 'audit', 'users', 'staff', 'reviews', 'resiliency']
+      platform: ['dashboard', 'profile', 'finances', 'settings', 'affiliates', 'reservations', 'analytics', 'incidents', 'audit', 'users', 'vehicles', 'staff', 'reviews', 'resiliency']
     };
     if (!validTabsByRole[role]?.includes(activeTab)) {
       setActiveTab('dashboard');
@@ -576,6 +576,7 @@ export const App = () => {
               {activeTab === 'incidents' && <IncidentsModule />}
               {activeTab === 'audit' && <AuditLogsModule />}
               {activeTab === 'users' && <UserRolesModule />}
+              {activeTab === 'vehicles' && <VehiclesModule />}
               {activeTab === 'staff' && <StaffModule />}
               {activeTab === 'reviews' && <ReviewsModule />}
               {activeTab === 'resiliency' && <ResiliencySimModule />}

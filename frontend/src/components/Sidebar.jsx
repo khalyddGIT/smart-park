@@ -68,6 +68,7 @@ const SECTIONS_BY_ROLE = {
         { id: 'analytics', label: 'Analítica Global', shortLabel: 'Métricas', icon: BarChart3 },
         { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
         { id: 'users', label: 'Usuarios & RBAC', shortLabel: 'Usuarios', icon: Shield },
+        { id: 'vehicles', label: 'Vehículos Registrados', shortLabel: 'Vehículos', icon: Car },
         { id: 'staff', label: 'Directorio Personal', shortLabel: 'Personal', icon: Users },
         { id: 'audit', label: 'Auditoría', shortLabel: 'Auditoría', icon: ShieldCheck },
         { id: 'reviews', label: 'Supervisión', shortLabel: 'Calidad', icon: Star },

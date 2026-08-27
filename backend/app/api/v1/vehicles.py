@@ -16,8 +16,11 @@ async def list_vehicles(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Solo vehículos del usuario autenticado - aislamiento por usuario
-    stmt = select(Vehicle).where(Vehicle.user_id == current_user.id)
+    # Platform ve todos los vehículos (auditoría global); resto solo los propios
+    if current_user.role == "platform":
+        stmt = select(Vehicle)
+    else:
+        stmt = select(Vehicle).where(Vehicle.user_id == current_user.id)
     if plate:
         stmt = stmt.where(Vehicle.license_plate.ilike(f"%{plate}%"))
     

@@ -99,9 +99,32 @@ def _detect_plate_opencv(image_bytes: bytes) -> dict:
         s = s.upper().replace(" ", "").replace("-", "")
         if len(s) < 5:
             return s
-        # Manejar 5,6,7 chars: primeros 2-3 como letras, resto como dígitos (permisivo para A1B-234)
+        is_moto = s[0].isdigit()
+        if is_moto:
+            # Moto: 4 dígitos + 2 alfanum (ej: 1234-5B, 9876-AA)
+            prefix = s[:4].replace("O", "0").replace("I", "1").replace("L", "1").replace("S", "5").replace("B", "8").replace("Z", "2").replace("A", "4").replace("Q", "0").replace("D", "0").replace("G", "6")
+            suffix = s[4:]
+            # Sufijo moto: mantener mixto, solo corregir 0->O si parece letra
+            if len(suffix) == 2 and suffix.isdigit():
+                suffix = suffix[0] + suffix[1].replace("0", "O").replace("1", "I").replace("5", "S").replace("8", "B")
+            return prefix + suffix
+        # Auto/Carga/Bus: detectar LNN vs LLN por segundo char
+        if len(s) == 6:
+            if s[1].isalpha():
+                # LLN-NNN (carga/bus): AG1-234, BA2-541
+                p0 = s[0].replace("0", "O").replace("1", "I").replace("5", "S").replace("8", "B").replace("6", "G").replace("2", "Z").replace("4", "A")
+                p1 = s[1].replace("0", "O").replace("1", "I").replace("5", "S").replace("8", "B").replace("6", "G").replace("2", "Z").replace("4", "A")
+                p2 = s[2].replace("O", "0").replace("I", "1").replace("S", "5").replace("B", "8").replace("Z", "2").replace("A", "4").replace("Q", "0").replace("D", "0")
+                suffix = s[3:6].replace("O", "0").replace("I", "1").replace("S", "5").replace("B", "8").replace("Z", "2").replace("A", "4").replace("Q", "0")
+                return p0 + p1 + p2 + suffix
+            else:
+                # LNN-NNN (auto): B11-123
+                p0 = s[0].replace("0", "O").replace("1", "I").replace("5", "S").replace("8", "B").replace("6", "G").replace("2", "Z").replace("4", "A")
+                p1 = s[1].replace("O", "0").replace("I", "1").replace("S", "5").replace("B", "8").replace("Z", "2").replace("A", "4").replace("Q", "0")
+                p2 = s[2].replace("O", "0").replace("I", "1").replace("S", "5").replace("B", "8").replace("Z", "2").replace("A", "4").replace("Q", "0")
+                suffix = s[3:6].replace("O", "0").replace("I", "1").replace("S", "5").replace("B", "8").replace("Z", "2").replace("A", "4").replace("Q", "0")
+                return p0 + p1 + p2 + suffix
         if len(s) == 5:
-            # Ej: 18234 (5) -> intentar 2 letras + 3 dígitos
             prefix = s[:2].replace("0", "O").replace("1", "I").replace("5", "S").replace("8", "B").replace("6", "G").replace("2", "Z").replace("4", "A")
             suffix = s[2:].replace("O", "0").replace("I", "1").replace("S", "5").replace("B", "8").replace("Z", "2").replace("A", "4")
             return prefix + suffix
@@ -112,10 +135,24 @@ def _detect_plate_opencv(image_bytes: bytes) -> dict:
         return prefix + suffix
 
     def _is_valid_plate(s: str) -> bool:
-        # Permisivo para pruebas: cualquier 5-7 alfanumérico con al menos 2 letras y 2 dígitos, o patrones peruanos clásicos
-        if re.match(r"^[A-Z]{3}\d{3}$", s) or re.match(r"^[A-Z]{3}\d{2}[A-Z]$", s) or re.match(r"^[A-Z]{2}\d{4}$", s):
-            return True
-        # Test mixto como A1B-234 (6 alfanum con letras y números mezclados)
+        # Formatos peruanos reales con guion ya quitado (6 sin guion, 7 con variantes)
+        # Auto particular: B11-123 -> B11123 (L N N + N N N)
+        if re.match(r"^[A-Z][0-9]{2}[0-9]{3}$", s): return True
+        # Legacy 3 letras: ABC-123
+        if re.match(r"^[A-Z]{3}[0-9]{3}$", s): return True
+        # Carga: AG1-234 (L L N + NNN, segunda L es G-R)
+        if re.match(r"^[A-Z][G-R][0-9][0-9]{3}$", s): return True
+        # Bus: BA2-541 (segunda L es A-F)
+        if re.match(r"^[A-Z][A-F][0-9][0-9]{3}$", s): return True
+        # Genérico LLN-NNN
+        if re.match(r"^[A-Z]{2}[0-9][0-9]{3}$", s): return True
+        # Moto: 4 dígitos + 2 mixto (1234-5B, 9876-AA, 4532-1W)
+        if re.match(r"^[0-9]{4}[A-Z]{2}$", s): return True
+        if re.match(r"^[0-9]{4}[0-9][A-Z]$", s): return True
+        if re.match(r"^[0-9]{4}[A-Z][0-9]$", s): return True
+        if re.match(r"^[A-Z]{3}[0-9]{2}[A-Z]$", s): return True
+        if re.match(r"^[A-Z]{2}[0-9]{4}$", s): return True
+        # Permisivo para pruebas mixtas como A1B-234 (6 alfanum con letras y números)
         if 5 <= len(s) <= 7 and s.isalnum() and sum(c.isalpha() for c in s) >= 2 and sum(c.isdigit() for c in s) >= 2:
             return True
         return False
@@ -208,28 +245,30 @@ def _detect_plate_opencv(image_bytes: bytes) -> dict:
     if not corrected:
         corrected = raw_text.upper().replace(" ", "").replace("-", "") if raw_text else ""
 
-    # Formateo con guion
+    # Formateo con guion según tipo (moto 4+2, resto 3+3)
     plate = corrected
-    if re.match(r"^[A-Z]{3}\d{3}$", corrected):
-        plate = f"{corrected[:3]}-{corrected[3:]}"
-    elif re.match(r"^[A-Z]{3}\d{2}[A-Z]$", corrected):
-        plate = f"{corrected[:3]}-{corrected[3:]}"
-    elif re.match(r"^[A-Z]{2}\d{4}$", corrected):
-        plate = f"{corrected[:2]}-{corrected[2:]}"
-    elif len(corrected) >= 6:
-        plate = f"{corrected[:3]}-{corrected[3:7]}"
-
-    # Tipo de vehículo por patrón de placa peruana
-    vehicle_type = "carro"
-    if re.match(r"^[A-Z]{2}\d{4}$", corrected) or re.match(r"^[A-Z]\d.*", corrected) and "M" in corrected[:2]:
-        vehicle_type = "moto"
-    # Si no es válida pero tenemos texto, mantener el raw para que el operador corrija (no bloquear)
-    if not _is_valid_plate(corrected) and raw_text:
-        # Si la corrección no validó pero el raw tiene 6 alfanum, usar raw corregido igual
-        if len(corrected) >= 6:
-            plate = f"{corrected[:3]}-{corrected[3:]}"
+    if len(corrected) == 6:
+        if corrected[0].isdigit():
+            plate = f"{corrected[:4]}-{corrected[4:]}"
         else:
-            plate = corrected
+            plate = f"{corrected[:3]}-{corrected[3:]}"
+    elif len(corrected) == 7:
+        plate = f"{corrected[:4]}-{corrected[4:]}" if corrected[0].isdigit() else f"{corrected[:3]}-{corrected[3:]}"
+    elif len(corrected) >= 5 and _is_valid_plate(corrected):
+        plate = f"{corrected[:4]}-{corrected[4:]}" if corrected[0].isdigit() else f"{corrected[:3]}-{corrected[3:7]}"
+
+    # Tipo de vehículo por patrón peruano
+    vehicle_type = "carro"
+    if re.match(r"^[0-9]{4}", corrected):
+        vehicle_type = "moto"
+    elif re.match(r"^[A-Z][G-R][0-9]", corrected):
+        vehicle_type = "camion"
+    elif re.match(r"^[A-Z][A-F][0-9]", corrected):
+        vehicle_type = "bus"
+    elif "M" in corrected[:2]:
+        vehicle_type = "moto"
+    if not _is_valid_plate(corrected) and raw_text and len(corrected) >= 5:
+        plate = f"{corrected[:4]}-{corrected[4:]}" if corrected[0].isdigit() else f"{corrected[:3]}-{corrected[3:]}"
 
     ms = int((time.perf_counter() - t0) * 1000)
     conf = max(0, min(99.9, float(ocr_conf) if ocr_conf else (yolo_conf * 100 if yolo_conf else 72.0)))

@@ -78,6 +78,8 @@ class Parking(Base):
     email = Column(String(150), nullable=True)
     reference = Column(String(255), nullable=True)
     level = Column(String(100), nullable=True)
+    camera_url = Column(Text, nullable=True)
+    camera_enabled = Column(Boolean, default=False)
 
     slots = relationship("Slot", back_populates="parking", cascade="all, delete-orphan")
     elements = relationship("FloorPlanElement", back_populates="parking", cascade="all, delete-orphan")

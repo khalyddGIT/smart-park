@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
@@ -117,6 +117,76 @@ async def get_parking(parking_id: int, db: AsyncSession = Depends(get_db)):
     p_dict = ParkingResponse.model_validate(parking)
     p_dict.available_slots = free_count
     return p_dict
+
+
+@router.put("/{parking_id}/camera/config", response_model=ParkingResponse)
+async def update_camera_config(parking_id: int, body: dict, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    result = await db.execute(select(Parking).where(Parking.id == parking_id))
+    parking = result.scalars().first()
+    if not parking:
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    if "camera_url" in body:
+        parking.camera_url = body["camera_url"]
+    if "camera_enabled" in body:
+        parking.camera_enabled = bool(body["camera_enabled"])
+    await db.commit()
+    await db.refresh(parking)
+    await invalidate_parkings_cache()
+    return ParkingResponse.model_validate(parking)
+
+
+@router.post("/{parking_id}/camera/detect")
+async def detect_camera_occupancy(parking_id: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    result = await db.execute(select(Parking).where(Parking.id == parking_id))
+    parking = result.scalars().first()
+    if not parking:
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
+    slots = slots_res.scalars().all()
+    if not slots:
+        raise HTTPException(status_code=400, detail="Este estacionamiento aún no tiene cajones definidos en el plano")
+    image_bytes = await file.read()
+    if len(image_bytes) < 100:
+        raise HTTPException(status_code=400, detail="Imagen vacía")
+    if len(image_bytes) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Imagen demasiado grande (máx 8MB)")
+    try:
+        from app.core.vision import detect_occupancy
+        slot_dicts = [{"code": s.code, "x": s.pos_x, "y": s.pos_y, "w": s.width, "h": s.height, "rot": s.rotation} for s in slots]
+        occupancy = detect_occupancy(image_bytes, slot_dicts)
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error en detección: {exc}")
+
+    updated = 0
+    for s in slots:
+        should_occupied = occupancy.get(s.code, False)
+        new_status = "occupied" if should_occupied else "free"
+        # No pisar reservas activas que ya están occupied por lógica de negocio — pero visión manda para cajones libres
+        # Si el slot está reservado (reservas scheduled), mantener reserved
+        if s.status == "reserved":
+            continue
+        if s.status != new_status:
+            s.status = new_status
+            updated += 1
+    await db.commit()
+
+    # Sincronizar contadores Redis y cache
+    try:
+        from app.core.cache import occ_set
+        free_c = sum(1 for s in slots if s.status == "free")
+        occ_c = sum(1 for s in slots if s.status == "occupied")
+        await occ_set(parking_id, free_c, occ_c, len(slots))
+        await cache_delete(PARKINGS_CACHE_KEY)
+    except Exception:
+        pass
+    try:
+        await realtime.broadcast("parkings:updated", {"parking_id": parking_id, "source": "camera"})
+    except Exception:
+        pass
+
+    return {"parking_id": parking_id, "updated": updated, "total": len(slots), "occupancy": occupancy}
 
 
 @router.post("", response_model=ParkingResponse, status_code=status.HTTP_201_CREATED)

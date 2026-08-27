@@ -55,6 +55,8 @@ async def startup_db():
                 "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS email VARCHAR(150)",
                 "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS reference VARCHAR(255)",
                 "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS level VARCHAR(100)",
+                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS camera_url TEXT",
+                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS camera_enabled BOOLEAN DEFAULT FALSE",
             ]:
                 try:
                     await conn.execute(_text(ddl))

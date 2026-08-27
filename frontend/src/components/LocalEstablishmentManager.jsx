@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import api from '../services/api';
 import { 
   Building2, 
   Plus, 
@@ -12,6 +13,7 @@ import {
   MapPin, 
   Clock, 
   Car, 
+  Camera,
   Check, 
   Search, 
   ArrowLeft,
@@ -272,6 +274,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
   const [isEditingNew, setIsEditingNew] = useState(false);
   const [selectedEstablishment, setSelectedEstablishment] = useState(null);
   const [currentPlanElements, setCurrentPlanElements] = useState([]);
+  const [cameraDetecting, setCameraDetecting] = useState(false);
   
   // Tab activa dentro de la vista de edición completa (Solo las 4 pedidas)
   const [activeTabSection, setActiveTabSection] = useState('general'); // 'general' | 'image' | 'location' | 'social'
@@ -598,6 +601,37 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     setActiveViewMode(mode);
   };
 
+  // Detección de ocupación por cámara (YOLO + OpenCV) — actualiza cajones en el servidor
+  const handleCameraDetect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedEstablishment) return;
+    const numId = Number(selectedEstablishment.id);
+    if (isNaN(numId)) {
+      showToast('La detección por cámara solo funciona en sedes reales (no demo EST-*).');
+      return;
+    }
+    setCameraDetecting(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post(`/parkings/${numId}/camera/detect`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      showToast(`✓ Detección completada: ${res.data.updated} cajones actualizados de ${res.data.total}.`);
+      // Refrescar plano desde el servidor
+      ensureFloorPlan(String(numId));
+      // Forzar recarga del plano tras 800ms
+      setTimeout(() => {
+        const fresh = establishments.find(x => String(x.id) === String(numId));
+        if (fresh?.elements) setCurrentPlanElements(fresh.elements);
+      }, 900);
+    } catch (err) {
+      const detail = err?.response?.data?.detail || 'No se pudo procesar la imagen.';
+      showToast(`✕ ${detail}`);
+    } finally {
+      setCameraDetecting(false);
+      e.target.value = '';
+    }
+  };
+
   // Guardar plano CAD
   const handleSaveCADPlan = (updatedElements) => {
     if (!selectedEstablishment) return;
@@ -853,6 +887,24 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 <p className="text-xs text-slate-500 font-medium">Diseña y distribuye espacios de esta sede.</p>
               </div>
             </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+              <Camera className="w-4 h-4 text-emerald-600" />
+              Detección por Cámara (YOLO)
+            </div>
+            <input type="file" accept="image/*" id="camera-upload" className="hidden" onChange={handleCameraDetect} />
+            <Button
+              type="button"
+              onClick={() => document.getElementById('camera-upload')?.click()}
+              disabled={cameraDetecting}
+              className="h-9 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1.5"
+            >
+              <Upload className="w-4 h-4" />
+              {cameraDetecting ? 'Detectando...' : 'Subir foto del playón y detectar ocupación'}
+            </Button>
+            <span className="text-[11px] text-slate-500">IA detecta autos por cajón y actualiza el plano (requiere tesseract en servidor para placas, no para ocupación)</span>
           </div>
 
           <InteractiveFloorPlanDrawingStudio

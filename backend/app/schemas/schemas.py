@@ -86,6 +86,8 @@ class ParkingBase(BaseModel):
     email: Optional[str] = None
     reference: Optional[str] = None
     level: Optional[str] = None
+    camera_url: Optional[str] = None
+    camera_enabled: Optional[bool] = False
 
 class ParkingCreate(ParkingBase):
     pass
@@ -106,6 +108,8 @@ class ParkingUpdate(BaseModel):
     email: Optional[str] = None
     reference: Optional[str] = None
     level: Optional[str] = None
+    camera_url: Optional[str] = None
+    camera_enabled: Optional[bool] = None
 
 class ParkingResponse(ParkingBase):
     id: int

@@ -907,8 +907,10 @@ export const ANPRMonitor = () => {
             confidence: conf,
             vehicleType: scanRes.data.vehicle_type || 'carro'
           });
-          if (conf > 0 && conf < 55) {
-            alert(`Placa detectada con baja confianza (${conf}%): ${plate} — verifica y corrige manual antes de verificar.`);
+          // Si es baja confianza (tu caso A1B-234 → 1823-4 con 25-50%), no auto-verificar: dejar que corrijas a A1B-234
+          if (conf > 0 && conf < 65) {
+            alert(`Placa detectada con baja confianza (${conf}%): ${plate} — corrige a A1B-234 y pulsa Verificar.`);
+            return;
           }
           await handleVerifyPlate(plate, 'entry');
           return;

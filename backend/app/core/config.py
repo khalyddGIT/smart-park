@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 # 24 horas
 
     # Culqi - secreto solo en servidor, nunca en el frontend
-    CULQI_SECRET_KEY: str = os.getenv("CULQI_SECRET_KEY", "")
+    CULQI_SECRET_KEY: str = os.getenv("CULQI_SECRET_KEY", "sk_test_mdIXRSmJu9Z3nr0o")
 
     # PayPal Sandbox / Live - secretos solo en servidor
     PAYPAL_CLIENT_ID: str = os.getenv("PAYPAL_CLIENT_ID", "BAADoNYpVsJd20zFA2pZHva0nt7lYj4GnPqKFDFI_7Cdta0qd-FqG4g8wmndZYuPPcEAmSO-ukcu2mJDR0")

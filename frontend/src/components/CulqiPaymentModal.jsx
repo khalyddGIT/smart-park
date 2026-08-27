@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 // Credenciales públicas para frontend (el secreto CULQI_SECRET_KEY y PAYPAL_CLIENT_SECRET residen en el backend)
-export const CULQI_PUBLIC_KEY = import.meta.env.VITE_CULQI_PUBLIC_KEY || 'pk_test_W5ShN8WanbYh5Ru8';
+export const CULQI_PUBLIC_KEY = import.meta.env.VITE_CULQI_PUBLIC_KEY || 'pk_test_ZqUyhWj5y7nmIHax';
 export const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'BAADoNYpVsJd20zFA2pZHva0nt7lYj4GnPqKFDFI_7Cdta0qd-FqG4g8wmndZYuPPcEAmSO-ukcu2mJDR0';
 export const PAYPAL_EXCHANGE_RATE = Number(import.meta.env.VITE_PAYPAL_EXCHANGE_RATE || 0.27);
 

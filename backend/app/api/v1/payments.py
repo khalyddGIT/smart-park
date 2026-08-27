@@ -448,3 +448,52 @@ async def list_my_payments(
         }
         for p in payments
     ]
+
+
+# --- Culqi Webhook Endpoint ---
+
+@router.post("/culqi-webhook")
+async def culqi_webhook_handler(
+    payload: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+):
+    """Webhook receptor de eventos asíncronos de Culqi (ej. charge.creation.succeeded, order.status.changed).
+    
+    URL a registrar en el Panel de Culqi (Desarrollo / Producción):
+    https://smart-park-web-production.up.railway.app/api/v1/payments/culqi-webhook
+    """
+    event_type = str(payload.get("type") or payload.get("object") or "")
+    event_data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
+    
+    # Manejar eventos de cargo exitoso
+    if event_type in ("charge.creation.succeeded", "charge") or payload.get("object") == "charge":
+        charge_id = event_data.get("id") or payload.get("id")
+        amount_cents = int(event_data.get("amount") or payload.get("amount") or 0)
+        currency = str(event_data.get("currency_code") or payload.get("currency_code") or "PEN").upper()
+        email = event_data.get("email") or payload.get("email")
+        
+        if charge_id:
+            res = await db.execute(select(Payment).where(Payment.culqi_charge_id == str(charge_id)))
+            existing_payment = res.scalars().first()
+            if not existing_payment:
+                # Buscar id de usuario si coincide el email
+                user_id = 1
+                if email:
+                    u_res = await db.execute(select(User).where(User.email == email))
+                    user = u_res.scalars().first()
+                    if user:
+                        user_id = user.id
+                
+                new_payment = Payment(
+                    user_id=user_id,
+                    amount_cents=amount_cents,
+                    currency=currency,
+                    status="succeeded",
+                    method="card",
+                    culqi_charge_id=str(charge_id),
+                    description="Pago confirmado vía Webhook Culqi"
+                )
+                db.add(new_payment)
+                await db.commit()
+                
+    return {"received": True, "event": event_type, "timestamp": datetime.utcnow().isoformat()}

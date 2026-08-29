@@ -512,6 +512,9 @@ export const EstablishmentProvider = ({ children }) => {
           email: p.email || '', 
           reference: p.reference || '', 
           level: p.level || '', 
+          camera_url: p.camera_url || '', 
+          camera_enabled: !!p.camera_enabled, 
+          camera_calibration: p.camera_calibration || null, 
           elements: null, 
           _needsFloorPlan: true
         }, idx));
@@ -770,7 +773,11 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Actualizar datos de un establecimiento - persistente
   const updateEstablishment = async (id, updatedFields) => {
-    setEstablishments(prev => prev.map(est => String(est.id) === String(id) ? sanitizeEstablishment({ ...est, ...updatedFields }) : est));
+    setEstablishments(prev => {
+      const next = prev.map(est => String(est.id) === String(id) ? sanitizeEstablishment({ ...est, ...updatedFields }) : est);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
     const numId = Number(id);
     if (!isNaN(numId)) {
       try {
@@ -795,12 +802,16 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Actualizar plano topográfico - persistente via sync
   const updateEstablishmentPlan = async (id, elements) => {
-    setEstablishments(prev => prev.map(est => String(est.id) === String(id) ? { ...est, elements } : est));
+    setEstablishments(prev => {
+      const next = prev.map(est => String(est.id) === String(id) ? { ...est, elements } : est);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
     const numId = Number(id);
     if (!isNaN(numId) && Array.isArray(elements)) {
       try {
-        const slots = elements.filter(e=>e.type==='slot').map(s=>({ code: s.code, floor_level: 'Piso 1', slot_type: s.slotType || 'auto', status: s.status || 'free', pos_x: s.x||0, pos_y: s.y||0, width: s.w||60, height: s.h||100, rotation: s.rot||0 }));
-        const elems = elements.filter(e=>e.type!=='slot').map(e=>({ element_type: e.type, pos_x: e.x||0, pos_y: e.y||0, width: e.w||100, height: e.h||20, rotation: e.rot||0, z_index: 1, properties_json: null }));
+        const slots = elements.filter(e=>e && e.type==='slot').map(s=>({ code: s.code, floor_level: 'Piso 1', slot_type: s.slotType || 'auto', status: s.status || 'free', pos_x: s.x||0, pos_y: s.y||0, width: s.w||60, height: s.h||100, rotation: s.rot||0 }));
+        const elems = elements.filter(e=>e && e.type!=='slot').map(e=>({ element_type: e.type || 'wall', pos_x: e.x||0, pos_y: e.y||0, width: e.w||100, height: e.h||20, rotation: e.rot||0, z_index: 1, properties_json: null }));
         await api.post(`/parkings/${numId}/floor-plan/sync`, { parking_id: numId, slots, elements: elems });
       } catch (e) { console.warn('sync floor-plan fail', e.response?.data); }
     }

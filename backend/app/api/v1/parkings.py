@@ -1,13 +1,15 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
+import asyncio
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import Parking, Slot, FloorPlanElement, Reservation
+from app.models.models import Parking, Slot, FloorPlanElement, Reservation, CameraDevice
 from app.schemas.schemas import (
     ParkingCreate, ParkingUpdate, ParkingResponse,
     SlotBase, SlotCreate, SlotUpdate, SlotResponse,
-    FloorPlanElementBase, FloorPlanElementCreate, FloorPlanElementResponse, FloorPlanSyncRequest
+    FloorPlanElementBase, FloorPlanElementCreate, FloorPlanElementResponse, FloorPlanSyncRequest,
+    CameraDeviceCreate, CameraDeviceUpdate, CameraDeviceResponse
 )
 from app.core.security import require_role
 from app.core.realtime import realtime
@@ -129,6 +131,17 @@ async def update_camera_config(parking_id: int, body: dict, db: AsyncSession = D
         parking.camera_url = body["camera_url"]
     if "camera_enabled" in body:
         parking.camera_enabled = bool(body["camera_enabled"])
+    if "camera_calibration" in body:
+        raw_cal = body["camera_calibration"]
+        if not raw_cal:
+            parking.camera_calibration = None
+        else:
+            from app.core.vision import parse_calibration
+            parsed = parse_calibration(raw_cal if isinstance(raw_cal, str) else __import__("json").dumps(raw_cal))
+            if parsed is None:
+                raise HTTPException(status_code=422, detail="camera_calibration inválido: se espera {'x','y','w','h'} normalizado 0..1")
+            import json as _json
+            parking.camera_calibration = _json.dumps(parsed)
     await db.commit()
     await db.refresh(parking)
     await invalidate_parkings_cache()
@@ -189,6 +202,43 @@ async def detect_camera_occupancy(parking_id: int, file: UploadFile = File(...),
     return {"parking_id": parking_id, "updated": updated, "total": len(slots), "occupancy": occupancy}
 
 
+@router.post("/vision/process-boxes")
+async def process_custom_vision_boxes(
+    file: UploadFile = File(...),
+    slots_json: str = Form(...),
+    threshold: Optional[int] = Form(None),
+    debug: Optional[bool] = Form(None),
+):
+    """Procesamiento OpenCV (Adaptive Thresholding + CountNonZero) idéntico al
+    car-parking-finder-main. threshold: conteo sobre caja 107x48 (default 900).
+    debug=true retorna conteos y jpeg procesado/anotado para calibrar."""
+    import json
+    try:
+        slots = json.loads(slots_json)
+    except Exception:
+        slots = []
+
+    image_bytes = await file.read()
+    if len(image_bytes) < 50:
+        raise HTTPException(status_code=400, detail="Imagen inválida o vacía")
+
+    white_ratio = None
+    if threshold is not None:
+        try:
+            thr = float(threshold)
+            white_ratio = thr / (107.0*48.0)
+        except Exception:
+            pass
+
+    if debug:
+        from app.core.vision import detect_occupancy_cv2_debug
+        return detect_occupancy_cv2_debug(image_bytes, slots, white_ratio=white_ratio)
+
+    from app.core.vision import detect_occupancy_cv2_adaptive
+    occupancy = detect_occupancy_cv2_adaptive(image_bytes, slots, white_ratio=white_ratio)
+    return {"occupancy": occupancy, "total_boxes": len(slots), "white_ratio": white_ratio}
+
+
 @router.post("/{parking_id}/camera/count")
 async def count_cars_simple(parking_id: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
     """Cuenta autos en la foto sin necesidad de cajones definidos — ideal para prueba rápida de cámara cenital."""
@@ -207,24 +257,8 @@ async def count_cars_simple(parking_id: int, file: UploadFile = File(...), db: A
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img is None:
         raise HTTPException(status_code=422, detail="No se pudo decodificar la imagen")
-    car_boxes = []
-    try:
-        from ultralytics import YOLO
-        import os
-        for _m in [os.getenv("YOLO_VEHICLE_MODEL", ""), "yolov8m.pt", "yolov8n.pt"]:
-            if not _m or not os.path.exists(_m):
-                continue
-            model = YOLO(_m)
-            res = model(img, verbose=False, conf=0.35)
-            for r in res:
-                for box in r.boxes:
-                    cls = int(box.cls[0]) if hasattr(box, 'cls') else -1
-                    if cls in (2, 3, 5, 7):
-                        car_boxes.append(list(map(int, box.xyxy[0].tolist())))
-            if car_boxes:
-                break
-    except Exception:
-        pass
+    from app.core.vision import detect_vehicle_boxes
+    car_boxes, _engine = detect_vehicle_boxes(img)
     if not car_boxes:
         # Fallback contornos oscuros (autos) sobre asfalto claro
         try:
@@ -241,6 +275,327 @@ async def count_cars_simple(parking_id: int, file: UploadFile = File(...), db: A
         except Exception:
             pass
     return {"parking_id": parking_id, "count": len(car_boxes), "total_detected": len(car_boxes), "boxes": car_boxes[:50]}
+
+
+# =======================================================
+# MONITOREO POR CÁMARA EN VIVO (Admin Local)
+# =======================================================
+from app.core.ipcam import extract_first_jpeg, fetch_camera_frame
+
+
+async def _apply_scan_result(db, parking_id, slots, frame_bytes, source, calibration=None):
+    """Recibe un frame ya descargado y devuelve el resultado completo del escaneo:
+    detección IA -> actualiza cajones en BD -> eventos -> Redis -> broadcast WS ->
+    imagen anotada base64. Compartido por la cámara única heredada y por cada
+    dispositivo de la multi-cámara."""
+    slot_dicts = [{"code": s.code, "x": s.pos_x, "y": s.pos_y, "w": s.width, "h": s.height, "rot": s.rotation} for s in slots]
+    try:
+        from app.core.vision import scan_parking_frame
+        analysis = await asyncio.to_thread(scan_parking_frame, frame_bytes, slot_dicts, calibration)
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail=f"Visión no disponible: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error en detección: {exc}")
+
+    occupancy = analysis["occupancy"]
+    prev_statuses = {s.code: s.status for s in slots}
+    # Aplicar resultado a los cajones (no pisar reservas activas)
+    for s in slots:
+        if s.status == "reserved":
+            continue
+        s.status = "occupied" if occupancy.get(s.code, False) else "free"
+    await db.commit()
+
+    from app.core.camera_events import compute_events
+    events = compute_events(parking_id, prev_statuses, occupancy, source=source)
+
+    occupied_c = sum(1 for s in slots if s.status == "occupied")
+    free_c = sum(1 for s in slots if s.status == "free")
+    reserved_c = sum(1 for s in slots if s.status == "reserved")
+
+    try:
+        from app.core.cache import occ_set
+        await occ_set(parking_id, free_c, occupied_c, len(slots))
+        await cache_delete(PARKINGS_CACHE_KEY)
+    except Exception:
+        pass
+    try:
+        await realtime.broadcast("parkings:updated", {"parking_id": parking_id, "source": source})
+    except Exception:
+        pass
+
+    annotated_b64 = None
+    if analysis.get("annotated_jpeg"):
+        import base64
+        annotated_b64 = "data:image/jpeg;base64," + base64.b64encode(analysis["annotated_jpeg"]).decode("ascii")
+
+    from datetime import datetime as _dt
+    return {
+        "parking_id": parking_id,
+        "source": source,
+        "engine": analysis["engine"],
+        "ts": _dt.utcnow().isoformat(),
+        "vehicles_detected": len(analysis["car_boxes"]),
+        "cars_in_slots": sum(1 for v in occupancy.values() if v),
+        "summary": {
+            "total": len(slots),
+            "occupied": occupied_c,
+            "free": free_c,
+            "reserved": reserved_c,
+            "occupancy_pct": round((occupied_c / len(slots)) * 100, 1) if slots else 0,
+        },
+        "slots": occupancy,
+        "events": events,
+        "annotated_image": annotated_b64,
+    }
+
+
+@router.get("/{parking_id}/camera/snapshot")
+async def camera_snapshot(parking_id: int, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    """Proxy de vista previa: descarga server-side un frame de la cámara IP
+    configurada para la sede y lo devuelve como JPEG. Evita problemas de CORS
+    del navegador con streams MJPEG cross-origin."""
+    result = await db.execute(select(Parking).where(Parking.id == parking_id))
+    parking = result.scalars().first()
+    if not parking:
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    if not parking.camera_url:
+        raise HTTPException(status_code=400, detail="Esta sede no tiene cámara configurada (camera_url)")
+    try:
+        frame_bytes = await asyncio.to_thread(fetch_camera_frame, parking.camera_url)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"No se pudo conectar a la cámara: {exc}")
+    from fastapi.responses import Response
+    return Response(
+        content=frame_bytes,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "no-store, max-age=0"},
+    )
+
+
+@router.post("/{parking_id}/camera/scan")
+async def scan_camera_monitor(parking_id: int, db: AsyncSession = Depends(get_db), current_user=Depends(write_required), file: Optional[UploadFile] = File(None)):
+    """Escaneo de ocupación en tiempo real para el monitor de cámara.
+
+    - Con `file`: analiza ese frame (captura de webcam de garita o foto manual).
+    - Sin `file`: el servidor toma un frame de la cámara IP de la sede
+      (camera_url) automáticamente.
+    Actualiza el estado de los cajones del plano, sincroniza contadores Redis,
+    emite evento realtime y devuelve el resumen + imagen anotada (base64).
+    """
+    result = await db.execute(select(Parking).where(Parking.id == parking_id))
+    parking = result.scalars().first()
+    if not parking:
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+
+    slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
+    slots = slots_res.scalars().all()
+    if not slots:
+        raise HTTPException(status_code=400, detail="Este estacionamiento aún no tiene cajones definidos en el plano")
+
+    prev_statuses = {s.code: s.status for s in slots}
+
+    source = "upload"
+    if file is not None:
+        image_bytes = await file.read()
+        if len(image_bytes) < 100:
+            raise HTTPException(status_code=400, detail="Imagen vacía")
+        if len(image_bytes) > 8 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Imagen demasiado grande (máx 8MB)")
+    else:
+        if not parking.camera_url:
+            raise HTTPException(status_code=400, detail="Sin fuente de imagen: envía un frame (webcam/foto) o configura camera_url de la sede")
+        try:
+            image_bytes = await asyncio.to_thread(fetch_camera_frame, parking.camera_url)
+            source = "camera"
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"No se pudo conectar a la cámara: {exc}")
+
+    slot_dicts = [{"code": s.code, "x": s.pos_x, "y": s.pos_y, "w": s.width, "h": s.height, "rot": s.rotation} for s in slots]
+    try:
+        from app.core.vision import scan_parking_frame, parse_calibration
+        analysis = await asyncio.to_thread(
+            scan_parking_frame, image_bytes, slot_dicts, parse_calibration(parking.camera_calibration)
+        )
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail=f"Visión no disponible: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error en detección: {exc}")
+
+    occupancy = analysis["occupancy"]
+    # Aplicar resultado a los cajones (no pisar reservas activas)
+    for s in slots:
+        if s.status == "reserved":
+            continue
+        s.status = "occupied" if occupancy.get(s.code, False) else "free"
+    await db.commit()
+
+    from app.core.camera_events import compute_events
+    events = compute_events(parking_id, prev_statuses, occupancy,
+                            source="garita" if file is not None else "camera")
+
+    occupied_c = sum(1 for s in slots if s.status == "occupied")
+    free_c = sum(1 for s in slots if s.status == "free")
+    reserved_c = sum(1 for s in slots if s.status == "reserved")
+
+    try:
+        from app.core.cache import occ_set
+        await occ_set(parking_id, free_c, occupied_c, len(slots))
+        await cache_delete(PARKINGS_CACHE_KEY)
+    except Exception:
+        pass
+    try:
+        await realtime.broadcast("parkings:updated", {"parking_id": parking_id, "source": "camera-scan"})
+    except Exception:
+        pass
+
+    annotated_b64 = None
+    if analysis.get("annotated_jpeg"):
+        import base64
+        annotated_b64 = "data:image/jpeg;base64," + base64.b64encode(analysis["annotated_jpeg"]).decode("ascii")
+
+    from datetime import datetime as _dt
+    return {
+        "parking_id": parking_id,
+        "source": source,
+        "engine": analysis["engine"],
+        "ts": _dt.utcnow().isoformat(),
+        "vehicles_detected": len(analysis["car_boxes"]),
+        "cars_in_slots": sum(1 for v in occupancy.values() if v),
+        "summary": {
+            "total": len(slots),
+            "occupied": occupied_c,
+            "free": free_c,
+            "reserved": reserved_c,
+            "occupancy_pct": round((occupied_c / len(slots)) * 100, 1) if slots else 0,
+        },
+        "slots": occupancy,
+        "events": events,
+        "annotated_image": annotated_b64,
+    }
+
+
+@router.get("/{parking_id}/camera/events")
+async def list_camera_events(parking_id: int, limit: int = 60, current_user=Depends(write_required)):
+    """Bitácora de eventos detectados por la IA de cámara para esta sede
+    (ingresos/salidas por cajón), incluyendo los generados por el worker de
+    auto-escaneo server-side. Más reciente primero."""
+    from app.core.camera_events import get_events
+    return {"parking_id": parking_id, "events": get_events(parking_id, limit)}
+
+
+# =======================================================
+# MULTI-CÁMARA POR SEDE (dispositivos independientes)
+# =======================================================
+@router.get("/{parking_id}/cameras", response_model=List[CameraDeviceResponse])
+async def list_cameras(parking_id: int, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    """Lista todos los dispositivos de cámara de una sede."""
+    res = await db.execute(
+        select(CameraDevice).where(CameraDevice.parking_id == parking_id).order_by(CameraDevice.id)
+    )
+    return res.scalars().all()
+
+
+@router.post("/{parking_id}/cameras", response_model=CameraDeviceResponse, status_code=status.HTTP_201_CREATED)
+async def create_camera(parking_id: int, cam_in: CameraDeviceCreate, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    res = await db.execute(select(Parking).where(Parking.id == parking_id))
+    if not res.scalars().first():
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    db_cam = CameraDevice(
+        parking_id=parking_id,
+        name=(cam_in.name or "").strip() or "Cámara",
+        url=cam_in.url.strip(),
+        enabled=bool(cam_in.enabled),
+        calibration=cam_in.calibration,
+    )
+    db.add(db_cam)
+    await db.commit()
+    await db.refresh(db_cam)
+    return db_cam
+
+
+@router.put("/{parking_id}/cameras/{cam_id}", response_model=CameraDeviceResponse)
+async def update_camera(parking_id: int, cam_id: int, cam_in: CameraDeviceUpdate, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    res = await db.execute(select(CameraDevice).where(CameraDevice.id == cam_id, CameraDevice.parking_id == parking_id))
+    cam = res.scalars().first()
+    if not cam:
+        raise HTTPException(status_code=404, detail="Cámara no encontrada")
+    if cam_in.name is not None:
+        cam.name = (cam_in.name or "").strip() or cam.name
+    if cam_in.url is not None:
+        cam.url = cam_in.url.strip()
+    if cam_in.enabled is not None:
+        cam.enabled = bool(cam_in.enabled)
+    if "calibration" in cam_in.model_dump(exclude_unset=True):
+        raw = cam_in.calibration
+        if not raw:
+            cam.calibration = None
+        else:
+            from app.core.vision import parse_calibration
+            parsed = parse_calibration(raw if isinstance(raw, str) else __import__("json").dumps(raw))
+            if parsed is None:
+                raise HTTPException(status_code=422, detail="calibration inválido: se espera {'x','y','w','h'} normalizado 0..1")
+            import json as _json
+            cam.calibration = _json.dumps(parsed)
+    await db.commit()
+    await db.refresh(cam)
+    return cam
+
+
+@router.delete("/{parking_id}/cameras/{cam_id}", status_code=status.HTTP_200_OK)
+async def delete_camera(parking_id: int, cam_id: int, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    res = await db.execute(select(CameraDevice).where(CameraDevice.id == cam_id, CameraDevice.parking_id == parking_id))
+    cam = res.scalars().first()
+    if not cam:
+        raise HTTPException(status_code=404, detail="Cámara no encontrada")
+    await db.delete(cam)
+    await db.commit()
+    return {"status": "success", "message": f"Cámara {cam_id} eliminada"}
+
+
+@router.get("/{parking_id}/cameras/{cam_id}/snapshot")
+async def camera_device_snapshot(parking_id: int, cam_id: int, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    """Proxy de vista previa de un dispositivo de cámara concreto."""
+    res = await db.execute(select(CameraDevice).where(CameraDevice.id == cam_id, CameraDevice.parking_id == parking_id))
+    cam = res.scalars().first()
+    if not cam:
+        raise HTTPException(status_code=404, detail="Cámara no encontrada")
+    try:
+        frame_bytes = await asyncio.to_thread(fetch_camera_frame, cam.url)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"No se pudo conectar a la cámara: {exc}")
+    from fastapi.responses import Response
+    return Response(
+        content=frame_bytes,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "no-store, max-age=0"},
+    )
+
+
+@router.post("/{parking_id}/cameras/{cam_id}/scan")
+async def scan_camera_device(parking_id: int, cam_id: int, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    """Escanea un dispositivo de cámara concreto: el servidor toma un frame de su
+    URL, corre la IA usando la calibración propia del dispositivo y actualiza la
+    ocupación del plano. Reutiliza el pipeline compartido con la cámara única."""
+    res = await db.execute(select(Parking).where(Parking.id == parking_id))
+    if not res.scalars().first():
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    cres = await db.execute(select(CameraDevice).where(CameraDevice.id == cam_id, CameraDevice.parking_id == parking_id))
+    cam = cres.scalars().first()
+    if not cam:
+        raise HTTPException(status_code=404, detail="Cámara no encontrada")
+    slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
+    slots = slots_res.scalars().all()
+    if not slots:
+        raise HTTPException(status_code=400, detail="Este estacionamiento aún no tiene cajones definidos en el plano")
+    try:
+        frame_bytes = await asyncio.to_thread(fetch_camera_frame, cam.url)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"No se pudo conectar a la cámara: {exc}")
+
+    from app.core.vision import parse_calibration
+    return await _apply_scan_result(db, parking_id, slots, frame_bytes,
+                                    source=f"cam:{cam.id}", calibration=parse_calibration(cam.calibration))
 
 
 @router.post("", response_model=ParkingResponse, status_code=status.HTTP_201_CREATED)

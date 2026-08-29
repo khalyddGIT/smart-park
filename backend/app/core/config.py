@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     # Sin REDIS_URL el sistema funciona igual que hoy (degradación elegante, fail-open).
     REDIS_URL: str = os.getenv("REDIS_URL", "")
 
+    # Auto-escaneo server-side del monitor de cámaras: el backend escanea las
+    # sedes con camera_enabled + camera_url aunque nadie tenga la app abierta.
+    CAMERA_AUTOSCAN_ENABLED: bool = os.getenv("CAMERA_AUTOSCAN_ENABLED", "True") == "True"
+    CAMERA_AUTOSCAN_INTERVAL: int = int(os.getenv("CAMERA_AUTOSCAN_INTERVAL", "15"))
+
     # Conexión a Base de Datos (DATABASE_URL en Railway / PostgreSQL estándar o SQLite local)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     USE_SQLITE: bool = os.getenv("USE_SQLITE", "True" if not os.getenv("DATABASE_URL") else "False") == "True"

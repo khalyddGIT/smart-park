@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime
 
 # ==========================================
@@ -88,6 +88,8 @@ class ParkingBase(BaseModel):
     level: Optional[str] = None
     camera_url: Optional[str] = None
     camera_enabled: Optional[bool] = False
+    camera_calibration: Optional[str] = None
+
 
 class ParkingCreate(ParkingBase):
     pass
@@ -110,10 +112,39 @@ class ParkingUpdate(BaseModel):
     level: Optional[str] = None
     camera_url: Optional[str] = None
     camera_enabled: Optional[bool] = None
+    camera_calibration: Optional[str] = None
 
 class ParkingResponse(ParkingBase):
     id: int
     available_slots: Optional[int] = 0
+    class Config:
+        from_attributes = True
+
+# ==========================================
+# 3b. DISPOSITIVOS DE CÁMARA POR SEDE (multi-cámara)
+# ==========================================
+class CameraDeviceBase(BaseModel):
+    name: Optional[str] = None
+    url: str
+    enabled: Optional[bool] = True
+    calibration: Optional[str] = None
+
+
+class CameraDeviceCreate(CameraDeviceBase):
+    pass
+
+
+class CameraDeviceUpdate(BaseModel):
+    name: Optional[str] = None
+    url: Optional[str] = None
+    enabled: Optional[bool] = None
+    calibration: Optional[Any] = None  # string JSON o dict {"x","y","w","h"}
+
+
+class CameraDeviceResponse(CameraDeviceBase):
+    id: int
+    parking_id: int
+    created_at: Optional[datetime] = None
     class Config:
         from_attributes = True
 

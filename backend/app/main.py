@@ -47,21 +47,36 @@ async def startup_db():
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            # Migración ligera: columnas añadidas después del despliegue inicial
+            # Migración ligera multi-dialecto: columnas añadidas tras el primer despliegue.
+            # En PostgreSQL usamos ADD COLUMN IF NOT EXISTS; en SQLite verificamos PRAGMA
+            # porque no soporta IF NOT EXISTS en ADD COLUMN (antes fallaba en silencio).
             from sqlalchemy import text as _text
-            for ddl in [
-                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS description TEXT",
-                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS phone VARCHAR(30)",
-                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS email VARCHAR(150)",
-                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS reference VARCHAR(255)",
-                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS level VARCHAR(100)",
-                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS camera_url TEXT",
-                "ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS camera_enabled BOOLEAN DEFAULT FALSE",
-            ]:
-                try:
-                    await conn.execute(_text(ddl))
-                except Exception:
-                    pass
+            lite_adds = [
+                ("estacionamientos", "description", "TEXT"),
+                ("estacionamientos", "phone", "VARCHAR(30)"),
+                ("estacionamientos", "email", "VARCHAR(150)"),
+                ("estacionamientos", "reference", "VARCHAR(255)"),
+                ("estacionamientos", "level", "VARCHAR(100)"),
+                ("estacionamientos", "camera_url", "TEXT"),
+                ("estacionamientos", "camera_enabled", "BOOLEAN DEFAULT FALSE"),
+                ("estacionamientos", "camera_calibration", "TEXT"),
+            ]
+            if str(engine.url).startswith("sqlite"):
+                for tbl, col, decl in lite_adds:
+                    try:
+                        rows = (await conn.execute(_text(f"PRAGMA table_info({tbl})"))).all()
+                        if col not in {r[1] for r in rows}:
+                            await conn.execute(_text(f"ALTER TABLE {tbl} ADD COLUMN {col} {decl}"))
+                    except Exception:
+                        pass
+            else:
+                for tbl, col, decl in lite_adds:
+                    try:
+                        await conn.execute(_text(
+                            f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col} {decl}"
+                        ))
+                    except Exception:
+                        pass
     except Exception as e:
         import logging
         logging.warning(f"[smart-park] startup_db: no se pudo inicializar DB remota, continuando en modo degradado: {e}")
@@ -167,6 +182,15 @@ async def startup_db():
     except Exception as e:
         import logging
         logging.warning(f"[smart-park] seed skip: {e}")
+
+    # Worker de auto-escaneo de cámaras en segundo plano (server-side 24/7):
+    # escanea sedes con camera_enabled+camera_url aunque nadie tenga la app abierta.
+    try:
+        from app.core.camera_worker import start_autoscan
+        start_autoscan()
+    except Exception as e:
+        import logging
+        logging.warning(f"[smart-park] auto-escaneo no iniciado: {e}")
 
 # Conectar todos los routers v1
 app.include_router(auth.router, prefix=settings.API_V1_STR)

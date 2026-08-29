@@ -80,9 +80,29 @@ class Parking(Base):
     level = Column(String(100), nullable=True)
     camera_url = Column(Text, nullable=True)
     camera_enabled = Column(Boolean, default=False)
+    # Calibración de la vista de cámara sobre el lienzo CAD: JSON {"x","y","w","h"} normalizado (0..1).
+    camera_calibration = Column(Text, nullable=True)
 
     slots = relationship("Slot", back_populates="parking", cascade="all, delete-orphan")
     elements = relationship("FloorPlanElement", back_populates="parking", cascade="all, delete-orphan")
+    cameras = relationship("CameraDevice", back_populates="parking", cascade="all, delete-orphan")
+
+class CameraDevice(Base):
+    """Dispositivo de cámara de una sede. Una sede puede tener varias cámaras
+    (entrada, playón norte/sur, techo...), cada una con su URL, estado y
+    calibración independiente para alinear su vista con el plano CAD."""
+    __tablename__ = "cameras_dispositivos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False, index=True)
+    name = Column(String(120), nullable=False, default="Cámara 1")
+    url = Column(Text, nullable=False)
+    enabled = Column(Boolean, default=True)
+    calibration = Column(Text, nullable=True)  # JSON {"x","y","w","h"} normalizado
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    parking = relationship("Parking", back_populates="cameras")
+
 
 class Slot(Base):
     __tablename__ = "plazas"
@@ -187,6 +207,9 @@ Reserva = Reservation
 Personal = Staff
 Resena = Review
 Incidente = Incident
+Incidente = Incident
+CamaraDispositivo = CameraDevice
+
 
 
 

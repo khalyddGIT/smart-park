@@ -29,6 +29,7 @@ import { PlatformGlobalDashboard } from './components/PlatformGlobalDashboard';
 import { TermsAndConditionsModal } from './components/TermsAndConditionsModal';
 import { UserProfileModule } from './components/UserProfileModule';
 import { LandingPage } from './components/LandingPage';
+import { CameraMonitorModule } from './components/CameraMonitorModule';
 import { 
   Search, 
   MapPin, 
@@ -69,7 +70,7 @@ export const App = () => {
   useEffect(() => {
     const validTabsByRole = {
       user: ['dashboard', 'reservations', 'profile', 'vehicles', 'payments', 'incidents', 'history', 'reviews'],
-      local: ['dashboard', 'editor', 'reservations', 'profile', 'anpr', 'garita', 'incidents', 'staff', 'reports', 'audit', 'reviews'],
+      local: ['dashboard', 'editor', 'reservations', 'profile', 'anpr', 'garita', 'cameras', 'incidents', 'staff', 'reports', 'audit', 'reviews'],
       platform: ['dashboard', 'profile', 'finances', 'settings', 'affiliates', 'reservations', 'analytics', 'incidents', 'audit', 'users', 'vehicles', 'staff', 'reviews', 'resiliency']
     };
     if (!validTabsByRole[role]?.includes(activeTab)) {
@@ -440,7 +441,6 @@ export const App = () => {
                             const elements = p.elements || [];
                             const totalSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
                             const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
-                            const pmrSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'pmr').length;
                             const shadedSlots = elements.filter(e => e.type === 'slot' && e.shaded).length;
 
                             return (
@@ -551,6 +551,7 @@ export const App = () => {
               {activeTab === 'reservations' && <ReservationsModule />}
               {activeTab === 'profile' && <UserProfileModule />}
               {(activeTab === 'anpr' || activeTab === 'garita') && <ANPRMonitor />}
+              {activeTab === 'cameras' && <CameraMonitorModule />}
               {activeTab === 'incidents' && <IncidentsModule />}
               {activeTab === 'staff' && <StaffModule />}
               {activeTab === 'audit' && <AuditLogsModule />}
@@ -567,6 +568,7 @@ export const App = () => {
                 <PlatformGlobalDashboard onNavigateTab={(tab) => setActiveTab(tab)} />
               )}
 
+              {activeTab === 'cameras' && <CameraMonitorModule />}
               {activeTab === 'profile' && <UserProfileModule />}
               {activeTab === 'finances' && <PlatformFinancesModule />}
               {activeTab === 'settings' && <PlatformSettingsModule />}

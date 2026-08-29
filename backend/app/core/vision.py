@@ -127,7 +127,7 @@ def classify_by_threshold(processed, original, slots: List[Dict], w_img: int, h_
     vehículos de color uniforme (rectángulos sintéticos/tests) combina con la
     señal de masa oscura (dark_ratio) del ROI original."""
     import cv2
-    ratio = white_ratio if white_ratio is not None else WHITE_RATIO
+    global_ratio = white_ratio if white_ratio is not None else WHITE_RATIO
     result = {}
     for s in slots:
         code = s.get("code", "?")
@@ -136,6 +136,15 @@ def classify_by_threshold(processed, original, slots: List[Dict], w_img: int, h_
         if crop is None or crop.size == 0:
             result[code] = False
             continue
+        # umbral por zona: slot.thr (absoluto sobre 107x48) tiene prioridad sobre global
+        thr_slot = s.get("thr")
+        if thr_slot is not None:
+            try:
+                ratio = float(thr_slot) / REF_BOX_AREA
+            except Exception:
+                ratio = global_ratio
+        else:
+            ratio = global_ratio
         count = int(cv2.countNonZero(crop))
         white_occ = count > ratio * (w * h)
         if white_occ:
@@ -307,13 +316,19 @@ def detect_occupancy_cv2_debug(image_bytes: bytes, slots: List[Dict], white_rati
     ratio = white_ratio if white_ratio is not None else WHITE_RATIO
     counts = {}
     occupancy = {}
+    global_ratio_dbg = ratio
     for s in slots:
         code = s.get("code", "?")
+        thr_slot = s.get("thr")
+        try:
+            r = float(thr_slot)/REF_BOX_AREA if thr_slot is not None else global_ratio_dbg
+        except Exception:
+            r = global_ratio_dbg
         cx, cy, w, h, angle = map_slot_box(s, w_img, h_img)
         crop = extract_rotated_crop(processed, cx, cy, w, h, angle)
         cnt = int(cv2.countNonZero(crop)) if crop is not None and crop.size else 0
-        counts[code] = {"count": cnt, "area": int(w*h), "ratio": round(cnt/max(1,w*h),4), "threshold": int(ratio*w*h)}
-        occupancy[code] = cnt > ratio*w*h
+        counts[code] = {"count": cnt, "area": int(w*h), "ratio": round(cnt/max(1,w*h),4), "threshold": int(r*w*h), "thr": thr_slot}
+        occupancy[code] = cnt > r*w*h
         if not occupancy[code]:
             orig_crop = extract_rotated_crop(img, cx, cy, w, h, angle)
             if orig_crop is not None and orig_crop.size:

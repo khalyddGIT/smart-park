@@ -238,7 +238,7 @@ export const CameraMonitorModule = () => {
     } else {
       pushHistory();
       const code = `CAM-${String(camZones.length + 1).padStart(2, '0')}`;
-      const nz = { id: `cz_${Date.now()}`, code, x: Math.max(0, Math.min(CANVAS_W - rectW, x - rectW / 2)), y: Math.max(0, Math.min(CANVAS_H - rectH, y - rectH / 2)), w: rectW, h: rectH, rot: currentRot, status: 'free' };
+      const nz = { id: `cz_${Date.now()}`, code, x: Math.max(0, Math.min(CANVAS_W - rectW, x - rectW / 2)), y: Math.max(0, Math.min(CANVAS_H - rectH, y - rectH / 2)), w: rectW, h: rectH, rot: currentRot, status: 'free', thr: null };
       const next = [...camZones, nz];
       setCamZones(next); persistZones(next);
       setSelectedZoneIdx(next.length - 1);
@@ -277,7 +277,7 @@ export const CameraMonitorModule = () => {
     }
   };
 
-  // dibujo canvas en modo edición
+  // dibujo canvas en modo edición — con handles y guía
   useEffect(() => {
     if (mode !== 'edit') return;
     const c = canvasRef.current;
@@ -285,6 +285,13 @@ export const CameraMonitorModule = () => {
     const ctx = c.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    // grilla sutil
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < CANVAS_W; x += 100) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CANVAS_H); ctx.stroke(); }
+    for (let y = 0; y < CANVAS_H; y += 100) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CANVAS_W, y); ctx.stroke(); }
+    ctx.restore();
     camZones.forEach((z, idx) => {
       const isSel = idx === selectedZoneIdx;
       const w = z.w || rectW, h = z.h || rectH;
@@ -296,6 +303,14 @@ export const CameraMonitorModule = () => {
       ctx.fillStyle = isSel ? 'rgba(250,204,21,0.28)' : z.status === 'occupied' ? 'rgba(244,63,94,0.22)' : 'rgba(16,185,129,0.18)';
       if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, 6); ctx.fill(); ctx.stroke(); }
       else { ctx.fillRect(-w / 2, -h / 2, w, h); ctx.strokeRect(-w / 2, -h / 2, w, h); }
+      // handles de esquina para la seleccionada
+      if (isSel) {
+        ctx.fillStyle = '#facc15';
+        const hs = 7;
+        [[-w/2, -h/2],[w/2, -h/2],[w/2, h/2],[-w/2, h/2]].forEach(([hx, hy]) => ctx.fillRect(hx - hs/2, hy - hs/2, hs, hs));
+        // punto de rotación arriba
+        ctx.beginPath(); ctx.arc(0, -h/2 - 14, 5, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.stroke();
+      }
       ctx.fillStyle = 'rgba(15,23,42,0.92)';
       ctx.fillRect(-26, -10, 52, 18);
       ctx.fillStyle = isSel ? '#facc15' : '#fff';
@@ -304,7 +319,56 @@ export const CameraMonitorModule = () => {
       ctx.fillText(z.code, 0, 0);
       ctx.restore();
     });
+    // hint si no hay zonas
+    if (camZones.length === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Haz click en la imagen para crear tu primera zona', CANVAS_W/2, 32);
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.fillText('Luego arrástrala para moverla — usa +TAM / -TAM y Rotar', CANVAS_W/2, 52);
+    }
   }, [camZones, selectedZoneIdx, mode, rectW, rectH]);
+
+  // atajos de teclado en edición
+  useEffect(() => {
+    if (mode !== 'edit') return;
+    const onKey = (e) => {
+      if (selectedZoneIdx === null) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        pushHistory();
+        const next = camZones.filter((_, i) => i !== selectedZoneIdx);
+        setCamZones(next); persistZones(next); setSelectedZoneIdx(null);
+        toast('Zona eliminada');
+      }
+      if (e.key.toLowerCase() === 'd' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        const z = camZones[selectedZoneIdx];
+        if (!z) return;
+        pushHistory();
+        const nz = { ...z, id: `cz_${Date.now()}`, code: `CAM-${String(camZones.length + 1).padStart(2, '0')}`, x: Math.min(CANVAS_W - z.w, z.x + 18), y: Math.min(CANVAS_H - z.h, z.y + 18), thr: z.thr ?? null };
+        const next = [...camZones, nz];
+        setCamZones(next); persistZones(next); setSelectedZoneIdx(next.length - 1);
+      }
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 2;
+        let dx=0, dy=0;
+        if (e.key === 'ArrowUp') dy=-step;
+        if (e.key === 'ArrowDown') dy=step;
+        if (e.key === 'ArrowLeft') dx=-step;
+        if (e.key === 'ArrowRight') dx=step;
+        setCamZones((prev) => {
+          const next = prev.map((z,i)=> i===selectedZoneIdx ? {...z, x: Math.max(0, Math.min(CANVAS_W - z.w, z.x+dx)), y: Math.max(0, Math.min(CANVAS_H - z.h, z.y+dy))} : z);
+          persistZones(next); return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mode, selectedZoneIdx, camZones, pushHistory, persistZones]);
 
   // snapshot para cámara IP
   const refreshSnapshot = useCallback(async () => {
@@ -387,7 +451,7 @@ export const CameraMonitorModule = () => {
       }
       const fd = new FormData();
       fd.append('file', blob, 'frame.jpg');
-      fd.append('slots_json', JSON.stringify(camZones.map((z) => ({ code: z.code, x: z.x, y: z.y, w: z.w, h: z.h, rot: z.rot || 0 }))));
+      fd.append('slots_json', JSON.stringify(camZones.map((z) => ({ code: z.code, x: z.x, y: z.y, w: z.w, h: z.h, rot: z.rot || 0, thr: z.thr ?? undefined }))));
       fd.append('threshold', String(threshold));
       if (debugMode) fd.append('debug', 'true');
 
@@ -600,6 +664,35 @@ export const CameraMonitorModule = () => {
 
       <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm p-4">
         <h3 className="text-xs font-black tracking-widest text-slate-900 flex items-center gap-2 mb-3"><ListChecks className="w-4 h-4 text-emerald-500" /> ZONAS DE CÁMARA — {camZones.length} zonas (módulo aparte)</h3>
+        {selectedZoneIdx !== null && camZones[selectedZoneIdx] && (
+          <div className="mb-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-black text-slate-900 flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-amber-600" /> {camZones[selectedZoneIdx].code}</span>
+              <span className="text-xs text-slate-500">— {Math.round(camZones[selectedZoneIdx].w)}×{Math.round(camZones[selectedZoneIdx].h)}{camZones[selectedZoneIdx].rot ? ` · ${camZones[selectedZoneIdx].rot}°` : ''} · {camZones[selectedZoneIdx].status === 'occupied' ? 'OCUPADA' : 'LIBRE'}</span>
+              <button type="button" onClick={() => setSelectedZoneIdx(null)} className="ml-auto h-7 px-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50"><X className="w-3.5 h-3.5" /></button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-white rounded-lg border border-slate-300 px-2 py-1">
+                <span className="text-[11px] font-black text-slate-600">Código</span>
+                <input value={camZones[selectedZoneIdx].code} onChange={(e)=> setCamZones((prev)=>{ const next=prev.map((z,i)=> i===selectedZoneIdx ? {...z, code: e.target.value.toUpperCase().slice(0,12)}:z); persistZones(next); return next; })} className="w-20 h-7 text-xs font-mono font-bold text-center outline-none" />
+              </div>
+              <div className="flex items-center gap-1.5 bg-white rounded-lg border border-slate-300 px-2 py-1">
+                <span className="text-[11px] font-black text-slate-600">Umbral</span>
+                <input type="number" min={200} max={2500} step={50} value={camZones[selectedZoneIdx].thr ?? ''} placeholder={`${threshold}`} onChange={(e) => {
+                  const v = e.target.value === '' ? null : Number(e.target.value);
+                  setCamZones((prev) => { const next = prev.map((z,i)=> i===selectedZoneIdx ? {...z, thr: v} : z); persistZones(next); return next; });
+                }} className="w-20 h-7 text-xs font-mono font-bold text-center outline-none" />
+                <button type="button" onClick={() => setCamZones((prev)=>{ const next=prev.map((z,i)=> i===selectedZoneIdx ? {...z, thr: null}:z); persistZones(next); return next; })} className="text-[11px] font-bold text-slate-600 hover:text-slate-900">Global</button>
+              </div>
+              <div className="flex items-center gap-1 ml-auto">
+                <Button type="button" variant="outline" onClick={() => { pushHistory(); const z=camZones[selectedZoneIdx]; const nz={...z, id:`cz_${Date.now()}`, code:`CAM-${String(camZones.length+1).padStart(2,'0')}`, x: Math.min(CANVAS_W - z.w, z.x+16), y: Math.min(CANVAS_H - z.h, z.y+16)}; const next=[...camZones, nz]; setCamZones(next); persistZones(next); setSelectedZoneIdx(next.length-1); }} className="h-8 rounded-lg bg-white border-slate-300 text-xs font-bold gap-1"><Copy className="w-3.5 h-3.5" /> Duplicar</Button>
+                <Button type="button" variant="outline" onClick={() => handleRotate(45)} className="h-8 rounded-lg bg-white border-slate-300 text-xs font-bold gap-1"><RotateCw className="w-3.5 h-3.5" /> Rotar</Button>
+                <Button type="button" variant="outline" onClick={() => { pushHistory(); const next=camZones.filter((_,i)=> i!==selectedZoneIdx); setCamZones(next); persistZones(next); setSelectedZoneIdx(null); }} className="h-8 rounded-lg bg-white border-rose-200 text-rose-600 text-xs font-bold gap-1"><Trash2 className="w-3.5 h-3.5" /> Borrar</Button>
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-500">Tip: arrastra la zona, usa flechas (Shift = 10px), <b>Supr</b> borra, <b>Ctrl+D</b> duplica. Esquinas amarillas = redimensiona (próximamente). Código editable.</p>
+          </div>
+        )}
         {camZones.length === 0 ? (
           <div className="py-8 text-center border-2 border-dashed border-slate-200 rounded-2xl">
             <Layers className="w-8 h-8 text-slate-300 mx-auto mb-2" />

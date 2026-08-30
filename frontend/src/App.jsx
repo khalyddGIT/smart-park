@@ -7,6 +7,7 @@ import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { LocalEstablishmentManager, FALLBACK_PARKING_IMAGE } from './components/LocalEstablishmentManager';
 import { ANPRMonitor } from './components/ANPRMonitor';
+import { PersonalGaritaModule } from './components/PersonalGaritaModule';
 import { PaymentsModule } from './components/PaymentsModule';
 import { VehiclesModule } from './components/VehiclesModule';
 import { HistoryModule } from './components/HistoryModule';
@@ -623,7 +624,7 @@ export const App = () => {
               )}
               {activeTab === 'reservations' && <ReservationsModule />}
               {activeTab === 'profile' && <UserProfileModule />}
-              {(activeTab === 'anpr' || activeTab === 'garita') && (isPersonalStaff ? <CameraMonitorModule readOnly /> : <ANPRMonitor />)}
+              {(activeTab === 'anpr' || activeTab === 'garita') && (isPersonalStaff ? <PersonalGaritaModule /> : <ANPRMonitor />)}
               {activeTab === 'cameras' && (isPersonalStaff ? <CameraMonitorModule readOnly /> : <CameraMonitorModule />)}
               {activeTab === 'incidents' && <IncidentsModule />}
               {activeTab === 'staff' && !isPersonalStaff && <StaffModule />}

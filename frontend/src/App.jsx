@@ -216,6 +216,42 @@ export const App = () => {
     }
   }, [user, pendingParkingForBooking]);
 
+  // --- Fix botón atrás en móvil: no cerrar la app, navegar dentro del SPA ---
+  const lastBackPressRef = React.useRef(0);
+  useEffect(() => {
+    try { window.history.replaceState({ appTab: activeTab, ts: Date.now() }, ''); } catch {}
+  }, []);
+  useEffect(() => {
+    try { window.history.pushState({ appTab: activeTab, ts: Date.now() }, ''); } catch {}
+  }, [activeTab]);
+  useEffect(() => {
+    if (selectedParkingId) {
+      try { window.history.pushState({ appTab: activeTab, parkingId: selectedParkingId }, ''); } catch {}
+    }
+  }, [selectedParkingId]);
+  useEffect(() => {
+    const onPopState = () => {
+      if (showQRModal) { setShowQRModal(false); try { window.history.pushState({ appTab: activeTab }, ''); } catch {} return; }
+      if (showTermsModal) { setShowTermsModal(false); try { window.history.pushState({ appTab: activeTab }, ''); } catch {} return; }
+      if (showAuthModal) { setShowAuthModal(false); try { window.history.pushState({ appTab: activeTab }, ''); } catch {} return; }
+      if (selectedParkingId) { setSelectedParkingId(null); try { window.history.pushState({ appTab: activeTab }, ''); } catch {} return; }
+      if (activeTab !== 'dashboard') { setActiveTab('dashboard'); try { window.history.pushState({ appTab: 'dashboard' }, ''); } catch {} return; }
+      const now = Date.now();
+      if (now - lastBackPressRef.current < 2000) return;
+      lastBackPressRef.current = now;
+      try { window.history.pushState({ appTab: 'dashboard' }, ''); } catch {}
+      try {
+        const el = document.createElement('div');
+        el.textContent = 'Pulsa atrás de nuevo para salir';
+        el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.3)';
+        document.body.appendChild(el);
+        setTimeout(()=> el.remove(), 1800);
+      } catch {}
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [activeTab, selectedParkingId, showQRModal, showTermsModal, showAuthModal]);
+
   const handleTabNavigation = (tab) => {
     if (!user && tab !== 'dashboard') {
       setAuthModalMode('login');

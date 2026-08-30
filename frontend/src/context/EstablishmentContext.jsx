@@ -503,6 +503,7 @@ export const EstablishmentProvider = ({ children }) => {
           latitude: Number(p.latitude), 
           longitude: Number(p.longitude), 
           rate: Number(p.hourly_rate) || 5.00, 
+          tolerance: Number(p.tolerance_minutes) || 15,
           status: p.status === 'active' ? 'Operativo' : p.status, 
           image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', 
           totalSlots: p.total_capacity, 
@@ -758,7 +759,7 @@ export const EstablishmentProvider = ({ children }) => {
     const token = getAccessToken();
     if (token || true) {
       try {
-        const payload = { name: newEst.name, address: newEst.address, city: newEst.city || 'Ayacucho - Huamanga', latitude: newEst.latitude || -13.1604, longitude: newEst.longitude || -74.2259, hourly_rate: newEst.rate || 5, tolerance_minutes: 15, status: 'active', total_capacity: newEst.totalSlots || newEst.elements?.filter(e=>e.type==='slot').length || 10, image_url: newEst.image };
+        const payload = { name: newEst.name, address: newEst.address, city: newEst.city || 'Ayacucho - Huamanga', latitude: newEst.latitude || -13.1604, longitude: newEst.longitude || -74.2259, hourly_rate: newEst.rate || 5, tolerance_minutes: Math.max(5, Math.min(60, Number(newEst.tolerance) || 15)), status: 'active', total_capacity: newEst.totalSlots || newEst.elements?.filter(e=>e.type==='slot').length || 10, image_url: newEst.image };
         const res = await api.post('/parkings', payload);
         if (res.data?.id) {
           const created = { ...newEst, id: String(res.data.id), rate: res.data.hourly_rate, image: res.data.image_url, status: res.data.status === 'active' ? 'Operativo' : res.data.status };
@@ -786,6 +787,7 @@ export const EstablishmentProvider = ({ children }) => {
         if (updatedFields.address) payload.address = updatedFields.address;
         if (updatedFields.city) payload.city = updatedFields.city || 'Ayacucho - Huamanga';
         if (updatedFields.rate) payload.hourly_rate = Number(updatedFields.rate);
+        if (updatedFields.tolerance !== undefined) payload.tolerance_minutes = Math.max(5, Math.min(60, Number(updatedFields.tolerance) || 15));
         if (updatedFields.status) payload.status = updatedFields.status === 'Operativo' ? 'active' : updatedFields.status;
         if (updatedFields.image) payload.image_url = updatedFields.image;
         if (updatedFields.description !== undefined) payload.description = updatedFields.description;

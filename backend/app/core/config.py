@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     CAMERA_AUTOSCAN_ENABLED: bool = os.getenv("CAMERA_AUTOSCAN_ENABLED", "True") == "True"
     CAMERA_AUTOSCAN_INTERVAL: int = int(os.getenv("CAMERA_AUTOSCAN_INTERVAL", "15"))
 
+    # Auto-cancelación de reservas por tolerancia vencida
+    RESERVATION_WORKER_ENABLED: bool = os.getenv("RESERVATION_WORKER_ENABLED", "True") == "True"
+    RESERVATION_TOLERANCE_CHECK_INTERVAL: int = int(os.getenv("RESERVATION_TOLERANCE_CHECK_INTERVAL", "60"))
+
     # Conexión a Base de Datos (DATABASE_URL en Railway / PostgreSQL estándar o SQLite local)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     USE_SQLITE: bool = os.getenv("USE_SQLITE", "True" if not os.getenv("DATABASE_URL") else "False") == "True"

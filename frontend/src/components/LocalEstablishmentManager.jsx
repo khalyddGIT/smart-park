@@ -287,6 +287,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     city: 'Ayacucho - Huamanga',
     level: 'Nivel 1 - Superficie',
     rate: 5.00,
+    tolerance: 15,
     status: 'Operativo',
     owner: '',
     ruc: '',
@@ -439,6 +440,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       city: 'Ayacucho - Huamanga',
       level: 'Nivel 1 - Superficie',
       rate: 5.00,
+      tolerance: 15,
       status: 'Operativo',
       owner: 'Administración Cochera Huamanga',
       ruc: '20' + Math.floor(100000000 + Math.random() * 900000000),
@@ -473,6 +475,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       city: est.city || 'Ayacucho - Huamanga',
       level: est.level || 'Nivel 1 - Superficie',
       rate: est.rate || 5.00,
+      tolerance: est.tolerance ?? est.tolerance_minutes ?? 15,
       status: est.status || 'Operativo',
       owner: est.owner || '',
       ruc: est.ruc || '',
@@ -524,6 +527,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
         city: formData.city || 'Ayacucho - Huamanga',
         level: formData.level,
         rate: Number(formData.rate) || 5.00,
+        tolerance: Math.max(5, Math.min(60, Number(formData.tolerance) || 15)),
         totalSlots: 6,
         status: formData.status,
         owner: formData.owner || 'Administración Local',
@@ -554,6 +558,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
         city: formData.city,
         level: formData.level,
         rate: Number(formData.rate) || 5.00,
+        tolerance: Math.max(5, Math.min(60, Number(formData.tolerance) || 15)),
         status: formData.status,
         owner: formData.owner,
         ruc: formData.ruc,
@@ -1132,6 +1137,51 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             S/ {val.toFixed(2)}
                           </button>
                         ))}
+                      </div>
+
+                      {/* Política de Tolerancia */}
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" /> Tolerancia de Reserva (min)
+                          </label>
+                          <span className="text-[10px] font-bold text-amber-700 bg-white border border-amber-200 px-2 py-0.5 rounded-full">
+                            Auto-cancela si no hay check-in
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-3 items-end">
+                          <div>
+                            <Input
+                              type="number"
+                              min="5"
+                              max="60"
+                              step="5"
+                              value={formData.tolerance}
+                              onChange={(e) => {
+                                let v = Math.max(5, Math.min(60, Number(e.target.value) || 15));
+                                setFormData({ ...formData, tolerance: v });
+                              }}
+                              className="text-xs font-mono font-bold h-9.5 bg-white border-amber-200"
+                            />
+                            <p className="text-[10px] text-amber-700 font-medium mt-1">5–60 min. Se cancela y libera cajón si vence.</p>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[11px] text-amber-700 font-medium">Rápido:</span>
+                            {[10, 15, 20, 30].map(v => (
+                              <button
+                                key={v}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, tolerance: v })}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${Number(formData.tolerance) === v ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-amber-800 border-amber-200 hover:bg-amber-100'}`}
+                              >
+                                {v} min
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          Si la reserva sigue en <b>programada</b> después de <b>{formData.tolerance} min</b> del inicio, el sistema la cancela automáticamente, libera el cajón y notifica al conductor via campana y push.
+                        </p>
                       </div>
                     </div>
 

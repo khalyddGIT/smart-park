@@ -121,8 +121,25 @@ export const NotificationProvider = ({ children }) => {
           const res = await api.get('/reservations/my-reservations');
           const reservations = Array.isArray(res.data) ? res.data : [];
           reservations.forEach((r) => {
-            // Solo notificar reservas vigentes; canceladas/completadas no generan ruido
-            if (r.status === 'cancelled' || r.status === 'completed') return;
+            // Canceladas/completadas: notificar solo si son recientes (últimos 7 días) para no spamear histórico
+            if (r.status === 'cancelled') {
+              const start = r.start_time ? Date.parse(r.start_time) : 0;
+              const recent = !start || (Date.now() - start < 7 * 86400000);
+              if (!recent) return;
+              derived.push({
+                id: `real-reservation-cancelled-${r.id}`,
+                role: 'user',
+                title: `Reserva ${r.code || `#${r.id}`} cancelada`,
+                message: `Tu reserva ${r.code} fue cancelada por tolerancia vencida (no hiciste check-in a tiempo). Cajón liberado · Placa ${r.license_plate} · Cochera #${r.parking_id}`,
+                time: formatDate(r.start_time),
+                timestamp: start || Date.now(),
+                read: false,
+                type: 'warning',
+                targetTab: 'reservations',
+              });
+              return;
+            }
+            if (r.status === 'completed') return;
             const end = r.end_time ? new Date(r.end_time) : null;
             const start = r.start_time ? new Date(r.start_time) : null;
             let message = '';

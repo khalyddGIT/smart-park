@@ -192,6 +192,14 @@ async def startup_db():
         import logging
         logging.warning(f"[smart-park] auto-escaneo no iniciado: {e}")
 
+    # Worker de auto-cancelación por tolerancia vencida (reservas scheduled)
+    try:
+        from app.core.reservation_worker import start_reservation_worker
+        start_reservation_worker()
+    except Exception as e:
+        import logging
+        logging.warning(f"[smart-park] reservation-worker no iniciado: {e}")
+
 # Conectar todos los routers v1
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(parkings.router, prefix=settings.API_V1_STR)

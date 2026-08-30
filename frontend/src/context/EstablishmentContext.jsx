@@ -971,7 +971,9 @@ export const EstablishmentProvider = ({ children }) => {
         slot_id: slotIdNum,
         license_plate: plate,
         start_time: startISO,
-        end_time: endISO
+        end_time: endISO,
+        payment_method: bookingData.paymentMethod || bookingData.payment_method || null,
+        pay_now: !!bookingData.payNow
       });
       setBookingError(null);
       const mapped = mapServerReservation(serverRes);

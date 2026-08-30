@@ -32,6 +32,7 @@ import { TermsAndConditionsModal } from './components/TermsAndConditionsModal';
 import { UserProfileModule } from './components/UserProfileModule';
 import { LandingPage } from './components/LandingPage';
 import { CameraMonitorModule } from './components/CameraMonitorModule';
+import { AutoFitFloorPlan } from './components/AutoFitFloorPlan';
 import { 
   Search, 
   MapPin, 
@@ -653,29 +654,7 @@ export const App = () => {
                           </div>
                           <span className="text-[10px] font-black tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-full">{isPersonalStaff ? 'ASIGNADA' : 'SOLO PARKING'}</span>
                         </div>
-                        <div className="relative bg-[#0f172a] rounded-2xl border-2 border-slate-800 overflow-hidden p-2" style={{height: 380}}>
-                          <div className="absolute inset-2 bg-[#1e293b] rounded-xl overflow-hidden">
-                            <div style={{width: 1100, height: 700, transform: 'scale(0.31)', transformOrigin: 'top left'}} className="relative bg-[#12161f]">
-                              {(est.elements||[]).map(el=>{
-                                if(el.type==='slot'){
-                                  const isFree=el.status==='free';
-                                  return (
-                                    <div key={el.code||el.id} style={{left: el.x, top: el.y, width: el.w||60, height: el.h||100, transform: el.rot?`rotate(${el.rot}deg)`:undefined}}
-                                      className={`absolute rounded-lg border-2 flex flex-col items-center justify-center text-[10px] font-mono font-black ${isFree?'bg-emerald-900/40 text-emerald-300 border-emerald-500/60':'bg-rose-900/40 text-rose-300 border-rose-500/50'}`}>
-                                      <span>{el.code}</span>
-                                      <span className="text-[8px]">{isFree?'LIBRE':'OCUPADO'}</span>
-                                    </div>
-                                  );
-                                }
-                                if(el.type==='wall') return <div key={el.id} style={{left: el.x, top: el.y, width: el.w, height: el.h}} className="absolute bg-slate-600 rounded-sm"/>;
-                                if(el.type==='road') return <div key={el.id} style={{left: el.x, top: el.y, width: el.w, height: el.h}} className="absolute bg-slate-800 border-y border-dashed border-amber-400/50 flex items-center justify-center text-[9px] font-bold text-amber-300">CARRIL</div>;
-                                if(el.type==='gate') return <div key={el.id} style={{left: el.x, top: el.y, width: el.w, height: el.h}} className="absolute bg-emerald-900 border border-emerald-500 rounded-lg flex items-center justify-center text-[8px] font-black text-emerald-300">GARITA</div>;
-                                return null;
-                              })}
-                            </div>
-                          </div>
-                          <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-slate-900 shadow">Plano en vivo • {est.name}</div>
-                        </div>
+                        <AutoFitFloorPlan elements={est.elements} name={est.name} />
                         <p className="text-[11px] text-center text-slate-500">Para registrar entradas/salidas usa <b>Garita → Walk-in</b> (toca un cajón libre en el mapa de arriba) o <b>Scanner</b>.</p>
                       </div>
                     );

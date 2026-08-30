@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useEstablishments } from '../context/EstablishmentContext';
 import { useAuth } from '../context/AuthContext';
+import { AutoFitFloorPlan } from './AutoFitFloorPlan';
 import api from '../services/api';
 
 export const PersonalGaritaModule = () => {
@@ -33,6 +34,7 @@ export const PersonalGaritaModule = () => {
   const [plate, setPlate] = useState('');
   const [slot, setSlot] = useState('');
   const [hours, setHours] = useState(2);
+  const [payMethod, setPayMethod] = useState('efectivo');
   const [feedback, setFeedback] = useState('');
 
   const freeSlots = useMemo(()=> (currentEst?.elements||[]).filter(e=>e.type==='slot' && e.status==='free'), [currentEst]);
@@ -41,10 +43,11 @@ export const PersonalGaritaModule = () => {
   const handleIngreso = async () => {
     if(!slot || !plate.trim()){ setFeedback('Elige cajón y placa'); setTimeout(()=>setFeedback(''),2500); return; }
     const now=new Date();
-    const res=await createReservation({parkingId: currentEst.id, slotCode: slot, plate: plate.trim().toUpperCase(), hours, startTime: now.toISOString(), expiresAt: new Date(now.getTime()+hours*3600000).toISOString()});
+    const isPendiente = payMethod==='pendiente';
+    const res=await createReservation({parkingId: currentEst.id, slotCode: slot, plate: plate.trim().toUpperCase(), hours, startTime: now.toISOString(), expiresAt: new Date(now.getTime()+hours*3600000).toISOString(), paymentMethod: isPendiente? null : payMethod, payNow: !isPendiente});
     if(!res){ setFeedback('Cajón ocupado'); setTimeout(()=>setFeedback(''),2500); return; }
     await checkInReservation(res.code);
-    setFeedback(`${slot} • ${plate.toUpperCase()} ingreso OK`);
+    setFeedback(`${slot} • ${plate.toUpperCase()} ingreso OK ${isPendiente?' (pendiente)':`(${payMethod})`}`);
     setSlot(''); setPlate('');
     setTimeout(()=>setFeedback(''),3000);
   };
@@ -56,72 +59,82 @@ export const PersonalGaritaModule = () => {
   };
 
   return (
-    <div className="max-w-[900px] mx-auto space-y-4">
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-black text-slate-900">{currentEst?.name || 'Mi Cochera'}</h2>
-          <p className="text-xs text-slate-500">{freeSlots.length} libres • {vehiclesInside.length} dentro • S/ {Number(currentEst?.rate||5).toFixed(2)}/h</p>
+    <div className="max-w-6xl w-full mx-auto space-y-5">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+        <div className="space-y-1">
+          <h2 className="text-base font-black text-slate-900 leading-snug">{currentEst?.name || 'Mi Cochera'}</h2>
+          <p className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">{freeSlots.length} libres</span>
+            <span>•</span>
+            <span className="font-bold text-slate-700">{vehiclesInside.length} dentro</span>
+            <span>•</span>
+            <span className="font-semibold text-slate-600">S/ {Number(currentEst?.rate||5).toFixed(2)}/h</span>
+          </p>
         </div>
-        <span className="text-xs font-bold bg-slate-900 text-white px-3 py-1 rounded-full">{currentEst?.level || 'Playa'}</span>
+        <span className="self-start sm:self-center text-xs font-black bg-slate-900 text-white px-3.5 py-1.5 rounded-full shadow-sm">{currentEst?.level || 'Playa'}</span>
       </div>
 
-      {feedback && <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2"><CheckCircle2 className="w-4 h-4"/>{feedback}</div>}
+      {feedback && <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm"><CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600"/>{feedback}</div>}
 
-      <div className="grid lg:grid-cols-2 gap-4">
-        <div className="bg-[#0f172a] rounded-2xl border border-slate-800 p-3">
-          <p className="text-xs font-bold text-white mb-2">Plano — toca un cajón libre</p>
-          {currentEst?.elements===null ? (
-            <div className="h-[380px] flex items-center justify-center text-xs text-slate-400">Cargando plano del parking...</div>
-          ) : (
-            <>
-          <div className="relative bg-[#1e293b] rounded-xl overflow-hidden" style={{height: 380}}>
-            <div style={{width: 1100, height: 700, transform: 'scale(0.33)', transformOrigin: 'top left'}} className="relative bg-[#12161f]">
-              {(currentEst?.elements||[]).map(el=>{
-                if(el.type==='slot'){
-                  const isFree=el.status==='free';
-                  const isSel=slot===el.code;
-                  return (
-                    <button key={el.code||el.id} disabled={!isFree} onClick={()=> isFree && setSlot(el.code)}
-                      style={{left: el.x, top: el.y, width: el.w||60, height: el.h||100}}
-                      className={`absolute rounded-lg border-2 flex flex-col items-center justify-center text-[10px] font-mono font-black ${isSel?'bg-emerald-500 text-white border-emerald-400 z-20': isFree?'bg-emerald-900/40 text-emerald-300 border-emerald-500/60':'bg-rose-900/40 text-rose-300 border-rose-500/40 opacity-60'}`}>
-                      <span>{el.code}</span>
-                    </button>
-                  );
-                }
-                if(el.type==='wall') return <div key={el.id} style={{left: el.x, top: el.y, width: el.w, height: el.h}} className="absolute bg-slate-600 rounded-sm"/>;
-                if(el.type==='gate') return <div key={el.id} style={{left: el.x, top: el.y, width: el.w, height: el.h}} className="absolute bg-emerald-900 border border-emerald-500 rounded-lg flex items-center justify-center text-[7px] font-black text-emerald-300">GARITA</div>;
-                return null;
-              })}
-            </div>
+      <div className="grid lg:grid-cols-12 gap-5 items-stretch">
+        <div className="lg:col-span-7 bg-[#0b1329] rounded-2xl border border-slate-800 p-3.5 flex flex-col justify-between shadow-xl">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <p className="text-xs font-black text-slate-200 tracking-wide uppercase">Plano interactivo — Toca un cajón libre</p>
+            {slot && <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-600/60 px-2.5 py-0.5 rounded-full">Seleccionado: {slot}</span>}
           </div>
-          <p className="text-[11px] text-slate-400 mt-2 text-center">{slot ? `Seleccionado: ${slot}` : 'Verde = libre'}</p>
-            </>
+          {currentEst?.elements===null ? (
+            <div className="h-[520px] flex items-center justify-center text-xs font-semibold text-slate-400">Cargando plano del parking...</div>
+          ) : (
+            <div className="flex-1 flex flex-col justify-center">
+              <AutoFitFloorPlan 
+                elements={currentEst?.elements||[]} 
+                name={currentEst?.name} 
+                selectable={true} 
+                selectedSlot={slot} 
+                onSelectSlot={setSlot} 
+                containerHeightClass="h-[460px] sm:h-[520px] lg:h-[560px]" 
+              />
+              <p className="text-[11px] font-medium text-slate-400 mt-2 text-center">{slot ? `Cajón verde [${slot}] listo para registrar` : 'Verde = Disponible • Rojo = Ocupado'}</p>
+            </div>
           )}
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-            <h3 className="text-sm font-black text-slate-900">Registrar ingreso presencial</h3>
+        <div className="lg:col-span-5 space-y-4 flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm flex-1">
+            <h3 className="text-sm font-black text-slate-900 border-b border-slate-100 pb-2">Registrar ingreso presencial</h3>
             <div>
-              <label className="text-xs font-bold text-slate-700">Placa</label>
-              <Input placeholder="ABC-123" value={plate} onChange={e=>setPlate(e.target.value.toUpperCase())} className="h-11 font-mono font-black uppercase mt-1"/>
+              <label className="text-xs font-bold text-slate-700">Placa del vehículo</label>
+              <Input placeholder="ABC-123" value={plate} onChange={e=>setPlate(e.target.value.toUpperCase())} className="h-11 font-mono font-black uppercase mt-1 text-slate-900 border-slate-300 focus:border-emerald-500"/>
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700">Cajón</label>
-              <div className="mt-1 h-11 flex items-center px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-900">{slot || '— toca en el plano'}</div>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-700">Horas</label>
-              <div className="grid grid-cols-4 gap-2 mt-1">
-                {[1,2,4,8].map(h=> <button key={h} onClick={()=>setHours(h)} className={`h-10 rounded-xl font-bold border ${hours===h?'bg-slate-900 text-white border-slate-900':'bg-slate-50 text-slate-700 border-slate-200'}`}>{h}h</button>)}
+              <label className="text-xs font-bold text-slate-700">Cajón seleccionado</label>
+              <div className={`mt-1 h-11 flex items-center px-3.5 border rounded-xl text-sm font-mono font-black transition-all ${slot ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                {slot ? `Cajón ${slot}` : '— Toca un cajón verde en el mapa'}
               </div>
             </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-600">Total</span>
-              <span className="text-lg font-black font-mono">S/ {(Number(currentEst?.rate||5)*hours).toFixed(2)}</span>
+            <div>
+              <label className="text-xs font-bold text-slate-700">Tiempo de estadía estimado</label>
+              <div className="grid grid-cols-4 gap-2 mt-1">
+                {[1,2,4,8].map(h=> <button key={h} type="button" onClick={()=>setHours(h)} className={`h-10 rounded-xl font-bold border transition-all ${hours===h?'bg-slate-900 text-white border-slate-900 shadow-sm':'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}>{h}h</button>)}
+              </div>
             </div>
-            <Button onClick={handleIngreso} disabled={!slot || !plate.trim()} className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold disabled:opacity-40">
-              <Plus className="w-4 h-4 mr-1"/> Registrar ingreso
+            <div>
+              <label className="text-xs font-bold text-slate-700">Método de Pago</label>
+              <select value={payMethod} onChange={e=>setPayMethod(e.target.value)} className="mt-1 w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500">
+                <option value="efectivo">Efectivo (en garita)</option>
+                <option value="yape">Yape</option>
+                <option value="plin">Plin</option>
+                <option value="tarjeta">Tarjeta Débito/Crédito</option>
+                <option value="transferencia">Transferencia bancaria</option>
+                <option value="pendiente">Pendiente — Pago al salir</option>
+              </select>
+            </div>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-600">Monto Total a Cobrar</span>
+              <span className="text-xl font-black font-mono text-slate-900">S/ {(Number(currentEst?.rate||5)*hours).toFixed(2)}</span>
+            </div>
+            <Button onClick={handleIngreso} disabled={!slot || !plate.trim()} className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md disabled:opacity-40 transition-all">
+              + Registrar Ingreso
             </Button>
           </div>
 

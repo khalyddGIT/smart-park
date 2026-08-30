@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import Reservation, Slot, Parking
+from app.models.models import Reservation, Slot, Parking, Payment
 from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationResponse
 from app.core.security import get_current_user, require_role
 from app.core.realtime import realtime
@@ -146,6 +146,34 @@ async def create_reservation(
     except Exception:
         pass
     await db.refresh(db_res)
+
+    # Pago inmediato si se especificó método (efectivo, yape, plin, tarjeta, etc.)
+    if getattr(res_in, 'pay_now', False) and getattr(res_in, 'payment_method', None):
+        try:
+            method = str(res_in.payment_method).strip().lower()[:30] or "efectivo"
+            # normalizar métodos comunes
+            if method in ("efectivo", "cash"): method = "cash"
+            elif method in ("yape",): method = "yape"
+            elif method in ("plin",): method = "plin"
+            elif method in ("tarjeta", "card", "culqi"): method = "card"
+            payment = Payment(
+                reservation_id=db_res.id,
+                user_id=current_user.id,
+                amount_cents=int(round(total_cost * 100)),
+                currency="PEN",
+                status="succeeded",
+                method=method,
+                culqi_charge_id=None,
+                description=f"Pago {method} reserva {reservation_code}",
+            )
+            db.add(payment)
+            await db.commit()
+        except Exception:
+            # no bloquear la reserva si falla el pago
+            try:
+                await db.rollback()
+            except Exception:
+                pass
 
     return ReservationResponse.model_validate(db_res)
 

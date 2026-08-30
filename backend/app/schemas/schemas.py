@@ -259,6 +259,8 @@ class ReservationCreate(BaseModel):
     license_plate: str
     start_time: datetime
     end_time: datetime
+    payment_method: Optional[str] = None
+    pay_now: Optional[bool] = False
 
 class ReservationUpdate(BaseModel):
     start_time: Optional[datetime] = None

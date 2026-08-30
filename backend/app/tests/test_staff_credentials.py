@@ -32,7 +32,10 @@ def test_create_and_login_worker():
         
         headers = {"Authorization": f"Bearer {token}"}
         
-        worker_email = "operador.garita.test@smartpark.pe"
+        import uuid
+        uid = uuid.uuid4().hex[:6]
+        worker_email = f"operador.garita.{uid}@smartpark.pe"
+        worker_dni = f"77{uuid.uuid4().int % 1000000:06d}"
         worker_password = "OperadorSeguro123!"
         
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -40,7 +43,7 @@ def test_create_and_login_worker():
             staff_payload = {
                 "parking_id": 1,
                 "full_name": "Juan Pérez Garita",
-                "dni": "77889911",
+                "dni": worker_dni,
                 "position": "Operador de Garita",
                 "shift": "Mañana (07:00 - 15:00)",
                 "status": "Activo",

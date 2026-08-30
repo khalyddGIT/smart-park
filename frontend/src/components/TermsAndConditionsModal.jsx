@@ -16,9 +16,13 @@ import {
   AlertTriangle 
 } from 'lucide-react';
 
-export const TermsAndConditionsModal = ({ isOpen, onClose }) => {
+export const TermsAndConditionsModal = ({ isOpen, onClose, onAccept, initialAccepted = false }) => {
   const [searchFilter, setSearchFilter] = useState('');
-  const [hasAccepted, setHasAccepted] = useState(false);
+  const [hasAccepted, setHasAccepted] = useState(initialAccepted);
+
+  React.useEffect(() => {
+    if (isOpen) setHasAccepted(initialAccepted);
+  }, [isOpen, initialAccepted]);
 
   const sections = [
     {
@@ -174,11 +178,13 @@ Smart-Park no es propietario de los inmuebles físicos de estacionamiento (salvo
 
           <Button
             type="button"
+            disabled={!hasAccepted}
             onClick={() => {
+              if (onAccept) onAccept();
               setHasAccepted(true);
               onClose();
             }}
-            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl px-5 py-2.5 shadow-2xs cursor-pointer"
+            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl px-5 py-2.5 shadow-2xs cursor-pointer"
           >
             Aceptar y Continuar
           </Button>

@@ -40,6 +40,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
   // 'login' | 'register' | 'affiliation' | 'forgot_password'
   const [authMode, setAuthMode] = useState(defaultAuthMode);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
 
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -90,6 +91,11 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
     }
     if (!driverPassword || driverPassword.length < 8) {
       setErrorMsg('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (!hasAcceptedTerms) {
+      setErrorMsg('Debes aceptar los Términos y Condiciones para crear tu cuenta');
+      setShowTermsModal(true);
       return;
     }
     setErrorMsg('');
@@ -372,24 +378,34 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                   />
                 </div>
 
+                <label className="flex items-start gap-2 p-2.5 rounded-xl border bg-white cursor-pointer select-none" style={{ borderColor: hasAcceptedTerms ? '#10b981' : '#e2e8f0' }}>
+                  <input
+                    type="checkbox"
+                    checked={hasAcceptedTerms}
+                    onChange={(e) => setHasAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
+                  />
+                  <span className="text-[11px] leading-snug text-slate-700">
+                    He leído y acepto los{' '}
+                    <button
+                      type="button"
+                      onClick={(ev) => { ev.preventDefault(); setShowTermsModal(true); }}
+                      className="text-emerald-700 font-bold underline hover:text-emerald-800 cursor-pointer"
+                    >
+                      Términos y Condiciones
+                    </button>
+                    {' '}y la Política de Privacidad (Ley N° 29733).
+                  </span>
+                </label>
+
                 <Button
                   type="submit"
-                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm mt-2 cursor-pointer"
+                  disabled={!hasAcceptedTerms}
+                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-sm mt-1 cursor-pointer"
                 >
                   <span>Registrarme como Conductor</span>
                   <ArrowRight className="w-4 h-4 ml-1.5 text-emerald-400" />
                 </Button>
-
-                <p className="text-[10px] text-slate-500 text-center leading-relaxed pt-1">
-                  Al registrarte, aceptas nuestros{' '}
-                  <button
-                    type="button"
-                    onClick={() => setShowTermsModal(true)}
-                    className="text-emerald-700 font-bold underline hover:text-emerald-800 cursor-pointer"
-                  >
-                    Términos y Condiciones
-                  </button>.
-                </p>
               </form>
             </div>
           )}
@@ -608,10 +624,12 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
         </button>
       </footer>
 
-      {/* Modal de Términos y Condiciones */}
+      {/* Modal de Términos y Condiciones — solo al crear cuenta o bajo demanda desde footer */}
       <TermsAndConditionsModal
         isOpen={showTermsModal}
         onClose={() => setShowTermsModal(false)}
+        onAccept={() => setHasAcceptedTerms(true)}
+        initialAccepted={hasAcceptedTerms}
       />
 
     </div>

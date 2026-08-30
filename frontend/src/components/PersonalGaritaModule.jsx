@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 export const PersonalGaritaModule = () => {
-  const { establishments, reservations, createReservation, checkInReservation, checkOutReservation } = useEstablishments();
+  const { establishments, reservations, createReservation, checkInReservation, checkOutReservation, ensureFloorPlan } = useEstablishments();
   const { user } = useAuth();
   const [assignedParkingId, setAssignedParkingId] = useState(null);
   useEffect(()=>{
@@ -22,6 +22,13 @@ export const PersonalGaritaModule = () => {
     if(assignedParkingId) return establishments.find(e=>String(e.id)===String(assignedParkingId)) || establishments[0];
     return establishments[0];
   },[establishments, assignedParkingId]);
+
+  // Asegura que el plano del parking asignado esté hidratado (si elements===null estaba en carga)
+  useEffect(()=>{
+    if(currentEst && currentEst.elements===null && currentEst.id && !String(currentEst.id).startsWith('EST-')){
+      ensureFloorPlan(currentEst.id);
+    }
+  },[currentEst?.id, currentEst?.elements]);
 
   const [plate, setPlate] = useState('');
   const [slot, setSlot] = useState('');
@@ -63,6 +70,10 @@ export const PersonalGaritaModule = () => {
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="bg-[#0f172a] rounded-2xl border border-slate-800 p-3">
           <p className="text-xs font-bold text-white mb-2">Plano — toca un cajón libre</p>
+          {currentEst?.elements===null ? (
+            <div className="h-[380px] flex items-center justify-center text-xs text-slate-400">Cargando plano del parking...</div>
+          ) : (
+            <>
           <div className="relative bg-[#1e293b] rounded-xl overflow-hidden" style={{height: 380}}>
             <div style={{width: 1100, height: 700, transform: 'scale(0.33)', transformOrigin: 'top left'}} className="relative bg-[#12161f]">
               {(currentEst?.elements||[]).map(el=>{
@@ -84,6 +95,8 @@ export const PersonalGaritaModule = () => {
             </div>
           </div>
           <p className="text-[11px] text-slate-400 mt-2 text-center">{slot ? `Seleccionado: ${slot}` : 'Verde = libre'}</p>
+            </>
+          )}
         </div>
 
         <div className="space-y-4">

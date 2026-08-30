@@ -47,6 +47,7 @@ import {
 } from '../utils/plateOcr';
 import { useEstablishments } from '../context/EstablishmentContext';
 import { CarParkZoneEditor } from './CarParkZoneEditor';
+import { CulqiPaymentModal } from './CulqiPaymentModal';
 
 const GARITA_LOGS_STORAGE_KEY = 'smart_park_garita_audit_logs_v2';
 const GARITA_ACTIVE_TICKETS_KEY = 'smart_park_garita_walkin_tickets_v2';
@@ -59,6 +60,7 @@ export const ANPRMonitor = () => {
     freeSlot, 
     checkInReservation, 
     checkOutReservation, 
+    createReservation,
     updateEstablishment,
     updateEstablishmentPlan
   } = useEstablishments();
@@ -74,7 +76,7 @@ export const ANPRMonitor = () => {
     [establishments, selectedEstId]
   );
 
-  const [activeTab, setActiveTab] = useState('lpr');
+  const [garitaTab, setGaritaTab] = useState('entry'); // entry | exit | inside
   const [plateInput, setPlateInput] = useState('');
   const [useRealWebcam, setUseRealWebcam] = useState(false);
   const [selectedCameraDeviceId, setSelectedCameraDeviceId] = useState('');
@@ -111,6 +113,11 @@ export const ANPRMonitor = () => {
   const [barcodeGunInput, setBarcodeGunInput] = useState('');
   const [gateMode, setGateMode] = useState('entry');
   const [liveTick, setLiveTick] = useState(0);
+  const [paidIds, setPaidIds] = useState(new Set());
+  const [payTarget, setPayTarget] = useState(null);
+  const [walkInSlot, setWalkInSlot] = useState('');
+  const [walkInName, setWalkInName] = useState('');
+  const [walkInHours, setWalkInHours] = useState(2);
 
   const webcamRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -119,6 +126,15 @@ export const ANPRMonitor = () => {
     const id = setInterval(() => setLiveTick(v => v + 1), 30000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem('smart_park_access_token');
+    if (!token) return;
+    api.get('/payments/my').then(r => {
+      const ids = new Set((Array.isArray(r.data) ? r.data : []).filter(p => p.status === 'succeeded' && p.reservation_id).map(p => Number(p.reservation_id)));
+      setPaidIds(ids);
+    }).catch(()=>{});
+  }, [reservations.length]);
 
   useEffect(() => {
     if (selectedEstId) localStorage.setItem('smart_park_active_garita_est', selectedEstId);
@@ -320,12 +336,19 @@ export const ANPRMonitor = () => {
         </div>
       </div>
 
-      {/* Visor de Cámara y Validación LPR */}
+      {/* Tabs Garita Personal: Entrada / Salida / En Cochera */}
+      <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl w-fit">
+        <button onClick={()=>{setGaritaTab('entry');setGateMode('entry');}} className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition ${garitaTab==='entry' ? 'bg-emerald-600 text-white shadow' : 'text-slate-600 hover:bg-white'}`}><ArrowUpRight className="w-3.5 h-3.5"/> Entrada</button>
+        <button onClick={()=>{setGaritaTab('exit');setGateMode('exit');}} className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition ${garitaTab==='exit' ? 'bg-amber-500 text-slate-900 shadow' : 'text-slate-600 hover:bg-white'}`}><ArrowDownLeft className="w-3.5 h-3.5"/> Salida</button>
+        <button onClick={()=>setGaritaTab('inside')} className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition ${garitaTab==='inside' ? 'bg-slate-900 text-white shadow' : 'text-slate-600 hover:bg-white'}`}><Car className="w-3.5 h-3.5"/> En cochera ({vehiclesInside.length})</button>
+      </div>
+
+      {garitaTab !== 'inside' && (
       <div className="grid grid-cols-1 xl:grid-cols-[1.7fr_0.9fr] gap-4">
         <div className="space-y-4">
           <div className="bg-slate-950 rounded-[22px] border border-slate-800 shadow-xl overflow-hidden">
             <div className="px-4 py-3 flex items-center justify-between gap-2 bg-slate-900 border-b border-slate-800">
-              <span className="text-xs font-black text-white tracking-tight">CCTV Garita • LPR OCR Reader</span>
+              <span className="text-xs font-black text-white tracking-tight">CCTV Garita • LPR OCR Reader • {garitaTab==='entry'?'INGRESO':'SALIDA'}</span>
               <Button type="button" size="sm" variant="outline" onClick={() => setUseRealWebcam(!useRealWebcam)} className="h-8 px-2.5 rounded-xl bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700 text-xs font-bold gap-1.5">
                 {useRealWebcam ? <><EyeOff className="w-3.5 h-3.5 text-rose-400"/> Apagar</> : <><Video className="w-3.5 h-3.5 text-emerald-400"/> WebCam</>}
               </Button>
@@ -351,67 +374,129 @@ export const ANPRMonitor = () => {
             </div>
 
             <div className="bg-slate-900 border-t border-slate-800 p-3.5 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-2.5 items-center">
-                <div className="flex items-center gap-2 justify-center sm:justify-start">
-                  <div className="bg-slate-800 rounded-full p-1 flex items-center gap-1 border border-slate-700">
-                    <button type="button" onClick={() => setGateMode('entry')} className={'px-3 py-1.5 rounded-full text-xs font-black flex items-center gap-1 transition ' + (gateMode === 'entry' ? 'bg-emerald-500 text-slate-900' : 'text-slate-400 hover:text-white')}>
-                      <ArrowUpRight className="w-3.5 h-3.5"/> Ingreso
-                    </button>
-                    <button type="button" onClick={() => setGateMode('exit')} className={'px-3 py-1.5 rounded-full text-xs font-black flex items-center gap-1 transition ' + (gateMode === 'exit' ? 'bg-amber-500 text-slate-900' : 'text-slate-400 hover:text-white')}>
-                      <ArrowDownLeft className="w-3.5 h-3.5"/> Salida
-                    </button>
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2.5 items-center">
                 <Input
                   type="text"
-                  placeholder="ABC-123"
+                  placeholder="ABC-123 o escanea QR"
                   value={plateInput}
                   onChange={e => setPlateInput(e.target.value.toUpperCase())}
-                  onKeyDown={e => { if (e.key === 'Enter') handleVerifyPlate(plateInput, gateMode); }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleVerifyPlate(plateInput, garitaTab==='entry'?'entry':'exit'); }}
                   className="bg-slate-900 border-slate-700 font-mono font-black text-white text-center text-sm uppercase h-10 rounded-xl"
                 />
-
                 <Button
                   type="button"
-                  onClick={() => handleVerifyPlate(plateInput, gateMode)}
+                  onClick={() => handleVerifyPlate(plateInput, garitaTab==='entry'?'entry':'exit')}
                   disabled={loading || !plateInput}
-                  className={'font-black text-xs h-10 px-5 rounded-2xl gap-1.5 ' + (gateMode === 'entry' ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-900' : 'bg-amber-500 hover:bg-amber-400 text-slate-900')}
+                  className={'font-black text-xs h-10 px-5 rounded-2xl gap-1.5 ' + (garitaTab==='entry' ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-900' : 'bg-amber-500 hover:bg-amber-400 text-slate-900')}
                 >
-                  {loading ? <RefreshCw className="w-4 h-4 animate-spin"/> : gateMode === 'entry' ? 'Validar Ingreso' : 'Liquidar Salida'}
+                  {loading ? <RefreshCw className="w-4 h-4 animate-spin"/> : garitaTab==='entry' ? 'Validar Ingreso' : 'Liquidar Salida'}
                 </Button>
               </div>
+              {scanResult && (
+                <div className={`p-3 rounded-2xl border text-xs ${scanResult.matched ? 'bg-emerald-950/50 border-emerald-800 text-emerald-200' : 'bg-amber-950/40 border-amber-800 text-amber-200'}`}>
+                  <p className="font-bold flex items-center gap-1.5">{scanResult.matched ? <CheckCircle2 className="w-4 h-4 text-emerald-400"/> : <AlertTriangle className="w-4 h-4 text-amber-400"/>} {scanResult.message}</p>
+                  {scanResult.type==='LPR_RESERVATION' && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className={`text-[10px] font-black px-2 py-1 rounded-lg border ${paidIds.has(Number(reservations.find(r=>r.code===scanResult.reservationCode)?.id)) ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-rose-500 text-white border-rose-500'}`}>{paidIds.has(Number(reservations.find(r=>r.code===scanResult.reservationCode)?.id)) ? 'PAGADO' : 'PENDIENTE DE PAGO'}</span>
+                      <span className="font-mono text-slate-300">Cajón {scanResult.slot} • S/ {scanResult.rate?.toFixed?.(2) || '5.00'}/h</span>
+                      {!paidIds.has(Number(reservations.find(r=>r.code===scanResult.reservationCode)?.id)) && (
+                        <button onClick={()=>{ const r=reservations.find(x=>x.code===scanResult.reservationCode); if(r) setPayTarget(r); }} className="ml-auto bg-white text-slate-900 px-3 py-1 rounded-xl font-black text-xs hover:bg-slate-100 flex items-center gap-1"><DollarSign className="w-3.5 h-3.5"/> Cobrar ahora</button>
+                      )}
+                    </div>
+                  )}
+                  {scanResult.type==='LPR_UNREGISTERED' && garitaTab==='entry' && (
+                    <div className="mt-3 p-3 bg-white rounded-2xl border border-slate-200 text-slate-900 space-y-2">
+                      <p className="text-xs font-bold text-slate-700">Sin reserva - Asignar cajón libre y emitir ticket walk-in:</p>
+                      <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                        {(currentEst?.elements||[]).filter(e=>e.type==='slot'&&e.status==='free').map(s=>(
+                          <button key={s.code} onClick={()=>setWalkInSlot(s.code)} className={`px-2.5 py-1 rounded-xl text-xs font-mono font-black border ${walkInSlot===s.code?'bg-slate-900 text-white border-slate-900':'bg-slate-100 text-slate-700 border-slate-200'}`}>{s.code}</button>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input placeholder="Nombre conductor" value={walkInName} onChange={e=>setWalkInName(e.target.value)} className="h-9 text-xs"/>
+                        <select value={walkInHours} onChange={e=>setWalkInHours(Number(e.target.value))} className="h-9 px-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+                          <option value={1}>1h</option><option value={2}>2h</option><option value={4}>4h</option><option value={8}>8h</option>
+                        </select>
+                      </div>
+                      <Button disabled={!walkInSlot || !plateInput} onClick={async()=>{
+                        const slotCode=walkInSlot; const plate=formatearPlacaConGuion(plateInput);
+                        const now=new Date(); const res=await createReservation({parkingId: currentEst.id, slotCode, plate, hours: walkInHours, startTime: now.toISOString(), expiresAt: new Date(now.getTime()+walkInHours*3600000).toISOString()});
+                        if(res){ await checkInReservation(res.code); setWalkInSlot(''); setWalkInName(''); addAuditLog({type:'WALK_IN',action:'TICKET_EMITIDO',plate,slot:slotCode,status:'ACTIVO',detail:`Walk-in ${res.code}`}); triggerBarrierOpen(); setScanResult({type:'LPR_RESERVATION',matched:true,actionType:'ENTRY',code:plate,slot:slotCode,message:`Ticket ${res.code} creado y check-in OK`}); }
+                      }} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs h-9 rounded-xl">Emitir ticket {walkInSlot||''} y abrir barrera</Button>
+                    </div>
+                  )}
+                  {scanResult.type==='LPR_EXIT' && (
+                    <p className="mt-1 font-mono">Estancia {scanResult.hoursParked}h • Total S/ {scanResult.totalCost?.toFixed(2)}</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Panel Lateral: Control de Barrera */}
         <div className="space-y-4">
           <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm p-4 space-y-3">
             <span className="text-xs font-black tracking-widest text-slate-900 flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-600"/> BARRERA VEHICULAR 90°
             </span>
-
             <div className="bg-slate-50 rounded-2xl border border-slate-200 p-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black text-slate-900">{barrierOpen ? 'Abierta 90° — Paso Libre' : 'Cerrada — Acceso Bloqueado'}</p>
-              </div>
+              <p className="text-xs font-black text-slate-900">{barrierOpen ? 'Abierta 90° — Paso Libre' : 'Cerrada — Acceso Bloqueado'}</p>
               <span className={'w-3 h-3 rounded-full ' + (barrierOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300')} />
             </div>
-
             <Button
               type="button"
-              onClick={() => {
-                if (barrierOpen) setBarrierOpen(false);
-                else triggerBarrierOpen();
-              }}
+              onClick={() => { if (barrierOpen) setBarrierOpen(false); else triggerBarrierOpen(); }}
               className={'w-full h-10 rounded-xl font-black text-xs gap-1.5 ' + (barrierOpen ? 'bg-amber-500 text-slate-900' : 'bg-slate-900 text-white')}
             >
               {barrierOpen ? 'Cerrar Barrera' : 'Abrir Barrera'}
             </Button>
           </div>
+          <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm p-4">
+            <p className="text-xs font-black text-slate-900 mb-2">QR Garita</p>
+            <div className="relative">
+              <QrCode className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
+              <Input placeholder="Pega token QR o escanea con pistola" value={barcodeGunInput} onChange={e=>setBarcodeGunInput(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'){ const code=barcodeGunInput.trim(); if(code){ const r=reservations.find(x=>x.code===code||x.token===code); if(r) handleVerifyPlate(r.plate, garitaTab==='entry'?'entry':'exit'); else handleVerifyPlate(code, garitaTab==='entry'?'entry':'exit'); setBarcodeGunInput(''); } } }} className="pl-9 h-9 text-xs font-mono"/>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">Admite pistola lectora + Enter</p>
+          </div>
         </div>
       </div>
+      )}
+
+      {garitaTab==='inside' && (
+        <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+            <span className="text-xs font-black text-slate-900 flex items-center gap-2"><Car className="w-4 h-4 text-emerald-600"/> Vehículos en cochera • {vehiclesInside.length}</span>
+            <span className="text-[10px] font-mono text-slate-500">{currentEst?.name}</span>
+          </div>
+          {vehiclesInside.length===0 ? (
+            <div className="p-8 text-center text-xs text-slate-500">No hay vehículos con check-in activo en esta sede.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <tr><th className="px-3 py-2 text-left">Placa</th><th className="px-3 py-2 text-left">Cajón</th><th className="px-3 py-2 text-left">Conductor</th><th className="px-3 py-2 text-left">Entrada</th><th className="px-3 py-2 text-left">Tiempo</th><th className="px-3 py-2 text-right">Acción</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {vehiclesInside.map(v=>{ const entry=new Date(v.entryTime); const mins=Math.max(0,Math.round((Date.now()-entry.getTime())/60000)); const h=Math.floor(mins/60); const m=mins%60; const isPaid=paidIds.has(Number(v.id)); return (
+                    <tr key={v.code+ v.plate} className="hover:bg-slate-50">
+                      <td className="px-3 py-2 font-mono font-black text-slate-900">{v.plate}</td>
+                      <td className="px-3 py-2 font-mono font-bold">{v.slot}</td>
+                      <td className="px-3 py-2 truncate max-w-[140px]">{v.driverName}</td>
+                      <td className="px-3 py-2 font-mono text-slate-600">{entry.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}</td>
+                      <td className="px-3 py-2 font-mono">{h}h {m}m</td>
+                      <td className="px-3 py-2 text-right flex items-center justify-end gap-1">
+                        {isPaid ? <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">PAGADO</span> : <button onClick={()=>{ const r=reservations.find(x=>String(x.id)===String(v.id)); if(r) setPayTarget(r); }} className="text-[10px] font-black bg-amber-500 text-slate-900 px-2 py-1 rounded-lg">Cobrar</button>}
+                        <button onClick={()=>handleVerifyPlate(v.plate,'exit')} className="text-[10px] font-bold bg-slate-900 text-white px-2 py-1 rounded-lg">Salida</button>
+                      </td>
+                    </tr>
+                  ); })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Editor Modal de Zonas CAD */}
       {showZoneEditor && (
@@ -421,6 +506,20 @@ export const ANPRMonitor = () => {
           parkingName={currentEst?.name}
           onSave={handleSaveZones}
           onClose={() => setShowZoneEditor(false)}
+        />
+      )}
+
+      {/* Modal Cobro Garita */}
+      {payTarget && (
+        <CulqiPaymentModal
+          isOpen={!!payTarget}
+          onClose={()=>setPayTarget(null)}
+          amount={Number(payTarget.cost || 10)}
+          concept={`Garita ${payTarget.plate} — ${payTarget.slot} en ${payTarget.parking || currentEst?.name}`}
+          parkingName={String(payTarget.parking || currentEst?.name)}
+          slotCode={String(payTarget.slot || '')}
+          reservationId={Number(payTarget.id)}
+          onPaymentSuccess={()=>{ setPaidIds(prev=> new Set([...prev, Number(payTarget.id)])); setPayTarget(null); }}
         />
       )}
     </div>

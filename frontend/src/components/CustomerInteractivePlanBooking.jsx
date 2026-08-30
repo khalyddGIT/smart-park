@@ -102,6 +102,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [hours, setHours] = useState(2);
+  const [etaMinutes, setEtaMinutes] = useState(15);
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [selectedPlate, setSelectedPlate] = useState('');
@@ -203,33 +204,46 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     }
   };
 
-  // Datos base compartidos por ambas vías de reserva
+  // Ventana de llegada configurable por sede (tolerance_minutes del backend)
+  const arrivalWindow = Math.max(5, Math.min(60, Number(parking?.tolerance ?? parking?.tolerance_minutes ?? 15) || 15));
+
+  // Datos base compartidos por ambas vías de reserva - ETA corrige la falla lógica: reservas porque estás lejos
   const buildReservationData = (paymentMeta) => {
     const now = new Date();
+    const start = new Date(now.getTime() + Number(etaMinutes || 0) * 60 * 1000);
+    const end = new Date(start.getTime() + Number(hours || 1) * 60 * 60 * 1000);
     return {
-      slotId: selectedSlot.id, // ID REAL del cajón en el servidor
+      slotId: selectedSlot.id,
       slotCode: selectedSlot.code,
       slotType: selectedSlot.slotType || 'standard',
-      parkingId: numericParkingId, // ID numérico real de la cochera
+      parkingId: numericParkingId,
       parkingName: parking?.name || 'Smart Park Central',
-      hours,
+      hours: Number(hours) || 1,
+      etaMinutes: Number(etaMinutes) || 0,
+      arrivalWindow,
       plate: selectedPlate.split(' ')[0],
-      totalCost: (parking?.rate || 5.0) * hours,
+      totalCost: (parking?.rate || 5.0) * (Number(hours) || 1),
       code: `RSV-${Date.now().toString().slice(-6)}`,
       token: `SPK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
-      startTime: now,
-      expiresAt: new Date(now.getTime() + hours * 60 * 60 * 1000),
+      startTime: start,
+      expiresAt: end,
       ...paymentMeta
     };
   };
 
   const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && vehicles.length > 0 && !!selectedPlate;
 
-  // Confirmar reserva (sin cobro: el pago se realiza en garita al salir)
-  const handleDirectReservation = () => {
+  const handleReserveHold = () => {
     if (!canReserve) return;
     if (onReserveSlot) {
-      onReserveSlot(buildReservationData({ paymentMethod: 'Pago en garita al salir' }));
+      onReserveSlot(buildReservationData({ paymentMethod: 'Pago en garita al salir', payNow: false }));
+    }
+  };
+
+  const handleReservePayNow = () => {
+    if (!canReserve) return;
+    if (onReserveSlot) {
+      onReserveSlot(buildReservationData({ paymentMethod: 'Prepago asegurado', payNow: true }));
     }
   };
 
@@ -581,10 +595,38 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
+            {/* Tiempo de llegada (ETA) - corrige lógica: reservas porque estás lejos */}
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">
+                ¿En cuánto llegas? <span className="text-slate-500 font-normal">(ventana de llegada {arrivalWindow} min)</span>
+              </label>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[0, 10, 15, 30, 45, 60].map(m => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setEtaMinutes(m)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer font-mono ${
+                      Number(etaMinutes) === m
+                        ? 'bg-emerald-500 text-slate-950 border border-emerald-400'
+                        : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {m === 0 ? 'Ahora' : `En ${m} min`}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1.5 leading-snug">
+                {etaMinutes === 0
+                  ? `Llegada inmediata. Tienes ${arrivalWindow} min de gracia antes de liberar el cajón.`
+                  : `Tu cajón se guarda hasta ${arrivalWindow} min después de las ${new Date(Date.now() + etaMinutes*60000).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}. Si no haces check-in, se libera automáticamente (persistente en servidor).`}
+              </p>
+            </div>
+
             {/* Selector de Duración */}
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
-                Duración estimada
+                Duración de estancia
               </label>
               <div className="flex items-center gap-2">
                 <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl overflow-hidden h-9 px-1 shrink-0">
@@ -636,39 +678,58 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
             </div>
 
-            {/* Desglose de Pago */}
+            {/* Desglose de Pago - persistente */}
             <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
                 <span>Tarifa:</span>
-                <span className="text-slate-200">S/ {(parking?.rate || 5.0).toFixed(2)} × {hours || 1}h</span>
+                <span className="text-slate-200">S/ {(parking?.rate || 5.0).toFixed(2)} × {Number(hours) || 1}h</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>Tolerancia:</span>
-                <span className="text-emerald-400 font-semibold">15 min gratis</span>
+                <span>Llegada:</span>
+                <span className="text-emerald-400 font-semibold">{etaMinutes === 0 ? 'Ahora' : `En ${etaMinutes} min`} + {arrivalWindow} min gracia</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Reserva:</span>
+                <span className="text-slate-300">{new Date(Date.now() + etaMinutes*60000).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})} → {new Date(Date.now() + etaMinutes*60000 + (Number(hours)||1)*3600000).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}</span>
               </div>
               <div className="h-px bg-slate-800 my-1" />
               <div className="flex justify-between font-bold text-white">
-                <span>Total:</span>
+                <span>Total estimado:</span>
                 <span className="text-emerald-400 font-mono text-sm font-bold">
                   S/ {((parking?.rate || 5.0) * (Number(hours) || 1)).toFixed(2)}
                 </span>
               </div>
+              <p className="text-[10px] text-slate-500 leading-snug">Persistente en servidor (PostgreSQL). Cajón pasa a <b className="text-slate-300">reserved</b> y se libera solo si no hay check-in antes del límite.</p>
             </div>
           </div>
 
-          {/* BOTÓN DE ACCIÓN */}
-          <div className="pt-1">
+          {/* DOS VÍAS: Hold vs Prepago */}
+          <div className="pt-1 space-y-2">
             <Button
               type="button"
               variant="default"
-              onClick={handleDirectReservation}
-              disabled={!selectedSlot}
+              onClick={handleReservePayNow}
+              disabled={!canReserve}
               className="w-full py-3 text-xs font-bold gap-1.5 shadow-md bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <QrCode className="w-4 h-4" />
-              <span>Confirmar Reserva</span>
-              <ChevronRight className="w-4 h-4 text-slate-950" />
+              <CreditCard className="w-4 h-4" />
+              <span>Pagar ahora y asegurar</span>
+              <span className="bg-slate-950 text-emerald-400 px-1.5 py-0.5 rounded text-[10px] font-mono">S/ {((parking?.rate || 5.0) * (Number(hours)||1)).toFixed(2)}</span>
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleReserveHold}
+              disabled={!canReserve}
+              className="w-full py-2.5 text-xs font-bold gap-1.5 bg-slate-800 hover:bg-slate-700 text-white border-slate-700 rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <QrCode className="w-4 h-4" />
+              <span>Reservar y pagar al llegar</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Button>
+            {!canReserve && vehicles.length === 0 && (
+              <p className="text-[11px] text-amber-400 text-center">Registra un vehículo para habilitar la reserva.</p>
+            )}
           </div>
         </div>
       </div>

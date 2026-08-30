@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import { 
   LayoutDashboard, 
   Search, 
@@ -26,6 +27,29 @@ import {
   Scale,
   Sparkles
 } from 'lucide-react';
+
+const isPersonalAccount = (user) => {
+  if (!user) return false;
+  const pos = (user.position || user.staffPosition || '').toLowerCase();
+  if (pos.includes('operador') || pos.includes('seguridad') || pos.includes('supervisor')) return true;
+  // Fallback: todo Staff con role local que no sea el admin semilla es personal
+  const adminEmails = ['adminlocal@smartpark.com', 'superadmin@smartpark.com'];
+  if (adminEmails.includes((user.email || '').toLowerCase())) return false;
+  // Si el usuario fue creado via StaffModule, su session guardará staffPosition; si no hay dato, asumimos dueño
+  return !!user.isStaffOperator;
+};
+
+const PERSONAL_SECTIONS = [
+  {
+    section: 'GARITA PERSONAL',
+    items: [
+      { id: 'anpr', label: 'Garita - Entrada/Salida', shortLabel: 'Garita', icon: Camera },
+      { id: 'reservations', label: 'Tickets & Reservas', shortLabel: 'Tickets', icon: CalendarCheck },
+      { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
+      { id: 'audit', label: 'Mi Auditoría', shortLabel: 'Auditoría', icon: ShieldCheck },
+    ]
+  }
+];
 
 const SECTIONS_BY_ROLE = {
   user: [
@@ -82,10 +106,28 @@ const SECTIONS_BY_ROLE = {
 };
 
 export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [staffPositions, setStaffPositions] = useState({});
 
-  const currentSections = SECTIONS_BY_ROLE[role] || SECTIONS_BY_ROLE.user;
+  useEffect(() => {
+    if (role !== 'local' || !user?.email) return;
+    const email = user.email.toLowerCase();
+    // Si ya es admin semilla, no es personal
+    if (['adminlocal@smartpark.com','superadmin@smartpark.com'].includes(email)) return;
+    api.get('/staff').then(r=>{
+      const list = Array.isArray(r.data)? r.data : [];
+      const match = list.find(s=> (s.email||'').toLowerCase()===email);
+      if (match) {
+        const pos = (match.position||'').toLowerCase();
+        const isOp = pos.includes('operador') || pos.includes('seguridad') || pos.includes('supervisor') || pos.includes('vigilante');
+        setStaffPositions({email, isOp, position: match.position});
+      }
+    }).catch(()=>{});
+  }, [role, user?.email]);
+
+  const isPersonal = role === 'local' && (isPersonalAccount(user) || !!staffPositions.isOp);
+  const currentSections = isPersonal ? PERSONAL_SECTIONS : (SECTIONS_BY_ROLE[role] || SECTIONS_BY_ROLE.user);
   const allItems = currentSections.flatMap(sec => sec.items);
 
   // Configuración de los 5 botones del Navbar Móvil Estilo Flotante Curvo
@@ -172,7 +214,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
             <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
             <span className="text-slate-500 text-xs font-medium">Rol:</span>
             <strong className="text-slate-800 font-bold capitalize text-xs truncate">
-              {role === 'user' ? 'Conductor' : role === 'local' ? 'Garita' : 'Admin'}
+              {role === 'user' ? 'Conductor' : isPersonal ? 'Personal' : role === 'local' ? 'Admin Local' : 'Admin'}
             </strong>
           </div>
         </div>

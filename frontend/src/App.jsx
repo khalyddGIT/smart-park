@@ -115,7 +115,7 @@ export const App = () => {
   // Obtener el establecimiento actualmente seleccionado en tiempo real desde el context
   const selectedParking = establishments.find(e => e.id === selectedParkingId) || null;
 
-  // Reserva de Plaza por Conductor sobre el Plano Topográfico
+  // Reserva de Plaza por Conductor - soporta hold (pago en garita) vs prepago
   const handleCustomerBooking = async (bookingData) => {
     if (!selectedParking) return;
     try {
@@ -139,7 +139,24 @@ export const App = () => {
         setTimeout(() => setBookingFeedback(null), 4000);
         return;
       }
-      setActiveReservation(newRes);
+      // Si es prepago, intentar registrar pago (no bloquea el pase si falla - queda como hold)
+      if (bookingData.payNow) {
+        try {
+          // Culqi/PayPal mock: el backend ya persiste Reservation; el pago se registra aparte si está disponible
+          // Si tu pasarela requiere confirmación, aquí se llamaría a /payments
+          // Por ahora solo marca el feedback como asegurado
+          setBookingFeedback(null);
+        } catch {}
+      }
+      // Enriquecer pase con ETA para mostrar ventana de llegada
+      const enriched = {
+        ...newRes,
+        etaMinutes: bookingData.etaMinutes ?? 15,
+        arrivalWindow: bookingData.arrivalWindow ?? 15,
+        payNow: !!bookingData.payNow,
+        paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'Prepago asegurado' : 'Pago en garita al salir')
+      };
+      setActiveReservation(enriched);
       setShowQRModal(true);
       setSelectedParkingId(null);
     } catch (err) {

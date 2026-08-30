@@ -39,7 +39,33 @@ async def list_reservations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Solo reservas del usuario autenticado - aislamiento por usuario
+    # Local/platform ven todas de su sede (para garita), conductor solo las suyas
+    if current_user.role in ("local", "platform"):
+        if parking_id:
+            stmt = select(Reservation).where(Reservation.parking_id == parking_id).order_by(Reservation.id.desc())
+            if status_filter:
+                stmt = stmt.where(Reservation.status == status_filter)
+            result = await db.execute(stmt)
+            return [ReservationResponse.model_validate(r) for r in result.scalars().all()]
+        # Sin parking_id: si es personal, solo su sede asignada
+        if current_user.role == "local":
+            from app.models.models import Staff
+            me = await db.execute(select(Staff).where(Staff.email == current_user.email))
+            my_staff = me.scalars().first()
+            if my_staff and my_staff.parking_id:
+                stmt = select(Reservation).where(Reservation.parking_id == my_staff.parking_id).order_by(Reservation.id.desc())
+                if status_filter:
+                    stmt = stmt.where(Reservation.status == status_filter)
+                result = await db.execute(stmt)
+                return [ReservationResponse.model_validate(r) for r in result.scalars().all()]
+        # platform sin filtro: todas
+        if current_user.role == "platform" and not parking_id:
+            stmt = select(Reservation).order_by(Reservation.id.desc())
+            if status_filter:
+                stmt = stmt.where(Reservation.status == status_filter)
+            result = await db.execute(stmt)
+            return [ReservationResponse.model_validate(r) for r in result.scalars().all()]
+    # Fallback conductor: solo suyas
     stmt = select(Reservation).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc())
     if parking_id:
         stmt = stmt.where(Reservation.parking_id == parking_id)

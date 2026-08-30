@@ -36,9 +36,35 @@ export const PersonalGaritaModule = () => {
   const [hours, setHours] = useState(2);
   const [payMethod, setPayMethod] = useState('efectivo');
   const [feedback, setFeedback] = useState('');
+  const [garitaReservations, setGaritaReservations] = useState([]);
+
+  const fetchGaritaReservations = async () => {
+    if(!currentEst?.id || String(currentEst.id).startsWith('EST-')) return;
+    try {
+      const r = await api.get('/reservations', { params: { parking_id: Number(currentEst.id) } });
+      if(Array.isArray(r.data)) setGaritaReservations(r.data.map(x=> ({
+        id: x.id, code: x.code, plate: x.license_plate, slotId: x.slot_id, parkingId: String(x.parking_id),
+        status: (x.status||'scheduled').toUpperCase(), startTime: x.start_time, endTime: x.end_time, total_cost: x.total_cost
+      })));
+    } catch {}
+  };
+  useEffect(()=>{ fetchGaritaReservations(); const iv=setInterval(fetchGaritaReservations, 8000); return ()=>clearInterval(iv); },[currentEst?.id]);
 
   const freeSlots = useMemo(()=> (currentEst?.elements||[]).filter(e=>e.type==='slot' && e.status==='free'), [currentEst]);
-  const vehiclesInside = useMemo(()=> reservations.filter(r=> String(r.parkingId)===String(currentEst?.id) && r.status==='ACTIVE').map(r=> ({id:r.id, code:r.code, plate:r.plate, slot:r.slot, entry:r.startTime||r.createdAt})), [reservations, currentEst]);
+  const vehiclesInside = useMemo(()=>{
+    const src = garitaReservations.length ? garitaReservations : reservations;
+    return src.filter(r=> {
+      const pid = String(r.parkingId || r.parking_id || '');
+      return pid===String(currentEst?.id) && (r.status||'').toUpperCase()==='ACTIVE';
+    }).map(r=>{
+      let slotCode=r.slot||'';
+      if(!slotCode && r.slotId){
+        const el=(currentEst?.elements||[]).find(e=> String(e.id)===String(r.slotId));
+        if(el) slotCode=el.code;
+      }
+      return {id:r.id, code:r.code, plate:r.plate||r.license_plate, slot: slotCode||r.slotId, entry: r.startTime||r.start_time||r.createdAt};
+    });
+  },[garitaReservations, reservations, currentEst]);
 
   const handleIngreso = async () => {
     if(!slot || !plate.trim()){ setFeedback('Elige cajón y placa'); setTimeout(()=>setFeedback(''),2500); return; }
@@ -50,12 +76,14 @@ export const PersonalGaritaModule = () => {
     setFeedback(`${slot} • ${plate.toUpperCase()} ingreso OK ${isPendiente?' (pendiente)':`(${payMethod})`}`);
     setSlot(''); setPlate('');
     setTimeout(()=>setFeedback(''),3000);
+    fetchGaritaReservations();
   };
 
   const handleSalida = async (code) => {
     const r=await checkOutReservation(code);
     setFeedback(r.message || 'Salida OK');
     setTimeout(()=>setFeedback(''),3000);
+    fetchGaritaReservations();
   };
 
   return (

@@ -618,8 +618,45 @@ export const App = () => {
                 <LocalEstablishmentManager />
               )}
               {isPersonalStaff && (activeTab === 'dashboard' || activeTab === 'editor') && (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-900 text-xs font-bold">
-                  Acceso restringido: el personal solo ve Garita y Tickets. Contacta al Admin Local para editar el plano.
+                <div className="space-y-4">
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-black text-slate-900 flex items-center gap-2"><Building2 className="w-4 h-4 text-emerald-600"/> Mapa de Sedes — Solo lectura</h2>
+                      <p className="text-xs text-slate-500">Vista del personal: consulta ubicación, tarifa y ocupación en vivo. Edición solo Admin Local.</p>
+                    </div>
+                    <span className="text-[10px] font-black tracking-widest border border-slate-200 rounded-full px-2 py-1 bg-slate-50">PERSONAL</span>
+                  </div>
+                  <AyacuchoMap parkings={establishments} onSelectParking={(p)=> setSelectedParkingId(p.id)} selectedParkingId={selectedParkingId} />
+                  {selectedParkingId ? (
+                    <div className="bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700">Sede: {establishments.find(e=>String(e.id)===String(selectedParkingId))?.name || selectedParkingId}</span>
+                      <Button variant="outline" size="sm" onClick={()=>setSelectedParkingId(null)} className="text-xs h-8 rounded-xl">Cerrar plano</Button>
+                    </div>
+                  ) : null}
+                  {selectedParkingId && (
+                    <div className="opacity-60 pointer-events-none">
+                      <CustomerInteractivePlanBooking parking={establishments.find(e=>String(e.id)===String(selectedParkingId))} planElements={establishments.find(e=>String(e.id)===String(selectedParkingId))?.elements || []} onReserveSlot={()=>{}} />
+                      <p className="text-[11px] text-center text-slate-500 mt-2">Plano solo lectura — el personal no reserva desde aquí, usa Garita → Walk-in.</p>
+                    </div>
+                  )}
+                  {!selectedParkingId && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {establishments.map(p=>{
+                        const free=(p.elements||[]).filter(e=>e.type==='slot' && e.status==='free').length;
+                        const total=(p.elements||[]).filter(e=>e.type==='slot').length || p.totalSlots || 0;
+                        return (
+                          <div key={p.id} className="bg-white rounded-2xl border border-slate-200 p-3 flex items-center gap-3">
+                            <img src={p.image || FALLBACK_PARKING_IMAGE} alt={p.name} className="w-14 h-14 rounded-xl object-cover border border-slate-200"/>
+                            <div className="min-w-0">
+                              <p className="text-xs font-black text-slate-900 truncate">{p.name}</p>
+                              <p className="text-[11px] text-slate-500 truncate">{p.address}</p>
+                              <p className="text-[11px] font-mono font-bold text-emerald-700">S/ {Number(p.rate).toFixed(2)}/h • {free}/{total} libres</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === 'reservations' && <ReservationsModule />}

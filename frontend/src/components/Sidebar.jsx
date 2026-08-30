@@ -43,6 +43,7 @@ const PERSONAL_SECTIONS = [
   {
     section: 'GARITA PERSONAL',
     items: [
+      { id: 'dashboard', label: 'Mapa & Sedes', shortLabel: 'Mapa', icon: Building2 },
       { id: 'anpr', label: 'Garita - Entrada/Salida', shortLabel: 'Garita', icon: Camera },
       { id: 'reservations', label: 'Tickets & Reservas', shortLabel: 'Tickets', icon: CalendarCheck },
       { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },

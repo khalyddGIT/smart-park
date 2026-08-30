@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ConfirmDialog } from './ui/confirm-dialog';
 import { 
   MousePointer, 
   Square, 
@@ -230,6 +231,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
   const [historyIndex, setHistoryIndex] = useState(0);
   const [message, setMessage] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   // Sincronizar cuando cambia initialElements desde afuera
   useEffect(() => {
@@ -350,8 +352,12 @@ export const InteractiveFloorPlanDrawingStudio = ({
     setTimeout(() => setMessage(''), 2000);
   }, [selectedElement, elements, canvasWidth]);
 
-  // Eliminar elemento seleccionado
+  // Eliminar elemento seleccionado — con confirmación
   const handleDeleteSelected = useCallback(() => {
+    if (!selectedId) return;
+    setConfirmDeleteOpen(true);
+  }, [selectedId]);
+  const confirmDeleteSelected = useCallback(() => {
     if (!selectedId) return;
     const updated = elements.filter(el => el.id !== selectedId);
     setElements(updated);
@@ -2228,8 +2234,16 @@ export const InteractiveFloorPlanDrawingStudio = ({
             </div>
           )}
 
-        </div>
+          </div>
       </div>
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        title={selectedElement ? `¿Eliminar ${selectedElement.type === 'slot' ? `cajón ${selectedElement.code || ''}` : selectedElement.type}?` : '¿Eliminar elemento?'}
+        description="Esta acción no se puede deshacer. El elemento se quitará del plano y podrás deshacer con el historial si fue un error."
+        confirmText="Sí, eliminar"
+        onConfirm={confirmDeleteSelected}
+      />
     </div>
   );
 };

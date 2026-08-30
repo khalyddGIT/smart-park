@@ -28,6 +28,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { Button } from './ui/button';
+import { ConfirmDialog } from './ui/confirm-dialog';
 import { useEstablishments } from '../context/EstablishmentContext';
 import api from '../services/api';
 
@@ -86,6 +87,8 @@ export const CameraMonitorModule = () => {
   const [history, setHistory] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [confirmDeleteIdx, setConfirmDeleteIdx] = useState(null);
 
   const [sourceMode, setSourceMode] = useState(() => (cameraUrl ? 'camera' : 'webcam'));
   const [availableDevices, setAvailableDevices] = useState([]);
@@ -270,10 +273,7 @@ export const CameraMonitorModule = () => {
     const { x, y } = getCanvasCoords(e);
     const hit = hitTest(x, y);
     if (hit >= 0) {
-      pushHistory();
-      const next = camZones.filter((_, i) => i !== hit);
-      setCamZones(next); persistZones(next);
-      setSelectedZoneIdx(null);
+      setConfirmDeleteIdx(hit);
     }
   };
 
@@ -338,10 +338,7 @@ export const CameraMonitorModule = () => {
       if (selectedZoneIdx === null) return;
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
-        pushHistory();
-        const next = camZones.filter((_, i) => i !== selectedZoneIdx);
-        setCamZones(next); persistZones(next); setSelectedZoneIdx(null);
-        toast('Zona eliminada');
+        setConfirmDeleteIdx(selectedZoneIdx);
       }
       if (e.key.toLowerCase() === 'd' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
@@ -629,7 +626,7 @@ export const CameraMonitorModule = () => {
             <Button type="button" variant="outline" onClick={() => handleResize(-10, -5)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-cyan-300 text-xs font-bold">- TAM</Button>
             <Button type="button" variant="outline" onClick={() => handleRotate(45)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-amber-300 text-xs font-bold gap-1"><RotateCw className="w-3.5 h-3.5" /> Rotar 45°</Button>
             <Button type="button" variant="outline" onClick={handleUndo} disabled={!history.length} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-white text-xs font-bold disabled:opacity-40">Deshacer</Button>
-            <Button type="button" variant="outline" onClick={() => { pushHistory(); const n=[]; setCamZones(n); persistZones(n); setSelectedZoneIdx(null); }} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-rose-400 text-xs font-bold gap-1"><Trash2 className="w-3.5 h-3.5" /> Limpiar</Button>
+            <Button type="button" variant="outline" onClick={() => setConfirmClearOpen(true)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-rose-400 text-xs font-bold gap-1"><Trash2 className="w-3.5 h-3.5" /> Limpiar</Button>
             <Button type="button" variant="ghost" onClick={() => setMode('monitor')} className="ml-auto h-9 rounded-xl text-slate-400 hover:text-white text-xs font-bold">Cancelar</Button>
             <span className="w-full text-[11px] text-slate-400">Click para crear zona · Click en zona para seleccionar → +TAM/-TAM/Rotar afecta selección · Click derecho borra · Zonas independientes del estacionamiento.</span>
           </div>
@@ -687,7 +684,7 @@ export const CameraMonitorModule = () => {
               <div className="flex items-center gap-1 ml-auto">
                 <Button type="button" variant="outline" onClick={() => { pushHistory(); const z=camZones[selectedZoneIdx]; const nz={...z, id:`cz_${Date.now()}`, code:`CAM-${String(camZones.length+1).padStart(2,'0')}`, x: Math.min(CANVAS_W - z.w, z.x+16), y: Math.min(CANVAS_H - z.h, z.y+16)}; const next=[...camZones, nz]; setCamZones(next); persistZones(next); setSelectedZoneIdx(next.length-1); }} className="h-8 rounded-lg bg-white border-slate-300 text-xs font-bold gap-1"><Copy className="w-3.5 h-3.5" /> Duplicar</Button>
                 <Button type="button" variant="outline" onClick={() => handleRotate(45)} className="h-8 rounded-lg bg-white border-slate-300 text-xs font-bold gap-1"><RotateCw className="w-3.5 h-3.5" /> Rotar</Button>
-                <Button type="button" variant="outline" onClick={() => { pushHistory(); const next=camZones.filter((_,i)=> i!==selectedZoneIdx); setCamZones(next); persistZones(next); setSelectedZoneIdx(null); }} className="h-8 rounded-lg bg-white border-rose-200 text-rose-600 text-xs font-bold gap-1"><Trash2 className="w-3.5 h-3.5" /> Borrar</Button>
+                <Button type="button" variant="outline" onClick={() => setConfirmDeleteIdx(selectedZoneIdx)} className="h-8 rounded-lg bg-white border-rose-200 text-rose-600 text-xs font-bold gap-1"><Trash2 className="w-3.5 h-3.5" /> Borrar</Button>
               </div>
             </div>
             <p className="text-[11px] text-slate-500">Tip: arrastra la zona, usa flechas (Shift = 10px), <b>Supr</b> borra, <b>Ctrl+D</b> duplica. Esquinas amarillas = redimensiona (próximamente). Código editable.</p>
@@ -711,6 +708,30 @@ export const CameraMonitorModule = () => {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmClearOpen}
+        onOpenChange={setConfirmClearOpen}
+        title="¿Eliminar todas las zonas?"
+        description={`Se borrarán las ${camZones.length} zonas de cámara de esta sede. Esta acción no se puede deshacer.`}
+        confirmText="Sí, limpiar todo"
+        onConfirm={() => { pushHistory(); const n=[]; setCamZones(n); persistZones(n); setSelectedZoneIdx(null); toast.success('Todas las zonas eliminadas'); }}
+      />
+      <ConfirmDialog
+        open={confirmDeleteIdx !== null}
+        onOpenChange={(o) => !o && setConfirmDeleteIdx(null)}
+        title={confirmDeleteIdx !== null && camZones[confirmDeleteIdx] ? `¿Eliminar ${camZones[confirmDeleteIdx].code}?` : '¿Eliminar zona?'}
+        description="La zona seleccionada se eliminará permanentemente. Puedes deshacer con el botón Deshacer si fue un error."
+        confirmText="Sí, eliminar"
+        onConfirm={() => {
+          if (confirmDeleteIdx === null) return;
+          pushHistory();
+          const next = camZones.filter((_, i) => i !== confirmDeleteIdx);
+          setCamZones(next); persistZones(next); setSelectedZoneIdx(null);
+          toast.success('Zona eliminada');
+          setConfirmDeleteIdx(null);
+        }}
+      />
     </div>
   );
 };

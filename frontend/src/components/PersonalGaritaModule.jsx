@@ -6,11 +6,26 @@ import { useEstablishments } from '../context/EstablishmentContext';
 import { normalizarPlaca, formatearPlacaConGuion } from '../utils/plateOcr';
 import api from '../services/api';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
+import { useAuth } from '../context/AuthContext';
 
 export const PersonalGaritaModule = () => {
   const { establishments, reservations, createReservation, checkInReservation, checkOutReservation } = useEstablishments();
+  const { user } = useAuth();
+  const [assignedParkingId, setAssignedParkingId] = useState(null);
+  useEffect(()=>{
+    if(!user?.email) return;
+    api.get('/staff').then(r=>{
+      const list=Array.isArray(r.data)?r.data:[];
+      const me=list.find(s=>(s.email||'').toLowerCase()===user.email.toLowerCase());
+      if(me?.parking_id) setAssignedParkingId(String(me.parking_id));
+    }).catch(()=>{});
+  },[user?.email]);
   const [selectedEstId, setSelectedEstId] = useState(() => establishments[0]?.id || '');
-  const currentEst = useMemo(() => establishments.find(e => String(e.id)===String(selectedEstId)) || establishments[0], [establishments, selectedEstId]);
+  useEffect(()=>{ if(assignedParkingId) setSelectedEstId(assignedParkingId); },[assignedParkingId]);
+  const currentEst = useMemo(() => {
+    if(assignedParkingId) return establishments.find(e => String(e.id)===String(assignedParkingId)) || establishments[0];
+    return establishments.find(e => String(e.id)===String(selectedEstId)) || establishments[0];
+  }, [establishments, selectedEstId, assignedParkingId]);
   const [tab, setTab] = useState('scanner'); // scanner | walkin | inside
   const [codeInput, setCodeInput] = useState('');
   const [plateInput, setPlateInput] = useState('');
@@ -97,9 +112,13 @@ export const PersonalGaritaModule = () => {
               <p className="text-xs text-slate-400">Solo lectura de cámara + scanner + walk-in + en cochera</p>
             </div>
           </div>
-          <select value={selectedEstId} onChange={e=>setSelectedEstId(e.target.value)} className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none">
-            {establishments.map(est=> <option key={est.id} value={est.id} className="text-slate-900">{est.name}</option>)}
-          </select>
+          {assignedParkingId ? (
+            <span className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs font-bold text-white">Sede asignada: {currentEst?.name}</span>
+          ) : (
+            <select value={selectedEstId} onChange={e=>setSelectedEstId(e.target.value)} className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none">
+              {establishments.map(est=> <option key={est.id} value={est.id} className="text-slate-900">{est.name}</option>)}
+            </select>
+          )}
         </div>
         <div className="bg-white/5 rounded-2xl border border-white/10 p-3 flex items-center gap-3">
           <img src={currentEst?.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=400'} alt="cam" className="w-20 h-14 rounded-xl object-cover border border-white/20"/>

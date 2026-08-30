@@ -68,15 +68,19 @@ export const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [bookingFeedback, setBookingFeedback] = useState(null);
   const [isPersonalStaff, setIsPersonalStaff] = useState(false);
+  const [personalParkingId, setPersonalParkingId] = useState(null);
   useEffect(() => {
-    if (role !== 'local' || !user?.email) { setIsPersonalStaff(false); return; }
-    if (['adminlocal@smartpark.com','superadmin@smartpark.com'].includes(user.email.toLowerCase())) { setIsPersonalStaff(false); return; }
+    if (role !== 'local' || !user?.email) { setIsPersonalStaff(false); setPersonalParkingId(null); return; }
+    if (['adminlocal@smartpark.com','superadmin@smartpark.com'].includes(user.email.toLowerCase())) { setIsPersonalStaff(false); setPersonalParkingId(null); return; }
     api.get('/staff').then(r=>{
       const list = Array.isArray(r.data)? r.data : [];
       const match = list.find(s=> (s.email||'').toLowerCase()===user.email.toLowerCase());
       if (match) {
         const pos=(match.position||'').toLowerCase();
-        if (pos.includes('operador') || pos.includes('seguridad') || pos.includes('supervisor') || pos.includes('vigilante')) setIsPersonalStaff(true);
+        if (pos.includes('operador') || pos.includes('seguridad') || pos.includes('supervisor') || pos.includes('vigilante')) {
+          setIsPersonalStaff(true);
+          if(match.parking_id) setPersonalParkingId(String(match.parking_id));
+        }
       }
     }).catch(()=>{});
   }, [role, user?.email]);
@@ -113,6 +117,7 @@ export const App = () => {
 
   // Estados de Reserva de Usuario
   const [selectedParkingId, setSelectedParkingId] = useState(null);
+  useEffect(()=>{ if(personalParkingId) setSelectedParkingId(personalParkingId); },[personalParkingId]);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [activeReservation, setActiveReservation] = useState({
@@ -637,12 +642,16 @@ export const App = () => {
                       <div className="space-y-3">
                         <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <select value={est.id} onChange={e=>setSelectedParkingId(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none">
-                              {establishments.map(p=> <option key={p.id} value={p.id}>{p.name} — S/ {Number(p.rate).toFixed(2)}/h</option>)}
-                            </select>
+                            {isPersonalStaff ? (
+                              <span className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs font-bold text-emerald-800">Sede asignada: {est.name} — S/ {Number(est.rate).toFixed(2)}/h</span>
+                            ) : (
+                              <select value={est.id} onChange={e=>setSelectedParkingId(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none">
+                                {establishments.map(p=> <option key={p.id} value={p.id}>{p.name} — S/ {Number(p.rate).toFixed(2)}/h</option>)}
+                              </select>
+                            )}
                             <span className="text-xs font-mono font-bold text-emerald-700">{free} libres / {occupied} ocupados</span>
                           </div>
-                          <span className="text-[10px] font-black tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-full">SOLO PARKING</span>
+                          <span className="text-[10px] font-black tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-full">{isPersonalStaff ? 'ASIGNADA' : 'SOLO PARKING'}</span>
                         </div>
                         <div className="relative bg-[#0f172a] rounded-2xl border-2 border-slate-800 overflow-hidden p-2" style={{height: 380}}>
                           <div className="absolute inset-2 bg-[#1e293b] rounded-xl overflow-hidden">

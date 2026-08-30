@@ -80,6 +80,16 @@ async def create_staff(
     if staff_in.password and len(staff_in.password) < 8:
         raise HTTPException(status_code=422, detail="La contraseña de acceso debe tener al menos 8 caracteres")
 
+    # Evitar duplicados por DNI o email (misma sede)
+    if staff_in.dni:
+        dup = await db.execute(select(Staff).where(Staff.dni == staff_in.dni.strip()))
+        if dup.scalars().first():
+            raise HTTPException(status_code=400, detail="DNI ya registrado en el personal")
+    if staff_in.email and staff_in.email.strip():
+        dup = await db.execute(select(Staff).where(Staff.email == staff_in.email.strip().lower()))
+        if dup.scalars().first():
+            raise HTTPException(status_code=400, detail="Correo ya registrado en el personal")
+
     # El PIN se almacena siempre hasheado (mínimo 4 dígitos)
     pin = staff_in.security_pin if staff_in.security_pin and len(staff_in.security_pin) >= 4 else f"{secrets.randbelow(10000):04d}"
     

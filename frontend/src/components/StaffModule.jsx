@@ -90,6 +90,7 @@ export const StaffModule = () => {
   });
 
   const [toast, setToast] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (establishments.length && formData.parking_id === 1) {
@@ -184,10 +185,12 @@ export const StaffModule = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!formData.full_name || !formData.dni) {
       notify('Por favor completa el nombre y DNI del colaborador.');
       return;
     }
+    setIsSubmitting(true);
 
     const payload = {
       parking_id: Number(formData.parking_id) || 1,
@@ -227,6 +230,8 @@ export const StaffModule = () => {
       await loadStaff();
     } catch (err) {
       describeError(err, 'registrar al colaborador');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -822,9 +827,10 @@ export const StaffModule = () => {
 
             <Button 
               type="submit" 
-              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
+              disabled={isSubmitting}
+              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Registrar Colaborador y Habilitar Acceso
+              {isSubmitting ? 'Registrando...' : 'Registrar Colaborador y Habilitar Acceso'}
             </Button>
           </form>
         </DialogContent>

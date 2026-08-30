@@ -9,7 +9,7 @@ import requests
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -454,14 +454,35 @@ async def list_my_payments(
 
 @router.post("/culqi-webhook")
 async def culqi_webhook_handler(
-    payload: Dict[str, Any],
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Webhook receptor de eventos asíncronos de Culqi (ej. charge.creation.succeeded, order.status.changed).
     
     URL a registrar en el Panel de Culqi (Desarrollo / Producción):
     https://smart-park-web-production.up.railway.app/api/v1/payments/culqi-webhook
+    Verifica firma HMAC X-Culqi-Signature y el cargo contra API Culqi antes de persistir.
     """
+    import hmac, hashlib, json
+    raw_body = await request.body()
+    try:
+        payload = json.loads(raw_body.decode() or "{}")
+    except Exception:
+        raise HTTPException(status_code=400, detail="JSON inválido")
+    # Verificar firma HMAC si hay secreto configurado
+    secret = (settings.CULQI_SECRET_KEY or "").strip()
+    if secret:
+        sig_header = request.headers.get("x-culqi-signature") or request.headers.get("X-Culqi-Signature") or ""
+        if not sig_header:
+            raise HTTPException(status_code=401, detail="Firma Culqi ausente")
+        expected = hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+        # Culqi puede enviar hex o base64; comparar ambos formatos
+        if not (hmac.compare_digest(expected, sig_header) or hmac.compare_digest(expected, sig_header.lower())):
+            # también probar base64
+            import base64 as _b64
+            b64_expected = _b64.b64encode(bytes.fromhex(expected)).decode() if len(expected)==64 else ""
+            if not hmac.compare_digest(b64_expected, sig_header):
+                raise HTTPException(status_code=401, detail="Firma Culqi inválida")
     event_type = str(payload.get("type") or payload.get("object") or "")
     event_data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
     
@@ -473,16 +494,31 @@ async def culqi_webhook_handler(
         email = event_data.get("email") or payload.get("email")
         
         if charge_id:
+            # Verificar cargo contra API Culqi si hay secreto (evita amount spoofing)
+            if secret:
+                try:
+                    import requests as _req
+                    vr = _req.get(f"https://api.culqi.com/v2/charges/{charge_id}", headers={"Authorization": f"Bearer {secret}"}, timeout=6)
+                    if vr.status_code == 200:
+                        j = vr.json()
+                        # Culqi puede envolver en {data: ...}
+                        cj = j.get("data") if isinstance(j.get("data"), dict) else j
+                        if str(cj.get("id")) == str(charge_id):
+                            amount_cents = int(cj.get("amount") or amount_cents)
+                            currency = str(cj.get("currency_code") or currency).upper()
+                except Exception:
+                    pass
             res = await db.execute(select(Payment).where(Payment.culqi_charge_id == str(charge_id)))
             existing_payment = res.scalars().first()
             if not existing_payment:
-                # Buscar id de usuario si coincide el email
-                user_id = 1
-                if email:
-                    u_res = await db.execute(select(User).where(User.email == email))
-                    user = u_res.scalars().first()
-                    if user:
-                        user_id = user.id
+                # Requiere email válido de usuario existente (no fallback a admin id=1)
+                if not email:
+                    return {"received": True, "event": event_type, "ignored": "email ausente"}
+                u_res = await db.execute(select(User).where(User.email == email))
+                user = u_res.scalars().first()
+                if not user:
+                    return {"received": True, "event": event_type, "ignored": "usuario no encontrado"}
+                user_id = user.id
                 
                 new_payment = Payment(
                     user_id=user_id,

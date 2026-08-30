@@ -98,11 +98,20 @@ async def create_reservation(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Verificar cajón
-    slot_res = await db.execute(select(Slot).where(Slot.id == res_in.slot_id))
+    # Validación de fechas
+    _start = _naive_utc(res_in.start_time)
+    _end = _naive_utc(res_in.end_time)
+    if _end <= _start:
+        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior al inicio")
+    if (_end - _start).total_seconds() < 1800:
+        raise HTTPException(status_code=422, detail="Duración mínima 30 minutos")
+    # Verificar cajón con bloqueo FOR UPDATE para evitar doble-booking
+    slot_res = await db.execute(select(Slot).where(Slot.id == res_in.slot_id).with_for_update())
     slot = slot_res.scalars().first()
     if not slot or slot.status != "free":
-        raise HTTPException(status_code=400, detail="El cajón seleccionado no se encuentra libre")
+        raise HTTPException(status_code=409, detail="El cajón seleccionado no se encuentra libre (conflicto concurrente)")
+    if slot.parking_id != res_in.parking_id:
+        raise HTTPException(status_code=400, detail="El cajón no pertenece al estacionamiento indicado")
 
     # Verificar local y calcular costo
     parking_res = await db.execute(select(Parking).where(Parking.id == res_in.parking_id))
@@ -110,9 +119,7 @@ async def create_reservation(
     if not parking:
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
 
-    # Duración en horas (normaliza antes de restar para evitar aware vs naive)
-    _start = _naive_utc(res_in.start_time)
-    _end = _naive_utc(res_in.end_time)
+    # Duración en horas
     duration = max(1.0, (_end - _start).total_seconds() / 3600.0)
     total_cost = round(duration * parking.hourly_rate, 2)
     reservation_code = f"RSV-{uuid.uuid4().hex[:6].upper()}"

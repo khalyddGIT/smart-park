@@ -14,12 +14,12 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 # 24 horas
 
-    # Culqi - secreto solo en servidor, nunca en el frontend
-    CULQI_SECRET_KEY: str = os.getenv("CULQI_SECRET_KEY", "sk_test_mdIXRSmJu9Z3nr0o")
+    # Culqi - secreto solo en servidor, nunca en el frontend (sin default en repo)
+    CULQI_SECRET_KEY: str = os.getenv("CULQI_SECRET_KEY", "")
 
-    # PayPal Sandbox / Live - secretos solo en servidor
-    PAYPAL_CLIENT_ID: str = os.getenv("PAYPAL_CLIENT_ID", "BAADoNYpVsJd20zFA2pZHva0nt7lYj4GnPqKFDFI_7Cdta0qd-FqG4g8wmndZYuPPcEAmSO-ukcu2mJDR0")
-    PAYPAL_CLIENT_SECRET: str = os.getenv("PAYPAL_CLIENT_SECRET", "EG6JQ_9HLl1G26MWDdPo1WnYsnn2pfscl0heKWCU35qpU9ZrDEcY5KZwhM6TZUHee5GBVnnWZH-PLCBE")
+    # PayPal Sandbox / Live - secretos solo en servidor (sin defaults hardcodeados)
+    PAYPAL_CLIENT_ID: str = os.getenv("PAYPAL_CLIENT_ID", "")
+    PAYPAL_CLIENT_SECRET: str = os.getenv("PAYPAL_CLIENT_SECRET", "")
     PAYPAL_MODE: str = os.getenv("PAYPAL_MODE", "sandbox") # "sandbox" | "live"
     PAYPAL_EXCHANGE_RATE_PEN_TO_USD: float = float(os.getenv("PAYPAL_EXCHANGE_RATE_PEN_TO_USD", "0.27"))
 

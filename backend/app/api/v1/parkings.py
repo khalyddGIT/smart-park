@@ -208,6 +208,7 @@ async def process_custom_vision_boxes(
     slots_json: str = Form(...),
     threshold: Optional[int] = Form(None),
     debug: Optional[bool] = Form(None),
+    current_user = Depends(write_required),
 ):
     """Procesamiento OpenCV (Adaptive Thresholding + CountNonZero) idéntico al
     car-parking-finder-main. threshold: conteo sobre caja 107x48 (default 900).
@@ -729,55 +730,67 @@ async def get_floor_plan(parking_id: int, db: AsyncSession = Depends(get_db)):
 @router.post("/{parking_id}/floor-plan/sync", status_code=status.HTTP_200_OK)
 async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
     from sqlalchemy import delete
-    # Cajones con CUALQUIER reserva histórica no pueden eliminarse (FK); solo se actualizan
-    existing_slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
-    existing_slots = existing_slots_res.scalars().all()
-    # IDs de cajones que tienen al menos una reserva (cualquier estado)
-    reserved_slot_ids = set()
-    if existing_slots:
+    # Validar parking_id coincide
+    if sync_in.parking_id and sync_in.parking_id != parking_id:
+        raise HTTPException(status_code=422, detail="parking_id en body no coincide con path")
+    # Validar unicidad de códigos en el payload
+    incoming_codes = [s.code for s in sync_in.slots]
+    if len(incoming_codes) != len(set(incoming_codes)):
+        raise HTTPException(status_code=422, detail="Códigos de cajones duplicados en el payload")
+    
+    async with db.begin():
+        from sqlalchemy import delete
+        # Cajones con reserva ACTIVA (scheduled/active) NO se pueden borrar ni cambiar estado
+        existing_slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
+        existing_slots = existing_slots_res.scalars().all()
+        # Slots con reserva ACTIVA (scheduled/active) = protegidos
         slot_ids = [s.id for s in existing_slots]
-        res = await db.execute(select(Reservation.slot_id).where(Reservation.slot_id.in_(slot_ids)))
-        reserved_slot_ids = {row[0] for row in res.all()}
+        protected_slot_ids = set()
+        if slot_ids:
+            res = await db.execute(select(Reservation.slot_id).where(
+                Reservation.slot_id.in_(slot_ids),
+                Reservation.status.in_(["scheduled", "active"])
+            ))
+            protected_slot_ids = {row[0] for row in res.all()}
 
-    await db.execute(delete(FloorPlanElement).where(FloorPlanElement.parking_id == parking_id))
-    # Borrar solo cajones huérfanos (sin reservas) cuyo código ya no viene en el nuevo plano
-    incoming_codes = {s.code for s in sync_in.slots}
-    for slot in existing_slots:
-        if slot.id not in reserved_slot_ids and slot.code not in incoming_codes:
-            await db.execute(delete(Slot).where(Slot.id == slot.id))
-    # Upsert por código: actualizar existentes (incluidos los reservados, solo geometría), crear nuevos
-    existing_by_code = {s.code: s for s in existing_slots}
-    for s in sync_in.slots:
-        existing = existing_by_code.get(s.code)
-        if existing:
-            existing.floor_level = s.floor_level
-            existing.slot_type = s.slot_type
-            existing.pos_x = s.pos_x
-            existing.pos_y = s.pos_y
-            existing.width = s.width
-            existing.height = s.height
-            existing.rotation = s.rotation
-            # No pisar estado occupied/reserved (tiene reserva activa)
-            if existing.status not in ("occupied", "reserved"):
-                existing.status = s.status or "free"
-        else:
-            # Nuevo cajón: verificar que el código no colisione con uno reservado que fue preservado
-            if s.code not in existing_by_code:
+        await db.execute(delete(FloorPlanElement).where(FloorPlanElement.parking_id == parking_id))
+        # Borrar solo cajones huérfanos (sin reservas activas) cuyo código ya no viene
+        incoming_codes = {s.code for s in sync_in.slots}
+        for slot in existing_slots:
+            if slot.id not in protected_slot_ids and slot.code not in incoming_codes:
+                await db.execute(delete(Slot).where(Slot.id == slot.id))
+        # Upsert por código: actualizar existentes (incluidos los protegidos, solo geometría), crear nuevos
+        existing_by_code = {s.code: s for s in existing_slots}
+        for s in sync_in.slots:
+            existing = existing_by_code.get(s.code)
+            if existing:
+                existing.floor_level = s.floor_level
+                existing.slot_type = s.slot_type
+                existing.pos_x = s.pos_x
+                existing.pos_y = s.pos_y
+                existing.width = s.width
+                existing.height = s.height
+                existing.rotation = s.rotation
+                # NO pisar estado si tiene reserva activa (protected)
+                if existing.id not in protected_slot_ids:
+                    existing.status = s.status or "free"
+            else:
                 db.add(Slot(
                     parking_id=parking_id, code=s.code, floor_level=s.floor_level,
                     slot_type=s.slot_type, status=s.status or "free",
                     pos_x=s.pos_x, pos_y=s.pos_y, width=s.width, height=s.height, rotation=s.rotation
                 ))
 
-    new_elems = [
-        FloorPlanElement(
-            parking_id=parking_id, element_type=e.element_type, pos_x=e.pos_x, pos_y=e.pos_y,
-            width=e.width, height=e.height, rotation=e.rotation, z_index=e.z_index, properties_json=e.properties_json
-        )
-        for e in sync_in.elements
-    ]
-    db.add_all(new_elems)
-    await db.commit()
+        new_elems = [
+            FloorPlanElement(
+                parking_id=parking_id, element_type=e.element_type, pos_x=e.pos_x, pos_y=e.pos_y,
+                width=e.width, height=e.height, rotation=e.rotation, z_index=e.z_index, properties_json=e.properties_json
+            )
+            for e in sync_in.elements
+        ]
+        db.add_all(new_elems)
+        # commit ocurre en db.begin() context manager
+    
     await invalidate_parkings_cache()
     await realtime.broadcast("parkings:updated", {"parking_id": parking_id})
     # Contar total actual y sincronizar contadores Redis

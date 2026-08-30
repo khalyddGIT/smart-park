@@ -77,6 +77,8 @@ async def login_user(user_in: UserCreate, request: Request, db: AsyncSession = D
     user = result.scalars().first()
     if not user or not verify_password(user_in.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+    if not user.is_active:
+        raise HTTPException(status_code=401, detail="Cuenta desactivada")
     
     access_token = create_access_token(subject=user.id)
     return {
@@ -107,6 +109,11 @@ async def logout(credentials: HTTPAuthorizationCredentials = Depends(_bearer_aut
             "message": "Sesión cerrada y token revocado" if revoked else "Sesión cerrada (revocación no disponible: Redis sin configurar)"
         }
     return {"status": "success", "message": "Sesión cerrada"}
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """Retorna el usuario autenticado según JWT (fuente de verdad para rol)."""
+    return UserResponse.model_validate(current_user)
 
 @router.post("/google", response_model=Token)
 async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(get_db)):

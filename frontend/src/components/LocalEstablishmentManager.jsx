@@ -137,6 +137,15 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
         markerRef.current.setLatLng([lat, lng]);
       }
     }
+    // Cleanup: remove map and marker on unmount to prevent memory leaks
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      markerRef.current = null;
+      layerGroupRef.current = null;
+    };
   }, [latitude, longitude, onChangeCoords]);
 
   // Cambiar capa Calles / Satélite

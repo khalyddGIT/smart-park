@@ -167,11 +167,14 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     : (planElements && planElements.length > 0 ? planElements : DEFAULT_FALLBACK_ELEMENTS);
 
   // Auto-ajuste de escala para que el plano se adapte a cualquier pantalla
+  // WCAG: mínimo 44px touch target → min slot width 56px (moto) → scale >= 44/56 = 0.785
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current) {
         const availableWidth = containerRef.current.clientWidth - 32;
-        const calculatedScale = Math.min(1, Math.max(0.35, availableWidth / BASE_WIDTH));
+        // Minimum scale ensures 44px minimum touch target (moto slot: 56px * scale >= 44 → scale >= 0.785)
+        const minScaleForWCAG = 44 / 56; // 0.785
+        const calculatedScale = Math.min(1, Math.max(minScaleForWCAG, availableWidth / BASE_WIDTH));
         setScale(calculatedScale);
       }
     };

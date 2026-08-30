@@ -9,11 +9,12 @@ from sqlalchemy import text as sql_text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.core.security import require_role
 
 router = APIRouter(prefix="/diagnostics", tags=["Diagnóstico"])
 
 
-@router.get("/status")
+@router.get("/status", dependencies=[Depends(require_role("platform", "local"))])
 async def diagnostics_status(db: AsyncSession = Depends(get_db)):
     t0 = time.perf_counter()
 
@@ -106,7 +107,7 @@ async def diagnostics_status(db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.post("/circuit/toggle")
+@router.post("/circuit/toggle", dependencies=[Depends(require_role("platform"))])
 async def toggle_circuit():
     """Alterna el circuit breaker real (persistido en Redis 24h). Sin Redis, solo confirma."""
     try:
@@ -122,7 +123,7 @@ async def toggle_circuit():
     return {"circuit_status": "ONLINE", "persisted": False, "note": "Sin Redis: toggle solo local"}
 
 
-@router.post("/test-event")
+@router.post("/test-event", dependencies=[Depends(require_role("platform"))])
 async def test_event():
     """Emite una transacción vehicular real a través del broker (Redis si disponible, memoria si no)."""
     from app.core.broker import message_broker

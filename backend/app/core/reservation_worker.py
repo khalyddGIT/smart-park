@@ -4,14 +4,30 @@ Cada RESERVATION_TOLERANCE_CHECK_INTERVAL segundos revisa reservas
 en estado 'scheduled' cuyo inicio + tolerancia de la sede ya venció
 sin check-in. Las cancela, libera el cajón, persiste y notifica
 via WebSocket + invalidación de caché.
+
+Lock distribuido vía Redis SETNX para evitar múltiples réplicas cancelando simultáneamente.
 """
 import asyncio
 import logging
+import random
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
 _task = None
+
+
+async def _acquire_lock(lock_name: str, ttl: int) -> bool:
+    """Intenta adquirir lock distribuido vía Redis SETNX."""
+    try:
+        from app.core.cache import get_client
+        client = get_client()
+        if client is None:
+            return True  # sin Redis, permite ejecutar (fail-open)
+        acquired = await client.set(f"lock:{lock_name}", "1", nx=True, ex=ttl)
+        return bool(acquired)
+    except Exception:
+        return True  # fail-open
 
 async def _cancel_expired_once() -> int:
     from sqlalchemy.future import select
@@ -79,9 +95,16 @@ async def _loop():
     logger.info(f"[reservation-worker] iniciado cada {interval}s")
     while True:
         try:
-            n = await _cancel_expired_once()
-            if n:
-                logger.info(f"[reservation-worker] ciclo OK: {n} cancelada(s)")
+            # Jitter para evitar thundering herd
+            await asyncio.sleep(random.uniform(0, 2))
+            # Lock distribuido
+            lock_ttl = interval + 5
+            if await _acquire_lock("reservation_tolerance", lock_ttl):
+                n = await _cancel_expired_once()
+                if n:
+                    logger.info(f"[reservation-worker] ciclo OK: {n} cancelada(s)")
+            else:
+                logger.debug("[reservation-worker] saltado (otra réplica tiene el lock)")
         except Exception as exc:
             logger.warning(f"[reservation-worker] ciclo con error: {exc}")
         await asyncio.sleep(interval)

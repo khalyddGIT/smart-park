@@ -18,18 +18,61 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      setRole(user.role || 'user');
+      const safeRole = ['user','local','platform'].includes(user.role) ? user.role : 'user';
+      if (safeRole !== user.role) {
+        setUser(prev => ({ ...prev, role: safeRole }));
+        setRole(safeRole);
+        return;
+      }
+      setRole(safeRole);
       try {
-        localStorage.setItem('smart_park_user_session', JSON.stringify(user));
+        localStorage.setItem('smart_park_user_session', JSON.stringify({ ...user, role: safeRole }));
       } catch (e) {}
     } else {
       localStorage.removeItem('smart_park_user_session');
     }
   }, [user]);
 
+  // Validar sesión contra servidor (fuente de verdad para rol y is_active)
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+    api.get('/auth/me')
+      .then(res => {
+        const serverUser = res.data;
+        if (!serverUser) return;
+        const serverRole = ['user','local','platform'].includes(serverUser.role) ? serverUser.role : 'user';
+        if (serverUser.is_active === false) {
+          logout();
+          return;
+        }
+        // Corregir spoof de localStorage: si rol o id no coinciden con servidor, sobrescribir
+        if (!user || user.role !== serverRole || user.id !== serverUser.id) {
+          const corrected = user ? { ...user, id: serverUser.id, role: serverRole, name: serverUser.full_name || user.name, email: serverUser.email } : { id: serverUser.id, name: serverUser.full_name, email: serverUser.email, avatar: null, role: serverRole, isGoogleAuth: false };
+          setUser(corrected);
+          setRole(serverRole);
+        }
+      })
+      .catch(err => {
+        if (err?.response?.status === 401) {
+          // token inválido, expirado o usuario desactivado
+          logout();
+        }
+      });
+  }, []); // solo al montar para no spamear
+
   const switchRole = (newRole) => {
+    const allowed = ['user','local','platform'];
+    if (!allowed.includes(newRole)) return;
+    // No permitir escalada local si el rol real del servidor no es platform
+    // Se valida contra el usuario actual ya verificado; si se intenta spoof, el effect de arriba lo revertirá
     setRole(newRole);
     if (user) {
+      // solo permitir bajar o mantener, no subir a platform sin ser platform
+      if (newRole === 'platform' && user.role !== 'platform') {
+        console.warn('Intento de escalada de rol bloqueado');
+        return;
+      }
       setUser(prev => ({ ...prev, role: newRole }));
     }
     if (newRole === 'user') setPinVerified(false);
@@ -51,9 +94,12 @@ export const AuthProvider = ({ children }) => {
           const u = { id: data.user.id, name: data.user.full_name || profile.name, email: data.user.email, avatar: profile.picture || null, role: data.user.role || 'user', isGoogleAuth: true };
           setUser(u); setRole(u.role); return u;
         }
-      } catch (err) { console.warn('Google backend no disponible, fallback local', err?.response?.data || err.message); }
-      const googleUser = { id: profile.sub || Date.now(), name: profile.name || profile.email.split('@')[0], email: profile.email, avatar: profile.picture || null, role: 'user', isGoogleAuth: true };
-      setUser(googleUser); setRole('user'); return googleUser;
+      } catch (err) {
+        console.warn('Google backend no disponible', err?.response?.data || err.message);
+        throw new Error(err?.response?.data?.detail || 'No se pudo validar Google con el servidor');
+      }
+      // Nunca crear sesión local sin validación del servidor
+      throw new Error('No se pudo crear sesión Google');
     } catch (e) { console.error('Error al procesar Google Auth:', e); throw e; }
   };
 

@@ -86,7 +86,8 @@ async def startup_db():
         async with AsyncSessionLocal() as session:
             from sqlalchemy.future import select
             res = await session.execute(select(Parking))
-            if not res.scalars().first():
+            # Demo parkings solo en no-producción (en prod se crean vía panel)
+            if not res.scalars().first() and settings.ENVIRONMENT != "production":
                 p1 = Parking(
                     name="Smart Park Plaza Mayor - Planta Baja",
                     address="Portal Unión 42, Centro Histórico",
@@ -150,35 +151,41 @@ async def startup_db():
                 session.add_all([v1, v2])
                 await session.commit()
 
-            # Seed superadmin
+            # Seed superadmin — en producción requiere SUPERADMIN_PASSWORD env var
             res_admin = await session.execute(select(User).where(User.email == "superadmin@smartpark.com"))
             if not res_admin.scalars().first():
-                super_admin = User(
-                    full_name="Super Administrador",
-                    email="superadmin@smartpark.com",
-                    phone="+51 999999999",
-                    hashed_password=get_password_hash("SmartParkSuperAdmin2026!"),
-                    security_pin=hash_pin("7391"),
-                    role="platform",
-                    is_active=True
-                )
-                session.add(super_admin)
-                await session.commit()
+                _super_pwd = os.getenv("SUPERADMIN_PASSWORD", "" if settings.ENVIRONMENT == "production" else "SmartParkSuperAdmin2026!")
+                _super_pin = os.getenv("SUPERADMIN_PIN", "" if settings.ENVIRONMENT == "production" else "7391")
+                if _super_pwd:
+                    super_admin = User(
+                        full_name="Super Administrador",
+                        email="superadmin@smartpark.com",
+                        phone="+51 999999999",
+                        hashed_password=get_password_hash(_super_pwd),
+                        security_pin=hash_pin(_super_pin),
+                        role="platform",
+                        is_active=True
+                    )
+                    session.add(super_admin)
+                    await session.commit()
 
-            # Seed adminlocal
+            # Seed adminlocal — en producción requiere ADMINLOCAL_PASSWORD env var
             res_local = await session.execute(select(User).where(User.email == "adminlocal@smartpark.com"))
             if not res_local.scalars().first():
-                local_admin = User(
-                    full_name="Administrador Local",
-                    email="adminlocal@smartpark.com",
-                    phone="+51 988888888",
-                    hashed_password=get_password_hash("SmartParkLocal2026!"),
-                    security_pin=hash_pin("4826"),
-                    role="local",
-                    is_active=True
-                )
-                session.add(local_admin)
-                await session.commit()
+                _local_pwd = os.getenv("ADMINLOCAL_PASSWORD", "" if settings.ENVIRONMENT == "production" else "SmartParkLocal2026!")
+                _local_pin = os.getenv("ADMINLOCAL_PIN", "" if settings.ENVIRONMENT == "production" else "4826")
+                if _local_pwd:
+                    local_admin = User(
+                        full_name="Administrador Local",
+                        email="adminlocal@smartpark.com",
+                        phone="+51 988888888",
+                        hashed_password=get_password_hash(_local_pwd),
+                        security_pin=hash_pin(_local_pin),
+                        role="local",
+                        is_active=True
+                    )
+                    session.add(local_admin)
+                    await session.commit()
     except Exception as e:
         import logging
         logging.warning(f"[smart-park] seed skip: {e}")

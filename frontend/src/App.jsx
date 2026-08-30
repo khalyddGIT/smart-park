@@ -116,36 +116,37 @@ export const App = () => {
   const selectedParking = establishments.find(e => e.id === selectedParkingId) || null;
 
   // Reserva de Plaza por Conductor sobre el Plano Topográfico
-  const handleCustomerBooking = (bookingData) => {
+  const handleCustomerBooking = async (bookingData) => {
     if (!selectedParking) return;
-
-    // Crear la reserva en el contexto global (usa IDs reales del servidor)
-    const newRes = createReservation({
-      parkingId: bookingData.parkingId || selectedParking.id,
-      slotId: bookingData.slotId,
-      parkingName: bookingData.parkingName || selectedParking.name,
-      slotCode: bookingData.slotCode,
-      plate: bookingData.plate,
-      customerName: 'Conductor Registrado',
-      customerPhone: '+51 966 123 456',
-      totalCost: bookingData.totalCost,
-      hours: bookingData.hours,
-      rate: selectedParking.rate,
-      startTime: bookingData.startTime,
-      expiresAt: bookingData.expiresAt
-    });
-
-    if (!newRes) {
-      const msg = bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
+    try {
+      const newRes = await createReservation({
+        parkingId: bookingData.parkingId || selectedParking.id,
+        slotId: bookingData.slotId,
+        parkingName: bookingData.parkingName || selectedParking.name,
+        slotCode: bookingData.slotCode,
+        plate: bookingData.plate,
+        customerName: 'Conductor Registrado',
+        customerPhone: '+51 966 123 456',
+        totalCost: bookingData.totalCost,
+        hours: bookingData.hours,
+        rate: selectedParking.rate,
+        startTime: bookingData.startTime,
+        expiresAt: bookingData.expiresAt
+      });
+      if (!newRes) {
+        const msg = bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
+        setBookingFeedback(msg);
+        setTimeout(() => setBookingFeedback(null), 4000);
+        return;
+      }
+      setActiveReservation(newRes);
+      setShowQRModal(true);
+      setSelectedParkingId(null);
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
       setBookingFeedback(msg);
       setTimeout(() => setBookingFeedback(null), 4000);
-      return;
     }
-
-    // Establecer la reserva activa y abrir el modal con el QR y token ANPR
-    setActiveReservation(newRes);
-    setShowQRModal(true);
-    setSelectedParkingId(null);
   };
 
   // Filtrado de establecimientos para la vista Conductor

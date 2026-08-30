@@ -4,13 +4,29 @@ Cada CAMERA_AUTOSCAN_INTERVAL segundos recorre las sedes con cámara habilitada
 (camera_enabled=True y camera_url configurada), toma un frame de la cámara IP,
 ejecuta la detección IA, actualiza el estado de los cajones en BD y emite los
 eventos de ingreso/salida por WebSocket — aunque ningún navegador esté abierto.
+
+Lock distribuido vía Redis SETNX para evitar múltiples réplicas escaneando simultáneamente.
 """
 import asyncio
 import logging
+import random
 
 logger = logging.getLogger(__name__)
 
 _task = None
+
+
+async def _acquire_lock(lock_name: str, ttl: int) -> bool:
+    """Intenta adquirir lock distribuido vía Redis SETNX."""
+    try:
+        from app.core.cache import get_client
+        client = get_client()
+        if client is None:
+            return True  # sin Redis, permite ejecutar (fail-open)
+        acquired = await client.set(f"lock:{lock_name}", "1", nx=True, ex=ttl)
+        return bool(acquired)
+    except Exception:
+        return True  # fail-open
 
 
 async def _scan_one(parking) -> bool:
@@ -101,9 +117,16 @@ async def _loop():
     logger.info(f"[camera-worker] iniciando auto-escaneo server-side cada {interval}s")
     while True:
         try:
-            n = await scan_enabled_cameras()
-            if n:
-                logger.info(f"[camera-worker] ciclo OK: {n} cámara(s) escaneadas")
+            # Jitter para evitar thundering herd
+            await asyncio.sleep(random.uniform(0, 2))
+            # Lock distribuido
+            lock_ttl = interval + 5
+            if await _acquire_lock("camera_autoscan", lock_ttl):
+                n = await scan_enabled_cameras()
+                if n:
+                    logger.info(f"[camera-worker] ciclo OK: {n} cámara(s) escaneadas")
+            else:
+                logger.debug("[camera-worker] saltado (otra réplica tiene el lock)")
         except Exception as exc:
             logger.warning(f"[camera-worker] ciclo con error: {exc}")
         await asyncio.sleep(interval)

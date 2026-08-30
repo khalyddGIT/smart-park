@@ -608,7 +608,11 @@ export const EstablishmentProvider = ({ children }) => {
   // Crear Solicitud de Afiliación de Cochera
   // Carga real desde el servidor (con fallback a localStorage si no hay auth o falla)
   useEffect(() => {
+    // Solo platform necesita afiliaciones; evita 403 spam para local/personal
+    const { user: _u } = (()=>{ try{ return {user: JSON.parse(localStorage.getItem('smart_park_user_session')||'{}')} }catch{return {user:null}} })();
+    if(_u?.role !== 'platform') return;
     const loadAffiliations = async () => {
+      if(document.visibilityState!=='visible') return;
       try {
         const res = await api.get('/affiliation-requests');
         if (Array.isArray(res.data)) {
@@ -631,7 +635,7 @@ export const EstablishmentProvider = ({ children }) => {
       } catch {}
     };
     loadAffiliations();
-    const iv = setInterval(loadAffiliations, 15000);
+    const iv = setInterval(loadAffiliations, 60000);
     return () => clearInterval(iv);
   }, []);
 

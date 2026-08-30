@@ -1,6 +1,6 @@
 from typing import List, Optional
 import secrets
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
@@ -50,6 +50,21 @@ async def list_staff(
         stmt = stmt.where(Staff.parking_id == parking_id)
     if shift:
         stmt = stmt.where(Staff.shift.ilike(f"%{shift}%"))
+    # Multi-tenant: si el solicitante es personal (no platform), solo ve su sede
+    # Se infiere por Staff vinculado a su email; platform ve todo
+    if current_user.role != "platform":
+        try:
+            me = await db.execute(select(Staff).where(Staff.email == current_user.email))
+            my_staff = me.scalars().first()
+            if my_staff and my_staff.parking_id:
+                # si no pidió parking_id explícito, filtrar a su sede; si pidió otra, denegar (403) o filtrar
+                if parking_id and parking_id != my_staff.parking_id:
+                    raise HTTPException(status_code=403, detail="No autorizado para ver personal de otra sede")
+                stmt = stmt.where(Staff.parking_id == my_staff.parking_id)
+        except HTTPException:
+            raise
+        except Exception:
+            pass
     
     result = await db.execute(stmt)
     staff_members = result.scalars().all()
@@ -74,13 +89,29 @@ async def get_staff(
 @router.post("", response_model=StaffResponse, status_code=status.HTTP_201_CREATED)
 async def create_staff(
     staff_in: StaffCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user = Depends(staff_required)
 ):
+    # Idempotency-Key: evita doble creación por doble-click/reintento de red (Redis SETNX 10s, fail-open sin Redis)
+    idem_key = request.headers.get("idempotency-key") or request.headers.get("Idempotency-Key")
+    if idem_key:
+        try:
+            from app.core.cache import get_client
+            c = get_client()
+            if c is not None:
+                ok = await c.set(f"idem:staff:{idem_key}", "1", nx=True, ex=10)
+                if not ok:
+                    raise HTTPException(status_code=409, detail="Solicitud duplicada — ya procesada")
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
     if staff_in.password and len(staff_in.password) < 8:
         raise HTTPException(status_code=422, detail="La contraseña de acceso debe tener al menos 8 caracteres")
 
-    # Evitar duplicados por DNI o email (misma sede)
+    # Evitar duplicados por DNI o email (DB unique + check aplicativo)
     if staff_in.dni:
         dup = await db.execute(select(Staff).where(Staff.dni == staff_in.dni.strip()))
         if dup.scalars().first():
@@ -89,6 +120,12 @@ async def create_staff(
         dup = await db.execute(select(Staff).where(Staff.email == staff_in.email.strip().lower()))
         if dup.scalars().first():
             raise HTTPException(status_code=400, detail="Correo ya registrado en el personal")
+
+    # Validar que la sede existe (evita FK error silencioso en producción sin parkings demo)
+    from app.models.models import Parking
+    parking_check = await db.execute(select(Parking).where(Parking.id == staff_in.parking_id))
+    if not parking_check.scalars().first():
+        raise HTTPException(status_code=400, detail=f"Estacionamiento ID {staff_in.parking_id} no existe. Crea una sede primero en Espacios & Plano.")
 
     # El PIN se almacena siempre hasheado (mínimo 4 dígitos)
     pin = staff_in.security_pin if staff_in.security_pin and len(staff_in.security_pin) >= 4 else f"{secrets.randbelow(10000):04d}"
@@ -103,9 +140,16 @@ async def create_staff(
         email=staff_in.email.strip() if staff_in.email else None,
         security_pin=hash_pin(pin)
     )
-    db.add(db_staff)
-    await db.commit()
-    await db.refresh(db_staff)
+    try:
+        db.add(db_staff)
+        await db.commit()
+        await db.refresh(db_staff)
+    except Exception as e:
+        await db.rollback()
+        msg = str(e).lower()
+        if "unique" in msg or "duplicate" in msg:
+            raise HTTPException(status_code=400, detail="DNI o correo ya existe (violación de unicidad)")
+        raise
 
     # Si se proporcionó un email, registrar o actualizar la cuenta de usuario para que el personal pueda ingresar
     target_role = staff_in.system_role or "local"

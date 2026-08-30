@@ -65,7 +65,8 @@ export const StaffModule = () => {
   const [showQuickPassword, setShowQuickPassword] = useState(false);
 
   const { establishments } = useEstablishments();
-  const defaultParkingId = Number(establishments?.[0]?.id) || 1;
+  const validEstablishments = establishments.filter(e => !String(e.id).startsWith('EST-') && !isNaN(Number(e.id)));
+  const defaultParkingId = validEstablishments.length ? Number(validEstablishments[0].id) : null;
 
   // Estados de formularios
   const [formData, setFormData] = useState({
@@ -74,7 +75,7 @@ export const StaffModule = () => {
     position: 'Operador de Garita',
     shift: 'Mañana (07:00 - 15:00)',
     status: 'Activo',
-    parking_id: defaultParkingId,
+    parking_id: defaultParkingId || '',
     email: '',
     password: '',
     security_pin: '',
@@ -93,9 +94,8 @@ export const StaffModule = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (establishments.length && formData.parking_id === 1) {
-      const firstId = Number(establishments[0].id);
-      if (!isNaN(firstId) && firstId !== 1) setFormData(prev => ({ ...prev, parking_id: firstId }));
+    if (validEstablishments.length && !validEstablishments.some(e => String(e.id) === String(formData.parking_id))) {
+      setFormData(prev => ({ ...prev, parking_id: Number(validEstablishments[0].id) }));
     }
   }, [establishments]);
 
@@ -190,10 +190,18 @@ export const StaffModule = () => {
       notify('Por favor completa el nombre y DNI del colaborador.');
       return;
     }
+    if (validEstablishments.length === 0) {
+      notify('No hay sedes registradas en el servidor. Crea una sede en Espacios & Plano antes de registrar personal.');
+      return;
+    }
+    if (!formData.parking_id || isNaN(Number(formData.parking_id))) {
+      notify('Selecciona una sede válida.');
+      return;
+    }
     setIsSubmitting(true);
 
     const payload = {
-      parking_id: Number(formData.parking_id) || 1,
+      parking_id: Number(formData.parking_id),
       full_name: formData.full_name.trim(),
       dni: formData.dni.trim(),
       position: formData.position,
@@ -224,12 +232,17 @@ export const StaffModule = () => {
     }
 
     try {
-      await api.post('/staff', payload);
+      const idem = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `idem-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+      await api.post('/staff', payload, { headers: { 'Idempotency-Key': idem } });
       setShowAddModal(false);
       notify(`Colaborador "${payload.full_name}" registrado exitosamente ${payload.email ? 'con credenciales de acceso activas.' : '.'}`);
       await loadStaff();
     } catch (err) {
-      describeError(err, 'registrar al colaborador');
+      if (err?.response?.status === 409) {
+        notify('Solicitud duplicada — el colaborador ya fue registrado (idempotencia).');
+      } else {
+        describeError(err, 'registrar al colaborador');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -733,17 +746,23 @@ export const StaffModule = () => {
 
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Sede / Cochera Asignada *</label>
-                <select
-                  value={formData.parking_id}
-                  onChange={(e) => setFormData({ ...formData, parking_id: Number(e.target.value) })}
-                  className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white"
-                >
-                  {establishments.map(est => (
-                    <option key={est.id} value={est.id}>
-                      {est.name} — {est.address?.slice(0, 40) || 'Sede'}
-                    </option>
-                  ))}
-                </select>
+                {validEstablishments.length === 0 ? (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-bold">
+                    No hay sedes registradas en el servidor. Crea una sede en Espacios & Plano antes de registrar personal.
+                  </div>
+                ) : (
+                  <select
+                    value={formData.parking_id}
+                    onChange={(e) => setFormData({ ...formData, parking_id: Number(e.target.value) })}
+                    className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white"
+                  >
+                    {validEstablishments.map(est => (
+                      <option key={est.id} value={est.id}>
+                        {est.name} — {est.address?.slice(0, 40) || 'Sede'}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 

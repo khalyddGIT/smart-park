@@ -162,11 +162,11 @@ class Staff(Base):
     id = Column(Integer, primary_key=True, index=True)
     parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
     full_name = Column(String(150), nullable=False)
-    dni = Column(String(20), nullable=False)
+    dni = Column(String(20), nullable=False, unique=True, index=True)
     position = Column(String(50), nullable=False)
     shift = Column(String(30), default="Mañana")
     status = Column(String(20), default="active")
-    email = Column(String(150), nullable=True)
+    email = Column(String(150), nullable=True, unique=True, index=True)
     security_pin = Column(String(20), nullable=True, default="1234")
     created_at = Column(DateTime, default=datetime.utcnow)
 

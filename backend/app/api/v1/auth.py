@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import secrets
 from datetime import datetime
 from pydantic import BaseModel

@@ -48,7 +48,15 @@ export const PersonalGaritaModule = () => {
       })));
     } catch {}
   };
-  useEffect(()=>{ fetchGaritaReservations(); const iv=setInterval(fetchGaritaReservations, 8000); return ()=>clearInterval(iv); },[currentEst?.id]);
+  useEffect(()=>{
+    fetchGaritaReservations();
+    const iv=setInterval(()=>{
+      if(document.visibilityState==='visible') fetchGaritaReservations();
+    }, 30000);
+    const onVis=()=>{ if(document.visibilityState==='visible') fetchGaritaReservations(); };
+    document.addEventListener('visibilitychange', onVis);
+    return ()=>{ clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
+  },[currentEst?.id]);
 
   const freeSlots = useMemo(()=> (currentEst?.elements||[]).filter(e=>e.type==='slot' && e.status==='free'), [currentEst]);
   const vehiclesInside = useMemo(()=>{

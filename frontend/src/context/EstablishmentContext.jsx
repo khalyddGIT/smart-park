@@ -543,9 +543,9 @@ export const EstablishmentProvider = ({ children }) => {
     fetchParkings();
     if (getAccessToken()) refreshMyReservations();
 
-    // Polling ligero: cocheras cada 20s, reservas cada 15s (solo con sesión)
-    const parkingsInterval = setInterval(fetchParkings, 20000);
-    const reservationsInterval = setInterval(() => { if (getAccessToken()) refreshMyReservations(); }, 15000);
+    // Polling ligero reducido para Railway edge (evita 429): cocheras 60s, reservas 30s, solo si pestaña visible
+    const parkingsInterval = setInterval(()=>{ if(document.visibilityState==='visible') fetchParkings(); }, 60000);
+    const reservationsInterval = setInterval(() => { if (getAccessToken() && document.visibilityState==='visible') refreshMyReservations(); }, 30000);
 
     // Refetch inmediato al volver a la pestaña (cambio de rol, edición en otra pestaña, etc.)
     const onFocus = () => { fetchParkings(); if (getAccessToken()) refreshMyReservations(); };

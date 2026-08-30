@@ -46,7 +46,7 @@ function parseCalibration(raw) {
   return null;
 }
 
-export const CameraMonitorModule = () => {
+export const CameraMonitorModule = ({ readOnly = false }) => {
   const { establishments, setEstablishments } = useEstablishments();
 
   const [selectedEstId, setSelectedEstId] = useState(() => {
@@ -507,15 +507,16 @@ export const CameraMonitorModule = () => {
                 {establishments.map((est) => (<option key={est.id} value={est.id} className="text-slate-900">{est.name}</option>))}
               </select>
             </div>
-            {mode === 'monitor' ? (
+            {!readOnly && (mode === 'monitor' ? (
               <Button type="button" onClick={() => setMode('edit')} className="h-9 rounded-xl bg-white text-slate-900 font-black text-xs gap-1.5 hover:bg-slate-100"><Pencil className="w-3.5 h-3.5" /> Editar zonas</Button>
             ) : (
               <Button type="button" onClick={handleSaveZones} className="h-9 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs gap-1.5 hover:bg-emerald-400"><Save className="w-3.5 h-3.5" /> Guardar zonas</Button>
-            )}
-            <Button type="button" variant="outline" onClick={() => setShowConfig((v) => !v)} className={`h-9 rounded-xl text-xs font-black gap-1.5 ${showConfig ? 'bg-white text-slate-900' : 'bg-slate-800 border-slate-700 text-white'}`}><Settings2 className="w-3.5 h-3.5" /> Cámara IP</Button>
+            ))}
+            {!readOnly && <Button type="button" variant="outline" onClick={() => setShowConfig((v) => !v)} className={`h-9 rounded-xl text-xs font-black gap-1.5 ${showConfig ? 'bg-white text-slate-900' : 'bg-slate-800 border-slate-700 text-white'}`}><Settings2 className="w-3.5 h-3.5" /> Cámara IP</Button>}
+            {readOnly && <span className="text-[10px] font-black tracking-widest text-slate-300 border border-white/20 rounded-full px-2 py-1">SOLO LECTURA</span>}
           </div>
         </div>
-        {showConfig && (
+        {!readOnly && showConfig && (
           <div className="bg-white rounded-2xl p-3 flex flex-col gap-2 text-slate-900">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black">URL MJPEG/JPEG de la sede · {currentEst?.name}</span>
@@ -534,6 +535,7 @@ export const CameraMonitorModule = () => {
         )}
       </div>
 
+      {!readOnly && (
       <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="text-xs font-black text-slate-900">FUENTE:</span>
@@ -576,6 +578,7 @@ export const CameraMonitorModule = () => {
           </Button>
         </div>
       </div>
+      )}
 
       <div className="bg-slate-950 rounded-[22px] border border-slate-800 shadow-xl overflow-hidden">
         <div className="px-4 py-3 flex items-center justify-between gap-2 bg-slate-900 border-b border-slate-800">
@@ -618,8 +621,8 @@ export const CameraMonitorModule = () => {
           {lastError && <div className="absolute bottom-3 left-3 right-3 sm:left-auto sm:right-3 sm:max-w-md bg-rose-950/90 backdrop-blur border border-rose-800 rounded-xl px-3 py-2 flex items-start gap-2 text-rose-100"><AlertTriangle className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" /><p className="text-xs font-medium leading-tight">{lastError}</p><button type="button" onClick={() => setLastError(null)} className="ml-auto p-1 hover:bg-white/10 rounded-lg"><X className="w-3.5 h-3.5" /></button></div>}
         </div>
 
-        {/* toolbar edición */}
-        {mode === 'edit' && (
+        {/* toolbar edición - oculta en solo lectura */}
+        {!readOnly && mode === 'edit' && (
           <div className="px-3 py-3 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center gap-2">
             <Button type="button" onClick={handleSaveZones} className="h-9 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs gap-1.5"><Save className="w-3.5 h-3.5" /> Guardar zonas</Button>
             <Button type="button" variant="outline" onClick={() => handleResize(10, 5)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-cyan-300 text-xs font-bold">+ TAM</Button>
@@ -660,8 +663,8 @@ export const CameraMonitorModule = () => {
       )}
 
       <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm p-4">
-        <h3 className="text-xs font-black tracking-widest text-slate-900 flex items-center gap-2 mb-3"><ListChecks className="w-4 h-4 text-emerald-500" /> ZONAS DE CÁMARA — {camZones.length} zonas (módulo aparte)</h3>
-        {selectedZoneIdx !== null && camZones[selectedZoneIdx] && (
+        <h3 className="text-xs font-black tracking-widest text-slate-900 flex items-center gap-2 mb-3"><ListChecks className="w-4 h-4 text-emerald-500" /> ZONAS DE CÁMARA — {camZones.length} zonas {readOnly && <span className="text-[10px] font-bold text-slate-400">(solo lectura)</span>}</h3>
+        {!readOnly && selectedZoneIdx !== null && camZones[selectedZoneIdx] && (
           <div className="mb-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-black text-slate-900 flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-amber-600" /> {camZones[selectedZoneIdx].code}</span>

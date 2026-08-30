@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
 import { useEstablishments } from './context/EstablishmentContext';
+import api from './services/api';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { LocalEstablishmentManager, FALLBACK_PARKING_IMAGE } from './components/LocalEstablishmentManager';
@@ -65,6 +66,19 @@ export const App = () => {
   const { establishments, occupySlot, createReservation, bookingError } = useEstablishments();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [bookingFeedback, setBookingFeedback] = useState(null);
+  const [isPersonalStaff, setIsPersonalStaff] = useState(false);
+  useEffect(() => {
+    if (role !== 'local' || !user?.email) { setIsPersonalStaff(false); return; }
+    if (['adminlocal@smartpark.com','superadmin@smartpark.com'].includes(user.email.toLowerCase())) { setIsPersonalStaff(false); return; }
+    api.get('/staff').then(r=>{
+      const list = Array.isArray(r.data)? r.data : [];
+      const match = list.find(s=> (s.email||'').toLowerCase()===user.email.toLowerCase());
+      if (match) {
+        const pos=(match.position||'').toLowerCase();
+        if (pos.includes('operador') || pos.includes('seguridad') || pos.includes('supervisor') || pos.includes('vigilante')) setIsPersonalStaff(true);
+      }
+    }).catch(()=>{});
+  }, [role, user?.email]);
 
   // Redirección segura entre vistas al cambiar de rol
   useEffect(() => {
@@ -599,19 +613,25 @@ export const App = () => {
           {/* VISTA ROL ADMIN LOCAL */}
           {role === 'local' && (
             <div className="space-y-6">
-              {(activeTab === 'dashboard' || activeTab === 'editor') && (
+              {(activeTab === 'dashboard' || activeTab === 'editor') && !isPersonalStaff && (
                 <LocalEstablishmentManager />
+              )}
+              {isPersonalStaff && (activeTab === 'dashboard' || activeTab === 'editor') && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-900 text-xs font-bold">
+                  Acceso restringido: el personal solo ve Garita y Tickets. Contacta al Admin Local para editar el plano.
+                </div>
               )}
               {activeTab === 'reservations' && <ReservationsModule />}
               {activeTab === 'profile' && <UserProfileModule />}
-              {(activeTab === 'anpr' || activeTab === 'garita') && <ANPRMonitor />}
-              {activeTab === 'cameras' && <CameraMonitorModule />}
+              {(activeTab === 'anpr' || activeTab === 'garita') && (isPersonalStaff ? <CameraMonitorModule readOnly /> : <ANPRMonitor />)}
+              {activeTab === 'cameras' && (isPersonalStaff ? <CameraMonitorModule readOnly /> : <CameraMonitorModule />)}
               {activeTab === 'incidents' && <IncidentsModule />}
-              {activeTab === 'staff' && <StaffModule />}
+              {activeTab === 'staff' && !isPersonalStaff && <StaffModule />}
+              {activeTab === 'staff' && isPersonalStaff && <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center text-xs text-slate-500">Solo el Admin Local gestiona el personal.</div>}
               {activeTab === 'audit' && <AuditLogsModule />}
               {activeTab === 'reviews' && <ReviewsModule />}
-              {activeTab === 'resiliency' && <ResiliencySimModule />}
-              {activeTab === 'reports' && <AnalyticsGlobalModule />}
+              {activeTab === 'resiliency' && !isPersonalStaff && <ResiliencySimModule />}
+              {activeTab === 'reports' && !isPersonalStaff && <AnalyticsGlobalModule />}
             </div>
           )}
 

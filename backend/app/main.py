@@ -77,6 +77,11 @@ async def startup_db():
                         ))
                     except Exception:
                         pass
+                # Fix: security_pin VARCHAR(20) -> VARCHAR(255) para hash (Postgres truncaba)
+                try:
+                    await conn.execute(_text("ALTER TABLE personal ALTER COLUMN security_pin TYPE VARCHAR(255)"))
+                except Exception:
+                    pass
     except Exception as e:
         import logging
         logging.warning(f"[smart-park] startup_db: no se pudo inicializar DB remota, continuando en modo degradado: {e}")

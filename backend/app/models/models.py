@@ -167,7 +167,7 @@ class Staff(Base):
     shift = Column(String(30), default="Mañana")
     status = Column(String(20), default="active")
     email = Column(String(150), nullable=True, unique=True, index=True)
-    security_pin = Column(String(20), nullable=True, default="1234")
+    security_pin = Column(String(255), nullable=True, default="1234")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Review(Base):

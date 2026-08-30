@@ -738,12 +738,12 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
     if len(incoming_codes) != len(set(incoming_codes)):
         raise HTTPException(status_code=422, detail="Códigos de cajones duplicados en el payload")
     
-    async with db.begin():
-        from sqlalchemy import delete
-        # Cajones con reserva ACTIVA (scheduled/active) NO se pueden borrar ni cambiar estado
+    from sqlalchemy import delete
+    # Cajones con reserva ACTIVA (scheduled/active) NO se pueden borrar ni cambiar estado
+    # Fix: no usar async with db.begin() porque la session ya puede estar en transacción implícita (autobegin en SQLAlchemy 2.0)
+    try:
         existing_slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
         existing_slots = existing_slots_res.scalars().all()
-        # Slots con reserva ACTIVA (scheduled/active) = protegidos
         slot_ids = [s.id for s in existing_slots]
         protected_slot_ids = set()
         if slot_ids:
@@ -754,12 +754,10 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
             protected_slot_ids = {row[0] for row in res.all()}
 
         await db.execute(delete(FloorPlanElement).where(FloorPlanElement.parking_id == parking_id))
-        # Borrar solo cajones huérfanos (sin reservas activas) cuyo código ya no viene
         incoming_codes = {s.code for s in sync_in.slots}
         for slot in existing_slots:
             if slot.id not in protected_slot_ids and slot.code not in incoming_codes:
                 await db.execute(delete(Slot).where(Slot.id == slot.id))
-        # Upsert por código: actualizar existentes (incluidos los protegidos, solo geometría), crear nuevos
         existing_by_code = {s.code: s for s in existing_slots}
         for s in sync_in.slots:
             existing = existing_by_code.get(s.code)
@@ -771,7 +769,6 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
                 existing.width = s.width
                 existing.height = s.height
                 existing.rotation = s.rotation
-                # NO pisar estado si tiene reserva activa (protected)
                 if existing.id not in protected_slot_ids:
                     existing.status = s.status or "free"
             else:
@@ -789,7 +786,11 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
             for e in sync_in.elements
         ]
         db.add_all(new_elems)
-        # commit ocurre en db.begin() context manager
+        await db.flush()
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
     
     await invalidate_parkings_cache()
     await realtime.broadcast("parkings:updated", {"parking_id": parking_id})

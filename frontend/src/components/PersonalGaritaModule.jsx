@@ -167,14 +167,36 @@ export const PersonalGaritaModule = () => {
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-bold text-slate-700">Cajón libre *</label>
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg font-mono">{freeSlots.length} libres</span>
+              <label className="text-xs font-bold text-slate-700">Mapa del parking — toca un cajón libre *</label>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg font-mono">{freeSlots.length} libres / {total}</span>
             </div>
-            {freeSlots.length===0 ? <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-bold text-center">Sin cajones libres en esta sede</div> : (
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-32 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
-                {freeSlots.map(s=> <button key={s.code} type="button" onClick={()=>setWalkInSlot(s.code)} className={`p-2 rounded-xl text-xs font-mono font-black border ${walkInSlot===s.code?'bg-slate-900 text-white border-slate-900 ring-2 ring-emerald-400':'bg-white text-slate-700 border-slate-200'}`}>{s.code}</button>)}
+            {/* Plano visual del parking para el trabajador */}
+            <div className="relative bg-[#0f172a] rounded-2xl border-2 border-slate-800 overflow-hidden p-2" style={{height: 340}}>
+              <div className="absolute inset-2 bg-[#1e293b] rounded-xl overflow-hidden">
+                <div style={{width: 1100, height: 700, transform: 'scale(0.31)', transformOrigin: 'top left'}} className="relative bg-[#12161f]">
+                  {(currentEst?.elements||[]).map(el=>{
+                    if(el.type==='slot'){
+                      const isFree=el.status==='free';
+                      const isSelected=walkInSlot===el.code;
+                      return (
+                        <button key={el.code||el.id} type="button" disabled={!isFree} onClick={()=> isFree && setWalkInSlot(el.code)}
+                          style={{left: el.x, top: el.y, width: el.w||60, height: el.h||100, transform: el.rot?`rotate(${el.rot}deg)`:undefined}}
+                          className={`absolute rounded-lg border-2 flex flex-col items-center justify-center text-[10px] font-mono font-black transition ${isSelected?'bg-emerald-500 text-white border-emerald-400 ring-2 ring-emerald-300 z-20': isFree?'bg-emerald-900/40 text-emerald-300 border-emerald-500/60 hover:bg-emerald-800/60':'bg-rose-900/40 text-rose-300 border-rose-500/50 opacity-60 cursor-not-allowed'}`}>
+                          <span>{el.code}</span>
+                          <span className="text-[8px]">{isFree?'LIBRE':'OCUPADO'}</span>
+                        </button>
+                      );
+                    }
+                    if(el.type==='wall') return <div key={el.id} style={{left: el.x, top: el.y, width: el.w, height: el.h}} className="absolute bg-slate-600 rounded-sm"/>;
+                    if(el.type==='road') return <div key={el.id} style={{left: el.x, top: el.y, width: el.w, height: el.h}} className="absolute bg-slate-800 border-y border-dashed border-amber-400/50 flex items-center justify-center text-[9px] font-bold text-amber-300">CARRIL</div>;
+                    if(el.type==='gate') return <div key={el.id} style={{left: el.x, top: el.y, width: el.w, height: el.h}} className="absolute bg-emerald-900 border border-emerald-500 rounded-lg flex items-center justify-center text-[8px] font-black text-emerald-300">GARITA</div>;
+                    return null;
+                  })}
+                </div>
               </div>
-            )}
+              {walkInSlot && <div className="absolute bottom-2 left-2 bg-emerald-500 text-white text-xs font-black px-3 py-1 rounded-full shadow">Seleccionado: {walkInSlot}</div>}
+            </div>
+            {freeSlots.length===0 && <div className="mt-2 p-2 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-bold text-center">Sin cajones libres</div>}
           </div>
           <div>
             <label className="text-xs font-bold text-slate-700 block mb-1">Nombre conductor (opcional)</label>

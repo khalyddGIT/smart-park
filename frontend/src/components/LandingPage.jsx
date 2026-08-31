@@ -540,25 +540,49 @@ export const LandingPage = ({
     <div
       ref={containerRef}
       style={{
-        background: 'linear-gradient(180deg, #F4F9F8 0%, #FBFDFC 35%, #F0F7F6 70%, #E8F4F2 100%)'
+        background: 'radial-gradient(ellipse 120% 80% at 50% -10%, #F0F9F8 0%, #FBFDFC 45%, #EBF5F3 85%, #E2F0ED 100%)'
       }}
       className="w-full min-h-screen text-[#111111] font-sans antialiased selection:bg-[#00827C] selection:text-white relative overflow-x-hidden"
     >
-      {/* 3. GRADIENT ANIMATION & PARALLAX FONDO */}
+      {/* 3. GRADIENT ANIMATION & PARALLAX FONDO MEJORADO */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Malla Neón Animada con Rotación sutil */}
+        <motion.div
+          animate={{
+            scale: [1, 1.08, 1],
+            opacity: [0.35, 0.55, 0.35]
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-gradient-to-r from-emerald-300/30 via-teal-200/40 to-cyan-300/30 rounded-full blur-[130px] transform-gpu"
+        />
+
+        {/* Orbe 1: Esmeralda Superior con Parallax */}
         <motion.div
           style={{ y: smoothBgOrb1 }}
-          className="absolute -top-32 -right-32 w-[550px] h-[550px] bg-gradient-to-br from-emerald-400/15 via-teal-300/10 to-transparent rounded-full blur-[140px] transform-gpu will-change-transform"
+          animate={{ rotate: [0, 360] }}
+          transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
+          className="absolute -top-32 -right-32 w-[600px] h-[600px] bg-gradient-to-br from-emerald-400/25 via-teal-300/20 to-transparent rounded-full blur-[140px] transform-gpu will-change-transform"
         />
+
+        {/* Orbe 2: Cyan Medio Izquierdo con Parallax */}
         <motion.div
           style={{ y: smoothBgOrb2 }}
-          className="absolute top-[40%] -left-40 w-[600px] h-[600px] bg-gradient-to-tr from-cyan-400/10 via-emerald-300/10 to-transparent rounded-full blur-[160px] transform-gpu will-change-transform"
+          animate={{ scale: [1, 1.12, 1] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-[35%] -left-48 w-[680px] h-[680px] bg-gradient-to-tr from-cyan-400/20 via-emerald-300/20 to-transparent rounded-full blur-[160px] transform-gpu will-change-transform"
         />
+
+        {/* Orbe 3: Esmeralda Profundo Inferior */}
         <motion.div
           style={{ y: smoothBgOrb3 }}
-          className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-gradient-to-tl from-[#004D49]/12 via-teal-400/8 to-transparent rounded-full blur-[150px] transform-gpu will-change-transform"
+          className="absolute bottom-10 right-10 w-[550px] h-[550px] bg-gradient-to-tl from-[#004D49]/20 via-teal-400/15 to-transparent rounded-full blur-[150px] transform-gpu will-change-transform"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#004D49_1px,transparent_1px),linear-gradient(to_bottom,#004D49_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.025]" />
+
+        {/* Matriz de Puntos de Alta Precisión (Dot Matrix Overlay) */}
+        <div className="absolute inset-0 bg-[radial-gradient(#004D49_1.2px,transparent_1.2px)] [background-size:24px_24px] opacity-[0.06]" />
+
+        {/* Cuadrícula sutil de ingeniería espacial */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#004D49_1px,transparent_1px),linear-gradient(to_bottom,#004D49_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,#000_80%,transparent_100%)] opacity-[0.035]" />
       </div>
 
       {/* Indicador elástico superior de scroll */}

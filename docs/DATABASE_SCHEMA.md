@@ -1,6 +1,6 @@
 # 🗄️ Documentación Oficial del Esquema de Base de Datos — SMART-PARK
 
-> **Motor:** `PostgreSQL 15 (Railway)` / `SQLite (dev)` · **ORM:** `SQLAlchemy 2.0` · **Tablas en español** · **v2026.08 — 12 tablas**
+> **Motor:** `PostgreSQL 15 (Railway)` / `SQLite (dev)` · **ORM:** `SQLAlchemy 2.0` · **Tablas en español** · **v2026.08 — 13 tablas** (verificadas en desplegado `SELECT tablename FROM pg_tables WHERE schemaname='public'`)
 
 Este documento detalla la estructura física, relacional y lógica actual de la base de datos de **Smart-Park**. Incluye todas las tablas visibles en `backend/app/models/models.py:31` y su `postgresql_schema.sql`. Migraciones ligeras se aplican en `backend/app/main.py:54` (`ALTER TABLE ... IF NOT EXISTS`).
 
@@ -56,7 +56,7 @@ erDiagram
 | `id` | `INTEGER` | `PK` | ID vehículo. |
 | `user_id` | `INTEGER` | `FK usuarios.id ON DELETE CASCADE` `INDEX` | Propietario. |
 | `license_plate` | `VARCHAR(20)` | `NOT NULL INDEX` | Placa `AYC-501`. |
-| `vehicle_type` | `VARCHAR(20)` | `DEFAULT 'auto'` `CHECK auto/moto/suv/truck/bike/pmr` | Tipo. |
+| `vehicle_type` | `VARCHAR(20)` | `DEFAULT 'auto'` `CHECK auto/moto/suv/truck/bike` | Tipo. |
 | `brand` | `VARCHAR(50)` | `NULLABLE` | Marca. |
 | `model` | `VARCHAR(50)` | `NULLABLE` | Modelo. |
 | `color` | `VARCHAR(30)` | `NULLABLE` | Color. |
@@ -92,7 +92,7 @@ erDiagram
 | `parking_id` | `INTEGER` | `FK estacionamientos.id CASCADE` | Sede. |
 | `code` | `VARCHAR(20)` | `NOT NULL` | `A-01` `B-02`. |
 | `floor_level` | `VARCHAR(20)` | `DEFAULT 'Piso 1'` | Piso. |
-| `slot_type` | `VARCHAR(20)` | `DEFAULT 'auto'` `CHECK` | `auto/moto/pmr` etc. |
+| `slot_type` | `VARCHAR(20)` | `DEFAULT 'auto'` `CHECK` | `auto/moto/suv/truck/bike`. |
 | `status` | `VARCHAR(20)` | `DEFAULT 'free'` `CHECK free/occupied/reserved/disabled` | Estado. |
 | `pos_x` | `INTEGER` | `DEFAULT 0` | X lienzo CAD `1100x700`. |
 | `pos_y` | `INTEGER` | `DEFAULT 0` | Y. |
@@ -241,4 +241,4 @@ sqlite3 smartpark_dev.db < backend/schema.sql
 
 **FKs `ON DELETE CASCADE`:** `vehiculos/user_id`, `plazas/parking_id`, `reservas/user_id/parking_id/slot_id`, `personal/parking_id`, etc.
 
-**Tamaño actual:** `12` tablas + `4` enums (`RoleEnum`, `VehicleTypeEnum`, `SlotStatusEnum`, `ReservationStatusEnum`).
+**Tamaño actual:** `13` tablas (`usuarios`, `vehiculos`, `estacionamientos`, `cameras_dispositivos`, `plazas`, `elementos_plano`, `reservas`, `personal`, `resenas`, `incidencias`, `pagos`, `solicitudes_afiliacion`, `configuracion_plataforma`) + `4` enums (`RoleEnum`, `VehicleTypeEnum`, `SlotStatusEnum`, `ReservationStatusEnum`).

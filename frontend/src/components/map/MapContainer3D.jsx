@@ -37,9 +37,9 @@ export const MapContainer3D = ({
   const cameraManagerRef = useRef(null);
   const routesManagerRef = useRef(null);
 
-  // Estados 3D
-  const [is3D, setIs3D] = useState(true);
-  const [isTerrainEnabled, setIsTerrainEnabled] = useState(true);
+  // Estados 3D (Carga inicial por defecto en vista 2D normal)
+  const [is3D, setIs3D] = useState(false);
+  const [isTerrainEnabled, setIsTerrainEnabled] = useState(false);
   const [isBuildingsEnabled, setIsBuildingsEnabled] = useState(true);
   const [isAtmosphereEnabled, setIsAtmosphereEnabled] = useState(true);
   const [mapLayer, setMapLayer] = useState(() => {
@@ -47,7 +47,7 @@ export const MapContainer3D = ({
     return (h >= 18 || h < 6) ? 'dark' : 'streets';
   });
   const [exaggeration, setExaggeration] = useState(1.5);
-  const [pitch, setPitch] = useState(62);
+  const [pitch, setPitch] = useState(0);
   const [activeRoute, setActiveRoute] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
 
@@ -55,7 +55,7 @@ export const MapContainer3D = ({
   const [filterType, setFilterType] = useState('all');
   const [filterPrice, setFilterPrice] = useState('all');
 
-  // Inicializar Mapbox GL JS 3D Engine Nativo
+  // Inicializar Mapbox GL JS 3D Engine Nativo (Vista 2D por defecto)
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     const mapboxgl = window.mapboxgl;
@@ -67,9 +67,9 @@ export const MapContainer3D = ({
       container: mapContainerRef.current,
       style: MAPBOX_STYLES[mapLayer] || MAPBOX_STYLES.streets,
       center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
-      zoom: AYACUCHO_CENTER.zoom,
-      pitch: AYACUCHO_CENTER.pitch,
-      bearing: AYACUCHO_CENTER.bearing,
+      zoom: 15.8,
+      pitch: 0,
+      bearing: 0,
       antialias: true
     });
 
@@ -133,10 +133,14 @@ export const MapContainer3D = ({
     if (!cameraManagerRef.current) return;
     if (is3D) {
       cameraManagerRef.current.enable2DView();
+      if (terrainManagerRef.current) terrainManagerRef.current.disableTerrain();
+      setIsTerrainEnabled(false);
       setPitch(0);
       setIs3D(false);
     } else {
       cameraManagerRef.current.enable3DView();
+      if (terrainManagerRef.current) terrainManagerRef.current.enableTerrain(exaggeration);
+      setIsTerrainEnabled(true);
       setPitch(65);
       setIs3D(true);
     }

@@ -11,7 +11,7 @@ export class MapTerrainManager {
   }
 
   // Inicializar fuente DEM de elevación raster y terreno 3D
-  setupTerrain() {
+  setupTerrain(enableImmediately = false) {
     if (!this.map) return;
 
     if (!this.map.getSource(TERRAIN_SOURCE.id)) {
@@ -23,7 +23,11 @@ export class MapTerrainManager {
       });
     }
 
-    this.enableTerrain(this.exaggeration);
+    if (enableImmediately) {
+      this.enableTerrain(this.exaggeration);
+    } else {
+      this.disableTerrain();
+    }
     this.setupAtmosphereAndSky('day');
   }
 

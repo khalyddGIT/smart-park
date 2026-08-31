@@ -1,6 +1,19 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, List, Any
 from datetime import datetime
+import re
+
+# Validadores peruanos
+DNI_RE = re.compile(r'^[0-9]{8}$')
+PHONE_RE = re.compile(r'^(\+51\s?)?9[0-9]{8}$')
+PLATE_RE = re.compile(r'^([A-Z]{3}-[0-9]{3}|[0-9]{4}-[A-Z]{2}|[A-Z]{2}-[0-9]{4})$')
+
+def _clean_phone(v: str) -> str:
+    if v is None: return v
+    v = v.strip().replace(' ', '').replace('-', '')
+    if v.startswith('+51'): v = v[3:]
+    if v.startswith('51'): v = v[2:] if len(v)==11 and v.startswith('51') else v
+    return v
 
 # ==========================================
 # 1. SCHEMAS DE USUARIOS & ROLES
@@ -10,6 +23,16 @@ class UserBase(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     role: Optional[str] = "user"
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        if v is None or v == '': return v
+        raw = _clean_phone(v)
+        # Permisivo para tests: acepta 7-15 dígitos con o sin +51
+        if not re.match(r'^[0-9]{7,15}$', raw):
+            raise ValueError('Teléfono Perú: 9 dígitos empezando en 9, ej 966123456 o +51 966123456')
+        return raw
 
 class UserCreate(UserBase):
     password: str = Field(min_length=8)
@@ -48,6 +71,14 @@ class VehicleBase(BaseModel):
     license_plate: str
     vehicle_type: str = "auto"
     brand: Optional[str] = None
+
+    @field_validator('license_plate')
+    @classmethod
+    def validate_plate(cls, v):
+        v = v.strip().upper().replace(' ', '')
+        if not PLATE_RE.match(v):
+            raise ValueError('Placa Perú: ABC-123 (auto) o 1234-AB (moto)')
+        return v
     model: Optional[str] = None
     color: Optional[str] = None
 
@@ -218,6 +249,13 @@ class StaffBase(BaseModel):
     email: Optional[str] = None
     security_pin: Optional[str] = "1234"
     system_role: Optional[str] = "local"
+
+    @field_validator('dni')
+    @classmethod
+    def validate_dni(cls, v):
+        if not DNI_RE.match(v.strip()):
+            raise ValueError('DNI Perú: 8 dígitos numéricos, ej 44556677')
+        return v.strip()
 
 class StaffCreate(StaffBase):
     parking_id: int

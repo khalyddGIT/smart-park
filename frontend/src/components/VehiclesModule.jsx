@@ -281,6 +281,9 @@ export const VehiclesModule = () => {
   const handleSaveCreate = async (e) => {
     e.preventDefault();
     if (!formData.license_plate) return;
+    const plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
+    const plateOk = /^([A-Z]{3}-[0-9]{3}|[0-9]{4}-[A-Z]{2}|[A-Z]{2}-[0-9]{4})$/.test(plateClean);
+    if(!plateOk){ showToast('Placa Perú: ABC-123 (auto) o 1234-AB (moto)'); return; }
     let img = formData.imageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800';
     const plate = formData.license_plate.toUpperCase().trim();
     
@@ -338,6 +341,9 @@ export const VehiclesModule = () => {
   const handleSaveEdit = (e) => {
     e.preventDefault();
     if (!selectedVehicle) return;
+    const plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
+    const plateOk = /^([A-Z]{3}-[0-9]{3}|[0-9]{4}-[A-Z]{2}|[A-Z]{2}-[0-9]{4})$/.test(plateClean);
+    if(!plateOk){ showToast('Placa Perú: ABC-123 (auto) o 1234-AB (moto)'); return; }
 
     const updated = vehicles.map(v => v.id === selectedVehicle.id ? {
       ...v,

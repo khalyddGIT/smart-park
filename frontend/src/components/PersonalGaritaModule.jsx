@@ -8,7 +8,7 @@ import { AutoFitFloorPlan } from './AutoFitFloorPlan';
 import api from '../services/api';
 
 export const PersonalGaritaModule = () => {
-  const { establishments, reservations, createReservation, checkInReservation, checkOutReservation, ensureFloorPlan } = useEstablishments();
+  const { establishments, reservations, createReservation, checkInReservation, checkOutReservation, ensureFloorPlan, fetchParkings } = useEstablishments();
   const { user } = useAuth();
   const [assignedParkingId, setAssignedParkingId] = useState(null);
   useEffect(()=>{
@@ -85,6 +85,7 @@ export const PersonalGaritaModule = () => {
     setSlot(''); setPlate('');
     setTimeout(()=>setFeedback(''),3000);
     fetchGaritaReservations();
+    try { await fetchParkings(); await ensureFloorPlan(String(currentEst.id)); } catch {}
   };
 
   const handleSalida = async (code) => {
@@ -92,6 +93,7 @@ export const PersonalGaritaModule = () => {
     setFeedback(r.message || 'Salida OK');
     setTimeout(()=>setFeedback(''),3000);
     fetchGaritaReservations();
+    try { await fetchParkings(); await ensureFloorPlan(String(currentEst.id)); } catch {}
   };
 
   return (

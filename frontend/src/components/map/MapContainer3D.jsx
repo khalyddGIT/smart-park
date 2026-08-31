@@ -22,7 +22,9 @@ import {
   MapPin,
   Footprints,
   Map,
-  Layers 
+  Layers,
+  Volume2,
+  VolumeX 
 } from 'lucide-react';
 import { FALLBACK_PARKING_IMAGE } from '../LocalEstablishmentManager';
 import { useAuth } from '../../context/AuthContext';
@@ -59,6 +61,7 @@ export const MapContainer3D = ({
   const [pitch, setPitch] = useState(0);
   const [activeRoute, setActiveRoute] = useState(null);
   const [targetDest, setTargetDest] = useState(null);
+  const [isMuted, setIsMuted] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
 
   // Filtros Rápidos (Feature 5)
@@ -421,9 +424,9 @@ export const MapContainer3D = ({
         </div>
       </div>
 
-      {/* Tarjeta Turn-by-Turn Flotante Superior (Giro a Giro en Tiempo Real) */}
+      {/* Tarjeta Turn-by-Turn Flotante Superior (Giro a Giro en Tiempo Real con Indicaciones por Voz) */}
       {activeRoute && activeRoute.currentStep && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-5 py-2.5 rounded-2xl shadow-2xl border border-cyan-500/40 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-top-4 duration-300 max-w-[92vw]">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-cyan-500/40 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-top-4 duration-300 max-w-[92vw]">
           <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/40">
             <Navigation className="w-5 h-5 stroke-[2.5]" />
           </div>
@@ -434,11 +437,31 @@ export const MapContainer3D = ({
             </span>
             <span className="font-extrabold text-slate-100 text-sm">{activeRoute.currentStep.instruction}</span>
           </div>
-          {activeRoute.currentStep.distance > 0 && (
-            <span className="font-mono font-black text-xs text-emerald-400 bg-emerald-950/90 px-2 py-1 rounded-lg border border-emerald-800 shrink-0">
-              {activeRoute.currentStep.distance} m
-            </span>
-          )}
+
+          <div className="flex items-center space-x-2 shrink-0 border-l border-slate-800 pl-3">
+            {activeRoute.currentStep.distance > 0 && (
+              <span className="font-mono font-black text-xs text-emerald-400 bg-emerald-950/90 px-2 py-1 rounded-lg border border-emerald-800">
+                {activeRoute.currentStep.distance} m
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (routesManagerRef.current) {
+                  const muted = routesManagerRef.current.toggleMute();
+                  setIsMuted(muted);
+                }
+              }}
+              className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                isMuted 
+                  ? 'bg-rose-950/80 border-rose-800 text-rose-400' 
+                  : 'bg-emerald-950/80 border-emerald-800 text-emerald-400'
+              }`}
+              title={isMuted ? 'Activar voz GPS' : 'Silenciar voz GPS'}
+            >
+              {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
       )}
 

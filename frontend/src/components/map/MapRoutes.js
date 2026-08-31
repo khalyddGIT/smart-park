@@ -1,4 +1,4 @@
-// Módulo Avanzado de Rutas 3D, GPS en Tiempo Real, Turn-by-Turn y AnimaciónNeón en Mapbox GL JS v3
+// Módulo Avanzado de Rutas 3D, GPS en Tiempo Real, Framing fitBounds, Indicador Vocal y Neón en Mapbox GL JS v3
 
 import { MAPBOX_TOKEN } from './mapConfig';
 
@@ -10,13 +10,16 @@ export class MapRoutesManager {
     this.pulseLayerId = 'mapbox-3d-route-pulse';
     this.vehicleMarker = null;
     this.userGpsMarker = null;
+    this.destPinMarker = null;
     this.watchId = null;
     this.animFrameId = null;
     this.dashOffset = 0;
     this.dashAnimationId = null;
+    this.lastSpokenStep = null;
+    this.isMuted = false;
   }
 
-  // Trazar ruta 3D interactiva con Turn-by-Turn e instrucciones usando Mapbox Directions API
+  // Trazar ruta 3D interactiva con Turn-by-Turn, encuadre fitBounds e voz usando Mapbox Directions API
   async drawRoute(originLngLat, destLngLat, destName, profile = 'driving') {
     if (!this.map) return null;
 
@@ -93,6 +96,24 @@ export class MapRoutesManager {
 
       this.startPulseAnimation();
 
+      // Marcador Neón en la Cochera Destino
+      const mapboxgl = window.mapboxgl;
+      if (mapboxgl) {
+        const destEl = document.createElement('div');
+        destEl.className = 'dest-neon-flag-pin';
+        destEl.innerHTML = `
+          <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+            <span style="position: absolute; width: 32px; height: 32px; border-radius: 50%; background: #06b6d4; opacity: 0.35; animation: ping 2s infinite;"></span>
+            <div style="background: #0f172a; color: #06b6d4; padding: 6px; border-radius: 50%; border: 2px solid #06b6d4; box-shadow: 0 8px 20px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+            </div>
+          </div>
+        `;
+        this.destPinMarker = new mapboxgl.Marker({ element: destEl })
+          .setLngLat(destLngLat)
+          .addTo(this.map);
+      }
+
       // Extraer maniobras y pasos Turn-by-Turn
       const steps = (route.legs[0]?.steps || []).map(s => ({
         instruction: s.maneuver?.instruction || 'Sigue la ruta principal',
@@ -102,9 +123,26 @@ export class MapRoutesManager {
         location: s.maneuver?.location || originLngLat
       }));
 
-      // Animar vehículo recorriendo el camino
+      // Encuadre de Cámara automático (fitBounds) con perspectiva 3D
       const coords = route.geometry.coordinates;
+      if (mapboxgl && coords.length > 0) {
+        const bounds = coords.reduce((b, coord) => b.extend(coord), new mapboxgl.LngLatBounds(coords[0], coords[0]));
+        this.map.fitBounds(bounds, {
+          padding: { top: 75, bottom: 85, left: 65, right: 65 },
+          pitch: 48,
+          duration: 1300
+        });
+      }
+
+      // Animar vehículo recorriendo el camino
       this.animateVehicleOnRoute(coords);
+
+      // Reproducir por voz la primera maniobra si no está silenciado
+      const currentStep = steps[0] || { instruction: 'Avanza hacia la cochera', distance: 100 };
+      if (currentStep.instruction && this.lastSpokenStep !== currentStep.instruction && !this.isMuted) {
+        this.speakInstruction(currentStep.instruction);
+        this.lastSpokenStep = currentStep.instruction;
+      }
 
       const distanceKm = (route.distance / 1000).toFixed(1);
       const durationMin = Math.max(1, Math.round(route.duration / 60));
@@ -114,7 +152,7 @@ export class MapRoutesManager {
         distanceKm,
         durationMin,
         steps,
-        currentStep: steps[0] || { instruction: 'Avanza hacia la cochera', distance: 100 },
+        currentStep,
         coordinates: coords,
         profile
       };
@@ -122,6 +160,27 @@ export class MapRoutesManager {
       console.warn('Mapbox 3D directions error:', err);
       return null;
     }
+  }
+
+  // Locución de voz para la maniobra (Web Speech API)
+  speakInstruction(text) {
+    if (!('speechSynthesis' in window) || !text) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'es-PE';
+      u.rate = 1.0;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  // Alternar silencio de audio de navegación
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    if (this.isMuted && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    return this.isMuted;
   }
 
   // Animación de pulso continuo sobre la polilínea 3D
@@ -237,6 +296,10 @@ export class MapRoutesManager {
   clearRoute() {
     this.stopRealtimeTracking();
 
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
     if (!this.map) return;
 
     if (this.dashAnimationId) {
@@ -252,6 +315,11 @@ export class MapRoutesManager {
     if (this.vehicleMarker) {
       this.vehicleMarker.remove();
       this.vehicleMarker = null;
+    }
+
+    if (this.destPinMarker) {
+      this.destPinMarker.remove();
+      this.destPinMarker = null;
     }
 
     if (this.map.getLayer(this.pulseLayerId)) {

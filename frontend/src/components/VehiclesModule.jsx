@@ -282,8 +282,8 @@ export const VehiclesModule = () => {
     e.preventDefault();
     if (!formData.license_plate) return;
     const plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
-    const plateOk = /^([A-Z]{3}-[0-9]{3}|[0-9]{4}-[A-Z]{2}|[A-Z]{2}-[0-9]{4})$/.test(plateClean);
-    if(!plateOk){ showToast('Placa Perú: ABC-123 (auto) o 1234-AB (moto)'); return; }
+    const plateOk = /^[A-Z0-9]{2,4}-?[A-Z0-9]{2,4}$/i.test(plateClean);
+    if (!plateOk) { showToast('Ingresa una placa válida (ej: ABC-123, ABC123, A1B-234 o 1234-AB)'); return; }
     let img = formData.imageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800';
     const plate = formData.license_plate.toUpperCase().trim();
     
@@ -292,9 +292,9 @@ export const VehiclesModule = () => {
       try {
         const created = await apiCreateVehicle({ 
           license_plate: plate, 
-          vehicle_type: formData.vehicle_type, 
-          brand: formData.brand.trim(), 
-          model: formData.model.trim(), 
+          vehicle_type: formData.vehicle_type || 'auto', 
+          brand: formData.brand.trim() || 'Toyota', 
+          model: formData.model.trim() || 'Corolla', 
           color: formData.color.trim() || 'Gris' 
         });
         const newObj = { 
@@ -314,17 +314,19 @@ export const VehiclesModule = () => {
         showToast(`✓ Vehículo ${newObj.license_plate} registrado con éxito.`);
         return;
       } catch (err) {
-        const msg = err?.response?.data?.detail || err.message;
-        if (msg?.includes('ya se encuentra')) { showToast('Placa ya registrada en sistema'); return; }
-        console.warn('Fallback localStorage', msg);
+        const msg = err?.response?.data?.detail;
+        const msgText = Array.isArray(msg) ? msg[0]?.msg : (typeof msg === 'string' ? msg : err.message);
+        if (msgText?.includes('ya se encuentra')) { showToast('Esta placa ya se encuentra registrada en el sistema'); return; }
+        showToast(`✕ Error al registrar vehículo: ${msgText || 'Revisa los datos ingresados'}`);
+        return;
       }
     }
     const newObj = { 
       id: Date.now(), 
       license_plate: plate, 
-      vehicle_type: formData.vehicle_type, 
-      brand: formData.brand.trim(), 
-      model: formData.model.trim(), 
+      vehicle_type: formData.vehicle_type || 'auto', 
+      brand: formData.brand.trim() || 'Toyota', 
+      model: formData.model.trim() || 'Corolla', 
       year: formData.year || '2023', 
       color: formData.color.trim() || 'Gris', 
       notes: formData.notes,

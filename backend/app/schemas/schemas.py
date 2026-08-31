@@ -3,10 +3,10 @@ from typing import Optional, List, Any
 from datetime import datetime
 import re
 
-# Validadores peruanos
+# Validadores peruanos (placas de autos/motos con o sin guión, alfanuméricas)
 DNI_RE = re.compile(r'^[0-9]{8}$')
 PHONE_RE = re.compile(r'^(\+51\s?)?9[0-9]{8}$')
-PLATE_RE = re.compile(r'^([A-Z]{3}-[0-9]{3}|[0-9]{4}-[A-Z]{2}|[A-Z]{2}-[0-9]{4})$')
+PLATE_RE = re.compile(r'^[A-Z0-9]{2,4}[- ]?[A-Z0-9]{2,4}$', re.IGNORECASE)
 
 def _clean_phone(v: str) -> str:
     if v is None: return v

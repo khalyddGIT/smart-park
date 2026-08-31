@@ -7,11 +7,10 @@ import {
   RotateCw, 
   Compass, 
   Sliders, 
-  Maximize2, 
-  Eye,
   Building2,
   Mountain,
-  Cloud
+  Map,
+  X
 } from 'lucide-react';
 
 export const MapControlPanel = ({
@@ -54,13 +53,14 @@ export const MapControlPanel = ({
         <button
           type="button"
           onClick={onToggle3D}
-          className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
             is3D 
               ? 'bg-emerald-500 text-white shadow-md ring-2 ring-emerald-400/50 scale-105' 
               : 'bg-slate-800 text-slate-400 hover:text-white'
           }`}
         >
-          {is3D ? '🏔️ VISTA 3D' : '🗺️ VISTA 2D'}
+          {is3D ? <Mountain className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />}
+          <span>{is3D ? 'VISTA 3D' : 'VISTA 2D'}</span>
         </button>
       </div>
 
@@ -74,9 +74,9 @@ export const MapControlPanel = ({
             </span>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-slate-400 hover:text-white text-xs font-mono font-bold"
+              className="text-slate-400 hover:text-white p-1 rounded-md"
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
 
@@ -112,24 +112,28 @@ export const MapControlPanel = ({
             </label>
             <div className="grid grid-cols-3 gap-1.5">
               {[
-                { id: 'streets', name: 'Calles' },
-                { id: 'dark', name: '🌙 Noche' },
-                { id: 'satellite', name: 'Satélite' },
-                { id: 'outdoors', name: 'Outdoors' },
-                { id: 'light', name: 'Claro' }
-              ].map((st) => (
-                <button
-                  key={st.id}
-                  onClick={() => onChangeLayer(st.id)}
-                  className={`px-2 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                    mapLayer === st.id
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-slate-800/80 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {st.name}
-                </button>
-              ))}
+                { id: 'streets', name: 'Calles', icon: Map },
+                { id: 'dark', name: 'Noche', icon: Moon },
+                { id: 'satellite', name: 'Satélite', icon: Layers },
+                { id: 'outdoors', name: 'Outdoors', icon: Mountain },
+                { id: 'light', name: 'Claro', icon: Sun }
+              ].map((st) => {
+                const IconComponent = st.icon;
+                return (
+                  <button
+                    key={st.id}
+                    onClick={() => onChangeLayer(st.id)}
+                    className={`px-2 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center justify-center gap-1 ${
+                      mapLayer === st.id
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-slate-800/80 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <IconComponent className="w-3 h-3" />
+                    <span>{st.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

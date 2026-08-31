@@ -10,7 +10,16 @@ import { MapBuildingsManager } from './MapBuildings';
 import { MapCameraManager } from './MapCamera';
 import { MapRoutesManager } from './MapRoutes';
 import { MapControlPanel } from './MapControlPanel';
-import { Compass, LocateFixed } from 'lucide-react';
+import { 
+  Compass, 
+  Car, 
+  Bike, 
+  Truck, 
+  Navigation, 
+  Building2, 
+  X, 
+  MapPin 
+} from 'lucide-react';
 import { FALLBACK_PARKING_IMAGE } from '../LocalEstablishmentManager';
 
 export const MapContainer3D = ({ 
@@ -41,7 +50,6 @@ export const MapContainer3D = ({
   const [pitch, setPitch] = useState(62);
   const [activeRoute, setActiveRoute] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
-  const [locatingUser, setLocatingUser] = useState(false);
 
   // Filtros Rápidos (Feature 5)
   const [filterType, setFilterType] = useState('all');
@@ -207,9 +215,8 @@ export const MapContainer3D = ({
 
       const elements = p.elements || [];
       const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
-      const totalSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
-      const isSelected = String(selectedParkingId) === String(p.id);
       const rateFormatted = `S/ ${Number(p.rate || 4).toFixed(2)}`;
+      const isSelected = String(selectedParkingId) === String(p.id);
 
       const el = document.createElement('div');
       el.className = `marker-3d-pin cursor-pointer transition-all duration-200 ${isSelected ? 'scale-110 z-30' : 'z-10'}`;
@@ -228,7 +235,7 @@ export const MapContainer3D = ({
         .setLngLat(coords)
         .addTo(map);
 
-      // Card Popup 3D
+      // Card Popup 3D con SVG vectoriales en lugar de emoticons
       const popupContent = document.createElement('div');
       popupContent.innerHTML = `
         <div style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; min-width: 240px; padding: 4px;">
@@ -241,8 +248,13 @@ export const MapContainer3D = ({
           <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">${p.address}</div>
           
           <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-            <button id="btn-3d-route-${p.id}" style="flex: 1; background: #0284c7; color: white; border: none; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">🛣️ Ruta 3D</button>
-            <button id="btn-3d-select-${p.id}" style="flex: 1; background: #0f172a; color: white; border: none; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Ver Plano</button>
+            <button id="btn-3d-route-${p.id}" style="flex: 1; background: #0284c7; color: white; border: none; padding: 7px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              <span>Ruta 3D</span>
+            </button>
+            <button id="btn-3d-select-${p.id}" style="flex: 1; background: #0f172a; color: white; border: none; padding: 7px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <span>Ver Plano</span>
+            </button>
           </div>
         </div>
       `;
@@ -298,29 +310,33 @@ export const MapContainer3D = ({
         onResetCamera={() => cameraManagerRef.current && cameraManagerRef.current.resetCamera()}
       />
 
-      {/* Filtros Rápidos (Feature 5) */}
+      {/* Filtros Rápidos (Feature 5) con Iconos SVG */}
       <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2 pointer-events-none max-w-[calc(100%-340px)]">
         <div className="pointer-events-auto flex items-center space-x-1 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 text-white text-xs font-bold shadow-2xl">
           <span className="text-slate-400 text-[10px] uppercase tracking-wider px-1">Vehículo:</span>
           {[
-            { id: 'all', label: 'Todos' },
-            { id: 'auto', label: 'Auto 🚗' },
-            { id: 'moto', label: 'Moto 🏍️' },
-            { id: 'suv', label: 'SUV 🚙' }
-          ].map(type => (
-            <button
-              key={type.id}
-              type="button"
-              onClick={() => setFilterType(type.id)}
-              className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
-                filterType === type.id
-                  ? 'bg-emerald-600 text-white font-black shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {type.label}
-            </button>
-          ))}
+            { id: 'all', label: 'Todos', icon: null },
+            { id: 'auto', label: 'Auto', icon: Car },
+            { id: 'moto', label: 'Moto', icon: Bike },
+            { id: 'suv', label: 'SUV', icon: Truck }
+          ].map(type => {
+            const IconComp = type.icon;
+            return (
+              <button
+                key={type.id}
+                type="button"
+                onClick={() => setFilterType(type.id)}
+                className={`px-2 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                  filterType === type.id
+                    ? 'bg-emerald-600 text-white font-black shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {IconComp && <IconComp className="w-3.5 h-3.5" />}
+                <span>{type.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -328,8 +344,12 @@ export const MapContainer3D = ({
       {selectedBuilding && (
         <div className="absolute top-16 left-4 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl border border-slate-800 shadow-2xl w-64 text-xs space-y-1.5 animate-in fade-in slide-in-from-left-4 duration-200">
           <div className="flex items-center justify-between border-b border-slate-800 pb-1">
-            <strong className="text-emerald-400 font-bold">🏢 Edificación 3D</strong>
-            <button onClick={() => setSelectedBuilding(null)} className="text-slate-400 hover:text-white">✕</button>
+            <strong className="text-emerald-400 font-bold flex items-center gap-1.5">
+              <Building2 className="w-4 h-4" /> Edificación 3D
+            </strong>
+            <button onClick={() => setSelectedBuilding(null)} className="text-slate-400 hover:text-white p-1">
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
           <div><strong className="text-slate-300">Nombre:</strong> {selectedBuilding.name}</div>
           <div><strong className="text-slate-300">Altura Real:</strong> {selectedBuilding.height}</div>
@@ -343,6 +363,7 @@ export const MapContainer3D = ({
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-[92vw]">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+            <Navigation className="w-4 h-4 text-cyan-400" />
             <span className="font-bold text-slate-200">
               Ruta 3D a <strong className="text-white">{activeRoute.destinationName}</strong>:
             </span>
@@ -353,9 +374,10 @@ export const MapContainer3D = ({
           <button
             type="button"
             onClick={handleClearRoute}
-            className="px-2.5 py-1 bg-slate-800 hover:bg-rose-900 text-slate-300 hover:text-white rounded-lg font-bold text-[11px] transition cursor-pointer border border-slate-700"
+            className="px-2.5 py-1 bg-slate-800 hover:bg-rose-900 text-slate-300 hover:text-white rounded-lg font-bold text-[11px] transition cursor-pointer border border-slate-700 flex items-center gap-1"
           >
-            ✕ Limpiar
+            <X className="w-3 h-3" />
+            <span>Limpiar</span>
           </button>
         </div>
       )}

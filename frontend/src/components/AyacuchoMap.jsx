@@ -35,6 +35,17 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
   // Estado para Feature 5: Vista 3D inclinada en perspectiva
   const [is3D, setIs3D] = useState(false);
 
+  // Menú flotante expandible con animación auto-colapsable
+  const [showLayerMenu, setShowLayerMenu] = useState(false);
+
+  useEffect(() => {
+    if (!showLayerMenu) return;
+    const timer = setTimeout(() => {
+      setShowLayerMenu(false);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [showLayerMenu]);
+
   const [tileLayerInstance, setTileLayerInstance] = useState(null);
   const [locatingUser, setLocatingUser] = useState(false);
 
@@ -332,62 +343,76 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       {/* Controles Flotantes Superiores con z-10 */}
       <div className="absolute top-4 right-4 z-10 flex items-center justify-end pointer-events-none">
         
-        {/* Segmented Layer Toggle (Calles / Noche / Satélite / 3D) & GPS */}
-        <div className="pointer-events-auto flex items-center space-x-2 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200 shadow-lg">
+        {/* Menú Flotante Expandible Auto-Colapsable (Expandable Floating Action Pill) */}
+        <div className="pointer-events-auto flex items-center bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200 shadow-lg transition-all duration-300">
           
-          <div className="flex items-center space-x-1">
+          {!showLayerMenu ? (
+            /* Botón compacto colapsado con icono Layers */
             <button
               type="button"
-              onClick={() => toggleMapLayer('streets')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
-                mapLayer === 'streets'
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
+              onClick={() => setShowLayerMenu(true)}
+              className="flex items-center space-x-2 px-2.5 py-1 text-xs font-bold text-slate-800 hover:text-emerald-600 transition-colors cursor-pointer"
             >
-              Calles
+              <Layers className="w-4 h-4 text-emerald-600" />
+              <span className="capitalize">{mapLayer === 'dark' ? '🌙 Noche' : (mapLayer === 'satellite' ? 'Satélite' : 'Calles')}</span>
+              {is3D && <span className="bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded font-mono font-black">3D</span>}
             </button>
-            <button
-              type="button"
-              onClick={() => toggleMapLayer('dark')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1 ${
-                mapLayer === 'dark'
-                  ? 'bg-slate-900 text-indigo-300 border border-indigo-700/60 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              <span>🌙 Noche</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleMapLayer('satellite')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
-                mapLayer === 'satellite'
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              Satélite
-            </button>
-          </div>
+          ) : (
+            /* Menú desplegado con animación suave fade & slide-in */
+            <div className="flex items-center space-x-1 animate-in fade-in slide-in-from-right-4 duration-200">
+              <button
+                type="button"
+                onClick={() => { toggleMapLayer('streets'); setShowLayerMenu(false); }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer ${
+                  mapLayer === 'streets'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Calles
+              </button>
+              <button
+                type="button"
+                onClick={() => { toggleMapLayer('dark'); setShowLayerMenu(false); }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer flex items-center gap-1 ${
+                  mapLayer === 'dark'
+                    ? 'bg-slate-900 text-indigo-300 border border-indigo-700/60 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <span>🌙 Noche</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { toggleMapLayer('satellite'); setShowLayerMenu(false); }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer ${
+                  mapLayer === 'satellite'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Satélite
+              </button>
 
-          <div className="w-[1px] h-4 bg-slate-200" />
+              <div className="w-[1px] h-4 bg-slate-200" />
 
-          {/* Toggle Vista 3D */}
-          <button
-            type="button"
-            onClick={() => setIs3D(!is3D)}
-            title="Conmutar perspectiva 3D"
-            className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
-              is3D 
-                ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/50 scale-105' 
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            3D
-          </button>
+              {/* Toggle Vista 3D */}
+              <button
+                type="button"
+                onClick={() => { setIs3D(!is3D); setShowLayerMenu(false); }}
+                title="Conmutar perspectiva 3D"
+                className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  is3D 
+                    ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/50 scale-105' 
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                3D
+              </button>
+            </div>
+          )}
 
-          <div className="w-[1px] h-4 bg-slate-200" />
+          <div className="w-[1px] h-4 bg-slate-200 mx-1" />
 
           {/* Centrar Plaza Mayor */}
           <button

@@ -581,11 +581,6 @@ export const LandingPage = ({
 
       </div>
 
-      {/* Indicador elástico superior de scroll */}
-      <motion.div
-        className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-400 to-[#004D49] z-[100] origin-left shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-        style={{ scaleX }}
-      />
 
       {/* =========================================================================
           1. HEADER FLOTANTE ULTRA-PREMIUM

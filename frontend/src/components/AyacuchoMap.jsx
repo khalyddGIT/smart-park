@@ -26,11 +26,19 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
 
-  const [mapLayer, setMapLayer] = useState('streets'); // 'streets' | 'satellite'
+  // Auto-detección de horario nocturno (18:00 a 06:00) para Feature 4
+  const [mapLayer, setMapLayer] = useState(() => {
+    const h = new Date().getHours();
+    return (h >= 18 || h < 6) ? 'dark' : 'streets';
+  }); // 'streets' | 'dark' | 'satellite'
+
+  // Estado para Feature 5: Vista 3D inclinada en perspectiva
+  const [is3D, setIs3D] = useState(false);
+
   const [tileLayerInstance, setTileLayerInstance] = useState(null);
   const [locatingUser, setLocatingUser] = useState(false);
 
-  // Inicializar Leaflet con capa Mapbox Streets HD
+  // Inicializar Leaflet con capa Mapbox Streets / Dark / Satélite HD
   useEffect(() => {
     if (!window.L || !mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -44,8 +52,12 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       attributionControl: false
     });
 
-    // Capa HD Mapbox Streets v12
-    const streetsLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+    const h = new Date().getHours();
+    const isNight = h >= 18 || h < 6;
+    const initialStyle = isNight ? 'mapbox/dark-v11' : 'mapbox/streets-v12';
+
+    // Capa HD Mapbox
+    const baseLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/${initialStyle}/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
       tileSize: 512,
       zoomOffset: -1,
       maxZoom: 20,
@@ -53,7 +65,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       attribution: '&copy; Mapbox &copy; OpenStreetMap'
     }).addTo(map);
 
-    setTileLayerInstance(streetsLayer);
+    setTileLayerInstance(baseLayer);
 
     // Controles de zoom minimalistas abajo a la derecha
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -70,7 +82,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
     };
   }, []);
 
-  // Alternar entre capa vectorial de calles Mapbox y satélite Mapbox
+  // Alternar entre capas Mapbox (Calles / Noche / Satélite)
   const toggleMapLayer = (layerType) => {
     if (!window.L || !mapInstanceRef.current) return;
     const L = window.L;
@@ -80,24 +92,17 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       map.removeLayer(tileLayerInstance);
     }
 
-    let newLayer;
-    if (layerType === 'satellite') {
-      newLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
-        tileSize: 512,
-        zoomOffset: -1,
-        maxZoom: 20,
-        maxNativeZoom: 20,
-        attribution: '&copy; Mapbox'
-      });
-    } else {
-      newLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
-        tileSize: 512,
-        zoomOffset: -1,
-        maxZoom: 20,
-        maxNativeZoom: 20,
-        attribution: '&copy; Mapbox &copy; OpenStreetMap'
-      });
-    }
+    let stylePath = 'mapbox/streets-v12';
+    if (layerType === 'satellite') stylePath = 'mapbox/satellite-streets-v12';
+    else if (layerType === 'dark') stylePath = 'mapbox/dark-v11';
+
+    const newLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/${stylePath}/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+      tileSize: 512,
+      zoomOffset: -1,
+      maxZoom: 20,
+      maxNativeZoom: 20,
+      attribution: '&copy; Mapbox'
+    });
 
     newLayer.addTo(map);
     setTileLayerInstance(newLayer);
@@ -311,59 +316,95 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
   };
 
   return (
-    <div className="relative isolate z-0 w-full h-[460px] sm:h-[520px] bg-[#FBFBFA] overflow-hidden rounded-xl">
+    <div className="relative isolate z-0 w-full h-[460px] sm:h-[520px] bg-[#1c253b] overflow-hidden rounded-xl">
       
-      {/* Contenedor del Mapa Leaflet Scoped */}
+      {/* Contenedor del Mapa Leaflet Scoped con transformación 3D opcional */}
       <div 
         ref={mapContainerRef} 
+        style={{
+          transform: is3D ? 'perspective(1100px) rotateX(44deg) rotateZ(-4deg)' : 'none',
+          transformOrigin: 'center 75%',
+          transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
+        }}
         className="w-full h-full cursor-grab active:cursor-grabbing relative z-0" 
       />
 
-      {/* Controles Flotantes Superiores con z-10 dentro del contexto aislado */}
+      {/* Controles Flotantes Superiores con z-10 */}
       <div className="absolute top-4 right-4 z-10 flex items-center justify-end pointer-events-none">
         
-        {/* Segmented Layer Toggle & GPS */}
-        <div className="pointer-events-auto flex items-center space-x-2 bg-white/90 backdrop-blur-md p-1 rounded-lg border border-[#E5E5E5] shadow-xs">
+        {/* Segmented Layer Toggle (Calles / Noche / Satélite / 3D) & GPS */}
+        <div className="pointer-events-auto flex items-center space-x-2 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200 shadow-lg">
           
-          <div className="flex items-center">
+          <div className="flex items-center space-x-1">
             <button
+              type="button"
               onClick={() => toggleMapLayer('streets')}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-all duration-200 cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
                 mapLayer === 'streets'
-                  ? 'bg-[#111111] text-white shadow-xs'
-                  : 'text-[#787774] hover:text-[#111111]'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
               Calles
             </button>
             <button
+              type="button"
+              onClick={() => toggleMapLayer('dark')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1 ${
+                mapLayer === 'dark'
+                  ? 'bg-slate-900 text-indigo-300 border border-indigo-700/60 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <span>🌙 Noche</span>
+            </button>
+            <button
+              type="button"
               onClick={() => toggleMapLayer('satellite')}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-all duration-200 cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
                 mapLayer === 'satellite'
-                  ? 'bg-[#111111] text-white shadow-xs'
-                  : 'text-[#787774] hover:text-[#111111]'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
               Satélite
             </button>
           </div>
 
-          <div className="w-[1px] h-4 bg-[#E5E5E5]" />
+          <div className="w-[1px] h-4 bg-slate-200" />
+
+          {/* Toggle Vista 3D */}
+          <button
+            type="button"
+            onClick={() => setIs3D(!is3D)}
+            title="Conmutar perspectiva 3D"
+            className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+              is3D 
+                ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/50 scale-105' 
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            3D
+          </button>
+
+          <div className="w-[1px] h-4 bg-slate-200" />
 
           {/* Centrar Plaza Mayor */}
           <button
+            type="button"
             onClick={handleRecenterAyacucho}
             title="Centrar en Plaza Mayor"
-            className="p-1 text-[#787774] hover:text-[#111111] transition-colors duration-200 cursor-pointer"
+            className="p-1 text-slate-500 hover:text-slate-900 transition-colors duration-200 cursor-pointer"
           >
             <Compass className="w-4 h-4" />
           </button>
 
           {/* Mi GPS */}
           <button
+            type="button"
             onClick={handleGetLocation}
             title="Mi Ubicación GPS"
-            className="p-1 text-[#787774] hover:text-[#111111] transition-colors duration-200 cursor-pointer"
+            className="p-1 text-slate-500 hover:text-slate-900 transition-colors duration-200 cursor-pointer"
           >
             <LocateFixed className={`w-4 h-4 ${locatingUser ? 'animate-spin' : ''}`} />
           </button>

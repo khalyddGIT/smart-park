@@ -1277,11 +1277,9 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       }`} />
                     </div>
 
-                    {/* Encabezado: Código y Distintivo */}
+                    {/* Encabezado: Código */}
                     <div className="flex items-center justify-between text-[10px] font-mono font-black z-10 leading-none pr-3">
                       <span className="text-white drop-shadow-sm tracking-tight">{el.code}</span>
-                      {isShaded && <span className="text-amber-300 text-[8px] font-bold bg-amber-950/80 px-1 py-0.5 rounded border border-amber-700">⛱️ TECH</span>}
-                      {isMoto && <span className="text-orange-300 font-bold text-[8px] bg-orange-950/80 px-1 py-0.5 rounded border border-orange-700">🏍️ MOTO</span>}
                     </div>
 
                     {/* Silueta / Stencil Central en Asfalto */}

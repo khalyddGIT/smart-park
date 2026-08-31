@@ -397,8 +397,6 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
                     <div className="flex items-center justify-between text-[10px] font-mono font-black z-10 leading-none pr-2">
                       <span className="text-white drop-shadow-sm">{el.code}</span>
-                      {isShaded && <span className="text-amber-300 text-[7px] font-bold bg-amber-950 px-1 rounded border border-amber-800">⛱️ TECH</span>}
-                      {isMoto && <span className="text-orange-300 font-bold text-[7px] bg-orange-950 px-1 rounded border border-orange-800">🏍️ MOTO</span>}
                     </div>
 
                     {/* Stencil Icono */}

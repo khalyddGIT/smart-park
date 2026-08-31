@@ -84,9 +84,6 @@ export const AutoFitFloorPlan = ({
                   }`}
                 >
                   <span className="text-xs font-black tracking-wider">{el.code}</span>
-                  <span className="text-[9px] font-bold mt-0.5 px-1 rounded bg-black/40">
-                    {isFree ? 'LIBRE' : 'OCUPADO'}
-                  </span>
                 </button>
               );
             }
@@ -124,12 +121,6 @@ export const AutoFitFloorPlan = ({
             return null;
           })}
         </div>
-      </div>
-
-      {/* Badge de estado del plano */}
-      <div className="absolute bottom-4 left-4 bg-slate-900/90 text-slate-100 border border-slate-700/80 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold shadow-xl flex items-center gap-2 z-20">
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span>Plano en vivo • {name}</span>
       </div>
     </div>
   );

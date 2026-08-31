@@ -102,14 +102,14 @@ export const PersonalGaritaModule = () => {
         <div className="space-y-1">
           <h2 className="text-base font-black text-slate-900 leading-snug">{currentEst?.name || 'Mi Cochera'}</h2>
           <p className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">{freeSlots.length} libres</span>
+            <span className="font-bold text-emerald-700">{freeSlots.length} libres</span>
             <span>•</span>
             <span className="font-bold text-slate-700">{vehiclesInside.length} dentro</span>
             <span>•</span>
             <span className="font-semibold text-slate-600">S/ {Number(currentEst?.rate||5).toFixed(2)}/h</span>
           </p>
         </div>
-        <span className="self-start sm:self-center text-xs font-black bg-slate-900 text-white px-3.5 py-1.5 rounded-full shadow-sm">{currentEst?.level || 'Playa'}</span>
+        <span className="self-start sm:self-center text-xs font-bold text-slate-700">{currentEst?.level || 'Playa'}</span>
       </div>
 
       {feedback && <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm"><CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600"/>{feedback}</div>}
@@ -118,7 +118,7 @@ export const PersonalGaritaModule = () => {
         <div className="lg:col-span-7 bg-[#1c253b] rounded-2xl border border-slate-700 p-3.5 flex flex-col justify-between shadow-xl">
           <div className="flex items-center justify-between mb-2 px-1">
             <p className="text-xs font-black text-slate-200 tracking-wide uppercase">Plano interactivo — Toca un cajón libre</p>
-            {slot && <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-600/60 px-2.5 py-0.5 rounded-full">Seleccionado: {slot}</span>}
+            {slot && <span className="text-xs font-bold text-emerald-400">Seleccionado: {slot}</span>}
           </div>
           {currentEst?.elements===null ? (
             <div className="h-[520px] flex items-center justify-center text-xs font-semibold text-slate-400">Cargando plano del parking...</div>

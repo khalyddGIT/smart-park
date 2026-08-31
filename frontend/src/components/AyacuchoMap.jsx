@@ -42,10 +42,11 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       attributionControl: false
     });
 
-    // Capa base limpia y elegante de CartoDB Voyager
-    const streetsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    // Capa base limpia y pública de OpenStreetMap (sin requerir API key)
+    const streetsLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: 'abcd',
+      maxNativeZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     setTileLayerInstance(streetsLayer);
@@ -78,12 +79,14 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
     let newLayer;
     if (layerType === 'satellite') {
       newLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19
+        maxZoom: 19,
+        maxNativeZoom: 19
       });
     } else {
-      newLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      newLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        subdomains: 'abcd'
+        maxNativeZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
       });
     }
 

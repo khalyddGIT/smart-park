@@ -81,9 +81,10 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
         attributionControl: false
       });
 
-      const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        subdomains: 'abcd'
+        maxNativeZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
       });
 
       const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {

@@ -421,24 +421,6 @@ export const MapContainer3D = ({
         </div>
       </div>
 
-      {/* Inspección de Edificio 3D Seleccionado */}
-      {selectedBuilding && (
-        <div className="absolute top-16 left-4 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl border border-slate-800 shadow-2xl w-64 text-xs space-y-1.5 animate-in fade-in slide-in-from-left-4 duration-200">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-1">
-            <strong className="text-emerald-400 font-bold flex items-center gap-1.5">
-              <Building2 className="w-4 h-4" /> Edificación 3D
-            </strong>
-            <button onClick={() => setSelectedBuilding(null)} className="text-slate-400 hover:text-white p-1">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <div><strong className="text-slate-300">Nombre:</strong> {selectedBuilding.name}</div>
-          <div><strong className="text-slate-300">Altura Real:</strong> {selectedBuilding.height}</div>
-          <div><strong className="text-slate-300">Pisos / Niveles:</strong> ~{selectedBuilding.levels} niveles</div>
-          <div><strong className="text-slate-300">Ubicación:</strong> {selectedBuilding.address}</div>
-        </div>
-      )}
-
       {/* Tarjeta Turn-by-Turn Flotante Superior (Giro a Giro en Tiempo Real) */}
       {activeRoute && activeRoute.currentStep && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-5 py-2.5 rounded-2xl shadow-2xl border border-cyan-500/40 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-top-4 duration-300 max-w-[92vw]">
@@ -460,9 +442,9 @@ export const MapContainer3D = ({
         </div>
       )}
 
-      {/* Tarjeta de Ruta 3D en Vivo (Feature 2 & Modos de Transporte) */}
+      {/* Tarjeta de Ruta 3D en Vivo */}
       {activeRoute && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-[95vw]">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-[95vw]">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
             <Navigation className="w-4 h-4 text-cyan-400 shrink-0" />
@@ -474,37 +456,10 @@ export const MapContainer3D = ({
             <span className="font-mono font-black text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">~{activeRoute.durationMin} min</span>
           </div>
 
-          {/* Selector de Modo de Transporte en Vivo */}
-          <div className="flex items-center space-x-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
-            {[
-              { id: 'driving', label: 'Auto', icon: Car },
-              { id: 'cycling', label: 'Moto', icon: Bike },
-              { id: 'walking', label: 'A pie', icon: Footprints }
-            ].map((m) => {
-              const IconComp = m.icon;
-              const isSel = (activeRoute.profile || 'driving') === m.id;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => {
-                    if (targetDest) handleCalculateRoute(targetDest.coords, targetDest.name, m.id);
-                  }}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
-                    isSel ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <IconComp className="w-3 h-3" />
-                  <span>{m.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
           <button
             type="button"
             onClick={handleClearRoute}
-            className="px-2.5 py-1 bg-slate-800 hover:bg-rose-900 text-slate-300 hover:text-white rounded-lg font-bold text-[11px] transition cursor-pointer border border-slate-700 flex items-center gap-1 shrink-0"
+            className="px-2.5 py-1 bg-slate-800 hover:bg-rose-900 text-slate-300 hover:text-white rounded-lg font-bold text-[11px] transition cursor-pointer border border-slate-700 flex items-center gap-1 shrink-0 ml-2"
           >
             <X className="w-3 h-3" />
             <span>Limpiar</span>

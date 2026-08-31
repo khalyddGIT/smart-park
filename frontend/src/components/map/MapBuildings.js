@@ -83,38 +83,9 @@ export class MapBuildingsManager {
     this.bindEvents();
   }
 
-  // Eventos de selección e inspección de edificios 3D
+  // Eventos de selección e inspección de edificios 3D (Deshabilitado para mapa super limpio)
   bindEvents() {
-    if (!this.map) return;
-
-    this.map.on('click', this.layerId, (e) => {
-      if (!e.features || e.features.length === 0) return;
-      const feature = e.features[0];
-      const props = feature.properties || {};
-
-      const buildingInfo = {
-        id: feature.id || props.id || `bldg-${Math.round(e.lngLat.lng*1000)}`,
-        name: props.name || 'Edificación / Manzana',
-        height: props.height ? `${Math.round(props.height)} metros` : '8.5 metros (~3 pisos)',
-        levels: props.building_levels || props.levels || Math.ceil((props.height || 8) / 3),
-        type: props.type || props.building || 'Residencial / Comercial',
-        address: props['addr:street'] ? `${props['addr:street']} ${props['addr:housenumber'] || ''}` : 'Centro Histórico de Ayacucho',
-        coordinates: [e.lngLat.lng, e.lngLat.lat]
-      };
-
-      if (this.onSelectBuilding) {
-        this.onSelectBuilding(buildingInfo);
-      }
-    });
-
-    // Cursor pointer al pasar sobre un edificio 3D
-    this.map.on('mouseenter', this.layerId, () => {
-      this.map.getCanvas().style.cursor = 'pointer';
-    });
-
-    this.map.on('mouseleave', this.layerId, () => {
-      this.map.getCanvas().style.cursor = '';
-    });
+    // No-op para mantener mapa super limpio sin tarjetas flotantes innecesarias
   }
 
   toggleBuildings(enable) {

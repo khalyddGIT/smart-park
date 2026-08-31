@@ -236,6 +236,7 @@ Cuentas creadas automáticamente en el primer arranque (semilla idempotente):
 | 🚗 Conductor demo | `usuario@smartpark.com` | `password123` | `1234` |
 | 🏢 Admin Local | `adminlocal@smartpark.com` | `SmartParkLocal2026!` | `4826` |
 | 🌐 Super Admin | `superadmin@smartpark.com` | `SmartParkSuperAdmin2026!` | `7391` |
+| 🚪 Operador Garita | `operador.garita@smartpark.pe` | `Operador2026!` | `2580` |
 
 > ⚠️ Rotar estas credenciales antes de un uso real en producción.
 

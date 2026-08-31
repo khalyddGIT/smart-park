@@ -351,8 +351,8 @@ const StickyStorytellingSection = () => {
     },
     {
       num: '03',
-      title: 'Pase Digital & Acceso ANPR',
-      desc: 'Genera tu Pase QR instantáneo. Al llegar a la garita, la cámara inteligente reconoce tu placa y abre el portón.',
+      title: 'Pase Digital & Detección OpenCV',
+      desc: 'Genera tu Pase QR instantáneo. Al llegar a la garita, el sistema OpenCV reconoce tu placa y abre el portón.',
       icon: QrCode,
       preview: (
         <div className="bg-white p-4 rounded-2xl border border-emerald-500/30 text-center space-y-2">
@@ -520,7 +520,7 @@ export const LandingPage = ({
   const faqs = [
     {
       q: '¿Cómo se realiza el ingreso a la cochera con la reserva?',
-      a: 'Al confirmar tu reserva recibes un Pase Digital. Al llegar a la cochera en Huamanga, la cámara inteligente ANPR reconoce tu placa registrada o puedes mostrar el código QR para ingresar de inmediato.'
+      a: 'Al confirmar tu reserva recibes un Pase Digital. Al llegar a la cochera en Huamanga, el sistema de visión artificial OpenCV reconoce tu placa registrada o puedes mostrar el código QR para ingresar de inmediato.'
     },
     {
       q: '¿Cuáles son los canales de pago habilitados?',
@@ -925,9 +925,9 @@ export const LandingPage = ({
               <Camera className="w-5 h-5 text-teal-700" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 mb-1">Acceso ANPR</h3>
+              <h3 className="text-base font-bold text-slate-900 mb-1">Detección OpenCV</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Detección automática de placas al llegar a la garita de control sin tickets impresos.
+                Detección por visión artificial OpenCV al llegar a la garita de control sin tickets impresos.
               </p>
             </div>
           </motion.div>

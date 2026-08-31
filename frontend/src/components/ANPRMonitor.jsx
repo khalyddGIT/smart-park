@@ -273,7 +273,7 @@ export const ANPRMonitor = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-[17px] font-black text-slate-900 tracking-tight leading-none">Control LPR & Garita</h1>
                 <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> ANPR OCR Active
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> OpenCV OCR Activo
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-medium mt-1 truncate">

@@ -1,4 +1,4 @@
-"""Visión de ocupación por cajón: YOLO con fallback a clasificador adaptativo OpenCV.
+"""Visión de ocupación por cajón: Clasificador adaptativo OpenCV con WarpPerspective.
 
 Motor de procesamiento de visión artificial para Smart-Park.
 Replica y optimiza el algoritmo de clasificación de cajones con preprocesamiento:

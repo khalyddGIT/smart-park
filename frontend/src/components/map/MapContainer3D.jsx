@@ -409,35 +409,6 @@ export const MapContainer3D = ({
         </div>
       )}
 
-      {/* Filtros Rápidos (Feature 5) con Iconos SVG */}
-      <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2 pointer-events-none max-w-[calc(100%-340px)]">
-        <div className="pointer-events-auto flex items-center space-x-1 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 text-white text-xs font-bold shadow-2xl">
-          <span className="text-slate-400 text-[10px] uppercase tracking-wider px-1">Vehículo:</span>
-          {[
-            { id: 'all', label: 'Todos', icon: null },
-            { id: 'auto', label: 'Auto', icon: Car },
-            { id: 'moto', label: 'Moto', icon: Bike },
-            { id: 'suv', label: 'SUV', icon: Truck }
-          ].map(type => {
-            const IconComp = type.icon;
-            return (
-              <button
-                key={type.id}
-                type="button"
-                onClick={() => setFilterType(type.id)}
-                className={`px-2 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                  filterType === type.id
-                    ? 'bg-emerald-600 text-white font-black shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {IconComp && <IconComp className="w-3.5 h-3.5" />}
-                <span>{type.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       {/* Tarjeta Turn-by-Turn Flotante Superior (Giro a Giro en Tiempo Real con Indicaciones por Voz) */}
       {activeRoute && activeRoute.currentStep && (

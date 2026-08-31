@@ -833,43 +833,6 @@ export const LandingPage = ({
               </button>
             )}
           </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {[
-              { id: 'todos', label: 'Todas' },
-              { id: 'centro', label: 'Centro Histórico' },
-              { id: 'techados', label: 'Techados' },
-              { id: 'economicos', label: 'Económicas' }
-            ].map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setCategoryFilter(cat.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer ${
-                  categoryFilter === cat.id
-                    ? 'bg-[#004D49] text-white border-[#004D49] shadow-md shadow-[#004D49]/20'
-                    : 'bg-white/85 text-[#004D49] border-[#004D49]/15 hover:border-emerald-500/50 hover:bg-white'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-center gap-2 pt-1 font-mono text-xs">
-            {/* 9. MARKER PULSE DISPONIBILIDAD */}
-            <span className="relative flex w-2.5 h-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex rounded-full w-2.5 h-2.5 bg-emerald-500" />
-            </span>
-            {/* 10. LIVE NUMBER TRANSITION */}
-            <p className="text-[#004D49] font-semibold">
-              {filteredParkings.length} {filteredParkings.length === 1 ? 'cochera coincide' : 'cocheras coinciden'} ·{' '}
-              <strong className="font-black text-[#002B29]">
-                <AnimatedCounter value={totalFreeSlots} /> plazas libres
-              </strong>
-            </p>
-          </div>
         </div>
 
         {/* 7. MAP ZOOM & 8. MARKER ANIMATION & 14. VEHICLE ANIMATION */}

@@ -468,7 +468,13 @@ export const PlatformSettingsModule = () => {
                 <div>
                   <div className="flex items-center justify-between">
                     <strong className="text-xs text-slate-900 font-black flex items-center gap-1.5">
-                      <span className="w-4 h-4 rounded-md bg-[#003087] text-white flex items-center justify-center text-[9px] font-black font-serif">PP</span>
+                      <div className="w-5 h-5 rounded-md bg-white border border-slate-200 p-0.5 flex items-center justify-center shrink-0 shadow-xs">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="7.056 3 37.351 45" className="w-3.5 h-3.5">
+                          <path fill="#002991" d="M38.914 13.35c0 5.574-5.144 12.15-12.927 12.15H18.49l-.368 2.322L16.373 39H7.056l5.605-36h15.095c5.083 0 9.082 2.833 10.555 6.77a9.7 9.7 0 0 1 .603 3.58"/>
+                          <path fill="#60cdff" d="M44.284 23.7A12.894 12.894 0 0 1 31.53 34.5h-5.206L24.157 48H14.89l1.483-9l1.75-11.178l.367-2.322h7.497c7.773 0 12.927-6.576 12.927-12.15c3.825 1.974 6.055 5.963 5.37 10.35"/>
+                          <path fill="#008cff" d="M38.914 13.35C37.31 12.511 35.365 12 33.248 12h-12.64L18.49 25.5h7.497c7.773 0 12.927-6.576 12.927-12.15"/>
+                        </svg>
+                      </div>
                       <span>PayPal Express</span>
                     </strong>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-blue-600 text-white border-blue-700 font-mono">

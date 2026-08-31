@@ -571,7 +571,14 @@ export const EstablishmentProvider = ({ children }) => {
             const msg = JSON.parse(ev.data);
             if (msg.event === 'pong') return;
             if (msg.event === 'parkings:updated' || msg.event === 'refresh') fetchParkings();
-            if (msg.event === 'reservations:updated' || msg.event === 'refresh') { if (getAccessToken()) refreshMyReservations(); }
+            if (msg.event === 'reservations:updated' || msg.event === 'refresh') {
+              if (getAccessToken()) refreshMyReservations();
+              // Cajón reservado/ocupado cambia plano, refrescar para que no siga disponible
+              fetchParkings();
+              // Si hay parking_id en payload, hidratar solo ese plano para feedback instantáneo
+              const pid = msg.payload?.parking_id || msg.payload?.parkingId;
+              if(pid) try{ hydrateFloorPlan(String(pid)); }catch{}
+            }
             if (msg.event === 'incidents:updated' || msg.event === 'reviews:updated') { /* NotificationContext hace su propio polling; el WS sirve como hint adicional si se desea */ }
           } catch {}
         };
@@ -981,11 +988,13 @@ export const EstablishmentProvider = ({ children }) => {
       });
       setBookingError(null);
       const mapped = mapServerReservation(serverRes);
-      // Refrescar lista completa desde el servidor (fuente de verdad)
+      // Refrescar lista completa y plano (para que cajón pase a reservado en vivo)
       await refreshMyReservations();
+      try { await fetchParkings(); await hydrateFloorPlan(String(parkingIdNum)); } catch {}
       return mapped;
     } catch (e) {
-      const detail = e?.response?.data?.detail || 'No se pudo registrar la reserva en el servidor (cajón ocupado o datos inválidos).';
+      const raw = e?.response?.data?.detail;
+      const detail = Array.isArray(raw) ? raw.map(d=> d?.msg || JSON.stringify(d)).join(', ') : (typeof raw === 'string' ? raw : raw ? JSON.stringify(raw) : 'No se pudo registrar la reserva en el servidor (cajón ocupado o datos inválidos).');
       console.error('Error creando reserva en el servidor', e?.response?.data || e);
       setBookingError(detail);
       return null;
@@ -1138,6 +1147,8 @@ export const EstablishmentProvider = ({ children }) => {
       updateEstablishment,
       updateEstablishmentPlan,
       ensureFloorPlan,
+      fetchParkings,
+      hydrateFloorPlan,
       deleteEstablishment,
       occupySlot,
       freeSlot,

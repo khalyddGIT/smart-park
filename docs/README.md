@@ -7,6 +7,7 @@
 | Documento | Contenido |
 | :--- | :--- |
 | [DOCUMENTACION_CODIGO_FUENTE_Y_DESPLIEGUE.md](DOCUMENTACION_CODIGO_FUENTE_Y_DESPLIEGUE.md) | Informe técnico integral: arquitectura del código fuente, incidente de despliegue, diagnóstico con CLIs, solución CI/CD y checklist de verificación |
+| [DOCUMENTACION_YOLO_INTEGRACION.md](DOCUMENTACION_YOLO_INTEGRACION.md) | Documentación técnica de integración de la red neuronal YOLOv8, control de concurrencia y clasificador híbrido OpenCV |
 | [RAILWAY_DEPLOY.md](RAILWAY_DEPLOY.md) | Guía paso a paso del despliegue en producción (Railway) |
 | [PROYECTO.md](PROYECTO.md) | Especificación funcional maestra (agnóstica al stack) |
 | [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) | Esquema relacional completo de la base de datos |

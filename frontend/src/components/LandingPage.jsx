@@ -38,7 +38,134 @@ import { BrandLogo } from './BrandLogo';
 // Curva elástica ultra fluida acelerada por hardware (GPU)
 const FLUID_EASE = [0.16, 1, 0.3, 1];
 
-// Componente de Sección con física cinemática y profundidad espacial
+// 1. HERO REVEAL: REVELACIÓN PALABRA POR PALABRA
+const TextRevealHeadline = ({ text }) => {
+  const words = text.split(' ');
+  return (
+    <span className="inline-block">
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0, y: 22, filter: 'blur(6px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{
+            duration: 0.55,
+            delay: 0.12 + i * 0.07,
+            ease: FLUID_EASE
+          }}
+          className="inline-block mr-[0.25em]"
+        >
+          {word}
+        </motion.span>
+      ))}
+    </span>
+  );
+};
+
+// 2. TEXT REVEAL: REVELACIÓN DINÁMICA CON DEGRADADO
+const GradientTypewriter = () => {
+  const dynamicWords = useMemo(() => [
+    'Tiempo Real',
+    'Ayacucho',
+    'Huamanga',
+    'tu Celular'
+  ], []);
+
+  const [wordIndex, setWordIndex] = useState(0);
+  const [currentText, setCurrentText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const word = dynamicWords[wordIndex];
+    const typingSpeed = isDeleting ? 40 : 90;
+
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        setCurrentText(word.substring(0, currentText.length + 1));
+        if (currentText === word) {
+          setTimeout(() => setIsDeleting(true), 2400);
+        }
+      } else {
+        setCurrentText(word.substring(0, currentText.length - 1));
+        if (currentText === '') {
+          setIsDeleting(false);
+          setWordIndex((prev) => (prev + 1) % dynamicWords.length);
+        }
+      }
+    }, typingSpeed);
+
+    return () => clearTimeout(timeout);
+  }, [currentText, isDeleting, wordIndex, dynamicWords]);
+
+  return (
+    <span className="inline-block relative">
+      <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 bg-clip-text text-transparent font-black">
+        {currentText || '\u00A0'}
+      </span>
+      <span className="inline-block w-[3px] sm:w-[4px] h-[0.85em] ml-1 bg-gradient-to-b from-emerald-500 to-teal-400 align-middle rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.7)]" />
+    </span>
+  );
+};
+
+// 4. MAGNETIC BUTTONS: BOTONES MAGNÉTICOS CTA CON SEGUIMIENTO DE CURSOR
+const MagneticButton = ({ children, className = '', onClick, href, type = 'button' }) => {
+  const ref = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const springX = useSpring(x, { stiffness: 220, damping: 18 });
+  const springY = useSpring(y, { stiffness: 220, damping: 18 });
+
+  const handleMouseMove = (e) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set((e.clientX - centerX) * 0.22);
+    y.set((e.clientY - centerY) * 0.22);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  if (href) {
+    return (
+      <motion.a
+        ref={ref}
+        href={href}
+        onClick={onClick}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{ x: springX, y: springY }}
+        whileHover={{ scale: 1.03 }}
+        whileTap={{ scale: 0.97 }}
+        className={`transform-gpu will-change-transform ${className}`}
+      >
+        {children}
+      </motion.a>
+    );
+  }
+
+  return (
+    <motion.button
+      ref={ref}
+      type={type}
+      onClick={onClick}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ x: springX, y: springY }}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      className={`transform-gpu will-change-transform ${className}`}
+    >
+      {children}
+    </motion.button>
+  );
+};
+
+// 5. SCROLL REVEAL: REVELACIÓN DE SECCIONES CON FÍSICA CINEMÁTICA
 const CinematicScrollSection = ({ children, className = '', id = '' }) => {
   const sectionRef = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -70,7 +197,41 @@ const CinematicScrollSection = ({ children, className = '', id = '' }) => {
   );
 };
 
-// Tarjeta con Inercia Interactiva 3D Suave
+// 6. ANIMATED COUNTERS: CONTADORES ANIMADOS
+const AnimatedCounter = ({ value, duration = 1.6, suffix = '' }) => {
+  const [count, setCount] = useState(0);
+  const target = Number(value) || 0;
+
+  useEffect(() => {
+    let start = 0;
+    const end = target;
+    if (start === end) {
+      setCount(end);
+      return;
+    }
+    const totalMs = duration * 1000;
+    const stepMs = 30;
+    const steps = totalMs / stepMs;
+    const stepVal = (end - start) / steps;
+
+    let curr = start;
+    const timer = setInterval(() => {
+      curr += stepVal;
+      if ((stepVal > 0 && curr >= end) || (stepVal < 0 && curr <= end)) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.round(curr));
+      }
+    }, stepMs);
+
+    return () => clearInterval(timer);
+  }, [target, duration]);
+
+  return <span>{count}{suffix}</span>;
+};
+
+// 12. CARD 3D HOVER: TARJETA 3D HOVER CON INERCIA
 const DynamicTiltCard = ({ children, className = '' }) => {
   const cardRef = useRef(null);
   const mouseX = useMotionValue(0);
@@ -145,48 +306,139 @@ const LazyMapSection = ({ parkings, onSelectParking }) => {
   );
 };
 
-// Componente de Tipificación con Gradiente Dinámico Claro
-const GradientTypewriter = () => {
-  const dynamicWords = useMemo(() => [
-    'Ayacucho',
-    'Huamanga',
-    'Tiempo Real',
-    'tu Celular'
-  ], []);
+// 15. STICKY STORYTELLING: SECCIÓN PRINCIPAL PASO A PASO CON PANTALLA FIJA
+const StickyStorytellingSection = () => {
+  const [activeStep, setActiveStep] = useState(0);
 
-  const [wordIndex, setWordIndex] = useState(0);
-  const [currentText, setCurrentText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const word = dynamicWords[wordIndex];
-    const typingSpeed = isDeleting ? 45 : 95;
-
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        setCurrentText(word.substring(0, currentText.length + 1));
-        if (currentText === word) {
-          setTimeout(() => setIsDeleting(true), 2600);
-        }
-      } else {
-        setCurrentText(word.substring(0, currentText.length - 1));
-        if (currentText === '') {
-          setIsDeleting(false);
-          setWordIndex((prev) => (prev + 1) % dynamicWords.length);
-        }
-      }
-    }, typingSpeed);
-
-    return () => clearTimeout(timeout);
-  }, [currentText, isDeleting, wordIndex, dynamicWords]);
+  const steps = [
+    {
+      num: '01',
+      title: 'Elige tu Cochera',
+      desc: 'Explora las sedes disponibles en el mapa interactivo 3D de Ayacucho, verifica tarifas y plazas en vivo.',
+      icon: MapPin,
+      preview: (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between bg-slate-900 text-white p-3 rounded-2xl border border-slate-800 text-xs font-mono">
+            <span className="text-emerald-400 font-bold">📍 Cochera Central Plaza</span>
+            <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full text-[10px]">12 Plazas Libres</span>
+          </div>
+          <div className="h-28 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl flex items-center justify-center text-xs text-emerald-700 font-bold font-mono">
+            [ MAPA MAPBOX 3D AYACUCHO ]
+          </div>
+        </div>
+      )
+    },
+    {
+      num: '02',
+      title: 'Digita tu Placa & Horario',
+      desc: 'Selecciona tu cajón preferido e ingresa tu placa directamente. No requiere registro ni trámites previos.',
+      icon: Car,
+      preview: (
+        <div className="space-y-2 font-mono text-xs">
+          <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1.5">
+            <div className="text-slate-400 flex justify-between">
+              <span>Placa:</span> <span className="text-white font-bold">W1P-404</span>
+            </div>
+            <div className="text-slate-400 flex justify-between">
+              <span>Estancia:</span> <span className="text-emerald-400 font-bold">2 Horas</span>
+            </div>
+            <div className="text-slate-400 flex justify-between">
+              <span>Tolerancia:</span> <span className="text-cyan-400 font-bold">+15 min gratis</span>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      num: '03',
+      title: 'Pase Digital & Acceso ANPR',
+      desc: 'Genera tu Pase QR instantáneo. Al llegar a la garita, la cámara inteligente reconoce tu placa y abre el portón.',
+      icon: QrCode,
+      preview: (
+        <div className="bg-white p-4 rounded-2xl border border-emerald-500/30 text-center space-y-2">
+          <div className="w-16 h-16 bg-slate-900 text-white rounded-xl mx-auto flex items-center justify-center font-bold text-xs font-mono">
+            [ QR ]
+          </div>
+          <p className="text-[11px] text-emerald-800 font-mono font-bold">✓ BARRERA AUTOMÁTICA HABILITADA</p>
+        </div>
+      )
+    }
+  ];
 
   return (
-    <span className="inline-block relative">
-      <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 bg-clip-text text-transparent font-black">
-        {currentText || '\u00A0'}
-      </span>
-      <span className="inline-block w-[3px] sm:w-[4px] h-[0.85em] ml-1 bg-gradient-to-b from-emerald-500 to-teal-400 align-middle rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.7)]" />
-    </span>
+    <CinematicScrollSection id="sistema" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
+      <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
+          Estaciona rápido y <span className="text-[#004D49]">sin complicaciones</span>
+        </h2>
+        <p className="text-xs sm:text-sm text-[#004D49] max-w-lg mx-auto font-medium">
+          Sin descargar aplicaciones pesadas. Todo funciona directo desde tu navegador móvil.
+        </p>
+      </div>
+
+      {/* Sticky Storytelling Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center max-w-5xl mx-auto">
+        
+        {/* Pasos Seleccionables */}
+        <div className="md:col-span-6 space-y-3">
+          {steps.map((s, idx) => {
+            const Icon = s.icon;
+            const isSelected = activeStep === idx;
+            return (
+              <motion.div
+                key={idx}
+                onClick={() => setActiveStep(idx)}
+                whileHover={{ scale: 1.01 }}
+                className={`p-5 rounded-3xl border transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-white border-[#004D49] shadow-xl shadow-[#004D49]/10'
+                    : 'bg-white/70 border-[#004D49]/15 hover:bg-white'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 font-bold ${
+                    isSelected ? 'bg-[#004D49] text-white' : 'bg-emerald-500/10 text-[#004D49]'
+                  }`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono font-bold text-[#004D49] block">{s.num}</span>
+                    <h3 className="text-base font-bold text-slate-900">{s.title}</h3>
+                    <p className="text-xs text-slate-600 leading-relaxed mt-1">{s.desc}</p>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Pantalla Sticky de Visualización de Proceso */}
+        <div className="md:col-span-6 sticky top-24">
+          <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 text-white shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+                DEMOSTRACIÓN EN VIVO DE PROCESO
+              </span>
+              <span className="text-[10px] font-mono text-slate-500">PASO {activeStep + 1} DE 3</span>
+            </div>
+            
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeStep}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25 }}
+              >
+                {steps[activeStep].preview}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+      </div>
+    </CinematicScrollSection>
   );
 };
 
@@ -201,11 +453,10 @@ export const LandingPage = ({
   const [activeFaq, setActiveFaq] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Referencias para Parallax Global
+  // Referencias para Parallax Global (13. PARALLAX BACKGROUND)
   const heroRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Barra elástica de progreso de lectura superior
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 200,
@@ -213,10 +464,10 @@ export const LandingPage = ({
     restDelta: 0.001
   });
 
-  // Parallax del Fondo Global
-  const bgOrb1Y = useTransform(scrollYProgress, [0, 1], [0, 280]);
-  const bgOrb2Y = useTransform(scrollYProgress, [0, 1], [0, -320]);
-  const bgOrb3Y = useTransform(scrollYProgress, [0, 1], [0, 180]);
+  // 13. PARALLAX BACKGROUND: CAPAS DE PROFUNDIDAD
+  const bgOrb1Y = useTransform(scrollYProgress, [0, 1], [0, 300]);
+  const bgOrb2Y = useTransform(scrollYProgress, [0, 1], [0, -350]);
+  const bgOrb3Y = useTransform(scrollYProgress, [0, 1], [0, 200]);
   const smoothBgOrb1 = useSpring(bgOrb1Y, { stiffness: 100, damping: 25 });
   const smoothBgOrb2 = useSpring(bgOrb2Y, { stiffness: 100, damping: 25 });
   const smoothBgOrb3 = useSpring(bgOrb3Y, { stiffness: 100, damping: 25 });
@@ -259,6 +510,7 @@ export const LandingPage = ({
     });
   }, [establishments, searchQuery, categoryFilter]);
 
+  // 10. LIVE NUMBER TRANSITION: PLAZAS LIBRES EN TIEMPO REAL
   const totalFreeSlots = useMemo(() => {
     return establishments.reduce((acc, curr) => {
       return acc + (curr.elements || []).filter(e => e.type === 'slot' && e.status === 'free').length;
@@ -292,29 +544,20 @@ export const LandingPage = ({
       }}
       className="w-full min-h-screen text-[#111111] font-sans antialiased selection:bg-[#00827C] selection:text-white relative overflow-x-hidden"
     >
-      {/* =========================================================================
-          CAPAS DE PROFUNDIDAD ATMOSFÉRICA & PARALLAX FLOTANTE (SPATIAL LIGHT LAYERS)
-          ========================================================================= */}
+      {/* 3. GRADIENT ANIMATION & PARALLAX FONDO */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Orbe 1: Esmeralda Superior */}
         <motion.div
           style={{ y: smoothBgOrb1 }}
           className="absolute -top-32 -right-32 w-[550px] h-[550px] bg-gradient-to-br from-emerald-400/15 via-teal-300/10 to-transparent rounded-full blur-[140px] transform-gpu will-change-transform"
         />
-
-        {/* Orbe 2: Cyan Medio Izquierdo */}
         <motion.div
           style={{ y: smoothBgOrb2 }}
           className="absolute top-[40%] -left-40 w-[600px] h-[600px] bg-gradient-to-tr from-cyan-400/10 via-emerald-300/10 to-transparent rounded-full blur-[160px] transform-gpu will-change-transform"
         />
-
-        {/* Orbe 3: Esmeralda Profundo Inferior */}
         <motion.div
           style={{ y: smoothBgOrb3 }}
           className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-gradient-to-tl from-[#004D49]/12 via-teal-400/8 to-transparent rounded-full blur-[150px] transform-gpu will-change-transform"
         />
-
-        {/* Cuadrícula sutil de ingeniería espacial */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#004D49_1px,transparent_1px),linear-gradient(to_bottom,#004D49_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.025]" />
       </div>
 
@@ -325,15 +568,13 @@ export const LandingPage = ({
       />
 
       {/* =========================================================================
-          1. HEADER FLOTANTE ULTRA-PREMIUM (GLASSMORPHISM CLARO)
+          1. HEADER FLOTANTE ULTRA-PREMIUM
           ========================================================================= */}
       <header className="sticky top-0 z-50 px-3 sm:px-6 lg:px-10 pt-2 sm:pt-3 pb-2 transition-all duration-300">
         <div className="max-w-6xl mx-auto bg-[#002624]/90 backdrop-blur-xl border border-[#005e58]/50 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgba(0,38,36,0.35)] flex items-center justify-between text-white relative">
 
-          {/* Logo y Denominación */}
           <BrandLogo className="h-8 sm:h-9 w-auto" dark={true} />
 
-          {/* Navegación Tipográfica en Escritorio */}
           <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 text-xs font-semibold">
             <a href="#mapa" className="px-3.5 py-1.5 rounded-xl text-emerald-100/90 hover:text-white hover:bg-white/10 transition-all duration-200">
               Directorio de Cocheras
@@ -349,28 +590,22 @@ export const LandingPage = ({
             </a>
           </nav>
 
-          {/* Acciones en Escritorio / Hamburguesa en Móvil */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            <button
-              type="button"
+            <MagneticButton
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
               className="hidden sm:inline-flex text-xs font-bold text-emerald-200 hover:text-white bg-white/5 hover:bg-white/15 px-3.5 py-2 rounded-xl border border-emerald-500/30 transition-all duration-200 cursor-pointer"
             >
               Afiliar Cochera
-            </button>
+            </MagneticButton>
 
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
+            <MagneticButton
               onClick={() => onOpenAuth && onOpenAuth('login')}
               className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 text-xs font-black px-4 sm:px-5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer flex items-center space-x-2 shadow-[0_0_20px_rgba(52,211,153,0.35)]"
             >
               <LogIn className="w-4 h-4 shrink-0 text-slate-950 stroke-[2.5]" />
               <span>Acceder</span>
-            </motion.button>
+            </MagneticButton>
 
-            {/* Botón menú móvil */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -383,7 +618,6 @@ export const LandingPage = ({
 
         </div>
 
-        {/* Desplegable de menú móvil */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
@@ -393,40 +627,12 @@ export const LandingPage = ({
               transition={{ duration: 0.2, ease: FLUID_EASE }}
               className="md:hidden mt-2 max-w-6xl mx-auto bg-[#002624]/95 backdrop-blur-xl border border-[#005e58]/50 p-4 rounded-2xl shadow-2xl space-y-2 text-xs font-bold text-emerald-100"
             >
-              <a
-                href="#mapa"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition"
-              >
-                Directorio de Cocheras
-              </a>
-              <a
-                href="#caracteristicas"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition"
-              >
-                Características
-              </a>
-              <a
-                href="#sistema"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition"
-              >
-                Funcionamiento
-              </a>
-              <a
-                href="#afiliacion"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition"
-              >
-                Propietarios
-              </a>
+              <a href="#mapa" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Directorio de Cocheras</a>
+              <a href="#caracteristicas" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Características</a>
+              <a href="#sistema" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Funcionamiento</a>
+              <a href="#afiliacion" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Propietarios</a>
               <div className="pt-2 border-t border-emerald-500/20 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => { setMobileMenuOpen(false); onOpenAuth && onOpenAuth('affiliation'); }}
-                  className="w-full py-2.5 bg-white/10 text-emerald-200 hover:text-white rounded-xl text-center font-bold"
-                >
+                <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenAuth && onOpenAuth('affiliation'); }} className="w-full py-2.5 bg-white/10 text-emerald-200 hover:text-white rounded-xl text-center font-bold">
                   Afiliar Cochera
                 </button>
               </div>
@@ -436,7 +642,7 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION LUMINOSA CON PROFUNDIDAD Y RESPONSIVE FLUIDO
+          2. HERO SECTION CON REVEAL Y MAGNETIC BUTTONS
           ========================================================================= */}
       <section ref={heroRef} className="pt-14 sm:pt-20 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto space-y-8 sm:space-y-10 text-center relative z-10">
 
@@ -452,27 +658,20 @@ export const LandingPage = ({
           className="space-y-5 sm:space-y-6 flex flex-col items-center transform-gpu will-change-transform"
         >
 
-          {/* Insignia Flotante Superior */}
           <div className="inline-flex items-center gap-2 bg-[#004D49]/10 border border-[#004D49]/20 text-[#004D49] text-xs font-mono font-bold px-4 py-1.5 rounded-full shadow-xs">
+            {/* 9. MARKER PULSE DE DISPONIBILIDAD */}
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
             <Zap className="w-3.5 h-3.5 text-[#004D49] shrink-0" />
             <span>SISTEMA INTELIGENTE DE ESTACIONAMIENTOS</span>
           </div>
 
-          {/* Titular Principal Centrado */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, ease: FLUID_EASE }}
-            className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] tracking-tight max-w-3xl mx-auto leading-[1.14] sm:leading-[1.08]"
-          >
-            <span className="bg-gradient-to-r from-[#002B29] via-[#004D49] to-[#002B29] bg-clip-text text-transparent">
-              Ecosistema Inteligente de Estacionamientos en{' '}
-            </span>
+          {/* 1. HERO REVEAL TÍTULO */}
+          <motion.h1 className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] tracking-tight max-w-3xl mx-auto leading-[1.14] sm:leading-[1.08]">
+            <TextRevealHeadline text="Ecosistema Inteligente de Estacionamientos en" />{' '}
+            {/* 2. TEXT REVEAL "TIEMPO REAL" */}
             <GradientTypewriter />
           </motion.h1>
 
-          {/* Subtítulo Centrado */}
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -482,7 +681,7 @@ export const LandingPage = ({
             Conectamos a conductores en Ayacucho con estacionamientos disponibles en tiempo real, facilitando la reserva de tu sitio e ingreso directo.
           </motion.p>
 
-          {/* LAS 2 TARJETAS PRINCIPALES DEL SISTEMA (3D TILT CARDS) */}
+          {/* 12. CARD 3D HOVER */}
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
@@ -490,7 +689,6 @@ export const LandingPage = ({
             className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mx-auto pt-4 text-left"
           >
 
-            {/* OPCIÓN 1: CONDUCTORES / USUARIOS */}
             <DynamicTiltCard className="h-full">
               <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-emerald-500/30 shadow-xl shadow-emerald-950/5 space-y-4 flex flex-col justify-between h-full group hover:border-emerald-600/60 transition-all duration-300">
                 <div className="space-y-3">
@@ -507,19 +705,17 @@ export const LandingPage = ({
                   </div>
                 </div>
 
-                <motion.a
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                {/* 4. MAGNETIC BUTTON CTA */}
+                <MagneticButton
                   href="#mapa"
                   className="w-full py-3 bg-[#004D49] hover:bg-[#003835] text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#004D49]/20 mt-3"
                 >
                   <span>Consultar Cocheras en Vivo</span>
                   <ArrowRight className="w-4 h-4 text-emerald-400" />
-                </motion.a>
+                </MagneticButton>
               </div>
             </DynamicTiltCard>
 
-            {/* OPCIÓN 2: PROPIETARIOS DE COCHERAS */}
             <DynamicTiltCard className="h-full">
               <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl shadow-slate-950/20 space-y-4 flex flex-col justify-between h-full group hover:border-emerald-500/50 transition-all duration-300">
                 <div className="space-y-3">
@@ -536,16 +732,13 @@ export const LandingPage = ({
                   </div>
                 </div>
 
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                <MagneticButton
                   onClick={() => onOpenAuth && onOpenAuth('affiliation')}
                   className="w-full py-3 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 text-xs font-black rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-400/20 mt-3"
                 >
                   <Building2 className="w-4 h-4 text-slate-950" />
                   <span>Solicitar Afiliación de Cochera</span>
-                </motion.button>
+                </MagneticButton>
               </div>
             </DynamicTiltCard>
 
@@ -555,15 +748,15 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          2.5 BANDA DE MÉTRICAS EN VIVO CON GLASS ELEVATION CLARA
+          2.5 ANIMATED COUNTERS & LIVE NUMBERS
           ========================================================================= */}
       <CinematicScrollSection className="py-6 sm:py-8 px-4 sm:px-6 lg:px-12">
         <div className="max-w-5xl mx-auto bg-white/85 backdrop-blur-xl border border-[#004D49]/15 rounded-3xl shadow-[0_20px_45px_rgba(0,77,73,0.08)] grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-[#004D49]/10 overflow-hidden">
           {[
-            { value: `${Math.max(establishments.length, 0)}`, suffix: '', label: 'Cocheras conectadas en vivo' },
-            { value: `${totalFreeSlots}`, suffix: '', label: 'Plazas libres ahora mismo' },
-            { value: '98', suffix: '%', label: 'Ingresos con pase automático' },
-            { value: '15', suffix: ' min', label: 'Tolerancia garantizada' }
+            { value: Math.max(establishments.length, 0), suffix: '', label: 'Cocheras conectadas en vivo' },
+            { value: totalFreeSlots, suffix: '', label: 'Plazas libres ahora mismo' },
+            { value: 98, suffix: '%', label: 'Ingresos con pase automático' },
+            { value: 15, suffix: ' min', label: 'Tolerancia garantizada' }
           ].map((m, i) => (
             <motion.div
               key={i}
@@ -573,8 +766,9 @@ export const LandingPage = ({
               transition={{ duration: 0.45, delay: i * 0.07, ease: FLUID_EASE }}
               className="p-5 sm:p-6 text-center group hover:bg-emerald-50/30 transition duration-300"
             >
-              <div className="text-2xl sm:text-4xl font-display font-black text-[#002B29] tracking-tight">
-                {m.value}<span className="text-[#004D49]">{m.suffix}</span>
+              {/* 6. ANIMATED COUNTERS */}
+              <div className="text-2xl sm:text-4xl font-display font-black text-[#002B29] tracking-tight font-mono">
+                <AnimatedCounter value={m.value} suffix={m.suffix} />
               </div>
               <div className="mt-1 text-[10px] sm:text-xs text-[#004D49]/70 font-bold uppercase tracking-wide">
                 {m.label}
@@ -585,11 +779,10 @@ export const LandingPage = ({
       </CinematicScrollSection>
 
       {/* =========================================================================
-          3. DIRECTORIO Y MAPA EN VIVO EN HUAMANGA
+          3. MAPBOX MAP & MARKERS ANIMATION
           ========================================================================= */}
       <CinematicScrollSection id="mapa" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
 
-        {/* Encabezado Centrado */}
         <div className="max-w-3xl mx-auto text-center space-y-2 px-2">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
             Estacionamientos Conectados en <span className="text-[#004D49]">Huamanga</span>
@@ -599,7 +792,6 @@ export const LandingPage = ({
           </p>
         </div>
 
-        {/* Buscador + Filtros + Contador en Vivo */}
         <div className="max-w-3xl mx-auto space-y-3 px-2">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#004D49]/60 pointer-events-none" />
@@ -645,18 +837,22 @@ export const LandingPage = ({
           </div>
 
           <div className="flex items-center justify-center gap-2 pt-1 font-mono text-xs">
+            {/* 9. MARKER PULSE DISPONIBILIDAD */}
             <span className="relative flex w-2.5 h-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
               <span className="relative inline-flex rounded-full w-2.5 h-2.5 bg-emerald-500" />
             </span>
+            {/* 10. LIVE NUMBER TRANSITION */}
             <p className="text-[#004D49] font-semibold">
               {filteredParkings.length} {filteredParkings.length === 1 ? 'cochera coincide' : 'cocheras coinciden'} ·{' '}
-              <strong className="font-black text-[#002B29]">{totalFreeSlots} plazas libres</strong> en la red
+              <strong className="font-black text-[#002B29]">
+                <AnimatedCounter value={totalFreeSlots} /> plazas libres
+              </strong>
             </p>
           </div>
         </div>
 
-        {/* Mapa Leaflet Interactivo */}
+        {/* 7. MAP ZOOM & 8. MARKER ANIMATION & 14. VEHICLE ANIMATION */}
         <LazyMapSection
           parkings={filteredParkings}
           onSelectParking={(p) => {
@@ -667,7 +863,7 @@ export const LandingPage = ({
       </CinematicScrollSection>
 
       {/* =========================================================================
-          3.5 CARACTERÍSTICAS & TECNOLOGÍA DEL SISTEMA (BENTO CARDS CLARAS)
+          11. FLOATING CARDS: CARACTERÍSTICAS
           ========================================================================= */}
       <CinematicScrollSection id="caracteristicas" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
@@ -682,8 +878,12 @@ export const LandingPage = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          {/* Card 1: Navegación 3D */}
-          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-emerald-500/50 transition">
+          {/* FLOATING CARD 1 */}
+          <motion.div
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-emerald-500/50 transition"
+          >
             <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 flex items-center justify-center">
               <Compass className="w-5 h-5 text-emerald-700" />
             </div>
@@ -693,10 +893,14 @@ export const LandingPage = ({
                 Trazado con GPS en tiempo real, indicaciones por voz y elevación topográfica DEM.
               </p>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Card 2: Reconocimiento ANPR */}
-          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-teal-500/50 transition">
+          {/* FLOATING CARD 2 */}
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+            className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-teal-500/50 transition"
+          >
             <div className="w-10 h-10 rounded-2xl bg-teal-500/10 border border-teal-500/30 text-teal-700 flex items-center justify-center">
               <Camera className="w-5 h-5 text-teal-700" />
             </div>
@@ -706,10 +910,14 @@ export const LandingPage = ({
                 Detección automática de placas al llegar a la garita de control sin tickets impresos.
               </p>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Card 3: Pagos Multicanal */}
-          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-cyan-500/50 transition">
+          {/* FLOATING CARD 3 */}
+          <motion.div
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+            className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-cyan-500/50 transition"
+          >
             <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 flex items-center justify-center">
               <CreditCard className="w-5 h-5 text-cyan-700" />
             </div>
@@ -719,10 +927,14 @@ export const LandingPage = ({
                 Pasarela segura con PayPal Express, Culqi, Yape, Plin y tarjetas bancarias.
               </p>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Card 4: Pase QR Instantáneo */}
-          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-emerald-500/50 transition">
+          {/* FLOATING CARD 4 */}
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+            className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-emerald-500/50 transition"
+          >
             <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 flex items-center justify-center">
               <QrCode className="w-5 h-5 text-emerald-700" />
             </div>
@@ -732,69 +944,19 @@ export const LandingPage = ({
                 Código QR encriptado generado al instante con ventana de tolerancia configurable.
               </p>
             </div>
-          </div>
+          </motion.div>
 
         </div>
 
       </CinematicScrollSection>
 
       {/* =========================================================================
-          4. CÓMO FUNCIONA — EXPERIENCIA PASO A PASO
+          15. STICKY STORYTELLING: SECCIÓN PRINCIPAL
           ========================================================================= */}
-      <CinematicScrollSection id="sistema" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
-
-        {/* Encabezado Centrado */}
-        <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
-            Estaciona rápido y <span className="text-[#004D49]">sin complicaciones</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-[#004D49] max-w-lg mx-auto font-medium">
-            Sin descargar aplicaciones pesadas. Todo funciona directo y seguro desde tu navegador móvil.
-          </p>
-        </div>
-
-        {/* Pasos de Funcionamiento */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          
-          <div className="bg-white/95 p-6 rounded-3xl border border-[#004D49]/15 shadow-lg space-y-3 relative overflow-hidden">
-            <div className="text-4xl font-mono font-black text-[#004D49]/20 absolute top-4 right-6">01</div>
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 flex items-center justify-center font-bold">
-              <MapPin className="w-5 h-5 text-emerald-700" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">1. Elige tu Cochera</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Explora las sedes disponibles en el mapa interactivo de Ayacucho y consulta la tarifa por hora.
-            </p>
-          </div>
-
-          <div className="bg-white/95 p-6 rounded-3xl border border-[#004D49]/15 shadow-lg space-y-3 relative overflow-hidden">
-            <div className="text-4xl font-mono font-black text-[#004D49]/20 absolute top-4 right-6">02</div>
-            <div className="w-10 h-10 rounded-2xl bg-teal-500/10 border border-teal-500/30 text-teal-700 flex items-center justify-center font-bold">
-              <Car className="w-5 h-5 text-teal-700" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">2. Digita tu Placa</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Selecciona tu cajón preferido e ingresa tu número de placa para generar el pase en 2 segundos.
-            </p>
-          </div>
-
-          <div className="bg-white/95 p-6 rounded-3xl border border-[#004D49]/15 shadow-lg space-y-3 relative overflow-hidden">
-            <div className="text-4xl font-mono font-black text-[#004D49]/20 absolute top-4 right-6">03</div>
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 flex items-center justify-center font-bold">
-              <QrCode className="w-5 h-5 text-emerald-700" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">3. Navega e Ingresa</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Sigue la ruta 3D en tiempo real. Al llegar, la cámara ANPR abre la barrera o muestra tu Pase QR.
-            </p>
-          </div>
-
-        </div>
-
-      </CinematicScrollSection>
+      <StickyStorytellingSection />
 
       {/* =========================================================================
-          5. PREGUNTAS FRECUENTES (FAQS ACCORDION CLARO)
+          PREGUNTAS FRECUENTES (FAQS ACCORDION)
           ========================================================================= */}
       <CinematicScrollSection className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-4xl mx-auto space-y-8">
 
@@ -844,7 +1006,7 @@ export const LandingPage = ({
       </CinematicScrollSection>
 
       {/* =========================================================================
-          6. FOOTER ELEGANTE CLARO
+          FOOTER ELEGANTE CLARO
           ========================================================================= */}
       <footer className="border-t border-[#004D49]/15 bg-[#002624] py-10 px-4 sm:px-6 lg:px-12 text-slate-300 text-xs z-10 relative">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">

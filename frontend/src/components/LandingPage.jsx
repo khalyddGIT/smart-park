@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { QRCodeSVG } from 'qrcode.react';
 import { AyacuchoMap } from './AyacuchoMap';
 import { BrandLogo } from './BrandLogo';
 
@@ -317,13 +318,41 @@ const StickyStorytellingSection = () => {
       desc: 'Explora las sedes disponibles en el mapa interactivo 3D de Ayacucho, verifica tarifas y plazas en vivo.',
       icon: MapPin,
       preview: (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between bg-slate-900 text-white p-3 rounded-2xl border border-slate-800 text-xs font-mono">
-            <span className="text-emerald-400 font-bold">📍 Cochera Central Plaza</span>
-            <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full text-[10px]">12 Plazas Libres</span>
+        <div className="space-y-3 font-mono text-xs">
+          <div className="flex items-center justify-between bg-slate-900/90 text-white p-3 rounded-2xl border border-emerald-500/40 shadow-md">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="font-bold text-white">Central Plaza Mayor</span>
+            </div>
+            <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full text-[10px] font-bold">
+              12 Plazas Libres
+            </span>
           </div>
-          <div className="h-28 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl flex items-center justify-center text-xs text-emerald-700 font-bold font-mono">
-            [ MAPA MAPBOX 3D AYACUCHO ]
+
+          <div className="relative h-40 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between p-3">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:16px_16px] opacity-40 pointer-events-none" />
+            
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5">
+              <div className="relative flex items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-10 w-10 rounded-full bg-emerald-400 opacity-40" />
+                <div className="w-8 h-8 rounded-full bg-emerald-500 border-2 border-white shadow-lg flex items-center justify-center text-slate-950 font-black">
+                  <Car className="w-4 h-4 text-slate-950" />
+                </div>
+              </div>
+              <span className="bg-slate-950/90 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40">
+                S/ 5.00 / h
+              </span>
+            </div>
+
+            <div className="relative z-10 flex justify-between items-end text-[10px]">
+              <span className="bg-slate-950/80 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-800 flex items-center gap-1">
+                <Navigation className="w-3 h-3 text-cyan-400 shrink-0" />
+                <span>350m · 2 min llegada</span>
+              </span>
+              <span className="bg-emerald-500 text-slate-950 font-bold px-2 py-1 rounded-lg shadow-sm">
+                Cajón A-04 Reservable
+              </span>
+            </div>
           </div>
         </div>
       )
@@ -334,16 +363,37 @@ const StickyStorytellingSection = () => {
       desc: 'Selecciona tu cajón preferido e ingresa tu placa directamente. No requiere registro ni trámites previos.',
       icon: Car,
       preview: (
-        <div className="space-y-2 font-mono text-xs">
-          <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1.5">
-            <div className="text-slate-400 flex justify-between">
-              <span>Placa:</span> <span className="text-white font-bold">W1P-404</span>
+        <div className="space-y-3 font-mono text-xs">
+          <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-24 h-9 bg-white text-slate-950 border-2 border-slate-400 rounded-lg flex flex-col items-center justify-center font-bold tracking-wider relative overflow-hidden shadow-inner">
+                <span className="text-[7px] text-blue-700 tracking-widest leading-none font-sans font-black uppercase">PERU</span>
+                <span className="text-sm font-black text-slate-900 leading-none">W1P-404</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 block font-sans">Vehículo</span>
+                <span className="text-xs font-bold text-white">Toyota Yaris (Gris)</span>
+              </div>
             </div>
-            <div className="text-slate-400 flex justify-between">
-              <span>Estancia:</span> <span className="text-emerald-400 font-bold">2 Horas</span>
+            <span className="text-emerald-400 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/30">
+              Registrado
+            </span>
+          </div>
+
+          <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+            <div className="flex justify-between items-center text-slate-300 text-xs">
+              <span>Cajón Seleccionado:</span>
+              <span className="text-emerald-400 font-bold text-sm bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-500/40">
+                A-04 (Techado)
+              </span>
             </div>
-            <div className="text-slate-400 flex justify-between">
-              <span>Tolerancia:</span> <span className="text-cyan-400 font-bold">+15 min gratis</span>
+            <div className="flex justify-between items-center text-slate-400 text-[11px]">
+              <span>Duración Estancia:</span>
+              <span className="text-slate-200">2 Horas (S/ 10.00)</span>
+            </div>
+            <div className="flex justify-between items-center text-slate-400 text-[11px]">
+              <span>Tolerancia de Llegada:</span>
+              <span className="text-cyan-400 font-bold">+15 min de gracia</span>
             </div>
           </div>
         </div>
@@ -355,11 +405,26 @@ const StickyStorytellingSection = () => {
       desc: 'Genera tu Pase QR instantáneo. Al llegar a la garita, el sistema OpenCV reconoce tu placa y abre el portón.',
       icon: QrCode,
       preview: (
-        <div className="bg-white p-4 rounded-2xl border border-emerald-500/30 text-center space-y-2">
-          <div className="w-16 h-16 bg-slate-900 text-white rounded-xl mx-auto flex items-center justify-center font-bold text-xs font-mono">
-            [ QR ]
+        <div className="bg-slate-900 p-4 rounded-2xl border border-emerald-500/40 text-center space-y-3 font-mono text-xs">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span className="text-emerald-400 font-bold text-[11px]">PASE DIGITAL #SPK-8912</span>
+            <span className="bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">VALIDADO</span>
           </div>
-          <p className="text-[11px] text-emerald-800 font-mono font-bold">✓ BARRERA AUTOMÁTICA HABILITADA</p>
+
+          <div className="bg-white p-3 rounded-xl border border-slate-200 inline-block shadow-inner">
+            <QRCodeSVG value="SPK-DEMO-2026-W1P404" size={88} />
+          </div>
+
+          <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1 text-[11px] text-left">
+            <div className="flex items-center justify-between text-emerald-400 font-bold">
+              <span className="flex items-center gap-1">
+                <Camera className="w-3.5 h-3.5 text-emerald-400 animate-pulse" /> OpenCV Gate
+              </span>
+              <span className="text-[10px] text-slate-400">99.4% precisión</span>
+            </div>
+            <p className="text-[10px] text-slate-300">✓ Detección de Placa W1P-404 exitosa</p>
+            <p className="text-[10px] text-emerald-400 font-bold">✓ Barrera electromecánica abierta</p>
+          </div>
         </div>
       )
     }

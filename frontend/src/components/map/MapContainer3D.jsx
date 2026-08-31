@@ -20,7 +20,9 @@ import {
   Building2, 
   X, 
   MapPin,
-  Footprints 
+  Footprints,
+  Map,
+  Layers 
 } from 'lucide-react';
 import { FALLBACK_PARKING_IMAGE } from '../LocalEstablishmentManager';
 import { useAuth } from '../../context/AuthContext';
@@ -339,15 +341,52 @@ export const MapContainer3D = ({
           onResetCamera={() => cameraManagerRef.current && cameraManagerRef.current.resetCamera()}
         />
       ) : (
-        /* Botón Único de Perspectiva 2D/3D para Usuarios y Admins Locales */
-        <div className="absolute top-4 right-4 z-20 pointer-events-auto flex items-center space-x-2 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 text-white text-xs shadow-2xl">
+        /* Selector de Vistas de Mapa (Mapa Normal Mapbox / Vista 3D / Satélite) */
+        <div className="absolute top-4 right-4 z-20 pointer-events-auto flex items-center space-x-1 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 text-white text-xs shadow-2xl">
           <button
             type="button"
-            onClick={handleToggle3D}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+            onClick={() => {
+              handleChangeLayer('streets');
+              if (is3D) handleToggle3D();
+            }}
+            className={`px-2.5 py-1.5 rounded-lg font-black text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
+              !is3D && mapLayer === 'streets'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Map className="w-3.5 h-3.5" />
+            <span>Mapa Normal</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!is3D) handleToggle3D();
+            }}
+            className={`px-2.5 py-1.5 rounded-lg font-black text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
+              is3D
+                ? 'bg-cyan-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
           >
             <Compass className="w-3.5 h-3.5" />
-            <span>{is3D ? 'VISTA 2D' : 'VISTA 3D'}</span>
+            <span>Vista 3D</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              handleChangeLayer('satellite');
+            }}
+            className={`px-2.5 py-1.5 rounded-lg font-black text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
+              mapLayer === 'satellite'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Satélite</span>
           </button>
         </div>
       )}

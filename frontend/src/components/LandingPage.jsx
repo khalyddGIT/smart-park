@@ -24,8 +24,11 @@ import {
   Sparkles,
   ShieldAlert,
   Lock,
-  MessageCircle,
-  FileText
+  MessageSquare,
+  FileText,
+  ChevronDown,
+  Compass,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -78,8 +81,8 @@ const DynamicTiltCard = ({ children, className = '' }) => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
   }, []);
 
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [7, -7]), { stiffness: 260, damping: 24 });
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-7, 7]), { stiffness: 260, damping: 24 });
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), { stiffness: 260, damping: 24 });
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-6, 6]), { stiffness: 260, damping: 24 });
 
   const handleMouseMove = (e) => {
     if (isTouchDevice || !cardRef.current) return;
@@ -129,20 +132,20 @@ const LazyMapSection = ({ parkings, onSelectParking }) => {
   }, [shouldLoad]);
 
   return (
-    <div ref={containerRef} className="relative isolate z-0 rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,77,73,0.18)] border border-[#004D49]/15 bg-white transition-shadow duration-300 min-h-[420px]">
+    <div ref={containerRef} className="relative isolate z-0 rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] border border-slate-800 bg-slate-900 transition-all duration-300 min-h-[420px]">
       {shouldLoad ? (
         <AyacuchoMap parkings={parkings} onSelectParking={onSelectParking} />
       ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#EAF4F2]">
-          <div className="w-9 h-9 rounded-full border-[3px] border-[#004D49]/20 border-t-[#004D49] animate-spin" />
-          <p className="text-xs font-bold text-[#004D49]/70 font-sans">Cargando mapa en vivo de Ayacucho…</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950 text-slate-400">
+          <div className="w-9 h-9 rounded-full border-[3px] border-cyan-500/20 border-t-cyan-400 animate-spin" />
+          <p className="text-xs font-bold text-slate-400 font-sans">Cargando mapa en vivo de Ayacucho…</p>
         </div>
       )}
     </div>
   );
 };
 
-// Componente de Tipificación con Gradiente Dinámico
+// Componente de Tipificación con Gradiente Dinámico Neón
 const GradientTypewriter = () => {
   const dynamicWords = useMemo(() => [
     'Ayacucho',
@@ -179,10 +182,10 @@ const GradientTypewriter = () => {
 
   return (
     <span className="inline-block relative">
-      <span className="bg-gradient-to-r from-emerald-600 via-teal-400 to-emerald-500 bg-clip-text text-transparent animate-gradient-flow font-black">
+      <span className="bg-gradient-to-r from-emerald-400 via-cyan-300 to-teal-400 bg-clip-text text-transparent font-black">
         {currentText || '\u00A0'}
       </span>
-      <span className="inline-block w-[3px] sm:w-[4px] h-[0.85em] ml-1 bg-gradient-to-b from-emerald-500 to-teal-400 align-middle rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.7)]" />
+      <span className="inline-block w-[3px] sm:w-[4px] h-[0.85em] ml-1 bg-gradient-to-b from-cyan-400 to-emerald-400 align-middle rounded-full animate-pulse shadow-[0_0_12px_rgba(6,182,212,0.8)]" />
     </span>
   );
 };
@@ -211,7 +214,7 @@ export const LandingPage = ({
     restDelta: 0.001
   });
 
-  // Parallax del Fondo Global (Capas Atmosféricas de Profundidad)
+  // Parallax del Fondo Global
   const bgOrb1Y = useTransform(scrollYProgress, [0, 1], [0, 280]);
   const bgOrb2Y = useTransform(scrollYProgress, [0, 1], [0, -320]);
   const bgOrb3Y = useTransform(scrollYProgress, [0, 1], [0, 180]);
@@ -219,7 +222,7 @@ export const LandingPage = ({
   const smoothBgOrb2 = useSpring(bgOrb2Y, { stiffness: 100, damping: 25 });
   const smoothBgOrb3 = useSpring(bgOrb3Y, { stiffness: 100, damping: 25 });
 
-  // Parallax del Hero con Física de Profundidad
+  // Parallax del Hero
   const { scrollYProgress: heroScrollProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start']
@@ -232,14 +235,14 @@ export const LandingPage = ({
   const smoothHeroHeadlineY = useSpring(heroHeadlineY, { stiffness: 180, damping: 26, mass: 0.7 });
   const smoothHeroScale = useSpring(heroScale, { stiffness: 180, damping: 26, mass: 0.7 });
 
-  // Transformación 3D Suave del Mockup Faux-OS
+  // Transformación 3D del Mockup
   const { scrollYProgress: mockupScrollProgress } = useScroll({
     target: mockupSectionRef,
     offset: ['start end', 'center center']
   });
 
-  const mockupRotateX = useTransform(mockupScrollProgress, [0, 1], [14, 0]);
-  const mockupScale = useTransform(mockupScrollProgress, [0, 1], [0.92, 1]);
+  const mockupRotateX = useTransform(mockupScrollProgress, [0, 1], [12, 0]);
+  const mockupScale = useTransform(mockupScrollProgress, [0, 1], [0.94, 1]);
   const mockupOpacity = useTransform(mockupScrollProgress, [0, 0.45], [0.5, 1]);
   const smoothMockupRotateX = useSpring(mockupRotateX, { stiffness: 140, damping: 22 });
   const smoothMockupScale = useSpring(mockupScale, { stiffness: 140, damping: 22 });
@@ -278,80 +281,80 @@ export const LandingPage = ({
   const faqs = [
     {
       q: '¿Cómo se realiza el ingreso a la cochera con la reserva?',
-      a: 'Al confirmar tu reserva recibes un Pase Digital. Al llegar a la cochera en Huamanga, el sistema automático reconoce tu placa registrada y abre el portón de inmediato.'
+      a: 'Al confirmar tu reserva recibes un Pase Digital QR en pantalla. Al llegar a la cochera en Huamanga, la cámara inteligente ANPR reconoce tu placa registrada o puedes mostrar el código QR para ingresar de inmediato.'
     },
     {
       q: '¿Cuáles son los canales de pago habilitados?',
-      a: 'Puedes pagar de forma fácil con PayPal, Yape, Plin y tarjetas de débito o crédito con total seguridad.'
+      a: 'Puedes pagar de forma rápida con PayPal Express Checkout, Yape, Plin y tarjetas de débito o crédito Visa, Mastercard y Amex.'
     },
     {
-      q: '¿Existe tolerancia de tiempo ante eventualidades de tráfico?',
-      a: 'Todas las cocheras cuentan con 15 minutos de cortesía para asegurar tu llegada sin problemas.'
+      q: '¿Existe tolerancia de tiempo ante eventualidades de tráfico en Ayacucho?',
+      a: 'Todas las cocheras afiliadas cuentan con 15 minutos de cortesía tras la hora seleccionada para asegurar tu llegada sin inconvenientes.'
     },
     {
-      q: '¿Cuál es el procedimiento para afiliar mi cochera en Huamanga?',
-      a: 'Haz clic en "Afiliar Cochera", completa los datos de tu local y nuestro equipo configurará tu mapa digital en menos de 24 horas.'
+      q: '¿Cómo puedo afiliar mi playa de estacionamiento?',
+      a: 'Haz clic en "Afiliar Cochera", completa los datos de tu establecimiento y nuestro equipo configurará el mapa interactivo 3D de tu local en menos de 24 horas.'
     }
   ];
 
   return (
     <div
       ref={containerRef}
-      style={{
-        background: 'linear-gradient(180deg, #F4F9F8 0%, #FBFDFC 35%, #F0F7F6 70%, #E8F4F2 100%)'
-      }}
-      className="w-full min-h-screen text-[#111111] font-sans antialiased selection:bg-[#00827C] selection:text-white relative overflow-x-hidden"
+      className="w-full min-h-screen text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-slate-950 relative overflow-x-hidden bg-slate-950"
     >
       {/* =========================================================================
-          CAPAS DE PROFUNDIDAD ATMOSFÉRICA & PARALLAX FLOTANTE (SPATIAL LAYERS)
+          CAPAS DE PROFUNDIDAD ATMOSFÉRICA & PARALLAX FLOTANTE (SPATIAL DARK LAYERS)
           ========================================================================= */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Orbe 1: Esmeralda Superior */}
+        {/* Orbe 1: Cyan Superior */}
         <motion.div
           style={{ y: smoothBgOrb1 }}
-          className="absolute -top-32 -right-32 w-[550px] h-[550px] bg-gradient-to-br from-emerald-400/15 via-teal-300/10 to-transparent rounded-full blur-[140px] transform-gpu will-change-transform"
+          className="absolute -top-40 -right-40 w-[650px] h-[650px] bg-gradient-to-br from-cyan-500/15 via-emerald-500/10 to-transparent rounded-full blur-[150px] transform-gpu will-change-transform"
         />
 
-        {/* Orbe 2: Cyan Medio Izquierdo */}
+        {/* Orbe 2: Esmeralda Medio Izquierdo */}
         <motion.div
           style={{ y: smoothBgOrb2 }}
-          className="absolute top-[40%] -left-40 w-[600px] h-[600px] bg-gradient-to-tr from-cyan-400/10 via-emerald-300/10 to-transparent rounded-full blur-[160px] transform-gpu will-change-transform"
+          className="absolute top-[35%] -left-48 w-[680px] h-[680px] bg-gradient-to-tr from-emerald-500/12 via-teal-400/8 to-transparent rounded-full blur-[160px] transform-gpu will-change-transform"
         />
 
-        {/* Orbe 3: Esmeralda Profundo Inferior */}
+        {/* Orbe 3: Azul Indigo Profundo Inferior */}
         <motion.div
           style={{ y: smoothBgOrb3 }}
-          className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-gradient-to-tl from-[#004D49]/12 via-teal-400/8 to-transparent rounded-full blur-[150px] transform-gpu will-change-transform"
+          className="absolute bottom-10 right-10 w-[550px] h-[550px] bg-gradient-to-tl from-indigo-600/10 via-cyan-500/10 to-transparent rounded-full blur-[150px] transform-gpu will-change-transform"
         />
 
         {/* Cuadrícula sutil de ingeniería espacial */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#004D49_1px,transparent_1px),linear-gradient(to_bottom,#004D49_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.025]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.15]" />
       </div>
 
       {/* Indicador elástico superior de scroll */}
       <motion.div
-        className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-400 to-[#004D49] z-[100] origin-left shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+        className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 z-[100] origin-left shadow-[0_0_12px_rgba(6,182,212,0.8)]"
         style={{ scaleX }}
       />
 
       {/* =========================================================================
-          1. HEADER FLOTANTE ULTRA-PREMIUM (GLASSMORPHISM CON ELEVACIÓN)
+          1. HEADER FLOTANTE ULTRA-PREMIUM (DARK GLASSMORPHISM CON NEÓN)
           ========================================================================= */}
       <header className="sticky top-0 z-50 px-3 sm:px-6 lg:px-10 pt-2 sm:pt-3 pb-2 transition-all duration-300">
-        <div className="max-w-6xl mx-auto bg-[#002624]/90 backdrop-blur-xl border border-[#005e58]/50 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgba(0,38,36,0.35)] flex items-center justify-between text-white relative">
+        <div className="max-w-6xl mx-auto bg-slate-950/80 backdrop-blur-2xl border border-slate-800/80 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] flex items-center justify-between text-white relative">
 
           {/* Logo y Denominación */}
           <BrandLogo className="h-8 sm:h-9 w-auto" dark={true} />
 
           {/* Navegación Tipográfica en Escritorio */}
           <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 text-xs font-semibold">
-            <a href="#mapa" className="px-3.5 py-1.5 rounded-xl text-emerald-100/90 hover:text-white hover:bg-white/10 transition-all duration-200">
-              Directorio de Cocheras
+            <a href="#mapa" className="px-3.5 py-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all duration-200">
+              Cocheras en Vivo
             </a>
-            <a href="#sistema" className="px-3.5 py-1.5 rounded-xl text-emerald-100/90 hover:text-white hover:bg-white/10 transition-all duration-200">
+            <a href="#caracteristicas" className="px-3.5 py-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all duration-200">
+              Características
+            </a>
+            <a href="#sistema" className="px-3.5 py-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all duration-200">
               Funcionamiento
             </a>
-            <a href="#afiliacion" className="px-3.5 py-1.5 rounded-xl text-emerald-100/90 hover:text-white hover:bg-white/10 transition-all duration-200">
+            <a href="#afiliacion" className="px-3.5 py-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all duration-200">
               Propietarios
             </a>
           </nav>
@@ -359,17 +362,19 @@ export const LandingPage = ({
           {/* Acciones en Escritorio / Hamburguesa en Móvil */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             <button
+              type="button"
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="hidden sm:inline-flex text-xs font-bold text-emerald-200 hover:text-white bg-white/5 hover:bg-white/15 px-3.5 py-2 rounded-xl border border-emerald-500/30 transition-all duration-200 cursor-pointer"
+              className="hidden sm:inline-flex text-xs font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-700/80 transition-all duration-200 cursor-pointer"
             >
               Afiliar Cochera
             </button>
 
             <motion.button
+              type="button"
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => onOpenAuth && onOpenAuth('login')}
-              className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 text-xs font-black px-4 sm:px-5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer flex items-center space-x-2 shadow-[0_0_20px_rgba(52,211,153,0.35)]"
+              className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-teal-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-xs font-black px-4 sm:px-5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer flex items-center space-x-2 shadow-[0_0_25px_rgba(6,182,212,0.35)]"
             >
               <LogIn className="w-4 h-4 shrink-0 text-slate-950 stroke-[2.5]" />
               <span>Acceder</span>
@@ -377,8 +382,9 @@ export const LandingPage = ({
 
             {/* Botón menú móvil */}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-emerald-200 hover:text-white hover:bg-white/10 rounded-xl transition cursor-pointer"
+              className="md:hidden p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
               aria-label="Abrir menú de navegación"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -395,33 +401,41 @@ export const LandingPage = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.97 }}
               transition={{ duration: 0.2, ease: FLUID_EASE }}
-              className="md:hidden mt-2 max-w-6xl mx-auto bg-[#002624]/95 backdrop-blur-xl border border-[#005e58]/50 p-4 rounded-2xl shadow-2xl space-y-2 text-xs font-bold text-emerald-100"
+              className="md:hidden mt-2 max-w-6xl mx-auto bg-slate-950/95 backdrop-blur-2xl border border-slate-800 p-4 rounded-2xl shadow-2xl space-y-2 text-xs font-bold text-slate-200"
             >
               <a
                 href="#mapa"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition"
+                className="block px-3.5 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition"
               >
-                Directorio de Cocheras
+                Cocheras en Vivo
+              </a>
+              <a
+                href="#caracteristicas"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3.5 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition"
+              >
+                Características
               </a>
               <a
                 href="#sistema"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition"
+                className="block px-3.5 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition"
               >
                 Funcionamiento
               </a>
               <a
                 href="#afiliacion"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition"
+                className="block px-3.5 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition"
               >
                 Propietarios
               </a>
-              <div className="pt-2 border-t border-emerald-500/20 flex flex-col gap-2">
+              <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
                 <button
+                  type="button"
                   onClick={() => { setMobileMenuOpen(false); onOpenAuth && onOpenAuth('affiliation'); }}
-                  className="w-full py-2.5 bg-white/10 text-emerald-200 hover:text-white rounded-xl text-center font-bold"
+                  className="w-full py-2.5 bg-slate-900 text-slate-200 hover:text-white border border-slate-700 rounded-xl text-center font-bold"
                 >
                   Afiliar Cochera
                 </button>
@@ -432,9 +446,9 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO SECTION CON PROFUNDIDAD Y RESPONSIVE FLUIDO
+          2. HERO SECTION CON PROFUNDIDAD 3D & NEÓN FUTURISTA
           ========================================================================= */}
-      <section ref={heroRef} className="pt-16 sm:pt-24 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto space-y-10 sm:space-y-12 text-center relative z-10">
+      <section ref={heroRef} className="pt-14 sm:pt-20 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto space-y-8 sm:space-y-10 text-center relative z-10">
 
         <motion.div
           style={{
@@ -448,16 +462,21 @@ export const LandingPage = ({
           className="space-y-5 sm:space-y-6 flex flex-col items-center transform-gpu will-change-transform"
         >
 
-          {/* Titular Principal Centrado con Efecto de Tipificación con Gradiente Dinámico */}
+          {/* Insignia Neón Flotante Superior */}
+          <div className="inline-flex items-center gap-2 bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold px-4 py-1.5 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.25)]">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+            <Zap className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>SISTEMA INTELIGENTE EN AYACUCHO</span>
+          </div>
+
+          {/* Titular Principal Centrado */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: FLUID_EASE }}
-            className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] tracking-[-0.03em] max-w-3xl mx-auto leading-[1.14] sm:leading-[1.08] drop-shadow-xs"
+            className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] tracking-tight max-w-3xl mx-auto leading-[1.14] sm:leading-[1.08] text-white"
           >
-            <span className="bg-gradient-to-r from-[#002B29] via-[#004D49] to-[#002B29] bg-clip-text text-transparent animate-gradient-flow">
-              Ecosistema Inteligente de Estacionamientos en{' '}
-            </span>
+            Encuentra y Reserva tu Cochera en{' '}
             <GradientTypewriter />
           </motion.h1>
 
@@ -466,12 +485,12 @@ export const LandingPage = ({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35, ease: FLUID_EASE }}
-            className="text-sm sm:text-[15px] md:text-lg text-[#003835]/80 max-w-2xl mx-auto font-medium leading-relaxed text-center px-2 tracking-[-0.01em]"
+            className="text-sm sm:text-base md:text-lg text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed text-center px-2"
           >
-            Conectamos a conductores en Ayacucho con estacionamientos disponibles en tiempo real, facilitando la reserva de tu sitio e ingreso directo.
+            Navegación 3D en tiempo real, reserva instantánea con pase QR y control de acceso automatizado por reconocimiento inteligente de placas.
           </motion.p>
 
-          {/* LAS 2 OPCIONES PRINCIPALES DEL SISTEMA (3D TILT CARDS) */}
+          {/* LAS 2 TARJETAS PRINCIPALES DEL SISTEMA (3D TILT CARDS) */}
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
@@ -481,17 +500,17 @@ export const LandingPage = ({
 
             {/* OPCIÓN 1: CONDUCTORES / USUARIOS */}
             <DynamicTiltCard className="h-full">
-              <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-emerald-500/30 shadow-xl shadow-emerald-950/5 space-y-4 flex flex-col justify-between h-full group hover:border-emerald-600/60 transition-all duration-300">
+              <div className="bg-slate-900/90 backdrop-blur-md p-6 rounded-3xl border border-slate-800 shadow-2xl space-y-4 flex flex-col justify-between h-full group hover:border-cyan-500/60 transition-all duration-300">
                 <div className="space-y-3">
-                  <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 flex items-center justify-center font-bold shadow-xs">
-                    <Car className="w-6 h-6 text-emerald-700" />
+                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-bold shadow-xs">
+                    <Car className="w-6 h-6 text-cyan-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-emerald-800 transition">
+                    <h3 className="text-lg font-black text-white tracking-tight group-hover:text-cyan-300 transition">
                       Buscar & Reservar Plazas
                     </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed mt-1 font-sans">
-                      Encuentra cocheras en Huamanga, elige tu sitio preferido en el mapa y accede directo reconociendo tu placa sin tickets.
+                    <p className="text-xs text-slate-400 leading-relaxed mt-1 font-sans">
+                      Encuentra cocheras en Huamanga, elige tu sitio en el mapa 3D y accede de forma fluida reconociendo tu placa sin tickets físicos.
                     </p>
                   </div>
                 </div>
@@ -500,36 +519,37 @@ export const LandingPage = ({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   href="#mapa"
-                  className="w-full py-3 bg-[#004D49] hover:bg-[#003835] text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#004D49]/20 mt-3"
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.3)] mt-3"
                 >
                   <span>Consultar Cocheras en Vivo</span>
-                  <ArrowRight className="w-4 h-4 text-emerald-400" />
+                  <ArrowRight className="w-4 h-4 text-slate-950" />
                 </motion.a>
               </div>
             </DynamicTiltCard>
 
             {/* OPCIÓN 2: PROPIETARIOS DE COCHERAS */}
             <DynamicTiltCard className="h-full">
-              <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl shadow-slate-950/20 space-y-4 flex flex-col justify-between h-full group hover:border-emerald-500/50 transition-all duration-300">
+              <div className="bg-slate-900/90 backdrop-blur-md p-6 rounded-3xl border border-slate-800 shadow-2xl space-y-4 flex flex-col justify-between h-full group hover:border-emerald-500/60 transition-all duration-300">
                 <div className="space-y-3">
-                  <div className="w-11 h-11 rounded-2xl bg-emerald-400/20 border border-emerald-400/30 text-emerald-400 flex items-center justify-center font-bold shadow-xs">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-400/10 border border-emerald-400/30 text-emerald-400 flex items-center justify-center font-bold shadow-xs">
                     <Building2 className="w-6 h-6 text-emerald-400" />
                   </div>
                   <div>
                     <h3 className="text-lg font-black text-white tracking-tight group-hover:text-emerald-300 transition">
                       Afiliar mi Estacionamiento
                     </h3>
-                    <p className="text-xs text-slate-300 leading-relaxed mt-1 font-sans">
-                      Registra tu cochera, organiza tus espacios en el mapa digital, recibe reservas online y automatiza el cobro sin costo inicial.
+                    <p className="text-xs text-slate-400 leading-relaxed mt-1 font-sans">
+                      Registra tu cochera, gestiona tus cajones en el mapa digital, recibe reservas online con pago integrado y automatiza tus ingresos.
                     </p>
                   </div>
                 </div>
 
                 <motion.button
+                  type="button"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 text-xs font-black rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-400/20 mt-3"
+                  className="w-full py-3 bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 text-slate-950 text-xs font-black rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.3)] mt-3"
                 >
                   <Building2 className="w-4 h-4 text-slate-950" />
                   <span>Solicitar Afiliación de Cochera</span>
@@ -543,14 +563,14 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          2.5 BANDA DE MÉTRICAS EN VIVO CON GLASS ELEVATION
+          2.5 BANDA DE MÉTRICAS EN VIVO CON GLASS DARK ELEVATION
           ========================================================================= */}
-      <CinematicScrollSection className="py-8 sm:py-10 px-4 sm:px-6 lg:px-12">
-        <div className="max-w-5xl mx-auto bg-white/85 backdrop-blur-xl border border-[#004D49]/15 rounded-3xl shadow-[0_20px_45px_rgba(0,77,73,0.08)] grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-[#004D49]/10 overflow-hidden">
+      <CinematicScrollSection className="py-6 sm:py-8 px-4 sm:px-6 lg:px-12">
+        <div className="max-w-5xl mx-auto bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-slate-800/80 overflow-hidden">
           {[
-            { value: `${Math.max(establishments.length, 0)}`, suffix: '', label: 'Cocheras conectadas en vivo' },
-            { value: `${totalFreeSlots}`, suffix: '', label: 'Plazas libres ahora mismo' },
-            { value: '98', suffix: '%', label: 'Ingresos con pase automático' },
+            { value: `${Math.max(establishments.length, 0)}`, suffix: '+', label: 'Cocheras conectadas' },
+            { value: `${totalFreeSlots}`, suffix: '', label: 'Plazas libres en vivo' },
+            { value: '98', suffix: '%', label: 'Ingresos automatizados' },
             { value: '15', suffix: ' min', label: 'Tolerancia garantizada' }
           ].map((m, i) => (
             <motion.div
@@ -559,12 +579,12 @@ export const LandingPage = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.45, delay: i * 0.07, ease: FLUID_EASE }}
-              className="p-5 sm:p-6 text-center group hover:bg-emerald-50/30 transition duration-300"
+              className="p-5 sm:p-6 text-center group hover:bg-slate-800/40 transition duration-300"
             >
-              <div className="text-2xl sm:text-4xl font-display font-black text-[#002B29] tracking-tight">
-                {m.value}<span className="text-[#004D49]">{m.suffix}</span>
+              <div className="text-2xl sm:text-4xl font-mono font-black text-cyan-400 tracking-tight">
+                {m.value}<span className="text-emerald-400">{m.suffix}</span>
               </div>
-              <div className="mt-1 text-[10px] sm:text-xs text-[#004D49]/70 font-bold uppercase tracking-wide">
+              <div className="mt-1 text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider font-mono">
                 {m.label}
               </div>
             </motion.div>
@@ -573,36 +593,37 @@ export const LandingPage = ({
       </CinematicScrollSection>
 
       {/* =========================================================================
-          3. DIRECTORIO Y MAPA EN VIVO CON PERSPECTIVA
+          3. DIRECTORIO Y MAPA EN VIVO DE AYACUCHO
           ========================================================================= */}
-      <CinematicScrollSection id="mapa" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
+      <CinematicScrollSection id="mapa" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
 
         {/* Encabezado Centrado */}
         <div className="max-w-3xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
-            Estacionamientos Conectados en <span className="text-[#004D49]">Huamanga</span>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-white tracking-tight">
+            Estacionamientos Conectados en <span className="text-cyan-400">Huamanga</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#004D49] max-w-md mx-auto font-medium">
-            Consulta disponibilidad en vivo, precios por hora y navega directamente a la cochera.
+          <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto font-normal">
+            Consulta disponibilidad en tiempo real, tarifas por hora y navega directamente a tu cochera.
           </p>
         </div>
 
         {/* Buscador + Filtros + Contador en Vivo */}
         <div className="max-w-3xl mx-auto space-y-3 px-2">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#004D49]/60 pointer-events-none" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nombre, dirección o referencia…"
-              className="w-full h-12 pl-11 pr-10 rounded-2xl bg-white/95 backdrop-blur-md border border-[#004D49]/15 text-sm font-medium text-[#002B29] placeholder:text-[#004D49]/40 shadow-sm focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/50 transition"
+              className="w-full h-12 pl-11 pr-10 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-800 text-sm font-medium text-white placeholder:text-slate-500 shadow-sm focus-visible:ring-2 focus-visible:ring-cyan-500/40 focus-visible:border-cyan-500 transition"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
                 aria-label="Limpiar búsqueda"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[#004D49]/50 hover:text-[#002B29] hover:bg-[#004D49]/5 transition cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -618,30 +639,32 @@ export const LandingPage = ({
             ].map((cat) => (
               <button
                 key={cat.id}
+                type="button"
                 onClick={() => setCategoryFilter(cat.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer ${categoryFilter === cat.id
-                    ? 'bg-[#004D49] text-white border-[#004D49] shadow-md shadow-[#004D49]/20'
-                    : 'bg-white/85 text-[#004D49] border-[#004D49]/15 hover:border-emerald-500/50 hover:bg-white'
-                  }`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer ${
+                  categoryFilter === cat.id
+                    ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-black shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+                    : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-white'
+                }`}
               >
                 {cat.label}
               </button>
             ))}
           </div>
 
-          <div className="flex items-center justify-center gap-2 pt-1">
+          <div className="flex items-center justify-center gap-2 pt-1 font-mono text-xs">
             <span className="relative flex w-2.5 h-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
               <span className="relative inline-flex rounded-full w-2.5 h-2.5 bg-emerald-500" />
             </span>
-            <p className="text-xs font-semibold text-[#004D49]">
+            <p className="text-slate-400">
               {filteredParkings.length} {filteredParkings.length === 1 ? 'cochera coincide' : 'cocheras coinciden'} ·{' '}
-              <strong className="font-black text-[#002B29]">{totalFreeSlots} plazas libres</strong> en la red
+              <strong className="font-black text-emerald-400">{totalFreeSlots} plazas libres</strong>
             </p>
           </div>
         </div>
 
-        {/* Mapa Leaflet Interactivo con Sombras y Parallax */}
+        {/* Mapa Leaflet Interactivo */}
         <LazyMapSection
           parkings={filteredParkings}
           onSelectParking={(p) => {
@@ -652,384 +675,210 @@ export const LandingPage = ({
       </CinematicScrollSection>
 
       {/* =========================================================================
-          4. CÓMO FUNCIONA — EXPERIENCIA 3D EN FAUX-OS WINDOW
+          3.5 CARACTERÍSTICAS & TECNOLOGÍA DEL SISTEMA (BENTO CARDS)
           ========================================================================= */}
-      <CinematicScrollSection id="sistema" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8 sm:space-y-10">
-
-        {/* Encabezado Centrado */}
+      <CinematicScrollSection id="caracteristicas" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
+        
         <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
-            Estaciona rápido y <span className="text-[#004D49]">sin complicaciones</span>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-white tracking-tight">
+            Tecnología Diseñada para <span className="text-emerald-400">Smart Park</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#004D49] max-w-lg mx-auto font-medium">
-            Sin descargar aplicaciones pesadas. Todo funciona directo y seguro desde tu celular.
+          <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto font-normal">
+            Una plataforma moderna que combina trazado 3D, visión artificial y pasarelas de pago digitales.
           </p>
         </div>
 
-        {/* Contenedor Faux-OS Window Chrome de Alta Definición con Inercia 3D */}
-        <div ref={mockupSectionRef} style={{ perspective: 1200 }}>
-          <motion.div
-            style={{
-              rotateX: smoothMockupRotateX,
-              scale: smoothMockupScale,
-              opacity: mockupOpacity,
-              transformStyle: 'preserve-3d'
-            }}
-            className="rounded-3xl border border-white/80 bg-white/95 backdrop-blur-xl shadow-[0_24px_60px_-15px_rgba(0,77,73,0.22)] overflow-hidden transition-all duration-300 transform-gpu will-change-transform"
-          >
-
-            {/* Barra Superior estilo Navegador Móvil Premium */}
-            <div className="px-4 sm:px-6 py-3 bg-[#F0F7F6] border-b border-[#D4E8E7] flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="w-4 h-4 shrink-0 rounded-full bg-[#004D49]/30" />
-                <span className="w-4 h-4 shrink-0 rounded-full bg-[#004D49]/20" />
-                <span className="w-4 h-4 shrink-0 rounded-full bg-[#004D49]/10" />
-              </div>
-              <span className="font-mono text-xs text-[#004D49] font-bold">
-                smart-park.pe/pase/SPK-8912
-              </span>
-              <div className="w-12 sm:w-16" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* Card 1: Navegación 3D */}
+          <div className="bg-slate-900/80 backdrop-blur-md p-6 rounded-3xl border border-slate-800 space-y-3 flex flex-col justify-between hover:border-cyan-500/50 transition">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
+              <Compass className="w-5 h-5 text-cyan-400" />
             </div>
-
-            {/* Cuerpo de la Experiencia */}
-            <div className="p-6 sm:p-10 lg:p-12 grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-white/95">
-
-              {/* Pasos a la Izquierda */}
-              <div className="space-y-5 md:col-span-1 md:border-r border-slate-200/80 md:pr-8">
-
-                {/* Paso 1 */}
-                <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition space-y-1.5 group">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-6 h-6 rounded-lg bg-[#004D49] text-white font-mono text-xs font-black flex items-center justify-center shadow-xs">
-                      1
-                    </span>
-                    <h3 className="text-sm font-extrabold text-[#002B29] group-hover:text-[#004D49] transition">
-                      Elige tu sitio preferido
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed pl-8">
-                    Visualiza en pantalla el espacio asignado: techado, estándar o de fácil acceso.
-                  </p>
-                </div>
-
-                {/* Paso 2 */}
-                <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition space-y-1.5 group">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-6 h-6 rounded-lg bg-[#004D49] text-white font-mono text-xs font-black flex items-center justify-center shadow-xs">
-                      2
-                    </span>
-                    <h3 className="text-sm font-extrabold text-[#002B29] group-hover:text-[#004D49] transition">
-                      Navegación directa
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed pl-8">
-                    Abre la ruta en tu celular con Google Maps o Waze y llega directo al portón.
-                  </p>
-                </div>
-
-                {/* Paso 3 */}
-                <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition space-y-1.5 group">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-6 h-6 rounded-lg bg-[#004D49] text-white font-mono text-xs font-black flex items-center justify-center shadow-xs">
-                      3
-                    </span>
-                    <h3 className="text-sm font-extrabold text-[#002B29] group-hover:text-[#004D49] transition">
-                      Ingreso directo sin ticket
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed pl-8">
-                    El sistema reconoce la placa de tu auto al llegar y levanta el portón automáticamente.
-                  </p>
-                </div>
-
-              </div>
-
-              {/* Ficha Interactiva de Pase Digital en Vivo a la Derecha */}
-              <div className="md:col-span-2 bg-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-5">
-
-                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                  <div className="space-y-1">
-                    <h4 className="font-extrabold text-sm sm:text-base text-white">Smart Park Plaza Mayor</h4>
-                    <p className="text-xs text-emerald-400 font-mono">Jr. 28 de Julio 142 &bull; Huamanga, Ayacucho</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 font-sans">
-                  <div className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700/80">
-                    <span className="text-[10px] text-slate-400 block font-mono font-bold uppercase">Espacio</span>
-                    <strong className="text-sm sm:text-base text-white block mt-0.5 font-mono font-black">A-01</strong>
-                  </div>
-                  <div className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700/80">
-                    <span className="text-[10px] text-slate-400 block font-mono font-bold uppercase">Tu Placa</span>
-                    <strong className="text-sm sm:text-base text-emerald-400 block mt-0.5 font-mono font-black">ABC-123</strong>
-                  </div>
-                  <div className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700/80">
-                    <span className="text-[10px] text-slate-400 block font-mono font-bold uppercase">Tolerancia</span>
-                    <strong className="text-sm sm:text-base text-emerald-300 block mt-0.5 font-mono font-black">15 min</strong>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-800/80 font-mono">
-                  <span>Acceso Automático Registrado</span>
-                  <span className="text-emerald-400 font-bold">Ingreso Sin Esperas</span>
-                </div>
-
-              </div>
-
+            <div>
+              <h3 className="text-base font-bold text-white mb-1">Ruta 3D en Vivo</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Trazado con GPS en tiempo real, indicaciones por voz y elevación topográfica DEM.
+              </p>
             </div>
+          </div>
 
-          </motion.div>
+          {/* Card 2: Reconocimiento ANPR */}
+          <div className="bg-slate-900/80 backdrop-blur-md p-6 rounded-3xl border border-slate-800 space-y-3 flex flex-col justify-between hover:border-emerald-500/50 transition">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+              <Camera className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white mb-1">Acceso ANPR</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Detección automática de placas al llegar a la garita de control sin tickets impresos.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: Pagos Multicanal */}
+          <div className="bg-slate-900/80 backdrop-blur-md p-6 rounded-3xl border border-slate-800 space-y-3 flex flex-col justify-between hover:border-indigo-500/50 transition">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-indigo-400" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white mb-1">Pagos Digitales</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Pasarela segura con PayPal Express, Culqi, Yape, Plin y tarjetas bancarias.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 4: Pase QR Instantáneo */}
+          <div className="bg-slate-900/80 backdrop-blur-md p-6 rounded-3xl border border-slate-800 space-y-3 flex flex-col justify-between hover:border-teal-500/50 transition">
+            <div className="w-10 h-10 rounded-2xl bg-teal-500/10 border border-teal-500/30 text-teal-400 flex items-center justify-center">
+              <QrCode className="w-5 h-5 text-teal-400" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white mb-1">Pase Digital QR</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Código QR encriptado generado al instante con ventana de tolerancia configurable.
+              </p>
+            </div>
+          </div>
+
         </div>
 
       </CinematicScrollSection>
 
       {/* =========================================================================
-          6. SECCIÓN PROPIETARIOS CON PROFUNDIDAD Y ELEVACIÓN
+          4. CÓMO FUNCIONA — EXPERIENCIA PASO A PASO
           ========================================================================= */}
-      <CinematicScrollSection id="afiliacion" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 25 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-20px' }}
-          transition={{ duration: 0.6, ease: FLUID_EASE }}
-          className="bg-gradient-to-b from-[#002B29] to-[#001D1B] text-white rounded-3xl p-6 sm:p-10 md:p-14 space-y-6 flex flex-col items-center text-center border border-[#005e58]/50 shadow-[0_24px_60px_-10px_rgba(0,43,41,0.5)] relative overflow-hidden"
-        >
-          {/* Luz ambiental de fondo */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <CinematicScrollSection id="sistema" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
 
-          <div className="max-w-2xl space-y-3 px-2 relative z-10">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold tracking-tight text-white">
-              Digitalice la operación de <span className="text-emerald-300">su cochera</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-[#D1FAE5] leading-relaxed max-w-xl mx-auto">
-              Creamos un mapa digital interactivo de tu local, automatizamos la entrada de vehículos y conectamos tu estacionamiento con conductores de la ciudad.
+        {/* Encabezado Centrado */}
+        <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-white tracking-tight">
+            Estaciona rápido y <span className="text-cyan-400">sin complicaciones</span>
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto font-normal">
+            Sin descargar aplicaciones pesadas. Todo funciona directo y seguro desde tu navegador móvil.
+          </p>
+        </div>
+
+        {/* Pasos de Funcionamiento */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          
+          <div className="bg-slate-900/80 p-6 rounded-3xl border border-slate-800 space-y-3 relative overflow-hidden">
+            <div className="text-4xl font-mono font-black text-cyan-500/30 absolute top-4 right-6">01</div>
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-bold">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white">1. Elige tu Cochera</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Explora las sedes disponibles en el mapa interactivo de Ayacucho y consulta la tarifa por hora.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto pt-2 relative z-10">
-            <motion.button
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-[#EAEAEA] text-[#002B29] text-xs font-black rounded-xl transition-all duration-200 cursor-pointer shadow-[0_4px_20px_rgba(255,255,255,0.25)]"
-            >
-              Solicitar Afiliación
-            </motion.button>
-            <motion.a
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              href="https://wa.me/51966000000?text=Hola,%20deseo%20afiliar%20mi%20cochera%20en%20Ayacucho"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto px-6 py-3.5 bg-[#004D49] hover:bg-[#003835] text-white text-xs font-bold rounded-xl border border-[#00605B] transition-colors duration-200 text-center shadow-md"
-            >
-              Contacto Directo
-            </motion.a>
+          <div className="bg-slate-900/80 p-6 rounded-3xl border border-slate-800 space-y-3 relative overflow-hidden">
+            <div className="text-4xl font-mono font-black text-emerald-500/30 absolute top-4 right-6">02</div>
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold">
+              <Car className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white">2. Digita tu Placa</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Selecciona tu cajón preferido e ingresa tu número de placa para generar el pase en 2 segundos.
+            </p>
           </div>
 
-        </motion.div>
+          <div className="bg-slate-900/80 p-6 rounded-3xl border border-slate-800 space-y-3 relative overflow-hidden">
+            <div className="text-4xl font-mono font-black text-teal-500/30 absolute top-4 right-6">03</div>
+            <div className="w-10 h-10 rounded-2xl bg-teal-500/10 border border-teal-500/30 text-teal-400 flex items-center justify-center font-bold">
+              <QrCode className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white">3. Navega e Ingresa</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Sigue la ruta 3D en tiempo real. Al llegar, la cámara ANPR abre la barrera o muestra tu Pase QR.
+            </p>
+          </div>
+
+        </div>
+
       </CinematicScrollSection>
 
       {/* =========================================================================
-          7. PREGUNTAS FRECUENTES (FAQ)
+          5. PREGUNTAS FRECUENTES (FAQS ACCORDION)
           ========================================================================= */}
-      <CinematicScrollSection className="py-16 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-4xl mx-auto space-y-8 sm:space-y-10">
+      <CinematicScrollSection className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-4xl mx-auto space-y-8">
 
-        {/* Encabezado Centrado */}
-        <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
-            Preguntas <span className="text-[#004D49]">Frecuentes</span>
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight">
+            Preguntas Frecuentes
           </h2>
-          <p className="text-xs sm:text-sm text-[#004D49] font-medium">
-            Respuestas a las dudas principales sobre el funcionamiento del sistema.
+          <p className="text-xs sm:text-sm text-slate-400 font-normal">
+            Resuelve tus dudas sobre el servicio de reserva y acceso.
           </p>
         </div>
 
-        <div className="divide-y divide-[#004D49]/15 border border-[#004D49]/15 bg-white/85 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-sm">
-          {faqs.map((faq, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-15px' }}
-              transition={{ duration: 0.4, delay: idx * 0.04, ease: FLUID_EASE }}
-              className="py-4 first:pt-0 last:pb-0"
-            >
-              <button
-                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                className="w-full text-left font-bold text-xs sm:text-sm text-[#002B29] flex items-center justify-between hover:text-[#004D49] transition-colors duration-200 cursor-pointer gap-2"
+        <div className="space-y-3">
+          {faqs.map((faq, i) => {
+            const isOpen = activeFaq === i;
+            return (
+              <div
+                key={i}
+                className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden transition"
               >
-                <span>{faq.q}</span>
-                <span className="font-mono text-base text-[#004D49] shrink-0">
-                  {activeFaq === idx ? '−' : '+'}
-                </span>
-              </button>
-              <AnimatePresence>
-                {activeFaq === idx && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.25, ease: FLUID_EASE }}
-                    className="overflow-hidden"
-                  >
-                    <div className="pt-3 text-xs sm:text-sm text-[#003835] leading-relaxed font-normal">
+                <button
+                  type="button"
+                  onClick={() => setActiveFaq(isOpen ? null : i)}
+                  className="w-full p-5 text-left flex items-center justify-between font-bold text-xs sm:text-sm text-slate-200 hover:text-white cursor-pointer"
+                >
+                  <span>{faq.q}</span>
+                  <ChevronDown className={`w-4 h-4 text-cyan-400 transition-transform duration-200 shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="px-5 pb-5 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60 pt-3"
+                    >
                       {faq.a}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </div>
 
       </CinematicScrollSection>
 
       {/* =========================================================================
-          8. FOOTER CORPORATIVO PROFESIONAL (DARK EMERALD CON ICONOGRAFÍA VECTORIAL SVG)
+          6. FOOTER ELEGANTE Y PROFESIONAL
           ========================================================================= */}
-      <footer className="bg-[#001B19] text-white border-t border-[#004D49]/50 pt-16 pb-12 px-4 sm:px-6 lg:px-12 relative z-10">
-        <div className="max-w-6xl mx-auto space-y-12">
-
-          {/* Fila Principal de Columnas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8">
-
-            {/* Columna 1: Identidad Institucional (4 cols) */}
-            <div className="lg:col-span-4 space-y-4">
-              <div className="flex items-center space-x-3">
-                <BrandLogo className="h-8 w-auto" dark={true} />
-              </div>
-
-              <p className="text-xs text-slate-300 leading-relaxed max-w-sm font-sans">
-                Plataforma de infraestructura y reservas para la red de estacionamientos de Ayacucho. Automatización de acceso vehicular con reconocimiento de placas y procesamiento digital de pagos.
-              </p>
-
-              <div className="flex items-center gap-2 pt-2 text-xs text-emerald-400 font-medium">
-                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Infraestructura Segura con Cifrado SSL de 256 bits</span>
-              </div>
-            </div>
-
-            {/* Columna 2: Servicios para Conductores (3 cols) */}
-            <div className="lg:col-span-3 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 font-display">
-                Conductores
-              </h4>
-              <ul className="space-y-2.5 text-xs text-slate-300">
-                <li>
-                  <a href="#mapa" className="hover:text-white transition flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Directorio de Cocheras en Huamanga</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="#mapa" className="hover:text-white transition flex items-center gap-2">
-                    <Search className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Consulta de Espacios Libres</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="#sistema" className="hover:text-white transition flex items-center gap-2">
-                    <QrCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Pase Digital y Reconocimiento</span>
-                  </a>
-                </li>
-                <li>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Tolerancia de 15 minutos en reservas</span>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            {/* Columna 3: Servicios para Propietarios (3 cols) */}
-            <div className="lg:col-span-3 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 font-display">
-                Propietarios
-              </h4>
-              <ul className="space-y-2.5 text-xs text-slate-300">
-                <li>
-                  <button
-                    onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                    className="hover:text-white transition flex items-center gap-2 text-left cursor-pointer"
-                  >
-                    <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Afiliación de Estacionamientos</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => onOpenAuth && onOpenAuth('login')}
-                    className="hover:text-white transition flex items-center gap-2 text-left cursor-pointer"
-                  >
-                    <Layers className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Panel de Control y Métricas</span>
-                  </button>
-                </li>
-                <li>
-                  <a href="#afiliacion" className="hover:text-white transition flex items-center gap-2">
-                    <Camera className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Tecnología LPR y Apertura Automática</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Columna 4: Medios de Pago y Soporte (2 cols) */}
-            <div className="lg:col-span-2 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 font-display">
-                Pasarelas & Soporte
-              </h4>
-
-              <div className="space-y-2 text-xs text-slate-300">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>PayPal, Culqi, Yape y Plin</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Pagos Seguros Certificados</span>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <a
-                  href="https://wa.me/51966000000?text=Hola,%20tengo%20una%20consulta%20sobre%20Smart-Park"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#004D49] hover:bg-[#003835] text-white text-xs font-medium border border-[#00605B] transition w-full justify-center shadow-xs"
-                >
-                  <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Atención al Cliente</span>
-                </a>
-              </div>
-            </div>
-
+      <footer className="border-t border-slate-800/80 bg-slate-950 py-10 px-4 sm:px-6 lg:px-12 text-slate-400 text-xs z-10 relative">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+          
+          <div className="space-y-2 flex flex-col items-center md:items-start">
+            <BrandLogo className="h-7 w-auto" dark={true} />
+            <p className="text-[11px] text-slate-500 max-w-sm">
+              Ecosistema Inteligente de Estacionamientos de Ayacucho, Perú.
+            </p>
           </div>
 
-          {/* Línea Divisoria y Sub-Footer */}
-          <div className="pt-8 border-t border-[#004D49]/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-sans">
-            <div className="flex items-center space-x-2">
-              <span>© {new Date().getFullYear()} Smart-Park Ayacucho. Todos los derechos reservados.</span>
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-400">
+            <a href="#mapa" className="hover:text-white transition">Cocheras en Vivo</a>
+            <a href="#caracteristicas" className="hover:text-white transition">Características</a>
+            <a href="#sistema" className="hover:text-white transition">Funcionamiento</a>
+            <button
+              type="button"
+              onClick={() => onOpenTerms && onOpenTerms()}
+              className="hover:text-white transition cursor-pointer"
+            >
+              Términos y Condiciones
+            </button>
+          </div>
 
-            <div className="flex items-center space-x-6">
-              <button
-                onClick={onOpenTerms}
-                className="hover:text-white transition-colors duration-200 cursor-pointer flex items-center gap-1.5"
-              >
-                <FileText className="w-3.5 h-3.5 text-slate-400" />
-                <span>Términos y Condiciones</span>
-              </button>
-              <button
-                onClick={onOpenTerms}
-                className="hover:text-white transition-colors duration-200 cursor-pointer flex items-center gap-1.5"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-                <span>Privacidad de Datos</span>
-              </button>
-            </div>
+          <div className="text-[11px] text-slate-500 font-mono">
+            © {new Date().getFullYear()} Smart Park. Todos los derechos reservados.
           </div>
 
         </div>

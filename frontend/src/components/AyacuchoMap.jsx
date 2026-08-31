@@ -322,8 +322,8 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       <div 
         ref={mapContainerRef} 
         style={{
-          transform: is3D ? 'perspective(1100px) rotateX(44deg) rotateZ(-4deg)' : 'none',
-          transformOrigin: 'center 75%',
+          transform: is3D ? 'perspective(1000px) rotateX(32deg) scale(1.35)' : 'none',
+          transformOrigin: 'center 50%',
           transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
         className="w-full h-full cursor-grab active:cursor-grabbing relative z-0" 

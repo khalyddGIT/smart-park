@@ -144,13 +144,20 @@ export class MapRoutesManager {
         this.lastSpokenStep = currentStep.instruction;
       }
 
-      const distanceKm = (route.distance / 1000).toFixed(1);
+      const distanceMeters = Math.round(route.distance);
+      const distanceFormatted = distanceMeters < 1000 
+        ? `${distanceMeters} m` 
+        : `${(distanceMeters / 1000).toFixed(1)} km`;
+
       const durationMin = Math.max(1, Math.round(route.duration / 60));
+      const durationFormatted = durationMin < 60
+        ? `~${durationMin} min`
+        : `~${Math.floor(durationMin / 60)}h ${durationMin % 60}m`;
 
       return {
         destinationName: destName,
-        distanceKm,
-        durationMin,
+        distanceKm: distanceFormatted,
+        durationMin: durationFormatted,
         steps,
         currentStep,
         coordinates: coords,

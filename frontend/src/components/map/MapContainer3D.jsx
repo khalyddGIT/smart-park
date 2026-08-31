@@ -182,19 +182,34 @@ export const MapContainer3D = ({
     }
   };
 
-  // Trazar Ruta 3D en Tiempo Real con GPS y Turn-by-Turn
+  // Trazar Ruta 3D en Tiempo Real con GPS Real y Turn-by-Turn
   const handleCalculateRoute = async (destCoords, destName, profile = 'driving') => {
     if (!routesManagerRef.current) return;
-    
-    // Trazado inicial estático si GPS tarda
-    const origin = [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat];
+    setTargetDest({ coords: destCoords, name: destName });
+
+    let origin = [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat];
+
+    // 1. Obtener la ubicación GPS real del navegador
+    if (navigator.geolocation) {
+      try {
+        const userPos = await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve([pos.coords.longitude, pos.coords.latitude]),
+            () => resolve(null),
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 3000 }
+          );
+        });
+        if (userPos) origin = userPos;
+      } catch (e) {}
+    }
+
+    // 2. Calcular ruta real con Mapbox Directions API desde la ubicación exacta del usuario
     const routeInfo = await routesManagerRef.current.drawRoute(origin, destCoords, destName, profile);
     if (routeInfo) {
       setActiveRoute(routeInfo);
-      setTargetDest({ coords: destCoords, name: destName });
     }
 
-    // Iniciar rastreo GPS en vivo en segundo plano
+    // 3. Iniciar rastreo continuo en tiempo real conforme el usuario avance (watchPosition)
     routesManagerRef.current.startRealtimeTracking(destCoords, destName, (liveRouteData) => {
       setActiveRoute(liveRouteData);
     });

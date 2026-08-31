@@ -152,54 +152,87 @@ async def startup_db():
                 ]
                 session.add_all(slots + elems)
                 
-                demo_user = User(
-                    full_name="Usuario Conductor Demo",
-                    email="usuario@smartpark.com",
-                    phone="+51 987654321",
-                    hashed_password=get_password_hash("password123"),
-                    security_pin=hash_pin("1234"),
-                    role="user"
-                )
-                session.add(demo_user)
-                await session.commit()
-                await session.refresh(demo_user)
-                v1 = Vehicle(user_id=demo_user.id, license_plate="ABC-123", vehicle_type="suv", brand="Toyota", model="RAV4", color="Gris")
-                v2 = Vehicle(user_id=demo_user.id, license_plate="XYZ-987", vehicle_type="auto", brand="Honda", model="Civic", color="Negro")
-                session.add_all([v1, v2])
-                await session.commit()
+            # Garantizar la persistencia y credenciales exactas de las 4 cuentas principales del sistema en PostgreSQL
+            from app.models.models import Staff
+            system_accounts = [
+                {
+                    "email": "superadmin@smartpark.com",
+                    "full_name": "Super Administrador",
+                    "password": os.getenv("SUPERADMIN_PASSWORD") or "SmartParkSuperAdmin2026!",
+                    "pin": os.getenv("SUPERADMIN_PIN") or "7391",
+                    "role": "platform",
+                    "phone": "+51 999999999"
+                },
+                {
+                    "email": "adminlocal@smartpark.com",
+                    "full_name": "Administrador Local",
+                    "password": os.getenv("ADMINLOCAL_PASSWORD") or "SmartParkLocal2026!",
+                    "pin": os.getenv("ADMINLOCAL_PIN") or "4826",
+                    "role": "local",
+                    "phone": "+51 988888888"
+                },
+                {
+                    "email": "usuario@smartpark.com",
+                    "full_name": "Usuario Conductor Demo",
+                    "password": "password123",
+                    "pin": "1234",
+                    "role": "user",
+                    "phone": "+51 987654321"
+                },
+                {
+                    "email": "operador.garita@smartpark.pe",
+                    "full_name": "Operador de Garita",
+                    "password": "Operador2026!",
+                    "pin": "2580",
+                    "role": "local",
+                    "phone": "+51 977777777"
+                }
+            ]
 
-            # Seed superadmin
-            res_admin = await session.execute(select(User).where(User.email == "superadmin@smartpark.com"))
-            if not res_admin.scalars().first():
-                _super_pwd = os.getenv("SUPERADMIN_PASSWORD") or "SmartParkSuperAdmin2026!"
-                _super_pin = os.getenv("SUPERADMIN_PIN") or "7391"
-                super_admin = User(
-                    full_name="Super Administrador",
-                    email="superadmin@smartpark.com",
-                    phone="+51 999999999",
-                    hashed_password=get_password_hash(_super_pwd),
-                    security_pin=hash_pin(_super_pin),
-                    role="platform",
-                    is_active=True
-                )
-                session.add(super_admin)
-                await session.commit()
+            for acc in system_accounts:
+                res_u = await session.execute(select(User).where(User.email == acc["email"]))
+                existing_u = res_u.scalars().first()
+                if existing_u:
+                    existing_u.full_name = acc["full_name"]
+                    existing_u.hashed_password = get_password_hash(acc["password"])
+                    existing_u.security_pin = hash_pin(acc["pin"])
+                    existing_u.role = acc["role"]
+                    existing_u.is_active = True
+                else:
+                    new_u = User(
+                        full_name=acc["full_name"],
+                        email=acc["email"],
+                        phone=acc["phone"],
+                        hashed_password=get_password_hash(acc["password"]),
+                        security_pin=hash_pin(acc["pin"]),
+                        role=acc["role"],
+                        is_active=True
+                    )
+                    session.add(new_u)
+            await session.commit()
 
-            # Seed adminlocal
-            res_local = await session.execute(select(User).where(User.email == "adminlocal@smartpark.com"))
-            if not res_local.scalars().first():
-                _local_pwd = os.getenv("ADMINLOCAL_PASSWORD") or "SmartParkLocal2026!"
-                _local_pin = os.getenv("ADMINLOCAL_PIN") or "4826"
-                local_admin = User(
-                    full_name="Administrador Local",
-                    email="adminlocal@smartpark.com",
-                    phone="+51 988888888",
-                    hashed_password=get_password_hash(_local_pwd),
-                    security_pin=hash_pin(_local_pin),
-                    role="local",
-                    is_active=True
-                )
-                session.add(local_admin)
+            # Garantizar registro en la tabla Staff (personal) para operador.garita@smartpark.pe
+            res_p1 = await session.execute(select(Parking))
+            first_p = res_p1.scalars().first()
+            if first_p:
+                res_staff = await session.execute(select(Staff).where(Staff.email == "operador.garita@smartpark.pe"))
+                staff_entry = res_staff.scalars().first()
+                if staff_entry:
+                    staff_entry.parking_id = first_p.id
+                    staff_entry.security_pin = hash_pin("2580")
+                    staff_entry.status = "active"
+                else:
+                    new_staff = Staff(
+                        parking_id=first_p.id,
+                        full_name="Operador de Garita",
+                        dni="76543210",
+                        position="Operador Garita",
+                        shift="Rotativo",
+                        status="active",
+                        email="operador.garita@smartpark.pe",
+                        security_pin=hash_pin("2580")
+                    )
+                    session.add(new_staff)
                 await session.commit()
     except Exception as e:
         import logging

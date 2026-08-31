@@ -956,6 +956,14 @@ export const EstablishmentProvider = ({ children }) => {
       const est = establishments.find(e => Number(e.id) === Number(parkingIdNum) || String(e.id) === String(bookingData.parkingId));
       const slot = (est?.elements || []).find(el => el.type === 'slot' && String(el.code) === String(bookingData.slotCode));
       if (slot) slotIdNum = Number(slot.id);
+      // Fallback: si el plano aún no está hidratado en memoria, pedirlo directo al servidor
+      if (isNaN(slotIdNum)) {
+        try {
+          const res = await api.get(`/parkings/${parkingIdNum}/floor-plan`);
+          const remoteSlot = (res.data?.slots || []).find(s => String(s.code) === String(bookingData.slotCode));
+          if (remoteSlot) slotIdNum = Number(remoteSlot.id);
+        } catch {}
+      }
     }
 
     if (!authed || isNaN(parkingIdNum) || isNaN(slotIdNum)) {

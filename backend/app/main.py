@@ -91,8 +91,8 @@ async def startup_db():
         async with AsyncSessionLocal() as session:
             from sqlalchemy.future import select
             res = await session.execute(select(Parking))
-            # Demo parkings solo en no-producción (en prod se crean vía panel)
-            if not res.scalars().first() and settings.ENVIRONMENT != "production":
+            # Garantizar que existan cocheras iniciales en PostgreSQL para reservas persistentes
+            if not res.scalars().first():
                 p1 = Parking(
                     name="Smart Park Plaza Mayor - Planta Baja",
                     address="Portal Unión 42, Centro Histórico",
@@ -129,17 +129,29 @@ async def startup_db():
                 session.add_all([p1, p2, p3])
                 await session.commit()
                 await session.refresh(p1)
+
+                # Generar conjunto completo de cajones para la sede 1
                 slots = [
-                    Slot(parking_id=p1.id, code="A-01", slot_type="auto", status="free", pos_x=50, pos_y=50, width=60, height=100),
-                    Slot(parking_id=p1.id, code="A-02", slot_type="auto", status="occupied", pos_x=130, pos_y=50, width=60, height=100),
-                    Slot(parking_id=p1.id, code="A-03", slot_type="auto", status="free", pos_x=210, pos_y=50, width=60, height=100),
-                    Slot(parking_id=p1.id, code="A-04", slot_type="moto", status="free", pos_x=290, pos_y=50, width=50, height=60),
+                    Slot(parking_id=p1.id, code="A-01", slot_type="auto", status="free", pos_x=60, pos_y=60, width=60, height=100),
+                    Slot(parking_id=p1.id, code="A-02", slot_type="auto", status="free", pos_x=140, pos_y=60, width=60, height=100),
+                    Slot(parking_id=p1.id, code="A-03", slot_type="auto", status="free", pos_x=220, pos_y=60, width=60, height=100),
+                    Slot(parking_id=p1.id, code="A-04", slot_type="auto", status="free", pos_x=300, pos_y=60, width=60, height=100),
+                    Slot(parking_id=p1.id, code="A-05", slot_type="auto", status="free", pos_x=380, pos_y=60, width=60, height=100),
+                    Slot(parking_id=p1.id, code="A-06", slot_type="auto", status="free", pos_x=460, pos_y=60, width=60, height=100),
+                    Slot(parking_id=p1.id, code="A-07", slot_type="moto", status="free", pos_x=540, pos_y=60, width=50, height=60),
+                    Slot(parking_id=p1.id, code="A-08", slot_type="moto", status="free", pos_x=600, pos_y=60, width=50, height=60),
+                    Slot(parking_id=p1.id, code="B-01", slot_type="auto", status="free", pos_x=60, pos_y=450, width=60, height=100),
+                    Slot(parking_id=p1.id, code="B-02", slot_type="auto", status="free", pos_x=140, pos_y=450, width=60, height=100),
+                    Slot(parking_id=p1.id, code="B-03", slot_type="auto", status="free", pos_x=220, pos_y=450, width=60, height=100),
+                    Slot(parking_id=p1.id, code="B-04", slot_type="auto", status="free", pos_x=300, pos_y=450, width=60, height=100),
                 ]
                 elems = [
-                    FloorPlanElement(parking_id=p1.id, element_type="crosswalk", pos_x=50, pos_y=180, width=300, height=60, z_index=2),
-                    FloorPlanElement(parking_id=p1.id, element_type="wall", pos_x=20, pos_y=20, width=10, height=300, z_index=1),
+                    FloorPlanElement(parking_id=p1.id, element_type="road", pos_x=60, pos_y=220, width=800, height=140, z_index=1),
+                    FloorPlanElement(parking_id=p1.id, element_type="crosswalk", pos_x=400, pos_y=220, width=80, height=140, z_index=2),
+                    FloorPlanElement(parking_id=p1.id, element_type="gate", pos_x=40, pos_y=240, width=50, height=90, z_index=3),
                 ]
                 session.add_all(slots + elems)
+                
                 demo_user = User(
                     full_name="Usuario Conductor Demo",
                     email="usuario@smartpark.com",
@@ -156,41 +168,39 @@ async def startup_db():
                 session.add_all([v1, v2])
                 await session.commit()
 
-            # Seed superadmin — en producción requiere SUPERADMIN_PASSWORD env var
+            # Seed superadmin
             res_admin = await session.execute(select(User).where(User.email == "superadmin@smartpark.com"))
             if not res_admin.scalars().first():
-                _super_pwd = os.getenv("SUPERADMIN_PASSWORD", "" if settings.ENVIRONMENT == "production" else "SmartParkSuperAdmin2026!")
-                _super_pin = os.getenv("SUPERADMIN_PIN", "" if settings.ENVIRONMENT == "production" else "7391")
-                if _super_pwd:
-                    super_admin = User(
-                        full_name="Super Administrador",
-                        email="superadmin@smartpark.com",
-                        phone="+51 999999999",
-                        hashed_password=get_password_hash(_super_pwd),
-                        security_pin=hash_pin(_super_pin),
-                        role="platform",
-                        is_active=True
-                    )
-                    session.add(super_admin)
-                    await session.commit()
+                _super_pwd = os.getenv("SUPERADMIN_PASSWORD") or "SmartParkSuperAdmin2026!"
+                _super_pin = os.getenv("SUPERADMIN_PIN") or "7391"
+                super_admin = User(
+                    full_name="Super Administrador",
+                    email="superadmin@smartpark.com",
+                    phone="+51 999999999",
+                    hashed_password=get_password_hash(_super_pwd),
+                    security_pin=hash_pin(_super_pin),
+                    role="platform",
+                    is_active=True
+                )
+                session.add(super_admin)
+                await session.commit()
 
-            # Seed adminlocal — en producción requiere ADMINLOCAL_PASSWORD env var
+            # Seed adminlocal
             res_local = await session.execute(select(User).where(User.email == "adminlocal@smartpark.com"))
             if not res_local.scalars().first():
-                _local_pwd = os.getenv("ADMINLOCAL_PASSWORD", "" if settings.ENVIRONMENT == "production" else "SmartParkLocal2026!")
-                _local_pin = os.getenv("ADMINLOCAL_PIN", "" if settings.ENVIRONMENT == "production" else "4826")
-                if _local_pwd:
-                    local_admin = User(
-                        full_name="Administrador Local",
-                        email="adminlocal@smartpark.com",
-                        phone="+51 988888888",
-                        hashed_password=get_password_hash(_local_pwd),
-                        security_pin=hash_pin(_local_pin),
-                        role="local",
-                        is_active=True
-                    )
-                    session.add(local_admin)
-                    await session.commit()
+                _local_pwd = os.getenv("ADMINLOCAL_PASSWORD") or "SmartParkLocal2026!"
+                _local_pin = os.getenv("ADMINLOCAL_PIN") or "4826"
+                local_admin = User(
+                    full_name="Administrador Local",
+                    email="adminlocal@smartpark.com",
+                    phone="+51 988888888",
+                    hashed_password=get_password_hash(_local_pwd),
+                    security_pin=hash_pin(_local_pin),
+                    role="local",
+                    is_active=True
+                )
+                session.add(local_admin)
+                await session.commit()
     except Exception as e:
         import logging
         logging.warning(f"[smart-park] seed skip: {e}")

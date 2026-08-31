@@ -22,9 +22,13 @@ import {
   Globe,
   Lock,
   CheckCircle2,
-  Trash2
+  Trash2,
+  Compass,
+  Map
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
+import { useEstablishments } from '../context/EstablishmentContext';
+import { MapContainer3D } from './map/MapContainer3D';
 import api from '../services/api';
 
 const SETTINGS_STORAGE_KEY = 'smart_park_platform_settings_v2';
@@ -98,7 +102,8 @@ export const PlatformSettingsModule = () => {
     return INITIAL_BROADCASTS;
   });
 
-  const [activeSection, setActiveSection] = useState('business'); // 'business' | 'payments' | 'security' | 'broadcasts'
+  const { establishments } = useEstablishments();
+  const [activeSection, setActiveSection] = useState('business'); // 'business' | 'payments' | 'security' | 'broadcasts' | 'map3d'
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [toast, setToast] = useState(null);
   // Estado honesto de pasarelas desde el backend
@@ -343,6 +348,16 @@ export const PlatformSettingsModule = () => {
         >
           <Bell className="w-4 h-4 text-emerald-600" />
           <span>4. Historial de Comunicados ({broadcasts.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSection('map3d')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+            activeSection === 'map3d' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Compass className="w-4 h-4 text-emerald-600" />
+          <span>5. Editor Geoespacial 3D Mapbox</span>
         </button>
       </div>
 
@@ -714,6 +729,35 @@ export const PlatformSettingsModule = () => {
               ))
             )}
           </div>
+        </div>
+      )}
+
+      {/* SECCIÓN 5: EDITOR GEOESPACIAL 3D MAPBOX */}
+      {activeSection === 'map3d' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <Card className="p-5 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <Compass className="w-5 h-5 text-emerald-600" />
+                  <span>Estudio Geoespacial & Editor de Mapa 3D</span>
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Herramienta avanzada de SuperAdmin para configurar elevación DEM, estilo de capa, niebla y parámetros 3D del mapa.
+                </p>
+              </div>
+              <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl w-fit">
+                ✓ Panel Editor 3D Habilitado
+              </span>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-xl relative min-h-[480px]">
+              <MapContainer3D 
+                parkings={establishments} 
+                forceShowAdminPanel={true} 
+              />
+            </div>
+          </Card>
         </div>
       )}
 

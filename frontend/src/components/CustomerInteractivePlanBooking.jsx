@@ -167,22 +167,28 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     ? [...remotePlan.elements, ...remotePlan.slots]
     : (planElements && planElements.length > 0 ? planElements : DEFAULT_FALLBACK_ELEMENTS);
 
-  // Auto-ajuste de escala para que el plano se adapte a cualquier pantalla
-  // WCAG: mínimo 44px touch target → min slot width 56px (moto) → scale >= 44/56 = 0.785
+  // Auto-ajuste responsivo y perfecto del plano CAD 1100x700px
   useEffect(() => {
-    const handleResize = () => {
+    const updateScale = () => {
       if (containerRef.current) {
-        const availableWidth = containerRef.current.clientWidth - 32;
-        // Minimum scale ensures 44px minimum touch target (moto slot: 56px * scale >= 44 → scale >= 0.785)
-        const minScaleForWCAG = 44 / 56; // 0.785
-        const calculatedScale = Math.min(1, Math.max(minScaleForWCAG, availableWidth / BASE_WIDTH));
-        setScale(calculatedScale);
+        const { clientWidth, clientHeight } = containerRef.current;
+        if (clientWidth > 0 && clientHeight > 0) {
+          const scaleX = (clientWidth * 0.96) / BASE_WIDTH;
+          const scaleY = (clientHeight * 0.96) / BASE_HEIGHT;
+          const fitScale = Math.min(scaleX, scaleY);
+          setScale(Math.max(0.2, fitScale));
+        }
       }
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    updateScale();
+    const observer = new ResizeObserver(() => updateScale());
+    observer.observe(containerRef.current);
+    window.addEventListener('resize', updateScale);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateScale);
+    };
   }, []);
 
   const slots = elements.filter(e => e && e.type === 'slot');
@@ -334,8 +340,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
         {/* Contenedor del Plano */}
         <div 
           ref={containerRef}
-          className="lg:col-span-2 bg-[#1c253b] rounded-3xl p-4 sm:p-6 border-4 border-slate-700 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden"
-          style={{ minHeight: `${BASE_HEIGHT * scale + 48}px` }}
+          className="lg:col-span-2 bg-[#1c253b] rounded-3xl p-3 sm:p-5 border-4 border-slate-700 shadow-2xl flex items-center justify-center relative overflow-hidden h-[480px] sm:h-[560px] lg:h-[620px]"
         >
           {/* Contenedor Escalado Automáticamente */}
           <div 
@@ -343,10 +348,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               width: `${BASE_WIDTH}px`, 
               height: `${BASE_HEIGHT}px`,
               transform: `scale(${scale})`,
-              transformOrigin: 'top center',
-              marginBottom: `-${BASE_HEIGHT * (1 - scale)}px`
+              transformOrigin: 'center center',
             }}
-            className="relative bg-[#2a3752] rounded-2xl border-2 border-slate-600 shadow-inner overflow-hidden select-none"
+            className="relative bg-[#2a3752] rounded-2xl border-2 border-slate-600 shadow-inner overflow-hidden select-none shrink-0 transition-transform duration-150 ease-out"
           >
             {/* Cuadrícula Asfáltica */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#3b4d6e_1px,transparent_1px),linear-gradient(to_bottom,#3b4d6e_1px,transparent_1px)] bg-[size:20px_20px] opacity-40 pointer-events-none" />

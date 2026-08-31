@@ -17,9 +17,12 @@ import {
   Bike,
   Crown,
   CreditCard,
-  Check,
+  Check, 
   AlertTriangle,
-  Loader2
+  Loader2,
+  Lock,
+  Timer,
+  Lightbulb
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -554,7 +557,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       }`}
                     >
                       <span>{s.code}</span>
-                      <span>{s.shaded ? '⛱️' : ''}</span>
+                      {s.shaded && <Umbrella className="w-3 h-3 text-cyan-400 shrink-0" />}
                     </button>
                   );
                 })}
@@ -627,8 +630,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-mono font-bold tracking-wider uppercase placeholder:normal-case placeholder:font-sans placeholder:font-normal focus:outline-none"
                   />
                   {vehicles.length === 0 && (
-                    <p className="text-[10px] text-slate-400 font-mono">
-                      💡 Digita tu placa directamente.
+                    <p className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                      <Lightbulb className="w-3 h-3 text-amber-400 shrink-0" />
+                      <span>Digita tu placa directamente.</span>
                     </p>
                   )}
                 </div>
@@ -657,7 +661,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 ))}
               </div>
               <p className="text-[10px] text-slate-400 mt-1.5 flex items-center gap-1 font-mono">
-                <span>⏱️ Tolerancia:</span>
+                <Timer className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span>Tolerancia:</span>
                 <strong className="text-emerald-400">+{arrivalWindow} min de gracia post-llegada</strong>
               </p>
             </div>
@@ -738,7 +743,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   S/ {((parking?.rate || 5.0) * (Number(hours) || 1)).toFixed(2)}
                 </span>
               </div>
-              <p className="text-[10px] text-emerald-400/90 font-mono font-bold pt-1 flex items-center gap-1">🔒 Reserva instantánea y protegida</p>
+              <p className="text-[10px] text-emerald-400/90 font-mono font-bold pt-1 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Reserva instantánea y protegida</span>
+              </p>
             </div>
           </div>
 

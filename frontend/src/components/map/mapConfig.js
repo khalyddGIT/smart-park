@@ -68,7 +68,7 @@ export const ATMOSPHERE_CONFIG = {
   }
 };
 
-// Limpieza de POIs innecesarios de Mapbox (comercio, bancos, tiendas) para dejar el mapa super limpio
+// Limpieza total de POIs innecesarios de Mapbox (comercio, bancos, tiendas, hoteles, comida)
 export const cleanPOIsFromMap = (map) => {
   if (!map) return;
   try {
@@ -76,15 +76,26 @@ export const cleanPOIsFromMap = (map) => {
     if (!style || !style.layers) return;
     
     style.layers.forEach(layer => {
-      // Ocultar capas de iconos/etiquetas de comercios, comida, bancos y transportes para mapa impecable
+      const id = layer.id.toLowerCase();
+      // Ocultar capas de iconos/etiquetas de comercios, comida, bancos, tiendas, hoteles, escuelas y transportes
       if (
-        layer.id.includes('poi-label') || 
-        layer.id.includes('transit-label') || 
-        layer.id.includes('airport-label') ||
-        layer.id.includes('medical-label') ||
-        layer.id.includes('education-label')
+        id.includes('poi') || 
+        id.includes('transit') || 
+        id.includes('airport') ||
+        id.includes('medical') ||
+        id.includes('education') ||
+        id.includes('lodging') ||
+        id.includes('food') ||
+        id.includes('shop') ||
+        id.includes('bank') ||
+        id.includes('store') ||
+        id.includes('services') ||
+        id.includes('commercial') ||
+        id.includes('attraction')
       ) {
-        map.setLayoutProperty(layer.id, 'visibility', 'none');
+        try {
+          map.setLayoutProperty(layer.id, 'visibility', 'none');
+        } catch (e) {}
       }
     });
   } catch (e) {

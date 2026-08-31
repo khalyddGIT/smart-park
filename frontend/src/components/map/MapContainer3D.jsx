@@ -23,12 +23,16 @@ import {
   Footprints 
 } from 'lucide-react';
 import { FALLBACK_PARKING_IMAGE } from '../LocalEstablishmentManager';
+import { useAuth } from '../../context/AuthContext';
 
 export const MapContainer3D = ({ 
   parkings = [], 
   onSelectParking, 
   selectedParkingId 
 }) => {
+  const { role } = useAuth();
+  const isSuperAdmin = role === 'platform';
+
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
@@ -98,6 +102,10 @@ export const MapContainer3D = ({
 
       // 4. Módulo Rutas 3D
       routesManagerRef.current = new MapRoutesManager(map);
+    });
+
+    map.on('idle', () => {
+      cleanPOIsFromMap(map);
     });
 
     return () => {
@@ -308,26 +316,40 @@ export const MapContainer3D = ({
       {/* Lienzo WebGL 3D Mapbox */}
       <div ref={mapContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
-      {/* Panel de Control Mapbox 3D */}
-      <MapControlPanel
-        is3D={is3D}
-        onToggle3D={handleToggle3D}
-        isTerrainEnabled={isTerrainEnabled}
-        onToggleTerrain={handleToggleTerrain}
-        isBuildingsEnabled={isBuildingsEnabled}
-        onToggleBuildings={handleToggleBuildings}
-        isAtmosphereEnabled={isAtmosphereEnabled}
-        onToggleAtmosphere={() => {}}
-        mapLayer={mapLayer}
-        onChangeLayer={handleChangeLayer}
-        exaggeration={exaggeration}
-        onChangeExaggeration={handleChangeExaggeration}
-        pitch={pitch}
-        onChangePitch={handleChangePitch}
-        onStartOrbit={() => cameraManagerRef.current && cameraManagerRef.current.orbitAroundLocation()}
-        onStartCinematic={() => cameraManagerRef.current && cameraManagerRef.current.startCinematicTour(parkings)}
-        onResetCamera={() => cameraManagerRef.current && cameraManagerRef.current.resetCamera()}
-      />
+      {/* Panel de Control Mapbox 3D (Exclusivo para SuperAdmin / Platform) */}
+      {isSuperAdmin ? (
+        <MapControlPanel
+          is3D={is3D}
+          onToggle3D={handleToggle3D}
+          isTerrainEnabled={isTerrainEnabled}
+          onToggleTerrain={handleToggleTerrain}
+          isBuildingsEnabled={isBuildingsEnabled}
+          onToggleBuildings={handleToggleBuildings}
+          isAtmosphereEnabled={isAtmosphereEnabled}
+          onToggleAtmosphere={() => {}}
+          mapLayer={mapLayer}
+          onChangeLayer={handleChangeLayer}
+          exaggeration={exaggeration}
+          onChangeExaggeration={handleChangeExaggeration}
+          pitch={pitch}
+          onChangePitch={handleChangePitch}
+          onStartOrbit={() => cameraManagerRef.current && cameraManagerRef.current.orbitAroundLocation()}
+          onStartCinematic={() => cameraManagerRef.current && cameraManagerRef.current.startCinematicTour(parkings)}
+          onResetCamera={() => cameraManagerRef.current && cameraManagerRef.current.resetCamera()}
+        />
+      ) : (
+        /* Botón Único de Perspectiva 2D/3D para Usuarios y Admins Locales */
+        <div className="absolute top-4 right-4 z-20 pointer-events-auto flex items-center space-x-2 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 text-white text-xs shadow-2xl">
+          <button
+            type="button"
+            onClick={handleToggle3D}
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>{is3D ? 'VISTA 2D' : 'VISTA 3D'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Filtros Rápidos (Feature 5) con Iconos SVG */}
       <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2 pointer-events-none max-w-[calc(100%-340px)]">

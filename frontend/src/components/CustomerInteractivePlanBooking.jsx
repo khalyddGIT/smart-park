@@ -627,18 +627,18 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-mono font-bold tracking-wider uppercase placeholder:normal-case placeholder:font-sans placeholder:font-normal focus:outline-none"
                   />
                   {vehicles.length === 0 && (
-                    <p className="text-[10px] text-slate-400 italic">
-                      💡 Tip: Ingresa tu placa para reservar directamente sin necesidad de registrarlo antes.
+                    <p className="text-[10px] text-slate-400 font-mono">
+                      💡 Digita tu placa directamente.
                     </p>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Tiempo de llegada (ETA) - corrige lógica: reservas porque estás lejos */}
+            {/* Tiempo de llegada (ETA) */}
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
-                ¿En cuánto llegas? <span className="text-slate-500 font-normal">(ventana de llegada {arrivalWindow} min)</span>
+                ¿En cuánto llegas? <span className="text-slate-500 font-normal">({arrivalWindow} min tolerancia)</span>
               </label>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {[0, 10, 15, 30, 45, 60].map(m => (
@@ -656,10 +656,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-slate-400 mt-1.5 leading-snug">
-                {etaMinutes === 0
-                  ? `Llegada inmediata. Tienes ${arrivalWindow} min de gracia antes de liberar el cajón.`
-                  : `Tu cajón se guarda hasta ${arrivalWindow} min después de las ${new Date(Date.now() + etaMinutes*60000).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}. Si no haces check-in, se libera automáticamente (persistente en servidor).`}
+              <p className="text-[10px] text-slate-400 mt-1.5 flex items-center gap-1 font-mono">
+                <span>⏱️ Tolerancia:</span>
+                <strong className="text-emerald-400">+{arrivalWindow} min de gracia post-llegada</strong>
               </p>
             </div>
 
@@ -718,7 +717,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
             </div>
 
-            {/* Desglose de Pago - persistente */}
+            {/* Desglose de Pago */}
             <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
                 <span>Tarifa:</span>
@@ -726,7 +725,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Llegada:</span>
-                <span className="text-emerald-400 font-semibold">{etaMinutes === 0 ? 'Ahora' : `En ${etaMinutes} min`} + {arrivalWindow} min gracia</span>
+                <span className="text-emerald-400 font-semibold">{etaMinutes === 0 ? 'Ahora' : `En ${etaMinutes} min`} + {arrivalWindow}m gracia</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Reserva:</span>
@@ -739,7 +738,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   S/ {((parking?.rate || 5.0) * (Number(hours) || 1)).toFixed(2)}
                 </span>
               </div>
-              <p className="text-[10px] text-slate-500 leading-snug">Persistente en servidor (PostgreSQL). Cajón pasa a <b className="text-slate-300">reserved</b> y se libera solo si no hay check-in antes del límite.</p>
+              <p className="text-[10px] text-emerald-400/90 font-mono font-bold pt-1 flex items-center gap-1">🔒 Reserva instantánea y protegida</p>
             </div>
           </div>
 

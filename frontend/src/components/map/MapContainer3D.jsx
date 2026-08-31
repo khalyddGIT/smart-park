@@ -18,7 +18,8 @@ import {
   Navigation, 
   Building2, 
   X, 
-  MapPin 
+  MapPin,
+  Footprints 
 } from 'lucide-react';
 import { FALLBACK_PARKING_IMAGE } from '../LocalEstablishmentManager';
 
@@ -49,6 +50,7 @@ export const MapContainer3D = ({
   const [exaggeration, setExaggeration] = useState(1.5);
   const [pitch, setPitch] = useState(0);
   const [activeRoute, setActiveRoute] = useState(null);
+  const [targetDest, setTargetDest] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
 
   // Filtros Rápidos (Feature 5)
@@ -162,14 +164,22 @@ export const MapContainer3D = ({
     }
   };
 
-  // Trazar Ruta 3D
-  const handleCalculateRoute = async (destCoords, destName) => {
+  // Trazar Ruta 3D en Tiempo Real con GPS y Turn-by-Turn
+  const handleCalculateRoute = async (destCoords, destName, profile = 'driving') => {
     if (!routesManagerRef.current) return;
+    
+    // Trazado inicial estático si GPS tarda
     const origin = [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat];
-    const routeInfo = await routesManagerRef.current.drawRoute(origin, destCoords, destName);
+    const routeInfo = await routesManagerRef.current.drawRoute(origin, destCoords, destName, profile);
     if (routeInfo) {
       setActiveRoute(routeInfo);
+      setTargetDest({ coords: destCoords, name: destName });
     }
+
+    // Iniciar rastreo GPS en vivo en segundo plano
+    routesManagerRef.current.startRealtimeTracking(destCoords, destName, (liveRouteData) => {
+      setActiveRoute(liveRouteData);
+    });
   };
 
   const handleClearRoute = () => {
@@ -177,6 +187,7 @@ export const MapContainer3D = ({
       routesManagerRef.current.clearRoute();
     }
     setActiveRoute(null);
+    setTargetDest(null);
   };
 
   // Filtrado reactivo de cocheras (Feature 5)
@@ -362,12 +373,33 @@ export const MapContainer3D = ({
         </div>
       )}
 
-      {/* Tarjeta de Ruta 3D en Vivo (Feature 2) */}
+      {/* Tarjeta Turn-by-Turn Flotante Superior (Giro a Giro en Tiempo Real) */}
+      {activeRoute && activeRoute.currentStep && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-5 py-2.5 rounded-2xl shadow-2xl border border-cyan-500/40 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-top-4 duration-300 max-w-[92vw]">
+          <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/40">
+            <Navigation className="w-5 h-5 stroke-[2.5]" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-cyan-400 font-mono uppercase tracking-wider font-extrabold flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+              Navegación GPS en Vivo
+            </span>
+            <span className="font-extrabold text-slate-100 text-sm">{activeRoute.currentStep.instruction}</span>
+          </div>
+          {activeRoute.currentStep.distance > 0 && (
+            <span className="font-mono font-black text-xs text-emerald-400 bg-emerald-950/90 px-2 py-1 rounded-lg border border-emerald-800 shrink-0">
+              {activeRoute.currentStep.distance} m
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Tarjeta de Ruta 3D en Vivo (Feature 2 & Modos de Transporte) */}
       {activeRoute && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-[92vw]">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-[95vw]">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
-            <Navigation className="w-4 h-4 text-cyan-400" />
+            <Navigation className="w-4 h-4 text-cyan-400 shrink-0" />
             <span className="font-bold text-slate-200">
               Ruta 3D a <strong className="text-white">{activeRoute.destinationName}</strong>:
             </span>
@@ -375,10 +407,38 @@ export const MapContainer3D = ({
             <span className="text-slate-400">•</span>
             <span className="font-mono font-black text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">~{activeRoute.durationMin} min</span>
           </div>
+
+          {/* Selector de Modo de Transporte en Vivo */}
+          <div className="flex items-center space-x-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+            {[
+              { id: 'driving', label: 'Auto', icon: Car },
+              { id: 'cycling', label: 'Moto', icon: Bike },
+              { id: 'walking', label: 'A pie', icon: Footprints }
+            ].map((m) => {
+              const IconComp = m.icon;
+              const isSel = (activeRoute.profile || 'driving') === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => {
+                    if (targetDest) handleCalculateRoute(targetDest.coords, targetDest.name, m.id);
+                  }}
+                  className={`px-2 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
+                    isSel ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <IconComp className="w-3 h-3" />
+                  <span>{m.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <button
             type="button"
             onClick={handleClearRoute}
-            className="px-2.5 py-1 bg-slate-800 hover:bg-rose-900 text-slate-300 hover:text-white rounded-lg font-bold text-[11px] transition cursor-pointer border border-slate-700 flex items-center gap-1"
+            className="px-2.5 py-1 bg-slate-800 hover:bg-rose-900 text-slate-300 hover:text-white rounded-lg font-bold text-[11px] transition cursor-pointer border border-slate-700 flex items-center gap-1 shrink-0"
           >
             <X className="w-3 h-3" />
             <span>Limpiar</span>

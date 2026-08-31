@@ -23,6 +23,7 @@ import { VerifyReservationPage } from './components/VerifyReservationPage';
 import { AyacuchoMap } from './components/AyacuchoMap';
 import { CustomerInteractivePlanBooking } from './components/CustomerInteractivePlanBooking';
 import { DigitalAccessPassModal } from './components/DigitalAccessPassModal';
+import { CulqiPaymentModal } from './components/CulqiPaymentModal';
 import { ReservationsModule } from './components/ReservationsModule';
 import { LoginAuthScreen } from './components/LoginAuthScreen';
 import { PlatformFinancesModule } from './components/PlatformFinancesModule';
@@ -121,6 +122,7 @@ export const App = () => {
   useEffect(()=>{ if(personalParkingId) setSelectedParkingId(personalParkingId); },[personalParkingId]);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [paymentTarget, setPaymentTarget] = useState(null);
   const [activeReservation, setActiveReservation] = useState({
     code: 'RSV-8912',
     token: 'SPK-AYC891-7B2F9A',
@@ -136,7 +138,7 @@ export const App = () => {
   // Obtener el establecimiento actualmente seleccionado en tiempo real desde el context
   const selectedParking = establishments.find(e => e.id === selectedParkingId) || null;
 
-  // Reserva de Plaza por Conductor - soporta hold (pago en garita) vs prepago
+  // Reserva de Plaza por Conductor - soporta hold (pago en garita) vs prepago con pasarela de pago
   const handleCustomerBooking = async (bookingData) => {
     if (!selectedParking) return;
     try {
@@ -160,16 +162,7 @@ export const App = () => {
         setTimeout(() => setBookingFeedback(null), 4000);
         return;
       }
-      // Si es prepago, intentar registrar pago (no bloquea el pase si falla - queda como hold)
-      if (bookingData.payNow) {
-        try {
-          // Culqi/PayPal mock: el backend ya persiste Reservation; el pago se registra aparte si está disponible
-          // Si tu pasarela requiere confirmación, aquí se llamaría a /payments
-          // Por ahora solo marca el feedback como asegurado
-          setBookingFeedback(null);
-        } catch {}
-      }
-      // Enriquecer pase con ETA para mostrar ventana de llegada
+
       const enriched = {
         ...newRes,
         etaMinutes: bookingData.etaMinutes ?? 15,
@@ -177,9 +170,24 @@ export const App = () => {
         payNow: !!bookingData.payNow,
         paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'Prepago asegurado' : 'Pago en garita al salir')
       };
-      setActiveReservation(enriched);
-      setShowQRModal(true);
-      setSelectedParkingId(null);
+
+      // Si es "Pagar ahora", desplegar la Pasarela de Pagos (PayPal, Tarjeta Culqi, Yape, Plin)
+      if (bookingData.payNow) {
+        setPaymentTarget({
+          reservationId: newRes.id || newRes.code,
+          amount: Number(bookingData.totalCost) || Number((selectedParking.rate * bookingData.hours).toFixed(2)),
+          concept: `Reserva ${newRes.code || 'Smart Park'} — Cajón ${newRes.slotCode || bookingData.slotCode} en ${newRes.parkingName || selectedParking.name}`,
+          parkingName: newRes.parkingName || selectedParking.name,
+          slotCode: newRes.slotCode || bookingData.slotCode || 'A-01',
+          customerEmail: user?.email || 'conductor@smartpark.com',
+          enrichedData: enriched
+        });
+      } else {
+        // Reservar y pagar en garita al llegar (Hold)
+        setActiveReservation(enriched);
+        setShowQRModal(true);
+        setSelectedParkingId(null);
+      }
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
       setBookingFeedback(msg);
@@ -707,6 +715,39 @@ export const App = () => {
         isOpen={showQRModal}
         onClose={() => setShowQRModal(false)}
         reservation={activeReservation}
+      />
+
+      {/* Modal de Pasarela de Pagos (PayPal, Culqi, Yape, Plin, PagoEfectivo) */}
+      <CulqiPaymentModal
+        isOpen={!!paymentTarget}
+        onClose={() => {
+          if (paymentTarget) {
+            setActiveReservation(paymentTarget.enrichedData);
+            setShowQRModal(true);
+            setSelectedParkingId(null);
+            setPaymentTarget(null);
+          }
+        }}
+        amount={Number(paymentTarget?.amount || 10.00)}
+        concept={paymentTarget?.concept || 'Reserva Smart Park'}
+        parkingName={paymentTarget?.parkingName || 'Smart Park'}
+        slotCode={paymentTarget?.slotCode || 'A-01'}
+        customerEmail={paymentTarget?.customerEmail || user?.email || 'conductor@smartpark.com'}
+        reservationId={paymentTarget?.reservationId}
+        onPaymentSuccess={(receipt) => {
+          if (paymentTarget) {
+            const paidEnriched = {
+              ...paymentTarget.enrichedData,
+              status: 'confirmed',
+              payNow: true,
+              paymentMethod: receipt?.paymentMethod || 'Culqi / PayPal (Pagado)'
+            };
+            setActiveReservation(paidEnriched);
+            setShowQRModal(true);
+            setSelectedParkingId(null);
+            setPaymentTarget(null);
+          }
+        }}
       />
 
       {/* Modal de Términos y Condiciones */}

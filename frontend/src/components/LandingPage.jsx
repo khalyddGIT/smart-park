@@ -678,12 +678,6 @@ export const LandingPage = ({
           className="space-y-5 sm:space-y-6 flex flex-col items-center transform-gpu will-change-transform"
         >
 
-          <div className="inline-flex items-center gap-2 bg-[#004D49]/10 border border-[#004D49]/20 text-[#004D49] text-xs font-mono font-bold px-4 py-1.5 rounded-full shadow-xs">
-            {/* 9. MARKER PULSE DE DISPONIBILIDAD */}
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
-            <Zap className="w-3.5 h-3.5 text-[#004D49] shrink-0" />
-            <span>SISTEMA INTELIGENTE DE ESTACIONAMIENTOS</span>
-          </div>
 
           {/* 1. HERO REVEAL TÍTULO */}
           <motion.h1 className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] tracking-tight max-w-3xl mx-auto leading-[1.14] sm:leading-[1.08]">

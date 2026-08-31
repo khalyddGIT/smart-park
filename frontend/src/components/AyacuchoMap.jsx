@@ -35,16 +35,89 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
   // Estado para Feature 5: Vista 3D inclinada en perspectiva
   const [is3D, setIs3D] = useState(false);
 
-  // Menú flotante expandible con animación auto-colapsable
-  const [showLayerMenu, setShowLayerMenu] = useState(false);
+  // Feature 5: Filtros Rápidos en Mapa por Tipo de Vehículo y Precio Máximo
+  const [filterType, setFilterType] = useState('all'); // 'all' | 'auto' | 'moto' | 'suv'
+  const [filterPrice, setFilterPrice] = useState('all'); // 'all' | '5' | '8'
 
-  useEffect(() => {
-    if (!showLayerMenu) return;
-    const timer = setTimeout(() => {
-      setShowLayerMenu(false);
-    }, 4500);
-    return () => clearTimeout(timer);
-  }, [showLayerMenu]);
+  // Feature 2: Ruta en vivo con Mapbox Directions API
+  const routeLayerRef = useRef(null);
+  const [activeRoute, setActiveRoute] = useState(null);
+
+  const clearRoute = () => {
+    if (routeLayerRef.current && mapInstanceRef.current) {
+      try { mapInstanceRef.current.removeLayer(routeLayerRef.current); } catch (e) {}
+      routeLayerRef.current = null;
+    }
+    setActiveRoute(null);
+  };
+
+  const calculateRouteTo = async (destCoords, destName) => {
+    if (!mapInstanceRef.current || !window.L) return;
+    const L = window.L;
+    const map = mapInstanceRef.current;
+
+    // Obtener origen (GPS del usuario o centro de Huamanga Plaza Mayor)
+    let origin = [-13.1606, -74.2257];
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 });
+        });
+        origin = [pos.coords.latitude, pos.coords.longitude];
+      } catch (e) {}
+    }
+
+    try {
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[1]},${origin[0]};${destCoords[1]},${destCoords[0]}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.routes && data.routes[0]) {
+        const routeData = data.routes[0];
+        clearRoute();
+
+        const routeGeoJSON = L.geoJSON(routeData.geometry, {
+          style: {
+            color: '#06b6d4',
+            weight: 6,
+            opacity: 0.9,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }
+        }).addTo(map);
+
+        routeLayerRef.current = routeGeoJSON;
+        map.fitBounds(routeGeoJSON.getBounds(), { padding: [50, 50] });
+
+        const distKm = (routeData.distance / 1000).toFixed(1);
+        const durMin = Math.max(1, Math.round(routeData.duration / 60));
+        setActiveRoute({
+          destinationName: destName,
+          distanceKm: distKm,
+          durationMin: durMin
+        });
+      }
+    } catch (err) {
+      console.warn('Mapbox directions error', err);
+    }
+  };
+
+  const filteredParkings = React.useMemo(() => {
+    return parkings.filter(p => {
+      const rate = Number(p.rate || 4);
+      if (filterPrice === '5' && rate > 5.0) return false;
+      if (filterPrice === '8' && rate > 8.0) return false;
+
+      if (filterType !== 'all') {
+        const elements = p.elements || [];
+        const slots = elements.filter(e => e.type === 'slot');
+        if (slots.length > 0) {
+          const hasType = slots.some(s => s.slot_type === filterType || (filterType === 'auto' && s.slot_type === 'auto'));
+          if (!hasType) return false;
+        }
+      }
+      return true;
+    });
+  }, [parkings, filterType, filterPrice]);
 
   const [tileLayerInstance, setTileLayerInstance] = useState(null);
   const [locatingUser, setLocatingUser] = useState(false);
@@ -130,7 +203,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
     Object.values(markersRef.current).forEach(m => map.removeLayer(m));
     markersRef.current = {};
 
-    parkings.forEach((p, idx) => {
+    filteredParkings.forEach((p, idx) => {
       const lat = Number(p.latitude);
       const lng = Number(p.longitude);
       const isAyacuchoCoords = !isNaN(lat) && !isNaN(lng) && lat <= -13.0 && lat >= -13.35 && lng <= -74.0 && lng >= -74.4;
@@ -140,7 +213,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
         : (DEFAULT_COORDS[p.id] || null);
 
       if (!coords) {
-        const angle = (idx * (2 * Math.PI)) / Math.max(1, parkings.length);
+        const angle = (idx * (2 * Math.PI)) / Math.max(1, filteredParkings.length);
         const radius = 0.003 + (idx % 3) * 0.002;
         coords = [-13.1606 + Math.sin(angle) * radius, -74.2257 + Math.cos(angle) * radius];
       }
@@ -204,15 +277,21 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
             <strong style="color: #346538; font-weight: bold;">${freeSlots} de ${totalSlots} libres</strong>
           </div>
 
-          <div style="margin-bottom: 8px;">
+          <div style="display: flex; gap: 6px; margin-bottom: 8px;">
             <a 
               href="https://www.google.com/maps/dir/?api=1&destination=${coords[0]},${coords[1]}" 
               target="_blank" 
               rel="noopener noreferrer" 
-              style="width: 100%; text-decoration: none; background: #FBFBFA; color: #111111; border: 1px solid #EAEAEA; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; text-align: center; display: block; box-sizing: border-box;"
+              style="flex: 1; text-decoration: none; background: #FBFBFA; color: #111111; border: 1px solid #EAEAEA; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; text-align: center; box-sizing: border-box;"
             >
               Google Maps
             </a>
+            <button 
+              id="btn-route-${p.id}"
+              style="flex: 1; background: #0284c7; color: #ffffff; border: none; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;"
+            >
+              🛣️ Ver Ruta
+            </button>
           </div>
 
           <button 
@@ -233,10 +312,16 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       });
 
       marker.on('popupopen', () => {
-        const btn = document.getElementById(`btn-select-${p.id}`);
-        if (btn) {
-          btn.onclick = () => {
+        const btnSelect = document.getElementById(`btn-select-${p.id}`);
+        if (btnSelect) {
+          btnSelect.onclick = () => {
             if (onSelectParking) onSelectParking(p);
+          };
+        }
+        const btnRoute = document.getElementById(`btn-route-${p.id}`);
+        if (btnRoute) {
+          btnRoute.onclick = () => {
+            calculateRouteTo(coords, p.name);
           };
         }
       });
@@ -247,7 +332,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
 
       markersRef.current[p.id] = marker;
     });
-  }, [parkings, selectedParkingId, onSelectParking]);
+  }, [filteredParkings, selectedParkingId, onSelectParking]);
 
   // Centrado matemático perfecto de pin y popup en el visor
   const centerOnMarker = (coords, zoom = 16) => {
@@ -437,6 +522,76 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
         </div>
 
       </div>
+
+      {/* Filtros Rápidos Flotantes (Feature 5): Tipo de Vehículo y Tarifa Máxima */}
+      <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2 pointer-events-none max-w-[calc(100%-200px)]">
+        <div className="pointer-events-auto flex items-center space-x-1 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200/90 shadow-lg text-xs font-bold">
+          <span className="text-slate-400 text-[10px] uppercase tracking-wider px-1">Vehículo:</span>
+          {[
+            { id: 'all', label: 'Todos' },
+            { id: 'auto', label: 'Auto 🚗' },
+            { id: 'moto', label: 'Moto 🏍️' },
+            { id: 'suv', label: 'SUV 🚙' }
+          ].map(type => (
+            <button
+              key={type.id}
+              type="button"
+              onClick={() => setFilterType(type.id)}
+              className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                filterType === type.id
+                  ? 'bg-emerald-600 text-white shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              {type.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="pointer-events-auto flex items-center space-x-1 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200/90 shadow-lg text-xs font-bold">
+          <span className="text-slate-400 text-[10px] uppercase tracking-wider px-1">Precio:</span>
+          {[
+            { id: 'all', label: 'Todos' },
+            { id: '5', label: '≤ S/ 5/h' },
+            { id: '8', label: '≤ S/ 8/h' }
+          ].map(price => (
+            <button
+              key={price.id}
+              type="button"
+              onClick={() => setFilterPrice(price.id)}
+              className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                filterPrice === price.id
+                  ? 'bg-slate-900 text-white shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              {price.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tarjeta Flotante de Ruta en Vivo (Feature 2): Mapbox Directions API */}
+      {activeRoute && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-[92vw]">
+          <div className="flex items-center space-x-2 flex-wrap">
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+            <span className="font-bold text-slate-200">
+              Ruta en vivo a <strong className="text-white">{activeRoute.destinationName}</strong>:
+            </span>
+            <span className="font-mono font-black text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">{activeRoute.distanceKm} km</span>
+            <span className="text-slate-400">•</span>
+            <span className="font-mono font-black text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">~{activeRoute.durationMin} min en auto</span>
+          </div>
+          <button
+            type="button"
+            onClick={clearRoute}
+            className="px-2.5 py-1 bg-slate-800 hover:bg-rose-900/80 text-slate-300 hover:text-white rounded-lg font-bold text-[11px] transition cursor-pointer border border-slate-700 hover:border-rose-700 shrink-0"
+          >
+            ✕ Limpiar
+          </button>
+        </div>
+      )}
 
     </div>
   );

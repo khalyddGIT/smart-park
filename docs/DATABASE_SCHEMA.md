@@ -37,6 +37,9 @@ erDiagram
 ## 📋 Diccionario de Datos por Tabla
 
 ### 1. `usuarios` — Cuentas y RBAC (`User` `models.py:31`)
+> **¿Para qué sirve?** Es la tabla madre de autenticación. Guarda a los 3 actores del marketplace: conductores (`user`) que reservan, dueños y operadores de cochera (`local`) que gestionan su sede asignada vía `Staff.parking_id`, y el super admin (`platform`) que aprueba afiliaciones y liquida. Cada fila genera un `JWT` `HS256` y un `PIN` de 4 dígitos hasheado para la garita. Ejemplo: `operador.garita@smartpark.pe / role local / PIN 2580` creado desde `StaffModule` con `parking_id=1`.
+> **Flujo:** `POST /auth/register` → `POST /auth/login` (rate limit 5/min) → `GET /auth/me` valida `is_active`. Si `is_active=false` (personal eliminado) el login falla.
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK AUTOINCREMENT` | Identificador. |
@@ -51,12 +54,14 @@ erDiagram
 | **Índices** | | `idx_usuarios_email`, `idx_usuarios_role` | |
 
 ### 2. `vehiculos` — Padrón (`Vehicle` `models.py:47`)
+> Guarda los vehículos del conductor para autocompletar la placa al reservar. Un usuario puede tener N vehículos. Ejemplo: `ABC-123 Toyota RAV4 Gris` de `usuario@smartpark.com`. Solo el conductor usa `VehiclesModule`.
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID vehículo. |
 | `user_id` | `INTEGER` | `FK usuarios.id ON DELETE CASCADE` `INDEX` | Propietario. |
 | `license_plate` | `VARCHAR(20)` | `NOT NULL INDEX` | Placa `AYC-501`. |
-| `vehicle_type` | `VARCHAR(20)` | `DEFAULT 'auto'` `CHECK auto/moto/suv/truck/bike` | Tipo. |
+| `vehicle_type` | `VARCHAR(20)` | `DEFAULT 'auto'` `CHECK auto/moto/suv/truck/bike/pmr` | Tipo. |
 | `brand` | `VARCHAR(50)` | `NULLABLE` | Marca. |
 | `model` | `VARCHAR(50)` | `NULLABLE` | Modelo. |
 | `color` | `VARCHAR(30)` | `NULLABLE` | Color. |

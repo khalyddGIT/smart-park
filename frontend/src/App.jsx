@@ -51,7 +51,9 @@ import {
   Umbrella,
   Crown,
   Bike,
-  ArrowLeft
+  ArrowLeft,
+  MessageSquare,
+  Phone
 } from 'lucide-react';
 
 import { Card, CardDescription } from './components/ui/card';
@@ -571,14 +573,16 @@ export const App = () => {
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             onClick={(e) => e.stopPropagation()}
-                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200"
+                                            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200"
                                           >
-                                            <span>💬 WhatsApp</span>
+                                            <MessageSquare className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                            <span>WhatsApp</span>
                                           </a>
                                         )}
                                         {p.phone && (
-                                          <span className="text-[11px] text-slate-500 font-mono">
-                                            📞 {p.phone}
+                                          <span className="text-[11px] text-slate-500 font-mono inline-flex items-center gap-1">
+                                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                            <span>{p.phone}</span>
                                           </span>
                                         )}
                                       </div>

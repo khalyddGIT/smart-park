@@ -385,7 +385,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           longitude: lng,
           mapsUrl: `https://maps.google.com/?q=${lat},${lng}`
         }));
-        showToast(`📍 Ubicación GPS detectada con éxito`);
+        showToast('Ubicación GPS detectada con éxito');
       },
       () => {
         setGpsLocating(false);
@@ -1351,7 +1351,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               address: prev.address || loc.address,
                               mapsUrl: `https://maps.google.com/?q=${loc.lat},${loc.lng}`
                             }));
-                            showToast(`📍 Fijado en ${loc.name}`);
+                            showToast(`Ubicación fijada en ${loc.name}`);
                           }}
                           className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 border border-slate-200 text-xs font-medium transition flex items-center gap-1 cursor-pointer"
                         >
@@ -1768,8 +1768,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
               {/* Información sobre el Marcador */}
               <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1.5 text-xs text-slate-600">
-                <span className="text-[11px] font-bold text-slate-700 block">
-                  📍 Marcador GPS para Conductores
+                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Marcador GPS para Conductores
                 </span>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
                   Esta ubicación aparecerá exactamente en las coordenadas <strong className="font-mono text-slate-800">{Number(formData.latitude).toFixed(5)}, {Number(formData.longitude).toFixed(5)}</strong> en el mapa satelital de Ayacucho.

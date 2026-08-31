@@ -56,7 +56,7 @@ export const UserProfileModule = ({ onBack }) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      showToast('❌ La imagen no debe superar los 5MB');
+      showToast('La imagen no debe superar los 5MB.');
       return;
     }
     setUploading(true);
@@ -64,7 +64,7 @@ export const UserProfileModule = ({ onBack }) => {
     reader.onloadend = () => {
       setAvatarInput(reader.result);
       setUploading(false);
-      showToast('📸 Vista previa de imagen de perfil cargada.');
+      showToast('Vista previa de imagen de perfil cargada.');
     };
     reader.readAsDataURL(file);
   };

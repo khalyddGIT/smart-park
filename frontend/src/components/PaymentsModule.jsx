@@ -24,7 +24,8 @@ import {
   ArrowRight,
   Shield,
   Zap,
-  Building2
+  Building2,
+  Wifi
 } from 'lucide-react';
 
 const CARDS_STORAGE_KEY_BASE = 'smart_park_cards_v2';
@@ -371,8 +372,8 @@ export const PaymentsModule = () => {
                       <div className="w-6 h-4 border border-amber-600/40 rounded-xs" />
                     </div>
                     {/* Icono Contactless */}
-                    <div className="text-slate-400 text-xs font-mono font-bold tracking-widest flex items-center gap-1">
-                      <span>📶</span>
+                    <div className="text-slate-400 text-xs font-mono font-bold tracking-widest flex items-center gap-1.5">
+                      <Wifi className="w-3.5 h-3.5 text-slate-300 rotate-90 shrink-0" />
                       <span className="text-[10px] text-slate-300">NFC PASS</span>
                     </div>
                   </div>

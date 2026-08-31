@@ -788,9 +788,9 @@ export const PlatformSettingsModule = () => {
                 onChange={(e) => setNewBroadcast({ ...newBroadcast, target: e.target.value })}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 cursor-pointer"
               >
-                <option value="ALL">🌐 Todos (Conductores + Administradores de Cocheras)</option>
-                <option value="CONDUCTORES">🚗 Solo Conductores Registrados</option>
-                <option value="COCHERAS">🏢 Solo Administradores de Cocheras Afiliadas</option>
+                <option value="ALL">Todos (Conductores + Administradores de Cocheras)</option>
+                <option value="CONDUCTORES">Solo Conductores Registrados</option>
+                <option value="COCHERAS">Solo Administradores de Cocheras Afiliadas</option>
               </select>
             </div>
 

@@ -866,7 +866,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <div className="bg-white p-3 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center">
               <div className="p-1.5 bg-white rounded-xl border border-slate-100 shadow-xs inline-block">
                 <QRCodeSVG
-                  value={`🚗 SMART-PARK AYACUCHO - TICKET
+                  value={`SMART-PARK AYACUCHO - TICKET
 Sede: ${selectedReceipt.parking}
 Plaza: ${selectedReceipt.slot}
 Placa: ${selectedReceipt.plate}

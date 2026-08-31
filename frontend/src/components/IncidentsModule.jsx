@@ -16,7 +16,8 @@ import {
   RefreshCw,
   Check,
   MapPin,
-  Loader2
+  Loader2,
+  Upload
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useAuth } from '../context/AuthContext';
@@ -643,7 +644,8 @@ export const IncidentsModule = () => {
                       photoMode === 'upload' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    <span>📁 Subir Archivo</span>
+                    <Upload className="w-4 h-4 shrink-0" />
+                    <span>Subir Archivo</span>
                   </button>
                   <button
                     type="button"

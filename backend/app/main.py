@@ -275,6 +275,8 @@ from app.api.v1 import affiliations as affiliations_router
 app.include_router(affiliations_router.router, prefix=settings.API_V1_STR)
 from app.api.v1 import platform as platform_router
 app.include_router(platform_router.router, prefix=settings.API_V1_STR)
+from app.api.v1 import settings as platform_settings_router
+app.include_router(platform_settings_router.router, prefix=settings.API_V1_STR)
 
 # Canal WebSocket en tiempo real (mismo origen, sin servicio extra)
 @app.websocket("/api/v1/ws")

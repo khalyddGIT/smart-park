@@ -525,17 +525,16 @@ export const EstablishmentProvider = ({ children }) => {
           const localOnly = prev.filter(e => String(e.id).startsWith('EST-'));
           const serverIds = new Set(mappedParkings.map(m => m.id));
           const preservedLocal = localOnly.filter(l => !serverIds.has(String(l.id)));
-          // Preservar el plano ya hidratado de la carga anterior (el polling no debe borrarlo)
           const prevMap = new Map(prev.map(e => [String(e.id), e]));
           const merged = mappedParkings.map(m => {
             const before = prevMap.get(m.id);
-            if (Array.isArray(before?.elements)) return { ...m, elements: before.elements };
-            pendingHydration.push(m.id);
-            return m;
+            return before?.elements ? { ...m, elements: before.elements } : m;
           });
           return [...merged, ...preservedLocal].map((e, idx) => sanitizeEstablishment(e, idx));
         });
-        pendingHydration.forEach(id => hydrateFloorPlan(id));
+
+        // Re-hidratar planos de forma forzada para sincronizar estados de cajones (libre/reservado/ocupado) desde PostgreSQL
+        mappedParkings.forEach(m => hydrateFloorPlan(m.id, true));
       }
     } catch {}
   };

@@ -46,16 +46,18 @@ export const PersonalGaritaModule = () => {
         id: x.id, code: x.code, plate: x.license_plate, slotId: x.slot_id, parkingId: String(x.parking_id),
         status: (x.status||'scheduled').toUpperCase(), startTime: x.start_time, endTime: x.end_time, total_cost: x.total_cost
       })));
+      ensureFloorPlan(currentEst.id, true);
     } catch {}
   };
+
   useEffect(()=>{
     fetchGaritaReservations();
-    const iv=setInterval(()=>{
+    const iv = setInterval(()=>{
       if(document.visibilityState==='visible') fetchGaritaReservations();
-    }, 30000);
-    const onVis=()=>{ if(document.visibilityState==='visible') fetchGaritaReservations(); };
+    }, 5000);
+    const onVis = () => { if(document.visibilityState==='visible') fetchGaritaReservations(); };
     document.addEventListener('visibilitychange', onVis);
-    return ()=>{ clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
   },[currentEst?.id]);
 
   const freeSlots = useMemo(()=> (currentEst?.elements||[]).filter(e=>e.type==='slot' && e.status==='free'), [currentEst]);

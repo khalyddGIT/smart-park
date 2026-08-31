@@ -60,6 +60,7 @@ async def startup_db():
                 ("estacionamientos", "camera_url", "TEXT"),
                 ("estacionamientos", "camera_enabled", "BOOLEAN DEFAULT FALSE"),
                 ("estacionamientos", "camera_calibration", "TEXT"),
+                ("usuarios", "avatar_url", "TEXT"),
             ]
             if str(engine.url).startswith("sqlite"):
                 for tbl, col, decl in lite_adds:

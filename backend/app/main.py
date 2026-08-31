@@ -132,7 +132,7 @@ async def startup_db():
                 slots = [
                     Slot(parking_id=p1.id, code="A-01", slot_type="auto", status="free", pos_x=50, pos_y=50, width=60, height=100),
                     Slot(parking_id=p1.id, code="A-02", slot_type="auto", status="occupied", pos_x=130, pos_y=50, width=60, height=100),
-                    Slot(parking_id=p1.id, code="A-03", slot_type="pmr", status="free", pos_x=210, pos_y=50, width=60, height=100),
+                    Slot(parking_id=p1.id, code="A-03", slot_type="auto", status="free", pos_x=210, pos_y=50, width=60, height=100),
                     Slot(parking_id=p1.id, code="A-04", slot_type="moto", status="free", pos_x=290, pos_y=50, width=50, height=60),
                 ]
                 elems = [

@@ -358,7 +358,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 // Solo "free" (según el servidor) es reservable; reserved/occupied no
                 const isFree = el.status === 'free';
                 const isSelected = selectedSlot?.id === el.id || selectedSlot?.code === el.code;
-                const isPMR = el.slotType === 'pmr';
+                const isPMR = false;
                 const isMoto = el.slotType === 'moto';
                 const isShaded = !!el.shaded;
 

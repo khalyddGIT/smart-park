@@ -40,8 +40,7 @@ Smart-Park no es propietario de los inmuebles físicos de estacionamiento (salvo
       icon: <Car className="w-4 h-4 text-blue-600 shrink-0" />,
       content: `• Reserva y Ocupación: El usuario tiene derecho a ocupar el cajón específico reservado durante el lapso de tiempo contratado.
 • Tolerancia y Horarios: Se otorga un periodo de gracia estándar de 15 minutos. El tiempo excedente será cobrado según el tarifario oficial de la cochera mediante la pasarela de pago o en garita.
-• Custodia y Objetos de Valor: El conductor debe cerrar debidamente su vehículo. Smart-Park y el establecimiento no se hacen responsables por bienes no declarados expresamente en garita conforme al Art. 1756 del Código Civil Peruano.
-• Plazas PMR e Inclusivas: Queda terminantemente prohibido ocupar plazas reservadas para personas con movilidad reducida (PMR - Norma A.120) sin contar con la acreditación CONADIS correspondiente.`
+• Custodia y Objetos de Valor: El conductor debe cerrar debidamente su vehículo. Smart-Park y el establecimiento no se hacen responsables por bienes no declarados expresamente en garita conforme al Art. 1756 del Código Civil Peruano.`
     },
     {
       id: 'sec-3',

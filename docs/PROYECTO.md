@@ -31,7 +31,7 @@ Bienvenido a la especificación completa del sistema **Smart Park**. Este docume
 - **RF11 - Búsqueda de Estacionamientos:** Filtro por texto (nombre, jirón, avenida o distrito).
 - **RF12 - Filtros Rápidos de Categoría:** Filtros de un solo clic (*Todas, Centro Histórico, Techadas, Económicas ≤ S/ 4.50*).
 - **RF13 - Disponibilidad en Tiempo Real:** Indicador visual y radar animado de plazas libres en cada local.
-- **RF14 - Filtro por Tipo de Plaza:** Autos, Motos, Bicicletas y Plazas Inclusivas (PMR bajo Norma A.120).
+- **RF14 - Filtro por Tipo de Plaza:** Autos, Motos y Bicicletas.
 - **RF15 - Mapa Interactivo Leaflet:** Mapa visual interactivo con zoom, pan, marcadores dinámicos con badges en vivo y switch de capas (*Calles / Satélite HD*).
 - **RF16 - Georreferenciación GPS:** Botón de centrado en Ayacucho y detección de ubicación actual del usuario.
 - **RF17 - Cinta Marquee Infinita de Sedes:** Desplazamiento horizontal continuo automático de todas las sedes fuera del mapa, con pausa al hacer hover y click para enfocar.
@@ -51,7 +51,7 @@ Bienvenido a la especificación completa del sistema **Smart Park**. Este docume
 - **RF33 - Validaciones en Garita:** Marcación de Check-In (Entrada) y Check-Out (Salida) por el operador de garita.
 
 ### Módulo 5: Estudio CAD y Gemelo Digital de Cocheras
-- **RF40 - Estudio CAD 1:1:** Lienzo interactivo para diseñar la distribución de la cochera (muros, plazas auto/moto/PMR, garita, pasos peatonales).
+- **RF40 - Estudio CAD 1:1:** Lienzo interactivo para diseñar la distribución de la cochera (muros, plazas auto/moto, garita, pasos peatonales).
 - **RF41 - Estado en Vivo de Plazas:** Conmutador manual y automático del estado (*Libre / Ocupado / Reservado*).
 - **RF42 - Tarifario y Aforo:** Parámetros de costo por hora y capacidad máxima del local.
 

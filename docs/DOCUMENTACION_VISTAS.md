@@ -244,7 +244,7 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
     - Al seleccionar cualquier plaza, despliega una tarjeta de especificaciones de solo lectura (código, tipo auto/moto, techado, estado libre/ocupado, matrícula y dimensiones).
     - Muestra métricas globales de la sede (total plazas, libres, ocupadas, motos y techadas).
   - **Modo Editor CAD ("Editar Plano" - Totalmente Interactivo):**
-    - Herramienta completa de arquitectura y trazado: añadir cajones para autos, motos, discapacitados (PMR) y techadas.
+    - Herramienta completa de arquitectura y trazado: añadir cajones para autos, motos y techadas.
     - Trazado de muros perimetrales, carriles viales con flechas direccionales, pasos peatonales cebra, jardines y garitas con sensores ANPR.
     - Auto-renumeración espacial inteligente, snapping a rejilla imantada, rotación libre en 360°, duplicación y alineación en el lote.
     - Guardado y persistencia en tiempo real en la base de datos de la sede.

@@ -67,6 +67,8 @@ erDiagram
 | `color` | `VARCHAR(30)` | `NULLABLE` | Color. |
 
 ### 3. `estacionamientos` — Sedes (`Parking` `models.py:60`)
+> **¿Para qué sirve?** Representa cada sede física o cochera registrada en el sistema. Contiene información comercial, ubicación georreferenciada (latitud/longitud), tarifas horarias, capacidad total de aforo, tolerancias de tiempo y la configuración del flujo de cámara LPR/ANPR.
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID sede. |
@@ -91,6 +93,8 @@ erDiagram
 | **Índices** | | `idx_estacionamientos_city/status` | |
 
 ### 4. `plazas` — Cajones (`Slot` `models.py:106`)
+> **¿Para qué sirve?** Guarda cada cajón de estacionamiento individual dentro del plano interactivo CAD. Registra sus coordenadas vectoriales en el lienzo (`pos_x`, `pos_y`, `width`, `height`, `rotation`), nivel de piso, tipo de plaza y su estado en tiempo real (`free`, `occupied`, `reserved`, `disabled`).
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID plaza. |
@@ -107,6 +111,8 @@ erDiagram
 | **Índices** | | `idx_plazas_parking_id/status` | |
 
 ### 5. `elementos_plano` — Infraestructura CAD (`FloorPlanElement` `models.py:123`)
+> **¿Para qué sirve?** Registra los elementos arquitectónicos e infraestructura del gemelo digital diseñados en el estudio CAD. Incluye muros perimetrales, vías de circulación, pasos peatonales (cebra), garitas ANPR y textos descriptivos con orden de capa (`z_index`).
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID elemento. |
@@ -121,6 +127,8 @@ erDiagram
 | `properties_json` | `TEXT` | `NULLABLE` | JSON extra. |
 
 ### 6. `reservas` — Pases (`Reservation` `models.py:139`)
+> **¿Para qué sirve?** Gestiona el ciclo de vida completo de cada ticket o reserva de parqueo. Almacena el código único con QR generado, horario reservado, hora real de entrada/salida (*check-in/check-out*), costo total calculado y estado operativo (`scheduled`, `active`, `completed`, `cancelled`).
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID. |
@@ -141,6 +149,8 @@ erDiagram
 > **Flujo:** `scheduled --check-in--> active --check-out--> completed` o `cancelled` por `reservation_worker.py:50` `deadline = start + tolerance` sin `check-in`.
 
 ### 7. `personal` — Operadores (`Staff` `models.py:158`)
+> **¿Para qué sirve?** Registra a los trabajadores y operadores de garita asignados a cada sede de estacionamiento. Asocia el DNI y credenciales de acceso local para que el personal pueda operar la garita y validar entradas/salidas de vehículos.
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID. |
@@ -155,6 +165,8 @@ erDiagram
 | `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Alta. |
 
 ### 8. `resenas` — Calificaciones (`Review` `models.py:172`)
+> **¿Para qué sirve?** Almacena las calificaciones (1 a 5 estrellas) y comentarios dejados por los conductores tras completar una estancia, así como las respuestas oficiales otorgadas por el administrador de la cochera.
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID. |
@@ -167,6 +179,8 @@ erDiagram
 | `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Fecha. |
 
 ### 9. `incidencias` — Reportes (`Incident` `models.py:184`)
+> **¿Para qué sirve?** Sistema de tickets para el reporte y seguimiento de problemas ocurridos dentro del establecimiento (seguridad, infraestructura, fallos de pago o garita). Permite adjuntar fotos y registrar notas de resolución.
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID. |
@@ -182,6 +196,8 @@ erDiagram
 | `resolved_at` | `TIMESTAMP` | `NULLABLE` | Cierre. |
 
 ### 10. `pagos` — Pagos (`Payment` `models.py:215`)
+> **¿Para qué sirve?** Registra todas las transacciones financieras procesadas en la plataforma. Vincula las reservas con los cobros en pasarelas digitales (Culqi, PayPal, Yape/Plin) o pagos directos en efectivo realizados en la garita.
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID. |
@@ -196,6 +212,8 @@ erDiagram
 | `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Fecha. |
 
 ### 11. `solicitudes_afiliacion` — Afiliaciones (`AffiliationRequest` `models.py:229`)
+> **¿Para qué sirve?** Almacena los formularios de solicitud enviados por dueños de cocheras interesadas en unirse a Smart-Park. Permite al superadministrador revisar, aprobar o rechazar nuevas sedes antes de integrarlas a la red.
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID. |
@@ -212,12 +230,16 @@ erDiagram
 | `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Solicitud. |
 
 ### 12. `configuracion_plataforma` — Ajustes globales (`PlatformSettings` `models.py:246`)
+> **¿Para qué sirve?** Tabla singleton (fila única `id=1`) que parametriza los ajustes globales de la plataforma, como porcentajes de comisión por reserva, estado de pasarelas de pago habilitadas y modo de mantenimiento.
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | `1` único. |
 | `data` | `TEXT` | `NOT NULL` | JSON `{commission, payment gateways, maintenance}`. |
 
 ### 13. `cameras_dispositivos` — Cámaras por sede (`CameraDevice` `models.py:89`)
+> **¿Para qué sirve?** Registra los dispositivos de cámara IP o streams MJPEG configurados en cada sede para la visión computacional YOLOv8 / OCR. Almacena la URL del stream, la calibración de la región de interés (ROI) y el estado de activación.
+
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID. |

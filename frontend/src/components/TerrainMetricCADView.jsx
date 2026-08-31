@@ -37,9 +37,9 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
 
   const totalAreaM2 = lotLength * lotWidth;
   const totalStalls = slots.length;
-  const pmrCount = slots.filter(s => s.slotType === 'pmr').length;
-  const pmrRatio = totalStalls > 0 ? (pmrCount / totalStalls) * 100 : 0;
-  const pmrCompliant = pmrCount >= Math.max(1, Math.ceil(totalStalls * 0.04));
+  const pmrCount = 0;
+  const pmrRatio = 0;
+  const pmrCompliant = true;
 
   // Área ocupada por cajones (aprox 12.5 m² por cajón de auto)
   const stallsAreaM2 = totalStalls * 12.5;
@@ -60,17 +60,16 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
 
     // Fila Superior (Norte)
     for (let i = 0; i < slotsPerRow; i++) {
-      const isPmr = counter === 1;
-      const isEv = counter === 2;
-      const slotType = isPmr ? 'pmr' : isEv ? 'ev' : 'auto';
+      const isEv = counter === 1;
+      const slotType = isEv ? 'ev' : 'auto';
 
       newSlots.push({
         id: Date.now() + counter,
-        code: isPmr ? `PMR-01` : isEv ? `EV-01` : `A-0${counter}`,
+        code: isEv ? `EV-01` : `A-0${counter}`,
         slotType,
         x: (3 + i * stallWidthM) * SCALE,
         y: 2 * SCALE,
-        w: (isPmr ? 3.8 : stallWidthM) * SCALE,
+        w: stallWidthM * SCALE,
         h: stallLengthM * SCALE,
         rot: 0,
         status: counter % 3 === 0 ? 'occupied' : 'free',
@@ -104,13 +103,13 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
 
   // Agregar Cajón Individual a Escala
   const handleAddMetricSlot = (type = 'auto') => {
-    const widthM = type === 'pmr' ? 3.8 : type === 'moto' ? 1.2 : 2.5;
+    const widthM = type === 'moto' ? 1.2 : 2.5;
     const lengthM = type === 'moto' ? 2.5 : 5.0;
     const count = slots.length + 1;
 
     const newSlot = {
       id: Date.now(),
-      code: type === 'pmr' ? `PMR-0${count}` : type === 'moto' ? `M-0${count}` : `N-0${count}`,
+      code: type === 'moto' ? `M-0${count}` : `N-0${count}`,
       slotType: type,
       x: 4 * SCALE,
       y: 4 * SCALE,
@@ -193,9 +192,7 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
         <Button onClick={() => handleAddMetricSlot('auto')} variant="outline" size="sm" className="font-bold text-xs gap-1">
           <Car className="w-4 h-4 shrink-0 text-emerald-600" /> Cajón Auto (2.5m × 5.0m)
         </Button>
-        <Button onClick={() => handleAddMetricSlot('pmr')} variant="outline" size="sm" className="font-bold text-xs gap-1">
-          <Accessibility className="w-4 h-4 shrink-0 text-blue-600" /> Plaza PMR (3.8m × 5.0m)
-        </Button>
+
         <Button onClick={() => handleAddMetricSlot('moto')} variant="outline" size="sm" className="font-bold text-xs gap-1">
           <Bike className="w-4 h-4 shrink-0 text-amber-600" /> Moto (1.2m × 2.5m)
         </Button>
@@ -265,7 +262,7 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
             {slots.map((slot) => {
               const isSelected = slot.id === selectedElementId;
               const isFree = slot.status === 'free';
-              const isPMR = slot.slotType === 'pmr';
+              const isPMR = false;
               const isEV = slot.slotType === 'ev';
               const isMoto = slot.slotType === 'moto';
 
@@ -283,9 +280,7 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
                   className={`absolute border-2 rounded-lg cursor-pointer transition-all flex flex-col justify-between p-1.5 select-none ${
                     isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30' : 'z-10'
                   } ${
-                    isPMR 
-                      ? 'border-blue-500 bg-blue-950/60 text-blue-200' 
-                      : isEV
+                    isEV
                       ? 'border-emerald-500 bg-emerald-950/60 text-emerald-200'
                       : isMoto
                       ? 'border-amber-500 bg-amber-950/60 text-amber-200'
@@ -300,10 +295,9 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
                   </div>
 
                   <div className="text-center text-[10px] font-black">
-                    {isPMR && 'Preferencial'}
                     {isEV && 'Punto Carga EV'}
                     {isMoto && 'Espacio Moto'}
-                    {!isPMR && !isEV && !isMoto && (isFree ? 'LIBRE' : 'OCUPADO')}
+                    {!isEV && !isMoto && (isFree ? 'LIBRE' : 'OCUPADO')}
                   </div>
 
 
@@ -346,19 +340,13 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-          <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Normativa PMR (Accesibilidad)</p>
+          <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Capacidad de Terreno</p>
           <div className="flex items-center space-x-2 mt-1">
-            {pmrCompliant ? (
-              <span className="flex items-center gap-1 font-bold text-xs text-emerald-600">
-                <CheckCircle2 className="w-4 h-4 shrink-0" /> Cumple ({pmrCount} plazas)
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 font-bold text-xs text-rose-600">
-                <AlertTriangle className="w-4 h-4 shrink-0" /> Requiere {Math.max(1, Math.ceil(totalStalls * 0.04))} PMR
-              </span>
-            )}
+            <span className="flex items-center gap-1 font-bold text-xs text-emerald-600">
+              <CheckCircle2 className="w-4 h-4 shrink-0" /> Geometría Optimizada
+            </span>
           </div>
-          <p className="text-[10px] text-slate-500 mt-1 font-mono">Mínimo 4% de capacidad para PMR</p>
+          <p className="text-[10px] text-slate-500 mt-1 font-mono">Diseño estándar 2.5m × 5.0m</p>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">

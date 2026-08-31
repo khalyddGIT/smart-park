@@ -35,7 +35,7 @@ CREATE TABLE vehiculos (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     license_plate VARCHAR(20) NOT NULL,
-    vehicle_type VARCHAR(20) DEFAULT 'auto' CHECK (vehicle_type IN ('auto', 'moto', 'suv', 'truck', 'bike', 'pmr')),
+    vehicle_type VARCHAR(20) DEFAULT 'auto' CHECK (vehicle_type IN ('auto', 'moto', 'suv', 'truck', 'bike')),
     brand VARCHAR(50),
     model VARCHAR(50),
     color VARCHAR(30)
@@ -70,7 +70,7 @@ CREATE TABLE plazas (
     parking_id INTEGER NOT NULL REFERENCES estacionamientos(id) ON DELETE CASCADE,
     code VARCHAR(20) NOT NULL,
     floor_level VARCHAR(20) DEFAULT 'Piso 1',
-    slot_type VARCHAR(20) DEFAULT 'auto' CHECK (slot_type IN ('auto', 'moto', 'suv', 'truck', 'bike', 'pmr')),
+    slot_type VARCHAR(20) DEFAULT 'auto' CHECK (slot_type IN ('auto', 'moto', 'suv', 'truck', 'bike')),
     status VARCHAR(20) DEFAULT 'free' CHECK (status IN ('free', 'occupied', 'reserved', 'disabled')),
     pos_x INTEGER DEFAULT 0,
     pos_y INTEGER DEFAULT 0,
@@ -196,7 +196,7 @@ INSERT INTO vehiculos (user_id, license_plate, vehicle_type, brand, model, color
 INSERT INTO plazas (parking_id, code, floor_level, slot_type, status, pos_x, pos_y, width, height, rotation) VALUES
 (1, 'A-01', 'Piso 1', 'auto', 'free', 50, 50, 60, 100, 0),
 (1, 'A-02', 'Piso 1', 'auto', 'occupied', 130, 50, 60, 100, 0),
-(1, 'A-03', 'Piso 1', 'pmr', 'free', 210, 50, 60, 100, 0),
+(1, 'A-03', 'Piso 1', 'auto', 'free', 210, 50, 60, 100, 0),
 (1, 'A-04', 'Piso 1', 'moto', 'free', 290, 50, 50, 60, 0);
 
 -- Insertar Elementos Plano

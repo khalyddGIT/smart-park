@@ -108,7 +108,7 @@
 
 ### 2. Software de Gestión para el Admin de Cochera (Afiliado)
 * **`LocalEstablishmentManager.jsx` & `InteractiveFloorPlanDrawingStudio.jsx` (Estudio CAD)**:
-  - Herramienta de dibujo arquitectónico 1:1 en lienzo interactivo (muros, plazas para autos, motos, discapacitados PMR, techadas, garitas y accesos peatonales).
+  - Herramienta de dibujo arquitectónico 1:1 en lienzo interactivo (muros, plazas para autos, motos, techadas, garitas y accesos peatonales).
   - Conmutador de estado de plazas en vivo (*Libre / Ocupado / Reservado*).
   - Configuración de tarifa horaria y aforo.
 * **`ANPRMonitor.jsx` (Control de Garita LPR & Barrera)**:

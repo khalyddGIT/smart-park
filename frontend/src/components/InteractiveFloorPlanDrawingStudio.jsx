@@ -258,7 +258,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
   const totalSlots = elements.filter(e => e.type === 'slot').length;
   const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
   const occupiedSlots = elements.filter(e => e.type === 'slot' && e.status === 'occupied').length;
-  const pmrSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'pmr').length;
+  const pmrSlots = 0;
   const shadedSlots = elements.filter(e => e.type === 'slot' && e.shaded).length;
   const motoSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'moto').length;
 
@@ -720,7 +720,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
             id: newId + i,
             type: 'slot',
             code: `${prefix}-0${(existingCount % 10) + i + 1}`,
-            slotType: i === 0 ? 'pmr' : 'auto',
+            slotType: 'auto',
             shaded: i === 1,
             x: currentDraw.x + i * (slotWidth + 8),
             y: currentDraw.y,
@@ -736,13 +736,13 @@ export const InteractiveFloorPlanDrawingStudio = ({
       else if (activeTool.startsWith('slot_')) {
         const rawType = activeTool.replace('slot_', '');
         const isShaded = rawType === 'shaded';
-        const isPMR = rawType === 'pmr';
+        const isPMR = false;
         const isMoto = rawType === 'moto';
         const slotType = isShaded ? 'auto' : rawType;
         
         const count = elements.filter(e => e.type === 'slot').length + 1;
-        const code = isShaded ? `S-0${count}` : isPMR ? `PMR-0${count}` : isMoto ? `M-0${count}` : `A-0${count}`;
-        const defaultW = isMoto ? 38 : isPMR ? 66 : 56;
+        const code = isShaded ? `S-0${count}` : isMoto ? `M-0${count}` : `A-0${count}`;
+        const defaultW = isMoto ? 38 : 56;
         const defaultH = isMoto ? 65 : 96;
 
         const finalW = currentDraw.w > 30 ? currentDraw.w : defaultW;
@@ -1232,7 +1232,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
               // 1. Plazas de Estacionamiento de Alta Definición
               if (el.type === 'slot') {
                 const isFree = el.status === 'free';
-                const isPMR = el.slotType === 'pmr';
+                const isPMR = false;
                 const isMoto = el.slotType === 'moto';
                 const isShaded = !!el.shaded;
 
@@ -1252,9 +1252,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                         ? 'ring-4 ring-cyan-400 border-cyan-300 z-30 shadow-[0_0_30px_rgba(6,182,212,0.9)] scale-[1.02]' 
                         : 'z-10'
                     } ${
-                      isPMR 
-                        ? 'border-blue-500/90 bg-gradient-to-b from-blue-950/90 via-slate-900/95 to-blue-950/90 text-blue-200 hover:border-blue-400' 
-                        : isShaded
+                      isShaded
                         ? 'border-amber-400/90 bg-gradient-to-b from-amber-950/70 via-slate-900/95 to-amber-950/80 text-amber-100 hover:border-amber-300'
                         : isMoto
                         ? 'border-orange-500/90 bg-gradient-to-b from-orange-950/80 via-slate-900/95 to-orange-950/90 text-orange-200 hover:border-orange-400'
@@ -1282,7 +1280,6 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     {/* Encabezado: Código y Distintivo */}
                     <div className="flex items-center justify-between text-[10px] font-mono font-black z-10 leading-none pr-3">
                       <span className="text-white drop-shadow-sm tracking-tight">{el.code}</span>
-                      {isPMR && <span className="text-blue-400 font-bold text-[8px] bg-blue-950/80 px-1 py-0.5 rounded border border-blue-700">♿ PMR</span>}
                       {isShaded && <span className="text-amber-300 text-[8px] font-bold bg-amber-950/80 px-1 py-0.5 rounded border border-amber-700">⛱️ TECH</span>}
                       {isMoto && <span className="text-orange-300 font-bold text-[8px] bg-orange-950/80 px-1 py-0.5 rounded border border-orange-700">🏍️ MOTO</span>}
                     </div>
@@ -1290,9 +1287,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     {/* Silueta / Stencil Central en Asfalto */}
                     <div className="flex flex-col items-center justify-center my-auto py-0.5 z-10 pointer-events-none">
                       {isFree ? (
-                        isPMR ? (
-                          <Accessibility className="w-5 h-5 shrink-0 text-blue-400/40" />
-                        ) : isMoto ? (
+                        isMoto ? (
                           <Bike className="w-4 h-4 shrink-0 text-orange-400/40" />
                         ) : (
                           <div className="w-6 h-9 rounded-lg border border-dashed border-emerald-400/30 flex flex-col items-center justify-around py-1">

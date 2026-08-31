@@ -15,7 +15,6 @@ class VehicleTypeEnum(str, enum.Enum):
     SUV = "suv"
     TRUCK = "truck"
     BIKE = "bike"
-    PMR = "pmr"
 
 class SlotStatusEnum(str, enum.Enum):
     FREE = "free"

@@ -467,10 +467,11 @@ export const EstablishmentProvider = ({ children }) => {
   const hydratedPlansRef = useRef(new Set());
 
   // Carga el plano real (plazas + muros) desde GET /parkings/{id}/floor-plan y lo fusiona en el estado
-  const hydrateFloorPlan = async (id) => {
+  const hydrateFloorPlan = async (id, force = false) => {
     const key = String(id);
     const numId = Number(key);
-    if (isNaN(numId) || hydratedPlansRef.current.has(key)) return;
+    if (isNaN(numId)) return;
+    if (!force && hydratedPlansRef.current.has(key)) return;
     hydratedPlansRef.current.add(key);
     try {
       const res = await api.get(`/parkings/${numId}/floor-plan`);
@@ -543,9 +544,18 @@ export const EstablishmentProvider = ({ children }) => {
     fetchParkings();
     if (getAccessToken()) refreshMyReservations();
 
-    // Polling ligero reducido para Railway edge (evita 429): cocheras 60s, reservas 30s, solo si pestaña visible
-    const parkingsInterval = setInterval(()=>{ if(document.visibilityState==='visible') fetchParkings(); }, 60000);
-    const reservationsInterval = setInterval(() => { if (getAccessToken() && document.visibilityState==='visible') refreshMyReservations(); }, 30000);
+    // Polling optimizado para sincronizar en tiempo real entre múltiples dispositivos
+    const parkingsInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchParkings();
+        hydratedPlansRef.current.clear();
+      }
+    }, 6000);
+    const reservationsInterval = setInterval(() => {
+      if (getAccessToken() && document.visibilityState === 'visible') {
+        refreshMyReservations();
+      }
+    }, 6000);
 
     // Refetch inmediato al volver a la pestaña (cambio de rol, edición en otra pestaña, etc.)
     const onFocus = () => { fetchParkings(); if (getAccessToken()) refreshMyReservations(); };
@@ -561,7 +571,8 @@ export const EstablishmentProvider = ({ children }) => {
       if (envUrl) return envUrl;
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return `${proto}//127.0.0.1:8000/api/v1/ws`;
-      return `${proto}//${window.location.host}/api/v1/ws`;
+      if (window.location.hostname.includes('railway.app')) return `${proto}//${window.location.host}/api/v1/ws`;
+      return `wss://smart-park-web-production.up.railway.app/api/v1/ws`;
     };
     const connectWs = () => {
       try {
@@ -1061,6 +1072,7 @@ export const EstablishmentProvider = ({ children }) => {
     try {
       await api.put(`/reservations/${target.id}/check-in`);
       await refreshMyReservations();
+      if (target.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
       return { ok: true, message: `Entrada registrada: vehículo ${target.plate} ingresó a la plaza ${target.slot}.` };
     } catch (e) {
       const s = e?.response?.status;
@@ -1085,6 +1097,7 @@ export const EstablishmentProvider = ({ children }) => {
     try {
       await api.put(`/reservations/${target.id}/check-out`);
       await refreshMyReservations();
+      if (target.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
       return { ok: true, message: `Salida registrada para ${target.plate}. Cajón ${target.slot} liberado.` };
     } catch (e) {
       const s = e?.response?.status;

@@ -1,7 +1,19 @@
 import axios from 'axios';
 
-// Base URL: local dev -> 8000, prod -> Railway / same origin
-const API_BASE = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://127.0.0.1:8000' : '');
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://127.0.0.1:8000';
+    }
+    if (window.location.hostname.includes('railway.app')) {
+      return window.location.origin;
+    }
+  }
+  return 'https://smart-park-web-production.up.railway.app';
+};
+
+const API_BASE = getApiBase();
 
 const api = axios.create({
   baseURL: `${API_BASE}/api/v1`,

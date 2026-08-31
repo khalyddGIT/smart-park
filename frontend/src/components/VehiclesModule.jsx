@@ -25,7 +25,7 @@ import {
   VideoOff
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { listVehicles, createVehicle as apiCreateVehicle, deleteVehicleApi, getAccessToken } from '../services/api';
+import { listVehicles, createVehicle as apiCreateVehicle, updateVehicleApi, deleteVehicleApi, getAccessToken } from '../services/api';
 
 // Función para consultar la API de Car Imagery y obtener foto real del modelo
 export const fetchCarPhoto = async (brand, model, year = '2022') => {
@@ -340,28 +340,67 @@ export const VehiclesModule = () => {
     showToast(`✓ Vehículo ${newObj.license_plate} registrado.`);
   };
 
-  const handleSaveEdit = (e) => {
-    e.preventDefault();
+  const handleSaveEdit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!selectedVehicle) return;
     const plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
-    const plateOk = /^([A-Z]{3}-[0-9]{3}|[0-9]{4}-[A-Z]{2}|[A-Z]{2}-[0-9]{4})$/.test(plateClean);
-    if(!plateOk){ showToast('Placa Perú: ABC-123 (auto) o 1234-AB (moto)'); return; }
+    const plateOk = /^[A-Z0-9]{2,4}-?[A-Z0-9]{2,4}$/i.test(plateClean);
+    if (!plateOk) { showToast('Ingresa una placa válida (ej: ABC-123, ABC123, A1B-234 o 1234-AB)'); return; }
 
-    const updated = vehicles.map(v => v.id === selectedVehicle.id ? {
-      ...v,
-      license_plate: formData.license_plate.toUpperCase().trim(),
-      vehicle_type: formData.vehicle_type,
-      brand: formData.brand.trim(),
-      model: formData.model.trim(),
-      year: formData.year,
-      color: formData.color.trim(),
-      notes: formData.notes,
-      imageUrl: formData.imageUrl || selectedVehicle.imageUrl
-    } : v);
+    const plate = formData.license_plate.toUpperCase().trim();
+    const token = getAccessToken();
 
-    setVehicles(updated);
+    let updatedObj = null;
+
+    if (token && typeof selectedVehicle.id === 'number' && selectedVehicle.id < 1000000000000) {
+      try {
+        const updatedServer = await updateVehicleApi(selectedVehicle.id, {
+          license_plate: plate,
+          vehicle_type: formData.vehicle_type,
+          brand: formData.brand.trim() || 'Toyota',
+          model: formData.model.trim() || 'Corolla',
+          color: formData.color.trim() || 'Gris'
+        });
+        updatedObj = {
+          ...selectedVehicle,
+          license_plate: updatedServer.license_plate,
+          vehicle_type: updatedServer.vehicle_type,
+          brand: updatedServer.brand,
+          model: updatedServer.model,
+          color: updatedServer.color,
+          year: formData.year,
+          notes: formData.notes,
+          imageUrl: formData.imageUrl || selectedVehicle.imageUrl
+        };
+      } catch (err) {
+        console.warn('Update vehicle API warning:', err);
+      }
+    }
+
+    if (!updatedObj) {
+      updatedObj = {
+        ...selectedVehicle,
+        license_plate: plate,
+        vehicle_type: formData.vehicle_type,
+        brand: formData.brand.trim(),
+        model: formData.model.trim(),
+        year: formData.year,
+        color: formData.color.trim(),
+        notes: formData.notes,
+        imageUrl: formData.imageUrl || selectedVehicle.imageUrl
+      };
+    }
+
+    const updatedList = vehicles.map(v => v.id === selectedVehicle.id ? updatedObj : v);
+
+    setVehicles(updatedList);
+    try {
+      localStorage.setItem(getVehiclesKey(), JSON.stringify(updatedList));
+    } catch (err) {}
+
     setShowEditModal(false);
-    showToast(`✓ Vehículo ${formData.license_plate} actualizado.`);
+    setSelectedVehicle(null);
+    showToast(`✓ Vehículo ${updatedObj.license_plate} actualizado exitosamente.`);
   };
 
   const handleDelete = async (id, plate) => {
@@ -840,7 +879,7 @@ export const VehiclesModule = () => {
 
       {/* Modal Editar Vehículo */}
       {showEditModal && (
-        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <Dialog open={showEditModal} onOpenChange={(open) => { setShowEditModal(open); if (!open) setSelectedVehicle(null); }}>
           <DialogContent className="max-w-md rounded-3xl p-6 bg-white shadow-2xl border-slate-200 max-h-[92vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-extrabold text-slate-900">Editar Vehículo</DialogTitle>

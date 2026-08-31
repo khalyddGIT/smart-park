@@ -49,6 +49,7 @@ export const verifyPinApi = (pin) => api.post('/auth/verify-pin', { pin }).then(
 // Vehicles (requiere JWT)
 export const listVehicles = () => api.get('/vehicles').then(r => r.data);
 export const createVehicle = (data) => api.post('/vehicles', data).then(r => r.data);
+export const updateVehicleApi = (id, data) => api.put(`/vehicles/${id}`, data).then(r => r.data);
 export const deleteVehicleApi = (id) => api.delete(`/vehicles/${id}`).then(r => r.data);
 
 // Reservations (requiere JWT)

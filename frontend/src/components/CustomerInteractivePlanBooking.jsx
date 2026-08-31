@@ -106,6 +106,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [selectedPlate, setSelectedPlate] = useState('');
+  const [useCustomPlate, setUseCustomPlate] = useState(false);
+  const [customPlateInput, setCustomPlateInput] = useState('');
 
   // Cargar solo vehículos del usuario autenticado
   useEffect(() => {
@@ -117,14 +119,15 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
         const list = Array.isArray(res.data) ? res.data : [];
         setVehicles(list);
         if (list.length > 0) {
-          const first = list[0];
-          setSelectedPlate(`${first.license_plate}${first.brand ? ` (${first.brand} ${first.model || ''} ${first.color || ''})`.trim() : ''}`);
+          setSelectedPlate(list[0].license_plate);
+          setUseCustomPlate(false);
         } else {
+          setUseCustomPlate(true);
           setSelectedPlate('');
         }
       })
       .catch(() => {
-        if (!cancelled) { setVehicles([]); setSelectedPlate(''); }
+        if (!cancelled) { setVehicles([]); setUseCustomPlate(true); setSelectedPlate(''); }
       })
       .finally(() => { if (!cancelled) setVehiclesLoading(false); });
     return () => { cancelled = true; };
@@ -213,6 +216,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   // Ventana de llegada configurable por sede (tolerance_minutes del backend)
   const arrivalWindow = Math.max(5, Math.min(60, Number(parking?.tolerance ?? parking?.tolerance_minutes ?? 15) || 15));
 
+  const effectivePlate = (useCustomPlate ? customPlateInput : selectedPlate).toUpperCase().trim();
+
   // Datos base compartidos por ambas vías de reserva - ETA corrige la falla lógica: reservas porque estás lejos
   const buildReservationData = (paymentMeta) => {
     const now = new Date();
@@ -227,7 +232,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       hours: Number(hours) || 1,
       etaMinutes: Number(etaMinutes) || 0,
       arrivalWindow,
-      plate: selectedPlate.split(' ')[0],
+      plate: effectivePlate.split(' ')[0],
       totalCost: (parking?.rate || 5.0) * (Number(hours) || 1),
       code: `RSV-${Date.now().toString().slice(-6)}`,
       token: `SPK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
@@ -237,7 +242,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     };
   };
 
-  const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && vehicles.length > 0 && !!selectedPlate;
+  const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && !!effectivePlate;
 
   const handleReserveHold = () => {
     if (!canReserve) return;
@@ -571,19 +576,36 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
             )}
 
-            {/* Selección de Vehículo — solo del usuario autenticado */}
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Vehículo <span className="text-slate-500 font-normal">({vehicles.length} registrado{vehicles.length!==1 ? 's' : ''})</span></label>
+            {/* Selección de Vehículo / Placa Directa */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Placa de Vehículo
+                </label>
+                {vehicles.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextMode = !useCustomPlate;
+                      setUseCustomPlate(nextMode);
+                      if (!nextMode && vehicles.length > 0) {
+                        setSelectedPlate(vehicles[0].license_plate);
+                      } else {
+                        setCustomPlateInput('');
+                      }
+                    }}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold cursor-pointer underline"
+                  >
+                    {useCustomPlate ? '← Usar mi vehículo registrado' : '+ Ingresar otra placa'}
+                  </button>
+                )}
+              </div>
+
               {vehiclesLoading ? (
                 <div className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-400 flex items-center gap-2">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando tus vehículos...
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando...
                 </div>
-              ) : vehicles.length === 0 ? (
-                <div className="w-full bg-amber-950/40 border border-amber-800 rounded-xl px-3 py-3 text-xs">
-                  <p className="font-bold text-amber-300 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Sin vehículos registrados</p>
-                  <p className="text-amber-200/80 mt-1 leading-snug">Registra un vehículo en <b>Mis Vehículos</b> antes de reservar. No se muestran placas de otros usuarios.</p>
-                </div>
-              ) : (
+              ) : vehicles.length > 0 && !useCustomPlate ? (
                 <select 
                   value={selectedPlate} 
                   onChange={(e) => setSelectedPlate(e.target.value)}
@@ -591,9 +613,25 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 >
                   {vehicles.map((v) => {
                     const label = `${v.license_plate}${v.brand ? ` (${v.brand} ${v.model || ''} ${v.color || ''})`.replace(/\s+/g,' ').trim() : ''}`;
-                    return <option key={v.id} value={label}>{label}</option>;
+                    return <option key={v.id} value={v.license_plate}>{label}</option>;
                   })}
                 </select>
+              ) : (
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    value={customPlateInput}
+                    onChange={(e) => setCustomPlateInput(e.target.value.toUpperCase())}
+                    placeholder="Ej. ABC-123 o P1A-999"
+                    maxLength={10}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-mono font-bold tracking-wider uppercase placeholder:normal-case placeholder:font-sans placeholder:font-normal focus:outline-none"
+                  />
+                  {vehicles.length === 0 && (
+                    <p className="text-[10px] text-slate-400 italic">
+                      💡 Tip: Ingresa tu placa para reservar directamente sin necesidad de registrarlo antes.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
@@ -729,8 +767,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               <span>Reservar y pagar al llegar</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Button>
-            {!canReserve && vehicles.length === 0 && (
-              <p className="text-[11px] text-amber-400 text-center">Registra un vehículo para habilitar la reserva.</p>
+            {!canReserve && !effectivePlate && (
+              <p className="text-[11px] text-amber-400 text-center">Ingresa o selecciona una placa para habilitar la reserva.</p>
             )}
           </div>
         </div>

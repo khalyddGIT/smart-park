@@ -1,6 +1,8 @@
 # 🗄️ Documentación Oficial del Esquema de Base de Datos — SMART-PARK
 
-Este documento detalla la estructura física, relacional y lógica de la base de datos de **Smart-Park**. Todas las tablas principales del sistema se encuentran nombradas en español y soportan almacenamiento en **PostgreSQL (Railway)** y **SQLite (Desarrollo Local)**.
+> **Motor:** `PostgreSQL 15 (Railway)` / `SQLite (dev)` · **ORM:** `SQLAlchemy 2.0` · **Tablas en español** · **v2026.08 — 12 tablas**
+
+Este documento detalla la estructura física, relacional y lógica actual de la base de datos de **Smart-Park**. Incluye todas las tablas visibles en `backend/app/models/models.py:31` y su `postgresql_schema.sql`. Migraciones ligeras se aplican en `backend/app/main.py:54` (`ALTER TABLE ... IF NOT EXISTS`).
 
 ---
 
@@ -12,191 +14,231 @@ erDiagram
     usuarios ||--o{ reservas : "realiza (1:N)"
     usuarios ||--o{ resenas : "escribe (1:N)"
     usuarios ||--o{ incidencias : "reporta (1:N)"
-    
+    usuarios ||--o{ pagos : "paga (1:N)"
+
     estacionamientos ||--o{ plazas : "contiene (1:N)"
     estacionamientos ||--o{ elementos_plano : "diseña (1:N)"
     estacionamientos ||--o{ reservas : "recibe (1:N)"
     estacionamientos ||--o{ personal : "emplea (1:N)"
     estacionamientos ||--o{ resenas : "registra (1:N)"
     estacionamientos ||--o{ incidencias : "atiende (1:N)"
-    
+    estacionamientos ||--o{ cameras_dispositivos : "vigila (1:N)"
+
     plazas ||--o{ reservas : "es reservada (1:N)"
+    reservas ||--o{ pagos : "genera (1:1)"
+
+    %% Tablas globales sin FK directa
+    solicitudes_afiliacion }o--|| estacionamientos : "solicita crear"
+    configuracion_plataforma ||--o{ estacionamientos : "parametriza"
 ```
 
 ---
 
 ## 📋 Diccionario de Datos por Tabla
 
-### 1. Tabla: `usuarios`
-Almacena las cuentas de acceso de todos los roles del sistema (Conductores, Administradores Locales de Garita y Super Admin Plataforma).
-
-| Campo | Tipo de Dato | Restricciones | Descripción |
+### 1. `usuarios` — Cuentas y RBAC (`User` `models.py:31`)
+| Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY`, `AUTOINCREMENT` | Identificador único del usuario. |
-| `full_name` | `VARCHAR(150)` | `NOT NULL` | Nombre completo del usuario. |
-| `email` | `VARCHAR(150)` | `NOT NULL`, `UNIQUE`, `INDEX` | Correo electrónico de inicio de sesión. |
-| `phone` | `VARCHAR(30)` | `NULLABLE` | Teléfono / WhatsApp de contacto. |
-| `hashed_password` | `VARCHAR(255)` | `NOT NULL` | Contraseña encriptada con Bcrypt. |
-| `security_pin` | `VARCHAR(255)` | `DEFAULT '1234'` | PIN de 4 dígitos para garita/operadores. |
-| `role` | `VARCHAR(20)` | `NOT NULL`, `DEFAULT 'user'` | Rol RBAC (`user`, `local`, `platform`). |
-| `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Estado activo o suspendido de la cuenta. |
-| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Fecha y hora de registro. |
+| `id` | `INTEGER` | `PK AUTOINCREMENT` | Identificador. |
+| `full_name` | `VARCHAR(150)` | `NOT NULL` | Nombre completo. |
+| `email` | `VARCHAR(150)` | `NOT NULL UNIQUE INDEX` | Login. |
+| `phone` | `VARCHAR(30)` | `NULLABLE` | Teléfono. |
+| `hashed_password` | `VARCHAR(255)` | `NOT NULL` | Bcrypt. |
+| `security_pin` | `VARCHAR(255)` | `DEFAULT '1234'` | PIN 4 dígitos hasheado (era `20` `FIX d73fa7d` `255`). |
+| `role` | `VARCHAR(20)` | `NOT NULL DEFAULT 'user'` `CHECK user/local/platform` | RBAC. |
+| `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Suspendido. |
+| `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Alta. |
+| **Índices** | | `idx_usuarios_email`, `idx_usuarios_role` | |
+
+### 2. `vehiculos` — Padrón (`Vehicle` `models.py:47`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID vehículo. |
+| `user_id` | `INTEGER` | `FK usuarios.id ON DELETE CASCADE` `INDEX` | Propietario. |
+| `license_plate` | `VARCHAR(20)` | `NOT NULL INDEX` | Placa `AYC-501`. |
+| `vehicle_type` | `VARCHAR(20)` | `DEFAULT 'auto'` `CHECK auto/moto/suv/truck/bike/pmr` | Tipo. |
+| `brand` | `VARCHAR(50)` | `NULLABLE` | Marca. |
+| `model` | `VARCHAR(50)` | `NULLABLE` | Modelo. |
+| `color` | `VARCHAR(30)` | `NULLABLE` | Color. |
+
+### 3. `estacionamientos` — Sedes (`Parking` `models.py:60`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID sede. |
+| `name` | `VARCHAR(150)` | `NOT NULL` | Nombre comercial. |
+| `address` | `VARCHAR(255)` | `NOT NULL` | Dirección. |
+| `city` | `VARCHAR(100)` | `NOT NULL INDEX DEFAULT 'Ayacucho - Huamanga'` | Ciudad. |
+| `latitude` | `DOUBLE` | `NOT NULL` | GPS lat. |
+| `longitude` | `DOUBLE` | `NOT NULL` | GPS lng. |
+| `hourly_rate` | `DOUBLE` | `NOT NULL DEFAULT 8.50` | Tarifa S/ hora. |
+| `tolerance_minutes` | `INTEGER` | `DEFAULT 15` | Ventana llegada (gracia). |
+| `status` | `VARCHAR(20)` | `DEFAULT 'active'` `CHECK active/inactive/maintenance` | Estado. |
+| `total_capacity` | `INTEGER` | `DEFAULT 30` | Aforo. |
+| `image_url` | `TEXT` | `NULLABLE` | Foto. |
+| `description` | `TEXT` | `NULLABLE` `main.py:55` | Descripción. |
+| `phone` | `VARCHAR(30)` | `NULLABLE` `main.py:56` | Teléfono sede. |
+| `email` | `VARCHAR(150)` | `NULLABLE` `main.py:57` | Email sede. |
+| `reference` | `VARCHAR(255)` | `NULLABLE` `main.py:58` | Referencia. |
+| `level` | `VARCHAR(100)` | `NULLABLE` `main.py:59` | Nivel. |
+| `camera_url` | `TEXT` | `NULLABLE` `main.py:60` | URL MJPEG/IP. |
+| `camera_enabled` | `BOOLEAN` | `DEFAULT FALSE` `main.py:61` | Habilitada. |
+| `camera_calibration` | `TEXT` | `NULLABLE` `main.py:62` | JSON `{x,y,w,h}` `0..1`. |
+| **Índices** | | `idx_estacionamientos_city/status` | |
+
+### 4. `plazas` — Cajones (`Slot` `models.py:106`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID plaza. |
+| `parking_id` | `INTEGER` | `FK estacionamientos.id CASCADE` | Sede. |
+| `code` | `VARCHAR(20)` | `NOT NULL` | `A-01` `B-02`. |
+| `floor_level` | `VARCHAR(20)` | `DEFAULT 'Piso 1'` | Piso. |
+| `slot_type` | `VARCHAR(20)` | `DEFAULT 'auto'` `CHECK` | `auto/moto/pmr` etc. |
+| `status` | `VARCHAR(20)` | `DEFAULT 'free'` `CHECK free/occupied/reserved/disabled` | Estado. |
+| `pos_x` | `INTEGER` | `DEFAULT 0` | X lienzo CAD `1100x700`. |
+| `pos_y` | `INTEGER` | `DEFAULT 0` | Y. |
+| `width` | `INTEGER` | `DEFAULT 60` | Ancho px. |
+| `height` | `INTEGER` | `DEFAULT 100` | Alto px. |
+| `rotation` | `INTEGER` | `DEFAULT 0` | Rotación `0-360`. |
+| **Índices** | | `idx_plazas_parking_id/status` | |
+
+### 5. `elementos_plano` — Infraestructura CAD (`FloorPlanElement` `models.py:123`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID elemento. |
+| `parking_id` | `INTEGER` | `FK CASCADE` | Sede. |
+| `element_type` | `VARCHAR(30)` | `NOT NULL` | `wall/crosswalk/gate/road/text`. |
+| `pos_x` | `INTEGER` | `NOT NULL` | X. |
+| `pos_y` | `INTEGER` | `NOT NULL` | Y. |
+| `width` | `INTEGER` | `NOT NULL` | W. |
+| `height` | `INTEGER` | `NOT NULL` | H. |
+| `rotation` | `INTEGER` | `DEFAULT 0` | Rot. |
+| `z_index` | `INTEGER` | `DEFAULT 1` | Capa. |
+| `properties_json` | `TEXT` | `NULLABLE` | JSON extra. |
+
+### 6. `reservas` — Pases (`Reservation` `models.py:139`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID. |
+| `code` | `VARCHAR(50)` | `NOT NULL UNIQUE INDEX` `RSV-XXXXXX` | Ticket QR. |
+| `user_id` | `INTEGER` | `FK usuarios.id CASCADE` | Conductor. |
+| `parking_id` | `INTEGER` | `FK estacionamientos.id CASCADE` | Sede. |
+| `slot_id` | `INTEGER` | `FK plazas.id CASCADE` | Cajón. |
+| `license_plate` | `VARCHAR(20)` | `NOT NULL` | Placa. |
+| `start_time` | `TIMESTAMP` | `NOT NULL` | Inicio `start = now + ETA`. |
+| `end_time` | `TIMESTAMP` | `NOT NULL` | Fin `start + hours`. |
+| `actual_entry` | `TIMESTAMP` | `NULLABLE` | Check-in garita. |
+| `actual_exit` | `TIMESTAMP` | `NULLABLE` | Check-out. |
+| `total_cost` | `DOUBLE` | `NOT NULL` | `hours * hourly_rate`. |
+| `status` | `VARCHAR(20)` | `DEFAULT 'scheduled'` `CHECK scheduled/active/completed/cancelled` | Estado. |
+| `qr_code` | `VARCHAR(255)` | `NOT NULL` | `SMARTPARK-RSV-...` para `QR`. |
+| **Índices** | | `idx_reservas_code/user_id/parking_id` | |
+
+> **Flujo:** `scheduled --check-in--> active --check-out--> completed` o `cancelled` por `reservation_worker.py:50` `deadline = start + tolerance` sin `check-in`.
+
+### 7. `personal` — Operadores (`Staff` `models.py:158`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID. |
+| `parking_id` | `INTEGER` | `FK estacionamientos.id CASCADE NOT NULL` | Sede asignada (única por trabajador). |
+| `full_name` | `VARCHAR(150)` | `NOT NULL` | Nombre. |
+| `dni` | `VARCHAR(20)` | `NOT NULL UNIQUE INDEX` `FIX c313c2f` | DNI. |
+| `position` | `VARCHAR(50)` | `NOT NULL` | `Operador de Garita` etc. |
+| `shift` | `VARCHAR(30)` | `DEFAULT 'Mañana'` | Turno. |
+| `status` | `VARCHAR(20)` | `DEFAULT 'active'` | `active/inactive`. |
+| `email` | `VARCHAR(150)` | `NULLABLE UNIQUE INDEX` | Login `local`. |
+| `security_pin` | `VARCHAR(255)` | `DEFAULT '1234'` `d73fa7d` era `20` truncaba hash | PIN hasheado. |
+| `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Alta. |
+
+### 8. `resenas` — Calificaciones (`Review` `models.py:172`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID. |
+| `parking_id` | `INTEGER` | `FK CASCADE` | Sede. |
+| `user_id` | `INTEGER` | `FK usuarios.id CASCADE` | Autor `user` único que puede escribir. |
+| `user_name` | `VARCHAR(150)` | `NOT NULL` | Denormalizado. |
+| `rating` | `INTEGER` | `1..5 DEFAULT 5` | Estrellas. |
+| `comment` | `TEXT` | `NOT NULL` | Texto. |
+| `response` | `TEXT` | `NULLABLE` | Réplica `local`. |
+| `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Fecha. |
+
+### 9. `incidencias` — Reportes (`Incident` `models.py:184`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID. |
+| `parking_id` | `INTEGER` | `FK CASCADE` | Sede. |
+| `user_id` | `INTEGER` | `FK usuarios.id CASCADE` | Reportante. |
+| `user_name` | `VARCHAR(150)` | `NOT NULL` | Nombre. |
+| `category` | `VARCHAR(50)` | `DEFAULT 'general'` | `general/seguridad/infraestructura`. |
+| `description` | `TEXT` | `NOT NULL` | Detalle. |
+| `photo_url` | `TEXT` | `NULLABLE` | Foto. |
+| `status` | `VARCHAR(20)` | `DEFAULT 'reported'` `CHECK reported/in_progress/resolved` | Estado. |
+| `resolution_note` | `TEXT` | `NULLABLE` | Resolución `local/platform`. |
+| `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Creación. |
+| `resolved_at` | `TIMESTAMP` | `NULLABLE` | Cierre. |
+
+### 10. `pagos` — Pagos (`Payment` `models.py:215`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID. |
+| `reservation_id` | `INTEGER` | `FK reservas.id NULLABLE INDEX` | Reserva pagada. |
+| `user_id` | `INTEGER` | `FK usuarios.id INDEX NOT NULL` | Pagador. |
+| `amount_cents` | `INTEGER` | `NOT NULL` | `S/ *100` `ej 1000 = 10.00`. |
+| `currency` | `VARCHAR(10)` | `DEFAULT 'PEN'` | `PEN/USD`. |
+| `status` | `VARCHAR(20)` | `DEFAULT 'succeeded'` | `succeeded/failed`. |
+| `method` | `VARCHAR(30)` | `DEFAULT 'card'` | `cash/yape/plin/card/paypal`. |
+| `culqi_charge_id` | `VARCHAR(100)` | `NULLABLE` | `tkn_...` o `PAYPAL-...`. |
+| `description` | `VARCHAR(200)` | `NULLABLE` | Concepto. |
+| `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Fecha. |
+
+### 11. `solicitudes_afiliacion` — Afiliaciones (`AffiliationRequest` `models.py:229`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID. |
+| `parking_name` | `VARCHAR(150)` | `NOT NULL` | Nombre solicitado. |
+| `owner_name` | `VARCHAR(150)` | `NOT NULL` | Dueño. |
+| `email` | `VARCHAR(150)` | `NOT NULL` | Contacto. |
+| `phone` | `VARCHAR(50)` | `NULLABLE` | Tel. |
+| `address` | `VARCHAR(255)` | `NULLABLE` | Dirección. |
+| `city` | `VARCHAR(100)` | `NULLABLE` | Ciudad. |
+| `capacity` | `INTEGER` | `NULLABLE` | Aforo estimado. |
+| `rate` | `DOUBLE` | `NULLABLE` | Tarifa propuesta. |
+| `notes` | `TEXT` | `NULLABLE` | Notas. |
+| `status` | `VARCHAR(20)` | `DEFAULT 'pending'` `CHECK pending/approved/rejected` | Estado. |
+| `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Solicitud. |
+
+### 12. `configuracion_plataforma` — Ajustes globales (`PlatformSettings` `models.py:246`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | `1` único. |
+| `data` | `TEXT` | `NOT NULL` | JSON `{commission, payment gateways, maintenance}`. |
+
+### 13. `cameras_dispositivos` — Cámaras por sede (`CameraDevice` `models.py:89`)
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PK` | ID. |
+| `parking_id` | `INTEGER` | `FK estacionamientos.id INDEX NOT NULL` | Sede. |
+| `name` | `VARCHAR(120)` | `NOT NULL DEFAULT 'Cámara 1'` | Nombre. |
+| `url` | `TEXT` | `NOT NULL` | `http://.../video`. |
+| `enabled` | `BOOLEAN` | `DEFAULT TRUE` | Habilitada. |
+| `calibration` | `TEXT` | `NULLABLE` | JSON `{x,y,w,h}` `0..1`. |
+| `created_at` | `TIMESTAMP` | `DEFAULT NOW` | Alta. |
 
 ---
 
-### 2. Tabla: `vehiculos`
-Guarda el padrón de vehículos asociados a los conductores.
-
-| Campo | Tipo de Dato | Restricciones | Descripción |
-| :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY`, `AUTOINCREMENT` | ID del vehículo. |
-| `user_id` | `INTEGER` | `FOREIGN KEY (usuarios.id)` | ID del propietario del vehículo. |
-| `license_plate` | `VARCHAR(20)` | `NOT NULL`, `INDEX` | Placa patente vehicular (ej. `AYC-501`). |
-| `vehicle_type` | `VARCHAR(20)` | `DEFAULT 'auto'` | Categoría (`auto`, `moto`, `suv`, `truck`, `bike`, `pmr`). |
-| `brand` | `VARCHAR(50)` | `NULLABLE` | Marca del vehículo (ej. `Toyota`). |
-| `model` | `VARCHAR(50)` | `NULLABLE` | Modelo del vehículo (ej. `Yaris`). |
-| `color` | `VARCHAR(30)` | `NULLABLE` | Color del vehículo. |
-
----
-
-### 3. Tabla: `estacionamientos`
-Establecimientos o cocheras afiliadas registradas en el sistema.
-
-| Campo | Tipo de Dato | Restricciones | Descripción |
-| :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY`, `AUTOINCREMENT` | ID del estacionamiento. |
-| `name` | `VARCHAR(150)` | `NOT NULL` | Nombre comercial de la cochera. |
-| `address` | `VARCHAR(255)` | `NOT NULL` | Dirección física de la propiedad. |
-| `city` | `VARCHAR(100)` | `NOT NULL`, `INDEX` | Ciudad y distrito (ej. `Ayacucho - Huamanga`). |
-| `latitude` | `DOUBLE` | `NOT NULL` | Coordenada GPS latitud. |
-| `longitude` | `DOUBLE` | `NOT NULL` | Coordenada GPS longitud. |
-| `hourly_rate` | `DOUBLE` | `NOT NULL`, `DEFAULT 8.50` | Tarifa regular por hora (S/). |
-| `tolerance_minutes` | `INTEGER` | `DEFAULT 15` | Minutos de tolerancia de cortesía. |
-| `status` | `VARCHAR(20)` | `DEFAULT 'active'` | Estado (`active`, `inactive`, `maintenance`). |
-| `total_capacity` | `INTEGER` | `DEFAULT 30` | Capacidad total estimada de plazas. |
-| `image_url` | `VARCHAR(255)` | `NULLABLE` | Foto representativa del local. |
-
----
-
-### 4. Tabla: `plazas`
-Espacios físicos de estacionamiento mapeados en el diseño interactivo 2D/3D.
-
-| Campo | Tipo de Dato | Restricciones | Descripción |
-| :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY`, `AUTOINCREMENT` | ID de la plaza. |
-| `parking_id` | `INTEGER` | `FOREIGN KEY (estacionamientos.id)` | Cochera a la que pertenece. |
-| `code` | `VARCHAR(20)` | `NOT NULL` | Código visible (ej. `A-01`, `B-02`). |
-| `floor_level` | `VARCHAR(20)` | `DEFAULT 'Piso 1'` | Nivel o piso del plano. |
-| `slot_type` | `VARCHAR(20)` | `DEFAULT 'auto'` | Tipo de plaza (`auto`, `moto`, `pmr`). |
-| `status` | `VARCHAR(20)` | `DEFAULT 'free'` | Estado (`free`, `occupied`, `reserved`, `disabled`). |
-| `pos_x` | `INTEGER` | `DEFAULT 0` | Posición X en el lienzo plano 2D. |
-| `pos_y` | `INTEGER` | `DEFAULT 0` | Posición Y en el lienzo plano 2D. |
-| `width` | `INTEGER` | `DEFAULT 60` | Ancho del elemento visual en píxeles. |
-| `height` | `INTEGER` | `DEFAULT 100` | Largo del elemento visual en píxeles. |
-| `rotation` | `INTEGER` | `DEFAULT 0` | Ángulo de rotación en grados (0° - 360°). |
-
----
-
-### 5. Tabla: `elementos_plano`
-Infraestructura arquitectónica del plano (paredes, accesos, garita LPR, pasillos).
-
-| Campo | Tipo de Dato | Restricciones | Descripción |
-| :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY`, `AUTOINCREMENT` | ID del elemento. |
-| `parking_id` | `INTEGER` | `FOREIGN KEY (estacionamientos.id)` | Cochera contenedora. |
-| `element_type` | `VARCHAR(30)` | `NOT NULL` | Tipo (`wall`, `crosswalk`, `text`, `gate`). |
-| `pos_x` | `INTEGER` | `NOT NULL` | Coordenada X. |
-| `pos_y` | `INTEGER` | `NOT NULL` | Coordenada Y. |
-| `width` | `INTEGER` | `NOT NULL` | Ancho en píxeles. |
-| `height` | `INTEGER` | `NOT NULL` | Alto en píxeles. |
-| `rotation` | `INTEGER` | `DEFAULT 0` | Rotación. |
-| `z_index` | `INTEGER` | `DEFAULT 1` | Capa de renderizado visual. |
-| `properties_json` | `TEXT` | `NULLABLE` | Propiedades adicionales JSON (colores, texto). |
-
----
-
-### 6. Tabla: `reservas`
-Transacciones de reserva y ocupación garantizada de estacionamiento.
-
-| Campo | Tipo de Dato | Restricciones | Descripción |
-| :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY`, `AUTOINCREMENT` | ID de la reserva. |
-| `code` | `VARCHAR(50)` | `NOT NULL`, `UNIQUE`, `INDEX` | Código único ticket QR (ej. `RSV-98214`). |
-| `user_id` | `INTEGER` | `FOREIGN KEY (usuarios.id)` | Conductor que reservó. |
-| `parking_id` | `INTEGER` | `FOREIGN KEY (estacionamientos.id)` | Cochera seleccionada. |
-| `slot_id` | `INTEGER` | `FOREIGN KEY (plazas.id)` | Plaza asignada. |
-| `license_plate` | `VARCHAR(20)` | `NOT NULL` | Placa del vehículo a ingresar. |
-| `start_time` | `TIMESTAMP` | `NOT NULL` | Hora estimada de ingreso. |
-| `end_time` | `TIMESTAMP` | `NOT NULL` | Hora estimada de salida. |
-| `actual_entry` | `TIMESTAMP` | `NULLABLE` | Registro de hora real de entrada ANPR. |
-| `actual_exit` | `TIMESTAMP` | `NULLABLE` | Registro de hora real de salida ANPR. |
-| `total_cost` | `DOUBLE` | `NOT NULL` | Monto total calculado en soles (S/). |
-| `status` | `VARCHAR(20)` | `DEFAULT 'scheduled'` | Estado (`scheduled`, `active`, `completed`, `cancelled`). |
-| `qr_code` | `VARCHAR(255)` | `NOT NULL` | Cadena cifrada para generación de QR. |
-
----
-
-### 7. Tabla: `personal`
-Registro de personal y operadores asignados a garitas por los Administradores Locales.
-
-| Campo | Tipo de Dato | Restricciones | Descripción |
-| :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY`, `AUTOINCREMENT` | ID del colaborador. |
-| `parking_id` | `INTEGER` | `FOREIGN KEY (estacionamientos.id)` | Cochera asignada. |
-| `full_name` | `VARCHAR(150)` | `NOT NULL` | Nombre completo del colaborador. |
-| `dni` | `VARCHAR(20)` | `NOT NULL` | Documento Nacional de Identidad. |
-| `position` | `VARCHAR(50)` | `NOT NULL` | Cargo (`Operador Garita`, `Supervisor`). |
-| `shift` | `VARCHAR(30)` | `DEFAULT 'Mañana'` | Turno laboral (`Mañana`, `Tarde`, `Noche`). |
-| `status` | `VARCHAR(20)` | `DEFAULT 'active'` | Estado del colaborador. |
-| `email` | `VARCHAR(150)` | `NULLABLE` | Correo de inicio de sesión de personal. |
-| `security_pin` | `VARCHAR(20)` | `DEFAULT '1234'` | PIN de acceso rápido a la terminal ANPR. |
-| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Fecha de creación del registro. |
-
----
-
-### 8. Tabla: `resenas`
-Opiniones y calificaciones otorgadas por los conductores a las cocheras.
-
-| Campo | Tipo de Dato | Restricciones | Descripción |
-| :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY`, `AUTOINCREMENT` | ID de la reseña. |
-| `parking_id` | `INTEGER` | `FOREIGN KEY (estacionamientos.id)` | Cochera calificada. |
-| `user_id` | `INTEGER` | `FOREIGN KEY (usuarios.id)` | Conductor autor. |
-| `user_name` | `VARCHAR(150)` | `NOT NULL` | Nombre mostrado del autor. |
-| `rating` | `INTEGER` | `NOT NULL`, `DEFAULT 5` | Puntuación de 1 a 5 estrellas. |
-| `comment` | `TEXT` | `NOT NULL` | Comentario de la experiencia. |
-| `response` | `TEXT` | `NULLABLE` | Respuesta emitida por la administración de la cochera. |
-| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Fecha de publicación. |
-
----
-
-### 9. Tabla: `incidencias`
-Reportes de eventos o anomalías notificadas en garitas o plazas.
-
-| Campo | Tipo de Dato | Restricciones | Descripción |
-| :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY`, `AUTOINCREMENT` | ID del reporte. |
-| `parking_id` | `INTEGER` | `FOREIGN KEY (estacionamientos.id)` | Cochera afectada. |
-| `user_id` | `INTEGER` | `FOREIGN KEY (usuarios.id)` | Usuario o colaborador que reporta. |
-| `user_name` | `VARCHAR(150)` | `NOT NULL` | Nombre del emisor del reporte. |
-| `category` | `VARCHAR(50)` | `DEFAULT 'general'` | Tipo de caso (`seguridad`, `infraestructura`, `vehicular`). |
-| `description` | `TEXT` | `NOT NULL` | Detalle explicativo de la incidencia. |
-| `photo_url` | `TEXT` | `NULLABLE` | Enlace a fotografía adjunta de evidencia. |
-| `status` | `VARCHAR(20)` | `DEFAULT 'reported'` | Estado del caso (`reported`, `in_progress`, `resolved`). |
-| `resolution_note` | `TEXT` | `NULLABLE` | Nota explicativa de solución emitida por el supervisor. |
-| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Hora del reporte. |
-| `resolved_at` | `TIMESTAMP` | `NULLABLE` | Hora del cierre y resolución. |
-
----
-
-## 🛠️ Ejecución y Migración en Base de Datos
-
-Para aplicar manualmente este esquema en cualquier motor relacional PostgreSQL o SQLite:
+## 🛠️ Migración y Ejecución
 
 ```bash
-# En PostgreSQL (Railway terminal o consola psql):
-psql $DATABASE_URL -f backend/schema.sql
-
-# En SQLite (Desarrollo local):
+# PostgreSQL Railway (psql)
+psql $DATABASE_URL -f backend/postgresql_schema.sql
+# SQLite dev
 sqlite3 smartpark_dev.db < backend/schema.sql
+# Migración ligera en arranque main.py:54
+# ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS description TEXT, etc.
+# ALTER TABLE personal ALTER COLUMN security_pin TYPE VARCHAR(255) (fix d73fa7d)
 ```
+
+**Índices clave:** `usuarios(email,role)`, `vehiculos(user_id,license_plate)`, `estacionamientos(city,status)`, `plazas(parking_id,status)`, `reservas(code,user_id,parking_id)`, `personal(parking_id) + UNIQUE(dni,email)`, `pagos(reservation_id,user_id)`.
+
+**FKs `ON DELETE CASCADE`:** `vehiculos/user_id`, `plazas/parking_id`, `reservas/user_id/parking_id/slot_id`, `personal/parking_id`, etc.
+
+**Tamaño actual:** `12` tablas + `4` enums (`RoleEnum`, `VehicleTypeEnum`, `SlotStatusEnum`, `ReservationStatusEnum`).

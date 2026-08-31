@@ -81,8 +81,4 @@ Thumbs.db
 .turbo/
 .next/
 
-# --- Agente IA / Tooling local (no es parte del sistema) ---
-.agents/
-skills-lock.json
-
 *.log

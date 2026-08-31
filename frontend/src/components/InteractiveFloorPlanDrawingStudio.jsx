@@ -1193,7 +1193,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
         <div className="lg:col-span-3 flex flex-col space-y-2.5">
           <div 
             ref={containerRef}
-            className="bg-[#0d1117] rounded-2xl sm:rounded-3xl p-2 sm:p-6 border border-slate-800 shadow-xl overflow-auto custom-scrollbar flex min-h-[420px] sm:min-h-[580px] max-h-[750px]"
+            className="bg-[#1c253b] rounded-2xl sm:rounded-3xl p-2 sm:p-6 border border-slate-700 shadow-xl overflow-auto custom-scrollbar flex min-h-[420px] sm:min-h-[580px] max-h-[750px]"
           >
             {/* Viewport Contenedor Escalado */}
             <div
@@ -1218,11 +1218,11 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 top: 0,
                 left: 0
               }}
-              className="canvas-bg relative bg-[#131924] rounded-2xl border-2 border-slate-700 shadow-inner overflow-hidden select-none cursor-crosshair transition-transform duration-75"
+              className="canvas-bg relative bg-[#2a3752] rounded-2xl border-2 border-slate-600 shadow-inner overflow-hidden select-none cursor-crosshair transition-transform duration-75"
             >
             {/* Rejilla métrica */}
             <div 
-              className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:20px_20px] opacity-40 pointer-events-none" 
+              className="absolute inset-0 bg-[linear-gradient(to_right,#3b4d6e_1px,transparent_1px),linear-gradient(to_bottom,#3b4d6e_1px,transparent_1px)] bg-[size:20px_20px] opacity-45 pointer-events-none" 
             />
 
             {/* Renderizado de todos los elementos con Estilo Arquitectónico Realista */}

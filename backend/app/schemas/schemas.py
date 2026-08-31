@@ -253,6 +253,8 @@ class StaffBase(BaseModel):
     @field_validator('dni')
     @classmethod
     def validate_dni(cls, v):
+        import logging
+        logging.getLogger("uvicorn.error").info(f"VALIDATE_DNI called with {v!r}")
         if not DNI_RE.match(v.strip()):
             raise ValueError('DNI Perú: 8 dígitos numéricos, ej 44556677')
         return v.strip()

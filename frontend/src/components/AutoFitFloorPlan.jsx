@@ -44,10 +44,10 @@ export const AutoFitFloorPlan = ({
   }, []);
 
   return (
-    <div className={`relative bg-[#0b1329] rounded-2xl border-2 border-slate-800/80 overflow-hidden p-2 sm:p-4 w-full ${containerHeightClass} flex items-center justify-center shadow-2xl`}>
+    <div className={`relative bg-[#1c253b] rounded-2xl border-2 border-slate-700/80 overflow-hidden p-2 sm:p-4 w-full ${containerHeightClass} flex items-center justify-center shadow-xl`}>
       <div 
         ref={containerRef} 
-        className="w-full h-full relative flex items-center justify-center overflow-hidden rounded-xl bg-[#131b2e] border border-slate-800/60"
+        className="w-full h-full relative flex items-center justify-center overflow-hidden rounded-xl bg-[#243048] border border-slate-700/60"
       >
         <div 
           style={{
@@ -56,7 +56,7 @@ export const AutoFitFloorPlan = ({
             transform: `scale(${scale})`,
             transformOrigin: 'center center',
           }} 
-          className="relative bg-[#0f172a] shadow-2xl rounded-2xl shrink-0 transition-transform duration-200 ease-out border border-slate-700/50"
+          className="relative bg-[#2a3752] shadow-2xl rounded-2xl shrink-0 transition-transform duration-200 ease-out border border-slate-600/50"
         >
           {elements.map((el) => {
             if (el.type === 'slot') {

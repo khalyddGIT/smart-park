@@ -115,7 +115,7 @@ export const PersonalGaritaModule = () => {
       {feedback && <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm"><CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600"/>{feedback}</div>}
 
       <div className="grid lg:grid-cols-12 gap-5 items-stretch">
-        <div className="lg:col-span-7 bg-[#0b1329] rounded-2xl border border-slate-800 p-3.5 flex flex-col justify-between shadow-xl">
+        <div className="lg:col-span-7 bg-[#1c253b] rounded-2xl border border-slate-700 p-3.5 flex flex-col justify-between shadow-xl">
           <div className="flex items-center justify-between mb-2 px-1">
             <p className="text-xs font-black text-slate-200 tracking-wide uppercase">Plano interactivo — Toca un cajón libre</p>
             {slot && <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-600/60 px-2.5 py-0.5 rounded-full">Seleccionado: {slot}</span>}

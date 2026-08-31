@@ -334,7 +334,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
         {/* Contenedor del Plano */}
         <div 
           ref={containerRef}
-          className="lg:col-span-2 bg-[#12161f] rounded-3xl p-4 sm:p-6 border-4 border-slate-800 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden"
+          className="lg:col-span-2 bg-[#1c253b] rounded-3xl p-4 sm:p-6 border-4 border-slate-700 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden"
           style={{ minHeight: `${BASE_HEIGHT * scale + 48}px` }}
         >
           {/* Contenedor Escalado Automáticamente */}
@@ -346,10 +346,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               transformOrigin: 'top center',
               marginBottom: `-${BASE_HEIGHT * (1 - scale)}px`
             }}
-            className="relative bg-[#181e29] rounded-2xl border-2 border-slate-700 shadow-inner overflow-hidden select-none"
+            className="relative bg-[#2a3752] rounded-2xl border-2 border-slate-600 shadow-inner overflow-hidden select-none"
           >
             {/* Cuadrícula Asfáltica */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#242b38_1px,transparent_1px),linear-gradient(to_bottom,#242b38_1px,transparent_1px)] bg-[size:20px_20px] opacity-30 pointer-events-none" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#3b4d6e_1px,transparent_1px),linear-gradient(to_bottom,#3b4d6e_1px,transparent_1px)] bg-[size:20px_20px] opacity-40 pointer-events-none" />
 
             {/* Renderizado de los Elementos del Plano */}
             {elements.map((el) => {

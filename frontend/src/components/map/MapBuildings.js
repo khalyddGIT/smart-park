@@ -53,10 +53,10 @@ export class MapBuildingsManager {
               'interpolate',
               ['linear'],
               ['get', 'height'],
-              0, '#f1f5f9',
-              15, '#cbd5e1',
-              35, '#94a3b8',
-              60, '#64748b'
+              0, '#f8fafc',
+              15, '#e2e8f0',
+              35, '#cbd5e1',
+              60, '#94a3b8'
             ]
           ],
           // Usar la altura real del edificio (o fallback a 8m)
@@ -74,7 +74,7 @@ export class MapBuildingsManager {
             14, 0,
             14.5, ['get', 'min_height']
           ],
-          'fill-extrusion-opacity': 0.88
+          'fill-extrusion-opacity': 0.72
         }
       },
       labelLayerId

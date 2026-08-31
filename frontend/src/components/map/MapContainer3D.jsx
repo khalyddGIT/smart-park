@@ -3,7 +3,8 @@ import {
   MAPBOX_TOKEN, 
   AYACUCHO_CENTER, 
   DEFAULT_PARKING_COORDS, 
-  MAPBOX_STYLES 
+  MAPBOX_STYLES,
+  cleanPOIsFromMap 
 } from './mapConfig';
 import { MapTerrainManager } from './MapTerrain';
 import { MapBuildingsManager } from './MapBuildings';
@@ -79,6 +80,9 @@ export const MapContainer3D = ({
 
     // Inicializar módulos 3D cuando el mapa cargue
     map.on('style.load', () => {
+      // 0. Limpiar POIs ruidosos de Mapbox para mapa minimalista e impecable
+      cleanPOIsFromMap(map);
+
       // 1. Módulo Terreno 3D
       terrainManagerRef.current = new MapTerrainManager(map);
       terrainManagerRef.current.setupTerrain();

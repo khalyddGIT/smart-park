@@ -67,3 +67,27 @@ export const ATMOSPHERE_CONFIG = {
     }
   }
 };
+
+// Limpieza de POIs innecesarios de Mapbox (comercio, bancos, tiendas) para dejar el mapa super limpio
+export const cleanPOIsFromMap = (map) => {
+  if (!map) return;
+  try {
+    const style = map.getStyle();
+    if (!style || !style.layers) return;
+    
+    style.layers.forEach(layer => {
+      // Ocultar capas de iconos/etiquetas de comercios, comida, bancos y transportes para mapa impecable
+      if (
+        layer.id.includes('poi-label') || 
+        layer.id.includes('transit-label') || 
+        layer.id.includes('airport-label') ||
+        layer.id.includes('medical-label') ||
+        layer.id.includes('education-label')
+      ) {
+        map.setLayoutProperty(layer.id, 'visibility', 'none');
+      }
+    });
+  } catch (e) {
+    console.warn('Clean POIs warning:', e);
+  }
+};

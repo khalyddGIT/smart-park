@@ -144,17 +144,24 @@ async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(ge
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalars().first()
 
+    picture = payload.picture or idinfo.get("picture")
+
     if not user:
         user = User(
             full_name=name or email.split("@")[0],
             email=email,
             phone="+51 900 000 000",
+            avatar_url=picture,
             # Contraseña aleatoria criptográfica: la cuenta OAuth no debe ser accesible vía /auth/login
             hashed_password=get_password_hash(secrets.token_urlsafe(32)),
             role="user",
             security_pin=hash_pin("1234"),
         )
         db.add(user)
+        await db.commit()
+        await db.refresh(user)
+    elif picture and not user.avatar_url:
+        user.avatar_url = picture
         await db.commit()
         await db.refresh(user)
 
@@ -164,6 +171,28 @@ async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(ge
         "token_type": "bearer",
         "user": user
     }
+
+class ProfileUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+@router.put("/profile", response_model=UserResponse)
+async def update_profile(
+    profile_in: ProfileUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if profile_in.full_name is not None:
+        current_user.full_name = profile_in.full_name
+    if profile_in.phone is not None:
+        current_user.phone = profile_in.phone
+    if profile_in.avatar_url is not None:
+        current_user.avatar_url = profile_in.avatar_url
+
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
 
 @router.post("/verify-pin")
 async def verify_pin(

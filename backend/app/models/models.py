@@ -35,6 +35,7 @@ class User(Base):
     full_name = Column(String(150), nullable=False)
     email = Column(String(150), unique=True, index=True, nullable=False)
     phone = Column(String(30), nullable=True)
+    avatar_url = Column(Text, nullable=True)
     hashed_password = Column(String(255), nullable=False)
     security_pin = Column(String(255), nullable=True, default="1234")
     role = Column(String(20), default=RoleEnum.USER.value, nullable=False)

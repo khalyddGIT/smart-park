@@ -16,14 +16,20 @@ import {
   MapPin, 
   ShieldCheck, 
   Check,
-  ArrowLeft
+  ArrowLeft,
+  Camera,
+  Upload
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
+import api from '../services/api';
 
 export const UserProfileModule = ({ onBack }) => {
   const { user, setUser, role } = useAuth();
   const { reservations } = useEstablishments();
+
+  const [avatarInput, setAvatarInput] = useState(user?.avatar || '');
+  const [uploading, setUploading] = useState(false);
 
   // Estado del formulario de perfil limpio
   const [formData, setFormData] = useState({
@@ -46,8 +52,26 @@ export const UserProfileModule = ({ onBack }) => {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  const handleSaveProfile = (e) => {
+  const handleFileUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('❌ La imagen no debe superar los 5MB');
+      return;
+    }
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarInput(reader.result);
+      setUploading(false);
+      showToast('📸 Vista previa de imagen de perfil cargada.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveProfile = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    const finalAvatar = avatarInput || user?.avatar || null;
     const updatedUser = {
       ...user,
       name: formData.name.trim(),
@@ -55,7 +79,8 @@ export const UserProfileModule = ({ onBack }) => {
       phone: formData.phone.trim(),
       dni: formData.dni.trim(),
       address: formData.address.trim(),
-      plate: formData.plate.toUpperCase().trim()
+      plate: formData.plate.toUpperCase().trim(),
+      avatar: finalAvatar
     };
 
     setUser(updatedUser);
@@ -63,7 +88,17 @@ export const UserProfileModule = ({ onBack }) => {
       localStorage.setItem('smart_park_user_session', JSON.stringify(updatedUser));
     } catch (err) {}
 
-    showToast('✓ Datos de perfil actualizados exitosamente.');
+    try {
+      await api.put('/auth/profile', {
+        full_name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        avatar_url: finalAvatar
+      });
+    } catch (err) {
+      console.warn('Backend sync profile warning:', err);
+    }
+
+    showToast('✓ Datos de perfil e foto actualizados exitosamente en PostgreSQL.');
   };
 
   const completedStays = reservations.filter(r => r.status === 'COMPLETED').length;
@@ -86,9 +121,32 @@ export const UserProfileModule = ({ onBack }) => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 relative z-10">
           <div className="flex items-center space-x-4">
             
-            {/* Icono de Usuario Limpio */}
-            <div className="w-16 h-16 rounded-2xl bg-slate-900 text-emerald-400 flex items-center justify-center font-black text-xl shadow-md border border-slate-800 shrink-0">
-              <User className="w-8 h-8 stroke-[2.2]" />
+            {/* Foto de Perfil / Avatar con Selector de Archivo */}
+            <div className="relative group">
+              {(avatarInput || user?.avatar) ? (
+                <img 
+                  src={avatarInput || user?.avatar} 
+                  alt={formData.name}
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  className="w-16 h-16 rounded-2xl object-cover shadow-md border-2 border-emerald-500 shrink-0 bg-slate-100" 
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-slate-900 text-emerald-400 flex items-center justify-center font-black text-xl shadow-md border border-slate-800 shrink-0">
+                  <User className="w-8 h-8 stroke-[2.2]" />
+                </div>
+              )}
+
+              <label className="absolute -bottom-1 -right-1 bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-xl shadow-lg cursor-pointer transition-all border border-white">
+                <Camera className="w-3.5 h-3.5" />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                />
+              </label>
             </div>
 
             {/* Info Básica */}

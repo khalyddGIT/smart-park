@@ -22,6 +22,7 @@ class UserBase(BaseModel):
     full_name: str
     email: EmailStr
     phone: Optional[str] = None
+    avatar_url: Optional[str] = None
     role: Optional[str] = "user"
 
     @field_validator('phone')
@@ -40,6 +41,7 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
+    avatar_url: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
 

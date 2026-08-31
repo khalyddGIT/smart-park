@@ -47,8 +47,10 @@ export const AuthProvider = ({ children }) => {
           return;
         }
         // Corregir spoof de localStorage: si rol o id no coinciden con servidor, sobrescribir
-        if (!user || user.role !== serverRole || user.id !== serverUser.id) {
-          const corrected = user ? { ...user, id: serverUser.id, role: serverRole, name: serverUser.full_name || user.name, email: serverUser.email } : { id: serverUser.id, name: serverUser.full_name, email: serverUser.email, avatar: null, role: serverRole, isGoogleAuth: false };
+        if (!user || user.role !== serverRole || user.id !== serverUser.id || (serverUser.avatar_url && user.avatar !== serverUser.avatar_url)) {
+          const corrected = user 
+            ? { ...user, id: serverUser.id, role: serverRole, name: serverUser.full_name || user.name, email: serverUser.email, avatar: serverUser.avatar_url || user.avatar || null } 
+            : { id: serverUser.id, name: serverUser.full_name, email: serverUser.email, phone: serverUser.phone, avatar: serverUser.avatar_url || null, role: serverRole, isGoogleAuth: false };
           setUser(corrected);
           setRole(serverRole);
         }
@@ -91,7 +93,7 @@ export const AuthProvider = ({ children }) => {
         const data = await apiGoogleAuth({ token: idToken, email: profile.email, name: profile.name, picture: profile.picture });
         if (data?.access_token && data?.user) {
           setAccessToken(data.access_token);
-          const u = { id: data.user.id, name: data.user.full_name || profile.name, email: data.user.email, avatar: profile.picture || null, role: data.user.role || 'user', isGoogleAuth: true };
+          const u = { id: data.user.id, name: data.user.full_name || profile.name, email: data.user.email, avatar: data.user.avatar_url || profile.picture || null, role: data.user.role || 'user', isGoogleAuth: true };
           setUser(u); setRole(u.role); return u;
         }
       } catch (err) {
@@ -120,7 +122,7 @@ export const AuthProvider = ({ children }) => {
     setAccessToken(data.access_token);
     // Disparar la carga inmediata de datos del usuario (reservas, etc.) sin esperar el polling de 15s
     window.dispatchEvent(new Event('focus'));
-    const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, avatar: null, role: data.user.role || explicitRole || 'user', isGoogleAuth: false };
+    const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, phone: data.user.phone, avatar: data.user.avatar_url || null, role: data.user.role || explicitRole || 'user', isGoogleAuth: false };
     setUser(u); setRole(u.role); return u;
   };
 
@@ -130,7 +132,7 @@ export const AuthProvider = ({ children }) => {
       const data = await apiRegister({ full_name: userData.name, email: userData.email, phone: userData.phone || '', password: userData.password || 'password123', role: 'user' });
       if (data?.access_token && data?.user) {
         setAccessToken(data.access_token);
-        const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, phone: data.user.phone, avatar: null, role: data.user.role || 'user', isGoogleAuth: false };
+        const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, phone: data.user.phone, avatar: data.user.avatar_url || null, role: data.user.role || 'user', isGoogleAuth: false };
         setUser(u); setRole('user'); return u;
       }
     } catch (err) {

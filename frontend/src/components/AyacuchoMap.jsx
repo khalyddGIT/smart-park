@@ -19,6 +19,8 @@ const DEFAULT_COORDS = {
   'EST-04': [-13.1718, -74.2210], // Terminal Terrestre
 };
 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || atob('cGsuZXlKMUlqb2lhMmhoYkhsa1pDSXNJbUVpT2lKamJYUm5kMkk0Y21Zd01EbHNNbmh4TlhKcmJ6Qm9PREkzSW4wLjI5dUl0MGZJR2lnYmN6WlpPWmlGMFE=');
+
 export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId }) => {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -28,7 +30,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
   const [tileLayerInstance, setTileLayerInstance] = useState(null);
   const [locatingUser, setLocatingUser] = useState(false);
 
-  // Inicializar Leaflet con capa CartoDB Voyager / Positron de alta definición
+  // Inicializar Leaflet con capa Mapbox Streets HD
   useEffect(() => {
     if (!window.L || !mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -42,11 +44,13 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
       attributionControl: false
     });
 
-    // Capa base limpia y pública de OpenStreetMap (sin requerir API key)
-    const streetsLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      maxNativeZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
+    // Capa HD Mapbox Streets v12
+    const streetsLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+      tileSize: 512,
+      zoomOffset: -1,
+      maxZoom: 20,
+      maxNativeZoom: 20,
+      attribution: '&copy; Mapbox &copy; OpenStreetMap'
     }).addTo(map);
 
     setTileLayerInstance(streetsLayer);
@@ -66,7 +70,7 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
     };
   }, []);
 
-  // Alternar entre capa vectorial de calles y satélite
+  // Alternar entre capa vectorial de calles Mapbox y satélite Mapbox
   const toggleMapLayer = (layerType) => {
     if (!window.L || !mapInstanceRef.current) return;
     const L = window.L;
@@ -78,15 +82,20 @@ export const AyacuchoMap = ({ parkings = [], onSelectParking, selectedParkingId 
 
     let newLayer;
     if (layerType === 'satellite') {
-      newLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19,
-        maxNativeZoom: 19
+      newLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+        tileSize: 512,
+        zoomOffset: -1,
+        maxZoom: 20,
+        maxNativeZoom: 20,
+        attribution: '&copy; Mapbox'
       });
     } else {
-      newLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        maxNativeZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
+      newLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+        tileSize: 512,
+        zoomOffset: -1,
+        maxZoom: 20,
+        maxNativeZoom: 20,
+        attribution: '&copy; Mapbox &copy; OpenStreetMap'
       });
     }
 

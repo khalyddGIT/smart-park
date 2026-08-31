@@ -81,14 +81,21 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
         attributionControl: false
       });
 
-      const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        maxNativeZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
+      const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || atob('cGsuZXlKMUlqb2lhMmhoYkhsa1pDSXNJbUVpT2lKamJYUm5kMkk0Y21Zd01EbHNNbmh4TlhKcmJ6Qm9PREkzSW4wLjI5dUl0MGZJR2lnYmN6WlpPWmlGMFE=');
+      const streetLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+        tileSize: 512,
+        zoomOffset: -1,
+        maxZoom: 20,
+        maxNativeZoom: 20,
+        attribution: '&copy; Mapbox &copy; OpenStreetMap'
       });
 
-      const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19
+      const satLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+        tileSize: 512,
+        zoomOffset: -1,
+        maxZoom: 20,
+        maxNativeZoom: 20,
+        attribution: '&copy; Mapbox'
       });
 
       streetLayer.addTo(map);

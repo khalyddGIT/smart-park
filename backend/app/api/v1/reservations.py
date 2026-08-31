@@ -209,7 +209,7 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
-    if reservation.user_id != current_user.id:
+    if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
         raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
     
     if reservation.status == "cancelled":
@@ -334,7 +334,7 @@ async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
-    if reservation.user_id != current_user.id:
+    if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
         raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
 
     # Si estaba activa o programada, liberar el cajón

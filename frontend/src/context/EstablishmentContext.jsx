@@ -942,11 +942,17 @@ export const EstablishmentProvider = ({ children }) => {
     };
   };
 
-  // Refresca las reservas del usuario desde GET /my-reservations y sincroniza estado+caché
+  // Refresca las reservas desde el servidor y sincroniza estado + caché
   const refreshMyReservations = async () => {
     if (!getAccessToken()) return;
     try {
-      const data = await listMyReservations();
+      const userSession = (() => { try { return JSON.parse(localStorage.getItem('smart_park_user_session') || '{}'); } catch { return {}; } })();
+      const isStaffOrAdmin = userSession?.role === 'local' || userSession?.role === 'platform';
+
+      const data = isStaffOrAdmin 
+        ? await api.get('/reservations').then(r => r.data)
+        : await listMyReservations();
+
       if (Array.isArray(data)) {
         const mapped = data.map(mapServerReservation);
         setReservations(mapped);

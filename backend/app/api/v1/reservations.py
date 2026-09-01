@@ -131,6 +131,56 @@ async def create_reservation(
         raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior al inicio")
     if (_end - _start).total_seconds() < 1800:
         raise HTTPException(status_code=422, detail="Duración mínima 30 minutos")
+
+    plate_clean = res_in.license_plate.strip().upper()
+
+    # =========================================================================
+    # REGLAS DE NEGOCIO ANTI-SABOTAJE Y PROTECCIÓN DE INVENTARIO
+    # =========================================================================
+    if current_user.role not in ("local", "platform"):
+        # Regla S-01: Límite de 1 reserva activa por usuario
+        active_user_res = await db.execute(
+            select(Reservation).where(
+                Reservation.user_id == current_user.id,
+                Reservation.status.in_(["scheduled", "active"])
+            )
+        )
+        if active_user_res.scalars().first():
+            raise HTTPException(
+                status_code=400,
+                detail="Ya cuentas con una reserva activa en curso. Completa o cancela tu reserva previa antes de solicitar otra."
+            )
+
+        # Regla S-02: Límite de cancelaciones diarias (Cooldown 24h a partir de 2 cancelaciones)
+        from datetime import timedelta
+        since_24h = datetime.utcnow() - timedelta(hours=24)
+        cancelled_stmt = await db.execute(
+            select(Reservation).where(
+                Reservation.user_id == current_user.id,
+                Reservation.status == "cancelled",
+                Reservation.start_time >= since_24h
+            )
+        )
+        cancelled_list = cancelled_stmt.scalars().all()
+        if len(cancelled_list) >= 2:
+            raise HTTPException(
+                status_code=429,
+                detail="Límite diario de cancelaciones alcanzado (máx. 2 al día). Por seguridad del sistema, tu cuenta tiene un tiempo de espera de 24 horas."
+            )
+
+    # Regla S-05: Unicidad de placa activa (no puede tener 2 reservas concurrentes)
+    active_plate_res = await db.execute(
+        select(Reservation).where(
+            Reservation.license_plate == plate_clean,
+            Reservation.status.in_(["scheduled", "active"])
+        )
+    )
+    if active_plate_res.scalars().first():
+        raise HTTPException(
+            status_code=400,
+            detail=f"El vehículo con placa {plate_clean} ya cuenta con una reserva activa en el sistema."
+        )
+
     # Verificar cajón con bloqueo FOR UPDATE para evitar doble-booking
     slot_res = await db.execute(select(Slot).where(Slot.id == res_in.slot_id).with_for_update())
     slot = slot_res.scalars().first()
@@ -155,12 +205,12 @@ async def create_reservation(
         user_id=current_user.id,
         parking_id=res_in.parking_id,
         slot_id=res_in.slot_id,
-        license_plate=res_in.license_plate.strip().upper(),
+        license_plate=plate_clean,
         start_time=_start,
         end_time=_end,
         total_cost=total_cost,
         status="scheduled",
-        qr_code=f"SMARTPARK-{reservation_code}-{res_in.license_plate.strip().upper()}"
+        qr_code=f"SMARTPARK-{reservation_code}-{plate_clean}"
     )
 
     slot.status = "reserved"
@@ -173,11 +223,10 @@ async def create_reservation(
         pass
     await db.refresh(db_res)
 
-    # Pago inmediato si se especificó método (efectivo, yape, plin, tarjeta, etc.)
+    # Pago inmediato opcional si se especificó método
     if getattr(res_in, 'pay_now', False) and getattr(res_in, 'payment_method', None):
         try:
             method = str(res_in.payment_method).strip().lower()[:30] or "efectivo"
-            # normalizar métodos comunes
             if method in ("efectivo", "cash"): method = "cash"
             elif method in ("yape",): method = "yape"
             elif method in ("plin",): method = "plin"
@@ -195,7 +244,6 @@ async def create_reservation(
             db.add(payment)
             await db.commit()
         except Exception:
-            # no bloquear la reserva si falla el pago
             try:
                 await db.rollback()
             except Exception:
@@ -217,7 +265,7 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
 
     reservation.status = "cancelled"
 
-    # Liberar cajón asociado si sigue reservado u ocupado (ej. cancela una reserva activa con check-in)
+    # Liberar cajón asociado si sigue reservado u ocupado
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))
     slot = slot_res.scalars().first()
     if slot and slot.status in ("reserved", "occupied"):
@@ -257,19 +305,32 @@ async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncS
     return ReservationResponse.model_validate(reservation)
 
 @router.put("/{reservation_id}/check-in", response_model=ReservationResponse)
-async def check_in_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(gate_operator_required)):
-    # Check-in de garita: registra el ingreso físico del vehículo (solo operadores)
+async def check_in_reservation(
+    reservation_id: int, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    # Check-in: registra el ingreso físico del vehículo y arranca el tiempo real de estadía
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
+        raise HTTPException(status_code=403, detail="No autorizado para hacer check-in en esta reserva")
 
     # Transición válida: solo una reserva programada puede pasar a activa
     if reservation.status != "scheduled":
         raise HTTPException(status_code=400, detail=f"Solo se puede hacer check-in de reservas programadas (estado actual: {reservation.status})")
 
+    now = datetime.utcnow()
+    # Calcular duración contratada original en horas
+    from datetime import timedelta
+    original_duration_hours = max(0.5, (reservation.end_time - reservation.start_time).total_seconds() / 3600.0)
+
     reservation.status = "active"
-    reservation.actual_entry = datetime.utcnow()
+    reservation.actual_entry = now
+    # FASE 2: La estadía corre desde el momento exacto del ingreso real
+    reservation.end_time = now + timedelta(hours=original_duration_hours)
 
     # El cajón pasa a ocupado mientras dure la estancia
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))
@@ -293,12 +354,18 @@ async def check_in_reservation(reservation_id: int, db: AsyncSession = Depends(g
     return ReservationResponse.model_validate(reservation)
 
 @router.put("/{reservation_id}/check-out", response_model=ReservationResponse)
-async def check_out_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(gate_operator_required)):
-    # Check-out de garita: registra la salida física y cierra la estancia
+async def check_out_reservation(
+    reservation_id: int, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    # Check-out: registra la salida física y cierra la estancia
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
+        raise HTTPException(status_code=403, detail="No autorizado para hacer check-out en esta reserva")
 
     # Transición válida: solo una reserva activa puede completarse
     if reservation.status != "active":

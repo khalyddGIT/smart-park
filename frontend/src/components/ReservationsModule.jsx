@@ -217,25 +217,35 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
     return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
   };
 
-  // Calcular tiempo restante legible
-  const getRemainingTimeText = (expiresAt, status) => {
+  // Calcular tiempo restante legible por fases (Llegada vs Estancia)
+  const getRemainingTimeText = (startTime, expiresAt, status) => {
     if (status === 'COMPLETED') return 'Estancia finalizada';
     if (status === 'CANCELLED') return 'Cancelada';
 
-    const end = new Date(expiresAt).getTime();
     const now = Date.now();
+    if (status === 'SCHEDULED') {
+      const start = new Date(startTime).getTime();
+      const tolMs = 15 * 60 * 1000; // 15 min tolerancia
+      const arrivalDeadline = start + tolMs;
+      const diffMs = arrivalDeadline - now;
+      if (diffMs <= 0) return 'Tolerancia de llegada vencida';
+      const mins = Math.max(1, Math.floor(diffMs / 60000));
+      return `Llegada: ${mins} min para presentarse`;
+    }
+
+    const end = new Date(expiresAt).getTime();
     const diffMs = end - now;
 
-    if (diffMs <= 0) return 'Tiempo vencido';
+    if (diffMs <= 0) return 'Estadía vencida (en exceso)';
 
     const diffMins = Math.floor(diffMs / (1000 * 60));
-    const hours = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
+    const h = Math.floor(diffMins / 60);
+    const m = diffMins % 60;
 
-    if (hours > 0) {
-      return `${hours}h ${mins}m restantes`;
+    if (h > 0) {
+      return `Estancia: ${h}h ${m}m restantes`;
     }
-    return `${mins} min restantes`;
+    return `Estancia: ${m} min restantes`;
   };
 
   return (
@@ -459,7 +469,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             const isPaid = paidIds.has(Number(res.id));
 
             const progress = calculateTimeProgress(res.startTime, res.expiresAt);
-            const remainingText = getRemainingTimeText(res.expiresAt, res.status);
+            const remainingText = getRemainingTimeText(res.startTime, res.expiresAt, res.status);
 
             return (
               <div 
@@ -551,7 +561,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                       {(isActive || isScheduled) && (
                         <div className="pt-1 max-w-xs">
                           <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-0.5 font-medium">
-                            <span>Tiempo transcurrido</span>
+                            <span>{isActive ? 'Estancia en curso' : 'Ventana de llegada'}</span>
                             <span className={isActive ? 'text-emerald-700 font-semibold' : 'text-cyan-700 font-semibold'}>
                               {remainingText}
                             </span>
@@ -585,24 +595,39 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                     {/* Botones de Acción */}
                     <div className="flex items-center gap-1.5">
                       
-                      {/* Pagar reserva pendiente */}
-                      {isScheduled && !isPaid && (
+                      {/* Marcar Check-in / Ingreso */}
+                      {isScheduled && (
                         <Button
-                          onClick={() => setPayTarget(res)}
+                          onClick={async () => {
+                            const resp = await updateReservationStatus(res.code, 'ACTIVE');
+                            if (resp?.ok) setFeedbackMessage(resp.message || `Ingreso registrado: ${res.plate} en plaza ${res.slot}`);
+                            else setFeedbackMessage(resp?.message || 'Error al registrar ingreso.');
+                          }}
                           size="sm"
-                          className="rounded-lg text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-8 px-3 cursor-pointer"
+                          className="rounded-lg text-xs font-bold gap-1 bg-emerald-600 hover:bg-emerald-500 text-white h-8 px-2.5 cursor-pointer shadow-xs"
+                          title="Registrar Ingreso (Check-in)"
                         >
-                          <CreditCard className="w-3.5 h-3.5 shrink-0" />
-                          <span>Pagar</span>
+                          <LogIn className="w-3.5 h-3.5 shrink-0" />
+                          <span>Ingreso</span>
                         </Button>
                       )}
 
-                      {/* Sello pagado */}
-                      {isPaid && (
-                        <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                          Pagado
-                        </span>
+                      {/* Marcar Check-out / Salida */}
+                      {isActive && (
+                        <Button
+                          onClick={async () => {
+                            const resp = await updateReservationStatus(res.code, 'COMPLETED');
+                            if (resp?.ok) setFeedbackMessage(resp.message || `Salida registrada para ${res.plate}. Cajón liberado.`);
+                            else setFeedbackMessage(resp?.message || 'Error al registrar salida.');
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="rounded-lg text-xs font-semibold gap-1 bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 h-8 px-2.5 cursor-pointer"
+                          title="Registrar Salida (Check-out)"
+                        >
+                          <LogOut className="w-3.5 h-3.5 shrink-0" />
+                          <span>Salida</span>
+                        </Button>
                       )}
 
                       {/* Ver Pase Digital QR */}

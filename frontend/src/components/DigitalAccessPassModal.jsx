@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Dialog, DialogContent } from './ui/dialog';
 import { Button } from './ui/button';
 import { QRCodeSVG } from 'qrcode.react';
+import api from '../services/api';
 import { 
   Car, 
   MapPin, 
@@ -11,33 +12,55 @@ import {
   Printer, 
   Compass, 
   Navigation, 
-  Camera 
+  Camera,
+  LogIn,
+  LogOut,
+  Loader2
 } from 'lucide-react';
 
-export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
+export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReservationUpdated }) => {
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [localStatus, setLocalStatus] = useState(null);
+  const [localActualEntry, setLocalActualEntry] = useState(null);
   const qrRef = useRef(null);
+
+  useEffect(() => {
+    if (reservation) {
+      setLocalStatus(reservation.status?.toLowerCase() || 'scheduled');
+      setLocalActualEntry(reservation.actual_entry || reservation.actualEntry || null);
+    }
+  }, [reservation]);
 
   const passData = useMemo(() => {
     if (!reservation) return null;
     
-    const id = reservation.code || 'RSV-8912';
-    const token = reservation.token || reservation.qr_code || `SPK-${id.replace('RSV-', '')}-7B2F9A`;
+    const dbId = reservation.id;
+    const id = reservation.code || (dbId ? `RSV-${dbId}` : 'RSV-8912');
+    const token = reservation.token || reservation.qr_code || `SPK-${String(id).replace('RSV-', '')}-7B2F9A`;
     const parkingName = reservation.parking || reservation.parkingName || 'Smart Park Central';
     const slotCode = reservation.slot || reservation.slotCode || 'A-01';
     const plate = reservation.plate || reservation.license_plate || 'ABC-123';
-    const hours = reservation.hours || 2;
+    const hours = Number(reservation.hours || 2);
     const cost = Number(reservation.cost || reservation.totalCost || reservation.total_cost || 10.0);
     const vehicleCategory = reservation.vehicleCategory || reservation.slotType || 'Auto';
+    const toleranceMinutes = Number(reservation.arrivalWindow || reservation.tolerance || 15);
     
     const startTime = reservation.startTime ? new Date(reservation.startTime) : new Date();
-    const expiresAt = reservation.expiresAt ? new Date(reservation.expiresAt) : new Date(startTime.getTime() + hours * 60 * 60 * 1000);
+    
+    // Tolerancia de llegada (Fase 1: fecha límite para presentarse en cochera)
+    const arrivalDeadline = new Date(startTime.getTime() + toleranceMinutes * 60 * 1000);
+    
+    // Estadía real (Fase 2: arranca al momento de la entrada real)
+    const entryTime = localActualEntry ? new Date(localActualEntry) : startTime;
+    const stayExpiresAt = new Date(entryTime.getTime() + hours * 60 * 60 * 1000);
 
     const verifyUrl = `${window.location.origin}/verify/${encodeURIComponent(id)}`;
     const qrPayload = verifyUrl;
 
     return {
+      dbId,
       id,
       token,
       parkingName,
@@ -46,35 +69,41 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
       hours,
       cost,
       vehicleCategory,
+      toleranceMinutes,
       startTime,
-      expiresAt,
+      arrivalDeadline,
+      entryTime,
+      stayExpiresAt,
       qrPayload
     };
-  }, [reservation]);
+  }, [reservation, localActualEntry]);
 
+  // Temporizador dinámico según la fase (Fase 1: Llegada / Fase 2: Estadía)
   useEffect(() => {
-    if (!passData?.expiresAt) return;
+    if (!passData) return;
 
     const updateCountdown = () => {
       const now = new Date().getTime();
-      const difference = passData.expiresAt.getTime() - now;
+      const isScheduled = localStatus === 'scheduled';
+      const targetDeadline = isScheduled ? passData.arrivalDeadline.getTime() : passData.stayExpiresAt.getTime();
+      const difference = targetDeadline - now;
 
       if (difference <= 0) {
         setTimeLeft('00:00:00');
         return;
       }
 
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+      const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const m = Math.floor((difference % (1000 * 60)) / (1000 * 60));
+      const s = Math.floor((difference % (1000 * 60)) / 1000);
 
-      setTimeLeft(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+      setTimeLeft(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
     };
 
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
-  }, [passData?.expiresAt]);
+  }, [passData, localStatus]);
 
   if (!passData) return null;
 
@@ -98,17 +127,73 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
     window.open(`https://waze.com/ul?q=${query}&navigate=yes`, '_blank');
   };
 
+  // Check-in (Registrar Ingreso y arrancar tiempo real de estadía)
+  const handleCheckIn = async () => {
+    if (!passData.dbId) {
+      const now = new Date().toISOString();
+      setLocalStatus('active');
+      setLocalActualEntry(now);
+      return;
+    }
+    setIsUpdating(true);
+    try {
+      const res = await api.put(`/reservations/${passData.dbId}/check-in`);
+      setLocalStatus('active');
+      setLocalActualEntry(res.data.actual_entry || new Date().toISOString());
+      if (onReservationUpdated) onReservationUpdated(res.data);
+    } catch (err) {
+      const now = new Date().toISOString();
+      setLocalStatus('active');
+      setLocalActualEntry(now);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Check-out (Registrar Salida)
+  const handleCheckOut = async () => {
+    if (!passData.dbId) {
+      setLocalStatus('completed');
+      return;
+    }
+    setIsUpdating(true);
+    try {
+      const res = await api.put(`/reservations/${passData.dbId}/check-out`);
+      setLocalStatus('completed');
+      if (onReservationUpdated) onReservationUpdated(res.data);
+    } catch (err) {
+      setLocalStatus('completed');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const isScheduled = localStatus === 'scheduled';
+  const isActive = localStatus === 'active';
+  const isCompleted = localStatus === 'completed';
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-sm sm:max-w-md rounded-2xl p-0 overflow-y-auto max-h-[90vh] border-slate-200 bg-white shadow-xl">
         
         {/* Encabezado */}
         <div className="bg-slate-900 text-white px-5 py-4">
-          <h2 className="text-base font-bold text-white">{passData.parkingName}</h2>
-          <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-            <MapPin className="w-3.5 h-3.5 text-slate-400" /> 
-            <span>Ayacucho</span>
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-base font-bold text-white">{passData.parkingName}</h2>
+              <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                <MapPin className="w-3.5 h-3.5 text-slate-400" /> 
+                <span>Ayacucho</span>
+              </p>
+            </div>
+            <div className="text-right">
+              <span className={`text-[11px] font-mono font-bold ${
+                isActive ? 'text-emerald-400' : isScheduled ? 'text-cyan-400' : 'text-slate-400'
+              }`}>
+                {isActive ? '● En Estancia' : isScheduled ? '● En Ruta' : 'Finalizado'}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="p-4 space-y-4">
@@ -134,7 +219,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
             </p>
           </div>
 
-          {/* Datos de la Reserva */}
+          {/* Datos de la Reserva y Separación de Tiempos */}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="p-3 rounded-xl border border-slate-200 bg-white">
               <span className="text-slate-400 block text-[10px]">Cajón Asignado</span>
@@ -151,11 +236,53 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
               <p className="font-mono font-semibold text-slate-800 mt-0.5">{passData.id}</p>
             </div>
 
-            <div className="p-3 rounded-xl border border-slate-200 bg-white">
-              <span className="text-slate-400 block text-[10px]">Tiempo Restante</span>
-              <p className="font-mono font-bold text-emerald-700 mt-0.5">{timeLeft || '--:--:--'}</p>
+            {/* Reloj Inteligente de 2 Fases */}
+            <div className={`p-3 rounded-xl border ${
+              isActive ? 'border-emerald-300 bg-emerald-50/40' : 'border-cyan-300 bg-cyan-50/40'
+            }`}>
+              <span className="text-slate-500 block text-[10px] font-semibold">
+                {isActive ? 'Estadía Restante' : isScheduled ? 'Tiempo de Llegada' : 'Estado'}
+              </span>
+              <p className={`font-mono font-bold text-sm mt-0.5 ${
+                isActive ? 'text-emerald-700' : isScheduled ? 'text-cyan-800' : 'text-slate-600'
+              }`}>
+                {isCompleted ? 'Finalizada' : timeLeft || '--:--:--'}
+              </p>
+              <span className="text-[9px] text-slate-400 block">
+                {isActive 
+                  ? `${passData.hours}h contratadas` 
+                  : isScheduled 
+                  ? `Tolerancia: ${passData.toleranceMinutes} min` 
+                  : ''}
+              </span>
             </div>
           </div>
+
+          {/* Botones de Acción de Flujo (Check-in / Check-out) */}
+          {isScheduled && (
+            <Button
+              type="button"
+              onClick={handleCheckIn}
+              disabled={isUpdating}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+              <span>Marcar Llegada / Registrar Ingreso</span>
+            </Button>
+          )}
+
+          {isActive && (
+            <Button
+              type="button"
+              onClick={handleCheckOut}
+              disabled={isUpdating}
+              variant="outline"
+              className="w-full border-slate-300 text-slate-800 hover:bg-slate-100 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+              <span>Registrar Salida / Check-out</span>
+            </Button>
+          )}
 
           {/* Navegación GPS */}
           <div className="space-y-1.5">
@@ -182,7 +309,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation }) => {
 
           {/* Total */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 text-white text-xs">
-            <span>Total:</span>
+            <span>Total a Pagar en Garita:</span>
             <span className="text-sm font-mono font-bold text-emerald-400">
               S/ {passData.cost.toFixed(2)}
             </span>

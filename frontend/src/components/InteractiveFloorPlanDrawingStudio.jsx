@@ -52,12 +52,191 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUpDown,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Box
 } from 'lucide-react';
 
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+
+// ==========================================
+// COMPONENTES VOLUMÉTRICOS 3D REALISTAS
+// ==========================================
+
+// 1. Vehículo Volumétrico 3D (Auto / Sedán / SUV / Moto)
+const VolumetricCar3D = ({ plate, color = '#2563eb', isMoto = false, isIsometric = true }) => {
+  if (isMoto) {
+    return (
+      <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none transform-gpu py-0.5">
+        {/* Sombra de contacto */}
+        <div className="absolute inset-x-2 bottom-0.5 h-2 bg-black/60 blur-xs rounded-full" />
+        {/* Chasis de Moto 3D */}
+        <div className="relative w-6 h-11 bg-slate-900 rounded-full border border-orange-500/80 shadow-md flex flex-col items-center justify-between p-1">
+          {/* Manillar & Faro Delantero */}
+          <div className="w-4 h-1.5 bg-slate-400 rounded-full shadow-[0_0_8px_#38bdf8] flex items-center justify-center">
+            <div className="w-1.5 h-1 bg-cyan-300 rounded-full" />
+          </div>
+          {/* Tanque de Gasolina & Asiento */}
+          <div className="w-3.5 h-4 bg-orange-600 rounded-md border border-orange-400 shadow-inner flex items-center justify-center">
+            <div className="w-2 h-2.5 bg-slate-950 rounded" />
+          </div>
+          {/* Placa & Luz Trasera */}
+          <div className="w-3.5 h-1 bg-rose-600 rounded-xs shadow-[0_0_6px_#f43f5e]" />
+          <span className="text-[6px] font-mono font-black text-slate-900 bg-white px-0.5 rounded shadow-xs tracking-tighter">
+            {plate || 'MOTO'}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none transform-gpu py-0.5">
+      {/* Sombra de contacto volumétrica */}
+      <div className="absolute inset-x-1 bottom-0.5 h-[90%] bg-black/70 blur-xs rounded-xl" />
+
+      {/* Carrocería 3D del Vehículo */}
+      <div 
+        className="relative w-[92%] h-[92%] rounded-xl border border-slate-700/80 flex flex-col justify-between p-1 overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${color}dd 0%, #0f172a 100%)`,
+          boxShadow: isIsometric ? '0 10px 22px rgba(0,0,0,0.85), inset 0 1px 3px rgba(255,255,255,0.45)' : '0 4px 10px rgba(0,0,0,0.7)'
+        }}
+      >
+        {/* Parachoques Delantero y Faros LED Xenon */}
+        <div className="w-full flex items-center justify-between px-1">
+          <div className="w-2 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
+          <div className="w-5 h-1 bg-slate-950/80 rounded-full" />
+          <div className="w-2 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
+        </div>
+
+        {/* Parabrisas Delantero con Reflejo Solar */}
+        <div className="w-[85%] h-3.5 mx-auto bg-gradient-to-b from-cyan-950 to-slate-950 rounded-t-lg border border-cyan-500/30 flex items-center justify-center overflow-hidden">
+          <div className="w-full h-full bg-[linear-gradient(45deg,transparent_30%,rgba(255,255,255,0.25)_50%,transparent_70%)]" />
+        </div>
+
+        {/* Techo Metálico / Sunroof */}
+        <div className="w-[80%] h-4 mx-auto bg-slate-950/90 rounded border border-slate-700/80 flex items-center justify-center shadow-inner">
+          <div className="w-[80%] h-[70%] bg-slate-900 rounded-xs border border-slate-800 flex items-center justify-center">
+            <span className="text-[6px] font-mono font-bold text-slate-400">●</span>
+          </div>
+        </div>
+
+        {/* Luneta Trasera */}
+        <div className="w-[85%] h-2.5 mx-auto bg-gradient-to-t from-cyan-950 to-slate-950 rounded-b-lg border border-cyan-500/30" />
+
+        {/* Parachoques Trasero, Luces de Freno & Placa Oficial */}
+        <div className="w-full flex flex-col items-center gap-0.5">
+          <div className="w-full flex items-center justify-between px-1">
+            <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
+            <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
+          </div>
+
+          {/* Placa Oficial en Alto Contraste */}
+          <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-sm flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
+            <span className="text-[5px] text-blue-800 font-bold">PE</span>
+            <span>{plate || 'ABC-123'}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 2. Muro Volumétrico de Hormigón Armado 3D
+const VolumetricWall3D = ({ el, isSelected, isIsometric }) => {
+  return (
+    <div
+      style={{
+        left: `${el.x}px`,
+        top: `${el.y}px`,
+        width: `${el.w}px`,
+        height: `${el.h}px`,
+        transform: `rotate(${el.rot || 0}deg)`
+      }}
+      className={`absolute rounded-xs cursor-pointer z-5 ${
+        isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30' : ''
+      }`}
+    >
+      {/* Sombra proyectada del muro */}
+      {isIsometric && (
+        <div 
+          className="absolute -inset-x-1 -bottom-2.5 h-3 bg-black/60 blur-xs rounded pointer-events-none"
+          style={{ transform: 'translateY(3px)' }}
+        />
+      )}
+      {/* Cara Superior del Muro de Hormigón Armado */}
+      <div 
+        className="w-full h-full rounded-xs border border-slate-500/80 bg-gradient-to-r from-slate-600 via-slate-500 to-slate-700 shadow-lg relative overflow-hidden"
+        style={{
+          boxShadow: isIsometric ? '0 12px 24px rgba(0,0,0,0.75), inset 0 2px 4px rgba(255,255,255,0.3)' : '0 4px 12px rgba(0,0,0,0.8)'
+        }}
+      >
+        <div className="w-full h-full bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.08),rgba(255,255,255,0.08)_4px,transparent_4px,transparent_8px)]" />
+      </div>
+      {/* Cara Frontal Extruida en 3D */}
+      {isIsometric && (
+        <div className="w-full h-2.5 bg-gradient-to-b from-slate-700 via-slate-800 to-slate-950 border-x border-b border-slate-800 rounded-b-xs" />
+      )}
+    </div>
+  );
+};
+
+// 3. Garita de Control y Talanquera 3D
+const VolumetricGate3D = ({ el, isSelected, isIsometric }) => {
+  const isEntry = el.gateType === 'entry' || (el.label && el.label.toUpperCase().includes('ENTRADA'));
+  const isExit = el.gateType === 'exit' || (el.label && el.label.toUpperCase().includes('SALIDA'));
+
+  return (
+    <div
+      style={{
+        left: `${el.x}px`,
+        top: `${el.y}px`,
+        width: `${el.w}px`,
+        height: `${el.h}px`,
+        transform: `rotate(${el.rot || 0}deg)`
+      }}
+      className={`absolute rounded-2xl flex flex-col items-center justify-between p-2 shadow-2xl cursor-pointer z-20 border-2 select-none backdrop-blur-md transition-all ${
+        isSelected ? 'ring-4 ring-cyan-400 z-30 scale-105 shadow-[0_0_25px_rgba(6,182,212,0.9)]' : ''
+      } ${
+        isEntry
+          ? 'bg-gradient-to-b from-slate-950 via-emerald-950/90 to-slate-950 border-emerald-400 text-emerald-300 shadow-emerald-500/30'
+          : isExit
+          ? 'bg-gradient-to-b from-slate-950 via-rose-950/90 to-slate-950 border-rose-400 text-rose-300 shadow-rose-500/30'
+          : 'bg-slate-950 border-cyan-400 text-cyan-300 shadow-cyan-500/30'
+      }`}
+    >
+      {/* Indicador LED y Sensor ANPR */}
+      <div className="flex items-center gap-1.5 w-full justify-center">
+        <div className={`w-2.5 h-2.5 rounded-full animate-ping ${
+          isEntry ? 'bg-emerald-400 shadow-[0_0_10px_#34d399]' : 'bg-rose-400 shadow-[0_0_10px_#f43f5e]'
+        }`} />
+        <span className="text-[9px] font-mono font-black tracking-widest text-white drop-shadow">
+          {isEntry ? 'ENTRADA LPR' : isExit ? 'SALIDA POS' : 'GARITA'}
+        </span>
+      </div>
+
+      {/* Talanquera Motorizada 3D con Rayas Reflectivas */}
+      <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-600 shadow-inner flex items-center my-1 relative">
+        <div className={`h-full w-full bg-[repeating-linear-gradient(45deg,#ffffff,#ffffff_6px,${isEntry ? '#10b981' : '#f43f5e'}_6px,${isEntry ? '#10b981' : '#f43f5e'}_12px)]`} />
+      </div>
+
+      {/* Sensor Láser de Detección */}
+      <div className="w-full flex items-center justify-between text-[7px] font-mono font-bold text-slate-300 bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-800">
+        <span className="flex items-center gap-1">
+          {isEntry ? <Camera className="w-2.5 h-2.5 text-emerald-400" /> : <CreditCard className="w-2.5 h-2.5 text-rose-400" />}
+          <span>{isEntry ? 'ANPR OCR' : 'CAJA'}</span>
+        </span>
+        <span className="text-amber-300 font-black">ACTIVO</span>
+      </div>
+
+      <div className="text-[8px] font-mono font-black uppercase text-center text-white truncate max-w-full tracking-tight">
+        {el.label || (isEntry ? 'GARITA LPR' : 'CONTROL COBRO')}
+      </div>
+    </div>
+  );
+};
 
 // ==========================================
 // PLANTILLAS DE TERRENOS REALES (PRESETS)
@@ -183,6 +362,10 @@ export const InteractiveFloorPlanDrawingStudio = ({
 }) => {
   // Herramienta activa
   const [activeTool, setActiveTool] = useState('select');
+
+  // Perspectiva Visual: 3D Isométrica Real vs 2D Técnica
+  const [viewPerspective, setViewPerspective] = useState('isometric');
+  const isIsometric = viewPerspective === 'isometric';
 
   // Forma y Dimensiones del Lote
   const [lotShape, setLotShape] = useState('rectangular');
@@ -1067,6 +1250,21 @@ export const InteractiveFloorPlanDrawingStudio = ({
             </button>
           )}
 
+          {/* Conmutador 3D Isométrico vs 2D Plana */}
+          <button
+            type="button"
+            onClick={() => setViewPerspective(isIsometric ? '2d' : 'isometric')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border shrink-0 ${
+              isIsometric
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-md shadow-emerald-950/40'
+                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+            }`}
+            title={isIsometric ? "Cambiar a Vista 2D Técnica" : "Cambiar a Vista 3D Isométrica Real"}
+          >
+            <Box className={`w-3.5 h-3.5 ${isIsometric ? 'text-emerald-200' : 'text-slate-400'}`} />
+            <span>{isIsometric ? '3D Isométrica' : '2D Plana'}</span>
+          </button>
+
           {/* Controles de Zoom */}
           <div className="flex items-center bg-slate-950 px-1.5 py-1 rounded-xl border border-slate-800 text-xs text-slate-300 gap-1.5 shrink-0">
             <button 
@@ -1292,17 +1490,22 @@ export const InteractiveFloorPlanDrawingStudio = ({
         <div className="lg:col-span-3 flex flex-col space-y-2.5">
           <div 
             ref={containerRef}
-            className="bg-[#1c253b] rounded-2xl sm:rounded-3xl p-2 sm:p-6 border border-slate-700 shadow-xl overflow-auto custom-scrollbar flex min-h-[420px] sm:min-h-[580px] max-h-[750px]"
+            className="bg-[#101726] rounded-2xl sm:rounded-3xl p-3 sm:p-8 border border-slate-800 shadow-2xl overflow-auto custom-scrollbar flex min-h-[440px] sm:min-h-[600px] max-h-[760px]"
+            style={{
+              perspective: '1400px',
+              perspectiveOrigin: '50% 50%'
+            }}
           >
             {/* Viewport Contenedor Escalado */}
             <div
-              className="m-auto relative flex-shrink-0"
+              className="m-auto relative flex-shrink-0 transition-transform duration-500"
               style={{
                 width: `${canvasWidth * (zoom / 100)}px`,
                 height: `${canvasHeight * (zoom / 100)}px`,
+                transformStyle: isIsometric ? 'preserve-3d' : 'flat'
               }}
             >
-            {/* Lienzo Escalado */}
+            {/* Lienzo Escalado 3D / 2D */}
             <div
               ref={canvasRef}
               onMouseDown={handleCanvasMouseDown}
@@ -1311,27 +1514,32 @@ export const InteractiveFloorPlanDrawingStudio = ({
               style={{
                 width: `${canvasWidth}px`,
                 height: `${canvasHeight}px`,
-                transform: `scale(${zoom / 100})`,
-                transformOrigin: 'top left',
+                transform: isIsometric 
+                  ? `scale(${zoom / 100}) rotateX(46deg) rotateZ(-22deg)` 
+                  : `scale(${zoom / 100})`,
+                transformOrigin: isIsometric ? 'center 42%' : 'top left',
+                transformStyle: isIsometric ? 'preserve-3d' : 'flat',
                 position: 'absolute',
                 top: 0,
-                left: 0
+                left: 0,
+                boxShadow: isIsometric 
+                  ? '-25px 45px 75px rgba(0,0,0,0.92), 0 0 0 1px rgba(255,255,255,0.09)' 
+                  : 'inset 0 2px 10px rgba(0,0,0,0.5)'
               }}
-              className="canvas-bg relative bg-[#2a3752] rounded-2xl border-2 border-slate-600 shadow-inner overflow-hidden select-none cursor-crosshair transition-transform duration-75"
+              className="canvas-bg relative bg-[#182337] rounded-3xl border-2 border-slate-700 select-none cursor-crosshair transition-transform duration-300"
             >
-            {/* Rejilla métrica */}
+            {/* Rejilla Métrica de Alta Definición */}
             <div 
-              className="absolute inset-0 bg-[linear-gradient(to_right,#3b4d6e_1px,transparent_1px),linear-gradient(to_bottom,#3b4d6e_1px,transparent_1px)] bg-[size:20px_20px] opacity-45 pointer-events-none" 
+              className="absolute inset-0 bg-[linear-gradient(to_right,#2a3b59_1px,transparent_1px),linear-gradient(to_bottom,#2a3b59_1px,transparent_1px)] bg-[size:20px_20px] opacity-40 pointer-events-none" 
             />
 
-            {/* Renderizado de todos los elementos con Estilo Arquitectónico Realista */}
+            {/* Renderizado de todos los elementos con Estilo Arquitectónico y Volumétrico Real */}
             {elements.map((el) => {
               const isSelected = selectedId === el.id;
 
-              // 1. Plazas de Estacionamiento de Alta Definición
+              // 1. Plazas de Estacionamiento Volumétricas de Alta Definición
               if (el.type === 'slot') {
                 const isFree = el.status === 'free';
-                const isPMR = false;
                 const isMoto = el.slotType === 'moto';
                 const isShaded = !!el.shaded;
 
@@ -1344,62 +1552,65 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       top: `${el.y}px`,
                       width: `${el.w}px`,
                       height: `${el.h}px`,
-                      transform: `rotate(${el.rot || 0}deg)`
+                      transform: `rotate(${el.rot || 0}deg)`,
+                      transformStyle: isIsometric ? 'preserve-3d' : 'flat'
                     }}
-                    className={`absolute rounded-xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between p-1.5 select-none overflow-hidden shadow-md ${
+                    className={`absolute rounded-xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between p-1 select-none overflow-hidden ${
                       isSelected 
-                        ? 'ring-4 ring-cyan-400 border-cyan-300 z-30 shadow-[0_0_30px_rgba(6,182,212,0.9)] scale-[1.02]' 
+                        ? 'ring-4 ring-cyan-400 border-cyan-300 z-30 shadow-[0_0_30px_rgba(6,182,212,0.9)] scale-[1.03]' 
                         : 'z-10'
                     } ${
                       isShaded
-                        ? 'border-amber-400/90 bg-gradient-to-b from-amber-950/70 via-slate-900/95 to-amber-950/80 text-amber-100 hover:border-amber-300'
+                        ? 'border-amber-400/90 bg-gradient-to-b from-amber-950/70 via-slate-900/95 to-amber-950/80 text-amber-100 hover:border-amber-300 shadow-lg'
                         : isMoto
-                        ? 'border-orange-500/90 bg-gradient-to-b from-orange-950/80 via-slate-900/95 to-orange-950/90 text-orange-200 hover:border-orange-400'
+                        ? 'border-orange-500/90 bg-gradient-to-b from-orange-950/80 via-slate-900/95 to-orange-950/90 text-orange-200 hover:border-orange-400 shadow-md'
                         : isFree
-                        ? 'border-emerald-500/80 bg-gradient-to-b from-emerald-950/60 via-slate-900/95 to-slate-950 text-emerald-100 hover:border-emerald-400'
-                        : 'border-rose-500/90 bg-gradient-to-b from-rose-950/80 via-slate-900/95 to-rose-950/90 text-rose-200'
+                        ? 'border-emerald-500/80 bg-gradient-to-b from-emerald-950/60 via-slate-900/95 to-slate-950 text-emerald-100 hover:border-emerald-400 shadow-md'
+                        : 'border-rose-500/90 bg-gradient-to-b from-rose-950/80 via-slate-900/95 to-rose-950/90 text-rose-200 shadow-xl'
                     }`}
                   >
-                    {/* Textura de Techado con Vigas y Sombra */}
+                    {/* Cubierta Tensada 3D para Plazas Techadas */}
                     {isShaded && (
-                      <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(245,158,11,0.18),rgba(245,158,11,0.18)_8px,transparent_8px,transparent_16px)] pointer-events-none rounded-xl">
-                        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(245,158,11,0.22),rgba(245,158,11,0.22)_8px,transparent_8px,transparent_16px)] pointer-events-none rounded-xl">
+                        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/15 to-transparent pointer-events-none" />
                       </div>
                     )}
 
                     {/* Sensor LED Cenital Inteligente */}
-                    <div className="absolute top-1 right-1.5 flex items-center gap-2 z-20 pointer-events-none">
-                      <div className={`w-2 h-2 rounded-full shadow-sm ${
+                    <div className="absolute top-1 right-1 flex items-center gap-1.5 z-20 pointer-events-none">
+                      <div className={`w-2.5 h-2.5 rounded-full shadow-sm ${
                         isFree 
-                          ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse' 
-                          : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.9)]'
+                          ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.95)] animate-pulse' 
+                          : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.95)]'
                       }`} />
                     </div>
 
-                    {/* Encabezado: Código */}
+                    {/* Encabezado: Código de Plaza */}
                     <div className="flex items-center justify-between text-[10px] font-mono font-black z-10 leading-none pr-3">
                       <span className="text-white drop-shadow-sm tracking-tight">{el.code}</span>
+                      {isShaded && <span className="text-[7px] text-amber-300 font-bold bg-amber-950/80 px-1 rounded">TECHADO</span>}
                     </div>
 
-                    {/* Silueta / Stencil Central en Asfalto */}
-                    <div className="flex flex-col items-center justify-center my-auto py-0.5 z-10 pointer-events-none">
+                    {/* Contenido Central: Vehículo 3D Volumétrico u Ocupación */}
+                    <div className="flex flex-col items-center justify-center my-auto py-0.5 z-10 w-full h-full pointer-events-none">
                       {isFree ? (
                         isMoto ? (
-                          <Bike className="w-4 h-4 shrink-0 text-orange-400/40" />
+                          <Bike className="w-4 h-4 shrink-0 text-orange-400/50" />
                         ) : (
-                          <div className="w-6 h-9 rounded-lg border border-dashed border-emerald-400/30 flex flex-col items-center justify-around py-1">
+                          <div className="w-7 h-10 rounded-lg border border-dashed border-emerald-400/40 flex flex-col items-center justify-around py-1">
                             <div className="w-4 h-1 bg-emerald-400/30 rounded-xs" />
-                            <Car className="w-4 h-4 shrink-0 text-emerald-400/40" />
+                            <Car className="w-4 h-4 shrink-0 text-emerald-400/50" />
                             <div className="w-4 h-1 bg-emerald-400/30 rounded-xs" />
                           </div>
                         )
                       ) : (
-                        <div className="w-full flex flex-col items-center bg-slate-950/90 p-1 rounded-lg border border-slate-700 shadow-inner">
-                          <Car className="w-4 h-4 shrink-0 text-rose-400 mb-0.5 animate-pulse" />
-                          <span className="text-[8px] font-mono font-black text-white uppercase tracking-wider bg-slate-800 px-1 rounded">
-                            {el.plate || 'OCUPADO'}
-                          </span>
-                        </div>
+                        /* Auto / Moto 3D Volumétrico Real */
+                        <VolumetricCar3D 
+                          plate={el.plate} 
+                          color={el.color || (isMoto ? '#ea580c' : '#2563eb')} 
+                          isMoto={isMoto} 
+                          isIsometric={isIsometric}
+                        />
                       )}
                     </div>
 
@@ -1410,41 +1621,28 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
                     </div>
 
-                    {/* Estado inferior */}
+                    {/* Estado Inferior */}
                     <div className="text-center text-[8px] font-mono font-bold leading-none z-10">
                       {isFree ? (
                         <span className="text-emerald-400 tracking-wider font-extrabold">LIBRE</span>
                       ) : (
-                        <span className="text-rose-400 tracking-wider">OCUPADO</span>
+                        <span className="text-rose-400 tracking-wider font-black">OCUPADO</span>
                       )}
                     </div>
                   </div>
                 );
               }
 
-              // 2. Muros Perimétricos de Hormigón Armado
+              // 2. Muros Perimétricos de Hormigón Armado con Extrusión 3D
               if (el.type === 'wall') {
                 return (
-                  <div
-                    key={el.id}
-                    onMouseDown={(e) => handleElementMouseDown(e, el)}
-                    style={{
-                      left: `${el.x}px`,
-                      top: `${el.y}px`,
-                      width: `${el.w}px`,
-                      height: `${el.h}px`,
-                      transform: `rotate(${el.rot || 0}deg)`
-                    }}
-                    className={`absolute rounded-xs cursor-pointer z-5 shadow-[0_4px_12px_rgba(0,0,0,0.8)] border border-slate-500/80 bg-gradient-to-r from-slate-700 via-slate-600 to-slate-800 ${
-                      isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 bg-cyan-600 z-30' : ''
-                    }`}
-                  >
-                    <div className="w-full h-full bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.06),rgba(255,255,255,0.06)_4px,transparent_4px,transparent_8px)]" />
+                  <div key={el.id} onMouseDown={(e) => handleElementMouseDown(e, el)}>
+                    <VolumetricWall3D el={el} isSelected={isSelected} isIsometric={isIsometric} />
                   </div>
                 );
               }
 
-              // 3. Vías y Carriles con Señalética y Tachas Reflectivas
+              // 3. Vías y Carriles con Señalética y Tachas Reflectivas Cat's Eyes
               if (el.type === 'road') {
                 return (
                   <div
@@ -1457,23 +1655,26 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute bg-[#151c28] border-y-2 border-dashed border-amber-400/70 flex flex-col items-center justify-center cursor-pointer z-2 overflow-hidden shadow-inner ${
+                    className={`absolute bg-[#121927] border-y-2 border-dashed border-amber-400/80 flex flex-col items-center justify-center cursor-pointer z-2 overflow-hidden shadow-inner ${
                       isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30' : ''
                     }`}
+                    style={{
+                      backgroundImage: 'radial-gradient(ellipse at center, #1b263b 0%, #0b111e 100%)'
+                    }}
                   >
                     {/* Línea Divisoria Central con Flechas Direccionales */}
-                    <div className="w-full flex items-center justify-around px-4 pointer-events-none opacity-80">
-                      <span className="text-[10px] font-mono font-black text-amber-400/70 tracking-widest flex items-center gap-2">
+                    <div className="w-full flex items-center justify-around px-4 pointer-events-none opacity-90">
+                      <span className="text-[10px] font-mono font-black text-amber-400/90 tracking-widest flex items-center gap-2">
                         <span>━►</span>
                         <span>{el.label || 'CARRIL VIAL DE CIRCULACIÓN'}</span>
                         <span>━►</span>
                       </span>
                     </div>
 
-                    {/* Tachas / Cat's Eyes Reflectivos en el Pavimento */}
+                    {/* Tachas / Cat's Eyes Reflectivos en 3D en el Pavimento */}
                     <div className="w-full flex items-center justify-between px-6 pointer-events-none mt-1">
                       {[...Array(6)].map((_, i) => (
-                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
+                        <div key={i} className="w-2 h-2 rounded-full bg-amber-400 border border-amber-200 shadow-[0_0_8px_#fbbf24]" />
                       ))}
                     </div>
                   </div>
@@ -1493,7 +1694,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute bg-[#1a2230] border-x-2 border-amber-400/80 rounded flex flex-col justify-around py-1.5 px-1 cursor-pointer z-4 shadow-lg ${
+                    className={`absolute bg-[#161f2e] border-x-2 border-amber-400/80 rounded flex flex-col justify-around py-1.5 px-1 cursor-pointer z-4 shadow-xl ${
                       isSelected ? 'ring-4 ring-cyan-400 opacity-95 z-30' : ''
                     }`}
                   >
@@ -1504,64 +1705,16 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 );
               }
 
-              // 5. Garitas / Accesos Tecnológicos (Entrada LPR & Salida Control)
+              // 5. Garitas / Accesos Tecnológicos (Entrada LPR & Salida Control) con Talanquera 3D
               if (el.type === 'gate') {
-                const isEntry = el.gateType === 'entry' || (el.label && el.label.toUpperCase().includes('ENTRADA'));
-                const isExit = el.gateType === 'exit' || (el.label && el.label.toUpperCase().includes('SALIDA'));
-
                 return (
-                  <div
-                    key={el.id}
-                    onMouseDown={(e) => handleElementMouseDown(e, el)}
-                    style={{
-                      left: `${el.x}px`,
-                      top: `${el.y}px`,
-                      width: `${el.w}px`,
-                      height: `${el.h}px`,
-                      transform: `rotate(${el.rot || 0}deg)`
-                    }}
-                    className={`absolute rounded-2xl flex flex-col items-center justify-between p-2 shadow-2xl cursor-pointer z-20 border-2 select-none backdrop-blur-md ${
-                      isSelected ? 'ring-4 ring-cyan-400 z-30 scale-105 shadow-[0_0_25px_rgba(6,182,212,0.9)]' : ''
-                    } ${
-                      isEntry
-                        ? 'bg-gradient-to-b from-slate-950 via-emerald-950/80 to-slate-950 border-emerald-400 text-emerald-300 shadow-emerald-500/30'
-                        : isExit
-                        ? 'bg-gradient-to-b from-slate-950 via-rose-950/80 to-slate-950 border-rose-400 text-rose-300 shadow-rose-500/30'
-                        : 'bg-slate-950 border-cyan-400 text-cyan-300 shadow-cyan-500/30'
-                    }`}
-                  >
-                    {/* Indicador LED y Sensor ANPR */}
-                    <div className="flex items-center gap-2 w-full justify-center">
-                      <div className={`w-2.5 h-2.5 rounded-full animate-ping ${
-                        isEntry ? 'bg-emerald-400 shadow-[0_0_10px_#34d399]' : 'bg-rose-400 shadow-[0_0_10px_#f43f5e]'
-                      }`} />
-                      <span className="text-[9px] font-mono font-black tracking-widest text-white drop-shadow">
-                        {isEntry ? 'ENTRADA' : isExit ? 'SALIDA' : 'ACCESO'}
-                      </span>
-                    </div>
-
-                    {/* Talanquera Motorizada con Rayas Reflectivas */}
-                    <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-600 shadow-inner flex items-center my-1">
-                      <div className={`h-full w-full bg-[repeating-linear-gradient(45deg,#ffffff,#ffffff_6px,${isEntry ? '#10b981' : '#f43f5e'}_6px,${isEntry ? '#10b981' : '#f43f5e'}_12px)]`} />
-                    </div>
-
-                    {/* Sensor / Cámara LPR */}
-                    <div className="w-full flex items-center justify-between text-[7px] font-mono font-bold text-slate-300 bg-slate-900/80 px-1.5 py-0.5 rounded border border-slate-800">
-                      <span className="flex items-center gap-1">
-                        {isEntry ? <Camera className="w-2.5 h-2.5 text-emerald-400" /> : <CreditCard className="w-2.5 h-2.5 text-rose-400" />}
-                        <span>{isEntry ? 'ANPR' : 'POS'}</span>
-                      </span>
-                      <span className="text-amber-300">AUTO</span>
-                    </div>
-
-                    <div className="text-[8px] font-mono font-black uppercase text-center text-white truncate max-w-full tracking-tight">
-                      {el.label || (isEntry ? 'GARITA LPR' : 'CONTROL COBRO')}
-                    </div>
+                  <div key={el.id} onMouseDown={(e) => handleElementMouseDown(e, el)}>
+                    <VolumetricGate3D el={el} isSelected={isSelected} isIsometric={isIsometric} />
                   </div>
                 );
               }
 
-              // 6. Jardín y Paisajismo
+              // 6. Jardín y Paisajismo 3D
               if (el.type === 'garden') {
                 return (
                   <div
@@ -1574,12 +1727,15 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-950 border-2 border-emerald-500/80 rounded-3xl flex flex-col items-center justify-center p-2 text-emerald-200 cursor-pointer z-3 shadow-xl overflow-hidden ${
+                    className={`absolute bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-950 border-2 border-emerald-500/80 rounded-3xl flex flex-col items-center justify-center p-2 text-emerald-200 cursor-pointer z-3 shadow-2xl overflow-hidden ${
                       isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30 scale-[1.01]' : ''
                     }`}
+                    style={{
+                      boxShadow: isIsometric ? '0 14px 28px rgba(0,0,0,0.8), inset 0 2px 6px rgba(52,211,153,0.3)' : undefined
+                    }}
                   >
-                    <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,rgba(52,211,153,0.15),transparent_70%)] flex flex-col items-center justify-center">
-                      <TreeIcon className="w-7 h-7 shrink-0 text-emerald-400 drop-shadow-md mb-1 animate-bounce" style={{ animationDuration: '3s' }} />
+                    <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,rgba(52,211,153,0.2),transparent_70%)] flex flex-col items-center justify-center">
+                      <TreeIcon className="w-8 h-8 shrink-0 text-emerald-400 drop-shadow-md mb-1" />
                       <span className="text-[10px] font-black uppercase tracking-wider text-emerald-200 drop-shadow">
                         {el.label || 'ÁREA VERDE'}
                       </span>

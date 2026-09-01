@@ -1641,7 +1641,14 @@ export const InteractiveFloorPlanDrawingStudio = ({
         <div className="lg:col-span-3 flex flex-col space-y-2.5">
           <div 
             ref={containerRef}
-            className="bg-[#1c253b] rounded-2xl sm:rounded-3xl p-2 sm:p-6 border border-slate-700 shadow-xl overflow-auto custom-scrollbar flex min-h-[420px] sm:min-h-[580px] max-h-[750px]"
+            className="bg-[#090d16] rounded-2xl sm:rounded-3xl p-3 sm:p-8 border border-slate-800 shadow-2xl overflow-auto custom-scrollbar flex min-h-[440px] sm:min-h-[600px] max-h-[780px] relative"
+            style={{
+              backgroundImage: `
+                radial-gradient(circle at 50% 50%, #121927 0%, #070a10 100%),
+                radial-gradient(rgba(148,163,184,0.08) 1px, transparent 1px)
+              `,
+              backgroundSize: '100% 100%, 24px 24px'
+            }}
           >
             {/* Viewport Contenedor Escalado */}
             <div
@@ -1651,7 +1658,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 height: `${canvasHeight * (zoom / 100)}px`,
               }}
             >
-            {/* Lienzo Escalado Plano 2D Directo */}
+            {/* Lienzo Escalado Plano 2D - Pavimento Asfáltico Realista */}
             <div
               ref={canvasRef}
               onMouseDown={handleCanvasMouseDown}
@@ -1664,14 +1671,64 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 transformOrigin: 'top left',
                 position: 'absolute',
                 top: 0,
-                left: 0
+                left: 0,
+                backgroundColor: '#111723',
+                boxShadow: '0 30px 70px -15px rgba(0,0,0,0.98), 0 0 0 1px rgba(255,255,255,0.08), inset 0 2px 6px rgba(0,0,0,0.8)'
               }}
-              className="canvas-bg relative bg-[#2a3752] rounded-2xl border-2 border-slate-600 shadow-inner overflow-hidden select-none cursor-crosshair transition-transform duration-75"
+              className="canvas-bg relative rounded-3xl border-4 border-slate-700/80 overflow-hidden select-none cursor-crosshair transition-transform duration-75"
             >
-            {/* Rejilla métrica */}
+            {/* CAPA 1: Pavimento de Asfalto con Iluminación Cenital de Reflectores LED */}
             <div 
-              className="absolute inset-0 bg-[linear-gradient(to_right,#3b4d6e_1px,transparent_1px),linear-gradient(to_bottom,#3b4d6e_1px,transparent_1px)] bg-[size:20px_20px] opacity-45 pointer-events-none" 
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `
+                  radial-gradient(ellipse at 50% 45%, #243044 0%, #17202f 45%, #0e141f 100%),
+                  radial-gradient(circle at 10% 10%, rgba(56,189,248,0.07) 0%, transparent 40%),
+                  radial-gradient(circle at 90% 10%, rgba(56,189,248,0.07) 0%, transparent 40%),
+                  radial-gradient(circle at 10% 90%, rgba(56,189,248,0.07) 0%, transparent 40%),
+                  radial-gradient(circle at 90% 90%, rgba(56,189,248,0.07) 0%, transparent 40%)
+                `
+              }}
             />
+
+            {/* CAPA 2: Textura Micro-Granular de Áridos de Asfalto */}
+            <div 
+              className="absolute inset-0 pointer-events-none opacity-30"
+              style={{
+                backgroundImage: `
+                  radial-gradient(rgba(255,255,255,0.4) 0.6px, transparent 0.6px),
+                  radial-gradient(rgba(0,0,0,0.7) 0.8px, transparent 0.8px)
+                `,
+                backgroundSize: '5px 5px, 9px 9px',
+                backgroundPosition: '0 0, 3px 3px'
+              }}
+            />
+
+            {/* CAPA 3: Juntas de Dilatación de Hormigón y Planchas Viales (Cortes cada 120px) */}
+            <div 
+              className="absolute inset-0 pointer-events-none opacity-40"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(0,0,0,0.55) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(0,0,0,0.55) 1px, transparent 1px)
+                `,
+                backgroundSize: '120px 120px'
+              }}
+            />
+
+            {/* CAPA 4: Rejilla Métrica de Precisión CAD (Puntos sutiles cada 20px) */}
+            <div 
+              className="absolute inset-0 pointer-events-none opacity-25"
+              style={{
+                backgroundImage: `
+                  radial-gradient(rgba(56,189,248,0.7) 1px, transparent 1px)
+                `,
+                backgroundSize: `${gridSize}px ${gridSize}px`
+              }}
+            />
+
+            {/* CAPA 5: Bordillo Perimétrico con Bisel de Seguridad */}
+            <div className="absolute inset-0 border border-slate-600/50 rounded-[20px] pointer-events-none shadow-[inset_0_0_24px_rgba(0,0,0,0.75)]" />
 
             {/* Renderizado de todos los elementos con Estilo Arquitectónico Real */}
             {elements.map((el) => {

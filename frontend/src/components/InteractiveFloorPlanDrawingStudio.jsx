@@ -53,92 +53,236 @@ import {
   ArrowRight,
   ArrowUpDown,
   ArrowLeftRight,
-  Box
+  Box,
+  Truck
 } from 'lucide-react';
 
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
-// ==========================================
-// COMPONENTES VOLUMÉTRICOS 3D REALISTAS
-// ==========================================
+// ============================================================
+// COMPONENTES DE VEHÍCULOS REALISTAS 2D (TOP-DOWN)
+// ============================================================
 
-// 1. Vehículo de Alta Definición (Auto / Sedán / SUV / Moto)
-const VolumetricCar3D = ({ plate, color = '#2563eb', isMoto = false }) => {
-  if (isMoto) {
-    return (
-      <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
-        {/* Chasis de Moto */}
-        <div className="relative w-6 h-11 bg-slate-900 rounded-full border border-orange-500/80 shadow-md flex flex-col items-center justify-between p-1">
-          {/* Manillar & Faro Delantero */}
-          <div className="w-4 h-1.5 bg-slate-400 rounded-full shadow-[0_0_8px_#38bdf8] flex items-center justify-center">
-            <div className="w-1.5 h-1 bg-cyan-300 rounded-full" />
-          </div>
-          {/* Tanque de Gasolina & Asiento */}
-          <div className="w-3.5 h-4 bg-orange-600 rounded-md border border-orange-400 shadow-inner flex items-center justify-center">
-            <div className="w-2 h-2.5 bg-slate-950 rounded" />
-          </div>
-          {/* Placa & Luz Trasera */}
-          <div className="w-3.5 h-1 bg-rose-600 rounded-xs shadow-[0_0_6px_#f43f5e]" />
-          <span className="text-[6px] font-mono font-black text-slate-900 bg-white px-0.5 rounded shadow-xs tracking-tighter">
-            {plate || 'MOTO'}
-          </span>
+// 1. Moto Lineal (Top-Down)
+const VehicleMoto2D = ({ plate }) => (
+  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
+    {/* Sombra de contacto */}
+    <div className="absolute inset-x-2 bottom-0.5 h-2 bg-black/60 blur-xs rounded-full" />
+    {/* Chasis de Moto */}
+    <div className="relative w-6 h-11 bg-slate-900 rounded-full border border-orange-500/80 shadow-md flex flex-col items-center justify-between p-1">
+      {/* Manillar & Faro Delantero */}
+      <div className="w-4.5 h-1.5 bg-slate-400 rounded-full shadow-[0_0_8px_#38bdf8] flex items-center justify-center">
+        <div className="w-1.5 h-1 bg-cyan-300 rounded-full" />
+      </div>
+      {/* Tanque de Gasolina & Asiento Biplaza */}
+      <div className="w-3.5 h-4 bg-orange-600 rounded-md border border-orange-400 shadow-inner flex items-center justify-center">
+        <div className="w-2 h-2.5 bg-slate-950 rounded" />
+      </div>
+      {/* Placa & Luz Trasera */}
+      <div className="w-3.5 h-1 bg-rose-600 rounded-xs shadow-[0_0_6px_#f43f5e]" />
+      <span className="text-[6px] font-mono font-black text-slate-900 bg-white px-0.5 rounded shadow-xs tracking-tighter">
+        {plate || '5421-3A'}
+      </span>
+    </div>
+  </div>
+);
+
+// 2. Auto / Sedán (Top-Down)
+const VehicleAuto2D = ({ plate, color = '#2563eb' }) => (
+  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
+    {/* Sombra de contacto */}
+    <div className="absolute inset-x-1 bottom-0.5 h-[90%] bg-black/60 blur-xs rounded-xl" />
+
+    {/* Carrocería del Vehículo */}
+    <div 
+      className="relative w-[92%] h-[92%] rounded-xl border border-slate-700/80 flex flex-col justify-between p-1 overflow-hidden shadow-lg"
+      style={{
+        background: `linear-gradient(135deg, ${color}dd 0%, #0f172a 100%)`
+      }}
+    >
+      {/* Parachoques Delantero y Faros LED */}
+      <div className="w-full flex items-center justify-between px-1">
+        <div className="w-2 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
+        <div className="w-5 h-1 bg-slate-950/80 rounded-full" />
+        <div className="w-2 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
+      </div>
+
+      {/* Parabrisas Delantero con Reflejo */}
+      <div className="w-[85%] h-3.5 mx-auto bg-gradient-to-b from-cyan-950 to-slate-950 rounded-t-lg border border-cyan-500/30 flex items-center justify-center overflow-hidden">
+        <div className="w-full h-full bg-[linear-gradient(45deg,transparent_30%,rgba(255,255,255,0.25)_50%,transparent_70%)]" />
+      </div>
+
+      {/* Techo Metálico / Sunroof */}
+      <div className="w-[80%] h-4 mx-auto bg-slate-950/90 rounded border border-slate-700/80 flex items-center justify-center shadow-inner">
+        <div className="w-[80%] h-[70%] bg-slate-900 rounded-xs border border-slate-800 flex items-center justify-center">
+          <span className="text-[6px] font-mono font-bold text-slate-400">●</span>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
-      {/* Sombra de contacto */}
-      <div className="absolute inset-x-1 bottom-0.5 h-[90%] bg-black/60 blur-xs rounded-xl" />
+      {/* Luneta Trasera */}
+      <div className="w-[85%] h-2.5 mx-auto bg-gradient-to-t from-cyan-950 to-slate-950 rounded-b-lg border border-cyan-500/30" />
 
-      {/* Carrocería del Vehículo */}
-      <div 
-        className="relative w-[92%] h-[92%] rounded-xl border border-slate-700/80 flex flex-col justify-between p-1 overflow-hidden shadow-lg"
-        style={{
-          background: `linear-gradient(135deg, ${color}dd 0%, #0f172a 100%)`
-        }}
-      >
-        {/* Parachoques Delantero y Faros LED */}
+      {/* Parachoques Trasero, Luces de Freno & Placa Oficial */}
+      <div className="w-full flex flex-col items-center gap-0.5">
         <div className="w-full flex items-center justify-between px-1">
-          <div className="w-2 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
-          <div className="w-5 h-1 bg-slate-950/80 rounded-full" />
-          <div className="w-2 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
+          <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
+          <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
         </div>
 
-        {/* Parabrisas Delantero con Reflejo */}
-        <div className="w-[85%] h-3.5 mx-auto bg-gradient-to-b from-cyan-950 to-slate-950 rounded-t-lg border border-cyan-500/30 flex items-center justify-center overflow-hidden">
-          <div className="w-full h-full bg-[linear-gradient(45deg,transparent_30%,rgba(255,255,255,0.25)_50%,transparent_70%)]" />
-        </div>
-
-        {/* Techo Metálico / Sunroof */}
-        <div className="w-[80%] h-4 mx-auto bg-slate-950/90 rounded border border-slate-700/80 flex items-center justify-center shadow-inner">
-          <div className="w-[80%] h-[70%] bg-slate-900 rounded-xs border border-slate-800 flex items-center justify-center">
-            <span className="text-[6px] font-mono font-bold text-slate-400">●</span>
-          </div>
-        </div>
-
-        {/* Luneta Trasera */}
-        <div className="w-[85%] h-2.5 mx-auto bg-gradient-to-t from-cyan-950 to-slate-950 rounded-b-lg border border-cyan-500/30" />
-
-        {/* Parachoques Trasero, Luces de Freno & Placa Oficial */}
-        <div className="w-full flex flex-col items-center gap-0.5">
-          <div className="w-full flex items-center justify-between px-1">
-            <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
-            <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
-          </div>
-
-          {/* Placa Oficial en Alto Contraste */}
-          <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-sm flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
-            <span className="text-[5px] text-blue-800 font-bold">PE</span>
-            <span>{plate || 'ABC-123'}</span>
-          </div>
+        {/* Placa Oficial en Alto Contraste */}
+        <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-sm flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
+          <span className="text-[5px] text-blue-800 font-bold">PE</span>
+          <span>{plate || 'ABC-123'}</span>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
+
+// 3. Camioneta / SUV / Pickup 4x4 (Top-Down)
+const VehicleCamioneta2D = ({ plate, color = '#0284c7' }) => (
+  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
+    {/* Sombra de contacto robusta */}
+    <div className="absolute inset-x-0.5 bottom-0.5 h-[94%] bg-black/70 blur-xs rounded-2xl" />
+
+    {/* Carrocería SUV / Camioneta 4x4 */}
+    <div 
+      className="relative w-[95%] h-[95%] rounded-2xl border-2 border-cyan-500/60 flex flex-col justify-between p-1.5 overflow-hidden shadow-xl"
+      style={{
+        background: `linear-gradient(145deg, ${color}ee 0%, #032b43 50%, #08121e 100%)`
+      }}
+    >
+      {/* Barra de Protección Delantera y Faros Cuádruples LED */}
+      <div className="w-full flex items-center justify-between px-0.5">
+        <div className="flex gap-0.5">
+          <div className="w-2 h-2 rounded-xs bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
+        </div>
+        <div className="w-7 h-1.5 bg-slate-950 rounded-xs border border-slate-700 flex items-center justify-center">
+          <span className="text-[5px] font-black text-cyan-300 tracking-tighter">4x4</span>
+        </div>
+        <div className="flex gap-0.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
+          <div className="w-2 h-2 rounded-xs bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
+        </div>
+      </div>
+
+      {/* Capó ancho con nervaduras */}
+      <div className="w-[88%] h-3 mx-auto bg-slate-950/40 rounded border border-cyan-500/20 flex items-center justify-around">
+        <div className="w-0.5 h-full bg-cyan-400/30" />
+        <div className="w-0.5 h-full bg-cyan-400/30" />
+      </div>
+
+      {/* Parabrisas Amplio con Espejos Laterales */}
+      <div className="w-[90%] h-4 mx-auto bg-gradient-to-b from-cyan-950 via-slate-950 to-slate-950 rounded-t-xl border border-cyan-400/40 flex items-center justify-center relative">
+        <div className="absolute -left-1 top-1 w-1 h-2 bg-slate-800 border border-slate-600 rounded-l" />
+        <div className="absolute -right-1 top-1 w-1 h-2 bg-slate-800 border border-slate-600 rounded-r" />
+        <div className="w-full h-full bg-[linear-gradient(45deg,transparent_20%,rgba(255,255,255,0.3)_50%,transparent_80%)]" />
+      </div>
+
+      {/* Techo con Barras Portaequipaje / Roof Racks */}
+      <div className="w-[86%] h-6 mx-auto bg-slate-950/95 rounded-lg border border-cyan-600/50 flex flex-col justify-between p-0.5 shadow-inner">
+        <div className="w-full h-0.5 bg-slate-400 rounded-full" />
+        <div className="w-full flex items-center justify-around text-[6px] font-mono font-black text-cyan-300">
+          <span>SUV</span>
+          <span>●</span>
+          <span>AWD</span>
+        </div>
+        <div className="w-full h-0.5 bg-slate-400 rounded-full" />
+      </div>
+
+      {/* Tolva / Maletero Trasero */}
+      <div className="w-[88%] h-3 mx-auto bg-slate-950/80 rounded-b-lg border border-slate-700 flex items-center justify-center">
+        <div className="w-4 h-1 bg-slate-800 rounded-xs" />
+      </div>
+
+      {/* Luces Traseras y Placa Oficial */}
+      <div className="w-full flex flex-col items-center gap-0.5">
+        <div className="w-full flex items-center justify-between px-0.5">
+          <div className="w-3 h-1.5 bg-rose-500 rounded-xs shadow-[0_0_8px_#f43f5e]" />
+          <div className="w-3 h-1.5 bg-rose-500 rounded-xs shadow-[0_0_8px_#f43f5e]" />
+        </div>
+
+        <div className="bg-white text-slate-950 px-1.5 py-0.2 rounded border border-slate-400 shadow-sm flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
+          <span className="text-[5px] text-blue-800 font-bold">PE</span>
+          <span>{plate || 'W1P-404'}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// 4. Mototaxi / Torito Bajaj (Top-Down)
+const VehicleMototaxi2D = ({ plate, color = '#ca8a04' }) => (
+  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
+    {/* Sombra de contacto */}
+    <div className="absolute inset-x-1 bottom-0.5 h-[92%] bg-black/65 blur-xs rounded-xl" />
+
+    {/* Carrocería Torito Bajaj */}
+    <div 
+      className="relative w-[92%] h-[94%] rounded-2xl border-2 border-yellow-400/90 flex flex-col justify-between p-1 overflow-hidden shadow-lg"
+      style={{
+        background: `linear-gradient(145deg, ${color}dd 0%, #451a03 50%, #0f172a 100%)`
+      }}
+    >
+      {/* Rueda delantera única y Faro Central */}
+      <div className="w-full flex flex-col items-center">
+        <div className="w-2.5 h-2.5 bg-slate-950 rounded-xs border border-slate-600 shadow-xs" />
+        <div className="w-3.5 h-1.5 bg-yellow-300 rounded-full shadow-[0_0_8px_#fde047] flex items-center justify-center -mt-0.5">
+          <div className="w-1.5 h-1 bg-white rounded-full" />
+        </div>
+      </div>
+
+      {/* Parabrisas Curvo de la Cabina */}
+      <div className="w-[88%] h-3 mx-auto bg-gradient-to-b from-cyan-950 to-slate-950 rounded-t-lg border border-cyan-400/50 flex items-center justify-center">
+        <div className="w-full h-full bg-[linear-gradient(45deg,transparent_30%,rgba(255,255,255,0.3)_50%,transparent_70%)]" />
+      </div>
+
+      {/* Techo de Lona / Carpa del Torito con Franjas Tradicionales */}
+      <div className="w-[90%] h-6 mx-auto bg-yellow-500 rounded-md border border-yellow-300 shadow-md flex flex-col justify-between p-0.5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,#000000,#000000_3px,transparent_3px,transparent_8px)] opacity-20" />
+        <div className="w-full text-center text-[6px] font-mono font-black text-slate-950 uppercase tracking-widest z-10 drop-shadow">
+          ★ TORITO ★
+        </div>
+        <div className="w-full text-center text-[5px] font-mono font-bold text-slate-900 z-10">
+          BAJAJ
+        </div>
+      </div>
+
+      {/* Eje trasero de dos ruedas y Placa Oficial */}
+      <div className="w-full flex flex-col items-center gap-0.5">
+        <div className="w-full flex items-center justify-between px-0.5">
+          <div className="w-2.5 h-2.5 bg-slate-950 rounded-xs border border-slate-700 -ml-1" />
+          <div className="flex gap-1">
+            <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
+            <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
+          </div>
+          <div className="w-2.5 h-2.5 bg-slate-950 rounded-xs border border-slate-700 -mr-1" />
+        </div>
+
+        <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-sm flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
+          <span className="text-[5px] text-blue-800 font-bold">PE</span>
+          <span>{plate || '5612-4B'}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Despachador Universal de Vehículo
+const RealisticVehicle2D = ({ slotType = 'auto', plate, color }) => {
+  if (slotType === 'moto') {
+    return <VehicleMoto2D plate={plate} />;
+  }
+  if (slotType === 'camioneta') {
+    return <VehicleCamioneta2D plate={plate} color={color || '#0284c7'} />;
+  }
+  if (slotType === 'mototaxi') {
+    return <VehicleMototaxi2D plate={plate} color={color || '#ca8a04'} />;
+  }
+  return <VehicleAuto2D plate={plate} color={color || '#2563eb'} />;
 };
 
 // 2. Muro de Hormigón Armado
@@ -233,30 +377,30 @@ const RECTANGULAR_PRESET = [
   { id: 7, type: 'gate', gateType: 'entry', x: 40, y: 260, w: 40, h: 70, rot: 0, label: 'ENTRADA' },
   { id: 8, type: 'gate', gateType: 'exit', x: 40, y: 330, w: 40, h: 70, rot: 0, label: 'SALIDA' },
   
-  // Fila Norte (Compacta)
+  // Fila Norte: Autos, Camioneta 4x4, Moto Taxi y Motos
   { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
   { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
   { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', shaded: true, x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'ABC-123', color: '#ef4444' },
-  { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 14, type: 'slot', code: 'A-05', slotType: 'auto', x: 350, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 15, type: 'slot', code: 'A-06', slotType: 'auto', x: 415, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'XYZ-789', color: '#3b82f6' },
-  { id: 16, type: 'slot', code: 'A-07', slotType: 'auto', x: 610, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 17, type: 'slot', code: 'A-08', slotType: 'auto', x: 675, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 18, type: 'slot', code: 'A-09', slotType: 'moto', x: 740, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
-  { id: 19, type: 'slot', code: 'A-10', slotType: 'moto', x: 785, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
-  { id: 20, type: 'slot', code: 'A-11', slotType: 'moto', x: 830, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
+  { id: 13, type: 'slot', code: 'C-01', slotType: 'camioneta', x: 290, y: 80, w: 68, h: 112, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#0284c7' },
+  { id: 14, type: 'slot', code: 'C-02', slotType: 'camioneta', x: 370, y: 80, w: 68, h: 112, rot: 0, status: 'free' },
+  { id: 15, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 450, y: 80, w: 48, h: 80, rot: 0, status: 'occupied', plate: '5612-4B', color: '#ca8a04' },
+  { id: 16, type: 'slot', code: 'T-02', slotType: 'mototaxi', x: 510, y: 80, w: 48, h: 80, rot: 0, status: 'free' },
+  { id: 17, type: 'slot', code: 'A-04', slotType: 'auto', x: 610, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 18, type: 'slot', code: 'M-01', slotType: 'moto', x: 680, y: 80, w: 38, h: 65, rot: 0, status: 'occupied', plate: '5421-3A' },
+  { id: 19, type: 'slot', code: 'M-02', slotType: 'moto', x: 730, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
+  { id: 20, type: 'slot', code: 'M-03', slotType: 'moto', x: 780, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
 
-  // Fila Sur (Compacta)
+  // Fila Sur: Autos, Camionetas y Motos
   { id: 30, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'AYC-501', color: '#10b981' },
   { id: 31, type: 'slot', code: 'B-02', slotType: 'auto', shaded: true, x: 145, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 32, type: 'slot', code: 'B-03', slotType: 'auto', x: 210, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 33, type: 'slot', code: 'B-04', slotType: 'auto', x: 275, y: 480, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#6366f1' },
-  { id: 34, type: 'slot', code: 'B-05', slotType: 'auto', x: 340, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 35, type: 'slot', code: 'B-06', slotType: 'auto', x: 405, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 36, type: 'slot', code: 'B-07', slotType: 'auto', x: 610, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 37, type: 'slot', code: 'B-08', slotType: 'auto', x: 675, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 38, type: 'slot', code: 'B-09', slotType: 'auto', x: 740, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 39, type: 'slot', code: 'B-10', slotType: 'auto', x: 805, y: 480, w: 56, h: 96, rot: 0, status: 'free' }
+  { id: 32, type: 'slot', code: 'C-03', slotType: 'camioneta', x: 215, y: 470, w: 68, h: 112, rot: 0, status: 'free' },
+  { id: 33, type: 'slot', code: 'C-04', slotType: 'camioneta', x: 295, y: 470, w: 68, h: 112, rot: 0, status: 'occupied', plate: 'T4X-882', color: '#4f46e5' },
+  { id: 34, type: 'slot', code: 'T-03', slotType: 'mototaxi', x: 375, y: 480, w: 48, h: 80, rot: 0, status: 'free' },
+  { id: 35, type: 'slot', code: 'B-03', slotType: 'auto', x: 435, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 36, type: 'slot', code: 'B-04', slotType: 'auto', x: 610, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 37, type: 'slot', code: 'B-05', slotType: 'auto', x: 675, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 38, type: 'slot', code: 'B-06', slotType: 'auto', x: 740, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 39, type: 'slot', code: 'B-07', slotType: 'auto', x: 805, y: 480, w: 56, h: 96, rot: 0, status: 'free' }
 ];
 
 // 2. Terreno en 'L'
@@ -275,12 +419,12 @@ const L_SHAPE_PRESET = [
 
   // Fila Norte
   { id: 12, type: 'slot', code: 'N-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 13, type: 'slot', code: 'N-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 14, type: 'slot', code: 'N-03', slotType: 'auto', shaded: true, x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'ABC-123' },
-  { id: 15, type: 'slot', code: 'N-04', slotType: 'auto', x: 330, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 16, type: 'slot', code: 'N-05', slotType: 'auto', x: 395, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'XYZ-789' },
-  { id: 17, type: 'slot', code: 'N-06', slotType: 'auto', x: 600, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 18, type: 'slot', code: 'N-07', slotType: 'moto', x: 665, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
+  { id: 13, type: 'slot', code: 'N-02', slotType: 'camioneta', x: 155, y: 70, w: 68, h: 112, rot: 0, status: 'free' },
+  { id: 14, type: 'slot', code: 'N-03', slotType: 'camioneta', shaded: true, x: 235, y: 70, w: 68, h: 112, rot: 0, status: 'occupied', plate: 'W1P-404' },
+  { id: 15, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 330, y: 80, w: 48, h: 80, rot: 0, status: 'occupied', plate: '5612-4B' },
+  { id: 16, type: 'slot', code: 'T-02', slotType: 'mototaxi', x: 390, y: 80, w: 48, h: 80, rot: 0, status: 'free' },
+  { id: 17, type: 'slot', code: 'N-04', slotType: 'auto', x: 600, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 18, type: 'slot', code: 'M-01', slotType: 'moto', x: 665, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
 
   // Columna Oeste
   { id: 25, type: 'slot', code: 'O-01', slotType: 'auto', x: 80, y: 340, w: 96, h: 56, rot: 0, status: 'free' },
@@ -300,18 +444,18 @@ const DIAGONAL_PRESET = [
   { id: 7, type: 'gate', gateType: 'exit', x: 40, y: 335, w: 40, h: 65, rot: 0, label: 'SALIDA' },
 
   { id: 10, type: 'slot', code: 'D-01', slotType: 'auto', x: 90, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
-  { id: 11, type: 'slot', code: 'D-02', slotType: 'auto', shaded: true, x: 165, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
-  { id: 12, type: 'slot', code: 'D-03', slotType: 'auto', shaded: true, x: 235, y: 90, w: 56, h: 96, rot: 30, status: 'occupied', plate: 'ABC-123' },
-  { id: 13, type: 'slot', code: 'D-04', slotType: 'auto', x: 305, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
-  { id: 14, type: 'slot', code: 'D-05', slotType: 'auto', x: 375, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
-  { id: 15, type: 'slot', code: 'D-06', slotType: 'auto', x: 445, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
-  { id: 16, type: 'slot', code: 'D-07', slotType: 'moto', x: 515, y: 90, w: 38, h: 65, rot: 30, status: 'free' },
+  { id: 11, type: 'slot', code: 'D-02', slotType: 'camioneta', shaded: true, x: 165, y: 80, w: 68, h: 112, rot: 30, status: 'free' },
+  { id: 12, type: 'slot', code: 'D-03', slotType: 'camioneta', shaded: true, x: 245, y: 80, w: 68, h: 112, rot: 30, status: 'occupied', plate: 'W1P-404' },
+  { id: 13, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 325, y: 90, w: 48, h: 80, rot: 30, status: 'occupied', plate: '5612-4B' },
+  { id: 14, type: 'slot', code: 'T-02', slotType: 'mototaxi', x: 385, y: 90, w: 48, h: 80, rot: 30, status: 'free' },
+  { id: 15, type: 'slot', code: 'D-04', slotType: 'auto', x: 450, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
+  { id: 16, type: 'slot', code: 'M-01', slotType: 'moto', x: 520, y: 90, w: 38, h: 65, rot: 30, status: 'free' },
 
-  { id: 20, type: 'slot', code: 'D-08', slotType: 'auto', x: 90, y: 470, w: 56, h: 96, rot: -30, status: 'free' },
-  { id: 21, type: 'slot', code: 'D-09', slotType: 'auto', shaded: true, x: 165, y: 470, w: 56, h: 96, rot: -30, status: 'free' },
-  { id: 22, type: 'slot', code: 'D-10', slotType: 'auto', x: 235, y: 470, w: 56, h: 96, rot: -30, status: 'occupied', plate: 'XYZ-999' },
-  { id: 23, type: 'slot', code: 'D-11', slotType: 'auto', x: 305, y: 470, w: 56, h: 96, rot: -30, status: 'free' },
-  { id: 24, type: 'slot', code: 'D-12', slotType: 'auto', x: 375, y: 470, w: 56, h: 96, rot: -30, status: 'free' }
+  { id: 20, type: 'slot', code: 'D-05', slotType: 'auto', x: 90, y: 470, w: 56, h: 96, rot: -30, status: 'free' },
+  { id: 21, type: 'slot', code: 'D-06', slotType: 'auto', shaded: true, x: 165, y: 470, w: 56, h: 96, rot: -30, status: 'free' },
+  { id: 22, type: 'slot', code: 'C-01', slotType: 'camioneta', x: 235, y: 460, w: 68, h: 112, rot: -30, status: 'occupied', plate: 'XYZ-999' },
+  { id: 23, type: 'slot', code: 'T-03', slotType: 'mototaxi', x: 315, y: 470, w: 48, h: 80, rot: -30, status: 'free' },
+  { id: 24, type: 'slot', code: 'D-07', slotType: 'auto', x: 375, y: 470, w: 56, h: 96, rot: -30, status: 'free' }
 ];
 
 // 4. Terreno en 'U'
@@ -327,11 +471,11 @@ const U_SHAPE_PRESET = [
   { id: 9, type: 'gate', gateType: 'exit', x: 40, y: 420, w: 40, h: 80, rot: 0, label: 'SALIDA' },
 
   { id: 10, type: 'slot', code: 'U-01', slotType: 'auto', x: 80, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 11, type: 'slot', code: 'U-02', slotType: 'auto', shaded: true, x: 155, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 12, type: 'slot', code: 'U-03', slotType: 'auto', shaded: true, x: 220, y: 75, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'P3X-998' },
-  { id: 13, type: 'slot', code: 'U-04', slotType: 'auto', x: 285, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 14, type: 'slot', code: 'U-05', slotType: 'auto', x: 350, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 15, type: 'slot', code: 'U-06', slotType: 'auto', x: 415, y: 75, w: 56, h: 96, rot: 0, status: 'free' }
+  { id: 11, type: 'slot', code: 'C-01', slotType: 'camioneta', shaded: true, x: 155, y: 65, w: 68, h: 112, rot: 0, status: 'free' },
+  { id: 12, type: 'slot', code: 'T-01', slotType: 'mototaxi', shaded: true, x: 235, y: 75, w: 48, h: 80, rot: 0, status: 'occupied', plate: '5612-4B' },
+  { id: 13, type: 'slot', code: 'M-01', slotType: 'moto', x: 295, y: 75, w: 38, h: 65, rot: 0, status: 'free' },
+  { id: 14, type: 'slot', code: 'U-02', slotType: 'auto', x: 350, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 15, type: 'slot', code: 'U-03', slotType: 'auto', x: 415, y: 75, w: 56, h: 96, rot: 0, status: 'free' }
 ];
 
 export const InteractiveFloorPlanDrawingStudio = ({ 
@@ -430,13 +574,15 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
   const selectedElement = elements.find(e => e.id === selectedId);
 
-  // Contadores
+  // Contadores por Tipo de Vehículo
   const totalSlots = elements.filter(e => e.type === 'slot').length;
   const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
   const occupiedSlots = elements.filter(e => e.type === 'slot' && e.status === 'occupied').length;
-  const pmrSlots = 0;
-  const shadedSlots = elements.filter(e => e.type === 'slot' && e.shaded).length;
+  const autoSlots = elements.filter(e => e.type === 'slot' && (!e.slotType || e.slotType === 'auto')).length;
+  const camionetaSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'camioneta').length;
+  const mototaxiSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'mototaxi').length;
   const motoSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'moto').length;
+  const shadedSlots = elements.filter(e => e.type === 'slot' && e.shaded).length;
 
   const pushHistory = (newElements) => {
     elementsRef.current = newElements;
@@ -715,10 +861,14 @@ export const InteractiveFloorPlanDrawingStudio = ({
         setActiveTool('select');
       } else if (e.key.toLowerCase() === 'a') {
         setActiveTool('slot_auto');
-      } else if (e.key.toLowerCase() === 't') {
-        setActiveTool('slot_shaded');
+      } else if (e.key.toLowerCase() === 'c') {
+        setActiveTool('slot_camioneta');
+      } else if (e.key.toLowerCase() === 'x') {
+        setActiveTool('slot_mototaxi');
       } else if (e.key.toLowerCase() === 'm') {
         setActiveTool('slot_moto');
+      } else if (e.key.toLowerCase() === 't') {
+        setActiveTool('slot_shaded');
       }
     };
 
@@ -975,17 +1125,28 @@ export const InteractiveFloorPlanDrawingStudio = ({
         }
         setMessage(`Batería de ${rowCount} plazas compactas colocada.`);
       }
-      // 2. Plaza Individual Compacta (Auto, Techado, PMR, Moto)
+      // 2. Plaza Individual Especializada (Auto, Camioneta, Moto Taxi, Moto, Techada)
       else if (activeTool.startsWith('slot_')) {
         const rawType = activeTool.replace('slot_', '');
         const isShaded = rawType === 'shaded';
+        const isCamioneta = rawType === 'camioneta';
+        const isMototaxi = rawType === 'mototaxi';
         const isMoto = rawType === 'moto';
         const slotType = isShaded ? 'auto' : rawType;
         
         const count = newElements.filter(e => e.type === 'slot').length + 1;
-        const code = isShaded ? `S-0${count}` : isMoto ? `M-0${count}` : `A-0${count}`;
-        const defaultW = isMoto ? 38 : 56;
-        const defaultH = isMoto ? 65 : 96;
+        const code = isShaded 
+          ? `S-0${count}` 
+          : isCamioneta 
+          ? `C-0${count}` 
+          : isMototaxi 
+          ? `T-0${count}` 
+          : isMoto 
+          ? `M-0${count}` 
+          : `A-0${count}`;
+
+        const defaultW = isCamioneta ? 68 : isMototaxi ? 48 : isMoto ? 38 : 56;
+        const defaultH = isCamioneta ? 112 : isMototaxi ? 80 : isMoto ? 65 : 96;
 
         const finalW = currentDraw.w > 30 ? currentDraw.w : defaultW;
         const finalH = currentDraw.h > 30 ? currentDraw.h : defaultH;
@@ -1003,7 +1164,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
           rot: 0,
           status: 'free'
         });
-        setMessage(`Plaza ${code} colocada.`);
+        setMessage(`Plaza ${code} (${slotType.toUpperCase()}) colocada.`);
       }
       else if (activeTool === 'add_wall') {
         newElements.push({
@@ -1291,41 +1452,70 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
             <div className="h-5 w-px bg-slate-800 mx-0.5" />
 
-            {/* Plazas */}
+            {/* Plazas por Tipo */}
             <button
               onClick={() => setActiveTool('slot_auto')}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'slot_auto' 
-                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  ? 'bg-emerald-600 text-white font-bold shadow-xs' 
                   : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
               }`}
+              title="Plaza estándar para automóvil sedán (A)"
             >
               <Car className="w-3.5 h-3.5 text-emerald-400" />
               <span>+ Auto</span>
             </button>
 
             <button
-              onClick={() => setActiveTool('slot_shaded')}
+              onClick={() => setActiveTool('slot_camioneta')}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                activeTool === 'slot_shaded' 
-                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                activeTool === 'slot_camioneta' 
+                  ? 'bg-cyan-600 text-white font-bold shadow-xs' 
                   : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
               }`}
+              title="Plaza amplia para camioneta / SUV / Pickup 4x4 (C)"
             >
-              <Umbrella className="w-3.5 h-3.5 text-amber-400" />
-              <span>+ Techado</span>
+              <Truck className="w-3.5 h-3.5 text-cyan-400" />
+              <span>+ Camioneta</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTool('slot_mototaxi')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'slot_mototaxi' 
+                  ? 'bg-yellow-600 text-white font-bold shadow-xs' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+              title="Plaza para Torito Bajaj / Mototaxi (X)"
+            >
+              <Navigation className="w-3.5 h-3.5 text-yellow-400" />
+              <span>+ Moto Taxi</span>
             </button>
 
             <button
               onClick={() => setActiveTool('slot_moto')}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'slot_moto' 
-                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
+                  ? 'bg-orange-600 text-white font-bold shadow-xs' 
                   : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
               }`}
+              title="Plaza compacta para moto lineal (M)"
             >
               <Bike className="w-3.5 h-3.5 text-orange-400" />
               <span>+ Moto</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTool('slot_shaded')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'slot_shaded' 
+                  ? 'bg-amber-600 text-white font-bold shadow-xs' 
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+              }`}
+              title="Plaza con cubierta techada (T)"
+            >
+              <Umbrella className="w-3.5 h-3.5 text-amber-400" />
+              <span>+ Techado</span>
             </button>
 
             <button
@@ -1483,14 +1673,17 @@ export const InteractiveFloorPlanDrawingStudio = ({
               className="absolute inset-0 bg-[linear-gradient(to_right,#3b4d6e_1px,transparent_1px),linear-gradient(to_bottom,#3b4d6e_1px,transparent_1px)] bg-[size:20px_20px] opacity-45 pointer-events-none" 
             />
 
-            {/* Renderizado de todos los elementos con Estilo Arquitectónico y Volumétrico Real */}
+            {/* Renderizado de todos los elementos con Estilo Arquitectónico Real */}
             {elements.map((el) => {
               const isSelected = selectedId === el.id;
 
-              // 1. Plazas de Estacionamiento de Alta Definición
+              // 1. Plazas de Estacionamiento Especializadas (Auto, Camioneta, Moto Taxi, Moto)
               if (el.type === 'slot') {
                 const isFree = el.status === 'free';
-                const isMoto = el.slotType === 'moto';
+                const slotType = el.slotType || 'auto';
+                const isMoto = slotType === 'moto';
+                const isCamioneta = slotType === 'camioneta';
+                const isMototaxi = slotType === 'mototaxi';
                 const isShaded = !!el.shaded;
 
                 return (
@@ -1511,6 +1704,10 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     } ${
                       isShaded
                         ? 'border-amber-400/90 bg-gradient-to-b from-amber-950/70 via-slate-900/95 to-amber-950/80 text-amber-100 hover:border-amber-300'
+                        : isCamioneta
+                        ? 'border-cyan-400/90 bg-gradient-to-b from-cyan-950/80 via-slate-900/95 to-cyan-950/90 text-cyan-200 hover:border-cyan-300'
+                        : isMototaxi
+                        ? 'border-yellow-400/90 bg-gradient-to-b from-yellow-950/80 via-slate-900/95 to-yellow-950/90 text-yellow-200 hover:border-yellow-300'
                         : isMoto
                         ? 'border-orange-500/90 bg-gradient-to-b from-orange-950/80 via-slate-900/95 to-orange-950/90 text-orange-200 hover:border-orange-400'
                         : isFree
@@ -1518,7 +1715,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                         : 'border-rose-500/90 bg-gradient-to-b from-rose-950/80 via-slate-900/95 to-rose-950/90 text-rose-200'
                     }`}
                   >
-                    {/* Cubierta Tensada 3D para Plazas Techadas */}
+                    {/* Cubierta Tensada para Plazas Techadas */}
                     {isShaded && (
                       <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(245,158,11,0.22),rgba(245,158,11,0.22)_8px,transparent_8px,transparent_16px)] pointer-events-none rounded-xl">
                         <div className="absolute inset-0 bg-gradient-to-b from-amber-500/15 to-transparent pointer-events-none" />
@@ -1529,45 +1726,96 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     <div className="absolute top-1 right-1 flex items-center gap-1.5 z-20 pointer-events-none">
                       <div className={`w-2.5 h-2.5 rounded-full shadow-sm ${
                         isFree 
-                          ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.95)] animate-pulse' 
+                          ? isCamioneta 
+                            ? 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.95)] animate-pulse'
+                            : isMototaxi 
+                            ? 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.95)] animate-pulse'
+                            : isMoto 
+                            ? 'bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.95)] animate-pulse'
+                            : 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.95)] animate-pulse'
                           : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.95)]'
                       }`} />
                     </div>
 
-                    {/* Encabezado: Código de Plaza */}
+                    {/* Encabezado: Código de Plaza y Badge de Tipo */}
                     <div className="flex items-center justify-between text-[10px] font-mono font-black z-10 leading-none pr-3">
                       <span className="text-white drop-shadow-sm tracking-tight">{el.code}</span>
-                      {isShaded && <span className="text-[7px] text-amber-300 font-bold bg-amber-950/80 px-1 rounded">TECHADO</span>}
+                      {isShaded ? (
+                        <span className="text-[6px] text-amber-300 font-bold bg-amber-950/80 px-1 rounded">TECHADO</span>
+                      ) : isCamioneta ? (
+                        <span className="text-[6px] text-cyan-300 font-bold bg-cyan-950/80 px-1 rounded">4x4</span>
+                      ) : isMototaxi ? (
+                        <span className="text-[6px] text-yellow-300 font-bold bg-yellow-950/80 px-1 rounded">TORITO</span>
+                      ) : isMoto ? (
+                        <span className="text-[6px] text-orange-300 font-bold bg-orange-950/80 px-1 rounded">MOTO</span>
+                      ) : null}
                     </div>
 
-                    {/* Contenido Central: Vehículo 3D Volumétrico u Ocupación */}
+                    {/* Contenido Central: Vehículo Realista 2D u Stencil de Cajón Libre */}
                     <div className="flex flex-col items-center justify-center my-auto py-0.5 z-10 w-full h-full pointer-events-none">
                       {isFree ? (
-                        isMoto ? (
-                          <Bike className="w-4 h-4 shrink-0 text-orange-400/50" />
+                        isCamioneta ? (
+                          <div className="w-9 h-14 rounded-xl border-2 border-dashed border-cyan-400/40 flex flex-col items-center justify-between p-1 bg-cyan-950/20">
+                            <div className="w-6 h-1 bg-cyan-400/30 rounded-xs" />
+                            <div className="flex flex-col items-center">
+                              <Truck className="w-5 h-5 shrink-0 text-cyan-300/70" />
+                              <span className="text-[7px] font-mono font-black text-cyan-300">4x4 • SUV</span>
+                            </div>
+                            <div className="w-6 h-1 bg-cyan-400/30 rounded-xs" />
+                          </div>
+                        ) : isMototaxi ? (
+                          <div className="w-8 h-11 rounded-lg border-2 border-dashed border-yellow-400/40 flex flex-col items-center justify-between p-1 bg-yellow-950/20">
+                            <div className="w-2.5 h-1.5 bg-yellow-400/40 rounded-full" />
+                            <div className="flex flex-col items-center">
+                              <Navigation className="w-4 h-4 shrink-0 text-yellow-400/80 rotate-45" />
+                              <span className="text-[6px] font-mono font-black text-yellow-300">★ TORITO ★</span>
+                            </div>
+                            <div className="w-7 h-1 bg-yellow-400/30 rounded-xs" />
+                          </div>
+                        ) : isMoto ? (
+                          <div className="w-5 h-8 rounded border border-dashed border-orange-400/40 flex flex-col items-center justify-around py-0.5">
+                            <div className="w-3 h-0.5 bg-orange-400/30 rounded-xs" />
+                            <Bike className="w-3.5 h-3.5 shrink-0 text-orange-400/60" />
+                            <span className="text-[5px] font-mono font-bold text-orange-300/80">MOTO</span>
+                          </div>
                         ) : (
                           <div className="w-7 h-10 rounded-lg border border-dashed border-emerald-400/40 flex flex-col items-center justify-around py-1">
                             <div className="w-4 h-1 bg-emerald-400/30 rounded-xs" />
                             <Car className="w-4 h-4 shrink-0 text-emerald-400/50" />
-                            <div className="w-4 h-1 bg-emerald-400/30 rounded-xs" />
+                            <span className="text-[6px] font-mono font-bold text-emerald-300/80">AUTO</span>
                           </div>
                         )
                       ) : (
-                        /* Auto / Moto 3D Volumétrico Real */
-                        <VolumetricCar3D 
+                        /* Vehículo Realista 2D según Tipo */
+                        <RealisticVehicle2D 
+                          slotType={slotType}
                           plate={el.plate} 
-                          color={el.color || (isMoto ? '#ea580c' : '#2563eb')} 
-                          isMoto={isMoto} 
+                          color={el.color || (isCamioneta ? '#0284c7' : isMototaxi ? '#ca8a04' : isMoto ? '#ea580c' : '#2563eb')} 
                         />
                       )}
                     </div>
 
-                    {/* Tope de Llanta con Franjas de Seguridad */}
-                    <div className="w-full h-2 rounded bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border border-amber-300/60 shadow-sm flex items-center justify-around px-0.5 z-10 my-0.5 overflow-hidden">
-                      <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
-                      <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
-                      <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
-                    </div>
+                    {/* Tope de Llanta Especializado */}
+                    {isMoto ? (
+                      <div className="w-4 h-1.5 mx-auto rounded bg-gradient-to-b from-orange-400 via-orange-500 to-amber-600 border border-orange-300/60 shadow-sm z-10 my-0.5" />
+                    ) : isCamioneta ? (
+                      <div className="w-full h-2.5 rounded bg-gradient-to-b from-cyan-400 via-cyan-600 to-slate-800 border border-cyan-300/60 shadow-sm flex items-center justify-around px-0.5 z-10 my-0.5 overflow-hidden">
+                        <div className="w-2 h-full bg-slate-950 transform -skew-x-12" />
+                        <div className="w-2 h-full bg-slate-950 transform -skew-x-12" />
+                        <div className="w-2 h-full bg-slate-950 transform -skew-x-12" />
+                      </div>
+                    ) : isMototaxi ? (
+                      <div className="w-full h-2 rounded bg-gradient-to-b from-yellow-400 via-yellow-500 to-amber-600 border border-yellow-300/60 shadow-sm flex items-center justify-around px-0.5 z-10 my-0.5 overflow-hidden">
+                        <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
+                        <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
+                      </div>
+                    ) : (
+                      <div className="w-full h-2 rounded bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border border-amber-300/60 shadow-sm flex items-center justify-around px-0.5 z-10 my-0.5 overflow-hidden">
+                        <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
+                        <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
+                        <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
+                      </div>
+                    )}
 
                     {/* Estado Inferior */}
                     <div className="text-center text-[8px] font-mono font-bold leading-none z-10">
@@ -1973,7 +2221,13 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
                         <span className="text-slate-500 font-medium">Tipo:</span>
                         <span className="font-bold text-slate-800 capitalize">
-                          {selectedElement.slotType === 'moto' ? 'Motocicleta' : 'Automóvil'}
+                          {selectedElement.slotType === 'camioneta' 
+                            ? 'Camioneta / SUV 4x4' 
+                            : selectedElement.slotType === 'mototaxi' 
+                            ? 'Moto Taxi (Torito)' 
+                            : selectedElement.slotType === 'moto' 
+                            ? 'Motocicleta' 
+                            : 'Automóvil Sedán'}
                         </span>
                       </div>
 
@@ -2020,21 +2274,29 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 <div className="space-y-2">
                   <span className="text-[11px] font-bold uppercase text-slate-400 font-tech block">Métricas de la Sede</span>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-2xl">
                       <span className="text-[10px] text-slate-400 font-bold block uppercase">Total Plazas</span>
                       <span className="text-xl font-bold font-mono text-slate-900">{totalSlots}</span>
                     </div>
-                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl">
                       <span className="text-[10px] text-emerald-700 font-bold block uppercase">Libres</span>
                       <span className="text-xl font-bold font-mono text-emerald-800">{freeSlots}</span>
                     </div>
-                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-2xl">
-                      <span className="text-[10px] text-orange-700 font-bold block uppercase">Motos</span>
-                      <span className="text-xl font-bold font-mono text-orange-800">{motoSlots}</span>
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase">Autos</span>
+                      <span className="text-lg font-bold font-mono text-slate-800">{autoSlots}</span>
                     </div>
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl">
-                      <span className="text-[10px] text-amber-700 font-bold block uppercase">Techadas</span>
-                      <span className="text-xl font-bold font-mono text-amber-800">{shadedSlots}</span>
+                    <div className="p-2 bg-cyan-50 border border-cyan-200 rounded-xl">
+                      <span className="text-[10px] text-cyan-700 font-bold block uppercase">Camionetas</span>
+                      <span className="text-lg font-bold font-mono text-cyan-800">{camionetaSlots}</span>
+                    </div>
+                    <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-xl">
+                      <span className="text-[10px] text-yellow-700 font-bold block uppercase">Moto Taxis</span>
+                      <span className="text-lg font-bold font-mono text-yellow-800">{mototaxiSlots}</span>
+                    </div>
+                    <div className="p-2 bg-orange-50 border border-orange-200 rounded-xl">
+                      <span className="text-[10px] text-orange-700 font-bold block uppercase">Motos</span>
+                      <span className="text-lg font-bold font-mono text-orange-800">{motoSlots}</span>
                     </div>
                   </div>
                 </div>
@@ -2124,7 +2386,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                   </Button>
                 </div>
 
-                {/* Presets Rápidos de Dimensiones Compactas */}
+                {/* Presets Rápidos de Dimensiones Especializadas */}
                 <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px] font-mono font-bold">
                   <button
                     onClick={() => handleSetExactSize(56, 96)}
@@ -2134,9 +2396,23 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     56×96 (Auto)
                   </button>
                   <button
+                    onClick={() => handleSetExactSize(68, 112)}
+                    className="py-1.5 px-1 rounded-lg bg-white border border-cyan-200 hover:bg-cyan-50 text-cyan-800 text-center shadow-xs"
+                    title="Plaza camioneta / SUV 4x4 (68x112)"
+                  >
+                    68×112 (Camioneta)
+                  </button>
+                  <button
+                    onClick={() => handleSetExactSize(48, 80)}
+                    className="py-1.5 px-1 rounded-lg bg-white border border-yellow-200 hover:bg-yellow-50 text-yellow-800 text-center shadow-xs"
+                    title="Plaza Moto Taxi Torito (48x80)"
+                  >
+                    48×80 (Torito)
+                  </button>
+                  <button
                     onClick={() => handleSetExactSize(38, 65)}
-                    className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs"
-                    title="Plaza moto (38x65)"
+                    className="py-1.5 px-1 rounded-lg bg-white border border-orange-200 hover:bg-orange-50 text-orange-800 text-center shadow-xs"
+                    title="Plaza moto lineal (38x65)"
                   >
                     38×65 (Moto)
                   </button>
@@ -2146,11 +2422,13 @@ export const InteractiveFloorPlanDrawingStudio = ({
               {/* Selector de Tipo de Plaza con 1 Clic */}
               {selectedElement.type === 'slot' && (
                 <div className="space-y-2">
-                  <label className="text-[11px] font-bold uppercase text-slate-400 font-tech">Tipo de Plaza</label>
+                  <label className="text-[11px] font-bold uppercase text-slate-400 font-tech">Tipo de Plaza y Vehículo</label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {[
-                      { id: 'auto', label: 'Auto', icon: Car },
-                      { id: 'moto', label: 'Moto', icon: Bike }
+                      { id: 'auto', label: 'Auto', icon: Car, defaultW: 56, defaultH: 96 },
+                      { id: 'camioneta', label: 'Camioneta 4x4', icon: Truck, defaultW: 68, defaultH: 112 },
+                      { id: 'mototaxi', label: 'Moto Taxi', icon: Navigation, defaultW: 48, defaultH: 80 },
+                      { id: 'moto', label: 'Moto', icon: Bike, defaultW: 38, defaultH: 65 }
                     ].map(t => {
                       const Icon = t.icon;
                       const isCurrent = (selectedElement.slotType || 'auto') === t.id;
@@ -2158,17 +2436,22 @@ export const InteractiveFloorPlanDrawingStudio = ({
                         <button
                           key={t.id}
                           onClick={() => {
-                            setElements(prev => prev.map(el => el.id === selectedId ? { ...el, slotType: t.id } : el));
+                            setElements(prev => prev.map(el => el.id === selectedId ? { 
+                              ...el, 
+                              slotType: t.id,
+                              w: el.w === 56 || el.w === 38 || el.w === 68 || el.w === 48 ? t.defaultW : el.w,
+                              h: el.h === 96 || el.h === 65 || el.h === 112 || el.h === 80 ? t.defaultH : el.h
+                            } : el));
                             setHasUnsavedChanges(true);
                           }}
-                          className={`flex flex-col items-center justify-center p-2.5 rounded-xl text-xs font-bold border transition ${
+                          className={`flex flex-col items-center justify-center p-2 rounded-xl text-xs font-bold border transition ${
                             isCurrent
                               ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-emerald-400'
                               : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
                           <Icon className={`w-4 h-4 shrink-0 mb-1 ${isCurrent ? 'text-emerald-400' : 'text-slate-500'}`} />
-                          <span>{t.label}</span>
+                          <span className="text-[11px]">{t.label}</span>
                         </button>
                       );
                     })}
@@ -2393,21 +2676,29 @@ export const InteractiveFloorPlanDrawingStudio = ({
               <div className="space-y-2">
                 <span className="text-[11px] font-bold uppercase text-slate-400 font-tech block">Métricas del Plano</span>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-2xl">
                     <span className="text-[10px] text-slate-400 font-bold block uppercase">Total Plazas</span>
                     <span className="text-xl font-bold font-mono text-slate-900">{totalSlots}</span>
                   </div>
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                  <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl">
                     <span className="text-[10px] text-emerald-700 font-bold block uppercase">Libres</span>
                     <span className="text-xl font-bold font-mono text-emerald-800">{freeSlots}</span>
                   </div>
-                  <div className="p-3 bg-orange-50 border border-orange-200 rounded-2xl">
-                    <span className="text-[10px] text-orange-700 font-bold block uppercase">Motos</span>
-                    <span className="text-xl font-bold font-mono text-orange-800">{motoSlots}</span>
+                  <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                    <span className="text-[10px] text-slate-500 font-bold block uppercase">Autos</span>
+                    <span className="text-lg font-bold font-mono text-slate-800">{autoSlots}</span>
                   </div>
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl">
-                    <span className="text-[10px] text-amber-700 font-bold block uppercase">Techadas</span>
-                    <span className="text-xl font-bold font-mono text-amber-800">{shadedSlots}</span>
+                  <div className="p-2 bg-cyan-50 border border-cyan-200 rounded-xl">
+                    <span className="text-[10px] text-cyan-700 font-bold block uppercase">Camionetas</span>
+                    <span className="text-lg font-bold font-mono text-cyan-800">{camionetaSlots}</span>
+                  </div>
+                  <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-xl">
+                    <span className="text-[10px] text-yellow-700 font-bold block uppercase">Moto Taxis</span>
+                    <span className="text-lg font-bold font-mono text-yellow-800">{mototaxiSlots}</span>
+                  </div>
+                  <div className="p-2 bg-orange-50 border border-orange-200 rounded-xl">
+                    <span className="text-[10px] text-orange-700 font-bold block uppercase">Motos</span>
+                    <span className="text-lg font-bold font-mono text-orange-800">{motoSlots}</span>
                   </div>
                 </div>
               </div>

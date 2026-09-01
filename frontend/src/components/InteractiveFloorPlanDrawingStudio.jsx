@@ -233,16 +233,33 @@ export const InteractiveFloorPlanDrawingStudio = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
-  // Sincronizar cuando cambia initialElements desde afuera
+  const elementsRef = useRef(elements);
+  elementsRef.current = elements;
+  const historyRef = useRef(history);
+  historyRef.current = history;
+  const historyIndexRef = useRef(historyIndex);
+  historyIndexRef.current = historyIndex;
+
+  // Sincronizar SOLO en la carga inicial o si cambia la sede
+  const hasInitializedRef = useRef(false);
+  const lastParkingNameRef = useRef(parkingName);
+
   useEffect(() => {
     if (initialElements && Array.isArray(initialElements)) {
-      setElements(initialElements);
-      setHistory([initialElements]);
-      setHistoryIndex(0);
-      setSelectedId(null);
-      setHasUnsavedChanges(false);
+      if (!hasInitializedRef.current || lastParkingNameRef.current !== parkingName) {
+        hasInitializedRef.current = true;
+        lastParkingNameRef.current = parkingName;
+        setElements(initialElements);
+        elementsRef.current = initialElements;
+        setHistory([initialElements]);
+        historyRef.current = [initialElements];
+        setHistoryIndex(0);
+        historyIndexRef.current = 0;
+        setSelectedId(null);
+        setHasUnsavedChanges(false);
+      }
     }
-  }, [initialElements]);
+  }, [initialElements, parkingName]);
 
   // Estados de dibujo y manipulación
   const [isDrawing, setIsDrawing] = useState(false);
@@ -263,9 +280,13 @@ export const InteractiveFloorPlanDrawingStudio = ({
   const motoSlots = elements.filter(e => e.type === 'slot' && e.slotType === 'moto').length;
 
   const pushHistory = (newElements) => {
-    const nextHistory = history.slice(0, historyIndex + 1);
-    setHistory([...nextHistory, newElements]);
+    elementsRef.current = newElements;
+    const nextHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
+    const updatedHistory = [...nextHistory, newElements];
+    setHistory(updatedHistory);
+    historyRef.current = updatedHistory;
     setHistoryIndex(nextHistory.length);
+    historyIndexRef.current = nextHistory.length;
     setHasUnsavedChanges(true);
   };
 
@@ -273,7 +294,9 @@ export const InteractiveFloorPlanDrawingStudio = ({
     if (historyIndex > 0) {
       const prev = history[historyIndex - 1];
       setHistoryIndex(historyIndex - 1);
+      historyIndexRef.current = historyIndex - 1;
       setElements(prev);
+      elementsRef.current = prev;
       setSelectedId(null);
       setHasUnsavedChanges(true);
     }
@@ -283,7 +306,9 @@ export const InteractiveFloorPlanDrawingStudio = ({
     if (historyIndex < history.length - 1) {
       const next = history[historyIndex + 1];
       setHistoryIndex(historyIndex + 1);
+      historyIndexRef.current = historyIndex + 1;
       setElements(next);
+      elementsRef.current = next;
       setSelectedId(null);
       setHasUnsavedChanges(true);
     }
@@ -603,6 +628,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
       const coords = getCanvasCoords(e);
       setDragState({
         mode: 'move',
+        id: element.id,
         startX: coords.x,
         startY: coords.y,
         origX: element.x,
@@ -621,6 +647,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
     const coords = getCanvasCoords(e);
     setDragState({
       mode: 'resize',
+      id: selectedElement.id,
       handle, // 'br', 'bl', 'tr', 'tl', 'r', 'b', 't', 'l'
       startX: coords.x,
       startY: coords.y,
@@ -640,6 +667,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
     const centerY = selectedElement.y + selectedElement.h / 2;
     setDragState({
       mode: 'rotate',
+      id: selectedElement.id,
       centerX,
       centerY,
       origRot: selectedElement.rot || 0,
@@ -652,7 +680,11 @@ export const InteractiveFloorPlanDrawingStudio = ({
     const coords = getCanvasCoords(e);
 
     // 1. Mover elemento
-    if (dragState && dragState.mode === 'move' && selectedElement) {
+    if (dragState && dragState.mode === 'move') {
+      const targetId = dragState.id || selectedId;
+      const targetElement = elementsRef.current.find(el => el.id === targetId);
+      if (!targetElement) return;
+
       const dx = coords.x - dragState.startX;
       const dy = coords.y - dragState.startY;
       let newX = dragState.origX + dx;
@@ -663,15 +695,21 @@ export const InteractiveFloorPlanDrawingStudio = ({
         newY = Math.round(newY / gridSize) * gridSize;
       }
 
-      newX = Math.max(0, Math.min(canvasWidth - selectedElement.w, newX));
-      newY = Math.max(0, Math.min(canvasHeight - selectedElement.h, newY));
+      newX = Math.max(0, Math.min(canvasWidth - (targetElement.w || 50), newX));
+      newY = Math.max(0, Math.min(canvasHeight - (targetElement.h || 80), newY));
 
-      setElements(prev => prev.map(el => el.id === selectedId ? { ...el, x: newX, y: newY } : el));
+      const updated = elementsRef.current.map(el => el.id === targetId ? { ...el, x: newX, y: newY } : el);
+      elementsRef.current = updated;
+      setElements(updated);
       return;
     }
 
     // 2. Redimensionar / Agrandar elemento por agarres
-    if (dragState && dragState.mode === 'resize' && selectedElement) {
+    if (dragState && dragState.mode === 'resize') {
+      const targetId = dragState.id || selectedId;
+      const targetElement = elementsRef.current.find(el => el.id === targetId);
+      if (!targetElement) return;
+
       const dx = coords.x - dragState.startX;
       const dy = coords.y - dragState.startY;
       const { origX, origY, origW, origH, handle } = dragState;
@@ -701,18 +739,21 @@ export const InteractiveFloorPlanDrawingStudio = ({
         newY = Math.round(newY / gridSize) * gridSize;
       }
 
-      setElements(prev => prev.map(el => el.id === selectedId ? { 
+      const updated = elementsRef.current.map(el => el.id === targetId ? { 
         ...el, 
         x: newX, 
         y: newY, 
         w: Math.max(15, newW), 
         h: Math.max(15, newH) 
-      } : el));
+      } : el);
+      elementsRef.current = updated;
+      setElements(updated);
       return;
     }
 
     // 3. Rotar elemento por agarre
-    if (dragState && dragState.mode === 'rotate' && selectedElement) {
+    if (dragState && dragState.mode === 'rotate') {
+      const targetId = dragState.id || selectedId;
       const currentAngle = Math.atan2(coords.y - dragState.centerY, coords.x - dragState.centerX) * (180 / Math.PI);
       const delta = currentAngle - dragState.startAngle;
       let newRot = Math.round((dragState.origRot + delta) % 360);
@@ -720,7 +761,9 @@ export const InteractiveFloorPlanDrawingStudio = ({
       if (snapToGrid) {
         newRot = Math.round(newRot / 15) * 15;
       }
-      setElements(prev => prev.map(el => el.id === selectedId ? { ...el, rot: newRot } : el));
+      const updated = elementsRef.current.map(el => el.id === targetId ? { ...el, rot: newRot } : el);
+      elementsRef.current = updated;
+      setElements(updated);
       return;
     }
 
@@ -739,13 +782,13 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
     if (dragState) {
       setDragState(null);
-      pushHistory(elements);
+      pushHistory(elementsRef.current);
     }
 
     if (isDrawing && currentDraw) {
       setIsDrawing(false);
       const newId = Date.now();
-      const newElements = [...elements];
+      const newElements = [...elementsRef.current];
       let newlyCreatedId = newId;
 
       // 1. Trazar fila múltiple (Compacta)
@@ -754,7 +797,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
         const slotWidth = 56;
         const slotHeight = 96;
         const prefix = currentDraw.y < 300 ? 'N' : 'S';
-        const existingCount = elements.filter(e => e.type === 'slot').length;
+        const existingCount = newElements.filter(e => e.type === 'slot').length;
 
         for (let i = 0; i < rowCount; i++) {
           newElements.push({
@@ -777,11 +820,10 @@ export const InteractiveFloorPlanDrawingStudio = ({
       else if (activeTool.startsWith('slot_')) {
         const rawType = activeTool.replace('slot_', '');
         const isShaded = rawType === 'shaded';
-        const isPMR = false;
         const isMoto = rawType === 'moto';
         const slotType = isShaded ? 'auto' : rawType;
         
-        const count = elements.filter(e => e.type === 'slot').length + 1;
+        const count = newElements.filter(e => e.type === 'slot').length + 1;
         const code = isShaded ? `S-0${count}` : isMoto ? `M-0${count}` : `A-0${count}`;
         const defaultW = isMoto ? 38 : 56;
         const defaultH = isMoto ? 65 : 96;
@@ -804,20 +846,18 @@ export const InteractiveFloorPlanDrawingStudio = ({
         });
         setMessage(`Plaza ${code} colocada.`);
       }
-      // 3. Muro Estructural
       else if (activeTool === 'add_wall') {
         newElements.push({
           id: newId,
           type: 'wall',
           x: currentDraw.x,
           y: currentDraw.y,
-          w: currentDraw.w > 20 ? currentDraw.w : 200,
-          h: currentDraw.h > 20 ? currentDraw.h : 12,
+          w: Math.max(12, currentDraw.w),
+          h: Math.max(12, currentDraw.h),
           rot: 0
         });
-        setMessage(`Muro estructural colocado.`);
+        setMessage(`Muro perimétrico añadido.`);
       }
-      // 4. Carril Vial
       else if (activeTool === 'add_road') {
         newElements.push({
           id: newId,
@@ -827,11 +867,10 @@ export const InteractiveFloorPlanDrawingStudio = ({
           w: currentDraw.w > 40 ? currentDraw.w : 400,
           h: currentDraw.h > 40 ? currentDraw.h : 120,
           rot: 0,
-          label: 'CARRIL DE CIRCULACIÓN'
+          label: 'CARRIL VIAL'
         });
-        setMessage(`Vía de circulación colocada.`);
+        setMessage(`Carril vial trazado.`);
       }
-      // 5. Cruce Peatonal
       else if (activeTool === 'add_crosswalk') {
         newElements.push({
           id: newId,
@@ -844,7 +883,6 @@ export const InteractiveFloorPlanDrawingStudio = ({
         });
         setMessage(`Paso peatonal añadido.`);
       }
-      // 6. Garita de Entrada
       else if (activeTool === 'add_entry') {
         newElements.push({
           id: newId,
@@ -859,7 +897,6 @@ export const InteractiveFloorPlanDrawingStudio = ({
         });
         setMessage(`Punto de ENTRADA vehicular colocado.`);
       }
-      // 7. Garita de Salida
       else if (activeTool === 'add_exit') {
         newElements.push({
           id: newId,
@@ -874,7 +911,6 @@ export const InteractiveFloorPlanDrawingStudio = ({
         });
         setMessage(`Punto de SALIDA vehicular colocado.`);
       }
-      // 8. Garita estándar
       else if (activeTool === 'add_gate') {
         newElements.push({
           id: newId,
@@ -889,7 +925,6 @@ export const InteractiveFloorPlanDrawingStudio = ({
         });
         setMessage(`Garita ANPR colocada.`);
       }
-      // 9. Jardín / Área verde
       else if (activeTool === 'add_garden') {
         newElements.push({
           id: newId,
@@ -904,6 +939,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
         setMessage(`Área verde añadida.`);
       }
 
+      elementsRef.current = newElements;
       setElements(newElements);
       pushHistory(newElements);
       setSelectedId(newlyCreatedId);

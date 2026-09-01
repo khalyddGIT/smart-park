@@ -605,9 +605,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     showToast(`Sede "${name}" eliminada.`);
   };
 
-  // Cuando el plano hidrata desde el servidor (elements pasa de null a array), reflejarlo en la vista abierta
+  // Cuando el plano hidrata desde el servidor (elements pasa de null a array), reflejarlo solo en modo visualización
   useEffect(() => {
-    if (!selectedEstablishment || activeViewMode === 'list') return;
+    if (!selectedEstablishment || activeViewMode !== 'view_plan') return;
     const fresh = establishments.find(e => String(e.id) === String(selectedEstablishment.id));
     if (fresh && Array.isArray(fresh.elements)) {
       setCurrentPlanElements(fresh.elements);

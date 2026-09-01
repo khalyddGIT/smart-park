@@ -844,41 +844,83 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Actualizar plano topográfico - persistente via sync
   const updateEstablishmentPlan = async (id, elements) => {
-    setEstablishments(prev => {
-      const next = prev.map(est => String(est.id) === String(id) ? { ...est, elements } : est);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
-      return next;
-    });
     let numId = Number(id);
     if (isNaN(numId)) {
       const match = String(id).match(/\d+/);
       if (match) numId = Number(match[0]);
     }
-    if (!isNaN(numId) && Array.isArray(elements)) {
+
+    const seenCodes = new Set();
+    const cleanElements = Array.isArray(elements) ? elements.map((el, idx) => {
+      const cleanX = Math.max(0, Math.round(Number(el.x !== undefined ? el.x : (el.pos_x || 0))));
+      const cleanY = Math.max(0, Math.round(Number(el.y !== undefined ? el.y : (el.pos_y || 0))));
+      const cleanW = Math.max(15, Math.round(Number(el.w !== undefined ? el.w : (el.width || 60))));
+      const cleanH = Math.max(15, Math.round(Number(el.h !== undefined ? el.h : (el.height || 100))));
+      const cleanRot = Math.round(Number(el.rot !== undefined ? el.rot : (el.rotation || 0))) % 360;
+
+      if (el.type === 'slot') {
+        let code = (el.code || '').trim() || `A-${String(idx + 1).padStart(2, '0')}`;
+        let uniqueCode = code;
+        let counter = 1;
+        while (seenCodes.has(uniqueCode.toUpperCase())) {
+          uniqueCode = `${code}-${counter++}`;
+        }
+        seenCodes.add(uniqueCode.toUpperCase());
+        return {
+          ...el,
+          code: uniqueCode,
+          x: cleanX,
+          y: cleanY,
+          w: cleanW,
+          h: cleanH,
+          rot: cleanRot,
+          slotType: el.slotType || el.slot_type || 'auto',
+          status: el.status || 'free'
+        };
+      }
+      return {
+        ...el,
+        x: cleanX,
+        y: cleanY,
+        w: cleanW,
+        h: cleanH,
+        rot: cleanRot
+      };
+    }) : [];
+
+    setEstablishments(prev => {
+      const next = prev.map(est => String(est.id) === String(id) ? { ...est, elements: cleanElements } : est);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+
+    if (!isNaN(numId) && cleanElements.length > 0) {
       try {
-        const slots = elements.filter(e=>e && e.type==='slot').map(s=>({ 
-          code: s.code, 
-          floor_level: s.level || s.floor_level || 'Piso 1', 
-          slot_type: s.slotType || s.slot_type || 'auto', 
-          status: s.status || 'free', 
-          pos_x: s.x !== undefined ? s.x : (s.pos_x || 0), 
-          pos_y: s.y !== undefined ? s.y : (s.pos_y || 0), 
-          width: s.w !== undefined ? s.w : (s.width || 60), 
-          height: s.h !== undefined ? s.h : (s.height || 100), 
-          rotation: s.rot !== undefined ? s.rot : (s.rotation || 0) 
+        const slots = cleanElements.filter(e => e && e.type === 'slot').map(s => ({
+          code: s.code,
+          floor_level: s.level || s.floor_level || 'Piso 1',
+          slot_type: s.slotType || s.slot_type || 'auto',
+          status: s.status || 'free',
+          pos_x: s.x,
+          pos_y: s.y,
+          width: s.w,
+          height: s.h,
+          rotation: s.rot
         }));
-        const elems = elements.filter(e=>e && e.type!=='slot').map(e=>({ 
-          element_type: e.type || e.element_type || 'wall', 
-          pos_x: e.x !== undefined ? e.x : (e.pos_x || 0), 
-          pos_y: e.y !== undefined ? e.y : (e.pos_y || 0), 
-          width: e.w !== undefined ? e.w : (e.width || 100), 
-          height: e.h !== undefined ? e.h : (e.height || 20), 
-          rotation: e.rot !== undefined ? e.rot : (e.rotation || 0), 
-          z_index: e.z_index || 1, 
-          properties_json: null 
+        const elems = cleanElements.filter(e => e && e.type !== 'slot').map(e => ({
+          element_type: e.type || e.element_type || 'wall',
+          pos_x: e.x,
+          pos_y: e.y,
+          width: e.w,
+          height: e.h,
+          rotation: e.rot,
+          z_index: e.z_index || 1,
+          properties_json: e.label ? JSON.stringify({ label: e.label, gateType: e.gateType }) : null
         }));
         await api.post(`/parkings/${numId}/floor-plan/sync`, { parking_id: numId, slots, elements: elems });
-      } catch (e) { console.warn('sync floor-plan fail', e.response?.data); }
+      } catch (e) {
+        console.warn('sync floor-plan fail', e.response?.data);
+      }
     }
   };
 

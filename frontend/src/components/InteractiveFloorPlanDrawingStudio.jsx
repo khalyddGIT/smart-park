@@ -289,10 +289,51 @@ export const InteractiveFloorPlanDrawingStudio = ({
     }
   };
 
-  // Guardar plano
+  // Guardar plano con auto-saneamiento y deduplicación de códigos
   const handleSave = () => {
     if (onSavePlan) {
-      onSavePlan(elements);
+      const seenCodes = new Set();
+      const sanitized = elements.map((el, idx) => {
+        const cleanX = Math.max(0, Math.round(Number(el.x) || 0));
+        const cleanY = Math.max(0, Math.round(Number(el.y) || 0));
+        const cleanW = Math.max(15, Math.round(Number(el.w) || 60));
+        const cleanH = Math.max(15, Math.round(Number(el.h) || 100));
+        const cleanRot = Math.round(Number(el.rot) || 0) % 360;
+
+        if (el.type === 'slot') {
+          let code = (el.code || '').trim() || `A-${String(idx + 1).padStart(2, '0')}`;
+          let uniqueCode = code;
+          let counter = 1;
+          while (seenCodes.has(uniqueCode.toUpperCase())) {
+            uniqueCode = `${code}-${counter++}`;
+          }
+          seenCodes.add(uniqueCode.toUpperCase());
+
+          return {
+            ...el,
+            code: uniqueCode,
+            x: cleanX,
+            y: cleanY,
+            w: cleanW,
+            h: cleanH,
+            rot: cleanRot,
+            slotType: el.slotType || 'auto',
+            status: el.status || 'free'
+          };
+        }
+
+        return {
+          ...el,
+          x: cleanX,
+          y: cleanY,
+          w: cleanW,
+          h: cleanH,
+          rot: cleanRot
+        };
+      });
+
+      setElements(sanitized);
+      onSavePlan(sanitized);
       setHasUnsavedChanges(false);
       setMessage('¡Plano y distribución guardados con éxito!');
       setTimeout(() => setMessage(''), 3000);
@@ -870,6 +911,28 @@ export const InteractiveFloorPlanDrawingStudio = ({
       setTimeout(() => setMessage(''), 2500);
     }
   };
+
+  // Asegurar que el arrastre o redimensionado no se trabe si el cursor sale del lienzo
+  useEffect(() => {
+    if (readOnly) return;
+    if (!dragState && !isDrawing) return;
+
+    const handleWindowMouseMove = (e) => {
+      handleMouseMove(e);
+    };
+
+    const handleWindowMouseUp = (e) => {
+      handleMouseUp(e);
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+  }, [dragState, isDrawing, readOnly]);
 
   return (
     <div className="space-y-4">

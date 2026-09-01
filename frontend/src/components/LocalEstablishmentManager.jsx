@@ -675,18 +675,22 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
   };
 
   // Guardar plano CAD
-  const handleSaveCADPlan = (updatedElements) => {
+  const handleSaveCADPlan = async (updatedElements) => {
     if (!selectedEstablishment) return;
 
-    updateEstablishmentPlan(selectedEstablishment.id, updatedElements);
+    try {
+      await updateEstablishmentPlan(selectedEstablishment.id, updatedElements);
 
-    if (onMasterSavePlan && selectedEstablishment.id === 'EST-01') {
-      onMasterSavePlan(updatedElements);
+      if (onMasterSavePlan && selectedEstablishment.id === 'EST-01') {
+        onMasterSavePlan(updatedElements);
+      }
+
+      setCurrentPlanElements(updatedElements);
+      showToast(`✓ Plano de "${selectedEstablishment.name}" guardado exitosamente.`);
+      setActiveViewMode('list');
+    } catch (err) {
+      showToast(`✕ Error al guardar el plano: ${err?.message || 'Reintente'}`);
     }
-
-    setCurrentPlanElements(updatedElements);
-    showToast(`Plano de "${selectedEstablishment.name}" guardado exitosamente.`);
-    setActiveViewMode('list');
   };
 
   const filteredEstablishments = establishments.filter(est => 

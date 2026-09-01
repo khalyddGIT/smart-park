@@ -42,25 +42,25 @@ export const MapControlPanel = ({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+          className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
             isOpen ? 'bg-emerald-600 text-white shadow-md' : 'hover:bg-slate-800 text-slate-200'
           }`}
         >
           <Sliders className="w-4 h-4 text-emerald-400" />
-          <span>PANEL MAPBOX 3D</span>
+          <span>Capas & Ajustes</span>
         </button>
 
         <button
           type="button"
           onClick={onToggle3D}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
             is3D 
-              ? 'bg-emerald-500 text-white shadow-md ring-2 ring-emerald-400/50 scale-105' 
+              ? 'bg-emerald-500 text-white shadow-md ring-2 ring-emerald-400/50' 
               : 'bg-slate-800 text-slate-400 hover:text-white'
           }`}
         >
           {is3D ? <Mountain className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />}
-          <span>{is3D ? 'VISTA 3D' : 'VISTA 2D'}</span>
+          <span>{is3D ? 'Vista 3D' : 'Vista 2D'}</span>
         </button>
       </div>
 
@@ -69,8 +69,8 @@ export const MapControlPanel = ({
         <div className="pointer-events-auto mt-2 w-80 bg-slate-900/95 backdrop-blur-xl text-white p-4 rounded-2xl border border-slate-800 shadow-2xl space-y-4 animate-in fade-in slide-in-from-top-3 duration-200">
           
           <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-              <Compass className="w-4 h-4" /> Control Geoespacial 3D
+            <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+              <Compass className="w-4 h-4" /> Capas del Mapa
             </span>
             <button
               onClick={() => setIsOpen(false)}

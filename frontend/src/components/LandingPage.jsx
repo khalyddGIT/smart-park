@@ -63,51 +63,6 @@ const TextRevealHeadline = ({ text }) => {
   );
 };
 
-// 2. TEXT REVEAL: REVELACIÓN DINÁMICA CON DEGRADADO
-const GradientTypewriter = () => {
-  const dynamicWords = useMemo(() => [
-    'Tiempo Real',
-    'Ayacucho',
-    'Huamanga',
-    'tu Celular'
-  ], []);
-
-  const [wordIndex, setWordIndex] = useState(0);
-  const [currentText, setCurrentText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const word = dynamicWords[wordIndex];
-    const typingSpeed = isDeleting ? 40 : 90;
-
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        setCurrentText(word.substring(0, currentText.length + 1));
-        if (currentText === word) {
-          setTimeout(() => setIsDeleting(true), 2400);
-        }
-      } else {
-        setCurrentText(word.substring(0, currentText.length - 1));
-        if (currentText === '') {
-          setIsDeleting(false);
-          setWordIndex((prev) => (prev + 1) % dynamicWords.length);
-        }
-      }
-    }, typingSpeed);
-
-    return () => clearTimeout(timeout);
-  }, [currentText, isDeleting, wordIndex, dynamicWords]);
-
-  return (
-    <span className="inline-block relative">
-      <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 bg-clip-text text-transparent font-black">
-        {currentText || '\u00A0'}
-      </span>
-      <span className="inline-block w-[3px] sm:w-[4px] h-[0.85em] ml-1 bg-gradient-to-b from-emerald-500 to-teal-400 align-middle rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.7)]" />
-    </span>
-  );
-};
-
 // 4. MAGNETIC BUTTONS: BOTONES MAGNÉTICOS CTA CON SEGUIMIENTO DE CURSOR
 const MagneticButton = ({ children, className = '', onClick, href, type = 'button' }) => {
   const ref = useRef(null);
@@ -196,40 +151,6 @@ const CinematicScrollSection = ({ children, className = '', id = '' }) => {
       {children}
     </motion.section>
   );
-};
-
-// 6. ANIMATED COUNTERS: CONTADORES ANIMADOS
-const AnimatedCounter = ({ value, duration = 1.6, suffix = '' }) => {
-  const [count, setCount] = useState(0);
-  const target = Number(value) || 0;
-
-  useEffect(() => {
-    let start = 0;
-    const end = target;
-    if (start === end) {
-      setCount(end);
-      return;
-    }
-    const totalMs = duration * 1000;
-    const stepMs = 30;
-    const steps = totalMs / stepMs;
-    const stepVal = (end - start) / steps;
-
-    let curr = start;
-    const timer = setInterval(() => {
-      curr += stepVal;
-      if ((stepVal > 0 && curr >= end) || (stepVal < 0 && curr <= end)) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(Math.round(curr));
-      }
-    }, stepMs);
-
-    return () => clearInterval(timer);
-  }, [target, duration]);
-
-  return <span>{count}{suffix}</span>;
 };
 
 // 12. CARD 3D HOVER: TARJETA 3D HOVER CON INERCIA
@@ -481,11 +402,9 @@ const StickyStorytellingSection = () => {
         <div className="md:col-span-6 sticky top-24">
           <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 text-white shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-                DEMOSTRACIÓN EN VIVO DE PROCESO
+              <span className="text-xs font-mono font-bold text-emerald-400">
+                Paso {activeStep + 1} — {steps[activeStep].title}
               </span>
-              <span className="text-[10px] font-mono text-slate-500">PASO {activeStep + 1} DE 3</span>
             </div>
             
             <AnimatePresence mode="wait">
@@ -739,27 +658,25 @@ export const LandingPage = ({
         >
 
 
-          {/* 1. HERO REVEAL TÍTULO */}
-          <motion.h1 className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[62px] tracking-tight max-w-3xl mx-auto leading-[1.14] sm:leading-[1.08]">
-            <TextRevealHeadline text="Ecosistema Inteligente de Estacionamientos en" />{' '}
-            {/* 2. TEXT REVEAL "TIEMPO REAL" */}
-            <GradientTypewriter />
+          {/* HERO TÍTULO EDITORIAL */}
+          <motion.h1 className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[60px] tracking-tight max-w-3xl mx-auto leading-[1.12] sm:leading-[1.08] text-[#002B29]">
+            Estacionamientos en Tiempo Real en Ayacucho
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.35, ease: FLUID_EASE }}
+            transition={{ duration: 0.5, delay: 0.2, ease: FLUID_EASE }}
             className="text-sm sm:text-base md:text-lg text-[#003835]/80 max-w-2xl mx-auto font-medium leading-relaxed text-center px-2"
           >
-            Conectamos a conductores en Ayacucho con estacionamientos disponibles en tiempo real, facilitando la reserva de tu sitio e ingreso directo.
+            Consulta disponibilidad de plazas en cocheras de Huamanga, reserva tu espacio y accede directo sin tickets físicos.
           </motion.p>
 
           {/* 12. CARD 3D HOVER */}
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5, ease: FLUID_EASE }}
+            transition={{ duration: 0.5, delay: 0.35, ease: FLUID_EASE }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mx-auto pt-4 text-left"
           >
 
@@ -820,37 +737,6 @@ export const LandingPage = ({
         </motion.div>
 
       </section>
-
-      {/* =========================================================================
-          2.5 ANIMATED COUNTERS & LIVE NUMBERS
-          ========================================================================= */}
-      <CinematicScrollSection className="py-6 sm:py-8 px-4 sm:px-6 lg:px-12">
-        <div className="max-w-5xl mx-auto bg-white/85 backdrop-blur-xl border border-[#004D49]/15 rounded-3xl shadow-[0_20px_45px_rgba(0,77,73,0.08)] grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-[#004D49]/10 overflow-hidden">
-          {[
-            { value: Math.max(establishments.length, 0), suffix: '', label: 'Cocheras conectadas en vivo' },
-            { value: totalFreeSlots, suffix: '', label: 'Plazas libres ahora mismo' },
-            { value: 98, suffix: '%', label: 'Ingresos con pase automático' },
-            { value: 15, suffix: ' min', label: 'Tolerancia garantizada' }
-          ].map((m, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: i * 0.07, ease: FLUID_EASE }}
-              className="p-5 sm:p-6 text-center group hover:bg-emerald-50/30 transition duration-300"
-            >
-              {/* 6. ANIMATED COUNTERS */}
-              <div className="text-2xl sm:text-4xl font-display font-black text-[#002B29] tracking-tight font-mono">
-                <AnimatedCounter value={m.value} suffix={m.suffix} />
-              </div>
-              <div className="mt-1 text-[10px] sm:text-xs text-[#004D49]/70 font-bold uppercase tracking-wide">
-                {m.label}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </CinematicScrollSection>
 
       {/* =========================================================================
           3. MAPBOX MAP & MARKERS ANIMATION
@@ -915,12 +801,8 @@ export const LandingPage = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          {/* FLOATING CARD 1 */}
-          <motion.div
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-emerald-500/50 transition"
-          >
+          {/* FEATURE CARD 1 */}
+          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-sm space-y-3 flex flex-col justify-between hover:border-emerald-500/50 hover:-translate-y-1 transition duration-200">
             <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 flex items-center justify-center">
               <Compass className="w-5 h-5 text-emerald-700" />
             </div>
@@ -930,14 +812,10 @@ export const LandingPage = ({
                 Trazado con GPS en tiempo real, indicaciones por voz y elevación topográfica DEM.
               </p>
             </div>
-          </motion.div>
+          </div>
 
-          {/* FLOATING CARD 2 */}
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-            className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-teal-500/50 transition"
-          >
+          {/* FEATURE CARD 2 */}
+          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-sm space-y-3 flex flex-col justify-between hover:border-teal-500/50 hover:-translate-y-1 transition duration-200">
             <div className="w-10 h-10 rounded-2xl bg-teal-500/10 border border-teal-500/30 text-teal-700 flex items-center justify-center">
               <Camera className="w-5 h-5 text-teal-700" />
             </div>
@@ -947,14 +825,10 @@ export const LandingPage = ({
                 Detección por visión artificial OpenCV al llegar a la garita de control sin tickets impresos.
               </p>
             </div>
-          </motion.div>
+          </div>
 
-          {/* FLOATING CARD 3 */}
-          <motion.div
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-            className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-cyan-500/50 transition"
-          >
+          {/* FEATURE CARD 3 */}
+          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-sm space-y-3 flex flex-col justify-between hover:border-cyan-500/50 hover:-translate-y-1 transition duration-200">
             <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 flex items-center justify-center">
               <CreditCard className="w-5 h-5 text-cyan-700" />
             </div>
@@ -964,14 +838,10 @@ export const LandingPage = ({
                 Pasarela segura con PayPal Express, Culqi, Yape, Plin y tarjetas bancarias.
               </p>
             </div>
-          </motion.div>
+          </div>
 
-          {/* FLOATING CARD 4 */}
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
-            className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-xl space-y-3 flex flex-col justify-between hover:border-emerald-500/50 transition"
-          >
+          {/* FEATURE CARD 4 */}
+          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-[#004D49]/15 shadow-sm space-y-3 flex flex-col justify-between hover:border-emerald-500/50 hover:-translate-y-1 transition duration-200">
             <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 flex items-center justify-center">
               <QrCode className="w-5 h-5 text-emerald-700" />
             </div>
@@ -981,7 +851,7 @@ export const LandingPage = ({
                 Código QR encriptado generado al instante con ventana de tolerancia configurable.
               </p>
             </div>
-          </motion.div>
+          </div>
 
         </div>
 

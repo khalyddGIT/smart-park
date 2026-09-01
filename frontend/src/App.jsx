@@ -656,7 +656,7 @@ export const App = () => {
                       <h2 className="text-sm font-black text-slate-900 flex items-center gap-2"><Building2 className="w-4 h-4 text-emerald-600"/> Mapa de Sedes — Solo lectura</h2>
                       <p className="text-xs text-slate-500">Vista del personal: consulta ubicación, tarifa y ocupación en vivo. Edición solo Admin Local.</p>
                     </div>
-                    <span className="text-[10px] font-black tracking-widest border border-slate-200 rounded-full px-2 py-1 bg-slate-50">PERSONAL</span>
+                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">Personal</span>
                   </div>
                   {/* Solo mapa del parking del establecimiento para el trabajador */}
                   {(() => {
@@ -678,7 +678,7 @@ export const App = () => {
                             )}
                             <span className="text-xs font-mono font-bold text-emerald-700">{free} libres / {occupied} ocupados</span>
                           </div>
-                          <span className="text-[10px] font-black tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-full">{isPersonalStaff ? 'ASIGNADA' : 'SOLO PARKING'}</span>
+                          <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg">{isPersonalStaff ? 'Asignada' : 'Solo Lectura'}</span>
                         </div>
                         <AutoFitFloorPlan elements={est.elements} name={est.name} />
                         <p className="text-[11px] text-center text-slate-500">Para registrar entradas/salidas usa <b>Garita → Walk-in</b> (toca un cajón libre en el mapa de arriba) o <b>Scanner</b>.</p>

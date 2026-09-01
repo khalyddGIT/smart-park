@@ -62,188 +62,268 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 
 // ============================================================
-// COMPONENTES DE VEHÍCULOS REALISTAS 2D (TOP-DOWN)
+// ============================================================
+// COMPONENTES DE VEHÍCULOS VECTORIALES FOTORREALISTAS (VISTA CENITAL 2D)
+// Inspirados en ilustración arquitectónica de alta fidelidad
 // ============================================================
 
-// 1. Moto Lineal (Top-Down)
-const VehicleMoto2D = ({ plate }) => (
-  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
-    {/* Sombra de contacto */}
-    <div className="absolute inset-x-2 bottom-0.5 h-2 bg-black/60 blur-xs rounded-full" />
-    {/* Chasis de Moto */}
-    <div className="relative w-6 h-11 bg-slate-900 rounded-full border border-orange-500/80 shadow-md flex flex-col items-center justify-between p-1">
-      {/* Manillar & Faro Delantero */}
-      <div className="w-4.5 h-1.5 bg-slate-400 rounded-full shadow-[0_0_8px_#38bdf8] flex items-center justify-center">
-        <div className="w-1.5 h-1 bg-cyan-300 rounded-full" />
+// Paleta de colores vehiculares de referencia
+const VEHICLE_PALETTE = [
+  { name: 'Sky Blue', hex: '#38bdf8', isTaxi: false },
+  { name: 'Sport Red', hex: '#ef4444', isTaxi: false },
+  { name: 'Taxi Lima', hex: '#facc15', isTaxi: true },
+  { name: 'Glacier Blue', hex: '#93c5fd', isTaxi: false },
+  { name: 'Amber Orange', hex: '#f97316', isTaxi: false },
+  { name: 'Dark Charcoal', hex: '#334155', isTaxi: false },
+  { name: 'Silver Steel', hex: '#94a3b8', isTaxi: false },
+  { name: 'Pearl White', hex: '#f8fafc', isTaxi: false }
+];
+
+// Helper para obtener color determinista por placa
+const getVehicleColorByPlate = (plate = '', defaultColor) => {
+  if (defaultColor) return defaultColor;
+  let hash = 0;
+  for (let i = 0; i < plate.length; i++) {
+    hash = plate.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % VEHICLE_PALETTE.length;
+  return VEHICLE_PALETTE[index].hex;
+};
+
+// 1. Moto Lineal (Top-Down Vectorial)
+const VehicleMoto2D = ({ plate, color = '#ea580c' }) => (
+  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-1 filter drop-shadow-[2px_3px_4px_rgba(0,0,0,0.6)]">
+    {/* Manillar con Espejos Retrovisores */}
+    <div className="relative w-7 h-2 flex items-center justify-between z-20">
+      <div className="w-1.5 h-1.5 rounded-full bg-slate-400 border border-slate-700 shadow-xs" />
+      <div className="w-4 h-1 bg-slate-800 rounded-full flex items-center justify-center">
+        <div className="w-2 h-1 bg-amber-300 rounded-full shadow-[0_0_6px_#fde047]" />
       </div>
-      {/* Tanque de Gasolina & Asiento Biplaza */}
-      <div className="w-3.5 h-4 bg-orange-600 rounded-md border border-orange-400 shadow-inner flex items-center justify-center">
-        <div className="w-2 h-2.5 bg-slate-950 rounded" />
+      <div className="w-1.5 h-1.5 rounded-full bg-slate-400 border border-slate-700 shadow-xs" />
+    </div>
+
+    {/* Chasis Aerodinámico */}
+    <div 
+      className="relative w-5 h-10 rounded-full border border-black/20 flex flex-col items-center justify-between p-0.5 shadow-sm -mt-0.5 overflow-hidden"
+      style={{ backgroundColor: color }}
+    >
+      {/* Horquilla & Rueda Delantera */}
+      <div className="w-1.5 h-2 bg-slate-900 rounded-full" />
+
+      {/* Tanque de Combustible con Brillo */}
+      <div className="w-3.5 h-3 rounded-md bg-white/20 border border-white/30 flex items-center justify-center">
+        <div className="w-2 h-1.5 rounded-full bg-black/30" />
       </div>
-      {/* Placa & Luz Trasera */}
-      <div className="w-3.5 h-1 bg-rose-600 rounded-xs shadow-[0_0_6px_#f43f5e]" />
-      <span className="text-[6px] font-mono font-black text-slate-900 bg-white px-0.5 rounded shadow-xs tracking-tighter">
-        {plate || '5421-3A'}
-      </span>
+
+      {/* Asiento Biplaza de Cuero */}
+      <div className="w-3.5 h-3.5 bg-slate-900 rounded-sm border border-slate-800 shadow-inner flex items-center justify-center">
+        <div className="w-2 h-0.5 bg-slate-700 rounded-full" />
+      </div>
+
+      {/* Luz Trasera */}
+      <div className="w-2.5 h-1 bg-red-600 rounded-full shadow-[0_0_6px_#ef4444]" />
+    </div>
+
+    {/* Placa Oficial Peruana */}
+    <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-xs flex items-center gap-0.5 font-mono text-[6px] font-black tracking-tighter leading-none mt-0.5 z-20">
+      <span className="text-[4px] text-blue-800 font-bold">PE</span>
+      <span>{plate || '5421-3A'}</span>
     </div>
   </div>
 );
 
-// 2. Auto / Sedán (Top-Down)
-const VehicleAuto2D = ({ plate, color = '#2563eb' }) => (
-  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
-    {/* Sombra de contacto */}
-    <div className="absolute inset-x-1 bottom-0.5 h-[90%] bg-black/60 blur-xs rounded-xl" />
+// 2. Automóvil / Sedán / Hatchback (Top-Down Vectorial Fiel a la Referencia)
+const VehicleAuto2D = ({ plate, color, isTaxi }) => {
+  const finalColor = getVehicleColorByPlate(plate, color || '#38bdf8');
+  const isYellowTaxi = isTaxi || finalColor === '#facc15';
 
-    {/* Carrocería del Vehículo */}
-    <div 
-      className="relative w-[92%] h-[92%] rounded-xl border border-slate-700/80 flex flex-col justify-between p-1 overflow-hidden shadow-lg"
-      style={{
-        background: `linear-gradient(135deg, ${color}dd 0%, #0f172a 100%)`
-      }}
-    >
-      {/* Parachoques Delantero y Faros LED */}
-      <div className="w-full flex items-center justify-between px-1">
-        <div className="w-2 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
-        <div className="w-5 h-1 bg-slate-950/80 rounded-full" />
-        <div className="w-2 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
-      </div>
+  return (
+    <div className="relative w-full h-full flex items-center justify-center pointer-events-none py-1 filter drop-shadow-[3px_4px_5px_rgba(0,0,0,0.55)]">
+      {/* Espejos Retrovisores Laterales a 45° */}
+      <div 
+        className="absolute left-[3px] top-[26%] w-1.5 h-3 rounded-l-full border border-black/20 shadow-xs"
+        style={{ backgroundColor: finalColor }} 
+      />
+      <div 
+        className="absolute right-[3px] top-[26%] w-1.5 h-3 rounded-r-full border border-black/20 shadow-xs"
+        style={{ backgroundColor: finalColor }} 
+      />
 
-      {/* Parabrisas Delantero con Reflejo */}
-      <div className="w-[85%] h-3.5 mx-auto bg-gradient-to-b from-cyan-950 to-slate-950 rounded-t-lg border border-cyan-500/30 flex items-center justify-center overflow-hidden">
-        <div className="w-full h-full bg-[linear-gradient(45deg,transparent_30%,rgba(255,255,255,0.25)_50%,transparent_70%)]" />
-      </div>
-
-      {/* Techo Metálico / Sunroof */}
-      <div className="w-[80%] h-4 mx-auto bg-slate-950/90 rounded border border-slate-700/80 flex items-center justify-center shadow-inner">
-        <div className="w-[80%] h-[70%] bg-slate-900 rounded-xs border border-slate-800 flex items-center justify-center">
-          <span className="text-[6px] font-mono font-bold text-slate-400">●</span>
-        </div>
-      </div>
-
-      {/* Luneta Trasera */}
-      <div className="w-[85%] h-2.5 mx-auto bg-gradient-to-t from-cyan-950 to-slate-950 rounded-b-lg border border-cyan-500/30" />
-
-      {/* Parachoques Trasero, Luces de Freno & Placa Oficial */}
-      <div className="w-full flex flex-col items-center gap-0.5">
-        <div className="w-full flex items-center justify-between px-1">
-          <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
-          <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
+      {/* Carrocería Curva con Cintura Aerodinámica */}
+      <div 
+        className="relative w-[86%] h-[95%] rounded-[18px] flex flex-col justify-between p-1 overflow-hidden border border-black/15 shadow-sm"
+        style={{ backgroundColor: finalColor }}
+      >
+        {/* Capó Delantero con Faros Curvos */}
+        <div className="w-full flex items-center justify-between px-0.5 pt-0.5">
+          <div className="w-2.5 h-2 rounded-tl-lg rounded-br-sm bg-[#fde047] shadow-[0_0_6px_#fde047]" />
+          {isYellowTaxi && (
+            <div className="flex gap-0.5 opacity-80">
+              <div className="w-1 h-1 bg-black" />
+              <div className="w-1 h-1 bg-white" />
+              <div className="w-1 h-1 bg-black" />
+            </div>
+          )}
+          <div className="w-2.5 h-2 rounded-tr-lg rounded-bl-sm bg-[#fde047] shadow-[0_0_6px_#fde047]" />
         </div>
 
-        {/* Placa Oficial en Alto Contraste */}
-        <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-sm flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
-          <span className="text-[5px] text-blue-800 font-bold">PE</span>
-          <span>{plate || 'ABC-123'}</span>
+        {/* Cabina / Acristalamiento Tintado con Reflejo Glossy */}
+        <div className="relative w-[90%] mx-auto my-auto bg-[#1e293b] rounded-[11px] p-0.5 border border-black/20 flex flex-col justify-between overflow-hidden shadow-inner">
+          {/* Parabrisas Delantero con Brillo Angular */}
+          <div className="w-full h-4 bg-[#0f172a] rounded-t-[8px] flex items-center justify-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_35%,rgba(255,255,255,0.45)_50%,transparent_65%)]" />
+          </div>
+
+          {/* Techo Central en Color de Carrocería con Ventanillas Laterales */}
+          <div className="w-full flex items-center justify-between my-0.5 px-0.5">
+            <div className="w-1 h-4 bg-[#0f172a] rounded-xs" />
+            <div 
+              className="flex-1 h-4 mx-0.5 rounded flex items-center justify-center border border-black/10 shadow-xs"
+              style={{ backgroundColor: finalColor }}
+            >
+              {isYellowTaxi ? (
+                <div className="bg-yellow-400 text-black font-black text-[5px] px-1 py-0.2 rounded border border-black/40 font-mono shadow-xs tracking-tighter">
+                  TAXI
+                </div>
+              ) : (
+                <div className="w-2.5 h-2 bg-black/15 rounded-xs" />
+              )}
+            </div>
+            <div className="w-1 h-4 bg-[#0f172a] rounded-xs" />
+          </div>
+
+          {/* Luneta Trasera */}
+          <div className="w-full h-3 bg-[#0f172a] rounded-b-[8px]" />
+        </div>
+
+        {/* Parachoques Trasero, Luces de Freno Rojas & Placa */}
+        <div className="w-full flex flex-col items-center gap-0.5 pb-0.5">
+          <div className="w-full flex items-center justify-between px-0.5">
+            <div className="w-2.5 h-1.5 rounded-bl-lg bg-[#ef4444] shadow-[0_0_6px_#ef4444]" />
+            {isYellowTaxi && (
+              <div className="flex gap-0.5 opacity-80">
+                <div className="w-1 h-1 bg-black" />
+                <div className="w-1 h-1 bg-white" />
+                <div className="w-1 h-1 bg-black" />
+              </div>
+            )}
+            <div className="w-2.5 h-1.5 rounded-br-lg bg-[#ef4444] shadow-[0_0_6px_#ef4444]" />
+          </div>
+
+          {/* Placa Oficial en Alto Contraste */}
+          <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-xs flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
+            <span className="text-[5px] text-blue-800 font-bold">PE</span>
+            <span>{plate || 'ABC-123'}</span>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// 3. Camioneta / SUV / Pickup 4x4 (Top-Down)
-const VehicleCamioneta2D = ({ plate, color = '#0284c7' }) => (
-  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
-    {/* Sombra de contacto robusta */}
-    <div className="absolute inset-x-0.5 bottom-0.5 h-[94%] bg-black/70 blur-xs rounded-2xl" />
+// 3. Camioneta / SUV / Pickup 4x4 (Top-Down Vectorial Robusto)
+const VehicleCamioneta2D = ({ plate, color = '#0284c7' }) => {
+  const finalColor = getVehicleColorByPlate(plate, color);
 
-    {/* Carrocería SUV / Camioneta 4x4 */}
-    <div 
-      className="relative w-[95%] h-[95%] rounded-2xl border-2 border-cyan-500/60 flex flex-col justify-between p-1.5 overflow-hidden shadow-xl"
-      style={{
-        background: `linear-gradient(145deg, ${color}ee 0%, #032b43 50%, #08121e 100%)`
-      }}
-    >
-      {/* Barra de Protección Delantera y Faros Cuádruples LED */}
-      <div className="w-full flex items-center justify-between px-0.5">
-        <div className="flex gap-0.5">
-          <div className="w-2 h-2 rounded-xs bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
-        </div>
-        <div className="w-7 h-1.5 bg-slate-950 rounded-xs border border-slate-700 flex items-center justify-center">
-          <span className="text-[5px] font-black text-cyan-300 tracking-tighter">4x4</span>
-        </div>
-        <div className="flex gap-0.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
-          <div className="w-2 h-2 rounded-xs bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
-        </div>
-      </div>
+  return (
+    <div className="relative w-full h-full flex items-center justify-center pointer-events-none py-1 filter drop-shadow-[4px_5px_6px_rgba(0,0,0,0.6)]">
+      {/* Espejos Laterales SUV */}
+      <div 
+        className="absolute left-[2px] top-[24%] w-2 h-3.5 rounded-l-full border border-black/25 shadow-xs"
+        style={{ backgroundColor: finalColor }} 
+      />
+      <div 
+        className="absolute right-[2px] top-[24%] w-2 h-3.5 rounded-r-full border border-black/25 shadow-xs"
+        style={{ backgroundColor: finalColor }} 
+      />
 
-      {/* Capó ancho con nervaduras */}
-      <div className="w-[88%] h-3 mx-auto bg-slate-950/40 rounded border border-cyan-500/20 flex items-center justify-around">
-        <div className="w-0.5 h-full bg-cyan-400/30" />
-        <div className="w-0.5 h-full bg-cyan-400/30" />
-      </div>
-
-      {/* Parabrisas Amplio con Espejos Laterales */}
-      <div className="w-[90%] h-4 mx-auto bg-gradient-to-b from-cyan-950 via-slate-950 to-slate-950 rounded-t-xl border border-cyan-400/40 flex items-center justify-center relative">
-        <div className="absolute -left-1 top-1 w-1 h-2 bg-slate-800 border border-slate-600 rounded-l" />
-        <div className="absolute -right-1 top-1 w-1 h-2 bg-slate-800 border border-slate-600 rounded-r" />
-        <div className="w-full h-full bg-[linear-gradient(45deg,transparent_20%,rgba(255,255,255,0.3)_50%,transparent_80%)]" />
-      </div>
-
-      {/* Techo con Barras Portaequipaje / Roof Racks */}
-      <div className="w-[86%] h-6 mx-auto bg-slate-950/95 rounded-lg border border-cyan-600/50 flex flex-col justify-between p-0.5 shadow-inner">
-        <div className="w-full h-0.5 bg-slate-400 rounded-full" />
-        <div className="w-full flex items-center justify-around text-[6px] font-mono font-black text-cyan-300">
-          <span>SUV</span>
-          <span>●</span>
-          <span>AWD</span>
-        </div>
-        <div className="w-full h-0.5 bg-slate-400 rounded-full" />
-      </div>
-
-      {/* Tolva / Maletero Trasero */}
-      <div className="w-[88%] h-3 mx-auto bg-slate-950/80 rounded-b-lg border border-slate-700 flex items-center justify-center">
-        <div className="w-4 h-1 bg-slate-800 rounded-xs" />
-      </div>
-
-      {/* Luces Traseras y Placa Oficial */}
-      <div className="w-full flex flex-col items-center gap-0.5">
+      {/* Carrocería SUV Robusta */}
+      <div 
+        className="relative w-[90%] h-[96%] rounded-[20px] flex flex-col justify-between p-1.5 overflow-hidden border border-black/20 shadow-md"
+        style={{ backgroundColor: finalColor }}
+      >
+        {/* Defensa Delantera y Faros Cuádruples */}
         <div className="w-full flex items-center justify-between px-0.5">
-          <div className="w-3 h-1.5 bg-rose-500 rounded-xs shadow-[0_0_8px_#f43f5e]" />
-          <div className="w-3 h-1.5 bg-rose-500 rounded-xs shadow-[0_0_8px_#f43f5e]" />
+          <div className="flex gap-0.5">
+            <div className="w-2.5 h-2 rounded-tl-lg bg-[#fde047] shadow-[0_0_6px_#fde047]" />
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-200" />
+          </div>
+          <div className="w-6 h-1.5 bg-slate-950 rounded-xs flex items-center justify-center">
+            <span className="text-[5px] font-black text-white">4x4</span>
+          </div>
+          <div className="flex gap-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-200" />
+            <div className="w-2.5 h-2 rounded-tr-lg bg-[#fde047] shadow-[0_0_6px_#fde047]" />
+          </div>
         </div>
 
-        <div className="bg-white text-slate-950 px-1.5 py-0.2 rounded border border-slate-400 shadow-sm flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
-          <span className="text-[5px] text-blue-800 font-bold">PE</span>
-          <span>{plate || 'W1P-404'}</span>
+        {/* Cabina SUV con Barras de Techo */}
+        <div className="relative w-[92%] mx-auto my-auto bg-[#1e293b] rounded-[12px] p-0.5 border border-black/25 flex flex-col justify-between overflow-hidden shadow-inner">
+          {/* Parabrisas Delantero Amplio */}
+          <div className="w-full h-4 bg-[#0f172a] rounded-t-[9px] flex items-center justify-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_30%,rgba(255,255,255,0.4)_50%,transparent_70%)]" />
+          </div>
+
+          {/* Techo SUV con Barras Portaequipaje / Roof Racks */}
+          <div className="w-full flex items-center justify-between my-0.5 px-0.5">
+            <div className="w-1.5 h-6 bg-slate-400 rounded-full" />
+            <div 
+              className="flex-1 h-6 mx-0.5 rounded-md flex flex-col items-center justify-center border border-black/15 shadow-xs"
+              style={{ backgroundColor: finalColor }}
+            >
+              <div className="w-[80%] h-0.5 bg-black/20 rounded-full my-0.5" />
+              <span className="text-[5px] font-mono font-black text-slate-900 tracking-wider">AWD</span>
+              <div className="w-[80%] h-0.5 bg-black/20 rounded-full my-0.5" />
+            </div>
+            <div className="w-1.5 h-6 bg-slate-400 rounded-full" />
+          </div>
+
+          {/* Luneta Trasera y Maletero */}
+          <div className="w-full h-3 bg-[#0f172a] rounded-b-[9px]" />
+        </div>
+
+        {/* Luces Traseras y Placa */}
+        <div className="w-full flex flex-col items-center gap-0.5 pb-0.5">
+          <div className="w-full flex items-center justify-between px-0.5">
+            <div className="w-3 h-1.5 rounded-bl-lg bg-[#ef4444] shadow-[0_0_6px_#ef4444]" />
+            <div className="w-3 h-1.5 rounded-br-lg bg-[#ef4444] shadow-[0_0_6px_#ef4444]" />
+          </div>
+
+          <div className="bg-white text-slate-950 px-1.5 py-0.2 rounded border border-slate-400 shadow-xs flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
+            <span className="text-[5px] text-blue-800 font-bold">PE</span>
+            <span>{plate || 'W1P-404'}</span>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// 4. Mototaxi / Torito Bajaj (Top-Down)
-const VehicleMototaxi2D = ({ plate, color = '#ca8a04' }) => (
-  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
-    {/* Sombra de contacto */}
-    <div className="absolute inset-x-1 bottom-0.5 h-[92%] bg-black/65 blur-xs rounded-xl" />
-
-    {/* Carrocería Torito Bajaj */}
+// 4. Mototaxi / Torito Bajaj (Top-Down Vectorial)
+const VehicleMototaxi2D = ({ plate, color = '#facc15' }) => (
+  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-1 filter drop-shadow-[3px_4px_5px_rgba(0,0,0,0.55)]">
+    {/* Carrocería Torito Triangular */}
     <div 
-      className="relative w-[92%] h-[94%] rounded-2xl border-2 border-yellow-400/90 flex flex-col justify-between p-1 overflow-hidden shadow-lg"
-      style={{
-        background: `linear-gradient(145deg, ${color}dd 0%, #451a03 50%, #0f172a 100%)`
-      }}
+      className="relative w-[90%] h-[94%] rounded-[16px] border border-black/20 flex flex-col justify-between p-1 overflow-hidden shadow-sm"
+      style={{ backgroundColor: color }}
     >
       {/* Rueda delantera única y Faro Central */}
       <div className="w-full flex flex-col items-center">
-        <div className="w-2.5 h-2.5 bg-slate-950 rounded-xs border border-slate-600 shadow-xs" />
+        <div className="w-2.5 h-2 bg-slate-950 rounded-xs border border-slate-700" />
         <div className="w-3.5 h-1.5 bg-yellow-300 rounded-full shadow-[0_0_8px_#fde047] flex items-center justify-center -mt-0.5">
           <div className="w-1.5 h-1 bg-white rounded-full" />
         </div>
       </div>
 
       {/* Parabrisas Curvo de la Cabina */}
-      <div className="w-[88%] h-3 mx-auto bg-gradient-to-b from-cyan-950 to-slate-950 rounded-t-lg border border-cyan-400/50 flex items-center justify-center">
-        <div className="w-full h-full bg-[linear-gradient(45deg,transparent_30%,rgba(255,255,255,0.3)_50%,transparent_70%)]" />
+      <div className="w-[88%] h-3 mx-auto bg-[#0f172a] rounded-t-lg border border-black/30 flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_30%,rgba(255,255,255,0.4)_50%,transparent_70%)]" />
       </div>
 
-      {/* Techo de Lona / Carpa del Torito con Franjas Tradicionales */}
-      <div className="w-[90%] h-6 mx-auto bg-yellow-500 rounded-md border border-yellow-300 shadow-md flex flex-col justify-between p-0.5 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,#000000,#000000_3px,transparent_3px,transparent_8px)] opacity-20" />
-        <div className="w-full text-center text-[6px] font-mono font-black text-slate-950 uppercase tracking-widest z-10 drop-shadow">
+      {/* Techo de Lona con Decoración Tradicional */}
+      <div className="w-[90%] h-6 mx-auto bg-amber-400 rounded-md border border-amber-500 shadow-sm flex flex-col justify-between p-0.5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,#000000,#000000_2px,transparent_2px,transparent_6px)] opacity-15" />
+        <div className="w-full text-center text-[6px] font-mono font-black text-slate-950 uppercase tracking-widest z-10">
           ★ TORITO ★
         </div>
         <div className="w-full text-center text-[5px] font-mono font-bold text-slate-900 z-10">
@@ -252,17 +332,17 @@ const VehicleMototaxi2D = ({ plate, color = '#ca8a04' }) => (
       </div>
 
       {/* Eje trasero de dos ruedas y Placa Oficial */}
-      <div className="w-full flex flex-col items-center gap-0.5">
+      <div className="w-full flex flex-col items-center gap-0.5 pb-0.5">
         <div className="w-full flex items-center justify-between px-0.5">
-          <div className="w-2.5 h-2.5 bg-slate-950 rounded-xs border border-slate-700 -ml-1" />
+          <div className="w-2.5 h-2 bg-slate-950 rounded-xs -ml-1 border border-slate-800" />
           <div className="flex gap-1">
-            <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
-            <div className="w-2 h-1 bg-rose-500 rounded-xs shadow-[0_0_6px_#f43f5e]" />
+            <div className="w-2 h-1 bg-[#ef4444] rounded-xs shadow-[0_0_6px_#ef4444]" />
+            <div className="w-2 h-1 bg-[#ef4444] rounded-xs shadow-[0_0_6px_#ef4444]" />
           </div>
-          <div className="w-2.5 h-2.5 bg-slate-950 rounded-xs border border-slate-700 -mr-1" />
+          <div className="w-2.5 h-2 bg-slate-950 rounded-xs -mr-1 border border-slate-800" />
         </div>
 
-        <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-sm flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
+        <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-xs flex items-center gap-0.5 font-mono text-[7px] font-black tracking-tight leading-none">
           <span className="text-[5px] text-blue-800 font-bold">PE</span>
           <span>{plate || '5612-4B'}</span>
         </div>
@@ -272,17 +352,17 @@ const VehicleMototaxi2D = ({ plate, color = '#ca8a04' }) => (
 );
 
 // Despachador Universal de Vehículo
-const RealisticVehicle2D = ({ slotType = 'auto', plate, color }) => {
+const RealisticVehicle2D = ({ slotType = 'auto', plate, color, isTaxi }) => {
   if (slotType === 'moto') {
-    return <VehicleMoto2D plate={plate} />;
+    return <VehicleMoto2D plate={plate} color={color} />;
   }
   if (slotType === 'camioneta') {
-    return <VehicleCamioneta2D plate={plate} color={color || '#0284c7'} />;
+    return <VehicleCamioneta2D plate={plate} color={color} />;
   }
   if (slotType === 'mototaxi') {
-    return <VehicleMototaxi2D plate={plate} color={color || '#ca8a04'} />;
+    return <VehicleMototaxi2D plate={plate} color={color} />;
   }
-  return <VehicleAuto2D plate={plate} color={color || '#2563eb'} />;
+  return <VehicleAuto2D plate={plate} color={color} isTaxi={isTaxi} />;
 };
 
 // 2. Muro de Hormigón Armado
@@ -1754,7 +1834,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute rounded-xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between p-1 select-none overflow-hidden shadow-md ${
+                    className={`absolute rounded-xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between p-1 select-none overflow-hidden ${
                       isSelected 
                         ? 'ring-4 ring-cyan-400 border-cyan-300 z-30 shadow-[0_0_30px_rgba(6,182,212,0.9)] scale-[1.02]' 
                         : 'z-10'
@@ -1762,14 +1842,14 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       isShaded
                         ? 'border-amber-400/90 bg-gradient-to-b from-amber-950/70 via-slate-900/95 to-amber-950/80 text-amber-100 hover:border-amber-300'
                         : isCamioneta
-                        ? 'border-cyan-400/90 bg-gradient-to-b from-cyan-950/80 via-slate-900/95 to-cyan-950/90 text-cyan-200 hover:border-cyan-300'
+                        ? isFree ? 'border-cyan-400/80 bg-cyan-950/25 text-cyan-200 hover:border-cyan-300' : 'border-slate-400/60 bg-transparent'
                         : isMototaxi
-                        ? 'border-yellow-400/90 bg-gradient-to-b from-yellow-950/80 via-slate-900/95 to-yellow-950/90 text-yellow-200 hover:border-yellow-300'
+                        ? isFree ? 'border-yellow-400/80 bg-yellow-950/25 text-yellow-200 hover:border-yellow-300' : 'border-slate-400/60 bg-transparent'
                         : isMoto
-                        ? 'border-orange-500/90 bg-gradient-to-b from-orange-950/80 via-slate-900/95 to-orange-950/90 text-orange-200 hover:border-orange-400'
+                        ? isFree ? 'border-orange-500/80 bg-orange-950/25 text-orange-200 hover:border-orange-400' : 'border-slate-400/60 bg-transparent'
                         : isFree
-                        ? 'border-emerald-500/80 bg-gradient-to-b from-emerald-950/60 via-slate-900/95 to-slate-950 text-emerald-100 hover:border-emerald-400'
-                        : 'border-rose-500/90 bg-gradient-to-b from-rose-950/80 via-slate-900/95 to-rose-950/90 text-rose-200'
+                        ? 'border-white/80 bg-slate-900/30 text-slate-100 hover:border-white shadow-xs'
+                        : 'border-slate-400/60 bg-transparent'
                     }`}
                   >
                     {/* Cubierta Tensada para Plazas Techadas */}

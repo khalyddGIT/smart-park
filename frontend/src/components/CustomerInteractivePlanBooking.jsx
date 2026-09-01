@@ -2,39 +2,25 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { 
   Car, 
-  Sparkles, 
   MapPin, 
   Clock, 
-  ShieldCheck, 
   QrCode, 
-  CheckCircle2, 
-  Zap, 
-  ChevronRight, 
-  Info, 
-  Umbrella, 
+  Check, 
+  AlertTriangle, 
+  Loader2, 
   Bike, 
   Truck, 
   Navigation, 
   CreditCard, 
-  Check, 
-  AlertTriangle, 
-  Loader2, 
-  Lock, 
-  Timer, 
-  Lightbulb, 
   Wallet, 
   Building2, 
   Receipt, 
-  Award, 
-  ArrowRight,
-  ShieldAlert,
-  Percent,
-  Compass
+  ArrowRight
 } from 'lucide-react';
 import { Button } from './ui/button';
 
 // ============================================================
-// COMPONENTES DE VEHÍCULOS VECTORIALES FOTORREALISTAS (TOP-DOWN)
+// COMPONENTES DE VEHÍCULOS VECTORIALES (TOP-DOWN 2D)
 // ============================================================
 
 const VEHICLE_PALETTE = ['#38bdf8', '#ef4444', '#facc15', '#93c5fd', '#f97316', '#334155', '#94a3b8', '#f8fafc'];
@@ -54,32 +40,30 @@ const VehicleAuto2D = ({ plate, color, isTaxi }) => {
   const isYellowTaxi = isTaxi || finalColor === '#facc15';
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center pointer-events-none py-1 filter drop-shadow-[2px_3px_4px_rgba(0,0,0,0.55)]">
+    <div className="relative w-full h-full flex items-center justify-center pointer-events-none py-1">
       <div className="absolute left-[2px] top-[26%] w-1.5 h-2.5 rounded-l-full border border-black/20" style={{ backgroundColor: finalColor }} />
       <div className="absolute right-[2px] top-[26%] w-1.5 h-2.5 rounded-r-full border border-black/20" style={{ backgroundColor: finalColor }} />
-      <div className="relative w-[86%] h-[95%] rounded-[14px] flex flex-col justify-between p-1 overflow-hidden border border-black/15 shadow-sm" style={{ backgroundColor: finalColor }}>
+      <div className="relative w-[86%] h-[95%] rounded-[12px] flex flex-col justify-between p-1 overflow-hidden border border-black/15 shadow-sm" style={{ backgroundColor: finalColor }}>
         <div className="w-full flex items-center justify-between px-0.5 pt-0.5">
-          <div className="w-2 h-1.5 rounded-tl-lg bg-[#fde047] shadow-[0_0_4px_#fde047]" />
-          {isYellowTaxi && <div className="text-[4px] font-black bg-black text-yellow-400 px-0.5 rounded">TAXI</div>}
-          <div className="w-2 h-1.5 rounded-tr-lg bg-[#fde047] shadow-[0_0_4px_#fde047]" />
+          <div className="w-2 h-1 bg-[#fde047] rounded-tl" />
+          {isYellowTaxi && <div className="text-[4px] font-mono font-black bg-black text-yellow-400 px-0.5 rounded">TAXI</div>}
+          <div className="w-2 h-1 bg-[#fde047] rounded-tr" />
         </div>
-        <div className="relative w-[90%] mx-auto my-auto bg-[#1e293b] rounded-[8px] p-0.5 border border-black/20 flex flex-col justify-between overflow-hidden shadow-inner">
-          <div className="w-full h-3 bg-[#0f172a] rounded-t-[6px] relative overflow-hidden">
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_35%,rgba(255,255,255,0.45)_50%,transparent_65%)]" />
-          </div>
+        <div className="relative w-[90%] mx-auto my-auto bg-[#1e293b] rounded-[6px] p-0.5 flex flex-col justify-between overflow-hidden shadow-inner">
+          <div className="w-full h-3 bg-[#0f172a] rounded-t-[4px]" />
           <div className="w-full flex items-center justify-between my-0.5 px-0.5">
             <div className="w-0.5 h-2.5 bg-[#0f172a]" />
-            <div className="flex-1 h-2.5 mx-0.5 rounded flex items-center justify-center border border-black/10" style={{ backgroundColor: finalColor }} />
+            <div className="flex-1 h-2.5 mx-0.5 rounded" style={{ backgroundColor: finalColor }} />
             <div className="w-0.5 h-2.5 bg-[#0f172a]" />
           </div>
-          <div className="w-full h-2.5 bg-[#0f172a] rounded-b-[6px]" />
+          <div className="w-full h-2.5 bg-[#0f172a] rounded-b-[4px]" />
         </div>
         <div className="w-full flex flex-col items-center gap-0.5 pb-0.5">
           <div className="w-full flex items-center justify-between px-0.5">
-            <div className="w-2 h-1 rounded-bl-lg bg-[#ef4444]" />
-            <div className="w-2 h-1 rounded-br-lg bg-[#ef4444]" />
+            <div className="w-2 h-1 bg-[#ef4444] rounded-bl" />
+            <div className="w-2 h-1 bg-[#ef4444] rounded-br" />
           </div>
-          <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-xs font-mono text-[6px] font-black tracking-tighter">
+          <div className="bg-white text-slate-950 px-1 py-0.2 rounded font-mono text-[6px] font-black">
             {plate || 'ABC-123'}
           </div>
         </div>
@@ -91,34 +75,29 @@ const VehicleAuto2D = ({ plate, color, isTaxi }) => {
 const VehicleCamioneta2D = ({ plate, color = '#0284c7' }) => {
   const finalColor = getVehicleColorByPlate(plate, color);
   return (
-    <div className="relative w-full h-full flex items-center justify-center pointer-events-none py-1 filter drop-shadow-[3px_4px_5px_rgba(0,0,0,0.6)]">
+    <div className="relative w-full h-full flex items-center justify-center pointer-events-none py-1">
       <div className="absolute left-[1px] top-[24%] w-1.5 h-3 rounded-l-full border border-black/25" style={{ backgroundColor: finalColor }} />
       <div className="absolute right-[1px] top-[24%] w-1.5 h-3 rounded-r-full border border-black/25" style={{ backgroundColor: finalColor }} />
-      <div className="relative w-[90%] h-[96%] rounded-[16px] flex flex-col justify-between p-1 overflow-hidden border border-black/20 shadow-md" style={{ backgroundColor: finalColor }}>
+      <div className="relative w-[90%] h-[96%] rounded-[14px] flex flex-col justify-between p-1 overflow-hidden border border-black/20 shadow-md" style={{ backgroundColor: finalColor }}>
         <div className="w-full flex items-center justify-between px-0.5">
-          <div className="w-2.5 h-1.5 rounded-tl-lg bg-[#fde047]" />
-          <span className="text-[5px] font-black text-slate-950 bg-white/60 px-0.5 rounded">4x4</span>
-          <div className="w-2.5 h-1.5 rounded-tr-lg bg-[#fde047]" />
+          <div className="w-2.5 h-1.5 bg-[#fde047] rounded-tl" />
+          <div className="w-2.5 h-1.5 bg-[#fde047] rounded-tr" />
         </div>
-        <div className="relative w-[92%] mx-auto my-auto bg-[#1e293b] rounded-[10px] p-0.5 border border-black/25 flex flex-col justify-between overflow-hidden shadow-inner">
-          <div className="w-full h-3.5 bg-[#0f172a] rounded-t-[7px] relative overflow-hidden">
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_30%,rgba(255,255,255,0.4)_50%,transparent_70%)]" />
-          </div>
+        <div className="relative w-[92%] mx-auto my-auto bg-[#1e293b] rounded-[8px] p-0.5 flex flex-col justify-between overflow-hidden shadow-inner">
+          <div className="w-full h-3.5 bg-[#0f172a] rounded-t-[5px]" />
           <div className="w-full flex items-center justify-between my-0.5 px-0.5">
             <div className="w-1 h-4 bg-slate-400 rounded-full" />
-            <div className="flex-1 h-4 mx-0.5 rounded flex items-center justify-center" style={{ backgroundColor: finalColor }}>
-              <span className="text-[4px] font-mono font-black text-slate-900">SUV</span>
-            </div>
+            <div className="flex-1 h-4 mx-0.5 rounded flex items-center justify-center" style={{ backgroundColor: finalColor }} />
             <div className="w-1 h-4 bg-slate-400 rounded-full" />
           </div>
-          <div className="w-full h-2.5 bg-[#0f172a] rounded-b-[7px]" />
+          <div className="w-full h-2.5 bg-[#0f172a] rounded-b-[5px]" />
         </div>
         <div className="w-full flex flex-col items-center gap-0.5 pb-0.5">
           <div className="w-full flex items-center justify-between px-0.5">
-            <div className="w-2.5 h-1 rounded-bl-lg bg-[#ef4444]" />
-            <div className="w-2.5 h-1 rounded-br-lg bg-[#ef4444]" />
+            <div className="w-2.5 h-1 bg-[#ef4444] rounded-bl" />
+            <div className="w-2.5 h-1 bg-[#ef4444] rounded-br" />
           </div>
-          <div className="bg-white text-slate-950 px-1 py-0.2 rounded border border-slate-400 shadow-xs font-mono text-[6px] font-black tracking-tighter">
+          <div className="bg-white text-slate-950 px-1 py-0.2 rounded font-mono text-[6px] font-black">
             {plate || 'W1P-404'}
           </div>
         </div>
@@ -128,25 +107,23 @@ const VehicleCamioneta2D = ({ plate, color = '#0284c7' }) => {
 };
 
 const VehicleMototaxi2D = ({ plate, color = '#facc15' }) => (
-  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-1 filter drop-shadow-[2px_3px_4px_rgba(0,0,0,0.55)]">
-    <div className="relative w-[88%] h-[94%] rounded-[14px] border border-black/20 flex flex-col justify-between p-1 overflow-hidden shadow-sm" style={{ backgroundColor: color }}>
+  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-1">
+    <div className="relative w-[88%] h-[94%] rounded-[12px] border border-black/20 flex flex-col justify-between p-1 overflow-hidden shadow-sm" style={{ backgroundColor: color }}>
       <div className="w-full flex flex-col items-center">
         <div className="w-2 h-1.5 bg-slate-950 rounded-xs" />
-        <div className="w-3 h-1 bg-yellow-300 rounded-full shadow-[0_0_6px_#fde047]" />
+        <div className="w-3 h-1 bg-yellow-300 rounded-full" />
       </div>
-      <div className="w-[88%] h-2.5 mx-auto bg-[#0f172a] rounded-t-lg relative overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_30%,rgba(255,255,255,0.4)_50%,transparent_70%)]" />
-      </div>
-      <div className="w-[90%] h-5 mx-auto bg-amber-400 rounded border border-amber-500 shadow-sm flex flex-col items-center justify-center p-0.5">
-        <span className="text-[5px] font-mono font-black text-slate-950 tracking-wider">TORITO</span>
+      <div className="w-[88%] h-2.5 mx-auto bg-[#0f172a] rounded-t-lg" />
+      <div className="w-[90%] h-5 mx-auto bg-amber-400 rounded flex flex-col items-center justify-center p-0.5">
+        <span className="text-[5px] font-mono font-black text-slate-950">TORITO</span>
       </div>
       <div className="w-full flex flex-col items-center gap-0.5 pb-0.5">
         <div className="w-full flex items-center justify-between px-0.5">
-          <div className="w-2 h-1 bg-slate-950 rounded-xs -ml-0.5" />
+          <div className="w-2 h-1 bg-slate-950 rounded-xs" />
           <div className="w-1.5 h-1 bg-[#ef4444] rounded-xs" />
-          <div className="w-2 h-1 bg-slate-950 rounded-xs -mr-0.5" />
+          <div className="w-2 h-1 bg-slate-950 rounded-xs" />
         </div>
-        <div className="bg-white text-slate-950 px-1 py-0.2 rounded font-mono text-[6px] font-black tracking-tighter">
+        <div className="bg-white text-slate-950 px-1 py-0.2 rounded font-mono text-[6px] font-black">
           {plate || '5612-4B'}
         </div>
       </div>
@@ -155,19 +132,19 @@ const VehicleMototaxi2D = ({ plate, color = '#facc15' }) => (
 );
 
 const VehicleMoto2D = ({ plate, color = '#ea580c' }) => (
-  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-1 filter drop-shadow-[2px_3px_4px_rgba(0,0,0,0.6)]">
+  <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-1">
     <div className="relative w-6 h-2 flex items-center justify-between z-20">
-      <div className="w-1 h-1 rounded-full bg-slate-400 border border-slate-700" />
-      <div className="w-3 h-1 bg-amber-300 rounded-full shadow-[0_0_4px_#fde047]" />
-      <div className="w-1 h-1 rounded-full bg-slate-400 border border-slate-700" />
+      <div className="w-1 h-1 rounded-full bg-slate-400" />
+      <div className="w-3 h-1 bg-amber-300 rounded-full" />
+      <div className="w-1 h-1 rounded-full bg-slate-400" />
     </div>
     <div className="relative w-4.5 h-9 rounded-full border border-black/20 flex flex-col items-center justify-between p-0.5 shadow-sm -mt-0.5 overflow-hidden" style={{ backgroundColor: color }}>
       <div className="w-1 h-1.5 bg-slate-900 rounded-full" />
-      <div className="w-3 h-2 rounded bg-white/20 border border-white/30" />
+      <div className="w-3 h-2 rounded bg-white/20" />
       <div className="w-3 h-2.5 bg-slate-900 rounded-sm" />
       <div className="w-2 h-0.5 bg-red-600 rounded-full" />
     </div>
-    <div className="bg-white text-slate-950 px-0.5 py-0.1 rounded font-mono text-[5px] font-black tracking-tighter mt-0.5 z-20">
+    <div className="bg-white text-slate-950 px-0.5 py-0.1 rounded font-mono text-[5px] font-black mt-0.5 z-20">
       {plate || '5421-3A'}
     </div>
   </div>
@@ -187,28 +164,28 @@ const DEFAULT_FALLBACK_ELEMENTS = [
   { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
   { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
   { id: 6, type: 'crosswalk', x: 500, y: 300, w: 80, h: 100, rot: 0 },
-  { id: 7, type: 'gate', x: 40, y: 300, w: 30, h: 100, rot: 0, label: 'ACCESO GARITA ANPR' },
-  { id: 8, type: 'slot', x: 60, y: 60, w: 56, h: 96, rot: 0, code: 'A-01', status: 'free', slotType: 'auto', shaded: true },
-  { id: 9, type: 'slot', x: 140, y: 60, w: 68, h: 112, rot: 0, code: 'C-01', status: 'free', slotType: 'camioneta', shaded: true },
-  { id: 10, type: 'slot', x: 230, y: 60, w: 56, h: 96, rot: 0, code: 'A-02', status: 'occupied', slotType: 'auto', plate: 'ABC-123', shaded: true },
-  { id: 11, type: 'slot', x: 310, y: 60, w: 48, h: 80, rot: 0, code: 'T-01', status: 'occupied', slotType: 'mototaxi', plate: '5612-4B', shaded: true },
-  { id: 12, type: 'slot', x: 380, y: 60, w: 48, h: 80, rot: 0, code: 'T-02', status: 'free', slotType: 'mototaxi', shaded: true },
-  { id: 13, type: 'slot', x: 450, y: 60, w: 38, h: 65, rot: 0, code: 'M-01', status: 'free', slotType: 'moto', shaded: true },
-  { id: 14, type: 'slot', x: 510, y: 60, w: 38, h: 65, rot: 0, code: 'M-02', status: 'occupied', slotType: 'moto', plate: '5421-3A', shaded: true },
-  { id: 15, type: 'slot', x: 620, y: 60, w: 56, h: 96, rot: 0, code: 'A-03', status: 'free', slotType: 'auto', shaded: false },
-  { id: 16, type: 'slot', x: 700, y: 60, w: 68, h: 112, rot: 0, code: 'C-02', status: 'occupied', slotType: 'camioneta', plate: 'W1P-404', shaded: false },
-  { id: 17, type: 'slot', x: 790, y: 60, w: 56, h: 96, rot: 0, code: 'A-04', status: 'free', slotType: 'auto', shaded: false },
+  { id: 7, type: 'gate', x: 40, y: 300, w: 30, h: 100, rot: 0, label: 'ACCESO GARITA' },
+  { id: 8, type: 'slot', x: 60, y: 60, w: 56, h: 96, rot: 0, code: 'A-01', status: 'free', slotType: 'auto' },
+  { id: 9, type: 'slot', x: 140, y: 60, w: 68, h: 112, rot: 0, code: 'C-01', status: 'free', slotType: 'camioneta' },
+  { id: 10, type: 'slot', x: 230, y: 60, w: 56, h: 96, rot: 0, code: 'A-02', status: 'occupied', slotType: 'auto', plate: 'ABC-123' },
+  { id: 11, type: 'slot', x: 310, y: 60, w: 48, h: 80, rot: 0, code: 'T-01', status: 'occupied', slotType: 'mototaxi', plate: '5612-4B' },
+  { id: 12, type: 'slot', x: 380, y: 60, w: 48, h: 80, rot: 0, code: 'T-02', status: 'free', slotType: 'mototaxi' },
+  { id: 13, type: 'slot', x: 450, y: 60, w: 38, h: 65, rot: 0, code: 'M-01', status: 'free', slotType: 'moto' },
+  { id: 14, type: 'slot', x: 510, y: 60, w: 38, h: 65, rot: 0, code: 'M-02', status: 'occupied', slotType: 'moto', plate: '5421-3A' },
+  { id: 15, type: 'slot', x: 620, y: 60, w: 56, h: 96, rot: 0, code: 'A-03', status: 'free', slotType: 'auto' },
+  { id: 16, type: 'slot', x: 700, y: 60, w: 68, h: 112, rot: 0, code: 'C-02', status: 'occupied', slotType: 'camioneta', plate: 'W1P-404' },
+  { id: 17, type: 'slot', x: 790, y: 60, w: 56, h: 96, rot: 0, code: 'A-04', status: 'free', slotType: 'auto' },
   
-  { id: 18, type: 'slot', x: 60, y: 480, w: 56, h: 96, rot: 0, code: 'B-01', status: 'free', slotType: 'auto', shaded: false },
-  { id: 19, type: 'slot', x: 140, y: 480, w: 56, h: 96, rot: 0, code: 'B-02', status: 'free', slotType: 'auto', shaded: false },
-  { id: 20, type: 'slot', x: 220, y: 480, w: 68, h: 112, rot: 0, code: 'C-03', status: 'occupied', slotType: 'camioneta', plate: 'AYC-888', shaded: false },
-  { id: 21, type: 'slot', x: 310, y: 480, w: 56, h: 96, rot: 0, code: 'B-03', status: 'free', slotType: 'auto', shaded: false },
-  { id: 22, type: 'slot', x: 390, y: 480, w: 56, h: 96, rot: 0, code: 'B-04', status: 'free', slotType: 'auto', shaded: false },
-  { id: 23, type: 'slot', x: 470, y: 480, w: 48, h: 80, rot: 0, code: 'T-03', status: 'free', slotType: 'mototaxi', shaded: false },
-  { id: 24, type: 'slot', x: 540, y: 480, w: 38, h: 65, rot: 0, code: 'M-03', status: 'free', slotType: 'moto', shaded: false },
-  { id: 25, type: 'slot', x: 620, y: 480, w: 56, h: 96, rot: 0, code: 'B-05', status: 'free', slotType: 'auto', shaded: false },
-  { id: 26, type: 'slot', x: 700, y: 480, w: 56, h: 96, rot: 0, code: 'B-06', status: 'free', slotType: 'auto', shaded: false },
-  { id: 27, type: 'slot', x: 780, y: 480, w: 56, h: 96, rot: 0, code: 'B-07', status: 'free', slotType: 'auto', shaded: false }
+  { id: 18, type: 'slot', x: 60, y: 480, w: 56, h: 96, rot: 0, code: 'B-01', status: 'free', slotType: 'auto' },
+  { id: 19, type: 'slot', x: 140, y: 480, w: 56, h: 96, rot: 0, code: 'B-02', status: 'free', slotType: 'auto' },
+  { id: 20, type: 'slot', x: 220, y: 480, w: 68, h: 112, rot: 0, code: 'C-03', status: 'occupied', slotType: 'camioneta', plate: 'AYC-888' },
+  { id: 21, type: 'slot', x: 310, y: 480, w: 56, h: 96, rot: 0, code: 'B-03', status: 'free', slotType: 'auto' },
+  { id: 22, type: 'slot', x: 390, y: 480, w: 56, h: 96, rot: 0, code: 'B-04', status: 'free', slotType: 'auto' },
+  { id: 23, type: 'slot', x: 470, y: 480, w: 48, h: 80, rot: 0, code: 'T-03', status: 'free', slotType: 'mototaxi' },
+  { id: 24, type: 'slot', x: 540, y: 480, w: 38, h: 65, rot: 0, code: 'M-03', status: 'free', slotType: 'moto' },
+  { id: 25, type: 'slot', x: 620, y: 480, w: 56, h: 96, rot: 0, code: 'B-05', status: 'free', slotType: 'auto' },
+  { id: 26, type: 'slot', x: 700, y: 480, w: 56, h: 96, rot: 0, code: 'B-06', status: 'free', slotType: 'auto' },
+  { id: 27, type: 'slot', x: 780, y: 480, w: 56, h: 96, rot: 0, code: 'B-07', status: 'free', slotType: 'auto' }
 ];
 
 const mapServerSlot = (s) => ({
@@ -217,7 +194,6 @@ const mapServerSlot = (s) => ({
   code: s.code,
   status: s.status || 'free',
   slotType: s.slot_type || 'auto',
-  shaded: false,
   x: s.pos_x || 0,
   y: s.pos_y || 0,
   w: s.width || 56,
@@ -260,15 +236,14 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const [useCustomPlate, setUseCustomPlate] = useState(false);
   const [customPlateInput, setCustomPlateInput] = useState('');
 
+  // Modalidad comercial
   const [bookingModel, setBookingModel] = useState('postpaid');
   const [vehicleCategory, setVehicleCategory] = useState('auto');
   
+  // Comprobante SUNAT
   const [receiptType, setReceiptType] = useState('boleta');
   const [rucNumber, setRucNumber] = useState('');
   const [businessName, setBusinessName] = useState('');
-
-  const [driverTrustScore] = useState(98);
-  const [walletBalance] = useState(35.00);
 
   useEffect(() => {
     let cancelled = false;
@@ -419,89 +394,50 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="space-y-4">
       
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 p-4 rounded-3xl text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-black shadow-lg shrink-0">
-            <Award className="w-6 h-6 stroke-[2.5]" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-white text-sm">Conductor Nivel Platino</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                {driverTrustScore} pts
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Tolerancia extendida (+20m de gracia) • Reembolso 100% en cancelaciones anticipadas • Prioridad LPR.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-2xl flex items-center gap-2.5">
-            <Wallet className="w-4 h-4 text-emerald-400 shrink-0" />
-            <div className="text-right font-mono">
-              <span className="text-[10px] text-slate-400 block leading-tight">Smart Wallet</span>
-              <span className="text-sm font-black text-emerald-400">S/ {walletBalance.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {planStatus === 'unregistered' && (
-        <div className="p-4 bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl text-xs font-bold flex items-center gap-2.5">
-          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-          <span>Esta sede está en modo catálogo y no admite reservas inmediatas en el servidor.</span>
+        <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <span>Sede en modo demostración. No admite reservas reales en el servidor.</span>
         </div>
       )}
       {planStatus === 'loading' && (
-        <div className="p-4 bg-slate-50 border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold flex items-center gap-2.5">
-          <Loader2 className="w-5 h-5 text-slate-500 shrink-0 animate-spin" />
-          <span>Cargando plano en tiempo real de la sede...</span>
+        <div className="p-3 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs flex items-center gap-2">
+          <Loader2 className="w-4 h-4 text-slate-500 shrink-0 animate-spin" />
+          <span>Cargando plano de la sede...</span>
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
+      {/* Cabecera Limpia de la Sede */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{parking?.name || 'Smart Park Central'}</h2>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              ● Abierto 24/7
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-            <MapPin className="w-4 h-4 text-emerald-600 shrink-0" /> 
-            <span>{parking?.address || 'Portal Unión 42, Centro Histórico'}, {parking?.city || 'Ayacucho - Huamanga'}</span>
+          <h2 className="text-lg font-bold text-slate-900">{parking?.name || 'Smart Park Central'}</h2>
+          <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> 
+            <span>{parking?.address || 'Portal Unión 42'}, {parking?.city || 'Ayacucho'}</span>
           </p>
         </div>
 
-        <div className="flex items-center space-x-4 bg-slate-50 border border-slate-200 p-3 rounded-2xl">
-          <div className="text-right">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Tarifa Base</span>
-            <span className="text-xl font-black text-emerald-600 font-mono">S/ {baseHourlyRate.toFixed(2)}/h</span>
+        <div className="flex items-center gap-4 text-xs font-mono">
+          <div>
+            <span className="text-slate-400 block text-[10px]">Tarifa</span>
+            <span className="font-bold text-slate-900 text-sm">S/ {baseHourlyRate.toFixed(2)}/h</span>
           </div>
-          <div className="h-8 w-px bg-slate-200" />
-          <div className="flex items-center space-x-2 text-xs font-mono text-slate-600">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-            <span>{freeSlots.length} Libres de {totalSlots}</span>
+          <div className="h-6 w-px bg-slate-200" />
+          <div>
+            <span className="text-slate-400 block text-[10px]">Disponibilidad</span>
+            <span className="font-bold text-emerald-700">{freeSlots.length} de {totalSlots} libres</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
+        {/* Contenedor del Plano Asfáltico Cenital */}
         <div 
           ref={containerRef}
-          className="lg:col-span-2 bg-[#090d16] rounded-3xl p-3 sm:p-5 border-4 border-slate-800 shadow-2xl flex items-center justify-center relative overflow-hidden h-[480px] sm:h-[560px] lg:h-[660px]"
-          style={{
-            backgroundImage: `
-              radial-gradient(circle at 50% 50%, #121927 0%, #070a10 100%),
-              radial-gradient(rgba(148,163,184,0.08) 1px, transparent 1px)
-            `,
-            backgroundSize: '100% 100%, 24px 24px'
-          }}
+          className="lg:col-span-2 bg-[#0d121c] rounded-2xl p-4 border border-slate-800 flex items-center justify-center relative overflow-hidden h-[440px] sm:h-[500px] lg:h-[580px]"
         >
           <div 
             style={{ 
@@ -509,21 +445,18 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               height: `${BASE_HEIGHT}px`,
               transform: `scale(${scale})`,
               transformOrigin: 'center center',
-              backgroundColor: '#111723',
-              boxShadow: '0 30px 70px -15px rgba(0,0,0,0.98), 0 0 0 1px rgba(255,255,255,0.08)'
+              backgroundColor: '#131a26'
             }}
-            className="relative rounded-3xl border-4 border-slate-700/80 overflow-hidden select-none shrink-0 transition-transform duration-150 ease-out"
+            className="relative rounded-2xl border border-slate-700 overflow-hidden select-none shrink-0"
           >
-            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_45%,#243044_0%,#17202f_45%,#0e141f_100%)]" />
-            <div className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(rgba(255,255,255,0.4)_0.6px,transparent_0.6px),radial-gradient(rgba(0,0,0,0.7)_0.8px,transparent_0.8px)] bg-[size:5px_5px,9px_9px]" />
-            <div className="absolute inset-0 pointer-events-none opacity-35 bg-[linear-gradient(to_right,rgba(0,0,0,0.55)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.55)_1px,transparent_1px)] bg-[size:120px_120px]" />
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_45%,#1c2536_0%,#111722_100%)]" />
+            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(to_right,rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.15)_1px,transparent_1px)] bg-[size:100px_100px]" />
 
             {elements.map((el) => {
               if (el.type === 'slot') {
                 const isFree = el.status === 'free';
                 const isSelected = selectedSlot?.id === el.id || selectedSlot?.code === el.code;
                 const slotType = el.slotType || 'auto';
-                const isShaded = !!el.shaded;
 
                 return (
                   <div
@@ -536,40 +469,30 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute rounded-xl border-2 transition-all duration-200 flex flex-col justify-between p-1.5 cursor-pointer overflow-hidden ${
+                    className={`absolute rounded-lg border transition-all flex flex-col justify-between p-1.5 cursor-pointer overflow-hidden ${
                       isSelected
-                        ? 'ring-4 ring-cyan-400 border-cyan-400 bg-cyan-950/80 shadow-[0_0_25px_rgba(6,182,212,0.9)] scale-105 z-30'
+                        ? 'border-cyan-400 bg-cyan-950/80 ring-2 ring-cyan-400/50 z-30'
                         : isFree
-                        ? 'border-white/80 bg-slate-900/40 text-slate-100 hover:border-white hover:scale-105 z-10'
-                        : 'border-slate-500/40 bg-slate-950/30 cursor-not-allowed z-5'
+                        ? 'border-white/70 bg-slate-900/40 text-slate-100 hover:border-white z-10'
+                        : 'border-slate-600/40 bg-slate-950/30 cursor-not-allowed z-5'
                     }`}
                   >
-                    {isShaded && (
-                      <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(245,158,11,0.18),rgba(245,158,11,0.18)_6px,transparent_6px,transparent_12px)] pointer-events-none rounded-xl" />
-                    )}
-
-                    <div className="absolute top-1 right-1 flex items-center z-20 pointer-events-none">
-                      <div className={`w-2 h-2 rounded-full ${
-                        isFree ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse' : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
-                      }`} />
-                    </div>
-
-                    <div className="flex items-center justify-between text-[10px] font-mono font-black z-10 leading-none pr-3">
-                      <span className="text-white drop-shadow-sm">{el.code}</span>
-                      {isShaded && <span className="text-[6px] text-amber-300 font-bold bg-amber-950/80 px-1 rounded">TECHADO</span>}
+                    <div className="flex items-center justify-between text-[10px] font-mono font-bold z-10 leading-none">
+                      <span className="text-white">{el.code}</span>
+                      <div className={`w-1.5 h-1.5 rounded-full ${isFree ? 'bg-emerald-400' : 'bg-rose-500'}`} />
                     </div>
 
                     <div className="flex items-center justify-center my-auto py-0.5 pointer-events-none z-10 w-full h-full">
                       {isFree ? (
-                        <div className="w-6 h-8 rounded border border-dashed border-white/30 flex items-center justify-center">
+                        <div className="w-6 h-7 rounded border border-dashed border-white/25 flex items-center justify-center">
                           {slotType === 'moto' ? (
-                            <Bike className="w-3.5 h-3.5 text-orange-400/50" />
+                            <Bike className="w-3 h-3 text-slate-400" />
                           ) : slotType === 'camioneta' ? (
-                            <Truck className="w-4 h-4 text-cyan-400/50" />
+                            <Truck className="w-3.5 h-3.5 text-slate-400" />
                           ) : slotType === 'mototaxi' ? (
-                            <Navigation className="w-3.5 h-3.5 text-yellow-400/50 rotate-45" />
+                            <Navigation className="w-3 h-3 text-slate-400 rotate-45" />
                           ) : (
-                            <Car className="w-4 h-4 text-emerald-400/50" />
+                            <Car className="w-3.5 h-3.5 text-slate-400" />
                           )}
                         </div>
                       ) : (
@@ -577,18 +500,15 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       )}
                     </div>
 
-                    <div className="w-full h-1.5 rounded bg-gradient-to-b from-amber-400 to-amber-600 border border-amber-300/60 shadow-xs flex items-center justify-around px-0.5 z-10 my-0.5 overflow-hidden">
-                      <div className="w-1 h-full bg-black transform -skew-x-12" />
-                      <div className="w-1 h-full bg-black transform -skew-x-12" />
-                    </div>
+                    <div className="w-full h-1 bg-amber-500/80 rounded-xs z-10 my-0.5" />
 
                     <div className="text-center text-[8px] font-mono font-bold leading-none z-10">
                       {isSelected ? (
-                        <span className="text-cyan-300 font-black animate-pulse">✓ ELEGIDO</span>
+                        <span className="text-cyan-300">SELECCIONADO</span>
                       ) : isFree ? (
-                        <span className="text-emerald-400 font-extrabold">LIBRE</span>
+                        <span className="text-emerald-400">LIBRE</span>
                       ) : (
-                        <span className="text-rose-400 font-bold">OCUPADO</span>
+                        <span className="text-slate-400">OCUPADO</span>
                       )}
                     </div>
                   </div>
@@ -606,7 +526,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className="absolute bg-slate-600 border border-slate-500 rounded-xs shadow-md z-5"
+                    className="absolute bg-slate-600 border border-slate-500 rounded-xs z-5"
                   />
                 );
               }
@@ -622,9 +542,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className="absolute bg-[#121824] border border-slate-700/60 rounded-xl flex items-center justify-center z-1 pointer-events-none"
+                    className="absolute bg-[#111620] border border-slate-700/50 rounded-lg flex items-center justify-center z-1 pointer-events-none"
                   >
-                    <span className="text-[11px] font-mono font-black text-slate-500/70 tracking-widest uppercase">{el.label || 'CARRIL DE TRÁNSITO'}</span>
+                    <span className="text-[10px] font-mono font-bold text-slate-500 tracking-wider uppercase">{el.label || 'VÍA INTERNA'}</span>
                   </div>
                 );
               }
@@ -634,18 +554,20 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
           </div>
         </div>
 
-        <div className="bg-slate-900/95 backdrop-blur-xl p-5 rounded-3xl border border-slate-800 shadow-xl flex flex-col justify-between space-y-4 text-white">
-          <div className="space-y-4">
+        {/* Panel Lateral de Reserva y Opciones Comerciales */}
+        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4 text-white">
+          <div className="space-y-3.5">
             
+            {/* Categoría de Vehículo */}
             <div>
-              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5 font-mono">
-                Tipo de Vehículo
+              <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                Vehículo
               </label>
               <div className="grid grid-cols-4 gap-1.5">
                 {[
                   { id: 'auto', label: 'Auto', icon: Car },
-                  { id: 'camioneta', label: '4x4', icon: Truck },
-                  { id: 'mototaxi', label: 'Torito', icon: Navigation },
+                  { id: 'camioneta', label: 'Camioneta', icon: Truck },
+                  { id: 'mototaxi', label: 'Mototaxi', icon: Navigation },
                   { id: 'moto', label: 'Moto', icon: Bike }
                 ].map((v) => {
                   const Icon = v.icon;
@@ -655,13 +577,13 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       key={v.id}
                       type="button"
                       onClick={() => setVehicleCategory(v.id)}
-                      className={`p-2 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                      className={`p-2 rounded-xl text-xs font-semibold transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
                         isCur 
-                          ? 'bg-emerald-500 text-slate-950 shadow-md ring-2 ring-emerald-300' 
+                          ? 'bg-emerald-600 text-white' 
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-3.5 h-3.5" />
                       <span className="text-[10px]">{v.label}</span>
                     </button>
                   );
@@ -669,10 +591,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            {/* Placa */}
+            <div className="space-y-1">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-slate-300 block">
-                  Placa de Vehículo
+                <label className="text-xs font-semibold text-slate-300">
+                  Placa
                 </label>
                 {vehicles.length > 0 && (
                   <button
@@ -686,9 +609,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                         setCustomPlateInput('');
                       }
                     }}
-                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold cursor-pointer underline"
+                    className="text-[11px] text-emerald-400 hover:underline cursor-pointer"
                   >
-                    {useCustomPlate ? '← Mi vehículo' : '+ Otra placa'}
+                    {useCustomPlate ? 'Mis vehículos' : 'Otra placa'}
                   </button>
                 )}
               </div>
@@ -712,127 +635,74 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   type="text"
                   value={customPlateInput}
                   onChange={(e) => setCustomPlateInput(e.target.value.toUpperCase())}
-                  placeholder="Ej. ABC-123 o P1A-999"
+                  placeholder="ABC-123"
                   maxLength={10}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-mono font-bold tracking-wider uppercase focus:outline-none"
                 />
               )}
             </div>
 
+            {/* Modalidades Comerciales */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block font-mono">
-                Modalidad Comercial
+              <label className="text-xs font-bold text-slate-300 block">
+                Forma de Pago
               </label>
               
-              <div className="grid grid-cols-1 gap-2">
-                
-                <button
-                  type="button"
-                  onClick={() => setBookingModel('postpaid')}
-                  className={`p-2.5 rounded-2xl border text-left transition flex items-start justify-between cursor-pointer ${
-                    bookingModel === 'postpaid'
-                      ? 'bg-slate-800/90 border-emerald-400 ring-2 ring-emerald-400/30'
-                      : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className={`p-1.5 rounded-xl ${bookingModel === 'postpaid' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
-                      <Zap className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-white">Reserva Libre (Paga al Salir)</span>
-                        <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono">S/ 0.00 HOY</span>
+              <div className="space-y-1.5">
+                {[
+                  {
+                    id: 'postpaid',
+                    title: 'Pagar en garita al salir',
+                    desc: 'Efectivo, Yape, Plin o POS',
+                    costText: `S/ ${rawCost.toFixed(2)}`
+                  },
+                  {
+                    id: 'prepaid_discount',
+                    title: 'Prepago online (-10% dto.)',
+                    desc: 'Tarjeta o pago digital anticipado',
+                    costText: `S/ ${(rawCost * 0.90).toFixed(2)}`
+                  },
+                  {
+                    id: 'wallet',
+                    title: 'Smart-Park Wallet',
+                    desc: 'Cargo a saldo disponible',
+                    costText: `S/ ${rawCost.toFixed(2)}`
+                  },
+                  {
+                    id: 'corporate_b2b',
+                    title: 'Cuenta Corporativa B2B',
+                    desc: 'Facturación a crédito por RUC',
+                    costText: 'Crédito'
+                  }
+                ].map((mode) => {
+                  const isCur = bookingModel === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setBookingModel(mode.id)}
+                      className={`w-full p-2 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
+                        isCur
+                          ? 'bg-slate-800 border-emerald-500 text-white'
+                          : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      <div>
+                        <span className="text-xs font-semibold block">{mode.title}</span>
+                        <span className="text-[10px] text-slate-400 block">{mode.desc}</span>
                       </div>
-                      <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                        Paga en garita con Yape, efectivo o POS al retirar tu vehículo.
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBookingModel('prepaid_discount')}
-                  className={`p-2.5 rounded-2xl border text-left transition flex items-start justify-between cursor-pointer ${
-                    bookingModel === 'prepaid_discount'
-                      ? 'bg-slate-800/90 border-cyan-400 ring-2 ring-cyan-400/30'
-                      : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className={`p-1.5 rounded-xl ${bookingModel === 'prepaid_discount' ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
-                      <Percent className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-white">Prepago Digital (-10% OFF)</span>
-                        <span className="text-[9px] font-bold bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded font-mono">AHORRA 10%</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                        Plaza 100% blindada sin vencimiento anticipado + Check-in LPR.
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBookingModel('wallet')}
-                  className={`p-2.5 rounded-2xl border text-left transition flex items-start justify-between cursor-pointer ${
-                    bookingModel === 'wallet'
-                      ? 'bg-slate-800/90 border-amber-400 ring-2 ring-amber-400/30'
-                      : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className={`p-1.5 rounded-xl ${bookingModel === 'wallet' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
-                      <Wallet className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-white">Smart-Park Wallet</span>
-                        <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-mono">+5% BONUS</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                        Débito instantáneo de tu saldo (Saldo actual: S/ {walletBalance.toFixed(2)}).
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBookingModel('corporate_b2b')}
-                  className={`p-2.5 rounded-2xl border text-left transition flex items-start justify-between cursor-pointer ${
-                    bookingModel === 'corporate_b2b'
-                      ? 'bg-slate-800/90 border-purple-400 ring-2 ring-purple-400/30'
-                      : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className={`p-1.5 rounded-xl ${bookingModel === 'corporate_b2b' ? 'bg-purple-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
-                      <Building2 className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-white">Flota Corporativa / B2B</span>
-                        <span className="text-[9px] font-bold bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-mono">CRÉDITO RUC</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                        Cargo a la cuenta corporativa de tu empresa con factura consolidada.
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
+                      <span className="text-xs font-mono font-bold text-emerald-400">{mode.costText}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
+            {/* Duración y ETA */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[11px] font-bold text-slate-300 block mb-1">
-                  Horas de Estadía
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  Horas
                 </label>
                 <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl overflow-hidden h-9 px-1">
                   <button
@@ -857,15 +727,15 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-300 block mb-1">
-                  Llegada (ETA)
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  Llegada
                 </label>
                 <select
                   value={etaMinutes}
                   onChange={(e) => setEtaMinutes(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl h-9 px-2 text-xs font-mono font-bold text-white outline-none cursor-pointer"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl h-9 px-2 text-xs font-mono font-semibold text-white outline-none cursor-pointer"
                 >
-                  <option value={0}>Ahora mismo</option>
+                  <option value={0}>Ahora</option>
                   <option value={15}>En 15 min</option>
                   <option value={30}>En 30 min</option>
                   <option value={60}>En 1 hora</option>
@@ -873,23 +743,22 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
             </div>
 
-            <div className="bg-slate-950 p-2.5 rounded-2xl border border-slate-800 space-y-2">
+            {/* Comprobante SUNAT */}
+            <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-bold flex items-center gap-1">
-                  <Receipt className="w-3.5 h-3.5 text-slate-400" /> Comprobante SUNAT:
-                </span>
+                <span className="text-slate-400">Comprobante SUNAT:</span>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setReceiptType('boleta')}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${receiptType === 'boleta' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+                    className={`px-2 py-0.5 rounded-md text-xs font-semibold ${receiptType === 'boleta' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}
                   >
                     Boleta
                   </button>
                   <button
                     type="button"
                     onClick={() => setReceiptType('factura')}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${receiptType === 'factura' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+                    className={`px-2 py-0.5 rounded-md text-xs font-semibold ${receiptType === 'factura' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}
                   >
                     Factura
                   </button>
@@ -910,75 +779,49 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     type="text"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Razón Social de la Empresa"
+                    placeholder="Razón Social"
                     className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2 py-1 text-xs"
                   />
                 </div>
               )}
             </div>
 
-            <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1.5 text-xs font-mono">
+            {/* Desglose */}
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
-                <span>Tarifa Base:</span>
-                <span className="text-slate-200">S/ {baseHourlyRate.toFixed(2)} × {Number(hours) || 1}h</span>
+                <span>Subtotal ({Number(hours) || 1}h):</span>
+                <span className="text-slate-200">S/ {rawCost.toFixed(2)}</span>
               </div>
               {discountAmount > 0 && (
-                <div className="flex justify-between text-cyan-400 font-bold">
-                  <span>Descuento Prepago (-10%):</span>
+                <div className="flex justify-between text-cyan-400">
+                  <span>Descuento prepago:</span>
                   <span>- S/ {discountAmount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-slate-400 text-[11px]">
-                <span>Base Imponible / IGV (18%):</span>
-                <span>S/ {subtotalBase.toFixed(2)} + S/ {igvAmount.toFixed(2)}</span>
+                <span>IGV (18% incluido):</span>
+                <span>S/ {igvAmount.toFixed(2)}</span>
               </div>
               <div className="h-px bg-slate-800 my-1" />
               <div className="flex justify-between font-bold text-white items-center">
-                <span>Total Estimado:</span>
-                <span className="text-emerald-400 font-mono text-base font-black">
+                <span>Total a Pagar:</span>
+                <span className="text-emerald-400 text-sm">
                   S/ {finalTotalCost.toFixed(2)}
                 </span>
               </div>
             </div>
 
-            <div className="p-2.5 bg-emerald-950/30 border border-emerald-500/30 rounded-2xl flex items-start gap-2 text-[10px] text-emerald-300">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <p className="leading-snug">
-                <strong>Garantía Smart-Park:</strong> Cancelación 100% gratuita hasta 15 min antes con reintegro automático a tu billetera.
-              </p>
-            </div>
-
           </div>
 
-          <div className="pt-2">
+          <div className="pt-1">
             <Button
               type="button"
               variant="default"
               onClick={handleExecuteBooking}
               disabled={!canReserve}
-              className="w-full py-3.5 text-xs font-bold gap-2 shadow-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full py-3 text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              {bookingModel === 'postpaid' ? (
-                <>
-                  <QrCode className="w-4 h-4" />
-                  <span>Emitir Reserva Gratuita (Pagar al salir)</span>
-                </>
-              ) : bookingModel === 'prepaid_discount' ? (
-                <>
-                  <CreditCard className="w-4 h-4" />
-                  <span>Prepagar con Descuento (S/ {finalTotalCost.toFixed(2)})</span>
-                </>
-              ) : bookingModel === 'wallet' ? (
-                <>
-                  <Wallet className="w-4 h-4" />
-                  <span>Pagar con Smart Wallet (S/ {finalTotalCost.toFixed(2)})</span>
-                </>
-              ) : (
-                <>
-                  <Building2 className="w-4 h-4" />
-                  <span>Cargar a Flota Corporativa</span>
-                </>
-              )}
+              <span>Confirmar Reserva</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
             {!canReserve && !effectivePlate && (

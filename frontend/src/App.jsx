@@ -171,10 +171,10 @@ export const App = () => {
         startTime: bookingData.startTime,
         expiresAt: bookingData.expiresAt
       });
-      if (!newRes) {
-        const msg = bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
+      if (!newRes || newRes.error) {
+        const msg = newRes?.error || bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
         setBookingFeedback(msg);
-        setTimeout(() => setBookingFeedback(null), 4000);
+        setTimeout(() => setBookingFeedback(null), 6000);
         return;
       }
 

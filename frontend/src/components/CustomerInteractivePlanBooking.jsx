@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import api from '../services/api';
+import { useEstablishments } from '../context/EstablishmentContext';
 import { 
   Car, 
   MapPin, 
@@ -217,6 +218,7 @@ const mapServerElement = (e) => {
 };
 
 export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onReserveSlot }) => {
+  const { reservations, bookingError } = useEstablishments();
   const BASE_WIDTH = 1100;
   const BASE_HEIGHT = 700;
   
@@ -244,6 +246,13 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const [receiptType, setReceiptType] = useState('boleta');
   const [rucNumber, setRucNumber] = useState('');
   const [businessName, setBusinessName] = useState('');
+
+  const activeUserReservation = useMemo(() => {
+    return (reservations || []).find(r => r && (
+      r.status === 'SCHEDULED' || r.status === 'ACTIVE' || 
+      r.status === 'scheduled' || r.status === 'active'
+    ));
+  }, [reservations]);
 
   useEffect(() => {
     let cancelled = false;
@@ -811,6 +820,27 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
             </div>
 
+            {/* Aviso si ya cuenta con reserva activa */}
+            {activeUserReservation && (
+              <div className="p-2.5 bg-cyan-950/80 border border-cyan-700/60 rounded-xl text-xs text-cyan-200 space-y-0.5">
+                <div className="flex items-center gap-1.5 font-bold text-cyan-300">
+                  <AlertTriangle className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span>Reserva activa en curso</span>
+                </div>
+                <p className="text-[11px] text-cyan-200/80 leading-relaxed">
+                  Ya tienes la reserva <span className="font-mono font-bold text-white">{activeUserReservation.code || activeUserReservation.id}</span> ({activeUserReservation.plate || activeUserReservation.license_plate}). Cancela o finaliza esa reserva para apartar otra plaza.
+                </p>
+              </div>
+            )}
+
+            {/* Mensaje de error si la creación falló */}
+            {bookingError && (
+              <div className="p-2.5 bg-rose-950/80 border border-rose-700/60 rounded-xl text-xs text-rose-200 flex items-start gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                <span className="text-[11px] leading-snug">{bookingError}</span>
+              </div>
+            )}
+
           </div>
 
           <div className="pt-1">
@@ -818,10 +848,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               type="button"
               variant="default"
               onClick={handleExecuteBooking}
-              disabled={!canReserve}
+              disabled={!canReserve || !!activeUserReservation}
               className="w-full py-3 text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <span>Confirmar Reserva</span>
+              <span>{activeUserReservation ? 'Tienes una reserva activa' : 'Confirmar Reserva'}</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
             {!canReserve && !effectivePlate && (

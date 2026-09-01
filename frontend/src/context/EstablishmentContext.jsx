@@ -1129,9 +1129,9 @@ export const EstablishmentProvider = ({ children }) => {
     } catch (e) {
       const raw = e?.response?.data?.detail;
       const detail = Array.isArray(raw) ? raw.map(d=> d?.msg || JSON.stringify(d)).join(', ') : (typeof raw === 'string' ? raw : raw ? JSON.stringify(raw) : 'No se pudo registrar la reserva en el servidor (cajón ocupado o datos inválidos).');
-      console.error('Error creando reserva en el servidor', e?.response?.data || e);
+      console.warn('Reserva rechazada:', detail);
       setBookingError(detail);
-      return null;
+      return { error: detail };
     }
   };
 

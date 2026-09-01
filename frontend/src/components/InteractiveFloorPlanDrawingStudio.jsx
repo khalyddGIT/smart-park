@@ -64,14 +64,12 @@ import { Input } from './ui/input';
 // COMPONENTES VOLUMÉTRICOS 3D REALISTAS
 // ==========================================
 
-// 1. Vehículo Volumétrico 3D (Auto / Sedán / SUV / Moto)
-const VolumetricCar3D = ({ plate, color = '#2563eb', isMoto = false, isIsometric = true }) => {
+// 1. Vehículo de Alta Definición (Auto / Sedán / SUV / Moto)
+const VolumetricCar3D = ({ plate, color = '#2563eb', isMoto = false }) => {
   if (isMoto) {
     return (
-      <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none transform-gpu py-0.5">
-        {/* Sombra de contacto */}
-        <div className="absolute inset-x-2 bottom-0.5 h-2 bg-black/60 blur-xs rounded-full" />
-        {/* Chasis de Moto 3D */}
+      <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
+        {/* Chasis de Moto */}
         <div className="relative w-6 h-11 bg-slate-900 rounded-full border border-orange-500/80 shadow-md flex flex-col items-center justify-between p-1">
           {/* Manillar & Faro Delantero */}
           <div className="w-4 h-1.5 bg-slate-400 rounded-full shadow-[0_0_8px_#38bdf8] flex items-center justify-center">
@@ -92,26 +90,25 @@ const VolumetricCar3D = ({ plate, color = '#2563eb', isMoto = false, isIsometric
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none transform-gpu py-0.5">
-      {/* Sombra de contacto volumétrica */}
-      <div className="absolute inset-x-1 bottom-0.5 h-[90%] bg-black/70 blur-xs rounded-xl" />
+    <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none py-0.5">
+      {/* Sombra de contacto */}
+      <div className="absolute inset-x-1 bottom-0.5 h-[90%] bg-black/60 blur-xs rounded-xl" />
 
-      {/* Carrocería 3D del Vehículo */}
+      {/* Carrocería del Vehículo */}
       <div 
-        className="relative w-[92%] h-[92%] rounded-xl border border-slate-700/80 flex flex-col justify-between p-1 overflow-hidden"
+        className="relative w-[92%] h-[92%] rounded-xl border border-slate-700/80 flex flex-col justify-between p-1 overflow-hidden shadow-lg"
         style={{
-          background: `linear-gradient(135deg, ${color}dd 0%, #0f172a 100%)`,
-          boxShadow: isIsometric ? '0 10px 22px rgba(0,0,0,0.85), inset 0 1px 3px rgba(255,255,255,0.45)' : '0 4px 10px rgba(0,0,0,0.7)'
+          background: `linear-gradient(135deg, ${color}dd 0%, #0f172a 100%)`
         }}
       >
-        {/* Parachoques Delantero y Faros LED Xenon */}
+        {/* Parachoques Delantero y Faros LED */}
         <div className="w-full flex items-center justify-between px-1">
           <div className="w-2 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
           <div className="w-5 h-1 bg-slate-950/80 rounded-full" />
           <div className="w-2 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_8px_#38bdf8]" />
         </div>
 
-        {/* Parabrisas Delantero con Reflejo Solar */}
+        {/* Parabrisas Delantero con Reflejo */}
         <div className="w-[85%] h-3.5 mx-auto bg-gradient-to-b from-cyan-950 to-slate-950 rounded-t-lg border border-cyan-500/30 flex items-center justify-center overflow-hidden">
           <div className="w-full h-full bg-[linear-gradient(45deg,transparent_30%,rgba(255,255,255,0.25)_50%,transparent_70%)]" />
         </div>
@@ -144,8 +141,8 @@ const VolumetricCar3D = ({ plate, color = '#2563eb', isMoto = false, isIsometric
   );
 };
 
-// 2. Muro Volumétrico de Hormigón Armado 3D
-const VolumetricWall3D = ({ el, isSelected, isIsometric }) => {
+// 2. Muro de Hormigón Armado
+const VolumetricWall3D = ({ el, isSelected }) => {
   return (
     <div
       style={{
@@ -159,32 +156,15 @@ const VolumetricWall3D = ({ el, isSelected, isIsometric }) => {
         isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30' : ''
       }`}
     >
-      {/* Sombra proyectada del muro */}
-      {isIsometric && (
-        <div 
-          className="absolute -inset-x-1 -bottom-2.5 h-3 bg-black/60 blur-xs rounded pointer-events-none"
-          style={{ transform: 'translateY(3px)' }}
-        />
-      )}
-      {/* Cara Superior del Muro de Hormigón Armado */}
-      <div 
-        className="w-full h-full rounded-xs border border-slate-500/80 bg-gradient-to-r from-slate-600 via-slate-500 to-slate-700 shadow-lg relative overflow-hidden"
-        style={{
-          boxShadow: isIsometric ? '0 12px 24px rgba(0,0,0,0.75), inset 0 2px 4px rgba(255,255,255,0.3)' : '0 4px 12px rgba(0,0,0,0.8)'
-        }}
-      >
+      <div className="w-full h-full rounded-xs border border-slate-500/80 bg-gradient-to-r from-slate-600 via-slate-500 to-slate-700 shadow-md relative overflow-hidden">
         <div className="w-full h-full bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.08),rgba(255,255,255,0.08)_4px,transparent_4px,transparent_8px)]" />
       </div>
-      {/* Cara Frontal Extruida en 3D */}
-      {isIsometric && (
-        <div className="w-full h-2.5 bg-gradient-to-b from-slate-700 via-slate-800 to-slate-950 border-x border-b border-slate-800 rounded-b-xs" />
-      )}
     </div>
   );
 };
 
-// 3. Garita de Control y Talanquera 3D
-const VolumetricGate3D = ({ el, isSelected, isIsometric }) => {
+// 3. Garita de Control y Talanquera
+const VolumetricGate3D = ({ el, isSelected }) => {
   const isEntry = el.gateType === 'entry' || (el.label && el.label.toUpperCase().includes('ENTRADA'));
   const isExit = el.gateType === 'exit' || (el.label && el.label.toUpperCase().includes('SALIDA'));
 
@@ -197,7 +177,7 @@ const VolumetricGate3D = ({ el, isSelected, isIsometric }) => {
         height: `${el.h}px`,
         transform: `rotate(${el.rot || 0}deg)`
       }}
-      className={`absolute rounded-2xl flex flex-col items-center justify-between p-2 shadow-2xl cursor-pointer z-20 border-2 select-none backdrop-blur-md transition-all ${
+      className={`absolute rounded-2xl flex flex-col items-center justify-between p-2 shadow-xl cursor-pointer z-20 border-2 select-none backdrop-blur-md transition-all ${
         isSelected ? 'ring-4 ring-cyan-400 z-30 scale-105 shadow-[0_0_25px_rgba(6,182,212,0.9)]' : ''
       } ${
         isEntry
@@ -362,10 +342,6 @@ export const InteractiveFloorPlanDrawingStudio = ({
 }) => {
   // Herramienta activa
   const [activeTool, setActiveTool] = useState('select');
-
-  // Perspectiva Visual: 3D Isométrica Real vs 2D Técnica
-  const [viewPerspective, setViewPerspective] = useState('isometric');
-  const isIsometric = viewPerspective === 'isometric';
 
   // Forma y Dimensiones del Lote
   const [lotShape, setLotShape] = useState('rectangular');
@@ -1250,21 +1226,6 @@ export const InteractiveFloorPlanDrawingStudio = ({
             </button>
           )}
 
-          {/* Conmutador 3D Isométrico vs 2D Plana */}
-          <button
-            type="button"
-            onClick={() => setViewPerspective(isIsometric ? '2d' : 'isometric')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border shrink-0 ${
-              isIsometric
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-md shadow-emerald-950/40'
-                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
-            }`}
-            title={isIsometric ? "Cambiar a Vista 2D Técnica" : "Cambiar a Vista 3D Isométrica Real"}
-          >
-            <Box className={`w-3.5 h-3.5 ${isIsometric ? 'text-emerald-200' : 'text-slate-400'}`} />
-            <span>{isIsometric ? '3D Isométrica' : '2D Plana'}</span>
-          </button>
-
           {/* Controles de Zoom */}
           <div className="flex items-center bg-slate-950 px-1.5 py-1 rounded-xl border border-slate-800 text-xs text-slate-300 gap-1.5 shrink-0">
             <button 
@@ -1490,22 +1451,17 @@ export const InteractiveFloorPlanDrawingStudio = ({
         <div className="lg:col-span-3 flex flex-col space-y-2.5">
           <div 
             ref={containerRef}
-            className="bg-[#101726] rounded-2xl sm:rounded-3xl p-3 sm:p-8 border border-slate-800 shadow-2xl overflow-auto custom-scrollbar flex min-h-[440px] sm:min-h-[600px] max-h-[760px]"
-            style={{
-              perspective: '1400px',
-              perspectiveOrigin: '50% 50%'
-            }}
+            className="bg-[#1c253b] rounded-2xl sm:rounded-3xl p-2 sm:p-6 border border-slate-700 shadow-xl overflow-auto custom-scrollbar flex min-h-[420px] sm:min-h-[580px] max-h-[750px]"
           >
             {/* Viewport Contenedor Escalado */}
             <div
-              className="m-auto relative flex-shrink-0 transition-transform duration-500"
+              className="m-auto relative flex-shrink-0"
               style={{
                 width: `${canvasWidth * (zoom / 100)}px`,
                 height: `${canvasHeight * (zoom / 100)}px`,
-                transformStyle: isIsometric ? 'preserve-3d' : 'flat'
               }}
             >
-            {/* Lienzo Escalado 3D / 2D */}
+            {/* Lienzo Escalado Plano 2D Directo */}
             <div
               ref={canvasRef}
               onMouseDown={handleCanvasMouseDown}
@@ -1514,30 +1470,24 @@ export const InteractiveFloorPlanDrawingStudio = ({
               style={{
                 width: `${canvasWidth}px`,
                 height: `${canvasHeight}px`,
-                transform: isIsometric 
-                  ? `scale(${zoom / 100}) rotateX(46deg) rotateZ(-22deg)` 
-                  : `scale(${zoom / 100})`,
-                transformOrigin: isIsometric ? 'center 42%' : 'top left',
-                transformStyle: isIsometric ? 'preserve-3d' : 'flat',
+                transform: `scale(${zoom / 100})`,
+                transformOrigin: 'top left',
                 position: 'absolute',
                 top: 0,
-                left: 0,
-                boxShadow: isIsometric 
-                  ? '-25px 45px 75px rgba(0,0,0,0.92), 0 0 0 1px rgba(255,255,255,0.09)' 
-                  : 'inset 0 2px 10px rgba(0,0,0,0.5)'
+                left: 0
               }}
-              className="canvas-bg relative bg-[#182337] rounded-3xl border-2 border-slate-700 select-none cursor-crosshair transition-transform duration-300"
+              className="canvas-bg relative bg-[#2a3752] rounded-2xl border-2 border-slate-600 shadow-inner overflow-hidden select-none cursor-crosshair transition-transform duration-75"
             >
-            {/* Rejilla Métrica de Alta Definición */}
+            {/* Rejilla métrica */}
             <div 
-              className="absolute inset-0 bg-[linear-gradient(to_right,#2a3b59_1px,transparent_1px),linear-gradient(to_bottom,#2a3b59_1px,transparent_1px)] bg-[size:20px_20px] opacity-40 pointer-events-none" 
+              className="absolute inset-0 bg-[linear-gradient(to_right,#3b4d6e_1px,transparent_1px),linear-gradient(to_bottom,#3b4d6e_1px,transparent_1px)] bg-[size:20px_20px] opacity-45 pointer-events-none" 
             />
 
             {/* Renderizado de todos los elementos con Estilo Arquitectónico y Volumétrico Real */}
             {elements.map((el) => {
               const isSelected = selectedId === el.id;
 
-              // 1. Plazas de Estacionamiento Volumétricas de Alta Definición
+              // 1. Plazas de Estacionamiento de Alta Definición
               if (el.type === 'slot') {
                 const isFree = el.status === 'free';
                 const isMoto = el.slotType === 'moto';
@@ -1552,21 +1502,20 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       top: `${el.y}px`,
                       width: `${el.w}px`,
                       height: `${el.h}px`,
-                      transform: `rotate(${el.rot || 0}deg)`,
-                      transformStyle: isIsometric ? 'preserve-3d' : 'flat'
+                      transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute rounded-xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between p-1 select-none overflow-hidden ${
+                    className={`absolute rounded-xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between p-1 select-none overflow-hidden shadow-md ${
                       isSelected 
-                        ? 'ring-4 ring-cyan-400 border-cyan-300 z-30 shadow-[0_0_30px_rgba(6,182,212,0.9)] scale-[1.03]' 
+                        ? 'ring-4 ring-cyan-400 border-cyan-300 z-30 shadow-[0_0_30px_rgba(6,182,212,0.9)] scale-[1.02]' 
                         : 'z-10'
                     } ${
                       isShaded
-                        ? 'border-amber-400/90 bg-gradient-to-b from-amber-950/70 via-slate-900/95 to-amber-950/80 text-amber-100 hover:border-amber-300 shadow-lg'
+                        ? 'border-amber-400/90 bg-gradient-to-b from-amber-950/70 via-slate-900/95 to-amber-950/80 text-amber-100 hover:border-amber-300'
                         : isMoto
-                        ? 'border-orange-500/90 bg-gradient-to-b from-orange-950/80 via-slate-900/95 to-orange-950/90 text-orange-200 hover:border-orange-400 shadow-md'
+                        ? 'border-orange-500/90 bg-gradient-to-b from-orange-950/80 via-slate-900/95 to-orange-950/90 text-orange-200 hover:border-orange-400'
                         : isFree
-                        ? 'border-emerald-500/80 bg-gradient-to-b from-emerald-950/60 via-slate-900/95 to-slate-950 text-emerald-100 hover:border-emerald-400 shadow-md'
-                        : 'border-rose-500/90 bg-gradient-to-b from-rose-950/80 via-slate-900/95 to-rose-950/90 text-rose-200 shadow-xl'
+                        ? 'border-emerald-500/80 bg-gradient-to-b from-emerald-950/60 via-slate-900/95 to-slate-950 text-emerald-100 hover:border-emerald-400'
+                        : 'border-rose-500/90 bg-gradient-to-b from-rose-950/80 via-slate-900/95 to-rose-950/90 text-rose-200'
                     }`}
                   >
                     {/* Cubierta Tensada 3D para Plazas Techadas */}
@@ -1609,12 +1558,11 @@ export const InteractiveFloorPlanDrawingStudio = ({
                           plate={el.plate} 
                           color={el.color || (isMoto ? '#ea580c' : '#2563eb')} 
                           isMoto={isMoto} 
-                          isIsometric={isIsometric}
                         />
                       )}
                     </div>
 
-                    {/* Tope de Llanta 3D con Franjas de Seguridad */}
+                    {/* Tope de Llanta con Franjas de Seguridad */}
                     <div className="w-full h-2 rounded bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border border-amber-300/60 shadow-sm flex items-center justify-around px-0.5 z-10 my-0.5 overflow-hidden">
                       <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
                       <div className="w-1.5 h-full bg-slate-950 transform -skew-x-12" />
@@ -1633,11 +1581,11 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 );
               }
 
-              // 2. Muros Perimétricos de Hormigón Armado con Extrusión 3D
+              // 2. Muros Perimétricos de Hormigón Armado
               if (el.type === 'wall') {
                 return (
                   <div key={el.id} onMouseDown={(e) => handleElementMouseDown(e, el)}>
-                    <VolumetricWall3D el={el} isSelected={isSelected} isIsometric={isIsometric} />
+                    <VolumetricWall3D el={el} isSelected={isSelected} />
                   </div>
                 );
               }
@@ -1671,7 +1619,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       </span>
                     </div>
 
-                    {/* Tachas / Cat's Eyes Reflectivos en 3D en el Pavimento */}
+                    {/* Tachas / Cat's Eyes Reflectivos en el Pavimento */}
                     <div className="w-full flex items-center justify-between px-6 pointer-events-none mt-1">
                       {[...Array(6)].map((_, i) => (
                         <div key={i} className="w-2 h-2 rounded-full bg-amber-400 border border-amber-200 shadow-[0_0_8px_#fbbf24]" />
@@ -1705,16 +1653,16 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 );
               }
 
-              // 5. Garitas / Accesos Tecnológicos (Entrada LPR & Salida Control) con Talanquera 3D
+              // 5. Garitas / Accesos Tecnológicos (Entrada LPR & Salida Control)
               if (el.type === 'gate') {
                 return (
                   <div key={el.id} onMouseDown={(e) => handleElementMouseDown(e, el)}>
-                    <VolumetricGate3D el={el} isSelected={isSelected} isIsometric={isIsometric} />
+                    <VolumetricGate3D el={el} isSelected={isSelected} />
                   </div>
                 );
               }
 
-              // 6. Jardín y Paisajismo 3D
+              // 6. Jardín y Paisajismo
               if (el.type === 'garden') {
                 return (
                   <div
@@ -1727,12 +1675,9 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-950 border-2 border-emerald-500/80 rounded-3xl flex flex-col items-center justify-center p-2 text-emerald-200 cursor-pointer z-3 shadow-2xl overflow-hidden ${
+                    className={`absolute bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-950 border-2 border-emerald-500/80 rounded-3xl flex flex-col items-center justify-center p-2 text-emerald-200 cursor-pointer z-3 shadow-xl overflow-hidden ${
                       isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30 scale-[1.01]' : ''
                     }`}
-                    style={{
-                      boxShadow: isIsometric ? '0 14px 28px rgba(0,0,0,0.8), inset 0 2px 6px rgba(52,211,153,0.3)' : undefined
-                    }}
                   >
                     <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,rgba(52,211,153,0.2),transparent_70%)] flex flex-col items-center justify-center">
                       <TreeIcon className="w-8 h-8 shrink-0 text-emerald-400 drop-shadow-md mb-1" />

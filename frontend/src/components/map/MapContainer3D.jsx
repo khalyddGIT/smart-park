@@ -75,12 +75,6 @@ export const MapContainer3D = ({
     if (!mapboxgl) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
-    if (mapboxgl.config) {
-      mapboxgl.config.EVENTS_URL = null;
-    }
-    if (typeof mapboxgl.setTelemetry === 'function') {
-      mapboxgl.setTelemetry(false);
-    }
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,

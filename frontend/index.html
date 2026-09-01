@@ -27,19 +27,6 @@
     <!-- Mapbox GL JS v3 3D Engine -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js"></script>
-    <script>
-      // Desactivar telemetría de eventos de Mapbox para evitar bloqueos por AdBlockers (net::ERR_BLOCKED_BY_CLIENT)
-      try {
-        if (window.mapboxgl) {
-          if (window.mapboxgl.config) {
-            window.mapboxgl.config.EVENTS_URL = null;
-          }
-          if (typeof window.mapboxgl.setTelemetry === 'function') {
-            window.mapboxgl.setTelemetry(false);
-          }
-        }
-      } catch (e) {}
-    </script>
   </head>
   <body class="antialiased bg-[#FBFBFA] text-[#191919] font-sans selection:bg-[#EAEAEA] selection:text-black">
     <div id="root"></div>

@@ -581,6 +581,25 @@ export const EstablishmentProvider = ({ children }) => {
             const msg = JSON.parse(ev.data);
             if (msg.event === 'pong') return;
             if (msg.event === 'parkings:updated' || msg.event === 'refresh') fetchParkings();
+            if (msg.event === 'spaces:update') {
+              const pid = msg.payload?.parking_id;
+              const slotCode = msg.payload?.slot_code;
+              const newStatus = msg.payload?.status;
+              if (pid && slotCode && newStatus) {
+                setEstablishments(prev => prev.map(est => {
+                  if (String(est.id) === String(pid)) {
+                    const nextElements = (est.elements || []).map(el => {
+                      if (el.type === 'slot' && el.code === slotCode) {
+                        return { ...el, status: newStatus };
+                      }
+                      return el;
+                    });
+                    return { ...est, elements: nextElements };
+                  }
+                  return est;
+                }));
+              }
+            }
             if (msg.event === 'reservations:updated' || msg.event === 'refresh') {
               if (getAccessToken()) refreshMyReservations();
               // Cajón reservado/ocupado cambia plano, refrescar para que no siga disponible
@@ -589,7 +608,7 @@ export const EstablishmentProvider = ({ children }) => {
               const pid = msg.payload?.parking_id || msg.payload?.parkingId;
               if(pid) try{ hydrateFloorPlan(String(pid)); }catch{}
             }
-            if (msg.event === 'incidents:updated' || msg.event === 'reviews:updated') { /* NotificationContext hace su propio polling; el WS sirve como hint adicional si se desea */ }
+            if (msg.event === 'incidents:updated' || msg.event === 'reviews:updated') { /* NotificationContext hace su propio polling */ }
           } catch {}
         };
         ws.onclose = () => { wsReconnectTimer = setTimeout(connectWs, 3000); };
@@ -830,11 +849,34 @@ export const EstablishmentProvider = ({ children }) => {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
-    const numId = Number(id);
+    let numId = Number(id);
+    if (isNaN(numId)) {
+      const match = String(id).match(/\d+/);
+      if (match) numId = Number(match[0]);
+    }
     if (!isNaN(numId) && Array.isArray(elements)) {
       try {
-        const slots = elements.filter(e=>e && e.type==='slot').map(s=>({ code: s.code, floor_level: 'Piso 1', slot_type: s.slotType || 'auto', status: s.status || 'free', pos_x: s.x||0, pos_y: s.y||0, width: s.w||60, height: s.h||100, rotation: s.rot||0 }));
-        const elems = elements.filter(e=>e && e.type!=='slot').map(e=>({ element_type: e.type || 'wall', pos_x: e.x||0, pos_y: e.y||0, width: e.w||100, height: e.h||20, rotation: e.rot||0, z_index: 1, properties_json: null }));
+        const slots = elements.filter(e=>e && e.type==='slot').map(s=>({ 
+          code: s.code, 
+          floor_level: s.level || s.floor_level || 'Piso 1', 
+          slot_type: s.slotType || s.slot_type || 'auto', 
+          status: s.status || 'free', 
+          pos_x: s.x !== undefined ? s.x : (s.pos_x || 0), 
+          pos_y: s.y !== undefined ? s.y : (s.pos_y || 0), 
+          width: s.w !== undefined ? s.w : (s.width || 60), 
+          height: s.h !== undefined ? s.h : (s.height || 100), 
+          rotation: s.rot !== undefined ? s.rot : (s.rotation || 0) 
+        }));
+        const elems = elements.filter(e=>e && e.type!=='slot').map(e=>({ 
+          element_type: e.type || e.element_type || 'wall', 
+          pos_x: e.x !== undefined ? e.x : (e.pos_x || 0), 
+          pos_y: e.y !== undefined ? e.y : (e.pos_y || 0), 
+          width: e.w !== undefined ? e.w : (e.width || 100), 
+          height: e.h !== undefined ? e.h : (e.height || 20), 
+          rotation: e.rot !== undefined ? e.rot : (e.rotation || 0), 
+          z_index: e.z_index || 1, 
+          properties_json: null 
+        }));
         await api.post(`/parkings/${numId}/floor-plan/sync`, { parking_id: numId, slots, elements: elems });
       } catch (e) { console.warn('sync floor-plan fail', e.response?.data); }
     }

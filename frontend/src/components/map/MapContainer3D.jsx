@@ -26,7 +26,7 @@ import {
   Volume2,
   VolumeX 
 } from 'lucide-react';
-import { FALLBACK_PARKING_IMAGE } from '../LocalEstablishmentManager';
+import { FALLBACK_PARKING_IMAGE } from './mapConfig';
 import { useAuth } from '../../context/AuthContext';
 
 export const MapContainer3D = ({ 

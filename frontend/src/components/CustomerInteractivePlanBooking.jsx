@@ -136,7 +136,13 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     return () => { cancelled = true; };
   }, []);
 
-  const numericParkingId = Number(parking?.id);
+  const numericParkingId = useMemo(() => {
+    if (!parking) return NaN;
+    const direct = Number(parking.id);
+    if (!isNaN(direct)) return direct;
+    const match = String(parking.id).match(/\d+/);
+    return match ? Number(match[0]) : NaN;
+  }, [parking]);
 
   // Carga del plano real del servidor al abrir/seleccionar una cochera registrada
   useEffect(() => {

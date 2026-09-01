@@ -1,24 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
 import { useEstablishments } from './context/EstablishmentContext';
 import api from './services/api';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
-import { LocalEstablishmentManager, FALLBACK_PARKING_IMAGE } from './components/LocalEstablishmentManager';
-import { ANPRMonitor } from './components/ANPRMonitor';
 import { PersonalGaritaModule } from './components/PersonalGaritaModule';
 import { PaymentsModule } from './components/PaymentsModule';
 import { VehiclesModule } from './components/VehiclesModule';
 import { HistoryModule } from './components/HistoryModule';
 import { ReviewsModule } from './components/ReviewsModule';
-import { AffiliatedParkingsModule } from './components/AffiliatedParkingsModule';
-import { UserRolesModule } from './components/UserRolesModule';
-import { StaffModule } from './components/StaffModule';
-import { AnalyticsGlobalModule } from './components/AnalyticsGlobalModule';
 import { IncidentsModule } from './components/IncidentsModule';
-import { AuditLogsModule } from './components/AuditLogsModule';
-import { ResiliencySimModule } from './components/ResiliencySimModule';
 import { VerifyReservationPage } from './components/VerifyReservationPage';
 import { AyacuchoMap } from './components/AyacuchoMap';
 import { CustomerInteractivePlanBooking } from './components/CustomerInteractivePlanBooking';
@@ -26,14 +18,35 @@ import { DigitalAccessPassModal } from './components/DigitalAccessPassModal';
 import { CulqiPaymentModal } from './components/CulqiPaymentModal';
 import { ReservationsModule } from './components/ReservationsModule';
 import { LoginAuthScreen } from './components/LoginAuthScreen';
-import { PlatformFinancesModule } from './components/PlatformFinancesModule';
-import { PlatformSettingsModule } from './components/PlatformSettingsModule';
-import { PlatformGlobalDashboard } from './components/PlatformGlobalDashboard';
 import { TermsAndConditionsModal } from './components/TermsAndConditionsModal';
 import { UserProfileModule } from './components/UserProfileModule';
 import { LandingPage } from './components/LandingPage';
-import { CameraMonitorModule } from './components/CameraMonitorModule';
 import { AutoFitFloorPlan } from './components/AutoFitFloorPlan';
+
+// Lazy-loaded heavy modules for code-splitting & lightning performance
+const LocalEstablishmentManager = lazy(() => import('./components/LocalEstablishmentManager').then(m => ({ default: m.LocalEstablishmentManager })));
+const ANPRMonitor = lazy(() => import('./components/ANPRMonitor').then(m => ({ default: m.ANPRMonitor })));
+const PlatformFinancesModule = lazy(() => import('./components/PlatformFinancesModule').then(m => ({ default: m.PlatformFinancesModule })));
+const PlatformSettingsModule = lazy(() => import('./components/PlatformSettingsModule').then(m => ({ default: m.PlatformSettingsModule })));
+const PlatformGlobalDashboard = lazy(() => import('./components/PlatformGlobalDashboard').then(m => ({ default: m.PlatformGlobalDashboard })));
+const UserRolesModule = lazy(() => import('./components/UserRolesModule').then(m => ({ default: m.UserRolesModule })));
+const AnalyticsGlobalModule = lazy(() => import('./components/AnalyticsGlobalModule').then(m => ({ default: m.AnalyticsGlobalModule })));
+const CameraMonitorModule = lazy(() => import('./components/CameraMonitorModule').then(m => ({ default: m.CameraMonitorModule })));
+const ResiliencySimModule = lazy(() => import('./components/ResiliencySimModule').then(m => ({ default: m.ResiliencySimModule })));
+const AuditLogsModule = lazy(() => import('./components/AuditLogsModule').then(m => ({ default: m.AuditLogsModule })));
+const StaffModule = lazy(() => import('./components/StaffModule').then(m => ({ default: m.StaffModule })));
+const AffiliatedParkingsModule = lazy(() => import('./components/AffiliatedParkingsModule').then(m => ({ default: m.AffiliatedParkingsModule })));
+
+const FALLBACK_PARKING_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500' width='800' height='500'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230f172a'/%3E%3Cstop offset='100%25' stop-color='%231e293b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3Ccircle cx='400' cy='210' r='85' fill='%2310b981' fill-opacity='0.15'/%3E%3Cpath d='M345 250 L455 250 L430 175 L370 175 Z' fill='%2310b981' fill-opacity='0.6'/%3E%3Crect x='330' y='250' width='140' height='40' rx='10' fill='%2310b981'/%3E%3Ccircle cx='365' cy='290' r='14' fill='%230f172a'/%3E%3Ccircle cx='435' cy='290' r='14' fill='%230f172a'/%3E%3Ctext x='400' y='370' font-family='system-ui, sans-serif' font-size='22' font-weight='bold' fill='%23f8fafc' text-anchor='middle'%3ESmart Park Huamanga%3C/text%3E%3Ctext x='400' y='402' font-family='system-ui, sans-serif' font-size='14' fill='%2394a3b8' text-anchor='middle'%3EEstacionamiento Seguro y Conectado%3C/text%3E%3C/svg%3E";
+
+const LoadingModule = () => (
+  <div className="flex items-center justify-center min-h-[350px] w-full py-12">
+    <div className="flex flex-col items-center space-y-3">
+      <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs font-semibold text-slate-500">Cargando módulo de Smart-Park...</span>
+    </div>
+  </div>
+);
 import { 
   Search, 
   MapPin, 
@@ -373,6 +386,7 @@ export const App = () => {
 
         {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto pb-28 md:pb-6 w-full max-w-full overflow-x-hidden min-w-0">
+          <Suspense fallback={<LoadingModule />}>
           
           {/* VISTA ROL CONDUCTOR (BUSCAR Y RESERVAR PLAZAS) */}
           {(role === 'user' || !user) && (
@@ -711,6 +725,7 @@ export const App = () => {
             </div>
           )}
 
+          </Suspense>
         </main>
       </div>
 

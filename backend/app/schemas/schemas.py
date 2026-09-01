@@ -29,14 +29,19 @@ class UserBase(BaseModel):
     @classmethod
     def validate_phone(cls, v):
         if v is None or v == '': return v
-        raw = _clean_phone(v)
-        # Permisivo para tests: acepta 7-15 dígitos con o sin +51
-        if not re.match(r'^[0-9]{7,15}$', raw):
-            raise ValueError('Teléfono Perú: 9 dígitos empezando en 9, ej 966123456 o +51 966123456')
-        return raw
+        return _clean_phone(v)
 
 class UserCreate(UserBase):
     password: str = Field(min_length=8)
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone_create(cls, v):
+        if v is None or v == '': return v
+        raw = _clean_phone(v)
+        if not re.match(r'^[0-9]{7,15}$', raw):
+            raise ValueError('Teléfono Perú: 9 dígitos empezando en 9, ej 966123456 o +51 966123456')
+        return raw
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None

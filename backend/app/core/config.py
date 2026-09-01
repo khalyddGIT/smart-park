@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     # Sin REDIS_URL el sistema funciona igual que hoy (degradación elegante, fail-open).
     REDIS_URL: str = os.getenv("REDIS_URL", "")
 
+    # RabbitMQ AMQP Broker (opcional - para colas transaccionales y reintentos DLQ)
+    RABBITMQ_URL: str = os.getenv("RABBITMQ_URL", "")
+    RABBITMQ_ENABLED: bool = os.getenv("RABBITMQ_ENABLED", "True").lower() in ("true", "1", "yes")
+    RABBITMQ_EXCHANGE_NAME: str = os.getenv("RABBITMQ_EXCHANGE_NAME", "smartpark.events")
+
     # Auto-escaneo server-side del monitor de cámaras: el backend escanea las
     # sedes con camera_enabled + camera_url aunque nadie tenga la app abierta.
     CAMERA_AUTOSCAN_ENABLED: bool = os.getenv("CAMERA_AUTOSCAN_ENABLED", "True") == "True"

@@ -76,7 +76,14 @@ async def diagnostics_status(db: AsyncSession = Depends(get_db)):
     except Exception:
         pass
 
-    # Circuit breaker real (persistido en Redis, fallback a ONLINE)
+    # RabbitMQ AMQP Broker
+    rabbitmq_status = {"ok": False, "status": "NOT_CONFIGURED", "detail": "No configurado"}
+    try:
+        from app.core.rabbitmq import rabbitmq_client
+        rabbitmq_status = await rabbitmq_client.check_health()
+    except Exception as exc:
+        rabbitmq_status = {"ok": False, "status": "ERROR", "detail": str(exc)}
+
     circuit_status = "ONLINE"
     try:
         from app.core.cache import get_client as _gc2
@@ -100,6 +107,7 @@ async def diagnostics_status(db: AsyncSession = Depends(get_db)):
         "circuit_status": circuit_status,
         "db": {"ok": db_ok, "latency_ms": db_latency_ms},
         "redis": {"ok": redis_ok, "latency_ms": redis_latency_ms, "detail": redis_detail},
+        "rabbitmq": rabbitmq_status,
         "broker": {"mode": broker_mode, "queue_depth": queue_depth, "processed_count": processed_count},
         "websocket": {"connections": ws_connections},
         "latency_ms": db_latency_ms if db_latency_ms is not None else (redis_latency_ms or 14),

@@ -123,6 +123,9 @@ export const ResiliencySimModule = () => {
           <span className={`text-[10px] px-2 py-1 rounded-lg border font-mono ${redisOk ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
             Redis: {redisOk ? `${diag?.redis?.latency_ms ?? 0}ms` : (diag?.redis?.detail || 'degradado')}
           </span>
+          <span className={`text-[10px] px-2 py-1 rounded-lg border font-mono ${diag?.rabbitmq?.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
+            RabbitMQ: {diag?.rabbitmq?.ok ? 'AMQP Conectado' : (diag?.rabbitmq?.status === 'NOT_CONFIGURED' ? 'Dual (Redis Fail-Open)' : (diag?.rabbitmq?.detail || 'Dual Standby'))}
+          </span>
         </div>
       </div>
 
@@ -142,11 +145,13 @@ export const ResiliencySimModule = () => {
 
         <Card className="p-5 border-slate-200 shadow-sm bg-white">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Eventos Pendientes</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400">Eventos & Colas</span>
             <Database className="w-4 h-4 text-teal-600" />
           </div>
           <p className="text-xl font-black font-mono text-slate-900">{queueDepth}</p>
-          <span className="text-[10px] text-slate-500 mt-1 block">En cola broker ({brokerMode}) · {diag?.broker?.processed_count ?? 0} procesados</span>
+          <span className="text-[10px] text-slate-500 mt-1 block">
+            Broker: {brokerMode.toUpperCase()} · {diag?.rabbitmq?.ok ? 'AMQP Activo' : 'Redis Fallback'} · {diag?.broker?.processed_count ?? 0} proc.
+          </span>
         </Card>
 
 

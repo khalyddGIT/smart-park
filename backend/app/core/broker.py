@@ -64,7 +64,7 @@ class MessageBroker:
         return event_id
 
     async def publish_event_async(self, event_type: str, data: dict) -> str:
-        """Variante async preferida para nuevo código: persiste 100% en Redis cuando está disponible."""
+        """Variante async preferida: enruta a RabbitMQ (AMQP) si está activo; fallback a Redis y memoria."""
         event_id = f"EVT-{uuid.uuid4().hex[:8].upper()}"
         event_payload = {
             "event_id": event_id,
@@ -73,6 +73,20 @@ class MessageBroker:
             "data": data,
             "ack": False,
         }
+
+        # 1. RabbitMQ AMQP Broker (alta durabilidad, DLQ, entrega garantizada)
+        try:
+            from app.core.rabbitmq import rabbitmq_client
+            if rabbitmq_client.is_available:
+                routing_key = f"notification.{event_type.replace(':', '.')}"
+                amqp_id = await rabbitmq_client.publish(routing_key, event_payload)
+                if amqp_id:
+                    logger.info(f"[Broker RabbitMQ AMQP] Evento persistido: {amqp_id} ({routing_key})")
+                    return amqp_id
+        except Exception as exc:
+            logger.warning(f"[Broker Dual] Fallo al publicar en RabbitMQ, recurriendo a Redis: {exc}")
+
+        # 2. Redis como broker secundario de alta velocidad
         client = self._redis_client()
         if client is not None:
             try:
@@ -80,8 +94,11 @@ class MessageBroker:
                 logger.info(f"[Broker Redis] Evento encolado (async): {event_id} ({event_type})")
                 return event_id
             except Exception as exc:
-                logger.warning(f"[Broker] Redis async publish falló (fail-open): {exc}")
+                logger.warning(f"[Broker] Redis async publish falló (fail-open a memoria): {exc}")
+
+        # 3. Memoria local como último fallback
         self.queue.append(event_payload)
+        logger.info(f"[Broker Memoria] Evento encolado localmente: {event_id} ({event_type})")
         return event_id
 
     def process_notifications_queue(self, simulate_failure: bool = False):

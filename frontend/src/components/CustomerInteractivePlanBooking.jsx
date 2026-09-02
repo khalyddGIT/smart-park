@@ -19,7 +19,8 @@ import {
   ArrowRight,
   ZoomIn,
   ZoomOut,
-  Maximize2
+  Maximize2,
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -426,8 +427,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       token: `SPK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
       startTime: start,
       expiresAt: end,
-      payNow: bookingModel !== 'postpaid',
-      paymentMethod: bookingModel === 'wallet' ? 'Billetera Digital' : bookingModel === 'corporate_b2b' ? 'Crédito Flota B2B' : bookingModel === 'prepaid_discount' ? 'Prepago Asegurado (-10%)' : 'Pago en garita al salir'
+      payNow: false,
+      paymentMethod: 'Pago en garita al salir'
     };
 
     if (onReserveSlot) {
@@ -879,75 +880,18 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
             </div>
 
-            {/* Modalidades Comerciales con Alto Valor */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 block">
-                Modalidad Comercial & Pago
-              </label>
-              
-              <div className="space-y-1.5">
-                {[
-                  {
-                    id: 'prepaid_discount',
-                    title: 'Prepago Digital Express (-10% dto.)',
-                    badge: 'FAST-PASS ANPR',
-                    desc: 'Apertura automática por cámara ANPR sin detenerse',
-                    costText: `S/ ${(rawCost * 0.90).toFixed(2)}`,
-                    highlight: true
-                  },
-                  {
-                    id: 'postpaid',
-                    title: 'Pagar en garita al salir',
-                    badge: 'PAGO LOCAL',
-                    desc: 'Efectivo, Yape o POS en garita • Confiabilidad 100 pts',
-                    costText: `S/ ${rawCost.toFixed(2)}`,
-                    highlight: false
-                  },
-                  {
-                    id: 'wallet',
-                    title: 'Smart-Park Wallet',
-                    badge: 'CASHBACK +5%',
-                    desc: 'Débito directo con bonificación en saldo',
-                    costText: `S/ ${rawCost.toFixed(2)}`,
-                    highlight: false
-                  },
-                  {
-                    id: 'corporate_b2b',
-                    title: 'Cuenta Corporativa B2B',
-                    badge: 'CRÉDITO RUC',
-                    desc: 'Facturación agrupada mensual para empresas',
-                    costText: 'A Crédito',
-                    highlight: false
-                  }
-                ].map((mode) => {
-                  const isCur = bookingModel === mode.id;
-                  return (
-                    <button
-                      key={mode.id}
-                      type="button"
-                      onClick={() => setBookingModel(mode.id)}
-                      className={`w-full p-2.5 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
-                        isCur
-                          ? 'bg-slate-800/95 border-emerald-500 text-white ring-1 ring-emerald-500/40'
-                          : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold">{mode.title}</span>
-                          <span className={`text-[8px] font-mono font-bold px-1.5 py-0.2 rounded ${
-                            mode.highlight ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'
-                          }`}>
-                            {mode.badge}
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 block">{mode.desc}</span>
-                      </div>
-                      <span className="text-xs font-mono font-bold text-emerald-400 shrink-0 ml-2">{mode.costText}</span>
-                    </button>
-                  );
-                })}
+            {/* Tarjeta Informativa de Reserva Gratuita (Pagas únicamente al Salir) */}
+            <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-xl p-3 text-xs flex items-center justify-between text-emerald-200 shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                <div>
+                  <span className="font-bold block text-white text-xs">Reserva 100% Sin Pago Previo</span>
+                  <span className="text-[10px] text-slate-300 block">Aparta tu lugar gratis • Pagas en garita al salir (Efectivo / Yape / POS)</span>
+                </div>
               </div>
+              <span className="font-mono font-bold text-emerald-400 text-xs shrink-0 ml-2 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+                S/ 0.00 ahora
+              </span>
             </div>
 
             {/* Duración y ETA */}
@@ -1039,27 +983,25 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
-            {/* Desglose */}
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1 text-xs font-mono">
+            {/* Desglose Informativo de Estadía */}
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
-                <span>Subtotal ({Number(hours) || 1}h):</span>
+                <span>Tarifa por hora:</span>
+                <span className="text-slate-200">S/ {baseHourlyRate.toFixed(2)} /h</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Estadía estimada ({Number(hours) || 1}h):</span>
                 <span className="text-slate-200">S/ {rawCost.toFixed(2)}</span>
               </div>
-              {discountAmount > 0 && (
-                <div className="flex justify-between text-cyan-400">
-                  <span>Descuento prepago:</span>
-                  <span>- S/ {discountAmount.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-slate-400 text-[11px]">
-                <span>IGV (18% incluido):</span>
-                <span>S/ {igvAmount.toFixed(2)}</span>
-              </div>
               <div className="h-px bg-slate-800 my-1" />
-              <div className="flex justify-between font-bold text-white items-center">
-                <span>Total a Pagar:</span>
-                <span className="text-emerald-400 text-sm">
-                  S/ {finalTotalCost.toFixed(2)}
+              <div className="flex justify-between text-cyan-400 font-bold">
+                <span>Cobro ahora por reservar:</span>
+                <span className="text-cyan-300">S/ 0.00 (Gratis)</span>
+              </div>
+              <div className="flex justify-between font-semibold text-slate-300 items-center text-[11px]">
+                <span>Total a pagar en garita al salir:</span>
+                <span className="text-emerald-400 font-bold text-sm">
+                  S/ {rawCost.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -1095,7 +1037,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               disabled={!canReserve || !!activeUserReservation}
               className="w-full py-3 text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <span>{activeUserReservation ? 'Tienes una reserva activa' : 'Confirmar Reserva'}</span>
+              <span>{activeUserReservation ? 'Tienes una reserva activa' : 'Confirmar Reserva (S/ 0.00 ahora)'}</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
             {!canReserve && !effectivePlate && (

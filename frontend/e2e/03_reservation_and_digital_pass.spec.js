@@ -35,11 +35,14 @@ test.describe('3. Flujo de Reserva, Plano Interactivo y Pase Digital QR', () => 
     const tuPlazaText = page.locator('text=Tu Plaza').first();
     await expect(tuPlazaText).toBeVisible({ timeout: 10000 });
 
-    // 5. Verificar elementos del modelo de negocio y fases de tiempo
+    // 5. Verificar elementos de reserva sin pago previo
     const tiemposText = page.locator('text=Dinámica de Tiempos').first();
     await expect(tiemposText).toBeVisible({ timeout: 10000 });
 
-    const fastPassBadge = page.locator('text=FAST-PASS ANPR').first();
-    await expect(fastPassBadge).toBeVisible({ timeout: 10000 });
+    const freeBookingBanner = page.locator('text=Reserva 100% Sin Pago Previo').first();
+    await expect(freeBookingBanner).toBeVisible({ timeout: 10000 });
+
+    const zeroNowBadge = page.locator('text=S/ 0.00 ahora').first();
+    await expect(zeroNowBadge).toBeVisible({ timeout: 10000 });
   });
 });

@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 test-results/
 playwright-report/
+blob-report/
+playwright/.cache/
+videos/
+e2e/screenshots/
+*.webm

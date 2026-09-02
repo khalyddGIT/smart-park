@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" width="100%" height="100%" fill="none">
+  <!-- Wordmark puramente tipográfico: Smart Park -->
+  <text 
+    x="250" 
+    y="72" 
+    text-anchor="middle" 
+    dominant-baseline="middle"
+    font-family="'Plus Jakarta Sans', 'Inter', 'Montserrat', 'Poppins', system-ui, -apple-system, sans-serif" 
+    font-size="52" 
+    letter-spacing="-0.5px">
+    <tspan fill="#009688" font-weight="700">Smart</tspan>
+    <tspan dx="12" fill="#0B2545" font-weight="800">Park</tspan>
+  </text>
+</svg>

@@ -19,9 +19,33 @@ frontend/dist-ssr/
 *.local
 dist/
 build/
-public/
 .eslintcache
 *.tsbuildinfo
+
+# --- Testing & E2E Artifacts (Playwright, Jest, Pytest) ---
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/
+frontend/e2e/videos/
+frontend/e2e/screenshots/
+*.webm
+
+# --- Computer Vision & Machine Learning Weights ---
+*.pt
+*.pth
+*.onnx
+*.weights
+*.bin
+*.safetensors
+backend/*.pt
+backend/*.onnx
+backend/models/
+yolov8*.pt
 
 # --- Python & Backend Virtual Environments ---
 venv/

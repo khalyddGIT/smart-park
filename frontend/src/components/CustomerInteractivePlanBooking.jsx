@@ -16,7 +16,10 @@ import {
   Wallet, 
   Building2, 
   Receipt, 
-  ArrowRight
+  ArrowRight,
+  ZoomIn,
+  ZoomOut,
+  Maximize2
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -219,10 +222,9 @@ const mapServerElement = (e) => {
 
 export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onReserveSlot }) => {
   const { reservations, bookingError } = useEstablishments();
-  const BASE_WIDTH = 1100;
-  const BASE_HEIGHT = 700;
   
-  const [scale, setScale] = useState(1);
+  const [baseScale, setBaseScale] = useState(1);
+  const [userZoom, setUserZoom] = useState(1);
   const containerRef = useRef(null);
   
   const [remotePlan, setRemotePlan] = useState(null);
@@ -313,15 +315,44 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     ? [...remotePlan.elements, ...remotePlan.slots]
     : (planElements && planElements.length > 0 ? planElements : DEFAULT_FALLBACK_ELEMENTS);
 
+  // Envolvente dinámica (Bounding Box): se ajusta a la extensión real de las plazas y vías
+  const layoutBounds = useMemo(() => {
+    if (!elements || elements.length === 0) {
+      return { minX: 0, minY: 0, width: 960, height: 600 };
+    }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const el of elements) {
+      if (typeof el.x === 'number') minX = Math.min(minX, el.x);
+      if (typeof el.y === 'number') minY = Math.min(minY, el.y);
+      if (typeof el.x === 'number' && typeof el.w === 'number') maxX = Math.max(maxX, el.x + el.w);
+      if (typeof el.y === 'number' && typeof el.h === 'number') maxY = Math.max(maxY, el.y + el.h);
+    }
+    if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+      return { minX: 0, minY: 0, width: 960, height: 600 };
+    }
+
+    const paddingX = 40;
+    const paddingY = 35;
+    const width = Math.max(480, (maxX - minX) + paddingX * 2);
+    const height = Math.max(340, (maxY - minY) + paddingY * 2);
+
+    return {
+      minX: minX - paddingX,
+      minY: minY - paddingY,
+      width: Math.round(width),
+      height: Math.round(height)
+    };
+  }, [elements]);
+
   useEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
         const { clientWidth, clientHeight } = containerRef.current;
         if (clientWidth > 0 && clientHeight > 0) {
-          const scaleX = (clientWidth * 0.96) / BASE_WIDTH;
-          const scaleY = (clientHeight * 0.96) / BASE_HEIGHT;
+          const scaleX = (clientWidth * 0.94) / layoutBounds.width;
+          const scaleY = (clientHeight * 0.94) / layoutBounds.height;
           const fitScale = Math.min(scaleX, scaleY);
-          setScale(Math.max(0.2, fitScale));
+          setBaseScale(Math.max(0.2, fitScale));
         }
       }
     };
@@ -333,7 +364,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       observer.disconnect();
       window.removeEventListener('resize', updateScale);
     };
-  }, []);
+  }, [layoutBounds]);
+
+  const effectiveScale = +(baseScale * userZoom).toFixed(3);
 
   const slots = elements.filter(e => e && e.type === 'slot');
   const freeSlots = slots.filter(s => s.status === 'free');
@@ -443,65 +476,122 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
-        {/* Contenedor del Plano Asfáltico Cenital */}
+        {/* Contenedor del Plano Asfáltico Cenital con Auto-Encuadre Dinámico */}
         <div 
           ref={containerRef}
-          className="lg:col-span-2 bg-[#0d121c] rounded-2xl p-4 border border-slate-800 flex items-center justify-center relative overflow-hidden h-[440px] sm:h-[500px] lg:h-[580px]"
+          className="lg:col-span-2 bg-[#090d16] rounded-2xl border border-slate-800 flex items-center justify-center relative overflow-hidden h-[440px] sm:h-[500px] lg:h-[580px] shadow-2xl select-none"
         >
+          {/* Controles Flotantes de Zoom y Recentrado */}
+          <div className="absolute top-3 right-3 z-30 flex items-center gap-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-700/80 shadow-lg">
+            <button
+              type="button"
+              onClick={() => setUserZoom(prev => Math.min(2.2, +(prev + 0.15).toFixed(2)))}
+              title="Acercar plano (+)"
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserZoom(prev => Math.max(0.6, +(prev - 0.15).toFixed(2)))}
+              title="Alejar plano (-)"
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserZoom(1)}
+              title="Reajustar y centrar plano"
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Leyenda Arquitectónica Limpia en la Base */}
+          <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2.5 sm:gap-3.5 bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[10px] font-mono shadow-md pointer-events-none">
+            <div className="flex items-center gap-1.5 text-slate-300">
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span>Libre</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-300">
+              <div className="w-2 h-2 rounded-full bg-rose-500" />
+              <span>Ocupado</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-300">
+              <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
+              <span className="font-bold text-cyan-300">Tu Plaza</span>
+            </div>
+          </div>
+
+          {/* Lienzo Arquitectónico Asfáltico Cenital */}
           <div 
             style={{ 
-              width: `${BASE_WIDTH}px`, 
-              height: `${BASE_HEIGHT}px`,
-              transform: `scale(${scale})`,
+              width: `${layoutBounds.width}px`, 
+              height: `${layoutBounds.height}px`,
+              transform: `scale(${effectiveScale})`,
               transformOrigin: 'center center',
-              backgroundColor: '#131a26'
+              backgroundColor: '#0c121e'
             }}
-            className="relative rounded-2xl border border-slate-700 overflow-hidden select-none shrink-0"
+            className="relative rounded-2xl border border-slate-700/80 overflow-hidden select-none shrink-0 shadow-2xl transition-transform duration-150 ease-out"
           >
-            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_45%,#1c2536_0%,#111722_100%)]" />
-            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(to_right,rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.15)_1px,transparent_1px)] bg-[size:100px_100px]" />
+            {/* Grano Asfáltico y Trazado Vial de Fondo */}
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_50%,#141d2e_0%,#090d16_100%)]" />
+            <div className="absolute inset-0 pointer-events-none opacity-15 bg-[linear-gradient(to_right,rgba(255,255,255,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.12)_1px,transparent_1px)] bg-[size:50px_50px]" />
 
             {elements.map((el) => {
+              const relX = el.x - layoutBounds.minX;
+              const relY = el.y - layoutBounds.minY;
+
               if (el.type === 'slot') {
                 const isFree = el.status === 'free';
                 const isSelected = selectedSlot?.id === el.id || selectedSlot?.code === el.code;
                 const slotType = el.slotType || 'auto';
+                const isPmr = slotType === 'pmr';
 
                 return (
                   <div
                     key={el.id}
                     onClick={() => handleSlotClick(el)}
                     style={{
-                      left: `${el.x}px`,
-                      top: `${el.y}px`,
+                      left: `${relX}px`,
+                      top: `${relY}px`,
                       width: `${el.w}px`,
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute rounded-lg border transition-all flex flex-col justify-between p-1.5 cursor-pointer overflow-hidden ${
+                    className={`absolute rounded-xl border-2 transition-all flex flex-col justify-between p-1.5 cursor-pointer overflow-hidden ${
                       isSelected
-                        ? 'border-cyan-400 bg-cyan-950/80 ring-2 ring-cyan-400/50 z-30'
+                        ? 'border-cyan-400 bg-cyan-950/90 ring-4 ring-cyan-400/40 z-30 shadow-[0_0_20px_rgba(34,211,238,0.35)] scale-[1.02]'
+                        : isPmr && isFree
+                        ? 'border-blue-500/80 bg-blue-950/40 text-blue-200 hover:border-blue-400 z-10'
                         : isFree
-                        ? 'border-white/70 bg-slate-900/40 text-slate-100 hover:border-white z-10'
-                        : 'border-slate-600/40 bg-slate-950/30 cursor-not-allowed z-5'
+                        ? 'border-slate-400/70 bg-[#111827]/80 text-slate-100 hover:border-emerald-400 hover:bg-[#152338] z-10'
+                        : 'border-slate-700/60 bg-[#0a0f18]/80 cursor-not-allowed z-5 opacity-90'
                     }`}
                   >
+                    {/* Cabecera del Cajón: Código + Tipo + Indicador LED */}
                     <div className="flex items-center justify-between text-[10px] font-mono font-bold z-10 leading-none">
-                      <span className="text-white">{el.code}</span>
-                      <div className={`w-1.5 h-1.5 rounded-full ${isFree ? 'bg-emerald-400' : 'bg-rose-500'}`} />
+                      <span className="text-white tracking-wider font-extrabold">{el.code}</span>
+                      <div className="flex items-center gap-1">
+                        {isPmr && <span className="text-[8px] bg-blue-600 text-white px-1 rounded-xs font-bold">PMR</span>}
+                        <div className={`w-2 h-2 rounded-full ${isFree ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-rose-500'}`} />
+                      </div>
                     </div>
 
+                    {/* Silueta Central del Vehículo o Área de Estacionamiento */}
                     <div className="flex items-center justify-center my-auto py-0.5 pointer-events-none z-10 w-full h-full">
                       {isFree ? (
-                        <div className="w-6 h-7 rounded border border-dashed border-white/25 flex items-center justify-center">
+                        <div className={`w-7 h-9 rounded-lg border border-dashed flex items-center justify-center ${isPmr ? 'border-blue-400/40 bg-blue-900/20' : 'border-slate-500/30'}`}>
                           {slotType === 'moto' ? (
-                            <Bike className="w-3 h-3 text-slate-400" />
+                            <Bike className="w-4 h-4 text-slate-400" />
                           ) : slotType === 'camioneta' ? (
-                            <Truck className="w-3.5 h-3.5 text-slate-400" />
+                            <Truck className="w-4 h-4 text-slate-400" />
                           ) : slotType === 'mototaxi' ? (
-                            <Navigation className="w-3 h-3 text-slate-400 rotate-45" />
+                            <Navigation className="w-4 h-4 text-slate-400 rotate-45" />
                           ) : (
-                            <Car className="w-3.5 h-3.5 text-slate-400" />
+                            <Car className={`w-4 h-4 ${isPmr ? 'text-blue-400' : 'text-slate-400'}`} />
                           )}
                         </div>
                       ) : (
@@ -509,17 +599,107 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       )}
                     </div>
 
-                    <div className="w-full h-1 bg-amber-500/80 rounded-xs z-10 my-0.5" />
+                    {/* Tope de Goma para Neumático (Wheel Stop con Franjas de Seguridad) */}
+                    <div 
+                      className="w-[85%] h-1.5 mx-auto rounded-full overflow-hidden flex shadow-xs my-0.5 pointer-events-none" 
+                      style={{ background: 'repeating-linear-gradient(45deg, #eab308 0, #eab308 4px, #0f172a 4px, #0f172a 8px)' }} 
+                    />
 
-                    <div className="text-center text-[8px] font-mono font-bold leading-none z-10">
+                    {/* Badge de Estado Inferior — Sin Truncamiento */}
+                    <div className="text-center z-10 py-0.5 leading-none">
                       {isSelected ? (
-                        <span className="text-cyan-300">SELECCIONADO</span>
+                        <span className="inline-block px-1.5 py-0.5 rounded bg-cyan-400 text-slate-950 font-black text-[9px] tracking-tight uppercase shadow-xs">
+                          TU PLAZA
+                        </span>
                       ) : isFree ? (
-                        <span className="text-emerald-400">LIBRE</span>
+                        <span className="text-emerald-400 font-mono font-bold text-[9px] tracking-wide">
+                          LIBRE
+                        </span>
                       ) : (
-                        <span className="text-slate-400">OCUPADO</span>
+                        <span className="text-slate-400 font-mono font-semibold text-[8px] tracking-tight">
+                          {el.plate || 'OCUPADO'}
+                        </span>
                       )}
                     </div>
+                  </div>
+                );
+              }
+
+              if (el.type === 'road') {
+                return (
+                  <div
+                    key={el.id}
+                    style={{
+                      left: `${relX}px`,
+                      top: `${relY}px`,
+                      width: `${el.w}px`,
+                      height: `${el.h}px`,
+                      transform: `rotate(${el.rot || 0}deg)`
+                    }}
+                    className="absolute bg-[#0f1624] border-y-2 border-dashed border-amber-400/60 rounded-xl flex items-center justify-center z-1 pointer-events-none shadow-inner overflow-hidden"
+                  >
+                    <div className="w-full flex items-center justify-around px-6 opacity-85 pointer-events-none">
+                      <span className="text-[10px] font-mono font-black text-amber-400/90 tracking-widest flex items-center gap-2">
+                        <span className="text-xs">━►</span>
+                        <span>{el.label || 'CARRIL VIAL DE CIRCULACIÓN'}</span>
+                        <span className="text-xs">━►</span>
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (el.type === 'gate') {
+                const isExit = el.gateType === 'exit' || (el.label && el.label.toLowerCase().includes('salida'));
+                return (
+                  <div
+                    key={el.id}
+                    style={{
+                      left: `${relX}px`,
+                      top: `${relY}px`,
+                      width: `${el.w}px`,
+                      height: `${el.h}px`,
+                      transform: `rotate(${el.rot || 0}deg)`
+                    }}
+                    className="absolute bg-slate-900 border border-slate-700 rounded-xl flex flex-col items-center justify-between p-1.5 z-10 shadow-lg pointer-events-none"
+                  >
+                    <div className="w-full flex items-center justify-between px-1 text-[8px] font-mono font-bold">
+                      <span className={isExit ? 'text-amber-400' : 'text-emerald-400'}>
+                        {isExit ? 'SALIDA' : 'INGRESO'}
+                      </span>
+                      <div className={`w-2 h-2 rounded-full ${isExit ? 'bg-amber-400' : 'bg-emerald-400'} animate-pulse`} />
+                    </div>
+                    {/* Pluma de la barrera con franjas diagonales rojas y blancas */}
+                    <div 
+                      className="w-full h-2 rounded-full shadow-xs border border-black/30 my-auto"
+                      style={{
+                        background: 'repeating-linear-gradient(45deg, #ef4444 0, #ef4444 5px, #ffffff 5px, #ffffff 10px)'
+                      }}
+                    />
+                    <span className="text-[7px] font-mono text-slate-400 uppercase tracking-tighter text-center leading-none">
+                      {el.label || 'CONTROL ANPR'}
+                    </span>
+                  </div>
+                );
+              }
+
+              if (el.type === 'crosswalk') {
+                return (
+                  <div
+                    key={el.id}
+                    style={{
+                      left: `${relX}px`,
+                      top: `${relY}px`,
+                      width: `${el.w}px`,
+                      height: `${el.h}px`,
+                      transform: `rotate(${el.rot || 0}deg)`,
+                      background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.85) 0px, rgba(255,255,255,0.85) 12px, transparent 12px, transparent 24px)'
+                    }}
+                    className="absolute border-y-2 border-amber-400/80 rounded-xs z-3 pointer-events-none flex items-center justify-center shadow-xs"
+                  >
+                    <span className="bg-black/80 text-amber-300 px-1.5 py-0.5 rounded text-[8px] font-mono font-bold tracking-wider uppercase border border-amber-400/40">
+                      Paso Peatonal
+                    </span>
                   </div>
                 );
               }
@@ -529,31 +709,54 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   <div
                     key={el.id}
                     style={{
-                      left: `${el.x}px`,
-                      top: `${el.y}px`,
+                      left: `${relX}px`,
+                      top: `${relY}px`,
                       width: `${el.w}px`,
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className="absolute bg-slate-600 border border-slate-500 rounded-xs z-5"
+                    className="absolute bg-slate-700 border border-slate-600 rounded-xs z-6 shadow-md pointer-events-none"
                   />
                 );
               }
 
-              if (el.type === 'road') {
+              if (el.type === 'building') {
                 return (
                   <div
                     key={el.id}
                     style={{
-                      left: `${el.x}px`,
-                      top: `${el.y}px`,
+                      left: `${relX}px`,
+                      top: `${relY}px`,
                       width: `${el.w}px`,
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className="absolute bg-[#111620] border border-slate-700/50 rounded-lg flex items-center justify-center z-1 pointer-events-none"
+                    className="absolute bg-slate-800/95 border border-cyan-500/40 rounded-xl p-2 z-7 shadow-lg flex flex-col items-center justify-center text-center pointer-events-none"
                   >
-                    <span className="text-[10px] font-mono font-bold text-slate-500 tracking-wider uppercase">{el.label || 'VÍA INTERNA'}</span>
+                    <Building2 className="w-4 h-4 text-cyan-400 mb-1" />
+                    <span className="text-[8px] font-mono font-bold text-cyan-200 uppercase tracking-tighter leading-tight">
+                      {el.label || 'ADMINISTRACIÓN'}
+                    </span>
+                  </div>
+                );
+              }
+
+              if (el.type === 'garden') {
+                return (
+                  <div
+                    key={el.id}
+                    style={{
+                      left: `${relX}px`,
+                      top: `${relY}px`,
+                      width: `${el.w}px`,
+                      height: `${el.h}px`,
+                      transform: `rotate(${el.rot || 0}deg)`
+                    }}
+                    className="absolute bg-emerald-950/70 border border-emerald-600/40 rounded-xl z-2 pointer-events-none flex items-center justify-center"
+                  >
+                    <span className="text-[8px] font-mono text-emerald-400/80 font-bold uppercase tracking-wider">
+                      {el.label || 'ÁREA VERDE'}
+                    </span>
                   </div>
                 );
               }

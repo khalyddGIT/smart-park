@@ -1,37 +1,36 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('3. Flujo de Reserva, Plano Interactivo y Pase Digital QR', () => {
   test('Acceso con usuario, selección de sede y visualización de plano/reserva', async ({ page }) => {
     await page.goto('/');
 
-    // 1. Iniciar sesión con cuenta conductor
-    const accederBtn = page.locator('button:has-text("Acceder"), button:has-text("Ingresar")').first();
-    if (await accederBtn.isVisible()) {
-      await accederBtn.click();
-      await page.waitForTimeout(600);
-      
-      const emailInput = page.locator('input[type="email"]').first();
-      const passwordInput = page.locator('input[type="password"]').first();
-      await emailInput.fill('usuario@smartpark.com');
-      await passwordInput.fill('password123');
+    // 1. Iniciar con sesión de conductor autenticado
+    await page.addInitScript(() => {
+      window.localStorage.setItem('smart_park_user_session', JSON.stringify({
+        id: 1,
+        name: 'Usuario Conductor Demo',
+        email: 'usuario@smartpark.com',
+        role: 'user',
+        isGoogleAuth: false
+      }));
+    });
 
-      const submitBtn = page.locator('button[type="submit"]:has-text("Iniciar"), button:has-text("Entrar")').first();
-      if (await submitBtn.isVisible()) {
-        await submitBtn.click();
-        await page.waitForTimeout(1500);
-      }
-    }
-
-    // 2. Verificar que el panel de usuario o lista de estacionamientos esté cargado
-    await page.waitForTimeout(1000);
+    await page.goto('/');
+    await page.waitForTimeout(1500);
     await page.screenshot({ path: 'e2e/screenshots/05_dashboard_driver.png' });
 
-    // 3. Localizar una sede en el directorio/mapa y abrir detalle
-    const parkingItem = page.locator('button:has-text("Reservar"), button:has-text("Ver Plazas"), div[role="button"]').first();
-    if (await parkingItem.isVisible()) {
-      await parkingItem.click();
-      await page.waitForTimeout(1000);
-      await page.screenshot({ path: 'e2e/screenshots/06_interactive_plan.png' });
-    }
+    // 2. Localizar sede "Smart Park Plaza Mayor" y hacer click en "Ver Plano & Reservar"
+    const verPlanoBtn = page.locator('button:has-text("Ver Plano & Reservar")').first();
+    await expect(verPlanoBtn).toBeVisible({ timeout: 10000 });
+    await verPlanoBtn.scrollIntoViewIfNeeded();
+    await verPlanoBtn.click({ force: true });
+
+    // 3. Esperar a que el visor arquitectónico del plano cargue sus elementos
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: 'e2e/screenshots/06_interactive_plan.png' });
+
+    // 4. Verificar que el plano y la leyenda arquitectónica están visibles
+    const tuPlazaText = page.locator('text=Tu Plaza').first();
+    await expect(tuPlazaText).toBeVisible({ timeout: 10000 });
   });
 });

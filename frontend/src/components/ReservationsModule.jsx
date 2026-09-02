@@ -86,6 +86,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
   const [showCheckoutPayment, setShowCheckoutPayment] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
   const [plate, setPlate] = useState('');
+  const [hours, setHours] = useState(2);
   const [feedbackMessage, setFeedbackMessage] = useState('');
 
   // Modal de Check-in para Garita (Personal define horas de estadía)
@@ -593,7 +594,11 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
 
                         <span className="flex items-center gap-1 text-slate-500">
                           <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(res.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({res.hours}h)</span>
+                          {isScheduled ? (
+                            <span>Llegada estimada: {new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          ) : (
+                            <span>{new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(res.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({res.hours}h)</span>
+                          )}
                         </span>
                       </div>
 
@@ -625,18 +630,20 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                     {/* Importe */}
                     <div className="text-left lg:text-right">
                       <span className="text-[10px] text-slate-400 block font-mono">
-                        Importe
+                        {isScheduled ? 'Tarifa' : 'Importe'}
                       </span>
                       <span className="text-base font-bold text-slate-900 font-mono">
-                        S/ {Number(res.cost).toFixed(2)}
+                        {isScheduled 
+                          ? `S/ ${Number(res.ratePerHour || 5.0).toFixed(2)} /h`
+                          : `S/ ${Number(res.cost).toFixed(2)}`}
                       </span>
                     </div>
 
                     {/* Botones de Acción */}
                     <div className="flex items-center gap-1.5">
                       
-                      {/* Marcar Check-in / Ingreso */}
-                      {isScheduled && (
+                      {/* Marcar Check-in / Ingreso (Personal de Garita) */}
+                      {role !== 'user' && isScheduled && (
                         <Button
                           onClick={() => {
                             setCheckInTarget(res);
@@ -651,8 +658,8 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                         </Button>
                       )}
 
-                      {/* Marcar Check-out / Salida */}
-                      {isActive && (
+                      {/* Marcar Check-out / Salida (Personal de Garita) */}
+                      {role !== 'user' && isActive && (
                         <Button
                           onClick={async () => {
                             const resp = await updateReservationStatus(res.code, 'COMPLETED');

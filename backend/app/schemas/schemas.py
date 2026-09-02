@@ -88,6 +88,9 @@ class VehicleBase(BaseModel):
         return v
     model: Optional[str] = None
     color: Optional[str] = None
+    year: Optional[str] = "2023"
+    notes: Optional[str] = None
+    image_url: Optional[str] = None
 
 class VehicleCreate(VehicleBase):
     user_id: Optional[int] = 1
@@ -98,6 +101,9 @@ class VehicleUpdate(BaseModel):
     brand: Optional[str] = None
     model: Optional[str] = None
     color: Optional[str] = None
+    year: Optional[str] = None
+    notes: Optional[str] = None
+    image_url: Optional[str] = None
 
 class VehicleResponse(VehicleBase):
     id: int

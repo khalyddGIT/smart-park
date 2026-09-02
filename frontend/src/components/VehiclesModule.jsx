@@ -25,11 +25,31 @@ import {
   VideoOff
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { listVehicles, createVehicle as apiCreateVehicle, updateVehicleApi, deleteVehicleApi, getAccessToken } from '../services/api';
+import { 
+  listVehicles, 
+  createVehicle as apiCreateVehicle, 
+  updateVehicleApi, 
+  deleteVehicleApi, 
+  lookupVehicleImageApi,
+  uploadVehicleImageApi,
+  resolveImageUrl,
+  getAccessToken 
+} from '../services/api';
 
-// Función para consultar la API de Car Imagery y obtener foto real del modelo
-export const fetchCarPhoto = async (brand, model, year = '2022') => {
+// Función para consultar la API y obtener foto real del modelo (vía backend proxy y fallback directo)
+export const fetchCarPhoto = async (brand, model, year = '2023', vehicleType = 'auto') => {
   if (!brand || !model) return null;
+  // 1. Intentar consulta server-side en backend (evita CORS y bloqueos de navegador)
+  try {
+    const data = await lookupVehicleImageApi(brand, model, year, vehicleType);
+    if (data?.image_url) {
+      return data.image_url;
+    }
+  } catch {
+    // Fallback al cliente directo
+  }
+
+  // 2. Consulta directa de respaldo con soporte HTTPS forzado
   try {
     const searchTerm = encodeURIComponent(`${brand} ${model} ${year}`.trim());
     const res = await fetch(`https://www.carimagery.com/api.asmx/GetImageUrl?searchTerm=${searchTerm}`);
@@ -37,13 +57,16 @@ export const fetchCarPhoto = async (brand, model, year = '2022') => {
       const xmlText = await res.text();
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-      const url = xmlDoc.getElementsByTagName("string")[0]?.textContent;
-      if (url && url.startsWith("http") && !url.includes("error")) {
+      let url = xmlDoc.getElementsByTagName("string")[0]?.textContent;
+      if (url && url.startsWith("http") && !url.toLowerCase().includes("error")) {
+        if (url.startsWith("http://")) {
+          url = "https://" + url.substring(7);
+        }
         return url;
       }
     }
   } catch {
-    // Retornar fallback si hay error de red/CORS
+    // Retornar fallback si hay error de red
   }
   return null;
 };
@@ -113,7 +136,7 @@ export const VehiclesModule = () => {
             year: v.year || '2023',
             notes: v.notes || '',
             isDefault: false, 
-            imageUrl: v.imageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800' 
+            imageUrl: v.image_url || v.imageUrl || getDefaultCarImage(v.vehicle_type) 
           }));
           setVehicles(mapped);
           try { localStorage.setItem(getVehiclesKey(), JSON.stringify(mapped)); } catch {}
@@ -228,22 +251,37 @@ export const VehiclesModule = () => {
       return;
     }
     setLoadingImage(true);
-    const photo = await fetchCarPhoto(formData.brand, formData.model, formData.year || '2023');
+    const photo = await fetchCarPhoto(formData.brand, formData.model, formData.year || '2023', formData.vehicle_type);
     setLoadingImage(false);
 
     if (photo) {
       setFormData(prev => ({ ...prev, imageUrl: photo }));
       showToast('✓ Fotografía oficial obtenida.');
     } else {
-      const fallbackUrl = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800';
+      const fallbackUrl = getDefaultCarImage(formData.vehicle_type);
       setFormData(prev => ({ ...prev, imageUrl: fallbackUrl }));
       showToast('Foto referencial asignada.');
     }
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      const token = getAccessToken();
+      if (token) {
+        try {
+          const uploadData = new FormData();
+          uploadData.append('file', file);
+          const res = await uploadVehicleImageApi(uploadData);
+          if (res?.image_url) {
+            setFormData(prev => ({ ...prev, imageUrl: res.image_url }));
+            showToast('✓ Fotografía subida y guardada en servidor.');
+            return;
+          }
+        } catch {
+          // Fallback a base64 local
+        }
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         setFormData(prev => ({ ...prev, imageUrl: event.target.result }));
@@ -258,11 +296,28 @@ export const VehiclesModule = () => {
     setShowCameraModal(true);
   };
 
-  const handleTakeSnapshot = () => {
+  const handleTakeSnapshot = async () => {
     if (webcamRef.current) {
       try {
         const screenshot = webcamRef.current.getScreenshot();
         if (screenshot) {
+          const token = getAccessToken();
+          if (token) {
+            try {
+              const blob = await fetch(screenshot).then(r => r.blob());
+              const uploadData = new FormData();
+              uploadData.append('file', blob, 'webcam_snap.jpg');
+              const res = await uploadVehicleImageApi(uploadData);
+              if (res?.image_url) {
+                setFormData(prev => ({ ...prev, imageUrl: res.image_url }));
+                setShowCameraModal(false);
+                showToast('✓ Fotografía capturada y guardada en servidor.');
+                return;
+              }
+            } catch {
+              // Fallback a base64
+            }
+          }
           setFormData(prev => ({ ...prev, imageUrl: screenshot }));
           setShowCameraModal(false);
           showToast('✓ Fotografía capturada con éxito desde la cámara.');
@@ -272,7 +327,7 @@ export const VehiclesModule = () => {
         console.warn('Webcam capture error', err);
       }
     }
-    const samplePhoto = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800';
+    const samplePhoto = getDefaultCarImage(formData.vehicle_type);
     setFormData(prev => ({ ...prev, imageUrl: samplePhoto }));
     setShowCameraModal(false);
     showToast('✓ Fotografía asignada.');
@@ -284,7 +339,7 @@ export const VehiclesModule = () => {
     const plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
     const plateOk = /^[A-Z0-9]{2,4}-?[A-Z0-9]{2,4}$/i.test(plateClean);
     if (!plateOk) { showToast('Ingresa una placa válida (ej: ABC-123, ABC123, A1B-234 o 1234-AB)'); return; }
-    let img = formData.imageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800';
+    let img = formData.imageUrl || getDefaultCarImage(formData.vehicle_type);
     const plate = formData.license_plate.toUpperCase().trim();
     
     const token = getAccessToken();
@@ -295,7 +350,10 @@ export const VehiclesModule = () => {
           vehicle_type: formData.vehicle_type || 'auto', 
           brand: formData.brand.trim() || 'Toyota', 
           model: formData.model.trim() || 'Corolla', 
-          color: formData.color.trim() || 'Gris' 
+          color: formData.color.trim() || 'Gris',
+          year: formData.year || '2023',
+          notes: formData.notes || '',
+          image_url: img
         });
         const newObj = { 
           id: created.id, 
@@ -304,10 +362,10 @@ export const VehiclesModule = () => {
           brand: created.brand, 
           model: created.model, 
           color: created.color, 
-          year: formData.year || '2023',
-          notes: formData.notes,
+          year: created.year || formData.year || '2023',
+          notes: created.notes || formData.notes || '',
           isDefault: vehicles.length === 0, 
-          imageUrl: img 
+          imageUrl: created.image_url || img 
         };
         setVehicles(prev => [newObj, ...prev]);
         setShowAddModal(false);
@@ -359,7 +417,10 @@ export const VehiclesModule = () => {
           vehicle_type: formData.vehicle_type,
           brand: formData.brand.trim() || 'Toyota',
           model: formData.model.trim() || 'Corolla',
-          color: formData.color.trim() || 'Gris'
+          color: formData.color.trim() || 'Gris',
+          year: formData.year || '2023',
+          notes: formData.notes || '',
+          image_url: formData.imageUrl || selectedVehicle.imageUrl
         });
         updatedObj = {
           ...selectedVehicle,
@@ -368,9 +429,9 @@ export const VehiclesModule = () => {
           brand: updatedServer.brand,
           model: updatedServer.model,
           color: updatedServer.color,
-          year: formData.year,
-          notes: formData.notes,
-          imageUrl: formData.imageUrl || selectedVehicle.imageUrl
+          year: updatedServer.year || formData.year,
+          notes: updatedServer.notes || formData.notes,
+          imageUrl: updatedServer.image_url || formData.imageUrl || selectedVehicle.imageUrl
         };
       } catch (err) {
         console.warn('Update vehicle API warning:', err);
@@ -581,7 +642,7 @@ export const VehiclesModule = () => {
 
         {formData.imageUrl && (
           <div className="h-28 rounded-xl overflow-hidden border border-slate-200 relative group bg-slate-950">
-            <img src={formData.imageUrl} alt="Vista previa del vehículo" className="w-full h-full object-cover" />
+            <img src={resolveImageUrl(formData.imageUrl)} alt="Vista previa del vehículo" className="w-full h-full object-cover" />
             <button
               type="button"
               onClick={() => setFormData({ ...formData, imageUrl: '' })}
@@ -770,7 +831,7 @@ export const VehiclesModule = () => {
                   {/* Foto con Encuadre Perfecto */}
                   <div className="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center">
                     <img 
-                      src={carImg} 
+                      src={resolveImageUrl(carImg)} 
                       alt={`${v.brand} ${v.model}`} 
                       className="w-full h-full object-cover object-center"
                       onError={(e) => {

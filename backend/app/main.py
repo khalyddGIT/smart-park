@@ -61,6 +61,9 @@ async def startup_db():
                 ("estacionamientos", "camera_enabled", "BOOLEAN DEFAULT FALSE"),
                 ("estacionamientos", "camera_calibration", "TEXT"),
                 ("usuarios", "avatar_url", "TEXT"),
+                ("vehiculos", "image_url", "TEXT"),
+                ("vehiculos", "year", "VARCHAR(10) DEFAULT '2023'"),
+                ("vehiculos", "notes", "TEXT"),
             ]
             if str(engine.url).startswith("sqlite"):
                 for tbl, col, decl in lite_adds:
@@ -292,6 +295,10 @@ async def realtime_ws(ws: WebSocket):
         await realtime.disconnect(ws)
     except Exception:
         await realtime.disconnect(ws)
+
+UPLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 STATIC_DIR = os.getenv("STATIC_DIR", "")
 

@@ -55,6 +55,9 @@ class Vehicle(Base):
     brand = Column(String(50), nullable=True)
     model = Column(String(50), nullable=True)
     color = Column(String(30), nullable=True)
+    year = Column(String(10), nullable=True, default="2023")
+    notes = Column(Text, nullable=True)
+    image_url = Column(Text, nullable=True)
 
     owner = relationship("User", back_populates="vehicles")
 

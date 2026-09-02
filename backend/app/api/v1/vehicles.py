@@ -1,5 +1,10 @@
+import os
+import uuid
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
@@ -9,6 +14,77 @@ from app.core.security import get_current_user
 from app.models.models import User
 
 router = APIRouter(prefix="/vehicles", tags=["Vehículos & Matrículas ANPR"])
+
+@router.get("/lookup-image")
+async def lookup_vehicle_image(
+    brand: str,
+    model: str,
+    year: Optional[str] = "2023",
+    vehicle_type: Optional[str] = "auto"
+):
+    """
+    Consulta confiable de imagen oficial de vehículo sin problemas de CORS ni HTTPS mixed-content.
+    """
+    search_term = urllib.parse.quote(f"{brand} {model} {year or ''}".strip())
+    api_url = f"https://www.carimagery.com/api.asmx/GetImageUrl?searchTerm={search_term}"
+
+    try:
+        req = urllib.request.Request(
+            api_url,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        )
+        with urllib.request.urlopen(req, timeout=4) as response:
+            xml_data = response.read().decode("utf-8", errors="ignore")
+            root = ET.fromstring(xml_data)
+            url = root.text
+            if url and url.startswith("http") and "error" not in url.lower():
+                # Forzar HTTPS si viene como http://www.regcheck.org.uk para evitar bloqueo de contenido mixto
+                if url.startswith("http://"):
+                    url = "https://" + url[7:]
+                return {"image_url": url, "source": "carimagery"}
+    except Exception:
+        pass
+
+    vt = (vehicle_type or "auto").lower()
+    fallbacks = {
+        "suv": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80",
+        "camioneta": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80",
+        "moto": "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80",
+        "mototaxi": "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80",
+        "truck": "https://images.unsplash.com/photo-1586191582056-a6c382f6e975?auto=format&fit=crop&w=800&q=80",
+        "auto": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80"
+    }
+    return {"image_url": fallbacks.get(vt, fallbacks["auto"]), "source": "fallback"}
+
+@router.post("/upload-image")
+async def upload_vehicle_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Sube una foto de vehículo tomada por cámara o subida desde archivo.
+    Guarda en el servidor y retorna la URL pública.
+    """
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="El archivo seleccionado debe ser una imagen")
+    
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="La imagen no debe superar los 10MB")
+    
+    ext = file.filename.split(".")[-1].lower() if file.filename and "." in file.filename else "jpg"
+    if ext not in ["jpg", "jpeg", "png", "webp", "gif"]:
+        ext = "jpg"
+    
+    filename = f"veh_{uuid.uuid4().hex[:12]}.{ext}"
+    uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "uploads", "vehicles"))
+    os.makedirs(uploads_dir, exist_ok=True)
+    file_path = os.path.join(uploads_dir, filename)
+    
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    return {"image_url": f"/uploads/vehicles/{filename}"}
 
 @router.get("", response_model=List[VehicleResponse])
 async def list_vehicles(
@@ -54,7 +130,10 @@ async def create_vehicle(vehicle_in: VehicleCreate, db: AsyncSession = Depends(g
         vehicle_type=vehicle_in.vehicle_type,
         brand=vehicle_in.brand,
         model=vehicle_in.model,
-        color=vehicle_in.color
+        color=vehicle_in.color,
+        year=vehicle_in.year or "2023",
+        notes=vehicle_in.notes or "",
+        image_url=vehicle_in.image_url
     )
     db.add(db_vehicle)
     await db.commit()

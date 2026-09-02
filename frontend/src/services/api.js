@@ -51,6 +51,17 @@ export const listVehicles = () => api.get('/vehicles').then(r => r.data);
 export const createVehicle = (data) => api.post('/vehicles', data).then(r => r.data);
 export const updateVehicleApi = (id, data) => api.put(`/vehicles/${id}`, data).then(r => r.data);
 export const deleteVehicleApi = (id) => api.delete(`/vehicles/${id}`).then(r => r.data);
+export const lookupVehicleImageApi = (brand, model, year, vehicleType) => 
+  api.get('/vehicles/lookup-image', { params: { brand, model, year, vehicle_type: vehicleType } }).then(r => r.data);
+export const uploadVehicleImageApi = (formData) => 
+  api.post('/vehicles/upload-image', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
+
+export const resolveImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
+  const base = getApiBase();
+  return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
 // Reservations (requiere JWT)
 export const listReservations = (params = {}) => api.get('/reservations', { params }).then(r => r.data);

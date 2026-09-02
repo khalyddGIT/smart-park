@@ -1177,15 +1177,16 @@ export const EstablishmentProvider = ({ children }) => {
     return { ok: true, message: `Reserva ${code} cancelada localmente (sin registro en servidor).` };
   };
 
-  // Check-In de garita: PUT /reservations/{id}/check-in → status active
-  const checkInReservation = async (code) => {
+  // Check-In de garita: PUT /reservations/{id}/check-in → status active (con horas de estadía opcional)
+  const checkInReservation = async (code, hoursStay = null) => {
     const target = reservations.find(r => r.code === code || String(r.id) === String(code));
     if (!target) return { ok: false, message: 'Reserva no encontrada.' };
     if (!isBackendReservation(target)) {
       return { ok: false, message: 'Esta reserva aún no está registrada en el servidor; no se puede registrar el ingreso.' };
     }
     try {
-      await api.put(`/reservations/${target.id}/check-in`);
+      const params = hoursStay ? { hours_stay: hoursStay } : {};
+      await api.put(`/reservations/${target.id}/check-in`, null, { params });
       await refreshMyReservations();
       if (target.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
       return { ok: true, message: `Entrada registrada: vehículo ${target.plate} ingresó a la plaza ${target.slot}.` };
@@ -1243,8 +1244,8 @@ export const EstablishmentProvider = ({ children }) => {
   };
 
   // Compatibilidad con llamadas existentes: enruta hacia las acciones reales del servidor
-  const updateReservationStatus = (code, newStatus) => {
-    if (newStatus === 'ACTIVE') return checkInReservation(code);
+  const updateReservationStatus = (code, newStatus, hoursStay = null) => {
+    if (newStatus === 'ACTIVE') return checkInReservation(code, hoursStay);
     if (newStatus === 'COMPLETED') return checkOutReservation(code);
     if (newStatus === 'CANCELLED') return cancelReservation(code);
     updateReservationStatusLocal(code, newStatus);

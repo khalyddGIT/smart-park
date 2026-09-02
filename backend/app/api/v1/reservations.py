@@ -307,10 +307,11 @@ async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncS
 @router.put("/{reservation_id}/check-in", response_model=ReservationResponse)
 async def check_in_reservation(
     reservation_id: int, 
+    hours_stay: Optional[float] = None,
     db: AsyncSession = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ):
-    # Check-in: registra el ingreso físico del vehículo y arranca el tiempo real de estadía
+    # Check-in: marca el ingreso real del vehículo a la cochera
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
     reservation = result.scalars().first()
     if not reservation:
@@ -323,14 +324,26 @@ async def check_in_reservation(
         raise HTTPException(status_code=400, detail=f"Solo se puede hacer check-in de reservas programadas (estado actual: {reservation.status})")
 
     now = datetime.utcnow()
-    # Calcular duración contratada original en horas
     from datetime import timedelta
-    original_duration_hours = max(0.5, (reservation.end_time - reservation.start_time).total_seconds() / 3600.0)
+
+    # Determinar duración de la estadía: asignada por personal o duración calculada
+    if hours_stay is not None and hours_stay > 0:
+        stay_hours = max(0.5, float(hours_stay))
+    elif reservation.end_time and reservation.start_time:
+        stay_hours = max(0.5, (reservation.end_time - reservation.start_time).total_seconds() / 3600.0)
+    else:
+        stay_hours = 1.0
+
+    # Recalcular costo estimado con la tarifa de la sede
+    parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
+    parking = parking_res.scalars().first()
+    hourly_rate = parking.hourly_rate if parking else 5.0
 
     reservation.status = "active"
     reservation.actual_entry = now
     # FASE 2: La estadía corre desde el momento exacto del ingreso real
-    reservation.end_time = now + timedelta(hours=original_duration_hours)
+    reservation.end_time = now + timedelta(hours=stay_hours)
+    reservation.total_cost = round(hourly_rate * stay_hours, 2)
 
     # El cajón pasa a ocupado mientras dure la estancia
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))

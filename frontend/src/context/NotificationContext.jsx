@@ -159,8 +159,22 @@ export const NotificationProvider = ({ children }) => {
                 type = 'info';
               }
             } else if (r.status === 'scheduled' && start) {
-              message = `Tu reserva ${r.code} programada para ${formatDate(r.start_time)} · Placa ${r.license_plate}`;
-              type = 'success';
+              const tolMin = Number(r.tolerance_minutes || 15);
+              const deadline = new Date(start.getTime() + tolMin * 60000);
+              const diffMin = Math.ceil((deadline.getTime() - Date.now()) / 60000);
+
+              if (diffMin <= 10 && diffMin > 0) {
+                title = `⚠️ Llegada urgente (${diffMin} min)`;
+                message = `¡Atención! Tu reserva ${r.code} vencerá en ${diffMin} min. Preséntate en garita antes del límite o tu reserva se cancelará automáticamente.`;
+                type = 'alert';
+              } else if (diffMin <= 0) {
+                title = `Reserva ${r.code} por cancelar`;
+                message = `El tiempo para ingresar ha expirado. Tu reserva ${r.code} será cancelada automáticamente.`;
+                type = 'warning';
+              } else {
+                message = `Llegada programada para ${formatDate(r.start_time)} (tolerancia: ${tolMin} min) · Placa ${r.license_plate}`;
+                type = 'info';
+              }
             } else {
               message = `Reserva ${r.code} · ${r.license_plate} · Cochera #${r.parking_id} · ${r.status}`;
             }

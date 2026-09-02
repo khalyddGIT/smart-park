@@ -247,6 +247,27 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
             </p>
           </div>
 
+          {/* Banner de Advertencia Preventiva 10 a 5 minutos antes */}
+          {isScheduled && secondsRemaining !== null && secondsRemaining > 0 && secondsRemaining <= 600 && (
+            <div className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
+              secondsRemaining <= 300 
+                ? 'bg-rose-50 border-rose-300 text-rose-900' 
+                : 'bg-amber-50 border-amber-300 text-amber-900'
+            }`}>
+              <AlertCircle className={`w-4 h-4 shrink-0 mt-0.5 ${secondsRemaining <= 300 ? 'text-rose-600' : 'text-amber-600'}`} />
+              <div>
+                <p className="font-bold">
+                  {secondsRemaining <= 300 
+                    ? `¡Atención urgente! Faltan menos de ${Math.max(1, Math.ceil(secondsRemaining / 60))} min` 
+                    : `Llegada requerida: ${Math.ceil(secondsRemaining / 60)} min restantes`}
+                </p>
+                <p className={`text-[11px] mt-0.5 leading-snug ${secondsRemaining <= 300 ? 'text-rose-800' : 'text-amber-800'}`}>
+                  Si no te presentas en garita a tiempo, tu reserva se cancelará automáticamente y tu cajón será liberado.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Datos de la Reserva y Cronómetro Inteligente */}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="p-2.5 rounded-xl border border-slate-200 bg-white">

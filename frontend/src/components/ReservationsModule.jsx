@@ -86,8 +86,12 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
   const [showCheckoutPayment, setShowCheckoutPayment] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
   const [plate, setPlate] = useState('');
-  const [hours, setHours] = useState(2);
   const [feedbackMessage, setFeedbackMessage] = useState('');
+
+  // Modal de Check-in para Garita (Personal define horas de estadía)
+  const [checkInTarget, setCheckInTarget] = useState(null);
+  const [checkInHours, setCheckInHours] = useState(2);
+  const [isProcessingCheckIn, setIsProcessingCheckIn] = useState(false);
 
   // Modal de Pase QR
   const [selectedReservationForPass, setSelectedReservationForPass] = useState(null);
@@ -634,10 +638,9 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                       {/* Marcar Check-in / Ingreso */}
                       {isScheduled && (
                         <Button
-                          onClick={async () => {
-                            const resp = await updateReservationStatus(res.code, 'ACTIVE');
-                            if (resp?.ok) setFeedbackMessage(resp.message || `Ingreso registrado: ${res.plate} en plaza ${res.slot}`);
-                            else setFeedbackMessage(resp?.message || 'Error al registrar ingreso.');
+                          onClick={() => {
+                            setCheckInTarget(res);
+                            setCheckInHours(Number(res.hours) || 2);
                           }}
                           size="sm"
                           className="rounded-lg text-xs font-bold gap-1 bg-emerald-600 hover:bg-emerald-500 text-white h-8 px-2.5 cursor-pointer shadow-xs"
@@ -1020,6 +1023,103 @@ ESTADO: AUTORIZADO`}
           setPayTarget(null);
         }}
       />
+
+      {/* Diálogo de Registro de Ingreso en Garita (Horas de Estadía) */}
+      <Dialog open={!!checkInTarget} onOpenChange={(open) => !open && setCheckInTarget(null)}>
+        <DialogContent className="sm:max-w-md bg-white border border-slate-200 p-6 rounded-2xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <LogIn className="w-4 h-4 text-emerald-600" />
+              <span>Registrar Ingreso en Garita</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Registra el ingreso real del vehículo y define el tiempo de estadía acordado.
+            </DialogDescription>
+          </DialogHeader>
+
+          {checkInTarget && (
+            <div className="space-y-4 my-2">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Vehículo / Placa</span>
+                  <p className="font-mono font-bold text-slate-900 mt-0.5">{checkInTarget.plate}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Cajón Asignado</span>
+                  <p className="font-mono font-bold text-slate-900 mt-0.5">{checkInTarget.slot}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  ¿Cuánto tiempo va a permanecer estacionado?
+                </label>
+                <div className="grid grid-cols-4 gap-2 mb-2">
+                  {[1, 2, 3, 4].map(h => (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={() => setCheckInHours(h)}
+                      className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                        checkInHours === h
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {h} {h === 1 ? 'hora' : 'horas'}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">Personalizado:</span>
+                  <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 h-9">
+                    <input
+                      type="number"
+                      min="1"
+                      max="48"
+                      value={checkInHours}
+                      onChange={(e) => setCheckInHours(Math.max(1, Number(e.target.value) || 1))}
+                      className="w-16 bg-transparent text-xs font-mono font-bold text-slate-800 outline-none text-center"
+                    />
+                    <span className="text-xs text-slate-500">horas</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCheckInTarget(null)}
+                  disabled={isProcessingCheckIn}
+                  className="text-xs rounded-xl"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isProcessingCheckIn}
+                  onClick={async () => {
+                    setIsProcessingCheckIn(true);
+                    const resp = await updateReservationStatus(checkInTarget.code, 'ACTIVE', checkInHours);
+                    setIsProcessingCheckIn(false);
+                    setCheckInTarget(null);
+                    if (resp?.ok) setFeedbackMessage(resp.message || `Ingreso registrado para ${checkInTarget.plate} por ${checkInHours}h.`);
+                    else setFeedbackMessage(resp?.message || 'Error al registrar ingreso.');
+                  }}
+                  className="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl gap-1.5"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Confirmar Ingreso ({checkInHours}h)</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

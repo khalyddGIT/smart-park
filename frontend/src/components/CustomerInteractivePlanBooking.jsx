@@ -845,50 +845,23 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
-            {/* Duración y ETA */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
-                  Horas Contratadas
-                </label>
-                <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl overflow-hidden h-9 px-1">
-                  <button
-                    type="button"
-                    onClick={() => setHours(prev => Math.max(1, (Number(prev) || 1) - 1))}
-                    className="w-7 h-7 flex items-center justify-center text-slate-300 hover:bg-slate-800 rounded font-bold"
-                  >-</button>
-                  <input
-                    type="number"
-                    min="1"
-                    max="168"
-                    value={hours}
-                    onChange={(e) => setHours(parseInt(e.target.value, 10) || 1)}
-                    className="w-10 text-center bg-transparent text-xs font-mono font-bold text-white outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setHours(prev => Math.min(168, (Number(prev) || 1) + 1))}
-                    className="w-7 h-7 flex items-center justify-center text-slate-300 hover:bg-slate-800 rounded font-bold"
-                  >+</button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
-                  Tiempo de Llegada (ETA)
-                </label>
-                <select
-                  value={etaMinutes}
-                  onChange={(e) => setEtaMinutes(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl h-9 px-2 text-xs font-mono font-semibold text-white outline-none cursor-pointer"
-                >
-                  <option value={10}>En 10 min</option>
-                  <option value={15}>En 15 min</option>
-                  <option value={20}>En 20 min</option>
-                  <option value={30}>En 30 min</option>
-                  <option value={45}>En 45 min</option>
-                </select>
-              </div>
+            {/* Tiempo Estimado de Llegada (ETA) */}
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">
+                Tiempo Estimado de Llegada (ETA)
+              </label>
+              <select
+                value={etaMinutes}
+                onChange={(e) => setEtaMinutes(Number(e.target.value))}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl h-9 px-3 text-xs font-mono font-semibold text-white outline-none cursor-pointer focus:border-emerald-500"
+              >
+                <option value={10}>Llego en 10 minutos</option>
+                <option value={15}>Llego en 15 minutos</option>
+                <option value={20}>Llego en 20 minutos</option>
+                <option value={30}>Llego en 30 minutos</option>
+                <option value={45}>Llego en 45 minutos</option>
+                <option value={60}>Llego en 1 hora (60 min)</option>
+              </select>
             </div>
 
             {/* Comprobante SUNAT */}
@@ -934,21 +907,25 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
-            {/* Desglose de Estadía */}
+            {/* Desglose de Reserva y Condiciones de Garita */}
             <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
-                <span>Tarifa:</span>
+                <span>Tarifa de Sede:</span>
                 <span className="text-slate-200">S/ {baseHourlyRate.toFixed(2)} /h</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>Estadía estimada ({Number(hours) || 1}h):</span>
-                <span className="text-slate-200">S/ {rawCost.toFixed(2)}</span>
+                <span>Tiempo de llegada (ETA):</span>
+                <span className="text-emerald-400 font-bold">{etaMinutes} min</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Tolerancia de ingreso:</span>
+                <span className="text-slate-300">{arrivalWindow} min</span>
               </div>
               <div className="h-px bg-slate-800 my-1" />
               <div className="flex justify-between font-semibold text-slate-300 items-center text-xs">
-                <span>Total estimado al salir:</span>
+                <span>Estadía a pagar:</span>
                 <span className="text-emerald-400 font-bold">
-                  S/ {rawCost.toFixed(2)}
+                  En garita al ingresar/salir
                 </span>
               </div>
             </div>

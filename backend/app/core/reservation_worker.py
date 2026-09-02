@@ -72,6 +72,22 @@ async def _cancel_expired_once() -> int:
                     })
                 except Exception:
                     pass
+            else:
+                diff_sec = (deadline - now).total_seconds()
+                # Notificación preventiva entre 10 y 5 minutos antes de vencer
+                if 0 < diff_sec <= 600:
+                    mins_left = max(1, int(diff_sec / 60))
+                    try:
+                        await realtime.broadcast("reservations:expiring_soon", {
+                            "reservation_id": r.id,
+                            "code": r.code,
+                            "user_id": r.user_id,
+                            "parking_id": r.parking_id,
+                            "minutes_left": mins_left,
+                            "deadline": deadline.isoformat(),
+                        })
+                    except Exception:
+                        pass
         if cancelled:
             await db.commit()
             try:

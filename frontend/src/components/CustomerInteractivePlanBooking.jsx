@@ -845,14 +845,6 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
-            {/* Información Operativa Directa (Anti-Slop) */}
-            <div className="p-3 rounded-xl border border-slate-800 bg-slate-950 text-xs text-slate-300 space-y-1">
-              <p className="font-semibold text-white">Reserva sin pago previo</p>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Pagas en garita al salir el tiempo que permanezcas estacionado. Cuentas con {etaMinutes > 0 ? `${etaMinutes} min` : '15 min'} de tolerancia para ingresar sin costo.
-              </p>
-            </div>
-
             {/* Duración y ETA */}
             <div className="grid grid-cols-2 gap-2">
               <div>

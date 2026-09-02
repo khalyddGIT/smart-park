@@ -31,8 +31,8 @@ test.describe('3. Flujo de Reserva, Plano Interactivo y Pase Digital QR', () => 
     await expect(tuPlazaText).toBeVisible({ timeout: 10000 });
 
     // 5. Verificar elementos de reserva directa y limpia (anti-slop)
-    const freeBookingBanner = page.locator('text=Reserva sin pago previo').first();
-    await expect(freeBookingBanner).toBeVisible({ timeout: 10000 });
+    const totalEstimado = page.locator('text=Total estimado al salir').first();
+    await expect(totalEstimado).toBeVisible({ timeout: 10000 });
 
     const confirmBtn = page.locator('button:has-text("Confirmar Reserva")').first();
     await expect(confirmBtn).toBeVisible({ timeout: 10000 });

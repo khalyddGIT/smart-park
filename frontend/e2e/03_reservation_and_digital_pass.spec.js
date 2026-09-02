@@ -27,10 +27,19 @@ test.describe('3. Flujo de Reserva, Plano Interactivo y Pase Digital QR', () => 
 
     // 3. Esperar a que el visor arquitectónico del plano cargue sus elementos
     await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'e2e/screenshots/06_interactive_plan.png' });
+    try {
+      await page.screenshot({ path: 'e2e/screenshots/06_interactive_plan.png', animations: 'disabled', timeout: 5000 });
+    } catch {}
 
     // 4. Verificar que el plano y la leyenda arquitectónica están visibles
     const tuPlazaText = page.locator('text=Tu Plaza').first();
     await expect(tuPlazaText).toBeVisible({ timeout: 10000 });
+
+    // 5. Verificar elementos del modelo de negocio y fases de tiempo
+    const tiemposText = page.locator('text=Dinámica de Tiempos').first();
+    await expect(tiemposText).toBeVisible({ timeout: 10000 });
+
+    const fastPassBadge = page.locator('text=FAST-PASS ANPR').first();
+    await expect(fastPassBadge).toBeVisible({ timeout: 10000 });
   });
 });

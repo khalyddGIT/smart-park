@@ -854,37 +854,70 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
-            {/* Modalidades Comerciales */}
+            {/* Explicación de 2 Fases Operativas (Llegada vs. Estadía) */}
+            <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-[11px] space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300 font-bold flex items-center gap-1.5 text-xs">
+                  <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span>Dinámica de Tiempos</span>
+                </span>
+                <span className="text-[10px] text-cyan-300 font-mono">2 Fases Claras</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 text-[10px] text-slate-300">
+                <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+                  <span className="text-amber-400 font-bold block">1. Llegada (ETA)</span>
+                  <span className="text-[9px] text-slate-400 mt-0.5 leading-tight">
+                    Hasta {etaMinutes > 0 ? `${etaMinutes} min` : '15 min'} para llegar sin costo de parqueo.
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+                  <span className="text-emerald-400 font-bold block">2. Estadía Real</span>
+                  <span className="text-[9px] text-slate-400 mt-0.5 leading-tight">
+                    Tu tiempo y cobro inician cuando tu vehículo cruza la garita.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modalidades Comerciales con Alto Valor */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-300 block">
-                Forma de Pago
+                Modalidad Comercial & Pago
               </label>
               
               <div className="space-y-1.5">
                 {[
                   {
-                    id: 'postpaid',
-                    title: 'Pagar en garita al salir',
-                    desc: 'Efectivo, Yape, Plin o POS',
-                    costText: `S/ ${rawCost.toFixed(2)}`
+                    id: 'prepaid_discount',
+                    title: 'Prepago Digital Express (-10% dto.)',
+                    badge: 'FAST-PASS ANPR',
+                    desc: 'Apertura automática por cámara ANPR sin detenerse',
+                    costText: `S/ ${(rawCost * 0.90).toFixed(2)}`,
+                    highlight: true
                   },
                   {
-                    id: 'prepaid_discount',
-                    title: 'Prepago online (-10% dto.)',
-                    desc: 'Tarjeta o pago digital anticipado',
-                    costText: `S/ ${(rawCost * 0.90).toFixed(2)}`
+                    id: 'postpaid',
+                    title: 'Pagar en garita al salir',
+                    badge: 'PAGO LOCAL',
+                    desc: 'Efectivo, Yape o POS en garita • Confiabilidad 100 pts',
+                    costText: `S/ ${rawCost.toFixed(2)}`,
+                    highlight: false
                   },
                   {
                     id: 'wallet',
                     title: 'Smart-Park Wallet',
-                    desc: 'Cargo a saldo disponible',
-                    costText: `S/ ${rawCost.toFixed(2)}`
+                    badge: 'CASHBACK +5%',
+                    desc: 'Débito directo con bonificación en saldo',
+                    costText: `S/ ${rawCost.toFixed(2)}`,
+                    highlight: false
                   },
                   {
                     id: 'corporate_b2b',
                     title: 'Cuenta Corporativa B2B',
-                    desc: 'Facturación a crédito por RUC',
-                    costText: 'Crédito'
+                    badge: 'CRÉDITO RUC',
+                    desc: 'Facturación agrupada mensual para empresas',
+                    costText: 'A Crédito',
+                    highlight: false
                   }
                 ].map((mode) => {
                   const isCur = bookingModel === mode.id;
@@ -893,17 +926,24 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       key={mode.id}
                       type="button"
                       onClick={() => setBookingModel(mode.id)}
-                      className={`w-full p-2 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
+                      className={`w-full p-2.5 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
                         isCur
-                          ? 'bg-slate-800 border-emerald-500 text-white'
+                          ? 'bg-slate-800/95 border-emerald-500 text-white ring-1 ring-emerald-500/40'
                           : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
                       }`}
                     >
-                      <div>
-                        <span className="text-xs font-semibold block">{mode.title}</span>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold">{mode.title}</span>
+                          <span className={`text-[8px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                            mode.highlight ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            {mode.badge}
+                          </span>
+                        </div>
                         <span className="text-[10px] text-slate-400 block">{mode.desc}</span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-emerald-400">{mode.costText}</span>
+                      <span className="text-xs font-mono font-bold text-emerald-400 shrink-0 ml-2">{mode.costText}</span>
                     </button>
                   );
                 })}
@@ -914,7 +954,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1">
-                  Horas
+                  Horas Contratadas
                 </label>
                 <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl overflow-hidden h-9 px-1">
                   <button
@@ -940,17 +980,18 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1">
-                  Llegada
+                  Tiempo de Llegada (ETA)
                 </label>
                 <select
                   value={etaMinutes}
                   onChange={(e) => setEtaMinutes(Number(e.target.value))}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl h-9 px-2 text-xs font-mono font-semibold text-white outline-none cursor-pointer"
                 >
-                  <option value={0}>Ahora</option>
+                  <option value={10}>En 10 min</option>
                   <option value={15}>En 15 min</option>
+                  <option value={20}>En 20 min</option>
                   <option value={30}>En 30 min</option>
-                  <option value={60}>En 1 hora</option>
+                  <option value={45}>En 45 min</option>
                 </select>
               </div>
             </div>

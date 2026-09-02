@@ -26,6 +26,40 @@
     
     <!-- Mapbox GL JS v3 3D Engine -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css" rel="stylesheet" />
+    <script>
+      // Suprimir telemetría externa de Mapbox para evitar ERR_BLOCKED_BY_CLIENT con adblockers y navegadores de privacidad
+      (function() {
+        const origFetch = window.fetch;
+        if (origFetch) {
+          window.fetch = function(input, init) {
+            const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+            if (url && url.includes('events.mapbox.com')) {
+              return Promise.resolve(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+            }
+            return origFetch.apply(this, arguments);
+          };
+        }
+        const origOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url) {
+          this._isMapboxEvents = typeof url === 'string' && url.includes('events.mapbox.com');
+          return origOpen.apply(this, arguments);
+        };
+        const origSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.send = function() {
+          if (this._isMapboxEvents) {
+            Object.defineProperty(this, 'readyState', { value: 4, configurable: true });
+            Object.defineProperty(this, 'status', { value: 200, configurable: true });
+            Object.defineProperty(this, 'responseText', { value: '{}', configurable: true });
+            setTimeout(() => {
+              if (typeof this.onreadystatechange === 'function') this.onreadystatechange();
+              if (typeof this.onload === 'function') this.onload();
+            }, 0);
+            return;
+          }
+          return origSend.apply(this, arguments);
+        };
+      })();
+    </script>
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js"></script>
   </head>
   <body class="antialiased bg-[#FBFBFA] text-[#191919] font-sans selection:bg-[#EAEAEA] selection:text-black">

@@ -57,17 +57,15 @@ export const NotificationProvider = ({ children }) => {
     const derived = [];
     const currentRole = role;
 
-    // Todos: GET /incidents (RBAC servidor: user ve propias, local/platform todas). Si 401, se ignora.
+    // Incidentes: GET /incidents (requiere JWT). Si no hay token, lista vacía sin error 401
     let incidents = [];
-    try {
-      const res = await api.get('/incidents');
-      incidents = Array.isArray(res.data) ? res.data : [];
-    } catch (e) {
-      const status = e?.response?.status;
-      if (status !== 401) {
-        // error no-auth se silencia; otros se ignoran también para no romper polling
+    if (getAccessToken()) {
+      try {
+        const res = await api.get('/incidents');
+        incidents = Array.isArray(res.data) ? res.data : [];
+      } catch (e) {
+        incidents = [];
       }
-      incidents = [];
     }
 
     incidents.forEach((inc) => {

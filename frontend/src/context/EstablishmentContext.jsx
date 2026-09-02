@@ -533,8 +533,7 @@ export const EstablishmentProvider = ({ children }) => {
           return [...merged, ...preservedLocal].map((e, idx) => sanitizeEstablishment(e, idx));
         });
 
-        // Re-hidratar planos de forma forzada para sincronizar estados de cajones (libre/reservado/ocupado) desde PostgreSQL
-        mappedParkings.forEach(m => hydrateFloorPlan(m.id, true));
+        // Los planos ya abiertos se preservan sin disparar ráfagas de peticiones en cada ciclo
       }
     } catch {}
   };
@@ -543,18 +542,17 @@ export const EstablishmentProvider = ({ children }) => {
     fetchParkings();
     if (getAccessToken()) refreshMyReservations();
 
-    // Polling optimizado para sincronizar en tiempo real entre múltiples dispositivos
+    // Sincronización periódica suave en segundo plano (el WebSocket provee actualizaciones instantáneas)
     const parkingsInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         fetchParkings();
-        hydratedPlansRef.current.clear();
       }
-    }, 6000);
+    }, 20000);
     const reservationsInterval = setInterval(() => {
       if (getAccessToken() && document.visibilityState === 'visible') {
         refreshMyReservations();
       }
-    }, 6000);
+    }, 20000);
 
     // Refetch inmediato al volver a la pestaña (cambio de rol, edición en otra pestaña, etc.)
     const onFocus = () => { fetchParkings(); if (getAccessToken()) refreshMyReservations(); };

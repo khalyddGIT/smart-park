@@ -38,6 +38,7 @@ import {
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { DigitalAccessPassModal } from './DigitalAccessPassModal';
 
 export const ReservationsModule = ({ onNavigateToBooking }) => {

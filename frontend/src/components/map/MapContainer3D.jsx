@@ -75,6 +75,12 @@ export const MapContainer3D = ({
     if (!mapboxgl) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
+    try {
+      // Desactivar telemetría para prevenir peticiones a events.mapbox.com bloqueadas por adblockers
+      if (typeof mapboxgl.setTelemetryEnabled === 'function') {
+        mapboxgl.setTelemetryEnabled(false);
+      }
+    } catch (e) {}
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
@@ -84,6 +90,14 @@ export const MapContainer3D = ({
       pitch: 0,
       bearing: 0,
       antialias: true
+    });
+
+    // Capturar errores no críticos de eventos bloqueados
+    map.on('error', (e) => {
+      // Ignorar bloqueos de red por extensiones de privacidad/adblock
+      if (!e || e?.error?.message?.includes('events.mapbox.com') || e?.status === 0) {
+        return;
+      }
     });
 
     mapRef.current = map;

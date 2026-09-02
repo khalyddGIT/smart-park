@@ -320,28 +320,20 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
 
       {/* Banner de Reserva en Curso para Conductor */}
       {role === 'user' && activeUserReservation && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-white shadow-lg border border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="p-4 rounded-xl bg-slate-900 text-white border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-mono font-bold text-base ${
-              activeUserReservation.status === 'ACTIVE' 
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' 
-                : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-            }`}>
-              <QrCode className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center">
+              <QrCode className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm text-white">{activeUserReservation.parking}</span>
-                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                  activeUserReservation.status === 'ACTIVE' 
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
-                    : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                }`}>
-                  {activeUserReservation.status === 'ACTIVE' ? '● En Estancia' : '● En Ruta hacia Cochera'}
+                <span className="text-xs font-mono text-slate-400">
+                  {activeUserReservation.status === 'ACTIVE' ? 'En estancia' : 'En ruta'}
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Plaza: <span className="font-mono font-bold text-white">{activeUserReservation.slot}</span> • Placa: <span className="font-mono font-bold text-white">{activeUserReservation.plate}</span> • Pase: <span className="font-mono text-cyan-300">{activeUserReservation.code}</span>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Plaza <span className="font-mono text-white">{activeUserReservation.slot}</span> · Placa <span className="font-mono text-white">{activeUserReservation.plate}</span> · Pase <span className="font-mono text-white">{activeUserReservation.code}</span>
               </p>
             </div>
           </div>
@@ -350,10 +342,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <Button
               type="button"
               onClick={() => handleOpenPass(activeUserReservation)}
-              className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
             >
               <QrCode className="w-4 h-4" />
-              <span>Ver Pase Digital QR</span>
+              <span>Ver Pase QR</span>
             </Button>
           </div>
         </div>

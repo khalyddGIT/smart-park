@@ -16,33 +16,25 @@ test.describe('3. Flujo de Reserva, Plano Interactivo y Pase Digital QR', () => 
     });
 
     await page.goto('/');
-    await page.waitForTimeout(1500);
-    await page.screenshot({ path: 'e2e/screenshots/05_dashboard_driver.png' });
+    await page.waitForTimeout(1000);
 
     // 2. Localizar sede "Smart Park Plaza Mayor" y hacer click en "Ver Plano & Reservar"
     const verPlanoBtn = page.locator('button:has-text("Ver Plano & Reservar")').first();
     await expect(verPlanoBtn).toBeVisible({ timeout: 10000 });
-    await verPlanoBtn.scrollIntoViewIfNeeded();
     await verPlanoBtn.click({ force: true });
 
     // 3. Esperar a que el visor arquitectónico del plano cargue sus elementos
-    await page.waitForTimeout(2000);
-    try {
-      await page.screenshot({ path: 'e2e/screenshots/06_interactive_plan.png', animations: 'disabled', timeout: 5000 });
-    } catch {}
+    await page.waitForTimeout(1500);
 
     // 4. Verificar que el plano y la leyenda arquitectónica están visibles
     const tuPlazaText = page.locator('text=Tu Plaza').first();
     await expect(tuPlazaText).toBeVisible({ timeout: 10000 });
 
-    // 5. Verificar elementos de reserva sin pago previo
-    const tiemposText = page.locator('text=Dinámica de Tiempos').first();
-    await expect(tiemposText).toBeVisible({ timeout: 10000 });
-
-    const freeBookingBanner = page.locator('text=Reserva 100% Sin Pago Previo').first();
+    // 5. Verificar elementos de reserva directa y limpia (anti-slop)
+    const freeBookingBanner = page.locator('text=Reserva sin pago previo').first();
     await expect(freeBookingBanner).toBeVisible({ timeout: 10000 });
 
-    const zeroNowBadge = page.locator('text=S/ 0.00 ahora').first();
-    await expect(zeroNowBadge).toBeVisible({ timeout: 10000 });
+    const confirmBtn = page.locator('button:has-text("Confirmar Reserva")').first();
+    await expect(confirmBtn).toBeVisible({ timeout: 10000 });
   });
 });

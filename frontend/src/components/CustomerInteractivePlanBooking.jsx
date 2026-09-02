@@ -637,13 +637,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className="absolute bg-[#0f1624] border-y-2 border-dashed border-amber-400/60 rounded-xl flex items-center justify-center z-1 pointer-events-none shadow-inner overflow-hidden"
+                    className="absolute bg-[#0c121d] border-y border-dashed border-amber-400/40 rounded-xl flex items-center justify-center z-1 pointer-events-none"
                   >
-                    <div className="w-full flex items-center justify-around px-6 opacity-85 pointer-events-none">
-                      <span className="text-[10px] font-mono font-black text-amber-400/90 tracking-widest flex items-center gap-2">
-                        <span className="text-xs">━►</span>
-                        <span>{el.label || 'CARRIL VIAL DE CIRCULACIÓN'}</span>
-                        <span className="text-xs">━►</span>
+                    <div className="w-full flex items-center justify-around px-8 opacity-60 pointer-events-none">
+                      <span className="text-[11px] font-mono text-slate-400 tracking-wider">
+                        {el.label || 'Vía de Circulación'}
                       </span>
                     </div>
                   </div>
@@ -662,24 +660,20 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className="absolute bg-slate-900 border border-slate-700 rounded-xl flex flex-col items-center justify-between p-1.5 z-10 shadow-lg pointer-events-none"
+                    className="absolute bg-slate-900 border border-slate-700 rounded-xl flex flex-col items-center justify-between p-2 z-10 pointer-events-none"
                   >
-                    <div className="w-full flex items-center justify-between px-1 text-[8px] font-mono font-bold">
+                    <div className="w-full flex items-center justify-between px-1 text-[9px] font-mono font-bold">
                       <span className={isExit ? 'text-amber-400' : 'text-emerald-400'}>
-                        {isExit ? 'SALIDA' : 'INGRESO'}
+                        {isExit ? 'Salida' : 'Ingreso'}
                       </span>
-                      <div className={`w-2 h-2 rounded-full ${isExit ? 'bg-amber-400' : 'bg-emerald-400'} animate-pulse`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${isExit ? 'bg-amber-400' : 'bg-emerald-400'}`} />
                     </div>
-                    {/* Pluma de la barrera con franjas diagonales rojas y blancas */}
                     <div 
-                      className="w-full h-2 rounded-full shadow-xs border border-black/30 my-auto"
+                      className="w-full h-1.5 rounded-full my-auto"
                       style={{
-                        background: 'repeating-linear-gradient(45deg, #ef4444 0, #ef4444 5px, #ffffff 5px, #ffffff 10px)'
+                        background: 'repeating-linear-gradient(45deg, #ef4444 0, #ef4444 4px, #ffffff 4px, #ffffff 8px)'
                       }}
                     />
-                    <span className="text-[7px] font-mono text-slate-400 uppercase tracking-tighter text-center leading-none">
-                      {el.label || 'CONTROL ANPR'}
-                    </span>
                   </div>
                 );
               }
@@ -694,14 +688,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       width: `${el.w}px`,
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`,
-                      background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.85) 0px, rgba(255,255,255,0.85) 12px, transparent 12px, transparent 24px)'
+                      background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.7) 0px, rgba(255,255,255,0.7) 12px, transparent 12px, transparent 24px)'
                     }}
-                    className="absolute border-y-2 border-amber-400/80 rounded-xs z-3 pointer-events-none flex items-center justify-center shadow-xs"
-                  >
-                    <span className="bg-black/80 text-amber-300 px-1.5 py-0.5 rounded text-[8px] font-mono font-bold tracking-wider uppercase border border-amber-400/40">
-                      Paso Peatonal
-                    </span>
-                  </div>
+                    className="absolute border-y border-amber-400/50 rounded-xs z-3 pointer-events-none"
+                  />
                 );
               }
 
@@ -855,43 +845,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
-            {/* Explicación de 2 Fases Operativas (Llegada vs. Estadía) */}
-            <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-[11px] space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300 font-bold flex items-center gap-1.5 text-xs">
-                  <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                  <span>Dinámica de Tiempos</span>
-                </span>
-                <span className="text-[10px] text-cyan-300 font-mono">2 Fases Claras</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 text-[10px] text-slate-300">
-                <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-                  <span className="text-amber-400 font-bold block">1. Llegada (ETA)</span>
-                  <span className="text-[9px] text-slate-400 mt-0.5 leading-tight">
-                    Hasta {etaMinutes > 0 ? `${etaMinutes} min` : '15 min'} para llegar sin costo de parqueo.
-                  </span>
-                </div>
-                <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-                  <span className="text-emerald-400 font-bold block">2. Estadía Real</span>
-                  <span className="text-[9px] text-slate-400 mt-0.5 leading-tight">
-                    Tu tiempo y cobro inician cuando tu vehículo cruza la garita.
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Tarjeta Informativa de Reserva Gratuita (Pagas únicamente al Salir) */}
-            <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-xl p-3 text-xs flex items-center justify-between text-emerald-200 shadow-xs">
-              <div className="flex items-center gap-2.5">
-                <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-                <div>
-                  <span className="font-bold block text-white text-xs">Reserva 100% Sin Pago Previo</span>
-                  <span className="text-[10px] text-slate-300 block">Aparta tu lugar gratis • Pagas en garita al salir (Efectivo / Yape / POS)</span>
-                </div>
-              </div>
-              <span className="font-mono font-bold text-emerald-400 text-xs shrink-0 ml-2 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
-                S/ 0.00 ahora
-              </span>
+            {/* Información Operativa Directa (Anti-Slop) */}
+            <div className="p-3 rounded-xl border border-slate-800 bg-slate-950 text-xs text-slate-300 space-y-1">
+              <p className="font-semibold text-white">Reserva sin pago previo</p>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Pagas en garita al salir el tiempo que permanezcas estacionado. Cuentas con {etaMinutes > 0 ? `${etaMinutes} min` : '15 min'} de tolerancia para ingresar sin costo.
+              </p>
             </div>
 
             {/* Duración y ETA */}
@@ -983,10 +942,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
-            {/* Desglose Informativo de Estadía */}
+            {/* Desglose de Estadía */}
             <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
-                <span>Tarifa por hora:</span>
+                <span>Tarifa:</span>
                 <span className="text-slate-200">S/ {baseHourlyRate.toFixed(2)} /h</span>
               </div>
               <div className="flex justify-between text-slate-400">
@@ -994,13 +953,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 <span className="text-slate-200">S/ {rawCost.toFixed(2)}</span>
               </div>
               <div className="h-px bg-slate-800 my-1" />
-              <div className="flex justify-between text-cyan-400 font-bold">
-                <span>Cobro ahora por reservar:</span>
-                <span className="text-cyan-300">S/ 0.00 (Gratis)</span>
-              </div>
-              <div className="flex justify-between font-semibold text-slate-300 items-center text-[11px]">
-                <span>Total a pagar en garita al salir:</span>
-                <span className="text-emerald-400 font-bold text-sm">
+              <div className="flex justify-between font-semibold text-slate-300 items-center text-xs">
+                <span>Total estimado al salir:</span>
+                <span className="text-emerald-400 font-bold">
                   S/ {rawCost.toFixed(2)}
                 </span>
               </div>
@@ -1008,13 +963,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
             {/* Aviso si ya cuenta con reserva activa */}
             {activeUserReservation && (
-              <div className="p-2.5 bg-cyan-950/80 border border-cyan-700/60 rounded-xl text-xs text-cyan-200 space-y-0.5">
-                <div className="flex items-center gap-1.5 font-bold text-cyan-300">
-                  <AlertTriangle className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                  <span>Reserva activa en curso</span>
-                </div>
-                <p className="text-[11px] text-cyan-200/80 leading-relaxed">
-                  Ya tienes la reserva <span className="font-mono font-bold text-white">{activeUserReservation.code || activeUserReservation.id}</span> ({activeUserReservation.plate || activeUserReservation.license_plate}). Cancela o finaliza esa reserva para apartar otra plaza.
+              <div className="p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-300 space-y-0.5">
+                <span className="font-semibold text-white block">Reserva en curso</span>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Cuentas con la reserva <span className="font-mono font-bold text-white">{activeUserReservation.code || activeUserReservation.id}</span> ({activeUserReservation.plate || activeUserReservation.license_plate}).
                 </p>
               </div>
             )}
@@ -1037,7 +989,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               disabled={!canReserve || !!activeUserReservation}
               className="w-full py-3 text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <span>{activeUserReservation ? 'Tienes una reserva activa' : 'Confirmar Reserva (S/ 0.00 ahora)'}</span>
+              <span>{activeUserReservation ? 'Tienes una reserva activa' : 'Confirmar Reserva'}</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
             {!canReserve && !effectivePlate && (

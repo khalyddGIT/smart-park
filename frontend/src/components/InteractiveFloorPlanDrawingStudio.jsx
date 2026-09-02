@@ -1981,17 +1981,15 @@ export const InteractiveFloorPlanDrawingStudio = ({
                   <div
                     key={el.id}
                     onMouseDown={(e) => handleElementMouseDown(e, el)}
+                    className={`absolute bg-[#121927] border-y-2 border-dashed border-amber-400/80 flex flex-col items-center justify-center cursor-pointer z-2 overflow-hidden shadow-inner ${
+                      isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30' : ''
+                    }`}
                     style={{
                       left: `${el.x}px`,
                       top: `${el.y}px`,
                       width: `${el.w}px`,
                       height: `${el.h}px`,
-                      transform: `rotate(${el.rot || 0}deg)`
-                    }}
-                    className={`absolute bg-[#121927] border-y-2 border-dashed border-amber-400/80 flex flex-col items-center justify-center cursor-pointer z-2 overflow-hidden shadow-inner ${
-                      isSelected ? 'ring-4 ring-cyan-400 border-cyan-400 z-30' : ''
-                    }`}
-                    style={{
+                      transform: `rotate(${el.rot || 0}deg)`,
                       backgroundImage: 'radial-gradient(ellipse at center, #1b263b 0%, #0b111e 100%)'
                     }}
                   >

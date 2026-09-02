@@ -1,4 +1,5 @@
 import pytest
+from fastapi import HTTPException
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.api.v1.payments import get_paypal_access_token

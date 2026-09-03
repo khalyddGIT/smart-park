@@ -6,25 +6,17 @@ import {
   MAPBOX_STYLES,
   cleanPOIsFromMap 
 } from './mapConfig';
-import { MapTerrainManager } from './MapTerrain';
-import { MapBuildingsManager } from './MapBuildings';
-import { MapCameraManager } from './MapCamera';
 import { MapRoutesManager } from './MapRoutes';
-import { MapControlPanel } from './MapControlPanel';
 import { 
-  Compass, 
-  Car, 
-  Bike, 
-  Truck, 
   Navigation, 
-  Building2, 
   X, 
-  MapPin,
-  Footprints,
   Map,
   Layers,
   Volume2,
-  VolumeX 
+  VolumeX,
+  Plus,
+  Minus,
+  RotateCcw
 } from 'lucide-react';
 import { FALLBACK_PARKING_IMAGE } from './mapConfig';
 import { useAuth } from '../../context/AuthContext';
@@ -36,35 +28,18 @@ export const MapContainer3D = ({
   forceShowAdminPanel = false
 }) => {
   const { role, user } = useAuth();
-  const isSuperAdmin = role === 'platform' || user?.role === 'platform' || forceShowAdminPanel || user?.email?.toLowerCase().includes('admin');
-
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
-
-  // Instancias de administradores modulares 3D
-  const terrainManagerRef = useRef(null);
-  const buildingsManagerRef = useRef(null);
-  const cameraManagerRef = useRef(null);
   const routesManagerRef = useRef(null);
 
-  // Estados 3D (Carga inicial por defecto en vista 2D normal)
-  const [is3D, setIs3D] = useState(false);
-  const [isTerrainEnabled, setIsTerrainEnabled] = useState(false);
-  const [isBuildingsEnabled, setIsBuildingsEnabled] = useState(true);
-  const [isAtmosphereEnabled, setIsAtmosphereEnabled] = useState(true);
-  const [mapLayer, setMapLayer] = useState(() => {
-    const h = new Date().getHours();
-    return (h >= 18 || h < 6) ? 'dark' : 'streets';
-  });
-  const [exaggeration, setExaggeration] = useState(1.5);
-  const [pitch, setPitch] = useState(0);
+  // Modo de mapa normal (calles por defecto)
+  const [mapLayer, setMapLayer] = useState('streets');
   const [activeRoute, setActiveRoute] = useState(null);
   const [targetDest, setTargetDest] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
-  const [selectedBuilding, setSelectedBuilding] = useState(null);
 
-  // Filtros Rápidos (Feature 5)
+  // Filtros Rápidos
   const [filterType, setFilterType] = useState('all');
   const [filterPrice, setFilterPrice] = useState('all');
 
@@ -102,25 +77,9 @@ export const MapContainer3D = ({
 
     mapRef.current = map;
 
-    // Inicializar módulos 3D cuando el mapa cargue
+    // Inicializar mapa estándar
     map.on('style.load', () => {
-      // 0. Limpiar POIs ruidosos de Mapbox para mapa minimalista e impecable
       cleanPOIsFromMap(map);
-
-      // 1. Módulo Terreno 3D
-      terrainManagerRef.current = new MapTerrainManager(map);
-      terrainManagerRef.current.setupTerrain();
-
-      // 2. Módulo Edificios 3D Extruidos
-      buildingsManagerRef.current = new MapBuildingsManager(map, (bldg) => {
-        setSelectedBuilding(bldg);
-      });
-      buildingsManagerRef.current.setupBuildings();
-
-      // 3. Módulo Cámara 3D
-      cameraManagerRef.current = new MapCameraManager(map);
-
-      // 4. Módulo Rutas 3D
       routesManagerRef.current = new MapRoutesManager(map);
     });
 
@@ -134,7 +93,7 @@ export const MapContainer3D = ({
     };
   }, []);
 
-  // Cambiar Estilo de Mapa preservando Terreno y Edificios 3D
+  // Cambiar Estilo de Mapa (Calles / Satélite)
   const handleChangeLayer = (layerKey) => {
     if (!mapRef.current) return;
     setMapLayer(layerKey);
@@ -142,61 +101,27 @@ export const MapContainer3D = ({
     mapRef.current.setStyle(styleUrl);
   };
 
-  // Conmutar Terreno 3D
-  const handleToggleTerrain = () => {
-    if (!terrainManagerRef.current) return;
-    if (isTerrainEnabled) {
-      terrainManagerRef.current.disableTerrain();
-      setIsTerrainEnabled(false);
-    } else {
-      terrainManagerRef.current.enableTerrain(exaggeration);
-      setIsTerrainEnabled(true);
-    }
+  const handleZoomIn = () => {
+    if (mapRef.current) mapRef.current.zoomIn({ duration: 300 });
   };
 
-  // Conmutar Edificios 3D
-  const handleToggleBuildings = () => {
-    if (!buildingsManagerRef.current) return;
-    const next = !isBuildingsEnabled;
-    buildingsManagerRef.current.toggleBuildings(next);
-    setIsBuildingsEnabled(next);
+  const handleZoomOut = () => {
+    if (mapRef.current) mapRef.current.zoomOut({ duration: 300 });
   };
 
-  // Conmutar 3D / 2D
-  const handleToggle3D = () => {
-    if (!cameraManagerRef.current) return;
-    if (is3D) {
-      cameraManagerRef.current.enable2DView();
-      if (terrainManagerRef.current) terrainManagerRef.current.disableTerrain();
-      setIsTerrainEnabled(false);
-      setPitch(0);
-      setIs3D(false);
-    } else {
-      cameraManagerRef.current.enable3DView();
-      if (terrainManagerRef.current) terrainManagerRef.current.enableTerrain(exaggeration);
-      setIsTerrainEnabled(true);
-      setPitch(65);
-      setIs3D(true);
-    }
-  };
-
-  // Cambiar Exageración
-  const handleChangeExaggeration = (val) => {
-    setExaggeration(val);
-    if (terrainManagerRef.current) {
-      terrainManagerRef.current.setExaggeration(val);
-    }
-  };
-
-  // Cambiar Pitch
-  const handleChangePitch = (val) => {
-    setPitch(val);
+  const handleRecenter = () => {
     if (mapRef.current) {
-      mapRef.current.easeTo({ pitch: val, duration: 300 });
+      mapRef.current.flyTo({
+        center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
+        zoom: 15.8,
+        pitch: 0,
+        bearing: 0,
+        duration: 600
+      });
     }
   };
 
-  // Trazar Ruta 3D en Tiempo Real con GPS Real y Turn-by-Turn
+  // Trazar Ruta en Tiempo Real con GPS y Turn-by-Turn
   const handleCalculateRoute = async (destCoords, destName, profile = 'driving') => {
     if (!routesManagerRef.current) return;
     setTargetDest({ coords: destCoords, name: destName });
@@ -310,11 +235,11 @@ export const MapContainer3D = ({
           <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">${p.address}</div>
           
           <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-            <button id="btn-3d-route-${p.id}" style="flex: 1; background: #0284c7; color: white; border: none; padding: 7px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+            <button id="btn-route-${p.id}" style="flex: 1; background: #0284c7; color: white; border: none; padding: 7px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-              <span>Ruta 3D</span>
+              <span>Cómo llegar</span>
             </button>
-            <button id="btn-3d-select-${p.id}" style="flex: 1; background: #0f172a; color: white; border: none; padding: 7px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+            <button id="btn-select-${p.id}" style="flex: 1; background: #0f172a; color: white; border: none; padding: 7px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
               <span>Ver Plano</span>
             </button>
           </div>
@@ -325,17 +250,23 @@ export const MapContainer3D = ({
       marker.setPopup(popup);
 
       el.addEventListener('click', () => {
-        if (cameraManagerRef.current) {
-          cameraManagerRef.current.flyToLocation(coords, 17.5, 65);
+        if (mapRef.current) {
+          mapRef.current.flyTo({
+            center: coords,
+            zoom: 16.8,
+            pitch: 0,
+            bearing: 0,
+            duration: 600
+          });
         }
       });
 
       marker.getPopup().on('open', () => {
-        const btnSelect = document.getElementById(`btn-3d-select-${p.id}`);
+        const btnSelect = document.getElementById(`btn-select-${p.id}`);
         if (btnSelect) {
           btnSelect.onclick = () => { if (onSelectParking) onSelectParking(p); };
         }
-        const btnRoute = document.getElementById(`btn-3d-route-${p.id}`);
+        const btnRoute = document.getElementById(`btn-route-${p.id}`);
         if (btnRoute) {
           btnRoute.onclick = () => { handleCalculateRoute(coords, p.name); };
         }
@@ -346,74 +277,34 @@ export const MapContainer3D = ({
   }, [filteredParkings, selectedParkingId, onSelectParking]);
 
   return (
-    <div className="relative isolate z-0 w-full h-[460px] sm:h-[520px] bg-slate-950 overflow-hidden rounded-xl">
+    <div className="relative isolate z-0 w-full h-[460px] sm:h-[520px] bg-slate-900 overflow-hidden rounded-xl">
       
-      {/* Lienzo WebGL 3D Mapbox */}
+      {/* Lienzo Normal Mapbox */}
       <div ref={mapContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
-      {/* Panel de Control Mapbox 3D (Exclusivo para SuperAdmin / Platform) */}
-      {isSuperAdmin ? (
-        <MapControlPanel
-          is3D={is3D}
-          onToggle3D={handleToggle3D}
-          isTerrainEnabled={isTerrainEnabled}
-          onToggleTerrain={handleToggleTerrain}
-          isBuildingsEnabled={isBuildingsEnabled}
-          onToggleBuildings={handleToggleBuildings}
-          isAtmosphereEnabled={isAtmosphereEnabled}
-          onToggleAtmosphere={() => {}}
-          mapLayer={mapLayer}
-          onChangeLayer={handleChangeLayer}
-          exaggeration={exaggeration}
-          onChangeExaggeration={handleChangeExaggeration}
-          pitch={pitch}
-          onChangePitch={handleChangePitch}
-          onStartOrbit={() => cameraManagerRef.current && cameraManagerRef.current.orbitAroundLocation()}
-          onStartCinematic={() => cameraManagerRef.current && cameraManagerRef.current.startCinematicTour(parkings)}
-          onResetCamera={() => cameraManagerRef.current && cameraManagerRef.current.resetCamera()}
-        />
-      ) : (
-        /* Selector de Vistas de Mapa (Mapa Normal Mapbox / Vista 3D / Satélite) */
-        <div className="absolute top-4 right-4 z-20 pointer-events-auto flex items-center space-x-1 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 text-white text-xs shadow-2xl">
+      {/* Controles de Mapa Normal (Capas, Recentrar, Zoom) */}
+      <div className="absolute top-4 right-4 z-20 pointer-events-auto flex items-center space-x-2">
+        {/* Selector de Capas Normal (Calles / Satélite) */}
+        <div className="flex items-center space-x-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-white text-xs shadow-2xl">
           <button
             type="button"
-            onClick={() => {
-              handleChangeLayer('streets');
-              if (is3D) handleToggle3D();
-            }}
-            className={`px-2.5 py-1.5 rounded-lg font-black text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
-              !is3D && mapLayer === 'streets'
+            onClick={() => handleChangeLayer('streets')}
+            className={`px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
+              mapLayer === 'streets'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
             <Map className="w-3.5 h-3.5" />
-            <span>Mapa Normal</span>
+            <span>Calles</span>
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              if (!is3D) handleToggle3D();
-            }}
-            className={`px-2.5 py-1.5 rounded-lg font-black text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
-              is3D
-                ? 'bg-cyan-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Compass className="w-3.5 h-3.5" />
-            <span>Vista 3D</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              handleChangeLayer('satellite');
-            }}
-            className={`px-2.5 py-1.5 rounded-lg font-black text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
+            onClick={() => handleChangeLayer('satellite')}
+            className={`px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
               mapLayer === 'satellite'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-emerald-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -421,10 +312,38 @@ export const MapContainer3D = ({
             <span>Satélite</span>
           </button>
         </div>
-      )}
 
+        {/* Botones de Navegación Zoom y Recentrar */}
+        <div className="flex items-center space-x-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-white shadow-2xl">
+          <button
+            type="button"
+            onClick={handleRecenter}
+            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            title="Centrar en Plaza Mayor"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+          <div className="w-[1px] h-4 bg-slate-800" />
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            title="Acercar"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            title="Alejar"
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
 
-      {/* Tarjeta Turn-by-Turn Flotante Superior (Giro a Giro en Tiempo Real con Indicaciones por Voz) */}
+      {/* Tarjeta Turn-by-Turn Flotante Superior (Giro a Giro en Tiempo Real) */}
       {activeRoute && activeRoute.currentStep && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-cyan-500/40 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-top-4 duration-300 max-w-[92vw]">
           <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/40">
@@ -465,18 +384,18 @@ export const MapContainer3D = ({
         </div>
       )}
 
-      {/* Tarjeta de Ruta 3D en Vivo */}
+      {/* Tarjeta de Ruta en Vivo */}
       {activeRoute && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-[95vw]">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
             <Navigation className="w-4 h-4 text-cyan-400 shrink-0" />
             <span className="font-bold text-slate-200">
-              Ruta 3D a <strong className="text-white">{activeRoute.destinationName}</strong>:
+              Ruta hacia <strong className="text-white">{activeRoute.destinationName}</strong>:
             </span>
-            <span className="font-mono font-black text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">{activeRoute.distanceKm} km</span>
+            <span className="font-mono font-black text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">{activeRoute.distanceKm}</span>
             <span className="text-slate-400">•</span>
-            <span className="font-mono font-black text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">~{activeRoute.durationMin} min</span>
+            <span className="font-mono font-black text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">{activeRoute.durationMin}</span>
           </div>
 
           <button

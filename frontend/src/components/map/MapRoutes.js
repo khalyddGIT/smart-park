@@ -129,8 +129,8 @@ export class MapRoutesManager {
         const bounds = coords.reduce((b, coord) => b.extend(coord), new mapboxgl.LngLatBounds(coords[0], coords[0]));
         this.map.fitBounds(bounds, {
           padding: { top: 75, bottom: 85, left: 65, right: 65 },
-          pitch: 48,
-          duration: 1300
+          pitch: 0,
+          duration: 1200
         });
       }
 

@@ -5,9 +5,9 @@ export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || atob('cGsuZXlKM
 export const AYACUCHO_CENTER = {
   lng: -74.2257,
   lat: -13.1606,
-  zoom: 16.5,
-  pitch: 62, // Inclinación 3D nativa de cámara
-  bearing: -15.4 // Rotación azimutal 3D
+  zoom: 15.8,
+  pitch: 0,
+  bearing: 0
 };
 
 export const DEFAULT_PARKING_COORDS = {

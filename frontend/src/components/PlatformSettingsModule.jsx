@@ -746,14 +746,14 @@ export const PlatformSettingsModule = () => {
               <div>
                 <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
                   <Compass className="w-5 h-5 text-emerald-600" />
-                  <span>Estudio Geoespacial & Editor de Mapa 3D</span>
+                  <span>Mapa General de Cocheras</span>
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Herramienta avanzada de SuperAdmin para configurar elevación DEM, estilo de capa, niebla y parámetros 3D del mapa.
+                  Visualización interactiva y geolocalización de todas las cocheras y tarifas en Ayacucho.
                 </p>
               </div>
               <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl w-fit">
-                ✓ Panel Editor 3D Habilitado
+                ✓ Mapa Habilitado
               </span>
             </div>
 

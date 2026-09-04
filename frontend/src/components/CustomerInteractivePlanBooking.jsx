@@ -386,7 +386,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   };
 
   const arrivalWindow = Math.max(5, Math.min(60, Number(parking?.tolerance ?? parking?.tolerance_minutes ?? 15) || 15));
-  const effectivePlate = (useCustomPlate ? customPlateInput : selectedPlate).toUpperCase().trim();
+  const effectivePlate = (useCustomPlate ? customPlateInput : selectedPlate).toUpperCase().trim().replace(/\s/g, '');
   const PLATE_REGEX = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/;
   const isPlateValid = PLATE_REGEX.test(effectivePlate);
   const isFacturaValid = receiptType !== 'factura' || (/^(10|20)[0-9]{9}$/.test(rucNumber.trim()) && businessName.trim().length >= 3);
@@ -946,12 +946,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 <span className="text-slate-200">S/ {baseHourlyRate.toFixed(2)} /h</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>Tiempo de llegada (ETA):</span>
-                <span className="text-emerald-400 font-bold">{etaMinutes} min</span>
-              </div>
-              <div className="flex justify-between text-slate-400">
-                <span>Tolerancia de ingreso:</span>
-                <span className="text-slate-300">{arrivalWindow} min</span>
+                <span>Ventana de llegada (tolerancia):</span>
+                <span className="text-emerald-400 font-bold">{etaMinutes} min para presentarse</span>
               </div>
               <div className="h-px bg-slate-800 my-1" />
               <div className="flex justify-between font-semibold text-slate-300 items-center text-xs">

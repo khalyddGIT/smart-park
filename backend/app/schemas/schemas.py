@@ -51,7 +51,9 @@ class UserCreate(UserBase):
         raw = _clean_phone(v)
         if not re.match(r'^[0-9]{7,15}$', raw):
             raise ValueError('Teléfono Perú: 9 dígitos empezando en 9, ej 966123456 o +51 966123456')
-        return raw
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1)
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None

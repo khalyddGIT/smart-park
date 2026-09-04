@@ -340,7 +340,7 @@ export const VehiclesModule = () => {
     const plateOk = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i.test(plateClean);
     if (!plateOk) { showToast('La placa debe incluir un guión obligatorio (ej: ABC-123 o 1234-AB)'); return; }
     let img = formData.imageUrl || getDefaultCarImage(formData.vehicle_type);
-    const plate = formData.license_plate.toUpperCase().trim();
+    const plate = plateClean;
     
     const token = getAccessToken();
     if (token) {
@@ -405,7 +405,7 @@ export const VehiclesModule = () => {
     const plateOk = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i.test(plateClean);
     if (!plateOk) { showToast('La placa debe incluir un guión obligatorio (ej: ABC-123 o 1234-AB)'); return; }
 
-    const plate = formData.license_plate.toUpperCase().trim();
+    const plate = plateClean;
     const token = getAccessToken();
 
     let updatedObj = null;

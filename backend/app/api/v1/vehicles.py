@@ -146,12 +146,19 @@ async def update_vehicle(vehicle_id: int, vehicle_in: VehicleUpdate, db: AsyncSe
     vehicle = result.scalars().first()
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado")
-    if vehicle.user_id != current_user.id:
+    if vehicle.user_id != current_user.id and current_user.role != "platform":
         raise HTTPException(status_code=403, detail="No autorizado para este vehículo")
     
     update_data = vehicle_in.model_dump(exclude_unset=True)
     if "license_plate" in update_data and update_data["license_plate"]:
-        update_data["license_plate"] = update_data["license_plate"].strip().upper()
+        new_plate = update_data["license_plate"].strip().upper()
+        # Verificar que la placa no esté registrada en otro vehículo
+        existing = await db.execute(
+            select(Vehicle).where(Vehicle.license_plate == new_plate, Vehicle.id != vehicle_id)
+        )
+        if existing.scalars().first():
+            raise HTTPException(status_code=400, detail="Esta placa ya se encuentra registrada en otro vehículo")
+        update_data["license_plate"] = new_plate
         
     for key, value in update_data.items():
         setattr(vehicle, key, value)
@@ -166,7 +173,7 @@ async def delete_vehicle(vehicle_id: int, db: AsyncSession = Depends(get_db), cu
     vehicle = result.scalars().first()
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado")
-    if vehicle.user_id != current_user.id:
+    if vehicle.user_id != current_user.id and current_user.role != "platform":
         raise HTTPException(status_code=403, detail="No autorizado para este vehículo")
     
     await db.delete(vehicle)

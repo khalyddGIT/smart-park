@@ -237,7 +237,7 @@ async def create_reservation(
                 detail="Ya cuentas con una reserva activa en curso. Completa o cancela tu reserva previa antes de solicitar otra."
             )
 
-        # Regla S-02: Límite de cancelaciones diarias (Cooldown 24h a partir de 2 cancelaciones)
+        # Regla S-02: Límite de cancelaciones diarias (Cooldown 24h a partir de 5 cancelaciones)
         from datetime import timedelta
         since_24h = datetime.utcnow() - timedelta(hours=24)
         cancelled_stmt = await db.execute(
@@ -248,10 +248,10 @@ async def create_reservation(
             )
         )
         cancelled_list = cancelled_stmt.scalars().all()
-        if len(cancelled_list) >= 2:
+        if len(cancelled_list) >= 5:
             raise HTTPException(
                 status_code=429,
-                detail="Límite diario de cancelaciones alcanzado (máx. 2 al día). Por seguridad del sistema, tu cuenta tiene un tiempo de espera de 24 horas."
+                detail="Límite diario de cancelaciones alcanzado (máx. 5 al día). Por seguridad del sistema, tu cuenta tiene un tiempo de espera de 24 horas."
             )
 
     # Regla S-05: Unicidad de placa activa (no puede tener 2 reservas concurrentes)

@@ -342,3 +342,25 @@ async def test_verify_reservation_not_found():
         res = await ac.get("/api/v1/reservations/verify/CODIGO-INEXISTENTE-999")
         assert res.status_code == 404
         assert "no encontrada" in res.json()["detail"].lower()
+
+
+# ==============================================================================
+# 8. PRUEBAS DE AUTENTICACIÓN Y ESQUEMA DE LOGIN
+# ==============================================================================
+
+def test_user_login_schema():
+    """UserLogin solo debe requerir email y password, sin exigir full_name."""
+    from app.schemas.schemas import UserLogin
+    
+    # Válido: solo email y password
+    login_req = UserLogin(email="conductor@smartpark.com", password="password123")
+    assert login_req.email == "conductor@smartpark.com"
+    assert login_req.password == "password123"
+
+    # Email inválido -> Rechazado
+    with pytest.raises(ValidationError):
+        UserLogin(email="correo-invalido", password="password123")
+
+    # Password vacío -> Rechazado
+    with pytest.raises(ValidationError):
+        UserLogin(email="conductor@smartpark.com", password="")

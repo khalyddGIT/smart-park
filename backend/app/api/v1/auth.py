@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import User
-from app.schemas.schemas import UserCreate, UserResponse, Token, PinVerify
+from app.schemas.schemas import UserCreate, UserLogin, UserResponse, Token, PinVerify
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user, verify_pin_hash, is_pin_hashed, hash_pin
 from app.core.cache import rate_limit_hit, blacklist_token
@@ -80,7 +80,7 @@ async def register_user(user_in: UserCreate, request: Request, db: AsyncSession 
     }
 
 @router.post("/login", response_model=Token)
-async def login_user(user_in: UserCreate, request: Request, db: AsyncSession = Depends(get_db)):
+async def login_user(user_in: UserLogin, request: Request, db: AsyncSession = Depends(get_db)):
     # Rate limit anti fuerza bruta por IP (fail-open sin Redis)
     allowed, attempts = await rate_limit_hit(f"ratelimit:login:{_client_ip(request)}", LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW)
     if not allowed:

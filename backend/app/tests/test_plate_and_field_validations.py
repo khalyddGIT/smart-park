@@ -326,3 +326,19 @@ def test_incident_create_boundaries():
 
     with pytest.raises(ValidationError):
         IncidentCreate(parking_id=1, category="general", description="Ups")
+
+
+# ==============================================================================
+# 7. PRUEBAS DEL ENDPOINT PÚBLICO DE VERIFICACIÓN QR (/verify/{code})
+# ==============================================================================
+
+@pytest.mark.asyncio
+async def test_verify_reservation_not_found():
+    """El endpoint /verify/{code} debe retornar 404 si el código no existe."""
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res = await ac.get("/api/v1/reservations/verify/CODIGO-INEXISTENTE-999")
+        assert res.status_code == 404
+        assert "no encontrada" in res.json()["detail"].lower()

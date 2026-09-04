@@ -125,14 +125,41 @@ async def get_my_reservations(db: AsyncSession = Depends(get_db), current_user: 
 @router.get("/verify/{code}", tags=["Reservas & Pases QR"])
 async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
     """Verificación pública del QR: escanea el código y valida el estado sin requerir login."""
-    result = await db.execute(select(Reservation).where(Reservation.code == code))
+    from sqlalchemy import or_
+    stmt = (
+        select(Reservation)
+        .options(
+            selectinload(Reservation.user),
+            selectinload(Reservation.parking),
+            selectinload(Reservation.slot)
+        )
+        .where(
+            or_(
+                Reservation.code == code,
+                Reservation.qr_code == code,
+                Reservation.code.ilike(code),
+                Reservation.qr_code.ilike(code)
+            )
+        )
+    )
+    result = await db.execute(stmt)
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada o código inválido")
-    slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))
-    slot = slot_res.scalars().first()
-    parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
-    parking = parking_res.scalars().first()
+
+    slot = reservation.slot
+    parking = reservation.parking
+    user = reservation.user
+
+    tol_min = reservation.tolerance_minutes or (parking.tolerance_minutes if parking else 15) or 15
+
+    def _iso_utc(dt: Optional[datetime]) -> Optional[str]:
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
+
     return {
         "id": reservation.id,
         "code": reservation.code,
@@ -140,11 +167,22 @@ async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
         "license_plate": reservation.license_plate,
         "parking_id": reservation.parking_id,
         "parking_name": parking.name if parking else f"Sede #{reservation.parking_id}",
+        "parking_address": parking.address if parking else "",
+        "hourly_rate": float(parking.hourly_rate) if parking and parking.hourly_rate else 8.50,
+        "slot_id": reservation.slot_id,
         "slot_code": slot.code if slot else f"#{reservation.slot_id}",
+        "floor_level": slot.floor_level if slot and slot.floor_level else "Piso 1",
+        "slot_type": slot.slot_type if slot and slot.slot_type else "auto",
         "status": reservation.status,
-        "start_time": reservation.start_time,
-        "end_time": reservation.end_time,
-        "total_cost": reservation.total_cost,
+        "tolerance_minutes": tol_min,
+        "start_time": _iso_utc(reservation.start_time),
+        "end_time": _iso_utc(reservation.end_time),
+        "actual_entry": _iso_utc(reservation.actual_entry),
+        "actual_exit": _iso_utc(reservation.actual_exit),
+        "total_cost": float(reservation.total_cost or 0),
+        "customer_name": user.full_name if user else "Conductor Registrado",
+        "customer_phone": user.phone if user else None,
+        "customer_email": user.email if user else None,
     }
 
 @router.get("/{reservation_id}", response_model=ReservationResponse)

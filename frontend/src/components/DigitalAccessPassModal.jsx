@@ -90,6 +90,13 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
   useEffect(() => {
     if (!passData) return;
 
+    // Si la reserva está cancelada o completada, NO debe correr ningún temporizador
+    if (localStatus === 'cancelled' || localStatus === 'completed') {
+      setTimeLeft(localStatus === 'cancelled' ? 'Cancelada' : 'Finalizada');
+      setSecondsRemaining(0);
+      return;
+    }
+
     const updateCountdown = () => {
       const now = new Date().getTime();
       const isScheduled = localStatus === 'scheduled';
@@ -97,7 +104,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       const difference = targetDeadline - now;
 
       if (difference <= 0) {
-        setTimeLeft('00:00:00');
+        setTimeLeft(isScheduled ? 'Tolerancia vencida' : '00:00:00');
         setSecondsRemaining(0);
         return;
       }
@@ -213,7 +220,15 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       <DialogContent className="max-w-sm sm:max-w-md rounded-2xl p-0 overflow-y-auto max-h-[90vh] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl">
         
         {/* Encabezado */}
-        <div className="bg-slate-900 text-white px-5 py-4 flex justify-between items-center border-b border-transparent dark:border-slate-800">
+        <div className={`px-5 py-4 flex justify-between items-center border-b ${
+          isCancelled 
+            ? 'bg-rose-950 text-white border-rose-900/60' 
+            : isCompleted
+            ? 'bg-slate-900 text-white border-slate-800'
+            : isActive
+            ? 'bg-emerald-950 text-white border-emerald-900/60'
+            : 'bg-slate-900 text-white border-slate-800'
+        }`}>
           <div>
             <h2 className="text-base font-bold text-white">{passData.parkingName}</h2>
             <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
@@ -221,35 +236,94 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               <span>Portal Unión 42, Centro Histórico</span>
             </p>
           </div>
-          <span className="text-xs font-mono text-slate-300">
-            {isActive ? 'En estancia' : isScheduled ? 'En ruta' : isCancelled ? 'Cancelado' : 'Finalizado'}
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+            isCancelled 
+              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' 
+              : isCompleted 
+              ? 'bg-slate-800 text-slate-300 border border-slate-700' 
+              : isActive 
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
+              : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+          }`}>
+            {isActive ? 'En estancia' : isScheduled ? 'En ruta' : isCancelled ? 'Cancelada' : 'Finalizada'}
           </span>
         </div>
 
         <div className="p-4 space-y-3.5">
 
-          {/* Código QR */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-center flex flex-col items-center justify-center">
-            <div ref={qrRef} className="p-2 bg-white rounded-lg border border-slate-200 dark:border-slate-700 inline-block shadow-xs">
-              <QRCodeSVG
-                value={passData.qrPayload}
-                size={135}
-                level="Q"
-                includeMargin={false}
-                fgColor="#0f172a"
-                bgColor="#ffffff"
-              />
+          {/* Código QR o Estado Inhabilitado */}
+          {isCancelled ? (
+            <div className="p-5 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/70 dark:bg-rose-950/30 text-center flex flex-col items-center justify-center">
+              <div className="relative p-2 bg-white dark:bg-slate-800 rounded-xl border border-rose-200 dark:border-rose-800 inline-block shadow-xs">
+                <div className="opacity-20 filter grayscale">
+                  <QRCodeSVG
+                    value="RESERVA_CANCELADA_SIN_VALIDEZ"
+                    size={135}
+                    level="Q"
+                    fgColor="#991b1b"
+                    bgColor="#ffffff"
+                  />
+                </div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-lg">
+                    <XCircle className="w-7 h-7 stroke-[2.5]" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 space-y-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black uppercase bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                  Pase Inhabilitado
+                </span>
+                <p className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+                  Código: {passData.id}
+                </p>
+                <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium max-w-xs mx-auto">
+                  Esta reserva fue cancelada y la plaza fue liberada. Este pase carece de validez para ingreso a la cochera.
+                </p>
+              </div>
             </div>
+          ) : isCompleted ? (
+            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-center flex flex-col items-center justify-center">
+              <div ref={qrRef} className="p-2 bg-white rounded-lg border border-slate-200 dark:border-slate-700 inline-block shadow-xs opacity-60">
+                <QRCodeSVG
+                  value={passData.qrPayload}
+                  size={120}
+                  level="Q"
+                  fgColor="#475569"
+                  bgColor="#ffffff"
+                />
+              </div>
+              <p className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mt-2">
+                Reserva Finalizada: {passData.id}
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Vehículo retirado · Estancia completada
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-center flex flex-col items-center justify-center">
+              <div ref={qrRef} className="p-2 bg-white rounded-lg border border-slate-200 dark:border-slate-700 inline-block shadow-xs">
+                <QRCodeSVG
+                  value={passData.qrPayload}
+                  size={135}
+                  level="Q"
+                  includeMargin={false}
+                  fgColor="#0f172a"
+                  bgColor="#ffffff"
+                />
+              </div>
 
-            <p className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-2">
-              Token: {passData.token}
-            </p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Escanea en el tótem o muestra al operador de garita
-            </p>
-          </div>
+              <p className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-2">
+                Token: {passData.token}
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Escanea en el tótem o muestra al operador de garita
+              </p>
+            </div>
+          )}
 
-          {/* Banner de Advertencia Preventiva 10 a 5 minutos antes */}
+          {/* Banner de Advertencia Preventiva 10 a 5 minutos antes (solo para reservas programadas) */}
           {isScheduled && secondsRemaining !== null && secondsRemaining > 0 && secondsRemaining <= 600 && (
             <div className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
               secondsRemaining <= 300 
@@ -270,7 +344,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
             </div>
           )}
 
-          {/* Datos de la Reserva y Cronómetro Inteligente */}
+          {/* Datos de la Reserva y Estado */}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60">
               <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Cajón Asignado</span>
@@ -287,25 +361,41 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               <p className="font-mono font-semibold text-slate-800 dark:text-slate-200 mt-0.5 truncate">{passData.id}</p>
             </div>
 
-            {/* Tiempo Restante */}
-            <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+            {/* Estado o Tiempo Restante */}
+            <div className={`p-2.5 rounded-xl border ${
+              isCancelled 
+                ? 'border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20' 
+                : isCompleted
+                ? 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60'
+                : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60'
+            }`}>
               <span className="text-slate-500 dark:text-slate-400 block text-[10px]">
                 {isActive ? 'Estadía' : isScheduled ? 'Tiempo para llegar' : 'Estado'}
               </span>
-              <p className="font-mono font-bold text-sm mt-0.5 text-slate-800 dark:text-slate-100">
-                {isCompleted ? 'Finalizada' : timeLeft || '--:--:--'}
+              <p className={`font-mono font-bold text-sm mt-0.5 ${
+                isCancelled 
+                  ? 'text-rose-600 dark:text-rose-400' 
+                  : isCompleted 
+                  ? 'text-slate-700 dark:text-slate-300' 
+                  : 'text-slate-800 dark:text-slate-100'
+              }`}>
+                {isCancelled ? 'Cancelada' : isCompleted ? 'Finalizada' : timeLeft || '--:--:--'}
               </p>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                {isActive 
+              <span className={`text-[10px] block ${
+                isCancelled ? 'text-rose-500 dark:text-rose-400 font-medium' : 'text-slate-400 dark:text-slate-500'
+              }`}>
+                {isCancelled 
+                  ? `Tolerancia de ${passData.toleranceMinutes} min vencida` 
+                  : isActive 
                   ? `${passData.hours}h contratadas` 
                   : isScheduled 
-                  ? `Tolerancia: ${passData.toleranceMinutes} min (Límite: ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '--:--'})` 
-                  : ''}
+                  ? `Tolerancia: ${passData.toleranceMinutes} min (Límite: ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'})` 
+                  : 'Sin estancia activa'}
               </span>
             </div>
           </div>
 
-          {/* Botones de Acción Operativos */}
+          {/* Botones de Acción Operativos (Solo para reservas programadas o activas) */}
           {isScheduled && (
             <div className="space-y-1.5">
               <Button
@@ -342,34 +432,38 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
             </Button>
           )}
 
-          {/* Navegación GPS Directa */}
-          <div className="space-y-1.5">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold block">Navegación:</span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={openGoogleMaps}
-                className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
-              >
-                <Compass className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                <span>Google Maps</span>
-              </button>
-              <button
-                type="button"
-                onClick={openWaze}
-                className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
-              >
-                <Navigation className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                <span>Waze</span>
-              </button>
+          {/* Navegación GPS Directa (Solo si no está cancelada ni finalizada) */}
+          {!isCancelled && !isCompleted && (
+            <div className="space-y-1.5">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold block">Navegación:</span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={openGoogleMaps}
+                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <Compass className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <span>Google Maps</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={openWaze}
+                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <Navigation className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <span>Waze</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Total */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-xs border border-transparent dark:border-slate-700">
-            <span className="text-slate-300 dark:text-slate-300">Total a pagar en garita:</span>
-            <span className="text-sm font-mono font-bold text-emerald-400">
-              S/ {passData.cost.toFixed(2)}
+            <span className="text-slate-300 dark:text-slate-300">
+              {isCancelled ? 'Importe de reserva:' : isCompleted ? 'Total pagado:' : 'Total a pagar en garita:'}
+            </span>
+            <span className={`text-sm font-mono font-bold ${isCancelled ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {isCancelled ? 'S/ 0.00 (Anulada)' : `S/ ${passData.cost.toFixed(2)}`}
             </span>
           </div>
 
@@ -379,11 +473,12 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               <Button
                 type="button"
                 onClick={handleCopyCode}
+                disabled={isCancelled}
                 variant="outline"
-                className="w-full text-xs font-semibold gap-1.5 rounded-xl h-9 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="w-full text-xs font-semibold gap-1.5 rounded-xl h-9 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 disabled:opacity-50"
               >
                 {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-600 dark:text-slate-400" />}
-                <span>{copied ? 'Copiado' : 'Copiar Token'}</span>
+                <span>{isCancelled ? 'Token Anulado' : copied ? 'Copiado' : 'Copiar Token'}</span>
               </Button>
 
               <Button

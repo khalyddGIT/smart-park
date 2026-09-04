@@ -16,6 +16,7 @@ import {
   User, 
   X, 
   AlertCircle, 
+  XCircle, 
   Filter, 
   Sparkles, 
   ArrowRight,
@@ -778,25 +779,42 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                       )}
 
                       {/* Ver Pase Digital QR */}
-                      <Button
-                        onClick={() => handleOpenPass(res)}
-                        size="sm"
-                        className="rounded-lg text-xs font-bold gap-1.5 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white border border-transparent dark:border-slate-700/80 shadow-xs h-8 px-3 cursor-pointer"
-                      >
-                        <QrCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span>Pase QR</span>
-                      </Button>
+                      {!isCancelled ? (
+                        <Button
+                          onClick={() => handleOpenPass(res)}
+                          size="sm"
+                          className="rounded-lg text-xs font-bold gap-1.5 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white border border-transparent dark:border-slate-700/80 shadow-xs h-8 px-3 cursor-pointer"
+                        >
+                          <QrCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>Pase QR</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleOpenPass(res)}
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg text-xs font-semibold gap-1.5 bg-rose-50/70 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 h-8 px-2.5 cursor-pointer"
+                          title="Ver Detalle de Pase Anulado"
+                        >
+                          <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                          <span>Pase Anulado</span>
+                        </Button>
+                      )}
 
                       {/* Imprimir Ticket */}
                       <Button
                         onClick={() => handlePrintReceipt(res)}
                         variant="outline"
                         size="sm"
-                        className="rounded-lg text-xs font-semibold gap-1.5 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 h-8 px-2.5 cursor-pointer"
-                        title="Imprimir Comprobante"
+                        className={`rounded-lg text-xs font-semibold gap-1.5 border h-8 px-2.5 cursor-pointer ${
+                          isCancelled 
+                            ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700' 
+                            : 'bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                        }`}
+                        title={isCancelled ? "Ver Comprobante de Anulación" : "Imprimir Comprobante"}
                       >
                         <Printer className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-                        <span className="hidden sm:inline">Ticket</span>
+                        <span className="hidden sm:inline">{isCancelled ? 'Ticket Anulado' : 'Ticket'}</span>
                       </Button>
 
                       {/* Cancelar Reserva */}
@@ -988,100 +1006,140 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       {/* =========================================================================
           MODAL: TICKET / COMPROBANTE DE PAGO IMPRIMIBLE
           ========================================================================= */}
-      {selectedReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 gap-4">
-            
-            {/* Header del Ticket */}
-            <div className="text-center border-b border-dashed border-slate-300 pb-4 space-y-1">
-              <span className="font-mono text-[10px] text-slate-400 font-bold block">SMART-PARK AYACUCHO</span>
-              <h3 className="font-black text-slate-900 text-base">{selectedReceipt.parking}</h3>
-              <p className="text-[11px] text-slate-500 font-mono">TICKET DE ESTACIONAMIENTO</p>
-              <p className="text-xs font-mono font-black text-emerald-700 mt-1">{selectedReceipt.code}</p>
-            </div>
+      {selectedReceipt && (() => {
+        const isCancelled = selectedReceipt.status === 'CANCELLED';
+        const isCompleted = selectedReceipt.status === 'COMPLETED';
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 gap-4">
+              
+              {/* Header del Ticket */}
+              <div className={`text-center border-b border-dashed pb-4 space-y-1 ${
+                isCancelled ? 'border-rose-300' : 'border-slate-300'
+              }`}>
+                <span className="font-mono text-[10px] text-slate-400 font-bold block">SMART-PARK AYACUCHO</span>
+                <h3 className="font-black text-slate-900 text-base">{selectedReceipt.parking}</h3>
+                <p className={`text-[11px] font-mono font-bold ${
+                  isCancelled ? 'text-rose-600' : 'text-slate-500'
+                }`}>
+                  {isCancelled ? '*** COMPROBANTE DE RESERVA ANULADA ***' : 'TICKET DE ESTACIONAMIENTO'}
+                </p>
+                <p className={`text-xs font-mono font-black mt-1 ${
+                  isCancelled ? 'text-rose-700' : 'text-emerald-700'
+                }`}>
+                  {selectedReceipt.code}
+                </p>
+              </div>
 
-            {/* Datos del Ticket */}
-            <div className="space-y-2 text-xs font-mono bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Plaza Asignada:</span>
-                <strong className="text-slate-900 text-sm">{selectedReceipt.slot}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Placa Vehicular:</span>
-                <strong className="text-slate-900">{selectedReceipt.plate}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Conductor:</span>
-                <span className="text-slate-800 truncate max-w-[150px]">{selectedReceipt.customerName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Fecha:</span>
-                <span className="text-slate-800 font-bold">{formatDateShort(selectedReceipt.startTime)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Ingreso:</span>
-                <span className="text-slate-800">{formatTime12h(selectedReceipt.startTime)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Salida estimada:</span>
-                <span className="text-slate-800">{formatTime12h(selectedReceipt.expiresAt)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Horas:</span>
-                <span className="text-slate-800">{selectedReceipt.hours} hora(s)</span>
-              </div>
-              <div className="h-px bg-slate-200 my-1" />
-              <div className="flex justify-between text-sm font-black text-slate-900">
-                <span>Total Cobrado:</span>
-                <span className="text-emerald-700">S/ {Number(selectedReceipt.cost).toFixed(2)}</span>
-              </div>
-            </div>
+              {/* Banner de cancelación si aplica */}
+              {isCancelled && (
+                <div className="mt-3 p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-center">
+                  <span className="text-xs font-black text-rose-700 block uppercase">
+                    Reserva Cancelada / Anulada
+                  </span>
+                  <span className="text-[10px] text-rose-600 block mt-0.5">
+                    La plaza {selectedReceipt.slot} fue liberada y no se generó cobro de estancia.
+                  </span>
+                </div>
+              )}
 
-            {/* Código QR Escaneable para Celulares y Garita */}
-            <div className="bg-white p-3 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center">
-              <div className="p-1.5 bg-white rounded-xl border border-slate-100 shadow-xs inline-block">
-                <QRCodeSVG
-                  value={`SMART-PARK AYACUCHO - TICKET
+              {/* Datos del Ticket */}
+              <div className="mt-3 space-y-2 text-xs font-mono bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Plaza Asignada:</span>
+                  <strong className="text-slate-900 text-sm">{selectedReceipt.slot}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Placa Vehicular:</span>
+                  <strong className="text-slate-900">{selectedReceipt.plate}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Conductor:</span>
+                  <span className="text-slate-800 truncate max-w-[150px]">{selectedReceipt.customerName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Fecha:</span>
+                  <span className="text-slate-800 font-bold">{formatDateShort(selectedReceipt.startTime)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Ingreso:</span>
+                  <span className="text-slate-800">{formatTime12h(selectedReceipt.startTime)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Salida estimada:</span>
+                  <span className="text-slate-800">{formatTime12h(selectedReceipt.expiresAt)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Horas:</span>
+                  <span className="text-slate-800">{selectedReceipt.hours} hora(s)</span>
+                </div>
+                <div className="h-px bg-slate-200 my-1" />
+                <div className="flex justify-between text-sm font-black text-slate-900">
+                  <span>{isCancelled ? 'Total a Cobrar:' : 'Total Cobrado:'}</span>
+                  <span className={isCancelled ? 'text-rose-600 font-bold' : 'text-emerald-700'}>
+                    {isCancelled ? 'S/ 0.00 (Anulado)' : `S/ ${Number(selectedReceipt.cost).toFixed(2)}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Código QR Escaneable o Marca de Anulación */}
+              <div className="mt-3 bg-white p-3 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center">
+                {isCancelled ? (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl w-full text-center space-y-1">
+                    <div className="w-10 h-10 mx-auto rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+                      <XCircle className="w-6 h-6" />
+                    </div>
+                    <strong className="text-xs text-rose-700 block font-mono">TICKET ANULADO</strong>
+                    <p className="text-[10px] text-slate-500">Este comprobante carece de validez de ingreso o estancia.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-1.5 bg-white rounded-xl border border-slate-100 shadow-xs inline-block">
+                      <QRCodeSVG
+                        value={`SMART-PARK AYACUCHO - TICKET
 Sede: ${selectedReceipt.parking}
 Plaza: ${selectedReceipt.slot}
 Placa: ${selectedReceipt.plate}
 Reserva: ${selectedReceipt.code}
 Token: ${selectedReceipt.token || 'SPK-TOKEN-VALID'}
 Total: S/ ${Number(selectedReceipt.cost).toFixed(2)}
-ESTADO: AUTORIZADO`}
-                  size={120}
-                  level="Q"
-                  includeMargin={false}
-                  fgColor="#0f172a"
-                  bgColor="#ffffff"
-                />
+ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
+                        size={120}
+                        level="Q"
+                        includeMargin={false}
+                        fgColor="#0f172a"
+                        bgColor="#ffffff"
+                      />
+                    </div>
+                    <p className="text-[10px] font-mono text-slate-500 mt-2">
+                      Token: <strong className="text-slate-900">{selectedReceipt.token || 'SPK-TOKEN-VALID'}</strong>
+                    </p>
+                  </>
+                )}
               </div>
-              <p className="text-[10px] font-mono text-slate-500 mt-2">
-                Token: <strong className="text-slate-900">{selectedReceipt.token || 'SPK-TOKEN-VALID'}</strong>
-              </p>
-            </div>
 
-            {/* Botones */}
-            <div className="flex items-center gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedReceipt(null)}
-                className="flex-1 rounded-xl text-xs font-bold"
-              >
-                Cerrar
-              </Button>
-              <Button
-                onClick={() => window.print()}
-                className="flex-1 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white gap-1.5"
-              >
-                <Printer className="w-4 h-4 shrink-0" />
-                <span>Imprimir</span>
-              </Button>
-            </div>
+              {/* Botones */}
+              <div className="flex items-center gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedReceipt(null)}
+                  className="flex-1 rounded-xl text-xs font-bold"
+                >
+                  Cerrar
+                </Button>
+                <Button
+                  onClick={() => window.print()}
+                  className="flex-1 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white gap-1.5"
+                >
+                  <Printer className="w-4 h-4 shrink-0" />
+                  <span>Imprimir</span>
+                </Button>
+              </div>
 
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Modal de Pase Digital QR */}
       <DigitalAccessPassModal

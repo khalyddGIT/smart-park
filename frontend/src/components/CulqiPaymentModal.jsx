@@ -543,7 +543,7 @@ export const CulqiPaymentModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleResetAndClose}>
-      <DialogContent className="max-w-lg rounded-3xl p-6 bg-white border-slate-200 shadow-2xl overflow-y-auto max-h-[92vh]">
+      <DialogContent className="max-w-lg w-[95vw] sm:w-full rounded-2xl sm:rounded-3xl p-4 sm:p-6 bg-white border-slate-200 shadow-2xl overflow-y-auto max-h-[92vh]">
         
         {/* Cabecera del Checkout */}
         <DialogHeader className="border-b border-slate-100 pb-3 space-y-1">
@@ -675,7 +675,7 @@ export const CulqiPaymentModal = ({
               <button
                 type="button"
                 onClick={() => { setActiveMethod('paypal'); setErrorMsg(''); }}
-                className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
+                className={`py-2 px-0.5 sm:px-1 text-[10px] sm:text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'paypal' ? 'bg-[#003087] text-white shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -684,55 +684,55 @@ export const CulqiPaymentModal = ({
                   <path fill="#60cdff" d="M44.284 23.7A12.894 12.894 0 0 1 31.53 34.5h-5.206L24.157 48H14.89l1.483-9l1.75-11.178l.367-2.322h7.497c7.773 0 12.927-6.576 12.927-12.15c3.825 1.974 6.055 5.963 5.37 10.35"/>
                   <path fill="#008cff" d="M38.914 13.35C37.31 12.511 35.365 12 33.248 12h-12.64L18.49 25.5h7.497c7.773 0 12.927-6.576 12.927-12.15"/>
                 </svg>
-                <span>PayPal</span>
+                <span className="truncate max-w-full">PayPal</span>
               </button>
 
               {/* TAB 2: TARJETA CULQI */}
               <button
                 type="button"
                 onClick={() => { setActiveMethod('card'); setErrorMsg(''); }}
-                className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
+                className={`py-2 px-0.5 sm:px-1 text-[10px] sm:text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'card' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <CreditCard className="w-4 h-4 shrink-0 text-emerald-600" />
-                <span>Tarjeta</span>
+                <span className="truncate max-w-full">Tarjeta</span>
               </button>
 
               {/* TAB 3: YAPE */}
               <button
                 type="button"
                 onClick={() => { setActiveMethod('yape'); setErrorMsg(''); }}
-                className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
+                className={`py-2 px-0.5 sm:px-1 text-[10px] sm:text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'yape' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <Smartphone className="w-4 h-4 shrink-0 text-purple-600" />
-                <span>Yape</span>
+                <span className="truncate max-w-full">Yape</span>
               </button>
 
               {/* TAB 4: PLIN */}
               <button
                 type="button"
                 onClick={() => { setActiveMethod('plin'); setErrorMsg(''); }}
-                className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
+                className={`py-2 px-0.5 sm:px-1 text-[10px] sm:text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'plin' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <QrCode className="w-4 h-4 shrink-0 text-sky-600" />
-                <span>Plin</span>
+                <span className="truncate max-w-full">Plin</span>
               </button>
 
               {/* TAB 5: CIP */}
               <button
                 type="button"
                 onClick={() => { setActiveMethod('pagoefectivo'); setErrorMsg(''); }}
-                className={`py-2 px-1 text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
+                className={`py-2 px-0.5 sm:px-1 text-[10px] sm:text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
                   activeMethod === 'pagoefectivo' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <Building className="w-4 h-4 shrink-0 text-amber-600" />
-                <span>Agentes</span>
+                <span className="truncate max-w-full">Agentes</span>
               </button>
             </div>
 

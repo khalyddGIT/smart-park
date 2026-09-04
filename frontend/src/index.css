@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="midnight"], [data-theme="high-contrast"], .dark, .dark *));
+
 @theme {
   /* ── Paleta Smart Park — Editorial + Industrial Refinado ── */
   --color-iris-gleam: #847dff;
@@ -151,7 +153,22 @@ html.dark body,
   color: var(--text-main) !important;
 }
 
+.dark header,
+[data-theme="dark"] header,
+[data-theme="midnight"] header,
+[data-theme="high-contrast"] header,
+.dark aside,
+[data-theme="dark"] aside,
+[data-theme="midnight"] aside,
+[data-theme="high-contrast"] aside {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+}
+
 .dark .bg-white,
+.dark .bg-white\/95,
+.dark .bg-white\/90,
+.dark .bg-white\/80,
 [data-theme="dark"] .bg-white,
 [data-theme="midnight"] .bg-white,
 [data-theme="high-contrast"] .bg-white {
@@ -161,6 +178,7 @@ html.dark body,
 
 .dark .bg-slate-50,
 .dark .bg-slate-50\/60,
+.dark .bg-slate-50\/70,
 .dark .bg-slate-100,
 [data-theme="dark"] .bg-slate-50,
 [data-theme="midnight"] .bg-slate-50,
@@ -185,6 +203,8 @@ html.dark body,
 
 .dark .border-slate-200,
 .dark .border-slate-100,
+.dark .border-slate-200\/90,
+.dark .border-slate-200\/80,
 [data-theme="dark"] .border-slate-200,
 [data-theme="midnight"] .border-slate-200,
 [data-theme="high-contrast"] .border-slate-200 {

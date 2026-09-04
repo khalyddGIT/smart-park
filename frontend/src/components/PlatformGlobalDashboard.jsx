@@ -217,20 +217,24 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
       </div>
 
       {pendingRequests > 0 && (
-        <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shadow-xs">
-          <div className="flex items-center gap-2 text-amber-900 text-xs">
-            <div className="w-9 h-9 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black shrink-0 shadow-xs">
+        <div className="bg-amber-500/10 border border-amber-500/30 dark:bg-amber-500/10 dark:border-amber-500/25 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shadow-xs backdrop-blur-xs">
+          <div className="flex items-center gap-3 text-amber-900 dark:text-amber-200 text-xs">
+            <div className="w-9 h-9 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-xs">
               <Building2 className="w-5 h-5 shrink-0" />
             </div>
             <div>
-              <strong className="text-sm font-black block">¡Tienes {pendingRequests} solicitud(es) de afiliación pendientes!</strong>
-              <span>Revisa los documentos y aprueba el alta de nuevos locales en la red de Huamanga.</span>
+              <strong className="text-sm font-black block text-amber-950 dark:text-amber-200">
+                ¡Tienes {pendingRequests} solicitud(es) de afiliación pendientes!
+              </strong>
+              <span className="text-amber-800/80 dark:text-amber-300/80">
+                Revisa los documentos y aprueba el alta de nuevos locales en la red de Huamanga.
+              </span>
             </div>
           </div>
           <Button
             onClick={() => onNavigateTab && onNavigateTab('affiliates')}
             size="sm"
-            className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs shrink-0"
+            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs shrink-0 cursor-pointer"
           >
             <span>Revisar y Aprobar Ahora →</span>
           </Button>
@@ -246,95 +250,95 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           
-          <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
+          <Card className="p-4 border-slate-200/90 dark:border-slate-800/80 rounded-3xl bg-white dark:bg-[#151D2F] shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Recaudación Total</span>
-              <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 dark:text-slate-400 tracking-wider">Recaudación Total</span>
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
-              <h3 className="text-xl font-black text-slate-900 font-mono">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white font-mono">
                 S/ {Number(grossRevenueToday).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
               </h3>
-              <span className="text-[10px] text-slate-500 mt-0.5 block">{summary ? 'Acumulado real (excluye canceladas)' : 'Sin datos aún'}</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block">{summary ? 'Acumulado real (excluye canceladas)' : 'Sin datos aún'}</span>
             </div>
           </Card>
 
-          <Card className="p-4 border-emerald-200 rounded-3xl bg-emerald-50/50 shadow-xs">
+          <Card className="p-4 border-slate-200/90 dark:border-slate-800/80 rounded-3xl bg-white dark:bg-[#151D2F] shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-emerald-800 tracking-wider">Comisión Neta (12%)</span>
-              <div className="w-7 h-7 shrink-0 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 dark:text-slate-400 tracking-wider">Comisión Neta (12%)</span>
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-black flex items-center justify-center">
                 <Percent className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
-              <h3 className="text-xl font-black text-emerald-700 font-mono">
+              <h3 className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
                 S/ {Number(netCommissionToday).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
               </h3>
-              <span className="text-[10px] font-medium text-emerald-800/80 mt-0.5 block">Ganancia de plataforma</span>
+              <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 block">Ganancia de plataforma</span>
             </div>
           </Card>
 
-          <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
+          <Card className="p-4 border-slate-200/90 dark:border-slate-800/80 rounded-3xl bg-white dark:bg-[#151D2F] shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Locales Afiliados</span>
-              <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 dark:text-slate-400 tracking-wider">Locales Afiliados</span>
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
                 <Building2 className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
-              <h3 className="text-xl font-black text-slate-900 font-mono">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white font-mono">
                 {totalBranches} Sedes
               </h3>
-              <span className="text-[10px] font-bold text-emerald-600 mt-0.5 block">● Reales en BD</span>
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">● Reales en BD</span>
             </div>
           </Card>
 
-          <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
+          <Card className="p-4 border-slate-200/90 dark:border-slate-800/80 rounded-3xl bg-white dark:bg-[#151D2F] shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Ocupación Red</span>
-              <div className="w-7 h-7 shrink-0 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 dark:text-slate-400 tracking-wider">Ocupación Red</span>
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                 <Activity className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
-              <h3 className="text-xl font-black text-amber-600 font-mono">
+              <h3 className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono">
                 {occupancyPercentage}%
               </h3>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
                 <div className="bg-amber-500 h-full rounded-full" style={{ width: `${occupancyPercentage}%` }} />
               </div>
             </div>
           </Card>
 
-          <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
+          <Card className="p-4 border-slate-200/90 dark:border-slate-800/80 rounded-3xl bg-white dark:bg-[#151D2F] shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Estancias Totales</span>
-              <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 dark:text-slate-400 tracking-wider">Estancias Totales</span>
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
                 <Car className="w-4 h-4 shrink-0" />
               </div>
             </div>
             <div className="mt-2.5">
-              <h3 className="text-xl font-black text-slate-900 font-mono">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white font-mono">
                 {Number(activeBookingsCount)} Reservas
               </h3>
-              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">{freeSlotsCount} plazas libres</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 block">{freeSlotsCount} plazas libres</span>
             </div>
           </Card>
 
-          <Card className="p-4 border-slate-200/90 rounded-3xl bg-white shadow-xs">
+          <Card className="p-4 border-slate-200/90 dark:border-slate-800/80 rounded-3xl bg-white dark:bg-[#151D2F] shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Calificación Red</span>
-              <div className="w-7 h-7 shrink-0 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 dark:text-slate-400 tracking-wider">Calificación Red</span>
+              <div className="w-7 h-7 shrink-0 rounded-xl bg-amber-500/15 dark:bg-amber-500/20 text-amber-500 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 shrink-0 fill-amber-400 text-amber-400" />
               </div>
             </div>
             <div className="mt-2.5">
-              <h3 className="text-xl font-black text-slate-900 font-mono">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white font-mono">
                 {reviewStats.count ? `${reviewStats.avg} ★` : '—'}
               </h3>
-              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">{reviewStats.count ? `${reviewStats.count} reseñas reales` : 'Sin reseñas aún'}</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 block">{reviewStats.count ? `${reviewStats.count} reseñas reales` : 'Sin reseñas aún'}</span>
             </div>
           </Card>
 
@@ -343,27 +347,27 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <Card className="lg:col-span-2 p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <Card className="lg:col-span-2 p-6 rounded-3xl border-slate-200/90 dark:border-slate-800/80 shadow-xs bg-white dark:bg-[#151D2F] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
             <div>
-              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 shrink-0 text-emerald-600" />
+              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 shrink-0 text-emerald-500" />
                 <span>Recaudación por Sede (Real)</span>
               </h2>
-              <p className="text-xs text-slate-500">Ranking derivado de <code className="bg-slate-100 px-1 rounded">GET /finances/summary</code> — excluye canceladas.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Ranking derivado de <code className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1 rounded">GET /finances/summary</code> — excluye canceladas.</p>
             </div>
           </div>
 
           <div className="h-[280px] w-full pt-2">
             {revenueTimeline.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-2">
                 <BarChart3 className="w-8 h-8" />
                 <span className="text-xs font-bold">Sin recaudación aún — crea reservas para ver el ranking</span>
               </div>
             ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={revenueTimeline} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
                 <XAxis dataKey="day" stroke="#94A3B8" fontSize={10} tickLine={false} interval={0} angle={-15} textAnchor="end" height={50} />
                 <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} tickFormatter={(v) => `S/ ${v}`} />
                 <Tooltip 
@@ -371,13 +375,13 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                     `S/ ${Number(value).toFixed(2)}`,
                     name === 'total' ? 'Recaudación Bruta' : 'Comisión 12%'
                   ]}
-                  contentStyle={{ borderRadius: '16px', background: '#0F172A', color: '#FFF', border: 'none', fontSize: '12px' }}
+                  contentStyle={{ borderRadius: '16px', background: '#0F172A', color: '#FFF', border: '1px solid #1E293B', fontSize: '12px' }}
                 />
                 <Legend 
                   formatter={(value) => value === 'total' ? 'Recaudación Bruta' : 'Comisión'}
                   wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
                 />
-                <Bar dataKey="total" fill="#0F172A" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="total" fill="#38BDF8" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="comision" fill="#10B981" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -385,53 +389,53 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4 flex flex-col justify-between">
-          <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 shrink-0 text-emerald-600" />
+        <Card className="p-6 rounded-3xl border-slate-200/90 dark:border-slate-800/80 shadow-xs bg-white dark:bg-[#151D2F] space-y-4 flex flex-col justify-between">
+          <div className="border-b border-slate-100 dark:border-slate-800/80 pb-3">
+            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <CreditCard className="w-5 h-5 shrink-0 text-emerald-500" />
               <span>Resumen Financiero</span>
             </h2>
-            <p className="text-xs text-slate-500">Totales reales del sistema.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Totales reales del sistema.</p>
           </div>
 
           <div className="space-y-3 text-xs">
-            <div className="flex justify-between p-3 bg-slate-50 rounded-xl">
-              <span className="text-slate-600">Recaudación Bruta</span>
-              <strong className="font-mono text-slate-900">S/ {Number(grossRevenueToday).toFixed(2)}</strong>
+            <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800/80">
+              <span className="text-slate-600 dark:text-slate-400 font-medium">Recaudación Bruta</span>
+              <strong className="font-mono text-slate-900 dark:text-white">S/ {Number(grossRevenueToday).toFixed(2)}</strong>
             </div>
-            <div className="flex justify-between p-3 bg-emerald-50 rounded-xl">
-              <span className="text-emerald-800 font-bold">Comisión Plataforma</span>
-              <strong className="font-mono text-emerald-700">S/ {Number(netCommissionToday).toFixed(2)}</strong>
+            <div className="flex justify-between p-3 bg-emerald-50/70 dark:bg-emerald-500/10 rounded-xl border border-emerald-200/60 dark:border-emerald-500/20">
+              <span className="text-emerald-800 dark:text-emerald-300 font-bold">Comisión Plataforma</span>
+              <strong className="font-mono text-emerald-700 dark:text-emerald-400 font-bold">S/ {Number(netCommissionToday).toFixed(2)}</strong>
             </div>
-            <div className="flex justify-between p-3 bg-slate-50 rounded-xl">
-              <span className="text-slate-600">Reservas Totales</span>
-              <strong className="font-mono text-slate-900">{activeBookingsCount}</strong>
+            <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800/80">
+              <span className="text-slate-600 dark:text-slate-400 font-medium">Reservas Totales</span>
+              <strong className="font-mono text-slate-900 dark:text-white">{activeBookingsCount}</strong>
             </div>
-            <div className="flex justify-between p-3 bg-slate-50 rounded-xl">
-              <span className="text-slate-600">Sedes Activas</span>
-              <strong className="font-mono text-slate-900">{totalBranches}</strong>
+            <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800/80">
+              <span className="text-slate-600 dark:text-slate-400 font-medium">Sedes Activas</span>
+              <strong className="font-mono text-slate-900 dark:text-white">{totalBranches}</strong>
             </div>
           </div>
-          <p className="text-[10px] text-slate-400 pt-2 border-t border-slate-100">Fuente: <code className="bg-slate-100 px-1 rounded">GET /finances/summary</code> + <code className="bg-slate-100 px-1 rounded">GET /reviews</code></p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800/80">Fuente: <code className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1 rounded">GET /finances/summary</code> + <code className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1 rounded">GET /reviews</code></p>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <Card className="lg:col-span-2 p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <Card className="lg:col-span-2 p-6 rounded-3xl border-slate-200/90 dark:border-slate-800/80 shadow-xs bg-white dark:bg-[#151D2F] space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-3">
             <div>
-              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Building2 className="w-5 h-5 shrink-0 text-emerald-600" />
+              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Building2 className="w-5 h-5 shrink-0 text-emerald-500" />
                 <span>Monitor de Cocheras de la Red ({establishments.length})</span>
               </h2>
-              <p className="text-xs text-slate-500">Estado operativo, aforo y recaudación real por sede.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Estado operativo, aforo y recaudación real por sede.</p>
             </div>
             <Button
               onClick={() => onNavigateTab && onNavigateTab('affiliates')}
               variant="outline"
               size="sm"
-              className="text-xs font-bold text-slate-700 rounded-xl"
+              className="text-xs font-bold text-slate-700 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
             >
               <span>Gestionar Sedes →</span>
             </Button>
@@ -439,17 +443,17 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
 
           <div className="space-y-3">
             {branchPerformance.map((b) => (
-              <div key={b.id} className="p-4 rounded-2xl border border-slate-100 hover:border-slate-300 bg-slate-50/50 hover:bg-white transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div key={b.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-slate-900 text-sm">{b.name}</span>
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.2 rounded-md flex items-center gap-1 font-mono">
+                    <span className="font-extrabold text-slate-900 dark:text-white text-sm">{b.name}</span>
+                    <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold px-2 py-0.2 rounded-md flex items-center gap-1 font-mono">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       LPR Online
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 flex items-center gap-1">
-                    <MapPin className="w-4 h-4 shrink-0 text-slate-400" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <MapPin className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
                     <span>{b.address}</span>
                   </p>
                 </div>
@@ -457,10 +461,10 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                 <div className="flex items-center gap-2 self-end sm:self-auto">
                   <div className="text-right w-28">
                     <div className="flex justify-between text-[11px] font-mono mb-1">
-                      <span className="text-slate-500">Aforo:</span>
-                      <strong className="text-slate-800">{b.occupancy}%</strong>
+                      <span className="text-slate-500 dark:text-slate-400">Aforo:</span>
+                      <strong className="text-slate-800 dark:text-slate-200">{b.occupancy}%</strong>
                     </div>
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
                       <div 
                         className={`h-full rounded-full ${b.occupancy > 80 ? 'bg-rose-500' : 'bg-emerald-500'}`} 
                         style={{ width: `${b.occupancy}%` }} 
@@ -468,9 +472,9 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                     </div>
                   </div>
 
-                  <div className="text-right font-mono border-l border-slate-200 pl-3">
-                    <span className="text-[10px] text-slate-400 font-bold block uppercase">Recaudado</span>
-                    <span className="text-xs font-black text-slate-900">S/ {Number(b.revenueToday).toFixed(2)}</span>
+                  <div className="text-right font-mono border-l border-slate-200 dark:border-slate-700 pl-3">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block uppercase">Recaudado</span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white">S/ {Number(b.revenueToday).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -478,34 +482,34 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4">
-          <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+        <Card className="p-6 rounded-3xl border-slate-200/90 dark:border-slate-800/80 shadow-xs bg-white dark:bg-[#151D2F] space-y-4">
+          <div className="border-b border-slate-100 dark:border-slate-800/80 pb-3 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Radio className="w-4 h-4 shrink-0 text-emerald-600 animate-pulse" />
+              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Radio className="w-4 h-4 shrink-0 text-emerald-500 animate-pulse" />
                 <span>Live Feed de la Red</span>
               </h2>
-              <p className="text-xs text-slate-500">Eventos reales de <code className="bg-slate-100 px-1 rounded">GET /audit/logs</code>.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Eventos reales de <code className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1 rounded">GET /audit/logs</code>.</p>
             </div>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
           </div>
 
           <div className="space-y-3">
             {liveEvents.map((ev) => (
-              <div key={ev.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-1 hover:bg-slate-100/80 transition">
+              <div key={ev.id} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1 hover:bg-slate-100/80 dark:hover:bg-slate-800 transition">
                 <div className="flex items-center justify-between">
                   <span className={`text-[10px] font-black uppercase px-2 py-0.2 rounded-md ${
-                    ev.color === 'emerald' ? 'bg-emerald-100 text-emerald-800' :
-                    ev.color === 'blue' ? 'bg-blue-100 text-blue-800' :
-                    ev.color === 'amber' ? 'bg-amber-100 text-amber-800' :
-                    'bg-indigo-100 text-indigo-800'
+                    ev.color === 'emerald' ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' :
+                    ev.color === 'blue' ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                    ev.color === 'amber' ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
+                    'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
                   }`}>
                     {ev.badge}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">{ev.time}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{ev.time}</span>
                 </div>
-                <h4 className="text-xs font-bold text-slate-900">{ev.title}</h4>
-                <p className="text-[11px] text-slate-600">{ev.desc}</p>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">{ev.title}</h4>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">{ev.desc}</p>
               </div>
             ))}
           </div>

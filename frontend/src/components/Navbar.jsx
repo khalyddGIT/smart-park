@@ -112,10 +112,10 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
 
   return (
     <>
-      <header className="glass-panel sticky top-0 z-40 px-3 sm:px-4 md:px-6 py-2.5 flex items-center justify-between border-b border-slate-200/90 bg-white/95 backdrop-blur-md select-none">
+      <header className="glass-panel sticky top-0 z-40 px-3 sm:px-4 md:px-6 py-2.5 flex items-center justify-between border-b border-slate-200/90 dark:border-slate-800/80 bg-white/95 dark:bg-[#0B0F19]/95 backdrop-blur-md select-none transition-colors">
         
         {/* Brand Logo */}
-        <BrandLogo className="h-8 sm:h-9 w-auto" />
+        <BrandLogo className="h-8 sm:h-9 w-auto" dark={isDark} />
 
         {/* Controles de Usuario / Visitante */}
         {!user ? (
@@ -167,8 +167,8 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
               title="Ver notificaciones del sistema"
               className={`relative p-2 sm:p-2.5 rounded-xl transition shadow-xs cursor-pointer border flex items-center justify-center shrink-0 ${
                 showNotifications 
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
-                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
+                  ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-500 shadow-md' 
+                  : 'bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800'
               }`}
             >
               <Bell className="w-[18px] h-[18px] shrink-0" />
@@ -332,34 +332,34 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
             )}
           </div>
 
-          {/* Perfil - reparado: evita corte de texto y solapamiento */}
-          <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-3 border-l border-slate-200 shrink-0">
+          {/* Perfil - adaptativo y armónico en claro/oscuro */}
+          <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-3 border-l border-slate-200 dark:border-slate-800 shrink-0">
             <button
               onClick={() => { if (onNavigateProfile) onNavigateProfile(); }}
               title="Abrir Mi Perfil"
-              className="flex items-center gap-2 py-1.5 px-2 sm:px-2.5 rounded-xl hover:bg-slate-50 transition cursor-pointer group bg-white border border-slate-200 shadow-xs"
+              className="flex items-center gap-2 py-1.5 px-2 sm:px-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs"
             >
               {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-7 h-7 rounded-xl object-cover shrink-0 shadow-sm ring-1 ring-slate-200 bg-white" onError={(e)=>{e.currentTarget.style.display='none'; if(e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display='flex';}} />
+                <img src={user.avatar} alt={user.name} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-7 h-7 rounded-xl object-cover shrink-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 bg-white" onError={(e)=>{e.currentTarget.style.display='none'; if(e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display='flex';}} />
               ) : null}
-              <div className={`w-7 h-7 rounded-xl bg-slate-900 text-emerald-400 items-center justify-center font-bold shrink-0 shadow-sm ring-1 ring-slate-200 ${user?.avatar ? 'hidden' : 'flex'}`} style={{display: user?.avatar ? 'none' : 'flex'}}>
+              <div className={`w-7 h-7 rounded-xl bg-slate-900 dark:bg-emerald-500/20 text-emerald-400 dark:text-emerald-300 items-center justify-center font-bold shrink-0 shadow-sm ring-1 ring-slate-200 dark:ring-emerald-500/30 ${user?.avatar ? 'hidden' : 'flex'}`} style={{display: user?.avatar ? 'none' : 'flex'}}>
                 <User className="w-4 h-4 shrink-0" />
               </div>
               <div className="hidden sm:block text-left min-w-0 pr-1">
-                <span className="text-xs font-black text-slate-900 block leading-tight tracking-tight truncate max-w-[90px]">
+                <span className="text-xs font-black text-slate-900 dark:text-slate-100 block leading-tight tracking-tight truncate max-w-[90px]">
                   {user?.name?.split(' ')[0] || 'Usuario'}
                 </span>
-                <span className="text-[10px] font-bold text-emerald-700 block uppercase leading-none tracking-wider">
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 block uppercase leading-none tracking-wider">
                   {role}
                 </span>
               </div>
-              <span className="sm:hidden text-xs font-black text-slate-900 truncate max-w-[60px]">{user?.name?.split(' ')[0] || 'Yo'}</span>
+              <span className="sm:hidden text-xs font-black text-slate-900 dark:text-slate-100 truncate max-w-[60px]">{user?.name?.split(' ')[0] || 'Yo'}</span>
             </button>
             <button
               onClick={logout}
               title="Cerrar Sesión"
               aria-label="Cerrar Sesión"
-              className="flex items-center gap-1.5 p-2 sm:p-2.5 bg-white text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-slate-200 hover:border-rose-200 shadow-xs shrink-0"
+              className="flex items-center gap-1.5 p-2 sm:p-2.5 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition cursor-pointer border border-slate-200 dark:border-slate-800 shadow-xs shrink-0"
             >
               <LogOut className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline text-xs font-bold">Salir</span>

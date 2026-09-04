@@ -169,11 +169,11 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
   return (
     <>
       {/* Sidebar Desktop Ajustado y Compacto (185px de ancho exacto) */}
-      <aside className="hidden md:flex w-[185px] min-w-[185px] max-w-[185px] bg-white border-r border-slate-200/90 flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] shadow-xs z-30 select-none shrink-0">
+      <aside className="hidden md:flex w-[185px] min-w-[185px] max-w-[185px] bg-white dark:bg-[#0B0F19] border-r border-slate-200/90 dark:border-slate-800/80 flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] shadow-xs z-30 select-none shrink-0 transition-colors">
         <div className="p-2 space-y-3.5 overflow-y-auto">
           {currentSections.map((sec, idx) => (
             <div key={idx} className="space-y-1">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider font-tech px-2 block">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 dark:text-slate-500 tracking-wider font-tech px-2 block">
                 {sec.section}
               </span>
               <nav className="space-y-0.5">
@@ -186,11 +186,11 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
                       onClick={() => handleSelectTab(item.id)}
                       className={`w-full flex items-center space-x-2 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
                         isActive
-                          ? 'bg-slate-900 text-white shadow-xs border border-slate-800 font-bold'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          ? 'bg-slate-900 dark:bg-emerald-500/15 text-white dark:text-emerald-300 shadow-xs border border-slate-800 dark:border-emerald-500/30 font-bold'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
                       }`}
                     >
-                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
+                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
                       <span className="tracking-tight truncate">{item.label}</span>
                     </button>
                   );
@@ -201,11 +201,11 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
         </div>
 
         {/* Footer del Sidebar Desktop Profesional y Limpio */}
-        <div className="p-2 border-t border-slate-100 bg-slate-50/70 space-y-1">
+        <div className="p-2 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-[#0B0F19] space-y-1">
           <button
             type="button"
             onClick={onOpenTerms}
-            className="w-full flex items-center space-x-2 px-2.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-semibold rounded-xl hover:bg-slate-100 transition cursor-pointer group"
+            className="w-full flex items-center space-x-2 px-2.5 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition cursor-pointer group"
           >
             <Scale className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-emerald-600 transition-colors" />
             <span className="text-xs font-semibold tracking-tight truncate">Términos Legales</span>
@@ -213,8 +213,8 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
 
           <div className="flex items-center space-x-2 px-2.5 py-1.5 rounded-xl text-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-slate-500 text-xs font-medium">Rol:</span>
-            <strong className="text-slate-800 font-bold capitalize text-xs truncate">
+            <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">Rol:</span>
+            <strong className="text-slate-800 dark:text-slate-200 font-bold capitalize text-xs truncate">
               {role === 'user' ? 'Conductor' : isPersonal ? 'Personal' : role === 'local' ? 'Admin Local' : 'Admin'}
             </strong>
           </div>

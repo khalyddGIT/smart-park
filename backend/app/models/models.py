@@ -156,6 +156,7 @@ class Reservation(Base):
     total_cost = Column(Float, nullable=False)
     status = Column(String(20), default=ReservationStatusEnum.SCHEDULED.value)
     qr_code = Column(String(255), nullable=False)
+    tolerance_minutes = Column(Integer, default=15, nullable=True)
 
     user = relationship("User", back_populates="reservations")
     parking = relationship("Parking")

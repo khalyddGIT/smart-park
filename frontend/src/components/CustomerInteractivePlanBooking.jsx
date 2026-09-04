@@ -402,7 +402,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const handleExecuteBooking = () => {
     if (!canReserve) return;
     const now = new Date();
-    const start = new Date(now.getTime() + Number(etaMinutes || 0) * 60 * 1000);
+    const chosenTolerance = Number(etaMinutes) || 15;
+    const start = now;
     const end = new Date(start.getTime() + Number(hours || 1) * 60 * 60 * 1000);
 
     const bookingPayload = {
@@ -413,8 +414,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       parkingId: numericParkingId,
       parkingName: parking?.name || 'Smart Park Central',
       hours: Number(hours) || 1,
-      etaMinutes: Number(etaMinutes) || 0,
-      arrivalWindow,
+      etaMinutes: chosenTolerance,
+      arrivalWindow: chosenTolerance,
+      toleranceMinutes: chosenTolerance,
       plate: effectivePlate.split(' ')[0],
       rawCost,
       discountAmount,

@@ -43,10 +43,12 @@ async def _cancel_expired_once() -> int:
         res = await db.execute(select(Reservation).where(Reservation.status == "scheduled"))
         scheduled = res.scalars().all()
         for r in scheduled:
-            # tolerancia por sede (fallback 15)
-            parking = await db.get(Parking, r.parking_id)
-            tol = int(parking.tolerance_minutes) if parking and parking.tolerance_minutes is not None else 15
-            tol = max(1, min(tol, 120))
+            # tolerancia personalizada de la reserva o fallback a sede (default 15)
+            tol = getattr(r, 'tolerance_minutes', None)
+            if tol is None:
+                parking = await db.get(Parking, r.parking_id)
+                tol = int(parking.tolerance_minutes) if parking and parking.tolerance_minutes is not None else 15
+            tol = max(1, min(int(tol), 120))
             deadline = r.start_time + timedelta(minutes=tol)
             # naive utc compare (columnas son naive)
             if deadline.tzinfo is not None:

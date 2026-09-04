@@ -1129,6 +1129,8 @@ export const EstablishmentProvider = ({ children }) => {
     const startISO = bookingData.startTime instanceof Date ? bookingData.startTime.toISOString() : (bookingData.startTime || new Date().toISOString());
     const endISO = bookingData.expiresAt instanceof Date ? bookingData.expiresAt.toISOString() : (bookingData.expiresAt || new Date(Date.now() + (Number(bookingData.hours || 2)) * 60 * 60 * 1000).toISOString());
 
+    const tolMinutes = Number(bookingData.toleranceMinutes || bookingData.arrivalWindow || bookingData.etaMinutes || 15);
+
     try {
       const serverRes = await createReservationApi({
         parking_id: parkingIdNum,
@@ -1136,6 +1138,7 @@ export const EstablishmentProvider = ({ children }) => {
         license_plate: plate,
         start_time: startISO,
         end_time: endISO,
+        tolerance_minutes: tolMinutes,
         payment_method: bookingData.paymentMethod || bookingData.payment_method || null,
         pay_now: !!bookingData.payNow
       });

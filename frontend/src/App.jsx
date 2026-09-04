@@ -176,7 +176,8 @@ export const App = () => {
         hours: bookingData.hours,
         rate: selectedParking.rate,
         startTime: bookingData.startTime,
-        expiresAt: bookingData.expiresAt
+        expiresAt: bookingData.expiresAt,
+        toleranceMinutes: bookingData.toleranceMinutes || bookingData.arrivalWindow || bookingData.etaMinutes || 15
       });
       if (!newRes || newRes.error) {
         const msg = newRes?.error || bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
@@ -187,8 +188,9 @@ export const App = () => {
 
       const enriched = {
         ...newRes,
-        etaMinutes: bookingData.etaMinutes ?? 15,
-        arrivalWindow: bookingData.arrivalWindow ?? 15,
+        etaMinutes: bookingData.etaMinutes ?? newRes.toleranceMinutes ?? 15,
+        arrivalWindow: bookingData.arrivalWindow ?? newRes.toleranceMinutes ?? 15,
+        toleranceMinutes: bookingData.toleranceMinutes ?? newRes.toleranceMinutes ?? 15,
         payNow: !!bookingData.payNow,
         paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'Prepago asegurado' : 'Pago en garita al salir')
       };

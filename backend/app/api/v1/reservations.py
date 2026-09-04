@@ -36,19 +36,34 @@ from sqlalchemy.orm import selectinload
 
 def _format_reservation_response(r: Reservation) -> ReservationResponse:
     resp = ReservationResponse.model_validate(r)
-    user = getattr(r, "user", None)
-    if user:
-        resp.customer_name = user.full_name
-        resp.customer_phone = user.phone
-        resp.customer_email = user.email
-    parking = getattr(r, "parking", None)
-    if parking:
-        resp.parking_name = parking.name
-        if parking.tolerance_minutes is not None:
-            resp.tolerance_minutes = parking.tolerance_minutes
-    slot = getattr(r, "slot", None)
-    if slot:
-        resp.slot_code = slot.code
+    try:
+        user = getattr(r, "user", None)
+        if user:
+            resp.customer_name = user.full_name
+            resp.customer_phone = user.phone
+            resp.customer_email = user.email
+    except Exception:
+        pass
+
+    try:
+        parking = getattr(r, "parking", None)
+        if parking:
+            resp.parking_name = parking.name
+            if resp.tolerance_minutes is None and parking.tolerance_minutes is not None:
+                resp.tolerance_minutes = parking.tolerance_minutes
+    except Exception:
+        pass
+
+    try:
+        slot = getattr(r, "slot", None)
+        if slot:
+            resp.slot_code = slot.code
+    except Exception:
+        pass
+
+    if resp.tolerance_minutes is None:
+        resp.tolerance_minutes = 15
+
     return resp
 
 @router.get("", response_model=List[ReservationResponse])
@@ -59,8 +74,14 @@ async def list_reservations(
     current_user: User = Depends(get_current_user)
 ):
     # Local/platform ven todas de su sede (para garita y admin), conductor solo las suyas
+    options_load = (
+        selectinload(Reservation.user),
+        selectinload(Reservation.parking),
+        selectinload(Reservation.slot)
+    )
+
     if current_user.role in ("local", "platform"):
-        stmt = select(Reservation).options(selectinload(Reservation.user)).order_by(Reservation.id.desc())
+        stmt = select(Reservation).options(*options_load).order_by(Reservation.id.desc())
         if parking_id:
             stmt = stmt.where(Reservation.parking_id == parking_id)
         elif current_user.role == "local":
@@ -78,7 +99,7 @@ async def list_reservations(
         return [_format_reservation_response(r) for r in result.scalars().all()]
 
     # Fallback conductor: solo suyas
-    stmt = select(Reservation).options(selectinload(Reservation.user)).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc())
+    stmt = select(Reservation).options(*options_load).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc())
     if parking_id:
         stmt = stmt.where(Reservation.parking_id == parking_id)
     if status_filter:
@@ -89,7 +110,16 @@ async def list_reservations(
 
 @router.get("/my-reservations", response_model=List[ReservationResponse])
 async def get_my_reservations(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    result = await db.execute(select(Reservation).options(selectinload(Reservation.user)).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc()))
+    result = await db.execute(
+        select(Reservation)
+        .options(
+            selectinload(Reservation.user),
+            selectinload(Reservation.parking),
+            selectinload(Reservation.slot)
+        )
+        .where(Reservation.user_id == current_user.id)
+        .order_by(Reservation.id.desc())
+    )
     return [_format_reservation_response(r) for r in result.scalars().all()]
 
 @router.get("/verify/{code}", tags=["Reservas & Pases QR"])
@@ -119,14 +149,22 @@ async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
 
 @router.get("/{reservation_id}", response_model=ReservationResponse)
 async def get_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
+    result = await db.execute(
+        select(Reservation)
+        .options(
+            selectinload(Reservation.user),
+            selectinload(Reservation.parking),
+            selectinload(Reservation.slot)
+        )
+        .where(Reservation.id == reservation_id)
+    )
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
     # IDOR: solo el dueño de la reserva o un administrador puede consultarla
     if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
         raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
-    return ReservationResponse.model_validate(reservation)
+    return _format_reservation_response(reservation)
 
 @router.post("", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
 async def create_reservation(
@@ -209,6 +247,7 @@ async def create_reservation(
     duration = max(1.0, (_end - _start).total_seconds() / 3600.0)
     total_cost = round(duration * parking.hourly_rate, 2)
     reservation_code = f"RSV-{uuid.uuid4().hex[:6].upper()}"
+    tol_min = int(res_in.tolerance_minutes or (parking.tolerance_minutes if parking and parking.tolerance_minutes else 15))
 
     db_res = Reservation(
         code=reservation_code,
@@ -220,7 +259,8 @@ async def create_reservation(
         end_time=_end,
         total_cost=total_cost,
         status="scheduled",
-        qr_code=f"SMARTPARK-{reservation_code}-{plate_clean}"
+        qr_code=f"SMARTPARK-{reservation_code}-{plate_clean}",
+        tolerance_minutes=tol_min
     )
 
     slot.status = "reserved"
@@ -265,8 +305,7 @@ async def create_reservation(
     resp.customer_email = current_user.email
     resp.parking_name = parking.name
     resp.slot_code = slot.code
-    if parking.tolerance_minutes is not None:
-        resp.tolerance_minutes = parking.tolerance_minutes
+    resp.tolerance_minutes = tol_min
     return resp
 
 @router.put("/{reservation_id}/cancel", response_model=ReservationResponse)
@@ -295,7 +334,7 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
     except Exception:
         pass
     await db.refresh(reservation)
-    return ReservationResponse.model_validate(reservation)
+    return _format_reservation_response(reservation)
 
 @router.put("/{reservation_id}/extend", response_model=ReservationResponse)
 async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -320,7 +359,7 @@ async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncS
     except Exception:
         pass
     await db.refresh(reservation)
-    return ReservationResponse.model_validate(reservation)
+    return _format_reservation_response(reservation)
 
 @router.put("/{reservation_id}/check-in", response_model=ReservationResponse)
 async def check_in_reservation(
@@ -382,7 +421,7 @@ async def check_in_reservation(
     except Exception:
         pass
     await db.refresh(reservation)
-    return ReservationResponse.model_validate(reservation)
+    return _format_reservation_response(reservation)
 
 @router.put("/{reservation_id}/check-out", response_model=ReservationResponse)
 async def check_out_reservation(
@@ -424,7 +463,7 @@ async def check_out_reservation(
     except Exception:
         pass
     await db.refresh(reservation)
-    return ReservationResponse.model_validate(reservation)
+    return _format_reservation_response(reservation)
 
 @router.delete("/{reservation_id}", status_code=status.HTTP_200_OK)
 async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):

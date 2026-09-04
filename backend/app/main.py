@@ -64,6 +64,7 @@ async def startup_db():
                 ("vehiculos", "image_url", "TEXT"),
                 ("vehiculos", "year", "VARCHAR(10) DEFAULT '2023'"),
                 ("vehiculos", "notes", "TEXT"),
+                ("reservas", "tolerance_minutes", "INTEGER DEFAULT 15"),
             ]
             if str(engine.url).startswith("sqlite"):
                 for tbl, col, decl in lite_adds:

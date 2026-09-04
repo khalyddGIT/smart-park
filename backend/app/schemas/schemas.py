@@ -314,6 +314,7 @@ class ReservationCreate(BaseModel):
     end_time: datetime
     payment_method: Optional[str] = None
     pay_now: Optional[bool] = False
+    tolerance_minutes: Optional[int] = 15
 
 class ReservationUpdate(BaseModel):
     start_time: Optional[datetime] = None

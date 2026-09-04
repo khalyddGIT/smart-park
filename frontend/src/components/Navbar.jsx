@@ -15,10 +15,13 @@ import {
   X,
   ChevronRight,
   Building2,
-  LogIn
+  LogIn,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { KeypadModal } from './KeypadModal';
 import { BrandLogo } from './BrandLogo';
+import { useTheme } from '../context/ThemeContext';
 
 const getIconForType = (type) => {
   switch (type) {
@@ -48,6 +51,7 @@ const getColorForType = (type) => {
 
 export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) => {
   const { role, setRole, user, pinVerified, logout } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
   const { 
     notifications, 
     unreadCount, 
@@ -117,6 +121,18 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
         {!user ? (
           <div className="flex items-center space-x-2">
             <button
+              onClick={toggleTheme}
+              title={`Tema actual: ${theme}. Clic para alternar modo claro/oscuro`}
+              aria-label="Alternar modo visual"
+              className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition shadow-xs cursor-pointer flex items-center justify-center shrink-0"
+            >
+              {isDark ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-600 hover:text-indigo-600 transition" />
+              )}
+            </button>
+            <button
               onClick={() => onOpenAuthModal && onOpenAuthModal('login')}
               className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-md shadow-slate-900/20 cursor-pointer"
             >
@@ -126,6 +142,18 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
           </div>
         ) : (
           <div className="flex items-center gap-2 sm:gap-2.5">
+            <button
+              onClick={toggleTheme}
+              title={`Tema actual: ${theme}. Clic para alternar modo claro/oscuro`}
+              aria-label="Alternar modo visual"
+              className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition shadow-xs cursor-pointer flex items-center justify-center shrink-0"
+            >
+              {isDark ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-600 hover:text-indigo-600 transition" />
+              )}
+            </button>
             
 
 

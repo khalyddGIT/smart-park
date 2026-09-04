@@ -101,6 +101,96 @@
   }
 }
 
+/* ── Theming Engine Tokens ── */
+:root {
+  --bg-app: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-subtle: #F1F5F9;
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --border-card: #E2E8F0;
+  --accent-color: #059669;
+}
+
+[data-theme="dark"], .dark {
+  --bg-app: #0B0F19;
+  --bg-card: #151D2F;
+  --bg-subtle: #1E293B;
+  --text-main: #F8FAFC;
+  --text-muted: #94A3B8;
+  --border-card: #1E293B;
+  --accent-color: #10B981;
+}
+
+[data-theme="midnight"] {
+  --bg-app: #070D1E;
+  --bg-card: #0D1B3E;
+  --bg-subtle: #132759;
+  --text-main: #F0F6FC;
+  --text-muted: #8BA2C4;
+  --border-card: #1E3568;
+  --accent-color: #38BDF8;
+}
+
+[data-theme="high-contrast"] {
+  --bg-app: #000000;
+  --bg-card: #0D0D0D;
+  --bg-subtle: #171717;
+  --text-main: #FFFFFF;
+  --text-muted: #D4D4D4;
+  --border-card: #404040;
+  --accent-color: #22C55E;
+}
+
+/* Aplicación global de temas oscuros a componentes Tailwind */
+html.dark body, 
+[data-theme="dark"] body, 
+[data-theme="midnight"] body, 
+[data-theme="high-contrast"] body {
+  background-color: var(--bg-app) !important;
+  color: var(--text-main) !important;
+}
+
+.dark .bg-white,
+[data-theme="dark"] .bg-white,
+[data-theme="midnight"] .bg-white,
+[data-theme="high-contrast"] .bg-white {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main);
+}
+
+.dark .bg-slate-50,
+.dark .bg-slate-50\/60,
+.dark .bg-slate-100,
+[data-theme="dark"] .bg-slate-50,
+[data-theme="midnight"] .bg-slate-50,
+[data-theme="high-contrast"] .bg-slate-50 {
+  background-color: var(--bg-subtle) !important;
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800,
+[data-theme="dark"] .text-slate-900,
+[data-theme="midnight"] .text-slate-900,
+[data-theme="high-contrast"] .text-slate-900 {
+  color: var(--text-main) !important;
+}
+
+.dark .text-slate-600,
+.dark .text-slate-500,
+[data-theme="dark"] .text-slate-500,
+[data-theme="midnight"] .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+.dark .border-slate-200,
+.dark .border-slate-100,
+[data-theme="dark"] .border-slate-200,
+[data-theme="midnight"] .border-slate-200,
+[data-theme="high-contrast"] .border-slate-200 {
+  border-color: var(--border-card) !important;
+}
+
 /* ── Tipografías de Clase ── */
 .font-display {
   font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;

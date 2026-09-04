@@ -387,6 +387,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
   const arrivalWindow = Math.max(5, Math.min(60, Number(parking?.tolerance ?? parking?.tolerance_minutes ?? 15) || 15));
   const effectivePlate = (useCustomPlate ? customPlateInput : selectedPlate).toUpperCase().trim();
+  const PLATE_REGEX = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/;
+  const isPlateValid = PLATE_REGEX.test(effectivePlate);
+  const isFacturaValid = receiptType !== 'factura' || (/^(10|20)[0-9]{9}$/.test(rucNumber.trim()) && businessName.trim().length >= 3);
 
   const baseHourlyRate = parking?.rate || 5.0;
   const rawCost = baseHourlyRate * (Number(hours) || 1);
@@ -397,7 +400,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const subtotalBase = finalTotalCost / 1.18;
   const igvAmount = finalTotalCost - subtotalBase;
 
-  const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && !!effectivePlate;
+  const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && isPlateValid && isFacturaValid;
 
   const handleExecuteBooking = () => {
     if (!canReserve) return;
@@ -836,14 +839,35 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   ))}
                 </select>
               ) : (
-                <input
-                  type="text"
-                  value={customPlateInput}
-                  onChange={(e) => setCustomPlateInput(e.target.value.toUpperCase())}
-                  placeholder="ABC-123"
-                  maxLength={10}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-mono font-bold tracking-wider uppercase focus:outline-none"
-                />
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    value={customPlateInput}
+                    onChange={(e) => {
+                      let clean = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+                      if (!clean.includes('-') && clean.length > 3) {
+                        clean = clean.slice(0, 3) + '-' + clean.slice(3);
+                      }
+                      setCustomPlateInput(clean.slice(0, 9));
+                    }}
+                    placeholder="ABC-123 o 1234-5A"
+                    maxLength={9}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-mono font-bold tracking-wider uppercase focus:outline-none"
+                  />
+                  {customPlateInput.length > 0 && !isPlateValid && (
+                    <p className="text-[10px] text-amber-400 font-mono flex items-center gap-1">
+                      <span>⚠️</span>
+                      {!customPlateInput.includes('-')
+                        ? 'La placa debe incluir un guión obligatorio (-), ej: ABC-123'
+                        : 'Formato de placa inválido (ej: ABC-123 o 1234-5A)'}
+                    </p>
+                  )}
+                  {customPlateInput.length > 0 && isPlateValid && (
+                    <p className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                      <span>✓</span> Placa con guión válida
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
@@ -893,18 +917,24 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   <input
                     type="text"
                     value={rucNumber}
-                    onChange={(e) => setRucNumber(e.target.value)}
-                    placeholder="RUC (11 dígitos)"
+                    onChange={(e) => setRucNumber(e.target.value.replace(/[^0-9]/g, '').slice(0, 11))}
+                    placeholder="RUC (11 dígitos, inicia con 10 o 20)"
                     maxLength={11}
                     className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2 py-1 text-xs font-mono"
                   />
+                  {rucNumber.length > 0 && !/^(10|20)[0-9]{9}$/.test(rucNumber) && (
+                    <p className="text-[10px] text-amber-400">RUC debe tener 11 dígitos y comenzar con 10 o 20.</p>
+                  )}
                   <input
                     type="text"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Razón Social"
+                    placeholder="Razón Social (mín. 3 caracteres)"
                     className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2 py-1 text-xs"
                   />
+                  {businessName.length > 0 && businessName.trim().length < 3 && (
+                    <p className="text-[10px] text-amber-400">Razón social debe tener al menos 3 caracteres.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -965,6 +995,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             </Button>
             {!canReserve && !effectivePlate && (
               <p className="text-[11px] text-amber-400 text-center mt-1">Ingresa o selecciona una placa para continuar.</p>
+            )}
+            {!canReserve && effectivePlate && !isPlateValid && (
+              <p className="text-[11px] text-rose-400 text-center mt-1 font-mono">⚠️ La placa debe incluir un guión obligatorio (ej: ABC-123).</p>
+            )}
+            {!canReserve && isPlateValid && !isFacturaValid && (
+              <p className="text-[11px] text-rose-400 text-center mt-1">⚠️ Completa los datos de la Factura (RUC válido de 11 dígitos y Razón Social).</p>
             )}
           </div>
         </div>

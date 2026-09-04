@@ -337,8 +337,8 @@ export const VehiclesModule = () => {
     e.preventDefault();
     if (!formData.license_plate) return;
     const plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
-    const plateOk = /^[A-Z0-9]{2,4}-?[A-Z0-9]{2,4}$/i.test(plateClean);
-    if (!plateOk) { showToast('Ingresa una placa válida (ej: ABC-123, ABC123, A1B-234 o 1234-AB)'); return; }
+    const plateOk = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i.test(plateClean);
+    if (!plateOk) { showToast('La placa debe incluir un guión obligatorio (ej: ABC-123 o 1234-AB)'); return; }
     let img = formData.imageUrl || getDefaultCarImage(formData.vehicle_type);
     const plate = formData.license_plate.toUpperCase().trim();
     
@@ -402,8 +402,8 @@ export const VehiclesModule = () => {
     if (e && e.preventDefault) e.preventDefault();
     if (!selectedVehicle) return;
     const plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
-    const plateOk = /^[A-Z0-9]{2,4}-?[A-Z0-9]{2,4}$/i.test(plateClean);
-    if (!plateOk) { showToast('Ingresa una placa válida (ej: ABC-123, ABC123, A1B-234 o 1234-AB)'); return; }
+    const plateOk = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i.test(plateClean);
+    if (!plateOk) { showToast('La placa debe incluir un guión obligatorio (ej: ABC-123 o 1234-AB)'); return; }
 
     const plate = formData.license_plate.toUpperCase().trim();
     const token = getAccessToken();
@@ -499,12 +499,24 @@ export const VehiclesModule = () => {
         <label className="block text-xs font-bold text-slate-700 mb-1">Placa Vehicular *</label>
         <Input
           type="text"
-          placeholder="ABC-123"
+          placeholder="ABC-123 o 1234-5A"
+          maxLength={9}
           value={formData.license_plate}
-          onChange={(e) => setFormData({ ...formData, license_plate: e.target.value.toUpperCase() })}
+          onChange={(e) => {
+            let val = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+            if (!val.includes('-') && val.length > 3) {
+              val = val.slice(0, 3) + '-' + val.slice(3);
+            }
+            setFormData({ ...formData, license_plate: val.slice(0, 9) });
+          }}
           className="font-mono tracking-widest font-black text-center text-sm uppercase h-10 bg-white border-slate-200"
           required
         />
+        {formData.license_plate && !/^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/.test(formData.license_plate.trim()) && (
+          <p className="text-[11px] text-amber-600 font-medium mt-1 text-center">
+            ⚠️ La placa debe incluir obligatoriamente un guión (-) (ej: ABC-123 o 1234-5A)
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

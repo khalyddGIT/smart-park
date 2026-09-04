@@ -3,10 +3,10 @@ from typing import Optional, List, Any
 from datetime import datetime, timezone
 import re
 
-# Validadores peruanos (placas de autos/motos con o sin guión, alfanuméricas)
+# Validadores peruanos (placas de autos/motos estrictamente con guión '-', alfanuméricas)
 DNI_RE = re.compile(r'^[0-9]{8}$')
 PHONE_RE = re.compile(r'^(\+51\s?)?9[0-9]{8}$')
-PLATE_RE = re.compile(r'^[A-Z0-9]{2,4}[- ]?[A-Z0-9]{2,4}$', re.IGNORECASE)
+PLATE_RE = re.compile(r'^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$', re.IGNORECASE)
 
 def _clean_phone(v: str) -> str:
     if v is None: return v
@@ -15,11 +15,21 @@ def _clean_phone(v: str) -> str:
     if v.startswith('51'): v = v[2:] if len(v)==11 and v.startswith('51') else v
     return v
 
+def validate_license_plate_format(v: Any) -> str:
+    if not v or not isinstance(v, str):
+        raise ValueError("La placa es obligatoria.")
+    v_clean = v.strip().upper().replace(' ', '')
+    if '-' not in v_clean:
+        raise ValueError("La placa debe incluir obligatoriamente un guión (-), ej: ABC-123 o 1234-5A.")
+    if not PLATE_RE.match(v_clean):
+        raise ValueError("Formato de placa inválido. Debe contener entre 2 y 4 caracteres alfanuméricos, un guión (-) y entre 2 y 4 caracteres alfanuméricos (ej: ABC-123 o 1234-5A).")
+    return v_clean
+
 # ==========================================
 # 1. SCHEMAS DE USUARIOS & ROLES
 # ==========================================
 class UserBase(BaseModel):
-    full_name: str
+    full_name: str = Field(min_length=2, max_length=150)
     email: EmailStr
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
@@ -78,19 +88,27 @@ class VehicleBase(BaseModel):
     license_plate: str
     vehicle_type: str = "auto"
     brand: Optional[str] = None
-
-    @field_validator('license_plate')
-    @classmethod
-    def validate_plate(cls, v):
-        v = v.strip().upper().replace(' ', '')
-        if not PLATE_RE.match(v):
-            raise ValueError('Placa Perú: ABC-123 (auto) o 1234-AB (moto)')
-        return v
     model: Optional[str] = None
     color: Optional[str] = None
     year: Optional[str] = "2023"
     notes: Optional[str] = None
     image_url: Optional[str] = None
+
+    @field_validator('license_plate')
+    @classmethod
+    def validate_plate(cls, v):
+        return validate_license_plate_format(v)
+
+    @field_validator('vehicle_type')
+    @classmethod
+    def validate_vehicle_type(cls, v):
+        if v is not None:
+            v_clean = v.strip().lower()
+            valid_types = {'auto', 'car', 'moto', 'motorcycle', 'camioneta', 'truck', 'camion', 'van', 'bicicleta', 'otro'}
+            if v_clean not in valid_types:
+                raise ValueError(f"Tipo de vehículo inválido: {v}. Tipos permitidos: {', '.join(sorted(valid_types))}")
+            return v_clean
+        return v
 
 class VehicleCreate(VehicleBase):
     user_id: Optional[int] = 1
@@ -105,6 +123,24 @@ class VehicleUpdate(BaseModel):
     notes: Optional[str] = None
     image_url: Optional[str] = None
 
+    @field_validator('license_plate')
+    @classmethod
+    def validate_plate(cls, v):
+        if v is None or v == '':
+            return v
+        return validate_license_plate_format(v)
+
+    @field_validator('vehicle_type')
+    @classmethod
+    def validate_vehicle_type(cls, v):
+        if v is not None and v != '':
+            v_clean = v.strip().lower()
+            valid_types = {'auto', 'car', 'moto', 'motorcycle', 'camioneta', 'truck', 'camion', 'van', 'bicicleta', 'otro'}
+            if v_clean not in valid_types:
+                raise ValueError(f"Tipo de vehículo inválido: {v}. Tipos permitidos: {', '.join(sorted(valid_types))}")
+            return v_clean
+        return v
+
 class VehicleResponse(VehicleBase):
     id: int
     user_id: int
@@ -115,15 +151,15 @@ class VehicleResponse(VehicleBase):
 # 3. SCHEMAS DE ESTACIONAMIENTOS
 # ==========================================
 class ParkingBase(BaseModel):
-    name: str
-    address: str
-    city: str
+    name: str = Field(min_length=2, max_length=150)
+    address: str = Field(min_length=2, max_length=255)
+    city: str = Field(min_length=2, max_length=100)
     latitude: float = -12.089
     longitude: float = -77.032
-    hourly_rate: float = 8.50
-    tolerance_minutes: int = 15
+    hourly_rate: float = Field(default=8.50, gt=0)
+    tolerance_minutes: int = Field(default=15, ge=5, le=120)
     status: Optional[str] = "active"
-    total_capacity: int = 30
+    total_capacity: int = Field(default=30, gt=0)
     image_url: Optional[str] = None
     description: Optional[str] = None
     phone: Optional[str] = None
@@ -196,7 +232,7 @@ class CameraDeviceResponse(CameraDeviceBase):
 # 4. SCHEMAS DE CAJONES (SLOTS) & PLANO CAD
 # ==========================================
 class SlotBase(BaseModel):
-    code: str
+    code: str = Field(min_length=1, max_length=20)
     floor_level: Optional[str] = "Piso 1"
     slot_type: Optional[str] = "auto"
     status: Optional[str] = "free"
@@ -207,7 +243,7 @@ class SlotBase(BaseModel):
     rotation: int = 0
 
 class SlotCreate(SlotBase):
-    parking_id: int
+    parking_id: int = Field(gt=0)
 
 class SlotUpdate(BaseModel):
     code: Optional[str] = None
@@ -237,7 +273,7 @@ class FloorPlanElementBase(BaseModel):
     properties_json: Optional[str] = None
 
 class FloorPlanElementCreate(FloorPlanElementBase):
-    parking_id: int
+    parking_id: int = Field(gt=0)
 
 class FloorPlanElementResponse(FloorPlanElementBase):
     id: int
@@ -254,9 +290,9 @@ class FloorPlanSyncRequest(BaseModel):
 # 5. SCHEMAS DE PERSONAL / STAFF
 # ==========================================
 class StaffBase(BaseModel):
-    full_name: str
+    full_name: str = Field(min_length=2, max_length=150)
     dni: str
-    position: str
+    position: str = Field(min_length=2, max_length=50)
     shift: Optional[str] = "Mañana"
     status: Optional[str] = "active"
     email: Optional[str] = None
@@ -272,8 +308,15 @@ class StaffBase(BaseModel):
             raise ValueError('DNI Perú: 8 dígitos numéricos, ej 44556677')
         return v.strip()
 
+    @field_validator('full_name')
+    @classmethod
+    def validate_full_name(cls, v):
+        if not v or len(v.strip()) < 2:
+            raise ValueError('El nombre completo debe tener al menos 2 caracteres.')
+        return v.strip()
+
 class StaffCreate(StaffBase):
-    parking_id: int
+    parking_id: int = Field(gt=0)
     password: Optional[str] = None
 
 class StaffUpdate(BaseModel):
@@ -307,14 +350,27 @@ class StaffResponse(BaseModel):
 # 6. SCHEMAS DE RESERVAS
 # ==========================================
 class ReservationCreate(BaseModel):
-    parking_id: int
-    slot_id: int
+    parking_id: int = Field(gt=0, description="ID del estacionamiento debe ser mayor a 0")
+    slot_id: int = Field(gt=0, description="ID del cajón debe ser mayor a 0")
     license_plate: str
     start_time: datetime
     end_time: datetime
     payment_method: Optional[str] = None
     pay_now: Optional[bool] = False
-    tolerance_minutes: Optional[int] = 15
+    tolerance_minutes: Optional[int] = Field(default=15, ge=5, le=120, description="Tolerancia entre 5 y 120 minutos")
+
+    @field_validator('license_plate')
+    @classmethod
+    def validate_plate(cls, v):
+        return validate_license_plate_format(v)
+
+    @field_validator('end_time')
+    @classmethod
+    def validate_end_time(cls, v, info):
+        start_time = info.data.get('start_time')
+        if start_time and v <= start_time:
+            raise ValueError("La fecha y hora de fin debe ser posterior a la fecha y hora de inicio.")
+        return v
 
 class ReservationUpdate(BaseModel):
     start_time: Optional[datetime] = None
@@ -322,6 +378,14 @@ class ReservationUpdate(BaseModel):
     status: Optional[str] = None
     actual_entry: Optional[datetime] = None
     actual_exit: Optional[datetime] = None
+
+    @field_validator('end_time')
+    @classmethod
+    def validate_end_time(cls, v, info):
+        start_time = info.data.get('start_time')
+        if start_time and v and v <= start_time:
+            raise ValueError("La fecha y hora de fin debe ser posterior a la fecha y hora de inicio.")
+        return v
 
 class ReservationResponse(BaseModel):
     id: int
@@ -359,12 +423,12 @@ class ReservationResponse(BaseModel):
 # 7. SCHEMAS DE RESEÑAS & CALIFICACIONES
 # ==========================================
 class ReviewCreate(BaseModel):
-    parking_id: int
-    rating: int = 5
-    comment: str
+    parking_id: int = Field(gt=0)
+    rating: int = Field(default=5, ge=1, le=5)
+    comment: str = Field(min_length=3, max_length=1000)
 
 class ReviewReply(BaseModel):
-    response: str
+    response: str = Field(min_length=2, max_length=1000)
 
 class ReviewResponse(BaseModel):
     id: int
@@ -382,13 +446,13 @@ class ReviewResponse(BaseModel):
 # 8. SCHEMAS DE INCIDENCIAS & ASISTENCIA
 # ==========================================
 class IncidentCreate(BaseModel):
-    parking_id: int
-    category: str = "general"
-    description: str = Field(min_length=5)
+    parking_id: int = Field(gt=0)
+    category: str = Field(default="general", min_length=2, max_length=50)
+    description: str = Field(min_length=5, max_length=2000)
     photo_url: Optional[str] = None
 
 class IncidentResolve(BaseModel):
-    resolution_note: str
+    resolution_note: str = Field(min_length=3, max_length=1000)
 
 class IncidentResponse(BaseModel):
     id: int
@@ -409,6 +473,18 @@ class IncidentResponse(BaseModel):
 # 9. SCHEMAS DE ANPR
 # ==========================================
 class ANPRScanRequest(BaseModel):
-    parking_id: int
+    parking_id: int = Field(gt=0)
     license_plate: str
     gate_type: str = "entry" # entry o exit
+
+    @field_validator('license_plate')
+    @classmethod
+    def validate_plate(cls, v):
+        return validate_license_plate_format(v)
+
+    @field_validator('gate_type')
+    @classmethod
+    def validate_gate_type(cls, v):
+        if v not in ('entry', 'exit'):
+            raise ValueError("gate_type debe ser 'entry' o 'exit'")
+        return v

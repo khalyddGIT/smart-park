@@ -3,8 +3,7 @@ import {
   MAPBOX_TOKEN, 
   AYACUCHO_CENTER, 
   DEFAULT_PARKING_COORDS, 
-  MAPBOX_STYLES,
-  cleanPOIsFromMap 
+  MAPBOX_STYLES
 } from './mapConfig';
 import { MapRoutesManager } from './MapRoutes';
 import { 
@@ -79,12 +78,7 @@ export const MapContainer3D = ({
 
     // Inicializar mapa estándar
     map.on('style.load', () => {
-      cleanPOIsFromMap(map);
       routesManagerRef.current = new MapRoutesManager(map);
-    });
-
-    map.on('idle', () => {
-      cleanPOIsFromMap(map);
     });
 
     return () => {
@@ -277,7 +271,7 @@ export const MapContainer3D = ({
   }, [filteredParkings, selectedParkingId, onSelectParking]);
 
   return (
-    <div className="relative isolate z-0 w-full h-[460px] sm:h-[520px] bg-slate-900 overflow-hidden rounded-xl">
+    <div className="relative isolate z-0 w-full h-[460px] sm:h-[520px] bg-slate-100 overflow-hidden rounded-xl">
       
       {/* Lienzo Normal Mapbox */}
       <div ref={mapContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />

@@ -102,12 +102,12 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
         return;
       }
 
-      const sec = Math.floor(difference / 1000);
-      setSecondsRemaining(sec);
+      const totalSec = Math.max(0, Math.floor(difference / 1000));
+      setSecondsRemaining(totalSec);
 
-      const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const m = Math.floor((difference % (1000 * 60)) / (1000 * 60));
-      const s = Math.floor((difference % (1000 * 60)) / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
 
       setTimeLeft(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
     };

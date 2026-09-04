@@ -150,12 +150,34 @@ Se cuenta con una suite automatizada de pruebas unitarias y de integración para
 
 ---
 
-## 8. 📦 Historial de Commits en GitHub
+## 9. 🔐 Autenticación Segura con Cookies HttpOnly y Compatibilidad Dual
+
+Se migró la arquitectura de autenticación hacia **Cookies HttpOnly**, blindando el sistema contra ataques de robo de tokens (XSS) y manteniendo **compatibilidad dual** con Bearer tokens:
+
+- **Cookies HttpOnly Seguras**:
+  - En los endpoints `/auth/register`, `/auth/login` y `/auth/google`, el backend emite automáticamente una cookie segura `access_token` con atributos `HttpOnly=True`, `SameSite=Lax`, `Path=/`, `Max-Age=7 días`.
+  - El flag `Secure=True` se activa automáticamente en entornos de producción (`https`), permitiendo desarrollo fluido en `http://localhost`.
+  - Al no ser accesible por JavaScript mediante `document.cookie`, scripts maliciosos inyectados no pueden sustraer las credenciales de la sesión.
+- **Soporte Dual en Backend (`get_current_user`)**:
+  - La dependencia central de seguridad ahora inspecciona en primer orden el encabezado `Authorization: Bearer <token>` y, en su defecto, la cookie `access_token`.
+  - Permite que las pruebas automatizadas (Pytest), aplicaciones móviles y clientes de API sigan funcionando sin requerir modificaciones.
+- **Logout Completo e Invalidación de Sesión**:
+  - El endpoint `/auth/logout` revoca el token en Redis (lista negra) y emite un `Set-Cookie` de expiración (`Max-Age=0`), instruyendo al navegador a eliminar la cookie de inmediato.
+- **Integración Transparente en Frontend**:
+  - Se configuró `withCredentials: true` en la instancia central de Axios (`api.js`), asegurando el envío y recepción automática de cookies de sesión en todas las peticiones.
+  - `AuthContext.jsx` verifica la sesión persistente en el montaje mediante `GET /auth/me`, restaurando la sesión automáticamente a partir de la cookie de forma instantánea.
+- **Pruebas Automatizadas de Cookies**:
+  - Se añadieron pruebas dedicadas en [`backend/app/tests/test_cookie_auth.py`](backend/app/tests/test_cookie_auth.py) que validan el registro, login, acceso a `/auth/me` exclusivamente con cookies, acceso con Bearer, y borrado en logout.
+
+---
+
+## 10. 📦 Historial de Commits en GitHub
 
 Todos los cambios han sido compilados y subidos satisfactoriamente a la rama `master`:
 
 | Commit | Descripción |
 | :--- | :--- |
+| [`0bb81f0`](https://github.com/khalyddGIT/smart-park/commit/0bb81f0) | `docs: agregar documento de consolidacion de avances y correcciones del proyecto` |
 | [`0474946`](https://github.com/khalyddGIT/smart-park/commit/0474946) | `fix(reservas): corregir flujo de pase y ticket en reservas canceladas, detener contador y deshabilitar QR` |
 | [`807dda3`](https://github.com/khalyddGIT/smart-park/commit/807dda3) | `fix(reservas): corregir formato de tiempo, fechas y tolerancia en vista de reservas del usuario` |
 | [`2619d1e`](https://github.com/khalyddGIT/smart-park/commit/2619d1e) | `fix(core): corregir inconsistencias en validaciones de login, reserva, cooldown y vehiculos` |

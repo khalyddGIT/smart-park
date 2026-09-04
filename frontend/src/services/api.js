@@ -18,9 +18,10 @@ const API_BASE = getApiBase();
 const api = axios.create({
   baseURL: `${API_BASE}/api/v1`,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // Envía y recibe cookies HttpOnly automáticamente
 });
 
-// Adjuntar JWT si existe
+// Adjuntar JWT si existe (compatibilidad dual)
 api.interceptors.request.use((config) => {
   try {
     const token = localStorage.getItem('smart_park_access_token');
@@ -37,12 +38,18 @@ export const setAccessToken = (token) => {
 };
 
 export const getAccessToken = () => {
-  try { return localStorage.getItem('smart_park_access_token'); } catch { return null; }
+  try {
+    return localStorage.getItem('smart_park_access_token') || 
+           (localStorage.getItem('smart_park_user_session') ? 'cookie_session' : null);
+  } catch { 
+    return null; 
+  }
 };
 
 // Auth
 export const register = (data) => api.post('/auth/register', data).then(r => r.data);
 export const login = (data) => api.post('/auth/login', data).then(r => r.data);
+export const logoutApi = () => api.post('/auth/logout').then(r => r.data);
 export const googleAuth = (data) => api.post('/auth/google', data).then(r => r.data);
 export const verifyPinApi = (pin) => api.post('/auth/verify-pin', { pin }).then(r => r.data);
 

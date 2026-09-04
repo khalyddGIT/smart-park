@@ -33,10 +33,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Validar sesión contra servidor (fuente de verdad para rol y is_active)
+  // Validar sesión contra servidor (fuente de verdad para rol y usuario vía cookies o token)
   useEffect(() => {
-    const token = getAccessToken();
-    if (!token) return;
     api.get('/auth/me')
       .then(res => {
         const serverUser = res.data;
@@ -46,22 +44,29 @@ export const AuthProvider = ({ children }) => {
           logout();
           return;
         }
-        // Corregir spoof de localStorage: si rol o id no coinciden con servidor, sobrescribir
-        if (!user || user.role !== serverRole || user.id !== serverUser.id || (serverUser.avatar_url && user.avatar !== serverUser.avatar_url)) {
-          const corrected = user 
-            ? { ...user, id: serverUser.id, role: serverRole, name: serverUser.full_name || user.name, email: serverUser.email, avatar: serverUser.avatar_url || user.avatar || null } 
-            : { id: serverUser.id, name: serverUser.full_name, email: serverUser.email, phone: serverUser.phone, avatar: serverUser.avatar_url || null, role: serverRole, isGoogleAuth: false };
-          setUser(corrected);
-          setRole(serverRole);
-        }
+        const corrected = {
+          id: serverUser.id,
+          name: serverUser.full_name || user?.name || serverUser.email.split('@')[0],
+          email: serverUser.email,
+          phone: serverUser.phone || user?.phone || '',
+          avatar: serverUser.avatar_url || user?.avatar || null,
+          role: serverRole,
+          isGoogleAuth: user?.isGoogleAuth || false
+        };
+        setUser(corrected);
+        setRole(serverRole);
       })
       .catch(err => {
         if (err?.response?.status === 401) {
-          // token inválido, expirado o usuario desactivado
-          logout();
+          // Sesión inválida, expirada o cookie ausente: limpiar estado local
+          setUser(null);
+          setRole('user');
+          setPinVerified(false);
+          localStorage.removeItem('smart_park_user_session');
+          setAccessToken(null);
         }
       });
-  }, []); // solo al montar para no spamear
+  }, []); // solo al montar para validar sesión con el servidor
 
   const switchRole = (newRole) => {
     const allowed = ['user','local','platform'];
@@ -175,12 +180,8 @@ export const AuthProvider = ({ children }) => {
 
   // Cerrar Sesión Definitivo
   const logout = () => {
-    // Revocar el token en el servidor (blacklist Redis) antes de limpiar la sesión local.
-    // Fire-and-forget: si falla o no hay token, el cierre local procede igual.
-    const token = localStorage.getItem('smart_park_access_token');
-    if (token) {
-      api.post('/auth/logout', {}, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
-    }
+    // Revocar el token en el servidor (blacklist Redis) y borrar la cookie HttpOnly en el navegador
+    api.post('/auth/logout').catch(() => {});
     setUser(null);
     setRole('user');
     setPinVerified(false);

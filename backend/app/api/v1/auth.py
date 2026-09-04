@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import Optional
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +20,34 @@ from app.core.security import get_password_hash, verify_password, create_access_
 from app.core.cache import rate_limit_hit, blacklist_token
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
+
+AUTH_COOKIE_NAME = "access_token"
+AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 días
+
+def _set_auth_cookie(response: Response, token: str) -> None:
+    """Configura la cookie HttpOnly con SameSite=Lax y flag Secure si es entorno de producción."""
+    is_prod = (settings.ENVIRONMENT == "production")
+    response.set_cookie(
+        key=AUTH_COOKIE_NAME,
+        value=token,
+        max_age=AUTH_COOKIE_MAX_AGE,
+        expires=AUTH_COOKIE_MAX_AGE,
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=is_prod
+    )
+
+def _clear_auth_cookie(response: Response) -> None:
+    """Elimina la cookie HttpOnly de la sesión."""
+    is_prod = (settings.ENVIRONMENT == "production")
+    response.delete_cookie(
+        key=AUTH_COOKIE_NAME,
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=is_prod
+    )
 
 # Rate limit anti fuerza bruta en login: 5 intentos por minuto por IP (fail-open sin Redis)
 LOGIN_RATE_LIMIT = 5
@@ -43,7 +71,7 @@ class GoogleLoginRequest(BaseModel):
     picture: Optional[str] = None
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def register_user(user_in: UserCreate, request: Request, db: AsyncSession = Depends(get_db)):
+async def register_user(user_in: UserCreate, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == user_in.email))
     existing_user = result.scalars().first()
     if existing_user:
@@ -62,6 +90,7 @@ async def register_user(user_in: UserCreate, request: Request, db: AsyncSession 
     await db.refresh(db_user)
 
     access_token = create_access_token(subject=db_user.id)
+    _set_auth_cookie(response, access_token)
     from app.core.audit_service import record_audit_event
     await record_audit_event(
         db=db,
@@ -80,7 +109,7 @@ async def register_user(user_in: UserCreate, request: Request, db: AsyncSession 
     }
 
 @router.post("/login", response_model=Token)
-async def login_user(user_in: UserLogin, request: Request, db: AsyncSession = Depends(get_db)):
+async def login_user(user_in: UserLogin, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     # Rate limit anti fuerza bruta por IP (fail-open sin Redis)
     allowed, attempts = await rate_limit_hit(f"ratelimit:login:{_client_ip(request)}", LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW)
     if not allowed:
@@ -123,6 +152,7 @@ async def login_user(user_in: UserLogin, request: Request, db: AsyncSession = De
         raise HTTPException(status_code=401, detail="Cuenta desactivada")
     
     access_token = create_access_token(subject=user.id)
+    _set_auth_cookie(response, access_token)
     await record_audit_event(
         db=db,
         action="Inicio de Sesión Exitoso",
@@ -141,9 +171,18 @@ async def login_user(user_in: UserLogin, request: Request, db: AsyncSession = De
 
 
 @router.post("/logout")
-async def logout(credentials: HTTPAuthorizationCredentials = Depends(_bearer_auto)):
-    """Logout real: revoca el token actual (blacklist en Redis hasta su expiración natural)."""
+async def logout(
+    request: Request,
+    response: Response,
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer_auto)
+):
+    """Logout real: revoca el token actual (blacklist en Redis) y borra la cookie HttpOnly."""
     token = credentials.credentials if credentials else ""
+    if not token and hasattr(request, "cookies"):
+        token = request.cookies.get(AUTH_COOKIE_NAME, "")
+
+    _clear_auth_cookie(response)
+
     if not token:
         return {"status": "success", "message": "Sesión cerrada"}
     try:
@@ -168,7 +207,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return UserResponse.model_validate(current_user)
 
 @router.post("/google", response_model=Token)
-async def google_auth(payload: GoogleLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def google_auth(payload: GoogleLoginRequest, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     # Fail-closed: sin client_id configurado o sin token, NO se confía en el email del body
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=503, detail="Inicio de sesión con Google no está configurado en el servidor")
@@ -218,6 +257,7 @@ async def google_auth(payload: GoogleLoginRequest, request: Request, db: AsyncSe
         await db.refresh(user)
 
     access_token = create_access_token(subject=user.id)
+    _set_auth_cookie(response, access_token)
 
     from app.core.audit_service import record_audit_event
     await record_audit_event(

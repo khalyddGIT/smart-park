@@ -399,17 +399,17 @@ export const StaffModule = () => {
       )}
 
       {/* Header & Main Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-[#151D2F] p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800/80 shadow-xs">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200 shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/30 shadow-xs">
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900">
+              <h1 className="text-xl font-black text-slate-900 dark:text-white">
                 Gestión de Personal & Credenciales de Trabajadores
               </h1>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 Crea operadores de garita, asigna turnos y configura sus credenciales de usuario (correo y contraseña) para que inicien sesión.
               </p>
             </div>
@@ -417,8 +417,8 @@ export const StaffModule = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="secondary" size="sm" onClick={exportCSV} className="gap-2 text-xs font-bold h-10 rounded-xl">
-            <Download className="w-4 h-4 text-slate-500" />
+          <Button variant="secondary" size="sm" onClick={exportCSV} className="gap-2 text-xs font-bold h-10 rounded-xl cursor-pointer">
+            <Download className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             <span>Exportar CSV</span>
           </Button>
 
@@ -434,42 +434,42 @@ export const StaffModule = () => {
 
       {/* Metric Cards Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-4 bg-white border-slate-200/80 rounded-2xl flex items-center justify-between shadow-xs">
+        <Card className="p-4 bg-white dark:bg-[#151D2F] border-slate-200/80 dark:border-slate-800/80 rounded-2xl flex items-center justify-between shadow-xs">
           <div>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">Total en Nómina</span>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{staff.length}</p>
-            <span className="text-[11px] text-slate-500 font-medium">Operadores y personal</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-400 block">Total en Nómina</span>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{staff.length}</p>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Operadores y personal</span>
           </div>
-          <div className="w-11 h-11 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center">
             <Users className="w-5 h-5" />
           </div>
         </Card>
 
-        <Card className="p-4 bg-white border-slate-200/80 rounded-2xl flex items-center justify-between shadow-xs">
+        <Card className="p-4 bg-white dark:bg-[#151D2F] border-slate-200/80 dark:border-slate-800/80 rounded-2xl flex items-center justify-between shadow-xs">
           <div>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-600 block">Acceso Sistema Habilitado</span>
-            <p className="text-2xl font-black text-emerald-800 mt-0.5">{totalWithAccount}</p>
-            <span className="text-[11px] text-emerald-700 font-medium">Con usuario y clave activa</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-600 dark:text-emerald-400 block">Acceso Sistema Habilitado</span>
+            <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-0.5">{totalWithAccount}</p>
+            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Con usuario y clave activa</span>
           </div>
-          <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
             <ShieldCheck className="w-5 h-5" />
           </div>
         </Card>
 
-        <Card className="p-4 bg-white border-slate-200/80 rounded-2xl flex items-center justify-between shadow-xs">
+        <Card className="p-4 bg-white dark:bg-[#151D2F] border-slate-200/80 dark:border-slate-800/80 rounded-2xl flex items-center justify-between shadow-xs">
           <div>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">Turno Activo Actual</span>
-            <p className="text-base font-black text-slate-900 mt-0.5">Mañana & Tarde</p>
-            <span className="text-[11px] text-slate-500 font-medium">Control en garita 24/7</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-400 block">Turno Activo Actual</span>
+            <p className="text-base font-black text-slate-900 dark:text-white mt-0.5">Mañana & Tarde</p>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Control en garita 24/7</span>
           </div>
-          <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
             <Clock className="w-5 h-5" />
           </div>
         </Card>
       </div>
 
       {/* Filter and Search Bar */}
-      <Card className="p-4 bg-white border-slate-200 rounded-2xl shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+      <Card className="p-4 bg-white dark:bg-[#151D2F] border-slate-200/90 dark:border-slate-800/80 rounded-2xl shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <Input
@@ -477,7 +477,7 @@ export const StaffModule = () => {
             placeholder="Buscar por nombre, DNI o correo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-10 text-xs bg-slate-50 border-slate-200 rounded-xl"
+            className="pl-9 h-10 text-xs rounded-xl"
           />
         </div>
 
@@ -486,7 +486,7 @@ export const StaffModule = () => {
           <select 
             value={shiftFilter} 
             onChange={(e) => setShiftFilter(e.target.value)}
-            className="h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            className="h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
           >
             <option value="all">Todos los Turnos</option>
             <option value="Mañana">Mañana</option>
@@ -499,7 +499,7 @@ export const StaffModule = () => {
           <select 
             value={statusFilter} 
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            className="h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
           >
             <option value="all">Todos los Estados</option>
             <option value="Activo">Activos</option>
@@ -515,10 +515,10 @@ export const StaffModule = () => {
           <span className="text-xs font-bold">Cargando nómina de colaboradores y accesos...</span>
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="p-12 border-dashed border-slate-300 text-center rounded-3xl bg-white space-y-3">
-          <Users className="w-10 h-10 mx-auto text-slate-300" />
-          <h3 className="text-sm font-bold text-slate-700">No se encontraron colaboradores</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+        <Card className="p-12 border-dashed border-slate-300 dark:border-slate-800 text-center rounded-3xl bg-white dark:bg-[#151D2F] space-y-3">
+          <Users className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600" />
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">No se encontraron colaboradores</h3>
+          <p className="text-xs text-slate-400 dark:text-slate-500 max-w-sm mx-auto">
             {search || shiftFilter !== 'all' || statusFilter !== 'all'
               ? 'Prueba ajustando los filtros de búsqueda.'
               : 'Haz clic en "Nuevo Colaborador" para registrar a tu primer trabajador y configurar su acceso.'}
@@ -533,7 +533,7 @@ export const StaffModule = () => {
             return (
               <Card 
                 key={s.id} 
-                className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+                className="bg-white dark:bg-[#151D2F] border border-slate-200/90 dark:border-slate-800/80 rounded-3xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
               >
                 <div className="space-y-4">
                   {/* Card Top: Avatar, Name, Status Badge */}
@@ -541,47 +541,47 @@ export const StaffModule = () => {
                     <div className="flex items-center gap-3">
                       <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm shadow-inner shrink-0 ${
                         isActive 
-                          ? 'bg-emerald-100/80 text-emerald-800 border border-emerald-200' 
-                          : 'bg-slate-100 text-slate-400 border border-slate-200'
+                          ? 'bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30' 
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
                       }`}>
                         {(s.full_name || '?').charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <h3 className="font-extrabold text-slate-900 text-sm leading-snug">{s.full_name}</h3>
-                        <span className="text-[11px] font-bold text-emerald-700 block">{s.position}</span>
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-sm leading-snug">{s.full_name}</h3>
+                        <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 block">{s.position}</span>
                       </div>
                     </div>
 
                     <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${
                       isActive 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                        : 'bg-rose-50 text-rose-600 border-rose-200'
+                        ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30' 
+                        : 'bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30'
                     }`}>
                       ● {s.status || 'Activo'}
                     </span>
                   </div>
 
                   {/* Labor Data Info */}
-                  <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50/80 rounded-2xl border border-slate-100 text-xs">
+                  <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/60 text-xs">
                     <div>
-                      <span className="text-[10px] text-slate-400 font-bold block uppercase">DNI / Doc</span>
-                      <span className="font-mono font-bold text-slate-800">{s.dni}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-400 font-bold block uppercase">DNI / Doc</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-100">{s.dni}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Turno</span>
-                      <span className="font-medium text-slate-700 truncate block text-[11px]">{s.shift}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-400 font-bold block uppercase">Turno</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200 truncate block text-[11px]">{s.shift}</span>
                     </div>
                   </div>
 
                   {/* System Access Credentials Box */}
                   <div className={`p-3.5 rounded-2xl border text-xs space-y-2 transition ${
                     hasCredentials 
-                      ? 'bg-slate-900 text-white border-slate-800' 
-                      : 'bg-amber-50/60 text-amber-900 border-amber-200/70'
+                      ? 'bg-slate-900 dark:bg-slate-950/80 text-white border-slate-800 dark:border-slate-800/80' 
+                      : 'bg-amber-50/60 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200 border-amber-200/70 dark:border-amber-500/25'
                   }`}>
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold flex items-center gap-1.5">
-                        <KeyRound className={`w-3.5 h-3.5 ${hasCredentials ? 'text-emerald-400' : 'text-amber-600'}`} />
+                        <KeyRound className={`w-3.5 h-3.5 ${hasCredentials ? 'text-emerald-400' : 'text-amber-500'}`} />
                         <span>Acceso al Sistema</span>
                       </span>
                       {hasCredentials ? (
@@ -589,7 +589,7 @@ export const StaffModule = () => {
                           HABILITADO
                         </span>
                       ) : (
-                        <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-md border border-amber-500/30">
                           SIN ACCESO
                         </span>
                       )}
@@ -607,7 +607,7 @@ export const StaffModule = () => {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-[11px] text-amber-700">
+                      <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">
                         Este trabajador no tiene credenciales configuradas para iniciar sesión en la garita.
                       </p>
                     )}
@@ -615,15 +615,15 @@ export const StaffModule = () => {
                 </div>
 
                 {/* Card Actions */}
-                <div className="flex items-center gap-2 pt-4 border-t border-slate-100 mt-4">
+                <div className="flex items-center gap-2 pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
                   <Button 
                     variant="secondary" 
                     size="sm" 
                     onClick={() => handleOpenCreds(s)}
-                    className="gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 h-9 rounded-xl flex-1 bg-slate-100 hover:bg-slate-200 border-none cursor-pointer"
+                    className="gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white h-9 rounded-xl flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/50 dark:border-slate-700 cursor-pointer"
                     title="Configurar usuario, contraseña y PIN"
                   >
-                    <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                    <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Credenciales</span>
                   </Button>
 
@@ -631,7 +631,7 @@ export const StaffModule = () => {
                     variant="secondary" 
                     size="sm" 
                     onClick={() => handleOpenEdit(s)}
-                    className="p-2.5 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border-none cursor-pointer"
+                    className="p-2.5 h-9 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/50 dark:border-slate-700 cursor-pointer"
                     title="Editar datos laborales"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
@@ -641,7 +641,7 @@ export const StaffModule = () => {
                     variant="ghost" 
                     size="sm" 
                     onClick={() => handleDelete(s.id, s.full_name)}
-                    className="p-2.5 h-9 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border-none cursor-pointer"
+                    className="p-2.5 h-9 rounded-xl text-slate-400 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/20 border-none cursor-pointer"
                     title="Eliminar colaborador"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

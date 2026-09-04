@@ -321,20 +321,20 @@ export const IncidentsModule = () => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#151D2F] p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800/80 shadow-xs">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-amber-50 text-amber-700 rounded-2xl border border-amber-200 shadow-xs shrink-0">
+          <div className="p-3 bg-amber-500/15 text-amber-500 dark:text-amber-400 rounded-2xl border border-amber-500/30 shadow-xs shrink-0">
             <AlertTriangle className="w-5 h-5 shrink-0" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {role === 'user' ? 'Reportar Incidencias & Asistencia' : 'Gestión de Incidencias & Asistencia'}
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {role === 'user'
                 ? 'Reporta anomalías en tus estancias con evidencia fotográfica y sigue su resolución.'
                 : isAdmin
-                ? `Bitácora central de atención operativa${user?.name ? ` — operador: ${user.name}` : ''}.`
+                ? `Bitácora central de atención operativa${user?.name ? ` • Operador: ${user.name}` : ''}.`
                 : 'Bitácora de atención operativa con captura fotográfica y seguimiento.'}
             </p>
           </div>
@@ -347,7 +347,7 @@ export const IncidentsModule = () => {
             setShowModal(true);
             setPhotoMode('upload');
           }}
-          className="gap-2"
+          className="gap-2 font-bold cursor-pointer"
         >
           <Plus className="w-5 h-5 shrink-0" />
           <span>{role === 'user' ? 'Reportar Problema' : 'Registrar Incidencia'}</span>
@@ -356,41 +356,41 @@ export const IncidentsModule = () => {
 
       {/* Tarjetas KPI */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 h-full">
-        <Card className="h-full flex flex-col gap-4 p-6 border-slate-200 bg-white">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Reportes</span>
+        <Card className="h-full flex flex-col gap-4 p-6 border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F]">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Total Reportes</span>
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-2xl font-black font-mono text-slate-900">{totalIncidents}</span>
-            <span className="text-xs text-slate-500">Histórico</span>
+            <span className="text-2xl font-black font-mono text-slate-900 dark:text-white">{totalIncidents}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">Histórico</span>
           </div>
         </Card>
 
-        <Card className="h-full flex flex-col gap-4 p-6 border-rose-200 bg-rose-50/40">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700">Reportadas</span>
+        <Card className="h-full flex flex-col gap-4 p-6 border-rose-200 dark:border-rose-500/30 bg-rose-50/50 dark:bg-rose-500/10">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">Reportadas</span>
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-2xl font-black font-mono text-rose-700">{reportedCount}</span>
-            <span className="text-xs text-rose-600 font-bold">Por atender</span>
+            <span className="text-2xl font-black font-mono text-rose-700 dark:text-rose-400">{reportedCount}</span>
+            <span className="text-xs text-rose-600 dark:text-rose-400 font-bold">Por atender</span>
           </div>
         </Card>
 
-        <Card className="h-full flex flex-col gap-4 p-6 border-emerald-200 bg-emerald-50/40">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Resueltas</span>
+        <Card className="h-full flex flex-col gap-4 p-6 border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-500/10">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">Resueltas</span>
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-2xl font-black font-mono text-emerald-700">{resolvedCount}</span>
-            <span className="text-xs text-emerald-700 font-bold">Concluidas</span>
+            <span className="text-2xl font-black font-mono text-emerald-700 dark:text-emerald-400">{resolvedCount}</span>
+            <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold">Concluidas</span>
           </div>
         </Card>
 
-        <Card className="h-full flex flex-col gap-4 p-6 border-sky-200 bg-sky-50/40">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-sky-800">Tasa de Resolución</span>
+        <Card className="h-full flex flex-col gap-4 p-6 border-sky-200 dark:border-sky-500/30 bg-sky-50/50 dark:bg-sky-500/10">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-sky-800 dark:text-sky-400">Tasa de Resolución</span>
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-2xl font-black font-mono text-sky-700">{resolutionRate}%</span>
-            <span className="text-xs text-sky-700 font-bold">{isAdmin ? 'Red completa' : 'Tus casos'}</span>
+            <span className="text-2xl font-black font-mono text-sky-700 dark:text-sky-400">{resolutionRate}%</span>
+            <span className="text-xs text-sky-700 dark:text-sky-400 font-bold">{isAdmin ? 'Red completa' : 'Tus casos'}</span>
           </div>
         </Card>
       </div>
 
       {/* Buscador y Filtros */}
-      <Card className="p-4 border-slate-200 bg-white flex flex-col lg:flex-row items-center justify-between gap-4">
+      <Card className="p-4 border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] flex flex-col lg:flex-row items-center justify-between gap-4">
         <div className="relative w-full lg:w-96">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 shrink-0 text-slate-400" />
           <Input
@@ -409,7 +409,7 @@ export const IncidentsModule = () => {
           <select
             value={filterParking}
             onChange={(e) => setFilterParking(e.target.value)}
-            className="h-10 w-full lg:w-auto bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
+            className="h-10 w-full lg:w-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 cursor-pointer"
           >
             <option value="all">Todas las Cocheras</option>
             {Object.entries(parkingsMap).map(([pid, pname]) => (
@@ -421,21 +421,21 @@ export const IncidentsModule = () => {
         <div className="flex items-center gap-2 overflow-x-auto">
           {[
             { id: 'all', label: 'Todos', count: totalIncidents },
-            { id: 'reported', label: 'Reportadas', count: reportedCount, color: 'text-rose-700 bg-rose-100' },
-            { id: 'resolved', label: 'Resueltas', count: resolvedCount, color: 'text-emerald-700 bg-emerald-100' }
+            { id: 'reported', label: 'Reportadas', count: reportedCount, color: 'text-rose-700 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20' },
+            { id: 'resolved', label: 'Resueltas', count: resolvedCount, color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20' }
           ].map(st => (
             <button
               key={st.id}
               onClick={() => setFilterStatus(st.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 filterStatus === st.id
-                  ? 'bg-slate-900 text-white shadow-xs font-black'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow-xs font-black'
+                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-transparent dark:border-slate-700/60'
               }`}
             >
               <span>{st.label}</span>
               <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
-                filterStatus === st.id ? 'bg-white/20 text-white' : st.color || 'bg-slate-200 text-slate-700'
+                filterStatus === st.id ? 'bg-white/20 text-white' : st.color || 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
               }`}>
                 {st.count}
               </span>
@@ -451,22 +451,22 @@ export const IncidentsModule = () => {
           <span className="text-sm font-bold">Cargando incidencias...</span>
         </div>
       ) : filteredIncidents.length === 0 ? (
-        <Card className="h-full flex flex-col gap-4 p-6 border-dashed border-slate-300 text-center">
-          <AlertTriangle className="w-5 h-5 shrink-0 mx-auto text-slate-300" />
+        <Card className="h-full flex flex-col gap-4 p-6 border-dashed border-slate-300 dark:border-slate-800 text-center">
+          <AlertTriangle className="w-5 h-5 shrink-0 mx-auto text-slate-300 dark:text-slate-600" />
           {searchText || filterStatus !== 'all' || filterParking !== 'all' ? (
             <>
-              <p className="text-sm font-bold text-slate-500">Ninguna incidencia coincide con los filtros aplicados.</p>
-              <p className="text-xs text-slate-400">Ajusta la búsqueda o restablece los filtros.</p>
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Ninguna incidencia coincide con los filtros aplicados.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Ajusta la búsqueda o restablece los filtros.</p>
             </>
           ) : role === 'user' ? (
             <>
-              <p className="text-sm font-bold text-slate-500">Aún no has reportado incidencias.</p>
-              <p className="text-xs text-slate-400">Si algo falla durante tu estancia, repórtalo aquí con evidencia fotográfica.</p>
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Aún no has reportado incidencias.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Si algo falla durante tu estancia, repórtalo aquí con evidencia fotográfica.</p>
             </>
           ) : (
             <>
-              <p className="text-sm font-bold text-slate-500">No hay incidencias registradas en la red.</p>
-              <p className="text-xs text-slate-400">Todo en orden por ahora: los reportes de los conductores aparecerán aquí.</p>
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">No hay incidencias registradas en la red.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Todo en orden por ahora: los reportes de los conductores aparecerán aquí.</p>
             </>
           )}
         </Card>
@@ -474,43 +474,43 @@ export const IncidentsModule = () => {
         <div className="overflow-x-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
             {filteredIncidents.map((inc) => (
-              <Card key={inc.id} className="h-full flex flex-col gap-4 p-6 border-slate-200 bg-white hover:shadow-md transition">
+              <Card key={inc.id} className="h-full flex flex-col gap-4 p-6 border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] hover:shadow-md transition">
                 <div className="flex flex-col gap-4 flex-1">
                   <div className="flex justify-between items-start gap-2">
-                    <span className="font-mono text-xs font-black text-slate-400">INC-{String(inc.id).padStart(3, '0')}</span>
+                    <span className="font-mono text-xs font-black text-slate-400 dark:text-slate-400">INC-{String(inc.id).padStart(3, '0')}</span>
                     <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border flex items-center gap-2 ${
                       inc.status === 'resolved'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/25'
+                        : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/25'
                     }`}>
                       ● {inc.status === 'resolved' ? 'Resuelta' : 'Pendiente'}
                     </span>
                   </div>
 
-                  <h3 className="font-extrabold text-slate-900 text-base">{CATEGORY_LABELS[inc.category] || inc.category}</h3>
-                  <p className="text-xs text-slate-500 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base">{CATEGORY_LABELS[inc.category] || inc.category}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                     <span className="truncate">{parkingNameOf(inc)}</span>
                   </p>
 
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-2 text-xs font-mono">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col gap-2 text-xs font-mono">
                     <div className="flex justify-between gap-2">
-                      <span className="text-slate-400 shrink-0">Reportante:</span>
-                      <span className="font-bold text-slate-900 truncate">{inc.user_name}</span>
+                      <span className="text-slate-400 dark:text-slate-400 shrink-0">Reportante:</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 truncate">{inc.user_name}</span>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <span className="text-slate-400">Categoría:</span>
-                      <span className="font-bold text-slate-700 truncate ml-2">
+                      <span className="text-slate-400 dark:text-slate-400">Categoría:</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-200 truncate ml-2">
                         {CATEGORY_LABELS[inc.category] || inc.category}
                       </span>
                     </div>
-                    <div className="flex justify-between gap-2 text-[10px] text-slate-400 pt-2 border-t border-slate-200">
+                    <div className="flex justify-between gap-2 text-[10px] text-slate-400 dark:text-slate-400 pt-2 border-t border-slate-200 dark:border-slate-700/80">
                       <span>Fecha:</span>
                       <span>{formatDateTime(inc.created_at)}</span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-600 leading-relaxed">{inc.description}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{inc.description}</p>
 
                   {/* Evidencia Fotográfica Adjunta */}
                   {inc.photo_url && (

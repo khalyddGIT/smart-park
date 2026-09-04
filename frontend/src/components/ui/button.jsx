@@ -18,14 +18,14 @@ const buttonVariants = cva(
         // Primary — acción principal (emerald)
         primary: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-600/20",
         default: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-600/20",
-        // Secondary — acción secundaria (borde + fondo claro)
-        secondary: "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 hover:border-slate-300 shadow-sm",
-        outline: "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 hover:border-slate-300 shadow-sm",
+        // Secondary — acción secundaria (borde + fondo claro / oscuro refinado)
+        secondary: "border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm",
+        outline: "border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm",
         // Ghost — acción terciaria / icono
-        ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900 shadow-none",
+        ghost: "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white shadow-none",
         // Semánticas
         destructive: "bg-rose-500 text-white hover:bg-rose-600 shadow-sm shadow-rose-500/20",
-        link: "text-emerald-700 underline-offset-4 hover:underline shadow-none h-auto p-0",
+        link: "text-emerald-700 dark:text-emerald-400 underline-offset-4 hover:underline shadow-none h-auto p-0",
       },
       size: {
         sm: "h-8 px-3 rounded-lg text-xs",

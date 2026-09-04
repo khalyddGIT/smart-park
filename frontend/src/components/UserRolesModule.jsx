@@ -215,15 +215,15 @@ export const UserRolesModule = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <Shield className="w-7 h-7 text-emerald-600" />
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <Shield className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
             <span>Usuarios & Control de Accesos (RBAC)</span>
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Administración centralizada de cuentas de usuario, roles de plataforma, accesos a garita y PINs de seguridad.
           </p>
         </div>
-        <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-md bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer">
           <Plus className="w-4 h-4" />
           <span>Nuevo Usuario</span>
         </Button>
@@ -231,40 +231,40 @@ export const UserRolesModule = () => {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-4 flex items-center justify-between border-slate-200 shadow-xs">
+        <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400">Conductores (Clientes)</span>
-            <p className="text-2xl font-black text-slate-900">{stats.user}</p>
+            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-400">Conductores (Clientes)</span>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stats.user}</p>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600">
+          <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200">
             <UserCheck className="w-5 h-5" />
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center justify-between border-slate-200 shadow-xs">
+        <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400">Operadores de Garita</span>
-            <p className="text-2xl font-black text-slate-900">{stats.local}</p>
+            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-400">Operadores de Garita</span>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stats.local}</p>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
+          <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
             <Shield className="w-5 h-5" />
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center justify-between border-slate-200 shadow-xs">
+        <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400">Super Admins Plataforma</span>
-            <p className="text-2xl font-black text-slate-900">{stats.platform}</p>
+            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-400">Super Admins Plataforma</span>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stats.platform}</p>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
+          <div className="w-10 h-10 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
             <KeyRound className="w-5 h-5" />
           </div>
         </Card>
       </div>
 
       {/* Filters & Table */}
-      <Card className="border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50">
+      <Card className="border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/60 dark:bg-slate-900/40">
           <div className="relative w-full md:w-80">
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
             <Input
@@ -272,7 +272,7 @@ export const UserRolesModule = () => {
               placeholder="Buscar por nombre o correo..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-white text-xs"
+              className="pl-9 text-xs"
             />
           </div>
 
@@ -284,8 +284,8 @@ export const UserRolesModule = () => {
                 onClick={() => setRoleFilter(r)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition capitalize cursor-pointer ${
                   roleFilter === r
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 {r === 'all' ? 'Todos los Roles' : r === 'user' ? 'Conductores' : r === 'local' ? 'Operadores' : 'Super Admins'}
@@ -302,13 +302,13 @@ export const UserRolesModule = () => {
           </div>
         ) : users.length === 0 ? (
           <div className="py-14 text-center space-y-1">
-            <Shield className="w-8 h-8 mx-auto text-slate-300" />
-            <p className="text-sm font-bold text-slate-500">No hay usuarios que coincidan con la búsqueda.</p>
+            <Shield className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
+            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">No hay usuarios que coincidan con la búsqueda.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100/75 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+              <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="py-3 px-4">Usuario</th>
                   <th className="py-3 px-4">Contacto</th>
@@ -319,31 +319,31 @@ export const UserRolesModule = () => {
                   <th className="py-3 px-4 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200">
                 {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50/80 transition">
+                  <tr key={u.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase text-xs ${u.is_active === false ? 'bg-slate-100 text-slate-400' : 'bg-slate-200 text-slate-700'}`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase text-xs ${u.is_active === false ? 'bg-slate-100 dark:bg-slate-800 text-slate-400' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'}`}>
                           {(u.full_name || '?').charAt(0)}
                         </div>
                         <div>
-                          <strong className="text-slate-900 block font-bold">{u.full_name}</strong>
-                          <span className="text-[11px] text-slate-400">{u.email}</span>
+                          <strong className="text-slate-900 dark:text-white block font-bold">{u.full_name}</strong>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-400">{u.email}</span>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4 font-mono text-[11px]">{u.phone || '—'}</td>
+                    <td className="py-3 px-4 font-mono text-[11px] text-slate-700 dark:text-slate-300">{u.phone || 'Sin teléfono'}</td>
                     <td className="py-3 px-4">
                       <select
                         value={u.role}
                         onChange={(e) => changeRole(u.id, e.target.value)}
-                        className={`text-[11px] font-bold rounded-lg px-2 py-1 border cursor-pointer ${
+                        className={`text-[11px] font-bold rounded-lg px-2 py-1 border cursor-pointer focus:outline-none ${
                           u.role === 'platform'
-                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            ? 'bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-500/30'
                             : u.role === 'local'
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30'
+                            : 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30'
                         }`}
                       >
                         <option value="user">Conductor (user)</option>
@@ -353,10 +353,10 @@ export const UserRolesModule = () => {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-1.5">
-                        <span className="font-mono text-slate-500 font-bold">••••</span>
+                        <span className="font-mono text-slate-500 dark:text-slate-400 font-bold">••••</span>
                         <button
                           onClick={() => handleOpenPin(u)}
-                          className="p-1 hover:bg-slate-200 rounded text-slate-500 transition cursor-pointer"
+                          className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400 transition cursor-pointer"
                           title="Cambiar PIN"
                         >
                           <KeyRound className="w-4 h-4 shrink-0" />
@@ -364,15 +364,15 @@ export const UserRolesModule = () => {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`text-[11px] font-bold ${u.is_active === false ? 'text-rose-500' : 'text-emerald-600'}`}>
+                      <span className={`text-[11px] font-bold ${u.is_active === false ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                         ● {u.is_active === false ? 'Inactivo' : 'Activo'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-slate-400 text-[11px]">{formatDate(u.created_at)}</td>
+                    <td className="py-3 px-4 text-slate-400 dark:text-slate-400 text-[11px]">{formatDate(u.created_at)}</td>
                     <td className="py-3 px-4 text-right space-x-1">
                       <button
                         onClick={() => handleOpenEdit(u)}
-                        className="p-1.5 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                        className="p-1.5 text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                         title="Editar datos"
                       >
                         <Edit3 className="w-4 h-4" />
@@ -381,8 +381,8 @@ export const UserRolesModule = () => {
                         onClick={() => toggleActive(u)}
                         className={`p-1.5 rounded-lg transition cursor-pointer ${
                           u.is_active === false
-                            ? 'text-emerald-600 hover:bg-emerald-50'
-                            : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'
+                            ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20'
+                            : 'text-slate-400 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/20'
                         }`}
                         title={u.is_active === false ? 'Activar cuenta' : 'Desactivar cuenta'}
                       >

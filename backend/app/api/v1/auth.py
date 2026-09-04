@@ -43,7 +43,7 @@ class GoogleLoginRequest(BaseModel):
     picture: Optional[str] = None
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def register_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register_user(user_in: UserCreate, request: Request, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == user_in.email))
     existing_user = result.scalars().first()
     if existing_user:
@@ -62,6 +62,17 @@ async def register_user(user_in: UserCreate, db: AsyncSession = Depends(get_db))
     await db.refresh(db_user)
 
     access_token = create_access_token(subject=db_user.id)
+    from app.core.audit_service import record_audit_event
+    await record_audit_event(
+        db=db,
+        action="Registro de Nueva Cuenta",
+        target=f"Usuario #{db_user.id} ({db_user.email})",
+        user_id=db_user.id,
+        user_email=db_user.email,
+        role=db_user.role,
+        severity="Info",
+        request=request,
+    )
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -73,16 +84,55 @@ async def login_user(user_in: UserCreate, request: Request, db: AsyncSession = D
     # Rate limit anti fuerza bruta por IP (fail-open sin Redis)
     allowed, attempts = await rate_limit_hit(f"ratelimit:login:{_client_ip(request)}", LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW)
     if not allowed:
+        from app.core.audit_service import record_audit_event
+        await record_audit_event(
+            db=db,
+            action="Bloqueo Rate-Limit de Acceso",
+            target=f"IP bloqueada temporalmente: {_client_ip(request)}",
+            severity="Crítico",
+            request=request,
+            details={"email_intentado": user_in.email, "intentos": attempts},
+        )
         raise HTTPException(status_code=429, detail="Demasiados intentos de inicio de sesión. Espera un minuto e inténtalo de nuevo.")
 
     result = await db.execute(select(User).where(User.email == user_in.email))
     user = result.scalars().first()
+    from app.core.audit_service import record_audit_event
+
     if not user or not verify_password(user_in.password, user.hashed_password):
+        await record_audit_event(
+            db=db,
+            action="Intento Fallido de Inicio de Sesión",
+            target=f"Email: {user_in.email}",
+            severity="Advertencia",
+            request=request,
+            details={"motivo": "Contraseña incorrecta o usuario inexistente"},
+        )
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     if not user.is_active:
+        await record_audit_event(
+            db=db,
+            action="Acceso Denegado (Cuenta Desactivada)",
+            target=f"Usuario #{user.id} ({user.email})",
+            user_id=user.id,
+            user_email=user.email,
+            role=user.role,
+            severity="Advertencia",
+            request=request,
+        )
         raise HTTPException(status_code=401, detail="Cuenta desactivada")
     
     access_token = create_access_token(subject=user.id)
+    await record_audit_event(
+        db=db,
+        action="Inicio de Sesión Exitoso",
+        target=f"Usuario #{user.id} ({user.role})",
+        user_id=user.id,
+        user_email=user.email,
+        role=user.role,
+        severity="Info",
+        request=request,
+    )
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -118,7 +168,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return UserResponse.model_validate(current_user)
 
 @router.post("/google", response_model=Token)
-async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(get_db)):
+async def google_auth(payload: GoogleLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
     # Fail-closed: sin client_id configurado o sin token, NO se confía en el email del body
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=503, detail="Inicio de sesión con Google no está configurado en el servidor")
@@ -145,8 +195,10 @@ async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(ge
     user = result.scalars().first()
 
     picture = payload.picture or idinfo.get("picture")
+    is_new = False
 
     if not user:
+        is_new = True
         user = User(
             full_name=name or email.split("@")[0],
             email=email,
@@ -166,6 +218,19 @@ async def google_auth(payload: GoogleLoginRequest, db: AsyncSession = Depends(ge
         await db.refresh(user)
 
     access_token = create_access_token(subject=user.id)
+
+    from app.core.audit_service import record_audit_event
+    await record_audit_event(
+        db=db,
+        action="Registro con Google" if is_new else "Inicio de Sesión con Google",
+        target=f"Usuario #{user.id} ({user.email})",
+        user_id=user.id,
+        user_email=user.email,
+        role=user.role,
+        severity="Info",
+        request=request,
+    )
+
     return {
         "access_token": access_token,
         "token_type": "bearer",

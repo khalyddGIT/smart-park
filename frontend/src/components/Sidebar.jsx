@@ -24,7 +24,6 @@ import {
   ChevronRight,
   Menu,
   X,
-  Scale,
   Sparkles
 } from 'lucide-react';
 
@@ -96,11 +95,8 @@ const SECTIONS_BY_ROLE = {
         { id: 'analytics', label: 'Analítica Global', shortLabel: 'Métricas', icon: BarChart3 },
         { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
         { id: 'users', label: 'Usuarios & RBAC', shortLabel: 'Usuarios', icon: Shield },
-        { id: 'vehicles', label: 'Vehículos Registrados', shortLabel: 'Vehículos', icon: Car },
-        { id: 'staff', label: 'Directorio Personal', shortLabel: 'Personal', icon: Users },
         { id: 'audit', label: 'Auditoría', shortLabel: 'Auditoría', icon: ShieldCheck },
-        { id: 'reviews', label: 'Supervisión', shortLabel: 'Calidad', icon: Star },
-        { id: 'resiliency', label: 'Servicios Backend', shortLabel: 'Servicios', icon: Radio },
+        { id: 'resiliency', label: 'Estado del Sistema', shortLabel: 'Servidores', icon: Server },
       ]
     }
   ]
@@ -201,16 +197,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
         </div>
 
         {/* Footer del Sidebar Desktop Profesional y Limpio */}
-        <div className="p-2 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-[#0B0F19] space-y-1">
-          <button
-            type="button"
-            onClick={onOpenTerms}
-            className="w-full flex items-center space-x-2 px-2.5 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition cursor-pointer group"
-          >
-            <Scale className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-emerald-600 transition-colors" />
-            <span className="text-xs font-semibold tracking-tight truncate">Términos Legales</span>
-          </button>
-
+        <div className="p-2 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-[#0B0F19]">
           <div className="flex items-center space-x-2 px-2.5 py-1.5 rounded-xl text-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
             <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">Rol:</span>
@@ -325,21 +312,6 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
                   </button>
                 );
               })}
-            </div>
-
-            {/* Acceso a Términos desde el móvil */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileDrawerOpen(false);
-                  if (onOpenTerms) onOpenTerms();
-                }}
-                className="w-full py-2.5 px-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/80 rounded-xl flex items-center justify-center gap-2 cursor-pointer border border-transparent dark:border-slate-700/80"
-              >
-                <Scale className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                <span>Términos y Condiciones Legales</span>
-              </button>
             </div>
           </div>
         </div>

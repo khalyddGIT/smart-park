@@ -254,6 +254,25 @@ class PlatformSettings(Base):
     data = Column(Text, nullable=False)  # JSON string
 
 
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=True, index=True)
+    user_email = Column(String(150), nullable=True)
+    role = Column(String(50), nullable=True)
+    action = Column(String(100), nullable=False)
+    target = Column(String(255), nullable=True)
+    severity = Column(String(20), default="Info")  # Info | Advertencia | Crítico
+    ip_address = Column(String(60), nullable=True)
+    parking_id = Column(Integer, nullable=True, index=True)
+    parking_name = Column(String(150), nullable=True)
+    details = Column(Text, nullable=True)  # JSON string
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
 Pago = Payment
 SolicitudAfiliacion = AffiliationRequest
 ConfigPlataforma = PlatformSettings
+RegistroAuditoria = AuditLog
+

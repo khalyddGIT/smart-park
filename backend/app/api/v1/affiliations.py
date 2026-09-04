@@ -116,6 +116,20 @@ async def approve_request(req_id: int, db: AsyncSession = Depends(get_db), curre
     req.status = "approved"
     await db.commit()
     await db.refresh(parking)
+
+    from app.core.audit_service import record_audit_event
+    await record_audit_event(
+        db=db,
+        action="Aprobación de Sede Afiliada",
+        target=f"Sede #{parking.id} '{parking.name}' (Solicitud #{req.id})",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        role=current_user.role,
+        severity="Info",
+        parking_id=parking.id,
+        parking_name=parking.name,
+        details={"solicitud_id": req.id, "dueño": req.owner_name, "email": req.email, "capacidad": req.capacity, "tarifa": req.rate}
+    )
     return {"status": "approved", "parking_id": parking.id, "parking_name": parking.name}
 
 
@@ -129,4 +143,16 @@ async def reject_request(req_id: int, db: AsyncSession = Depends(get_db), curren
         raise HTTPException(status_code=400, detail=f"Solicitud ya está {req.status}")
     req.status = "rejected"
     await db.commit()
+
+    from app.core.audit_service import record_audit_event
+    await record_audit_event(
+        db=db,
+        action="Rechazo de Solicitud de Sede",
+        target=f"Solicitud #{req.id} '{req.parking_name}' ({req.email})",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        role=current_user.role,
+        severity="Advertencia",
+        details={"solicitud_id": req.id, "dueño": req.owner_name, "email": req.email}
+    )
     return {"status": "rejected"}

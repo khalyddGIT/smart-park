@@ -336,6 +336,9 @@ class ReservationResponse(BaseModel):
     total_cost: float
     status: str
     qr_code: str
+    customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
+    customer_email: Optional[str] = None
     class Config:
         from_attributes = True
 

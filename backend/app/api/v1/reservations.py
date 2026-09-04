@@ -32,6 +32,17 @@ gate_operator_required = require_role("local", "platform")
 
 router = APIRouter(prefix="/reservations", tags=["Reservas & Pases QR"])
 
+from sqlalchemy.orm import selectinload
+
+def _format_reservation_response(r: Reservation) -> ReservationResponse:
+    resp = ReservationResponse.model_validate(r)
+    user = getattr(r, "user", None)
+    if user:
+        resp.customer_name = user.full_name
+        resp.customer_phone = user.phone
+        resp.customer_email = user.email
+    return resp
+
 @router.get("", response_model=List[ReservationResponse])
 async def list_reservations(
     parking_id: Optional[int] = None,
@@ -39,48 +50,39 @@ async def list_reservations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Local/platform ven todas de su sede (para garita), conductor solo las suyas
+    # Local/platform ven todas de su sede (para garita y admin), conductor solo las suyas
     if current_user.role in ("local", "platform"):
+        stmt = select(Reservation).options(selectinload(Reservation.user)).order_by(Reservation.id.desc())
         if parking_id:
-            stmt = select(Reservation).where(Reservation.parking_id == parking_id).order_by(Reservation.id.desc())
-            if status_filter:
-                stmt = stmt.where(Reservation.status == status_filter)
-            result = await db.execute(stmt)
-            return [ReservationResponse.model_validate(r) for r in result.scalars().all()]
-        # Sin parking_id: si es personal, solo su sede asignada
-        if current_user.role == "local":
+            stmt = stmt.where(Reservation.parking_id == parking_id)
+        elif current_user.role == "local":
             from app.models.models import Staff
             me = await db.execute(select(Staff).where(Staff.email == current_user.email))
             my_staff = me.scalars().first()
             if my_staff and my_staff.parking_id:
-                stmt = select(Reservation).where(Reservation.parking_id == my_staff.parking_id).order_by(Reservation.id.desc())
-                if status_filter:
-                    stmt = stmt.where(Reservation.status == status_filter)
-                result = await db.execute(stmt)
-                return [ReservationResponse.model_validate(r) for r in result.scalars().all()]
-        # platform sin filtro: todas
-        if current_user.role == "platform" and not parking_id:
-            stmt = select(Reservation).order_by(Reservation.id.desc())
-            if status_filter:
-                stmt = stmt.where(Reservation.status == status_filter)
-            result = await db.execute(stmt)
-            return [ReservationResponse.model_validate(r) for r in result.scalars().all()]
+                # Personal operativo asignado a garita específica
+                stmt = stmt.where(Reservation.parking_id == my_staff.parking_id)
+            # Si es adminlocal (dueño/administrador general), ve todas las reservas de los establecimientos
+
+        if status_filter:
+            stmt = stmt.where(Reservation.status == status_filter)
+        result = await db.execute(stmt)
+        return [_format_reservation_response(r) for r in result.scalars().all()]
+
     # Fallback conductor: solo suyas
-    stmt = select(Reservation).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc())
+    stmt = select(Reservation).options(selectinload(Reservation.user)).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc())
     if parking_id:
         stmt = stmt.where(Reservation.parking_id == parking_id)
     if status_filter:
         stmt = stmt.where(Reservation.status == status_filter)
     
     result = await db.execute(stmt)
-    reservations = result.scalars().all()
-    return [ReservationResponse.model_validate(r) for r in reservations]
+    return [_format_reservation_response(r) for r in result.scalars().all()]
 
 @router.get("/my-reservations", response_model=List[ReservationResponse])
 async def get_my_reservations(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    result = await db.execute(select(Reservation).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc()))
-    reservations = result.scalars().all()
-    return [ReservationResponse.model_validate(r) for r in reservations]
+    result = await db.execute(select(Reservation).options(selectinload(Reservation.user)).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc()))
+    return [_format_reservation_response(r) for r in result.scalars().all()]
 
 @router.get("/verify/{code}", tags=["Reservas & Pases QR"])
 async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):

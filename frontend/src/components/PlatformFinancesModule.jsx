@@ -215,14 +215,14 @@ export const PlatformFinancesModule = () => {
             <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm shrink-0">
               <Wallet className="w-5 h-5 shrink-0" />
             </div>
-            <h1 className="text-heading text-xl sm:text-2xl text-slate-900 tracking-tight">Finanzas, Comisiones & Liquidaciones a Cocheras</h1>
+            <h1 className="text-heading text-xl sm:text-2xl text-slate-900 dark:text-white tracking-tight">Finanzas, Comisiones & Liquidaciones a Cocheras</h1>
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Control de comisiones de la plataforma Smart-Park y dispersión bancaria quincenal a propietarios afiliados.{' '}
-            <span className="text-amber-700 font-bold">Comisión fija 12% • Fuente: reservas reales (canceladas excluidas).</span>
+            <span className="text-amber-700 dark:text-amber-400 font-bold">Comisión fija 12% • Fuente: reservas reales (canceladas excluidas).</span>
           </p>
           {summary?.nota && (
-            <p className="text-xs text-slate-400 flex items-center gap-2">
+            <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-2">
               <Info className="w-5 h-5 shrink-0" />
               <span>{summary.nota}</span>
             </p>
@@ -234,6 +234,7 @@ export const PlatformFinancesModule = () => {
             onClick={handleExportCSV}
             variant="secondary"
             size="sm"
+            className="dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <Download className="w-4 h-4 shrink-0" />
             Exportar para Contabilidad (CSV)
@@ -242,6 +243,7 @@ export const PlatformFinancesModule = () => {
             onClick={fetchSummary}
             variant="secondary"
             size="sm"
+            className="dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <TrendingUp className="w-4 h-4 shrink-0" />
             Actualizar
@@ -251,19 +253,19 @@ export const PlatformFinancesModule = () => {
 
       {/* Loading / Error */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 gap-2 text-slate-400">
+        <div className="flex items-center justify-center py-16 gap-2 text-slate-400 dark:text-slate-500">
           <Loader2 className="w-5 h-5 shrink-0 animate-spin" />
           <span className="text-sm font-bold">Cargando resumen financiero...</span>
         </div>
       ) : error ? (
-        <Card className="p-6 h-full flex flex-col gap-4 border-rose-200 bg-rose-50/60">
+        <Card className="p-6 h-full flex flex-col gap-4 border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/20">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
             <div className="flex flex-col gap-2">
-              <p className="text-subheading text-rose-900">No se pudo cargar finanzas</p>
-              <p className="text-xs text-rose-800">{error}</p>
-              {errorStatus === 401 && <p className="text-xs text-slate-500">Verifica tu JWT (localStorage smart_park_access_token).</p>}
-              {errorStatus === 403 && <p className="text-xs text-slate-500">Solo platform puede consultar GET /finances/summary.</p>}
+              <p className="text-subheading text-rose-900 dark:text-rose-200">No se pudo cargar finanzas</p>
+              <p className="text-xs text-rose-800 dark:text-rose-300">{error}</p>
+              {errorStatus === 401 && <p className="text-xs text-slate-500 dark:text-slate-400">Verifica tu JWT (localStorage smart_park_access_token).</p>}
+              {errorStatus === 403 && <p className="text-xs text-slate-500 dark:text-slate-400">Solo platform puede consultar GET /finances/summary.</p>}
               <Button onClick={fetchSummary} variant="primary" size="sm">
                 Reintentar
               </Button>
@@ -274,63 +276,63 @@ export const PlatformFinancesModule = () => {
         <>
           {/* KPIs Financieros Reales */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="p-6 h-full flex flex-col justify-between gap-4">
+            <Card className="p-6 h-full flex flex-col justify-between gap-4 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-caption text-slate-400">Recaudación Bruta Red</span>
-                <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                <span className="text-caption text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-wider">Recaudación Bruta Red</span>
+                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0">
                   <TrendingUp className="w-5 h-5 shrink-0" />
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <h3 className="text-heading text-2xl font-mono tracking-tight text-slate-900">{fmt(grossNetworkRevenue)}</h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  {totales.total_reservas_global} reserva(s) no canceladas • {totales.liquidados_count} completadas
+                <h3 className="text-heading text-2xl font-mono tracking-tight text-slate-900 dark:text-white">{fmt(grossNetworkRevenue)}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  {totales.total_reservas_global} reserva(s) no canceladas • {totales.liquidados_count || 0} completadas
                 </p>
               </div>
             </Card>
 
-            <Card className="p-6 h-full flex flex-col justify-between gap-4 border-emerald-200 bg-gradient-to-br from-emerald-50/70 to-white">
+            <Card className="p-6 h-full flex flex-col justify-between gap-4 border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-br from-emerald-50/70 to-white dark:from-emerald-950/40 dark:to-[#111827] shadow-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-caption text-emerald-800">Comisión Smart-Park (12%)</span>
+                <span className="text-caption text-emerald-800 dark:text-emerald-400 font-bold uppercase text-[10px] tracking-wider">Comisión Smart-Park (12%)</span>
                 <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-sm shrink-0">
                   <Percent className="w-5 h-5 shrink-0" />
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <h3 className="text-heading text-2xl font-mono tracking-tight text-emerald-700">{fmt(totalPlatformEarnings)}</h3>
-                <p className="text-xs text-emerald-800/80 font-medium">Ganancia líquida de la plataforma</p>
+                <h3 className="text-heading text-2xl font-mono tracking-tight text-emerald-700 dark:text-emerald-300">{fmt(totalPlatformEarnings)}</h3>
+                <p className="text-xs text-emerald-800/80 dark:text-emerald-400/80 font-medium">Ganancia líquida de la plataforma</p>
               </div>
             </Card>
 
-            <Card className="p-6 h-full flex flex-col justify-between gap-4 border-amber-200 bg-amber-50/40">
+            <Card className="p-6 h-full flex flex-col justify-between gap-4 border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/25 shadow-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-caption text-amber-800">Por Transferir a Cocheras</span>
+                <span className="text-caption text-amber-800 dark:text-amber-400 font-bold uppercase text-[10px] tracking-wider">Por Transferir a Cocheras</span>
                 <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
                   <Clock className="w-5 h-5 shrink-0" />
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <h3 className="text-heading text-2xl font-mono tracking-tight text-amber-900">{fmt(pendingPayoutsAmount)}</h3>
-                <p className="text-xs text-amber-700 font-medium">Liquidaciones listas para desembolso</p>
+                <h3 className="text-heading text-2xl font-mono tracking-tight text-amber-900 dark:text-amber-300">{fmt(pendingPayoutsAmount)}</h3>
+                <p className="text-xs text-amber-700 dark:text-amber-400/80 font-medium">Liquidaciones listas para desembolso</p>
               </div>
             </Card>
 
-            <Card className="p-6 h-full flex flex-col justify-between gap-4">
+            <Card className="p-6 h-full flex flex-col justify-between gap-4 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-caption text-slate-400">Liquidado & Transferido</span>
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <span className="text-caption text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-wider">Liquidado & Transferido</span>
+                <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                   <CheckCircle2 className="w-5 h-5 shrink-0" />
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <h3 className="text-heading text-2xl font-mono tracking-tight text-slate-900">{fmt(disbursedPayoutsAmount)}</h3>
-                <p className="text-xs text-slate-500 font-medium">Marcado como liquidado (local, sin persistencia)</p>
+                <h3 className="text-heading text-2xl font-mono tracking-tight text-slate-900 dark:text-white">{fmt(disbursedPayoutsAmount)}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Marcado como liquidado (local, sin persistencia)</p>
               </div>
             </Card>
           </div>
 
           {/* Controles */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-[#111827] p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="relative w-full sm:w-80">
               <Search className="w-4 h-4 shrink-0 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
@@ -338,7 +340,7 @@ export const PlatformFinancesModule = () => {
                 placeholder="Buscar cochera, RUC o ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 dark:bg-slate-900/80 dark:border-slate-800 dark:text-white"
               />
             </div>
 
@@ -349,6 +351,7 @@ export const PlatformFinancesModule = () => {
                   onClick={() => setStatusFilter(st)}
                   variant={statusFilter === st ? 'primary' : 'secondary'}
                   size="sm"
+                  className={statusFilter !== st ? 'dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800' : ''}
                 >
                   {st === 'ALL' ? 'Todas las Sedes' : st === 'PENDING' ? 'Pendientes de Pago' : 'Liquidadas (local)'}
                 </Button>
@@ -357,79 +360,81 @@ export const PlatformFinancesModule = () => {
           </div>
 
           {/* Tabla */}
-          <Card className="overflow-hidden p-0 gap-0">
+          <Card className="overflow-hidden p-0 gap-0 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800">
             {!hasAnyMovement ? (
               <div className="p-6 flex flex-col items-center gap-2 py-16 text-center">
-                <DollarSign className="w-5 h-5 shrink-0 text-slate-300" />
-                <p className="text-subheading text-slate-600">Aún no hay movimientos para liquidar.</p>
-                <p className="text-xs text-slate-400 max-w-md">
+                <DollarSign className="w-5 h-5 shrink-0 text-slate-300 dark:text-slate-600" />
+                <p className="text-subheading text-slate-600 dark:text-slate-300">Aún no hay movimientos para liquidar.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 max-w-md">
                   No se encontraron reservas no canceladas. Cuando existan reservas (scheduled/active/completed), aquí verás la
                   recaudación por sede, comisión 12% y neto a liquidar.
                 </p>
               </div>
             ) : filteredPayouts.length === 0 ? (
               <div className="p-6 py-12 text-center">
-                <p className="text-subheading text-slate-500">Sin resultados para el filtro actual.</p>
+                <p className="text-subheading text-slate-500 dark:text-slate-400">Sin resultados para el filtro actual.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="p-4 text-caption text-slate-500">Establecimiento & Razón Social</th>
-                      <th className="p-4 text-caption text-slate-500">Datos Bancarios</th>
-                      <th className="p-4 text-caption text-slate-500 text-right">Recaudado</th>
-                      <th className="p-4 text-caption text-slate-500 text-right">Comisión Smart-Park</th>
-                      <th className="p-4 text-caption text-slate-500 text-right">Neto a Transferir</th>
-                      <th className="p-4 text-caption text-slate-500 text-center">Estado</th>
-                      <th className="p-4 text-caption text-slate-500 text-center">Acción</th>
+                    <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800">
+                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider">Establecimiento & Razón Social</th>
+                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider">Datos Bancarios</th>
+                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-right">Recaudado</th>
+                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-right">Comisión Smart-Park</th>
+                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-right">Neto a Transferir</th>
+                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-center">Estado</th>
+                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-center">Acción</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                     {filteredPayouts.map((p) => {
                       if (p.status === 'EMPTY') return null;
                       const isPending = p.status === 'PENDING';
                       return (
-                        <tr key={p.id} className="hover:bg-slate-50/70 transition">
+                        <tr key={p.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition">
                           <td className="p-4">
-                            <div className="font-extrabold text-slate-900">{p.parkingName}</div>
-                            <div className="text-xs text-slate-500 font-medium flex items-center gap-2">
+                            <div className="font-extrabold text-slate-900 dark:text-white">{p.parkingName}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
                               <span>RUC: <span className="font-mono">{p.ruc}</span></span>
-                              <span className="text-amber-600 font-bold">• pendiente de completar</span>
+                              <span className="text-amber-600 dark:text-amber-400 font-bold">• pendiente de completar</span>
                             </div>
-                            <div className="text-xs text-slate-400 font-mono">
+                            <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">
                               Sede #{p.parkingId} • {p.totalReservas} reserva(s) • {p.reservasCompleted} completada(s)
                             </div>
                           </td>
 
                           <td className="p-4 font-mono text-xs">
-                            <div className="font-bold text-amber-700">{p.bank}</div>
-                            <div className="text-slate-500 text-xs">Cta: {p.accountNumber}</div>
-                            <div className="text-slate-400 text-xs">CCI: {p.cci}</div>
-                            <div className="text-xs text-amber-600 font-bold mt-1">RUC/CCI sin tabla — dato ilustrativo</div>
+                            <div className="font-bold text-amber-700 dark:text-amber-400">{p.bank}</div>
+                            <div className="text-slate-500 dark:text-slate-400 text-xs">Cta: {p.accountNumber}</div>
+                            <div className="text-slate-400 dark:text-slate-500 text-xs">CCI: {p.cci}</div>
+                            <div className="text-xs text-amber-600 dark:text-amber-400/80 font-bold mt-1">RUC/CCI sin tabla — dato ilustrativo</div>
                           </td>
 
-                          <td className="p-4 text-right font-mono font-bold text-slate-900">{fmt(p.totalRevenue)}</td>
+                          <td className="p-4 text-right font-mono font-bold text-slate-900 dark:text-white">{fmt(p.totalRevenue)}</td>
 
                           <td className="p-4 text-right font-mono">
-                            <div className="font-bold text-emerald-700">{fmt(p.platformFee)}</div>
-                            <div className="text-xs text-emerald-600 font-extrabold bg-emerald-50 px-2 py-0.5 rounded inline-block">
+                            <div className="font-bold text-emerald-700 dark:text-emerald-400">{fmt(p.platformFee)}</div>
+                            <div className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded inline-block">
                               {p.commissionRate}%
                             </div>
                           </td>
 
-                          <td className="p-4 text-right font-mono font-black text-slate-900 text-sm">{fmt(p.netPayout)}</td>
+                          <td className="p-4 text-right font-mono font-black text-slate-900 dark:text-white text-sm">{fmt(p.netPayout)}</td>
 
                           <td className="p-4 text-center">
                             <span
                               className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-xl text-xs font-extrabold uppercase ${
-                                isPending ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                isPending 
+                                  ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-800/80' 
+                                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80'
                               }`}
                             >
                               <span className={`w-2 h-2 rounded-full shrink-0 ${isPending ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                               <span>{isPending ? 'Por Liquidar' : 'Transferido (local)'}</span>
                             </span>
-                            {p.processedAt && <div className="text-xs text-slate-400 font-mono mt-1">{p.processedAt}</div>}
+                            {p.processedAt && <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1">{p.processedAt}</div>}
                           </td>
 
                           <td className="p-4 text-center">
@@ -479,7 +484,7 @@ export const PlatformFinancesModule = () => {
         <DialogContent className="max-w-md rounded-3xl p-6">
           <DialogHeader>
             <DialogTitle className="text-heading flex items-center gap-2">
-              <Send className="w-5 h-5 shrink-0 text-emerald-600" />
+              <Send className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
               Emitir Liquidación Bancaria
             </DialogTitle>
             <DialogDescription className="text-xs">
@@ -489,41 +494,41 @@ export const PlatformFinancesModule = () => {
 
           {selectedPayout && (
             <div className="flex flex-col gap-4 my-2">
-              <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200 text-xs text-amber-900 font-medium">
+              <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-300 font-medium">
                 <strong>Aviso honesto:</strong> no existe aún tabla de cuentas bancarias (RUC/CCI) ni endpoint de liquidaciones persistente. El
                 RUC/CCI mostrado es ficticio. La liquidación real es manual por tesorería.
               </div>
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col gap-2 text-xs">
+              <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-2 text-xs">
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500 font-medium">Establecimiento:</span>
-                  <strong className="text-slate-900">{selectedPayout.parkingName}</strong>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Establecimiento:</span>
+                  <strong className="text-slate-900 dark:text-slate-100">{selectedPayout.parkingName}</strong>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500 font-medium">RUC (ilustrativo):</span>
-                  <span className="font-mono text-slate-800">{selectedPayout.ruc} — pendiente de completar</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">RUC (ilustrativo):</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-200">{selectedPayout.ruc} — pendiente de completar</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500 font-medium">Banco & Cuenta:</span>
-                  <span className="font-mono text-slate-800 font-bold">{selectedPayout.bank} • {selectedPayout.accountNumber}</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Banco & Cuenta:</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-200 font-bold">{selectedPayout.bank} • {selectedPayout.accountNumber}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500 font-medium">CCI (ilustrativo):</span>
-                  <span className="font-mono text-slate-600 text-xs">{selectedPayout.cci}</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">CCI (ilustrativo):</span>
+                  <span className="font-mono text-slate-600 dark:text-slate-400 text-xs">{selectedPayout.cci}</span>
                 </div>
               </div>
 
-              <div className="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-200 flex flex-col gap-2 text-xs font-mono">
-                <div className="flex justify-between gap-2 text-slate-700">
+              <div className="bg-emerald-50/80 dark:bg-emerald-950/30 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 flex flex-col gap-2 text-xs font-mono">
+                <div className="flex justify-between gap-2 text-slate-700 dark:text-slate-300">
                   <span>Recaudación Bruta ({selectedPayout.totalReservas} reservas):</span>
                   <span>{fmt(selectedPayout.totalRevenue)}</span>
                 </div>
-                <div className="flex justify-between gap-2 text-emerald-800 font-bold">
+                <div className="flex justify-between gap-2 text-emerald-800 dark:text-emerald-400 font-bold">
                   <span>Retención Comisión Smart-Park ({selectedPayout.commissionRate}%):</span>
                   <span>- {fmt(selectedPayout.platformFee)}</span>
                 </div>
-                <div className="border-t border-emerald-200/80 pt-2 flex justify-between gap-2 text-sm font-black text-slate-900">
+                <div className="border-t border-emerald-200/80 dark:border-emerald-800/60 pt-2 flex justify-between gap-2 text-sm font-black text-slate-900 dark:text-white">
                   <span>MONTO NETO A TRANSFERIR:</span>
-                  <span className="text-emerald-700 text-base">{fmt(selectedPayout.netPayout)}</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 text-base">{fmt(selectedPayout.netPayout)}</span>
                 </div>
               </div>
 
@@ -553,7 +558,7 @@ export const PlatformFinancesModule = () => {
         <DialogContent className="max-w-md rounded-3xl p-6">
           <DialogHeader>
             <DialogTitle className="text-heading text-center flex items-center justify-center gap-2">
-              <Receipt className="w-5 h-5 shrink-0 text-emerald-600" />
+              <Receipt className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
               Comprobante de Liquidación
             </DialogTitle>
             <DialogDescription className="text-xs text-center">
@@ -563,54 +568,54 @@ export const PlatformFinancesModule = () => {
 
           {receiptData && (
             <div className="flex flex-col gap-4 my-2">
-              <div className="border border-slate-200 rounded-2xl p-4 bg-white flex flex-col gap-4 text-xs font-mono">
-                <div className="text-center pb-2 border-b border-slate-100 flex flex-col gap-2">
-                  <div className="font-extrabold text-sm text-slate-900 font-sans">SMART-PARK ENTERPRISE</div>
+              <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-slate-900/90 flex flex-col gap-4 text-xs font-mono">
+                <div className="text-center pb-2 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-2">
+                  <div className="font-extrabold text-sm text-slate-900 dark:text-white font-sans">SMART-PARK ENTERPRISE</div>
                   <div className="text-xs text-slate-400">RUC: 20719284019 • Ayacucho, Perú</div>
-                  <div className="text-xs font-bold text-emerald-600">{receiptData.operationNumber}</div>
+                  <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{receiptData.operationNumber}</div>
                 </div>
 
                 <div className="flex flex-col gap-2 text-xs">
                   <div className="flex justify-between gap-2">
-                    <span className="text-slate-500">Destinatario:</span>
-                    <strong className="text-slate-900">{receiptData.parkingName}</strong>
+                    <span className="text-slate-500 dark:text-slate-400">Destinatario:</span>
+                    <strong className="text-slate-900 dark:text-white">{receiptData.parkingName}</strong>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-slate-500">RUC (pendiente):</span>
-                    <span className="text-slate-800">{receiptData.ruc}</span>
+                    <span className="text-slate-500 dark:text-slate-400">RUC (pendiente):</span>
+                    <span className="text-slate-800 dark:text-slate-200">{receiptData.ruc}</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-slate-500">Banco:</span>
-                    <span className="text-slate-800 font-bold">{receiptData.bank}</span>
+                    <span className="text-slate-500 dark:text-slate-400">Banco:</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-bold">{receiptData.bank}</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-slate-500">Fecha:</span>
-                    <span className="text-slate-800">{receiptData.processedAt || '—'}</span>
+                    <span className="text-slate-500 dark:text-slate-400">Fecha:</span>
+                    <span className="text-slate-800 dark:text-slate-200">{receiptData.processedAt || '—'}</span>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-100 pt-2 flex flex-col gap-1.5 text-xs">
-                  <div className="flex justify-between gap-2 text-slate-600">
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-2 flex flex-col gap-1.5 text-xs">
+                  <div className="flex justify-between gap-2 text-slate-600 dark:text-slate-300">
                     <span>Recaudación Bruta Total:</span>
                     <span>{fmt(receiptData.totalRevenue)}</span>
                   </div>
-                  <div className="flex justify-between gap-2 text-emerald-700 font-semibold">
+                  <div className="flex justify-between gap-2 text-emerald-700 dark:text-emerald-400 font-semibold">
                     <span>Comisión Smart-Park ({receiptData.commissionRate}%):</span>
                     <span>- {fmt(receiptData.platformFee)}</span>
                   </div>
-                  <div className="flex justify-between gap-2 text-slate-500 text-[10px] pl-2 border-l-2 border-slate-200">
+                  <div className="flex justify-between gap-2 text-slate-500 dark:text-slate-400 text-[10px] pl-2 border-l-2 border-slate-200 dark:border-slate-700">
                     <span>Subtotal Base Imponible:</span>
                     <span>{fmt(receiptData.platformFee / 1.18)}</span>
                   </div>
-                  <div className="flex justify-between gap-2 text-slate-500 text-[10px] pl-2 border-l-2 border-slate-200">
+                  <div className="flex justify-between gap-2 text-slate-500 dark:text-slate-400 text-[10px] pl-2 border-l-2 border-slate-200 dark:border-slate-700">
                     <span>IGV Débito Fiscal (18% SUNAT):</span>
                     <span>{fmt(receiptData.platformFee - (receiptData.platformFee / 1.18))}</span>
                   </div>
-                  <div className="flex justify-between gap-2 font-black text-slate-900 text-sm border-t border-slate-200 pt-2 mt-1">
+                  <div className="flex justify-between gap-2 font-black text-slate-900 dark:text-white text-sm border-t border-slate-200 dark:border-slate-800 pt-2 mt-1">
                     <span>NETO A TRANSFERIR:</span>
-                    <span className="text-emerald-600 text-base">{fmt(receiptData.netPayout)}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 text-base">{fmt(receiptData.netPayout)}</span>
                   </div>
-                  <div className="bg-slate-50 rounded-lg p-2 text-[10px] text-slate-400 font-mono text-center mt-2 border border-slate-200">
+                  <div className="bg-slate-50 dark:bg-slate-950 rounded-lg p-2 text-[10px] text-slate-400 font-mono text-center mt-2 border border-slate-200 dark:border-slate-800">
                     HASH CPE: SHA256-SUNAT-{Math.random().toString(36).substring(2, 10).toUpperCase()} • VÁLIDO PARA DECLARACIÓN TRIBUTARIA
                   </div>
                 </div>

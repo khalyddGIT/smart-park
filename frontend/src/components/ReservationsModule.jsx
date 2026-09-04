@@ -117,7 +117,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       (r.slot && r.slot.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
-    const matchesParking = parkingFilter === 'ALL' || r.parkingId === parkingFilter;
+    const matchesParking = parkingFilter === 'ALL' || String(r.parkingId) === String(parkingFilter);
 
     let matchesDate = true;
     if (dateFilter === 'TODAY') {

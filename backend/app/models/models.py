@@ -158,6 +158,8 @@ class Reservation(Base):
     qr_code = Column(String(255), nullable=False)
 
     user = relationship("User", back_populates="reservations")
+    parking = relationship("Parking")
+    slot = relationship("Slot")
 
 class Staff(Base):
     __tablename__ = "personal"

@@ -41,6 +41,14 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
         resp.customer_name = user.full_name
         resp.customer_phone = user.phone
         resp.customer_email = user.email
+    parking = getattr(r, "parking", None)
+    if parking:
+        resp.parking_name = parking.name
+        if parking.tolerance_minutes is not None:
+            resp.tolerance_minutes = parking.tolerance_minutes
+    slot = getattr(r, "slot", None)
+    if slot:
+        resp.slot_code = slot.code
     return resp
 
 @router.get("", response_model=List[ReservationResponse])
@@ -251,7 +259,15 @@ async def create_reservation(
             except Exception:
                 pass
 
-    return ReservationResponse.model_validate(db_res)
+    resp = _format_reservation_response(db_res)
+    resp.customer_name = current_user.full_name
+    resp.customer_phone = current_user.phone
+    resp.customer_email = current_user.email
+    resp.parking_name = parking.name
+    resp.slot_code = slot.code
+    if parking.tolerance_minutes is not None:
+        resp.tolerance_minutes = parking.tolerance_minutes
+    return resp
 
 @router.put("/{reservation_id}/cancel", response_model=ReservationResponse)
 async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):

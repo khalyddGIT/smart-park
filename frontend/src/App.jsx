@@ -81,7 +81,7 @@ export const App = () => {
   }
 
   const { role, user } = useAuth();
-  const { establishments, occupySlot, createReservation, bookingError } = useEstablishments();
+  const { establishments, occupySlot, createReservation, bookingError, reservations, refreshMyReservations } = useEstablishments();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [bookingFeedback, setBookingFeedback] = useState(null);
   const [isPersonalStaff, setIsPersonalStaff] = useState(false);
@@ -138,17 +138,24 @@ export const App = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [paymentTarget, setPaymentTarget] = useState(null);
-  const [activeReservation, setActiveReservation] = useState({
-    code: 'RSV-8912',
-    token: 'SPK-AYC891-7B2F9A',
-    parking: 'Smart Park Plaza Mayor - Planta Baja',
-    slot: 'A-01',
-    plate: 'ABC-123',
-    cost: 10.00,
-    hours: 2,
-    startTime: new Date(),
-    expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000)
-  });
+  
+  // Reserva activa persistente real del conductor (status SCHEDULED o ACTIVE)
+  const realActiveReservation = React.useMemo(() => {
+    if (!reservations || !reservations.length) return null;
+    return reservations.find(r => {
+      const st = (r.status || '').toUpperCase();
+      return st === 'SCHEDULED' || st === 'ACTIVE';
+    }) || null;
+  }, [reservations]);
+
+  const [activeReservation, setActiveReservation] = useState(null);
+
+  // Sincronizar automáticamente la reserva activa con el estado del servidor
+  useEffect(() => {
+    if (realActiveReservation) {
+      setActiveReservation(realActiveReservation);
+    }
+  }, [realActiveReservation]);
 
   // Obtener el establecimiento actualmente seleccionado en tiempo real desde el context
   const selectedParking = establishments.find(e => e.id === selectedParkingId) || null;
@@ -470,6 +477,41 @@ export const App = () => {
                     </div>
                   </Card>
 
+                  {/* Banner de Reserva Activa / Pase Digital del Conductor */}
+                  {realActiveReservation && (
+                    <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+                          <QrCode className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-md">
+                              {realActiveReservation.status === 'SCHEDULED' ? 'Llegando al Estacionamiento' : 'Estadía en Curso'}
+                            </span>
+                            <span className="text-xs text-emerald-100 font-mono font-bold">
+                              {realActiveReservation.code}
+                            </span>
+                          </div>
+                          <p className="text-sm font-semibold mt-0.5">
+                            {realActiveReservation.parking} · Plaza {realActiveReservation.slot} ({realActiveReservation.plate})
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveReservation(realActiveReservation);
+                          setShowQRModal(true);
+                        }}
+                        className="w-full sm:w-auto px-4 py-2 bg-white text-emerald-800 hover:bg-emerald-50 text-xs font-bold rounded-xl transition shadow cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                      >
+                        <QrCode className="w-4 h-4" />
+                        <span>Ver Pase Digital & QR</span>
+                      </button>
+                    </div>
+                  )}
+
                   {/* MAPA INTERACTIVO DE AYACUCHO */}
                   <AyacuchoMap 
                     parkings={establishments}
@@ -730,7 +772,10 @@ export const App = () => {
       <DigitalAccessPassModal
         isOpen={showQRModal}
         onClose={() => setShowQRModal(false)}
-        reservation={activeReservation}
+        reservation={activeReservation || realActiveReservation}
+        onReservationUpdated={() => {
+          if (refreshMyReservations) refreshMyReservations();
+        }}
       />
 
       {/* Modal de Pasarela de Pagos (PayPal, Culqi, Yape, Plin, PagoEfectivo) */}

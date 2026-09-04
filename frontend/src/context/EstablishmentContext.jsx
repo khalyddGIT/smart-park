@@ -20,6 +20,18 @@ const getCurrentUserKey = () => {
 };
 const getReservationsKey = () => `${RESERVATIONS_STORAGE_KEY_BASE}_${getCurrentUserKey()}`;
 
+export const parseIsoToDate = (dateVal) => {
+  if (!dateVal) return new Date();
+  if (dateVal instanceof Date) return isNaN(dateVal.getTime()) ? new Date() : dateVal;
+  let s = String(dateVal).trim();
+  // Si es formato ISO pero sin Z ni offset (+/-HH:MM), asumir UTC (ya que el backend corre y persiste en UTC)
+  if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}/.test(s) && !s.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(s)) {
+    s = s.replace(' ', 'T') + 'Z';
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? new Date() : d;
+};
+
 export const INITIAL_ESTABLISHMENTS = [
   {
     id: 'EST-01',
@@ -1000,16 +1012,19 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Mapea la respuesta del backend al formato interno que consume la UI
   const mapServerReservation = (r) => {
-    const startMs = new Date(r.start_time).getTime();
-    const endMs = new Date(r.end_time).getTime();
+    const startDate = parseIsoToDate(r.start_time);
+    const endDate = parseIsoToDate(r.end_time);
+    const startMs = startDate.getTime();
+    const endMs = endDate.getTime();
+    const tolMinutes = Number(r.tolerance_minutes ?? 15);
     return {
       id: r.id,
       code: r.code,
       token: r.qr_code || r.code,
       parkingId: String(r.parking_id),
-      parking: resolveParkingName(r.parking_id),
+      parking: r.parking_name || resolveParkingName(r.parking_id),
       slotId: r.slot_id,
-      slot: resolveSlotCode(r.parking_id, r.slot_id),
+      slot: r.slot_code || resolveSlotCode(r.parking_id, r.slot_id),
       plate: r.license_plate,
       customerName: r.customer_name || 'Conductor Registrado',
       customerPhone: r.customer_phone || '+51 966 000 000',
@@ -1018,11 +1033,14 @@ export const EstablishmentProvider = ({ children }) => {
       hours: Math.max(1, Math.round((endMs - startMs) / 3600000)) || 1,
       ratePerHour: Number((Number(r.total_cost ?? 0) / Math.max(1, (endMs - startMs) / 3600000)).toFixed(2)),
       status: (r.status || 'scheduled').toUpperCase(),
-      startTime: r.start_time,
-      expiresAt: r.end_time,
-      createdAt: r.actual_entry || r.start_time,
-      actualEntry: r.actual_entry || null,
-      actualExit: r.actual_exit || null
+      startTime: startDate.toISOString(),
+      expiresAt: endDate.toISOString(),
+      createdAt: r.actual_entry ? parseIsoToDate(r.actual_entry).toISOString() : startDate.toISOString(),
+      actualEntry: r.actual_entry ? parseIsoToDate(r.actual_entry).toISOString() : null,
+      actualExit: r.actual_exit ? parseIsoToDate(r.actual_exit).toISOString() : null,
+      tolerance: tolMinutes,
+      arrivalWindow: tolMinutes,
+      toleranceMinutes: tolMinutes
     };
   };
 

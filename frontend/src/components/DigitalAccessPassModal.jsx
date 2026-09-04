@@ -22,6 +22,8 @@ import {
   FileText
 } from 'lucide-react';
 
+import { parseIsoToDate } from '../context/EstablishmentContext';
+
 export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReservationUpdated }) => {
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState('');
@@ -49,15 +51,15 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     const hours = Number(reservation.hours || 2);
     const cost = Number(reservation.cost || reservation.totalCost || reservation.total_cost || 10.0);
     const vehicleCategory = reservation.vehicleCategory || reservation.slotType || 'Auto';
-    const toleranceMinutes = Number(reservation.arrivalWindow || reservation.tolerance || 15);
+    const toleranceMinutes = Number(reservation.arrivalWindow || reservation.tolerance || reservation.toleranceMinutes || reservation.tolerance_minutes || 15);
     
-    const startTime = reservation.startTime ? new Date(reservation.startTime) : new Date();
+    const startTime = parseIsoToDate(reservation.startTime || reservation.start_time);
     
     // Tolerancia de llegada (Fase 1: fecha límite para presentarse en cochera)
     const arrivalDeadline = new Date(startTime.getTime() + toleranceMinutes * 60 * 1000);
     
     // Estadía real (Fase 2: arranca al momento de la entrada real)
-    const entryTime = localActualEntry ? new Date(localActualEntry) : startTime;
+    const entryTime = localActualEntry ? parseIsoToDate(localActualEntry) : startTime;
     const stayExpiresAt = new Date(entryTime.getTime() + hours * 60 * 60 * 1000);
 
     const verifyUrl = `${window.location.origin}/verify/${encodeURIComponent(id)}`;
@@ -297,7 +299,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 {isActive 
                   ? `${passData.hours}h contratadas` 
                   : isScheduled 
-                  ? `Tolerancia: ${passData.toleranceMinutes} min` 
+                  ? `Tolerancia: ${passData.toleranceMinutes} min (Límite: ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '--:--'})` 
                   : ''}
               </span>
             </div>

@@ -1,6 +1,6 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer
 from typing import Optional, List, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 # Validadores peruanos (placas de autos/motos con o sin guión, alfanuméricas)
@@ -339,8 +339,20 @@ class ReservationResponse(BaseModel):
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
     customer_email: Optional[str] = None
+    parking_name: Optional[str] = None
+    slot_code: Optional[str] = None
+    tolerance_minutes: Optional[int] = 15
+
     class Config:
         from_attributes = True
+
+    @field_serializer("start_time", "end_time", "actual_entry", "actual_exit", when_used="always")
+    def serialize_utc_datetime(self, dt: Optional[datetime]) -> Optional[str]:
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
 
 # ==========================================
 # 7. SCHEMAS DE RESEÑAS & CALIFICACIONES

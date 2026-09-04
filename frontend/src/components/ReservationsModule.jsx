@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useEstablishments } from '../context/EstablishmentContext';
+import { useEstablishments, parseIsoToDate } from '../context/EstablishmentContext';
 import api, { getAccessToken } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
@@ -212,10 +212,27 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
     setSelectedReceipt(res);
   };
 
+  // Formateadores seguros de fecha y hora local peruana (12 horas AM/PM)
+  const formatTime12h = (dateVal) => {
+    const dt = parseIsoToDate(dateVal);
+    return isNaN(dt.getTime()) ? '—' : dt.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
+
+  const formatDateShort = (dateVal) => {
+    const dt = parseIsoToDate(dateVal);
+    if (isNaN(dt.getTime())) return '—';
+    const now = new Date();
+    if (dt.toDateString() === now.toDateString()) return 'Hoy';
+    const yest = new Date(now);
+    yest.setDate(now.getDate() - 1);
+    if (dt.toDateString() === yest.toDateString()) return 'Ayer';
+    return dt.toLocaleDateString('es-PE', { day: '2-digit', month: 'short' });
+  };
+
   // Calcular progreso de tiempo transcurrido
   const calculateTimeProgress = (startTime, expiresAt) => {
-    const start = new Date(startTime).getTime();
-    const end = new Date(expiresAt).getTime();
+    const start = parseIsoToDate(startTime).getTime();
+    const end = parseIsoToDate(expiresAt).getTime();
     const now = Date.now();
 
     if (now <= start) return 0;
@@ -227,14 +244,14 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
   };
 
   // Calcular tiempo restante legible por fases (Llegada vs Estancia)
-  const getRemainingTimeText = (startTime, expiresAt, status) => {
+  const getRemainingTimeText = (startTime, expiresAt, status, tolMinutes = 15) => {
     if (status === 'COMPLETED') return 'Estancia finalizada';
     if (status === 'CANCELLED') return 'Cancelada';
 
     const now = Date.now();
     if (status === 'SCHEDULED') {
-      const start = new Date(startTime).getTime();
-      const tolMs = 15 * 60 * 1000; // 15 min tolerancia
+      const start = parseIsoToDate(startTime).getTime();
+      const tolMs = (Number(tolMinutes) || 15) * 60 * 1000;
       const arrivalDeadline = start + tolMs;
       const diffMs = arrivalDeadline - now;
       if (diffMs <= 0) return 'Tolerancia de llegada vencida';
@@ -242,7 +259,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       return `Llegada: ${mins} min para presentarse`;
     }
 
-    const end = new Date(expiresAt).getTime();
+    const end = parseIsoToDate(expiresAt).getTime();
     const diffMs = end - now;
 
     if (diffMs <= 0) return 'Estadía vencida (en exceso)';
@@ -549,8 +566,9 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             const isCancelled = res.status === 'CANCELLED';
             const isPaid = paidIds.has(Number(res.id));
 
+            const tolMin = Number(res.toleranceMinutes || res.tolerance || res.arrivalWindow || 15);
             const progress = calculateTimeProgress(res.startTime, res.expiresAt);
-            const remainingText = getRemainingTimeText(res.startTime, res.expiresAt, res.status);
+            const remainingText = getRemainingTimeText(res.startTime, res.expiresAt, res.status, tolMin);
 
             return (
               <div 
@@ -628,7 +646,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                         <span>{res.parking}</span>
                       </h3>
 
-                      {/* Fila 3: Conductor (si existe) y Horario */}
+                      {/* Fila 3: Conductor (si existe) y Horario Real */}
                       <div className="flex flex-wrap items-center text-xs text-slate-500 dark:text-slate-400 gap-x-3 gap-y-1">
                         {res.customerName && (
                           <span className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
@@ -637,14 +655,52 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                           </span>
                         )}
 
-                        <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          {isScheduled ? (
-                            <span>Llegada estimada: {new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          ) : (
-                            <span>{new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(res.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({res.hours}h)</span>
+                        {/* Horario y Fecha Descriptiva */}
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{formatDateShort(res.startTime)}</span>
+                          </span>
+
+                          <span className="text-slate-300 dark:text-slate-600">·</span>
+
+                          {isScheduled && (
+                            <span className="inline-flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium font-mono">
+                              <Clock className="w-3.5 h-3.5 shrink-0" />
+                              <span>Llegada máx: {formatTime12h(new Date(parseIsoToDate(res.startTime).getTime() + tolMin * 60 * 1000))}</span>
+                              <span className="text-[11px] text-slate-400 font-sans font-normal">
+                                ({tolMin} min tol · Estancia: {res.hours || 2}h)
+                              </span>
+                            </span>
                           )}
-                        </span>
+
+                          {isActive && (
+                            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium font-mono">
+                              <Clock className="w-3.5 h-3.5 shrink-0" />
+                              <span>Ingresó: {res.actualEntry ? formatTime12h(res.actualEntry) : formatTime12h(res.startTime)}</span>
+                              <span className="text-slate-400 font-sans font-normal">
+                                · Salida prevista: {formatTime12h(res.expiresAt)} ({res.hours || 2}h)
+                              </span>
+                            </span>
+                          )}
+
+                          {isCancelled && (
+                            <span className="inline-flex items-center gap-1 text-rose-500 dark:text-rose-400 font-medium font-mono">
+                              <Clock className="w-3.5 h-3.5 shrink-0" />
+                              <span>Programada: {formatTime12h(res.startTime)} ({res.hours || 2}h)</span>
+                              <span className="text-[11px] text-rose-500/80 font-sans font-normal">
+                                · Cancelada: tolerancia de {tolMin} min venció a las {formatTime12h(new Date(parseIsoToDate(res.startTime).getTime() + tolMin * 60 * 1000))}
+                              </span>
+                            </span>
+                          )}
+
+                          {isCompleted && (
+                            <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-400 font-medium font-mono">
+                              <Clock className="w-3.5 h-3.5 shrink-0" />
+                              <span>{res.actualEntry ? formatTime12h(res.actualEntry) : formatTime12h(res.startTime)} a {res.actualExit ? formatTime12h(res.actualExit) : formatTime12h(res.expiresAt)} ({res.hours || 2}h)</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Barra de Tiempo Transcurrido */}
@@ -959,12 +1015,16 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                 <span className="text-slate-800 truncate max-w-[150px]">{selectedReceipt.customerName}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-slate-500">Fecha:</span>
+                <span className="text-slate-800 font-bold">{formatDateShort(selectedReceipt.startTime)}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-slate-500">Ingreso:</span>
-                <span className="text-slate-800">{new Date(selectedReceipt.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-slate-800">{formatTime12h(selectedReceipt.startTime)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Salida estimada:</span>
-                <span className="text-slate-800">{new Date(selectedReceipt.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-slate-800">{formatTime12h(selectedReceipt.expiresAt)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Horas:</span>

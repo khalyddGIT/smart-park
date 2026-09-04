@@ -208,10 +208,10 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-sm sm:max-w-md rounded-2xl p-0 overflow-y-auto max-h-[90vh] border-slate-200 bg-white shadow-2xl">
+      <DialogContent className="max-w-sm sm:max-w-md rounded-2xl p-0 overflow-y-auto max-h-[90vh] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl">
         
         {/* Encabezado */}
-        <div className="bg-slate-900 text-white px-5 py-4 flex justify-between items-center">
+        <div className="bg-slate-900 text-white px-5 py-4 flex justify-between items-center border-b border-transparent dark:border-slate-800">
           <div>
             <h2 className="text-base font-bold text-white">{passData.parkingName}</h2>
             <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
@@ -227,8 +227,8 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
         <div className="p-4 space-y-3.5">
 
           {/* Código QR */}
-          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-center flex flex-col items-center justify-center">
-            <div ref={qrRef} className="p-2 bg-white rounded-lg border border-slate-200 inline-block shadow-xs">
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-center flex flex-col items-center justify-center">
+            <div ref={qrRef} className="p-2 bg-white rounded-lg border border-slate-200 dark:border-slate-700 inline-block shadow-xs">
               <QRCodeSVG
                 value={passData.qrPayload}
                 size={135}
@@ -239,10 +239,10 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               />
             </div>
 
-            <p className="text-xs font-mono font-bold text-slate-800 mt-2">
+            <p className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-2">
               Token: {passData.token}
             </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
               Escanea en el tótem o muestra al operador de garita
             </p>
           </div>
@@ -251,17 +251,17 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
           {isScheduled && secondsRemaining !== null && secondsRemaining > 0 && secondsRemaining <= 600 && (
             <div className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
               secondsRemaining <= 300 
-                ? 'bg-rose-50 border-rose-300 text-rose-900' 
-                : 'bg-amber-50 border-amber-300 text-amber-900'
+                ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-300' 
+                : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-300'
             }`}>
-              <AlertCircle className={`w-4 h-4 shrink-0 mt-0.5 ${secondsRemaining <= 300 ? 'text-rose-600' : 'text-amber-600'}`} />
+              <AlertCircle className={`w-4 h-4 shrink-0 mt-0.5 ${secondsRemaining <= 300 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`} />
               <div>
                 <p className="font-bold">
                   {secondsRemaining <= 300 
                     ? `¡Atención urgente! Faltan menos de ${Math.max(1, Math.ceil(secondsRemaining / 60))} min` 
                     : `Llegada requerida: ${Math.ceil(secondsRemaining / 60)} min restantes`}
                 </p>
-                <p className={`text-[11px] mt-0.5 leading-snug ${secondsRemaining <= 300 ? 'text-rose-800' : 'text-amber-800'}`}>
+                <p className={`text-[11px] mt-0.5 leading-snug ${secondsRemaining <= 300 ? 'text-rose-800 dark:text-rose-400' : 'text-amber-800 dark:text-amber-400'}`}>
                   Si no te presentas en garita a tiempo, tu reserva se cancelará automáticamente y tu cajón será liberado.
                 </p>
               </div>
@@ -270,30 +270,30 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
 
           {/* Datos de la Reserva y Cronómetro Inteligente */}
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="p-2.5 rounded-xl border border-slate-200 bg-white">
-              <span className="text-slate-400 block text-[10px]">Cajón Asignado</span>
-              <p className="text-base font-mono font-bold text-slate-900 mt-0.5">{passData.slotCode}</p>
+            <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60">
+              <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Cajón Asignado</span>
+              <p className="text-base font-mono font-bold text-slate-900 dark:text-white mt-0.5">{passData.slotCode}</p>
             </div>
 
-            <div className="p-2.5 rounded-xl border border-slate-200 bg-white">
-              <span className="text-slate-400 block text-[10px]">Placa Registrada</span>
-              <p className="text-base font-mono font-bold text-slate-900 mt-0.5">{passData.plate}</p>
+            <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60">
+              <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Placa Registrada</span>
+              <p className="text-base font-mono font-bold text-slate-900 dark:text-white mt-0.5">{passData.plate}</p>
             </div>
 
-            <div className="p-2.5 rounded-xl border border-slate-200 bg-white">
-              <span className="text-slate-400 block text-[10px]">Código Reserva</span>
-              <p className="font-mono font-semibold text-slate-800 mt-0.5 truncate">{passData.id}</p>
+            <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60">
+              <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Código Reserva</span>
+              <p className="font-mono font-semibold text-slate-800 dark:text-slate-200 mt-0.5 truncate">{passData.id}</p>
             </div>
 
             {/* Tiempo Restante */}
-            <div className="p-2.5 rounded-xl border border-slate-200 bg-slate-50">
-              <span className="text-slate-500 block text-[10px]">
+            <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">
                 {isActive ? 'Estadía' : isScheduled ? 'Tiempo para llegar' : 'Estado'}
               </span>
-              <p className="font-mono font-bold text-sm mt-0.5 text-slate-800">
+              <p className="font-mono font-bold text-sm mt-0.5 text-slate-800 dark:text-slate-100">
                 {isCompleted ? 'Finalizada' : timeLeft || '--:--:--'}
               </p>
-              <span className="text-[10px] text-slate-400 block">
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
                 {isActive 
                   ? `${passData.hours}h contratadas` 
                   : isScheduled 
@@ -320,7 +320,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 type="button"
                 onClick={handleCancelReservation}
                 disabled={isUpdating}
-                className="w-full text-center text-xs text-slate-500 hover:text-rose-600 py-1 font-medium transition cursor-pointer flex items-center justify-center gap-1"
+                className="w-full text-center text-xs text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 py-1 font-medium transition cursor-pointer flex items-center justify-center gap-1"
               >
                 <span>Cancelar reserva</span>
               </button>
@@ -333,7 +333,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               onClick={handleCheckOut}
               disabled={isUpdating}
               variant="outline"
-              className="w-full border-slate-300 text-slate-800 hover:bg-slate-100 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
               <span>Registrar Salida / Check-out</span>
@@ -342,30 +342,30 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
 
           {/* Navegación GPS Directa */}
           <div className="space-y-1.5">
-            <span className="text-xs text-slate-500 font-semibold block">Navegación:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold block">Navegación:</span>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={openGoogleMaps}
-                className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
-                <Compass className="w-4 h-4 text-slate-600" />
+                <Compass className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                 <span>Google Maps</span>
               </button>
               <button
                 type="button"
                 onClick={openWaze}
-                className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
-                <Navigation className="w-4 h-4 text-slate-600" />
+                <Navigation className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                 <span>Waze</span>
               </button>
             </div>
           </div>
 
           {/* Total */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 text-white text-xs">
-            <span className="text-slate-300">Total a pagar en garita:</span>
+          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-xs border border-transparent dark:border-slate-700">
+            <span className="text-slate-300 dark:text-slate-300">Total a pagar en garita:</span>
             <span className="text-sm font-mono font-bold text-emerald-400">
               S/ {passData.cost.toFixed(2)}
             </span>
@@ -378,9 +378,9 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 type="button"
                 onClick={handleCopyCode}
                 variant="outline"
-                className="w-full text-xs font-semibold gap-1.5 rounded-xl h-9"
+                className="w-full text-xs font-semibold gap-1.5 rounded-xl h-9 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               >
-                {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-600" />}
+                {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-600 dark:text-slate-400" />}
                 <span>{copied ? 'Copiado' : 'Copiar Token'}</span>
               </Button>
 
@@ -388,9 +388,9 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 type="button"
                 onClick={handlePrintPass}
                 variant="outline"
-                className="w-full text-xs font-semibold gap-1.5 rounded-xl h-9"
+                className="w-full text-xs font-semibold gap-1.5 rounded-xl h-9 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               >
-                <Printer className="w-4 h-4 text-slate-600" />
+                <Printer className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                 <span>Imprimir</span>
               </Button>
             </div>
@@ -398,7 +398,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
             <Button
               type="button"
               onClick={onClose}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold h-10 rounded-xl text-xs"
+              className="w-full bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold h-10 rounded-xl text-xs border border-transparent dark:border-slate-700"
             >
               Cerrar
             </Button>

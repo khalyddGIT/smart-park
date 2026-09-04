@@ -6,12 +6,10 @@ import React from 'react';
  */
 export const BrandLogo = ({ 
   className = 'h-8 sm:h-9 w-auto', 
-  dark = false 
+  dark = null 
 }) => {
-  const parkColor = dark ? '#FFFFFF' : '#0B2545';
-
   return (
-    <div className="flex items-center shrink-0 select-none">
+    <div className="flex items-center shrink-0 select-none bg-transparent">
       <svg 
         viewBox="0 0 500 120" 
         className={className} 
@@ -29,8 +27,15 @@ export const BrandLogo = ({
           fontSize="52" 
           letterSpacing="-0.5px"
         >
-          <tspan fill="#009688" fontWeight="700">Smart</tspan>
-          <tspan dx="12" fill={parkColor} fontWeight="800">Park</tspan>
+          <tspan fill="#10B981" fontWeight="700">Smart</tspan>
+          <tspan 
+            dx="12" 
+            fill={dark === true ? '#FFFFFF' : dark === false ? '#0B2545' : 'currentColor'} 
+            className={dark === null ? 'text-slate-900 dark:text-white fill-current' : ''} 
+            fontWeight="800"
+          >
+            Park
+          </tspan>
         </text>
       </svg>
     </div>

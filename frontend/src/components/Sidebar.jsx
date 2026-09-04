@@ -226,7 +226,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           ========================================================================= */}
       <nav 
         aria-label="Navegación Móvil Flotante Glassmorphism"
-        className="md:hidden fixed bottom-3 left-3 right-3 max-w-sm sm:max-w-md mx-auto z-40 bg-white/80 backdrop-blur-xl rounded-[28px] shadow-[0_12px_40px_rgba(0,0,0,0.14)] border border-white/80 ring-1 ring-slate-900/5 px-2 sm:px-3 py-1 flex items-center justify-between select-none"
+        className="md:hidden fixed bottom-3 left-3 right-3 max-w-sm sm:max-w-md mx-auto z-40 bg-white/90 dark:bg-[#0B0F19]/90 backdrop-blur-xl rounded-[28px] shadow-[0_12px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-white/80 dark:border-slate-800/80 ring-1 ring-slate-900/5 dark:ring-white/5 px-2 sm:px-3 py-1 flex items-center justify-between select-none"
       >
         {/* 4 Botones Principales por Rol */}
         {[navConfig.left1, navConfig.left2, navConfig.center, navConfig.right1].filter(Boolean).map((item) => {
@@ -241,19 +241,19 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
             >
               {isActive ? (
                 <div className="flex flex-col items-center justify-center -mt-6 animate-in zoom-in-90 duration-200">
-                  <div className="w-12 h-12 rounded-full bg-slate-950 text-emerald-400 border-[3.5px] border-white shadow-xl shadow-slate-950/30 ring-2 ring-emerald-500/20 flex items-center justify-center transition-transform duration-200 scale-105 active:scale-95">
+                  <div className="w-12 h-12 rounded-full bg-slate-950 dark:bg-emerald-600 text-emerald-400 dark:text-white border-[3.5px] border-white dark:border-[#0B0F19] shadow-xl shadow-slate-950/30 dark:shadow-emerald-950/50 ring-2 ring-emerald-500/20 flex items-center justify-center transition-transform duration-200 scale-105 active:scale-95">
                     <Icon className="w-5 h-5 stroke-[2.4]" />
                   </div>
-                  <span className="text-[10px] font-black text-slate-900 tracking-tight mt-1">
+                  <span className="text-[10px] font-black text-slate-900 dark:text-white tracking-tight mt-1">
                     {item.shortLabel || item.label}
                   </span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-1 transition-all duration-200">
-                  <div className="p-1 text-slate-400 group-hover:text-slate-700 transition-colors">
+                  <div className="p-1 text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
                     <Icon className="w-5 h-5 stroke-[2.2]" />
                   </div>
-                  <span className="text-[9px] font-semibold text-slate-400 tracking-tight group-hover:text-slate-700 transition-colors">
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 tracking-tight group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
                     {item.shortLabel || item.label}
                   </span>
                 </div>
@@ -269,19 +269,19 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
         >
           {mobileDrawerOpen || isDrawerActive ? (
             <div className="flex flex-col items-center justify-center -mt-6 animate-in zoom-in-90 duration-200">
-              <div className="w-12 h-12 rounded-full bg-slate-950 text-emerald-400 border-[3.5px] border-white shadow-xl shadow-slate-950/30 ring-2 ring-emerald-500/20 flex items-center justify-center transition-transform duration-200 scale-105 active:scale-95">
+              <div className="w-12 h-12 rounded-full bg-slate-950 dark:bg-emerald-600 text-emerald-400 dark:text-white border-[3.5px] border-white dark:border-[#0B0F19] shadow-xl shadow-slate-950/30 dark:shadow-emerald-950/50 ring-2 ring-emerald-500/20 flex items-center justify-center transition-transform duration-200 scale-105 active:scale-95">
                 <Menu className="w-5 h-5 stroke-[2.4]" />
               </div>
-              <span className="text-[10px] font-black text-slate-900 tracking-tight mt-1">
+              <span className="text-[10px] font-black text-slate-900 dark:text-white tracking-tight mt-1">
                 Más
               </span>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-1 transition-all duration-200">
-              <div className="p-1 text-slate-400 group-hover:text-slate-700 transition-colors">
+              <div className="p-1 text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
                 <Menu className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <span className="text-[9px] font-semibold text-slate-400 tracking-tight group-hover:text-slate-700 transition-colors">
+              <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 tracking-tight group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
                 Más
               </span>
             </div>
@@ -292,15 +292,15 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
       {/* Drawer Móvil Desplegable (Slide-Up Sheet) */}
       {mobileDrawerOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-t-3xl p-5 max-h-[80vh] overflow-y-auto space-y-4 shadow-2xl animate-in slide-in-from-bottom">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+          <div className="bg-white dark:bg-[#111827] rounded-t-3xl p-5 max-h-[80vh] overflow-y-auto space-y-4 shadow-2xl dark:shadow-black/70 border-t border-slate-200/80 dark:border-slate-800 animate-in slide-in-from-bottom">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <h3 className="font-black text-slate-900 text-sm">Menú Completo ({role.toUpperCase()})</h3>
+                <h3 className="font-black text-slate-900 dark:text-white text-sm">Menú Completo ({role.toUpperCase()})</h3>
               </div>
               <button 
                 onClick={() => setMobileDrawerOpen(false)}
-                className="p-1.5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer"
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -316,11 +316,11 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
                     onClick={() => handleSelectTab(item.id)}
                     className={`flex items-center space-x-3 p-3.5 rounded-2xl border text-left transition cursor-pointer ${
                       isActive 
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-md font-bold' 
-                        : 'bg-slate-50 text-slate-700 border-slate-200/80 hover:bg-slate-100'
+                        ? 'bg-slate-900 dark:bg-emerald-950/80 text-white dark:text-emerald-300 border-slate-900 dark:border-emerald-800 shadow-md font-bold' 
+                        : 'bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`} />
                     <span className="text-xs font-semibold tracking-tight truncate">{item.label}</span>
                   </button>
                 );
@@ -328,16 +328,16 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
             </div>
 
             {/* Acceso a Términos desde el móvil */}
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => {
                   setMobileDrawerOpen(false);
                   if (onOpenTerms) onOpenTerms();
                 }}
-                className="w-full py-2.5 px-3 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/80 rounded-xl flex items-center justify-center gap-2 cursor-pointer border border-transparent dark:border-slate-700/80"
               >
-                <Scale className="w-4 h-4 text-slate-500" />
+                <Scale className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 <span>Términos y Condiciones Legales</span>
               </button>
             </div>

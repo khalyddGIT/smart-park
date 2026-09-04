@@ -25,6 +25,12 @@
       "skillPath": "skills/hyperframes-animation/SKILL.md",
       "computedHash": "98b083870a81b7748acf8068855eb455c9c7e5c840627d4a2a8005b0d687cb79"
     },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "dce739bef2928af5b36f892ad718faf1fdb0e4656a2acf6164fadce33bc22067"
+    },
     "improve-codebase-architecture": {
       "source": "mattpocock/skills",
       "sourceType": "github",

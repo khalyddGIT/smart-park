@@ -314,14 +314,14 @@ export const IncidentsModule = () => {
 
       {/* Toast Alert */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-bounce">
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 dark:bg-slate-950 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-3 duration-300">
           <Check className="w-5 h-5 shrink-0 text-emerald-400" />
           <span>{notification}</span>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#151D2F] p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/95 dark:bg-[#111827]/95 p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-amber-500/15 text-amber-500 dark:text-amber-400 rounded-2xl border border-amber-500/30 shadow-xs shrink-0">
             <AlertTriangle className="w-5 h-5 shrink-0" />
@@ -355,42 +355,70 @@ export const IncidentsModule = () => {
       </div>
 
       {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 h-full">
-        <Card className="h-full flex flex-col gap-4 p-6 border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F]">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Total Reportes</span>
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-2xl font-black font-mono text-slate-900 dark:text-white">{totalIncidents}</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">Histórico</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-slate-400/10 dark:bg-slate-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Reportes</span>
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <AlertTriangle className="w-4 h-4 stroke-[2.2]" />
+            </div>
           </div>
-        </Card>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">{totalIncidents}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Histórico</span>
+          </div>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Acumulado del sistema</p>
+        </div>
 
-        <Card className="h-full flex flex-col gap-4 p-6 border-rose-200 dark:border-rose-500/30 bg-rose-50/50 dark:bg-rose-500/10">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">Reportadas</span>
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-2xl font-black font-mono text-rose-700 dark:text-rose-400">{reportedCount}</span>
-            <span className="text-xs text-rose-600 dark:text-rose-400 font-bold">Por atender</span>
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-rose-500/10 dark:bg-rose-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Reportadas</span>
+            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <Clock className="w-4 h-4 stroke-[2.2]" />
+            </div>
           </div>
-        </Card>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-rose-600 dark:text-rose-400">{reportedCount}</span>
+            <span className="text-xs text-rose-700 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800/80">Por atender</span>
+          </div>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">En cola de resolución</p>
+        </div>
 
-        <Card className="h-full flex flex-col gap-4 p-6 border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-500/10">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">Resueltas</span>
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-2xl font-black font-mono text-emerald-700 dark:text-emerald-400">{resolvedCount}</span>
-            <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold">Concluidas</span>
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Resueltas</span>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <CheckCircle2 className="w-4 h-4 stroke-[2.2]" />
+            </div>
           </div>
-        </Card>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{resolvedCount}</span>
+            <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80">Concluidas</span>
+          </div>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Casos cerrados con éxito</p>
+        </div>
 
-        <Card className="h-full flex flex-col gap-4 p-6 border-sky-200 dark:border-sky-500/30 bg-sky-50/50 dark:bg-sky-500/10">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-sky-800 dark:text-sky-400">Tasa de Resolución</span>
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-2xl font-black font-mono text-sky-700 dark:text-sky-400">{resolutionRate}%</span>
-            <span className="text-xs text-sky-700 dark:text-sky-400 font-bold">{isAdmin ? 'Red completa' : 'Tus casos'}</span>
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-cyan-500/10 dark:bg-cyan-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tasa de Resolución</span>
+            <div className="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200/80 dark:border-cyan-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <ShieldCheck className="w-4 h-4 stroke-[2.2]" />
+            </div>
           </div>
-        </Card>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-cyan-600 dark:text-cyan-400">{resolutionRate}%</span>
+            <span className="text-xs text-cyan-700 dark:text-cyan-400 font-bold bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-lg border border-cyan-200 dark:border-cyan-800/80">{isAdmin ? 'Red' : 'Tus casos'}</span>
+          </div>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Efectividad de soporte</p>
+        </div>
       </div>
 
       {/* Buscador y Filtros */}
-      <Card className="p-4 border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] flex flex-col lg:flex-row items-center justify-between gap-4">
+      <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs flex flex-col lg:flex-row items-center justify-between gap-4">
         <div className="relative w-full lg:w-96">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 shrink-0 text-slate-400" />
           <Input
@@ -442,7 +470,7 @@ export const IncidentsModule = () => {
             </button>
           ))}
         </div>
-      </Card>
+      </div>
 
       {/* Grid de Incidencias */}
       {loading ? (
@@ -451,37 +479,39 @@ export const IncidentsModule = () => {
           <span className="text-sm font-bold">Cargando incidencias...</span>
         </div>
       ) : filteredIncidents.length === 0 ? (
-        <Card className="h-full flex flex-col gap-4 p-6 border-dashed border-slate-300 dark:border-slate-800 text-center">
-          <AlertTriangle className="w-5 h-5 shrink-0 mx-auto text-slate-300 dark:text-slate-600" />
+        <div className="bg-white/95 dark:bg-[#111827]/95 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-12 text-center shadow-xs dark:shadow-black/50 space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-7 h-7" />
+          </div>
           {searchText || filterStatus !== 'all' || filterParking !== 'all' ? (
             <>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Ninguna incidencia coincide con los filtros aplicados.</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Ajusta la búsqueda o restablece los filtros.</p>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Ninguna incidencia coincide con los filtros</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Ajusta la búsqueda o restablece los filtros para ver otros reportes.</p>
             </>
           ) : role === 'user' ? (
             <>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Aún no has reportado incidencias.</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Si algo falla durante tu estancia, repórtalo aquí con evidencia fotográfica.</p>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Aún no has reportado incidencias</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Si algo falla durante tu estancia, repórtalo aquí con evidencia fotográfica.</p>
             </>
           ) : (
             <>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">No hay incidencias registradas en la red.</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Todo en orden por ahora: los reportes de los conductores aparecerán aquí.</p>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">No hay incidencias registradas en la red</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Todo en orden por ahora: los reportes de los conductores aparecerán aquí.</p>
             </>
           )}
-        </Card>
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
             {filteredIncidents.map((inc) => (
-              <Card key={inc.id} className="h-full flex flex-col gap-4 p-6 border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] hover:shadow-md transition">
+              <div key={inc.id} className="h-full flex flex-col gap-4 p-6 border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 rounded-2xl shadow-xs hover:shadow-md dark:shadow-black/50 transition">
                 <div className="flex flex-col gap-4 flex-1">
                   <div className="flex justify-between items-start gap-2">
-                    <span className="font-mono text-xs font-black text-slate-400 dark:text-slate-400">INC-{String(inc.id).padStart(3, '0')}</span>
+                    <span className="font-mono text-xs font-black text-slate-400 dark:text-slate-500">INC-{String(inc.id).padStart(3, '0')}</span>
                     <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border flex items-center gap-2 ${
                       inc.status === 'resolved'
-                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/25'
-                        : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/25'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/80'
+                        : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/80'
                     }`}>
                       ● {inc.status === 'resolved' ? 'Resuelta' : 'Pendiente'}
                     </span>
@@ -493,18 +523,18 @@ export const IncidentsModule = () => {
                     <span className="truncate">{parkingNameOf(inc)}</span>
                   </p>
 
-                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col gap-2 text-xs font-mono">
+                  <div className="bg-slate-50 dark:bg-slate-900/80 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col gap-2 text-xs font-mono">
                     <div className="flex justify-between gap-2">
-                      <span className="text-slate-400 dark:text-slate-400 shrink-0">Reportante:</span>
+                      <span className="text-slate-400 dark:text-slate-500 shrink-0">Reportante:</span>
                       <span className="font-bold text-slate-900 dark:text-slate-100 truncate">{inc.user_name}</span>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <span className="text-slate-400 dark:text-slate-400">Categoría:</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-200 truncate ml-2">
+                      <span className="text-slate-400 dark:text-slate-500">Categoría:</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300 truncate ml-2">
                         {CATEGORY_LABELS[inc.category] || inc.category}
                       </span>
                     </div>
-                    <div className="flex justify-between gap-2 text-[10px] text-slate-400 dark:text-slate-400 pt-2 border-t border-slate-200 dark:border-slate-700/80">
+                    <div className="flex justify-between gap-2 text-[10px] text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-200 dark:border-slate-800">
                       <span>Fecha:</span>
                       <span>{formatDateTime(inc.created_at)}</span>
                     </div>
@@ -517,10 +547,10 @@ export const IncidentsModule = () => {
                     <div className="flex flex-col gap-2">
                       <button
                         onClick={() => setSelectedImage(inc.photo_url)}
-                        className="relative w-full h-40 rounded-xl overflow-hidden border border-slate-200 group/eye"
+                        className="relative w-full h-40 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 group/eye cursor-pointer"
                       >
                         <img src={inc.photo_url} alt="Evidencia" className="w-full h-40 object-cover group-hover/eye:scale-105 transition" />
-                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/eye:opacity-100 flex items-center justify-center transition">
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/eye:opacity-100 flex items-center justify-center transition">
                           <Eye className="w-5 h-5 shrink-0 text-white" />
                         </div>
                       </button>
@@ -530,17 +560,17 @@ export const IncidentsModule = () => {
 
                 {/* Nota de Resolución del Administrador */}
                 {inc.status === 'resolved' && inc.resolution_note && (
-                  <div className="bg-emerald-50/90 border border-emerald-200/80 p-4 rounded-xl flex flex-col gap-2">
-                    <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider flex items-center gap-2">
-                      <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-700" />
+                  <div className="bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 p-4 rounded-xl flex flex-col gap-2">
+                    <span className="text-[10px] font-black uppercase text-emerald-800 dark:text-emerald-400 tracking-wider flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-700 dark:text-emerald-400" />
                       <span>Nota de Resolución</span>
                     </span>
-                    <p className="text-xs text-emerald-950 font-medium">{inc.resolution_note}</p>
+                    <p className="text-xs text-emerald-950 dark:text-emerald-200 font-medium">{inc.resolution_note}</p>
                   </div>
                 )}
 
                 {/* Footer de Tarjeta */}
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 mt-auto">
                   {isAdmin ? (
                     inc.status !== 'resolved' ? (
                       <Button
@@ -553,20 +583,20 @@ export const IncidentsModule = () => {
                         <span>Resolver</span>
                       </Button>
                     ) : (
-                      <span className="text-[11px] text-slate-400 font-bold flex items-center gap-2 mx-auto">
-                        <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" /> Caso Finalizado · {formatDateTime(inc.resolved_at)}
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold flex items-center gap-2 mx-auto">
+                        <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" /> Caso Finalizado · {formatDateTime(inc.resolved_at)}
                       </span>
                     )
                   ) : (
                     <span className={`text-[11px] font-bold flex items-center gap-2 mx-auto ${
-                      inc.status === 'resolved' ? 'text-emerald-700' : 'text-amber-700'
+                      inc.status === 'resolved' ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'
                     }`}>
                       <Clock className="w-5 h-5 shrink-0" />
                       {inc.status === 'resolved' ? 'Resuelto por Administración' : 'En Atención por Garita'}
                     </span>
                   )}
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
@@ -577,24 +607,24 @@ export const IncidentsModule = () => {
         if (!open) stopCamera();
         setShowModal(open);
       }}>
-        <DialogContent className="max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto bg-white shadow-2xl border-slate-200">
+        <DialogContent className="max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 shadow-2xl border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900">
-              <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600" />
+            <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
+              <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400" />
               <span>{role === 'user' ? 'Reportar Problema con mi Estancia' : 'Registrar Incidencia Operativa'}</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Detalla lo sucedido y adjunta evidencia fotográfica tomada al instante o desde tu galería.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateIncident} className="flex flex-col gap-4 my-2">
             <div className="flex flex-col gap-2">
-              <label className="block text-xs font-bold text-slate-700">Tipo de Anomalía *</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Tipo de Anomalía *</label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="h-10 w-full bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
+                className="h-10 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
               >
                 {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
@@ -603,11 +633,11 @@ export const IncidentsModule = () => {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="block text-xs font-bold text-slate-700">Establecimiento *</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Establecimiento *</label>
               <select
                 value={formData.parkingId}
                 onChange={(e) => setFormData({ ...formData, parkingId: e.target.value })}
-                className="h-10 w-full bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
+                className="h-10 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
                 required
               >
                 {Object.keys(parkingsMap).length === 0 && (
@@ -620,13 +650,13 @@ export const IncidentsModule = () => {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="block text-xs font-bold text-slate-700">Descripción del Suceso *</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Descripción del Suceso *</label>
               <textarea
                 rows={3}
                 placeholder="Explica detalladamente lo sucedido (mínimo 5 caracteres)..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-xl p-4 text-xs font-medium text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
+                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
                 required
               />
             </div>
@@ -634,14 +664,14 @@ export const IncidentsModule = () => {
             {/* SECCIÓN DE EVIDENCIA (opcional, una foto) */}
             <div className="flex flex-col gap-4 pt-2">
               <div className="flex items-center justify-between gap-4">
-                <label className="block text-xs font-bold text-slate-700">Foto de Evidencia (opcional)</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Foto de Evidencia (opcional)</label>
 
-                <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 gap-2">
+                <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 gap-2">
                   <button
                     type="button"
                     onClick={() => setPhotoMode('upload')}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition text-xs gap-2 flex items-center ${
-                      photoMode === 'upload' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                    className={`px-3 py-1.5 rounded-lg font-bold transition text-xs gap-2 flex items-center cursor-pointer ${
+                      photoMode === 'upload' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                     }`}
                   >
                     <Upload className="w-4 h-4 shrink-0" />
@@ -650,8 +680,8 @@ export const IncidentsModule = () => {
                   <button
                     type="button"
                     onClick={() => setPhotoMode('camera')}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-2 text-xs ${
-                      photoMode === 'camera' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                    className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-2 text-xs cursor-pointer ${
+                      photoMode === 'camera' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                     }`}
                   >
                     <Camera className="w-5 h-5 shrink-0" />
@@ -664,13 +694,13 @@ export const IncidentsModule = () => {
                 <div
                   {...getRootProps()}
                   className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition flex flex-col gap-2 items-center ${
-                    isDragActive ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-300 hover:bg-slate-50'
+                    isDragActive ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30' : 'border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-850'
                   }`}
                 >
                   <input {...getInputProps()} />
-                  <UploadCloud className="w-5 h-5 shrink-0 text-slate-400" />
-                  <p className="text-xs font-bold text-slate-700">Arrastra una foto aquí o haz clic para subir</p>
-                  <p className="text-[10px] text-slate-400">JPG, PNG o WebP hasta 6MB (se comprime automáticamente)</p>
+                  <UploadCloud className="w-5 h-5 shrink-0 text-slate-400 dark:text-slate-500" />
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Arrastra una foto aquí o haz clic para subir</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">JPG, PNG o WebP hasta 6MB (se comprime automáticamente)</p>
                 </div>
               )}
 
@@ -744,17 +774,17 @@ export const IncidentsModule = () => {
               {photoPreview && (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-bold text-slate-600">Evidencia adjunta:</span>
-                    <span className="text-[10px] text-emerald-700 font-bold">
+                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Evidencia adjunta:</span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
                       ~{Math.round(photoPreview.length * 0.75 / 1024)} KB · Lista para enviar
                     </span>
                   </div>
-                  <div className="relative w-full h-40 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                  <div className="relative w-full h-40 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
                     <img src={photoPreview} alt="Evidencia" className="w-full h-40 object-cover" />
                     <button
                       type="button"
                       onClick={removePhoto}
-                      className="absolute top-2 right-2 w-8 h-8 bg-rose-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md hover:bg-rose-700"
+                      className="absolute top-2 right-2 w-8 h-8 bg-rose-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md hover:bg-rose-700 cursor-pointer"
                     >
                       ×
                     </button>
@@ -777,26 +807,26 @@ export const IncidentsModule = () => {
       {/* Modal Resolver Incidencia (ADMIN LOCAL / PLATAFORMA) */}
       {isAdmin && (
         <Dialog open={showResolveModal} onOpenChange={setShowResolveModal}>
-          <DialogContent className="max-w-md rounded-3xl p-6">
+          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900">
-                <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
+              <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
+                <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                 Resolver Incidencia INC-{String(resolveTarget?.id || '').padStart(3, '0')}
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Caso reportado por <strong>{resolveTarget?.user_name}</strong> en {resolveTarget ? parkingNameOf(resolveTarget) : ''}.
+              <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                Caso reportado por <strong className="text-slate-800 dark:text-slate-200">{resolveTarget?.user_name}</strong> en {resolveTarget ? parkingNameOf(resolveTarget) : ''}.
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleResolveIncident} className="flex flex-col gap-4 my-2">
               <div className="flex flex-col gap-2">
-                <label className="block text-xs font-bold text-slate-700">Nota de Resolución *</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Nota de Resolución *</label>
                 <textarea
                   rows={4}
                   placeholder="Describe cómo se atendió o resolvió el caso..."
                   value={resolutionNote}
                   onChange={(e) => setResolutionNote(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl p-4 text-xs font-medium text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
                   required
                 />
               </div>

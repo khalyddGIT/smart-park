@@ -153,16 +153,21 @@ html.dark body,
   color: var(--text-main) !important;
 }
 
-.dark header,
-[data-theme="dark"] header,
-[data-theme="midnight"] header,
-[data-theme="high-contrast"] header,
-.dark aside,
-[data-theme="dark"] aside,
-[data-theme="midnight"] aside,
-[data-theme="high-contrast"] aside {
+.dark header:not(.bg-transparent):not([class*="bg-transparent"]),
+[data-theme="dark"] header:not(.bg-transparent):not([class*="bg-transparent"]),
+[data-theme="midnight"] header:not(.bg-transparent):not([class*="bg-transparent"]),
+[data-theme="high-contrast"] header:not(.bg-transparent):not([class*="bg-transparent"]),
+.dark aside:not(.bg-transparent):not([class*="bg-transparent"]),
+[data-theme="dark"] aside:not(.bg-transparent):not([class*="bg-transparent"]),
+[data-theme="midnight"] aside:not(.bg-transparent):not([class*="bg-transparent"]),
+[data-theme="high-contrast"] aside:not(.bg-transparent):not([class*="bg-transparent"]) {
   background-color: var(--bg-card) !important;
   border-color: var(--border-card) !important;
+}
+
+.bg-transparent,
+[class*="bg-transparent"] {
+  background-color: transparent !important;
 }
 
 /* Fondos base */
@@ -409,6 +414,43 @@ html.dark body,
 [data-theme="midnight"] [class*="text-cyan-700"],
 [data-theme="high-contrast"] [class*="text-cyan-700"] {
   color: #38BDF8 !important;
+}
+
+/* Manejo de variantes 100 (iconos y pills) en Modo Oscuro */
+.dark [class*="bg-emerald-100"],
+.dark [class*="bg-green-100"],
+[data-theme="dark"] [class*="bg-emerald-100"],
+[data-theme="midnight"] [class*="bg-emerald-100"],
+[data-theme="high-contrast"] [class*="bg-emerald-100"] {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+.dark [class*="bg-cyan-100"],
+.dark [class*="bg-sky-100"],
+[data-theme="dark"] [class*="bg-cyan-100"],
+[data-theme="midnight"] [class*="bg-cyan-100"],
+[data-theme="high-contrast"] [class*="bg-cyan-100"] {
+  background-color: rgba(6, 182, 212, 0.18) !important;
+  border-color: rgba(6, 182, 212, 0.35) !important;
+}
+
+.dark [class*="bg-rose-100"],
+.dark [class*="bg-red-100"],
+[data-theme="dark"] [class*="bg-rose-100"],
+[data-theme="midnight"] [class*="bg-rose-100"],
+[data-theme="high-contrast"] [class*="bg-rose-100"] {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  border-color: rgba(244, 63, 94, 0.35) !important;
+}
+
+.dark [class*="bg-amber-100"],
+.dark [class*="bg-yellow-100"],
+[data-theme="dark"] [class*="bg-amber-100"],
+[data-theme="midnight"] [class*="bg-amber-100"],
+[data-theme="high-contrast"] [class*="bg-amber-100"] {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
 }
 
 /* ── Tipografías de Clase ── */

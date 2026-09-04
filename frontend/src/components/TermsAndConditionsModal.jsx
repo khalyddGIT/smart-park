@@ -92,20 +92,20 @@ Smart-Park no es propietario de los inmuebles físicos de estacionamiento (salvo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl rounded-3xl p-6 sm:p-8 max-h-[88vh] overflow-y-auto bg-white border-slate-200">
+      <DialogContent className="max-w-3xl rounded-3xl p-6 sm:p-8 max-h-[88vh] overflow-y-auto bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100">
         
         {/* Encabezado Principal */}
-        <DialogHeader className="border-b border-slate-100 pb-4 space-y-2">
+        <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-4 space-y-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center justify-center font-black shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 flex items-center justify-center font-black shrink-0">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight">
+                <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   Términos y Condiciones de Uso
                 </DialogTitle>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Marco Legal y Normativa de Servicio • Smart-Park
                 </p>
               </div>
@@ -117,60 +117,60 @@ Smart-Park no es propietario de los inmuebles físicos de estacionamiento (salvo
                 variant="outline"
                 size="sm"
                 onClick={handlePrint}
-                className="text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl gap-1.5 cursor-pointer h-9 px-3"
+                className="text-xs font-semibold text-slate-700 dark:text-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl gap-1.5 cursor-pointer h-9 px-3"
               >
-                <Printer className="w-4 h-4 shrink-0 text-slate-500" />
+                <Printer className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />
                 <span>Imprimir / PDF</span>
               </Button>
             </div>
           </div>
 
-          <DialogDescription className="text-xs text-slate-600 leading-relaxed pt-1">
+          <DialogDescription className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
             Al acceder, registrarte o contratar plazas mediante <strong>Smart-Park</strong>, aceptas las siguientes cláusulas conforme a la legislación peruana vigente (Ley N° 29571 y Ley N° 29733).
           </DialogDescription>
         </DialogHeader>
 
         {/* Buscador dentro del documento legal */}
         <div className="relative my-3">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             placeholder="Buscar cláusula (ej. reembolsos, LPR, comisiones, tolerancia)..."
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-emerald-500"
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
           />
         </div>
 
         {/* Cuerpo de Cláusulas */}
         <div className="space-y-3 my-2">
           {filteredSections.map((sec) => (
-            <div key={sec.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-slate-50 transition space-y-2">
+            <div key={sec.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition space-y-2">
               <div className="flex items-center space-x-2">
                 {sec.icon}
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">{sec.title}</h3>
+                <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">{sec.title}</h3>
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line pl-6">
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line pl-6">
                 {sec.content}
               </p>
             </div>
           ))}
 
           {filteredSections.length === 0 && (
-            <div className="p-8 text-center text-xs text-slate-400">
+            <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500">
               No se encontraron cláusulas que coincidan con "{searchFilter}".
             </div>
           )}
         </div>
 
         {/* Footer con Checkbox de Conformidad */}
-        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <label className="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <label className="flex items-center space-x-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={hasAccepted}
               onChange={(e) => setHasAccepted(e.target.checked)}
-              className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+              className="w-4 h-4 text-emerald-600 rounded border-slate-300 dark:border-slate-600 focus:ring-emerald-500 cursor-pointer"
             />
             <span>He leído y comprendido los Términos y Condiciones</span>
           </label>
@@ -183,7 +183,7 @@ Smart-Park no es propietario de los inmuebles físicos de estacionamiento (salvo
               setHasAccepted(true);
               onClose();
             }}
-            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl px-5 py-2.5 shadow-2xs cursor-pointer"
+            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 disabled:text-slate-500 dark:disabled:text-slate-600 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl px-5 py-2.5 shadow-md shadow-emerald-600/25 cursor-pointer"
           >
             Aceptar y Continuar
           </Button>

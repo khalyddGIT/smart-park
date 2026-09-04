@@ -711,38 +711,64 @@ export const VehiclesModule = () => {
         </Button>
       </div>
 
-      {/* Tarjetas KPI Compactas (Sin Badges ni Elementos Gigantes) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Tarjetas KPI */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         
-        <div className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-[11px] font-semibold uppercase text-slate-400 tracking-wider block">
-            Vehículos Registrados
-          </span>
-          <div className="mt-1.5 flex items-baseline justify-between">
-            <span className="text-xl font-bold font-mono text-slate-900">{vehicles.length}</span>
-            <span className="text-xs text-emerald-700 font-semibold">Activos</span>
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-slate-400/10 dark:bg-slate-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Vehículos Registrados
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <Car className="w-4 h-4 stroke-[2.2]" />
+            </div>
+          </div>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
+              {vehicles.length}
+            </span>
+            <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80">
+              Activos
+            </span>
           </div>
         </div>
 
-        <div className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-[11px] font-semibold uppercase text-slate-400 tracking-wider block">
-            Reconocimiento LPR / ANPR
-          </span>
-          <div className="mt-1.5 flex items-baseline justify-between">
-            <span className="text-sm font-bold text-emerald-700 font-mono">100% HABILITADO</span>
-            <span className="text-xs text-slate-500">Apertura automática</span>
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Reconocimiento LPR / ANPR
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <Camera className="w-4 h-4 stroke-[2.2]" />
+            </div>
+          </div>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-lg sm:text-xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
+              100% HABILITADO
+            </span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Apertura auto</span>
           </div>
         </div>
 
-        <div className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-[11px] font-semibold uppercase text-slate-400 tracking-wider block">
-            Vehículo Predeterminado
-          </span>
-          <div className="mt-1.5 flex items-baseline justify-between">
-            <span className="text-sm font-bold text-slate-900 font-mono">
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/10 dark:bg-amber-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Vehículo Predeterminado
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <Star className="w-4 h-4 stroke-[2.2]" />
+            </div>
+          </div>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
               {vehicles.find(v => v.isDefault)?.license_plate || 'Ninguno'}
             </span>
-            <span className="text-xs text-amber-700 font-semibold">Principal</span>
+            <span className="text-xs text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800/80">
+              Principal
+            </span>
           </div>
         </div>
 

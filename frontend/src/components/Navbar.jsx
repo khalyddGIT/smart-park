@@ -39,13 +39,13 @@ const getIconForType = (type) => {
 const getColorForType = (type) => {
   switch (type) {
     case 'success':
-      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      return 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/80';
     case 'warning':
-      return 'bg-amber-100 text-amber-800 border-amber-200';
+      return 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/80';
     case 'alert':
-      return 'bg-rose-100 text-rose-700 border-rose-200';
+      return 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/80';
     default:
-      return 'bg-blue-100 text-blue-700 border-blue-200';
+      return 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/80';
   }
 };
 
@@ -146,7 +146,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
               onClick={toggleTheme}
               title={`Tema actual: ${theme}. Clic para alternar modo claro/oscuro`}
               aria-label="Alternar modo visual"
-              className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition shadow-xs cursor-pointer flex items-center justify-center shrink-0"
+              className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shadow-xs cursor-pointer flex items-center justify-center shrink-0"
             >
               {isDark ? (
                 <Sun className="w-4 h-4 text-amber-400" />
@@ -168,12 +168,12 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
               className={`relative p-2 sm:p-2.5 rounded-xl transition shadow-xs cursor-pointer border flex items-center justify-center shrink-0 ${
                 showNotifications 
                   ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-500 shadow-md' 
-                  : 'bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800'
               }`}
             >
               <Bell className="w-[18px] h-[18px] shrink-0" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[19px] h-[19px] bg-emerald-500 text-white font-mono font-bold text-[10px] rounded-full flex items-center justify-center px-1 shadow-md ring-2 ring-white leading-none">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[19px] h-[19px] bg-emerald-500 text-white font-mono font-bold text-[10px] rounded-full flex items-center justify-center px-1 shadow-md ring-2 ring-white dark:ring-slate-900 leading-none">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -186,9 +186,9 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                   onClick={() => setShowNotifications(false)}
                 />
 
-                <div className="fixed inset-x-3 top-[64px] max-w-sm mx-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2.5 sm:w-96 sm:max-w-none bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 max-h-[80vh] flex flex-col">
+                <div className="fixed inset-x-3 top-[64px] max-w-sm mx-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2.5 sm:w-96 sm:max-w-none bg-white dark:bg-[#111827] rounded-3xl shadow-2xl dark:shadow-black/70 border border-slate-200/90 dark:border-slate-800/90 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 max-h-[80vh] flex flex-col">
                   
-                  <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+                  <div className="p-4 bg-slate-900 dark:bg-slate-950 text-white flex items-center justify-between border-b border-slate-800">
                     <div className="flex items-center space-x-2">
                       <Bell className="w-4 h-4 text-emerald-400" />
                       <div>
@@ -220,12 +220,12 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-50 border-b border-slate-100 text-xs">
+                  <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800 text-xs">
                     <div className="flex items-center space-x-1">
                       <button
                         onClick={() => setFilterUnreadOnly(false)}
                         className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer ${
-                          !filterUnreadOnly ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                          !filterUnreadOnly ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
                       >
                         Todas ({notifications.length})
@@ -233,7 +233,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                       <button
                         onClick={() => setFilterUnreadOnly(true)}
                         className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer ${
-                          filterUnreadOnly ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                          filterUnreadOnly ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
                       >
                         No leídas ({unreadCount})
@@ -243,7 +243,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                     {notifications.length > 0 && (
                       <button
                         onClick={clearRoleNotifications}
-                        className="text-[10px] text-slate-400 hover:text-rose-600 font-bold transition flex items-center gap-1 cursor-pointer"
+                        className="text-[10px] text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 font-bold transition flex items-center gap-1 cursor-pointer"
                         title="Limpiar todas las notificaciones de este rol"
                       >
                         <Trash2 className="w-4 h-4 shrink-0" />
@@ -252,12 +252,12 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                     )}
                   </div>
 
-                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
                     {displayedNotifications.length === 0 ? (
-                      <div className="p-8 text-center text-slate-400 space-y-2">
-                        <CheckCircle2 className="w-8 h-8 mx-auto text-slate-300" />
-                        <p className="text-xs font-semibold text-slate-600">No tienes notificaciones pendientes</p>
-                        <p className="text-[10px] text-slate-400">Los avisos de reservas, LPR y accesos aparecerán aquí.</p>
+                      <div className="p-8 text-center text-slate-400 dark:text-slate-500 space-y-2">
+                        <CheckCircle2 className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
+                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">No tienes notificaciones pendientes</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500">Los avisos de reservas, LPR y accesos aparecerán aquí.</p>
                       </div>
                     ) : (
                       displayedNotifications.map((n) => {
@@ -268,8 +268,8 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                           <div 
                             key={n.id}
                             className={`p-3.5 transition flex items-start space-x-3 ${
-                              n.read ? 'bg-white opacity-70 hover:opacity-100' : 'bg-emerald-50/30'
-                            } hover:bg-slate-50`}
+                              n.read ? 'bg-white dark:bg-[#111827] opacity-70 hover:opacity-100' : 'bg-emerald-50/30 dark:bg-emerald-950/20'
+                            } hover:bg-slate-50 dark:hover:bg-slate-850`}
                           >
                             <div className={`p-2 rounded-xl border shrink-0 ${colors}`}>
                               <Icon className="w-4 h-4" />
@@ -277,15 +277,15 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1">
-                                <h4 className="text-xs font-bold text-slate-900 truncate">
+                                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                   {n.title}
                                 </h4>
-                                <span className="text-[9px] font-mono text-slate-400 shrink-0">
+                                <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500 shrink-0">
                                   {n.time}
                                 </span>
                               </div>
 
-                              <p className="text-[11px] text-slate-600 mt-0.5 leading-snug">
+                              <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-snug">
                                 {n.message}
                               </p>
 
@@ -293,7 +293,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                                 {n.targetTab ? (
                                   <button
                                     onClick={() => handleNotificationClick(n)}
-                                    className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-0.5 cursor-pointer"
+                                    className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 flex items-center gap-0.5 cursor-pointer"
                                   >
                                     <span>Ver detalle</span>
                                     <ChevronRight className="w-4 h-4 shrink-0" />
@@ -305,7 +305,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                                 <button
                                   onClick={() => removeNotification(n.id)}
                                   title="Eliminar notificación"
-                                  className="text-slate-300 hover:text-rose-500 p-0.5 rounded cursor-pointer"
+                                  className="text-slate-300 dark:text-slate-600 hover:text-rose-500 p-0.5 rounded cursor-pointer"
                                 >
                                   <X className="w-4 h-4 shrink-0" />
                                 </button>
@@ -321,8 +321,8 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                     )}
                   </div>
 
-                  <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
-                    <span className="text-[10px] font-mono text-slate-500">
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-100 dark:border-slate-800 text-center">
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
                       Notificaciones en tiempo real para {role.toUpperCase()}
                     </span>
                   </div>
@@ -359,7 +359,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
               onClick={logout}
               title="Cerrar Sesión"
               aria-label="Cerrar Sesión"
-              className="flex items-center gap-1.5 p-2 sm:p-2.5 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition cursor-pointer border border-slate-200 dark:border-slate-800 shadow-xs shrink-0"
+              className="flex items-center gap-1.5 p-2 sm:p-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer border border-slate-200 dark:border-slate-800 shadow-xs shrink-0"
             >
               <LogOut className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline text-xs font-bold">Salir</span>

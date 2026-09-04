@@ -145,35 +145,35 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
   };
 
   const screenContent = (
-    <div className={`${isModal ? 'w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6' : 'min-h-screen p-4 sm:p-6 lg:p-8'} bg-slate-50/70 text-slate-800 flex flex-col justify-between items-center relative overflow-hidden font-sans selection:bg-emerald-500 selection:text-white`}>
+    <div className={`${isModal ? 'w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6' : 'min-h-screen p-4 sm:p-6 lg:p-8'} bg-slate-50/70 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col justify-between items-center relative overflow-hidden font-sans selection:bg-emerald-500 selection:text-white`}>
       
 
       {/* Fondo con brillo sutil */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-emerald-100/60 via-slate-100/40 to-transparent rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute -bottom-32 right-1/4 w-[400px] h-[200px] bg-teal-100/40 rounded-full blur-[90px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-emerald-100/60 dark:from-emerald-950/30 via-slate-100/40 dark:via-transparent to-transparent rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute -bottom-32 right-1/4 w-[400px] h-[200px] bg-teal-100/40 dark:bg-teal-950/20 rounded-full blur-[90px] pointer-events-none" />
 
       {/* Header / Brand */}
-      <header className="relative z-10 pt-2 sm:pt-4 flex flex-col items-center text-center space-y-1">
+      <div className="relative z-10 pt-2 sm:pt-4 flex flex-col items-center text-center space-y-1 bg-transparent">
         <BrandLogo className="h-10 sm:h-11 w-auto" />
-        <p className="text-xs text-slate-500 font-medium pt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium pt-1 bg-transparent">
           Gestión y Reserva de Estacionamientos
         </p>
-      </header>
+      </div>
 
       {/* Tarjeta Central de Autenticación */}
-      <main className="w-full max-w-[440px] my-auto relative z-10 py-4">
-        <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xl shadow-slate-200/60 space-y-5">
+      <main className="w-full max-w-[440px] my-auto relative z-10 py-3">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl shadow-slate-200/60 dark:shadow-black/50 space-y-5">
           
           {/* Tabs principales para Conductor/Usuario: Iniciar Sesión | Crear Cuenta */}
           {(authMode === 'login' || authMode === 'register') && (
-            <div className="grid grid-cols-2 p-1 bg-slate-100/90 rounded-2xl border border-slate-200 text-xs font-bold shadow-inner">
+            <div className="grid grid-cols-2 p-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 text-xs font-bold shadow-inner">
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
                 className={`py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
                   authMode === 'login'
-                    ? 'bg-white text-slate-900 shadow-md font-extrabold scale-[1.02]'
-                    : 'text-slate-500 hover:text-slate-800 font-semibold'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md font-extrabold scale-[1.02]'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
                 }`}
               >
                 Iniciar Sesión
@@ -183,8 +183,8 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                 onClick={() => { setAuthMode('register'); setErrorMsg(''); }}
                 className={`py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
                   authMode === 'register'
-                    ? 'bg-white text-slate-900 shadow-md font-extrabold scale-[1.02]'
-                    : 'text-slate-500 hover:text-slate-800 font-semibold'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md font-extrabold scale-[1.02]'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
                 }`}
               >
                 Crear Cuenta
@@ -194,15 +194,15 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
           {/* Alertas de error y éxito */}
           {errorMsg && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-semibold text-rose-700 text-center flex items-center justify-center space-x-2 animate-fade-in">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-xs font-semibold text-rose-700 dark:text-rose-300 text-center flex items-center justify-center space-x-2 animate-fade-in">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {successMsg && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs font-semibold text-emerald-800 text-center flex items-center justify-center space-x-2 animate-fade-in">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl text-xs font-semibold text-emerald-800 dark:text-emerald-300 text-center flex items-center justify-center space-x-2 animate-fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
@@ -228,15 +228,15 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
               {/* Divisor */}
               <div className="flex items-center space-x-3 my-2">
-                <div className="h-px bg-slate-200 flex-1" />
-                <span className="text-[11px] text-slate-400 font-medium">o con tu correo y contraseña</span>
-                <div className="h-px bg-slate-200 flex-1" />
+                <div className="h-px bg-slate-200 dark:bg-slate-700/80 flex-1" />
+                <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium">o con tu correo y contraseña</span>
+                <div className="h-px bg-slate-200 dark:bg-slate-700/80 flex-1" />
               </div>
 
               {/* Formulario Login */}
               <form onSubmit={handleLoginSubmit} className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Correo Electrónico</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Correo Electrónico</label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
@@ -245,18 +245,18 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       placeholder="nombre@ejemplo.com"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="pl-10 bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10.5 focus:bg-white focus:border-slate-900"
+                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10.5 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700">Contraseña</label>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Contraseña</label>
                     <button
                       type="button"
                       onClick={() => { setAuthMode('forgot_password'); setErrorMsg(''); }}
-                      className="text-[11px] text-slate-500 hover:text-emerald-600 transition"
+                      className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer"
                     >
                       ¿La olvidaste?
                     </button>
@@ -268,12 +268,12 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       placeholder="••••••••"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="pl-10 pr-10 bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10.5 focus:bg-white focus:border-slate-900"
+                      className="pl-10 pr-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10.5 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
                     </button>
@@ -282,10 +282,10 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
                 <Button
                   type="submit"
-                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm mt-1 transition cursor-pointer"
+                  className="w-full h-10.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/25 mt-1 transition cursor-pointer"
                 >
                   <span>Ingresar al Sistema</span>
-                  <ArrowRight className="w-4 h-4 ml-1.5 text-emerald-400" />
+                  <ArrowRight className="w-4 h-4 ml-1.5 text-white" />
                 </Button>
               </form>
 
@@ -298,8 +298,8 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
           {authMode === 'register' && (
             <div className="space-y-4">
               <div className="text-center pb-1">
-                <h3 className="text-sm font-black text-slate-900">Registro de Conductor</h3>
-                <p className="text-[11px] text-slate-500">Reserva plazas garantizadas en tiempo real</p>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">Registro de Conductor</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Reserva plazas garantizadas en tiempo real</p>
               </div>
 
               {/* Botón Google Registro */}
@@ -317,14 +317,14 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
               {/* Divisor */}
               <div className="flex items-center space-x-3 my-1">
-                <div className="h-px bg-slate-200 flex-1" />
-                <span className="text-[11px] text-slate-400 font-medium">o con tu correo</span>
-                <div className="h-px bg-slate-200 flex-1" />
+                <div className="h-px bg-slate-200 dark:bg-slate-700/80 flex-1" />
+                <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium">o con tu correo</span>
+                <div className="h-px bg-slate-200 dark:bg-slate-700/80 flex-1" />
               </div>
 
               <form onSubmit={handleDriverRegister} className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Nombre Completo *</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Nombre Completo *</label>
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
@@ -333,13 +333,13 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       placeholder="Nombres y Apellidos"
                       value={driverName}
                       onChange={(e) => setDriverName(e.target.value)}
-                      className="pl-10 bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Correo Electrónico *</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Correo Electrónico *</label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
@@ -348,13 +348,13 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       placeholder="usuario@correo.com"
                       value={driverEmail}
                       onChange={(e) => setDriverEmail(e.target.value)}
-                      className="pl-10 bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Celular</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Celular</label>
                   <div className="relative">
                     <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
@@ -362,35 +362,35 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       placeholder="+51 987 654 321"
                       value={driverPhone}
                       onChange={(e) => setDriverPhone(e.target.value)}
-                      className="pl-10 bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Contraseña</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Contraseña</label>
                   <Input
                     type="password"
                     placeholder="••••••••"
                     value={driverPassword}
                     onChange={(e) => setDriverPassword(e.target.value)}
-                    className="bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                    className="bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
                   />
                 </div>
 
-                <label className="flex items-start gap-2 p-2.5 rounded-xl border bg-white cursor-pointer select-none" style={{ borderColor: hasAcceptedTerms ? '#10b981' : '#e2e8f0' }}>
+                <label className="flex items-start gap-2 p-2.5 rounded-xl border bg-white dark:bg-slate-800/60 cursor-pointer select-none border-slate-200 dark:border-slate-700">
                   <input
                     type="checkbox"
                     checked={hasAcceptedTerms}
                     onChange={(e) => setHasAcceptedTerms(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
+                    className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
                   />
-                  <span className="text-[11px] leading-snug text-slate-700">
+                  <span className="text-[11px] leading-snug text-slate-700 dark:text-slate-300">
                     He leído y acepto los{' '}
                     <button
                       type="button"
                       onClick={(ev) => { ev.preventDefault(); setShowTermsModal(true); }}
-                      className="text-emerald-700 font-bold underline hover:text-emerald-800 cursor-pointer"
+                      className="text-emerald-600 dark:text-emerald-400 font-bold underline hover:text-emerald-500 cursor-pointer"
                     >
                       Términos y Condiciones
                     </button>
@@ -401,10 +401,10 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                 <Button
                   type="submit"
                   disabled={!hasAcceptedTerms}
-                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-sm mt-1 cursor-pointer"
+                  className="w-full h-10.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 disabled:text-slate-500 dark:disabled:text-slate-600 disabled:cursor-not-allowed text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/25 mt-1 cursor-pointer"
                 >
                   <span>Registrarme como Conductor</span>
-                  <ArrowRight className="w-4 h-4 ml-1.5 text-emerald-400" />
+                  <ArrowRight className="w-4 h-4 ml-1.5 text-white" />
                 </Button>
               </form>
             </div>
@@ -416,115 +416,115 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
           {authMode === 'affiliation' && (
             <div className="space-y-4">
               <div className="text-center pb-1">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto mb-1.5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mx-auto mb-1.5">
                   <Building2 className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-black text-slate-900">Solicitud de Afiliación de Cochera</h3>
-                <p className="text-[11px] text-slate-500">Envía tus datos para habilitar tu cuenta de Admin Local</p>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">Solicitud de Afiliación de Cochera</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Envía tus datos para habilitar tu cuenta de Admin Local</p>
               </div>
 
               {reqSuccess ? (
-                <div className="py-6 text-center space-y-3 animate-fade-in bg-emerald-50/50 border border-emerald-200 rounded-2xl p-4">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                <div className="py-6 text-center space-y-3 animate-fade-in bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mx-auto">
                     <FileCheck2 className="w-6 h-6" />
                   </div>
-                  <h4 className="text-xs font-black text-slate-900">¡Solicitud Enviada con Éxito!</h4>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                  <h4 className="text-xs font-black text-slate-900 dark:text-white">¡Solicitud Enviada con Éxito!</h4>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                     El Super Admin ha recibido los datos de tu establecimiento. Una vez aprobada la solicitud, podrás iniciar sesión con tu correo.
                   </p>
                 </div>
               ) : (
                 <form onSubmit={handleAffiliationSubmit} className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Nombre Comercial del Estacionamiento *</label>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Nombre Comercial del Estacionamiento *</label>
                     <Input
                       type="text"
                       required
                       placeholder="Nombre del Establecimiento"
                       value={reqParkingName}
                       onChange={(e) => setReqParkingName(e.target.value)}
-                      className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                      className="bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700">Propietario / Responsable *</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Propietario / Responsable *</label>
                       <Input
                         type="text"
                         required
                         placeholder="Nombres y Apellidos"
                         value={reqOwnerName}
                         onChange={(e) => setReqOwnerName(e.target.value)}
-                        className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                        className="bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700">Correo Electrónico *</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Correo Electrónico *</label>
                       <Input
                         type="email"
                         required
                         placeholder="contacto@cochera.com"
                         value={reqEmail}
                         onChange={(e) => setReqEmail(e.target.value)}
-                        className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                        className="bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700">WhatsApp / Teléfono</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200">WhatsApp / Teléfono</label>
                       <Input
                         type="tel"
                         placeholder="+51 966 123 456"
                         value={reqPhone}
                         onChange={(e) => setReqPhone(e.target.value)}
-                        className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                        className="bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700">Dirección del Local</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Dirección del Local</label>
                       <Input
                         type="text"
                         placeholder="Jr. 28 de Julio 340"
                         value={reqAddress}
                         onChange={(e) => setReqAddress(e.target.value)}
-                        className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10"
+                        className="bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2.5">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700">Plazas Estimadas</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Plazas Estimadas</label>
                       <Input
                         type="number"
                         min="1"
                         value={reqCapacity}
                         onChange={(e) => setReqCapacity(e.target.value)}
-                        className="bg-slate-50 border-slate-200 text-slate-900 rounded-xl text-xs h-10 font-mono"
+                        className="bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10 font-mono"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700">Tarifa Sugerida / h (S/)</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Tarifa Sugerida / h (S/)</label>
                       <Input
                         type="number"
                         step="0.5"
                         min="1"
                         value={reqRate}
                         onChange={(e) => setReqRate(e.target.value)}
-                        className="bg-slate-50 border-slate-200 text-emerald-700 font-bold rounded-xl text-xs h-10 font-mono"
+                        className="bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 font-bold rounded-xl text-xs h-10 font-mono"
                       />
                     </div>
                   </div>
 
                   <Button
                     type="submit"
-                    className="w-full h-10.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm mt-1 cursor-pointer"
+                    className="w-full h-10.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/25 mt-1 cursor-pointer"
                   >
                     <Send className="w-4 h-4 ml-1 text-white mr-1.5" />
                     <span>Enviar Solicitud de Afiliación</span>
@@ -540,11 +540,11 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
           {authMode === 'forgot_password' && (
             <div className="space-y-4">
               <div className="text-center space-y-1">
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto mb-2">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-2">
                   <KeyRound className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-black text-slate-900">Recuperar Contraseña</h3>
-                <p className="text-xs text-slate-500">Ingresa tu correo para recibir un PIN temporal</p>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">Recuperar Contraseña</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Ingresa tu correo para recibir un PIN temporal</p>
               </div>
 
               <form 
@@ -555,20 +555,20 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                 className="space-y-3"
               >
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Correo Electrónico</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Correo Electrónico</label>
                   <Input
                     type="email"
                     required
                     placeholder="ejemplo@correo.com"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    className="bg-slate-50/80 border-slate-200 text-slate-900 rounded-xl text-xs h-10.5"
+                    className="bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10.5"
                   />
                 </div>
 
                 <Button
                   type="submit"
-                  className="w-full h-10.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                  className="w-full h-10.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/25 cursor-pointer"
                 >
                   <span>Enviar Enlace</span>
                 </Button>
@@ -577,7 +577,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
-                className="w-full text-center text-xs text-slate-500 hover:text-slate-900 flex items-center justify-center gap-1.5 pt-1 transition cursor-pointer"
+                className="w-full text-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5 pt-1 transition cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4 shrink-0" />
                 <span>Volver a Iniciar Sesión</span>
@@ -586,23 +586,23 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
           )}
 
           {/* Botón inferior dinámico para alternar entre Afiliación e Iniciar Sesión */}
-          <div className="pt-3 border-t border-slate-100 text-center">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center">
             {authMode === 'affiliation' ? (
               <button
                 type="button"
                 onClick={() => setAuthMode('login')}
-                className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center justify-center mx-auto space-x-1.5 transition cursor-pointer"
+                className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center mx-auto space-x-1.5 transition cursor-pointer"
               >
                 <span>¿Ya tienes tu cuenta de cochera habilitada?</span>
-                <span className="text-emerald-700 underline font-extrabold">Iniciar Sesión</span>
+                <span className="text-emerald-600 dark:text-emerald-400 underline font-extrabold">Iniciar Sesión</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setAuthMode('affiliation')}
-                className="w-full py-2.5 px-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold transition flex items-center justify-center space-x-2 group cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition flex items-center justify-center space-x-2 group cursor-pointer"
               >
-                <Building2 className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
                 <span>¿Administras una cochera? Solicitar Afiliación</span>
               </button>
             )}
@@ -612,13 +612,13 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       </main>
 
       {/* Footer minimalista con enlace a Términos y Condiciones */}
-      <footer className="relative z-10 py-3 text-center text-[11px] text-slate-500 space-x-2">
+      <footer className="relative z-10 py-3 text-center text-[11px] text-slate-500 dark:text-slate-400 space-x-2">
         <span>Smart-Park Enterprise &copy; 2026 &bull; Ayacucho, Perú</span>
         <span>&bull;</span>
         <button
           type="button"
           onClick={() => setShowTermsModal(true)}
-          className="text-slate-600 hover:text-emerald-700 font-bold underline cursor-pointer"
+          className="text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-bold underline cursor-pointer"
         >
           Términos y Condiciones
         </button>
@@ -641,14 +641,14 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
         onClick={(e) => {
           if (e.target === e.currentTarget && onClose) onClose();
         }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in overflow-y-auto"
       >
-        <div className="relative z-[10000] w-full max-w-xl my-8 bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="relative z-[10000] w-full max-w-lg my-6 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 z-[10001] p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="absolute top-4 right-4 z-[10001] p-2 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>

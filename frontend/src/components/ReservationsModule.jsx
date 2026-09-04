@@ -261,21 +261,21 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
     <div className="space-y-6 animate-in fade-in">
       
       {/* Encabezado Principal Limpio y Profesional */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
         <div className="flex items-center space-x-3.5">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shadow-xs shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-slate-800 text-emerald-400 flex items-center justify-center font-bold shadow-xs shrink-0 border border-transparent dark:border-slate-700">
             <CalendarCheck className="w-5 h-5 stroke-[2.2]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+              <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                 {role === 'user' ? 'Mis Reservas & Pases Digitales' : 'Centro de Reservas & Garita'}
               </h1>
-              <span className="text-xs font-mono font-bold text-slate-500">
+              <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
                 ({filteredReservations.length} {filteredReservations.length === 1 ? 'reserva' : 'reservas'})
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-normal mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-normal mt-0.5">
               {role === 'user' 
                 ? 'Monitorea tus estancias en tiempo real, descarga tus pases QR y gestiona tus horarios.' 
                 : 'Control operativo de entradas, salidas y emisión de tickets en tiempo real.'}
@@ -287,7 +287,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           {role === 'user' && onNavigateToBooking && (
             <Button
               onClick={onNavigateToBooking}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 rounded-xl h-9 px-4 shadow-xs cursor-pointer transition-colors"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 rounded-xl h-9 px-4 shadow-sm cursor-pointer transition-colors"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>Nueva Reserva en Mapa</span>
@@ -302,9 +302,9 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                 }
                 setShowCreateModal(true);
               }}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs gap-1.5 rounded-xl h-9 px-4 shadow-xs cursor-pointer transition-colors"
+              className="bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 rounded-xl h-9 px-4 shadow-xs cursor-pointer transition-colors"
             >
-              <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+              <Plus className="w-4 h-4 text-emerald-400 dark:text-white stroke-[2.5]" />
               <span>Emitir Ticket</span>
             </Button>
           )}
@@ -313,12 +313,12 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
 
       {/* Alerta de Feedback */}
       {feedbackMessage && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs font-semibold flex items-center justify-between shadow-2xs animate-in fade-in">
+        <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900 text-emerald-900 dark:text-emerald-200 rounded-xl text-xs font-semibold flex items-center justify-between shadow-2xs animate-in fade-in">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.2]" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 stroke-[2.2]" />
             <span>{feedbackMessage}</span>
           </div>
-          <button onClick={() => setFeedbackMessage('')} className="text-emerald-700 hover:text-emerald-900 cursor-pointer">
+          <button onClick={() => setFeedbackMessage('')} className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-200 cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -326,7 +326,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
 
       {/* Banner de Reserva en Curso para Conductor */}
       {role === 'user' && activeUserReservation && (
-        <div className="p-4 rounded-xl bg-slate-900 text-white border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="p-4 rounded-xl bg-slate-900 dark:bg-slate-900 text-white border border-slate-800 dark:border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center">
               <QrCode className="w-5 h-5 text-emerald-400" />
@@ -348,7 +348,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <Button
               type="button"
               onClick={() => handleOpenPass(activeUserReservation)}
-              className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               <QrCode className="w-4 h-4" />
               <span>Ver Pase QR</span>
@@ -358,53 +358,92 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       )}
 
       {/* =========================================================================
-          MÉTRICAS KPI COMPACTAS Y LIMPIAS (SIN TEXTOS DE RELLENO NI PUNTOS)
+          MÉTRICAS KPI COMPACTAS Y LIMPIAS
           ========================================================================= */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         
-        {/* Total Reservas */}
-        <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total</span>
-            <span className="text-xl font-black font-mono text-slate-900">{totalReservations}</span>
+        {/* Card 1: Total Reservas */}
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-slate-400/10 dark:bg-slate-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Total Reservas
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <CalendarCheck className="w-4 h-4 stroke-[2.2]" />
+            </div>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
-            <CalendarCheck className="w-4 h-4" />
-          </div>
-        </div>
-
-        {/* En Curso / Activas */}
-        <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">En Estancia</span>
-            <span className="text-xl font-black font-mono text-emerald-700">{activeCount}</span>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-            <Car className="w-4 h-4" />
-          </div>
-        </div>
-
-        {/* Programadas */}
-        <div className="p-3.5 rounded-xl border border-cyan-200 bg-cyan-50/50 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800 block">Programadas</span>
-            <span className="text-xl font-black font-mono text-cyan-800">{scheduledCount}</span>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center">
-            <Clock className="w-4 h-4" />
+          <div className="mt-2.5">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white block">
+              {totalReservations}
+            </span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 block">
+              Historial completo
+            </span>
           </div>
         </div>
 
-        {/* Gasto Total / Recaudación */}
-        <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+        {/* Card 2: En Estancia */}
+        <div className="p-4 sm:p-5 rounded-2xl border border-emerald-200/80 dark:border-emerald-900/60 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/15 dark:bg-emerald-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+              En Estancia
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <Car className="w-4 h-4 stroke-[2.2]" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400 block">
+              {activeCount}
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              En tiempo real
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: Programadas */}
+        <div className="p-4 sm:p-5 rounded-2xl border border-cyan-200/80 dark:border-cyan-900/60 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-cyan-500/15 dark:bg-cyan-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-cyan-700 dark:text-cyan-400">
+              Programadas
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200/80 dark:border-cyan-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <Clock className="w-4 h-4 stroke-[2.2]" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-cyan-600 dark:text-cyan-400 block">
+              {scheduledCount}
+            </span>
+            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium mt-0.5 block">
+              Por ingresar
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Gasto Total / Recaudación */}
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               {role === 'user' ? 'Gasto Total' : 'Recaudación'}
             </span>
-            <span className="text-xl font-black font-mono text-emerald-700">S/ {totalRevenue.toFixed(2)}</span>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 font-black text-xs font-mono flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              S/
+            </div>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 font-black text-xs font-mono flex items-center justify-center">
-            S/
+          <div className="mt-2.5">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400 block">
+              S/ {totalRevenue.toFixed(2)}
+            </span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono font-medium mt-0.5 block">
+              Total acumulado
+            </span>
           </div>
         </div>
 
@@ -413,23 +452,23 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
       {/* =========================================================================
           BARRA DE BÚSQUEDA Y FILTROS INTEGRADOS
           ========================================================================= */}
-      <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-3">
+      <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           
           {/* Buscador */}
           <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 shrink-0" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
             <input
               type="text"
               placeholder="Buscar por placa, código RSV, cajón o cochera..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-8 h-9 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
+              className="w-full pl-9 pr-8 h-9 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-colors"
             />
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm('')} 
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-xs cursor-pointer"
               >
                 ✕
               </button>
@@ -441,7 +480,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <select
               value={parkingFilter}
               onChange={(e) => setParkingFilter(e.target.value)}
-              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none cursor-pointer focus:border-emerald-500"
+              className="h-9 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none cursor-pointer focus:border-emerald-500"
             >
               <option value="ALL">Todas las Sedes ({establishments.length})</option>
               {establishments.map(e => (
@@ -452,7 +491,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none cursor-pointer focus:border-emerald-500"
+              className="h-9 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none cursor-pointer focus:border-emerald-500"
             >
               <option value="ALL">Cualquier Fecha</option>
               <option value="TODAY">Solo Hoy</option>
@@ -461,7 +500,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
         </div>
 
         {/* Pestañas de Estado */}
-        <div className="flex items-center gap-1.5 border-t border-slate-100 pt-2.5 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-800 pt-2.5 overflow-x-auto scrollbar-none">
           {[
             { id: 'ALL', label: 'Todas', count: totalReservations },
             { id: 'ACTIVE', label: 'En Curso', count: activeCount },
@@ -476,12 +515,12 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                 onClick={() => setStatusFilter(tab.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                   isSelected 
-                    ? 'bg-slate-900 text-white shadow-xs' 
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-slate-900 dark:bg-slate-700 text-white shadow-xs' 
+                    : 'bg-slate-100 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
                 }`}
               >
                 <span>{tab.label}</span>
-                <span className={`text-[11px] font-mono ${isSelected ? 'text-emerald-400' : 'text-slate-400'}`}>
+                <span className={`text-[11px] font-mono ${isSelected ? 'text-emerald-400' : 'text-slate-400 dark:text-slate-400'}`}>
                   ({tab.count})
                 </span>
               </button>
@@ -495,10 +534,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           ========================================================================= */}
       <div className="space-y-3">
         {filteredReservations.length === 0 ? (
-          <div className="p-12 text-center rounded-xl border border-slate-200 bg-white shadow-2xs space-y-2">
-            <CalendarCheck className="w-8 h-8 text-slate-300 mx-auto" />
-            <h3 className="font-bold text-slate-800 text-sm">No se encontraron reservas</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <div className="p-12 text-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-2">
+            <CalendarCheck className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">No se encontraron reservas</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
               Intenta buscar por otro término o restablece los filtros.
             </p>
           </div>
@@ -516,12 +555,12 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
             return (
               <div 
                 key={res.code} 
-                className={`p-4 rounded-xl border bg-white shadow-2xs hover:border-slate-300 transition-all ${
+                className={`p-4 rounded-xl border bg-white dark:bg-slate-900/90 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all ${
                   isActive 
-                    ? 'border-emerald-300' 
+                    ? 'border-emerald-300 dark:border-emerald-800/80' 
                     : isScheduled 
-                    ? 'border-cyan-200' 
-                    : 'border-slate-200'
+                    ? 'border-cyan-200 dark:border-cyan-800/80' 
+                    : 'border-slate-200 dark:border-slate-800'
                 }`}
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -532,68 +571,73 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                     {/* Caja de Plaza / Cajón */}
                     <div className={`w-12 h-12 rounded-lg flex flex-col items-center justify-center font-mono font-black shrink-0 border ${
                       isActive 
-                        ? 'bg-emerald-600 text-white border-emerald-600' 
+                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' 
                         : isScheduled
-                        ? 'bg-slate-900 text-white border-slate-900'
+                        ? 'bg-slate-900 dark:bg-slate-800 text-white border-slate-800 dark:border-slate-700'
                         : isCompleted
-                        ? 'bg-slate-100 text-slate-700 border-slate-200'
-                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                        : 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/60'
                     }`}>
                       <span className="text-[8px] uppercase font-bold tracking-tighter opacity-80 leading-none">Plaza</span>
                       <span className="text-base leading-tight font-black">{res.slot}</span>
                     </div>
 
                     {/* Contenido Central */}
-                    <div className="space-y-1">
-                      {/* Fila 1: Código, Estado y Placa */}
+                    <div className="space-y-1.5">
+                      {/* Fila 1: Código, Badge de Estado y Placa Vehicular Estilizada */}
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono font-bold text-xs text-slate-400">{res.code}</span>
+                        <span className="font-mono font-bold text-xs text-slate-400 dark:text-slate-400">{res.code}</span>
                         
-                        {/* Estado en Texto Directo */}
+                        {/* Estado en Pill/Badge */}
                         {isActive && (
-                          <span className="text-xs font-bold text-emerald-600">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                             En Estancia
                           </span>
                         )}
 
                         {isScheduled && (
-                          <span className="text-xs font-bold text-cyan-600">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
                             Programada
                           </span>
                         )}
 
                         {isCompleted && (
-                          <span className="text-xs font-bold text-slate-400">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30">
                             Finalizada
                           </span>
                         )}
 
                         {isCancelled && (
-                          <span className="text-xs font-bold text-rose-600">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
                             Cancelada
                           </span>
                         )}
 
-                        {/* Placa en Monospace */}
-                        <span className="font-mono font-bold text-xs text-slate-900">
-                          {res.plate}
-                        </span>
+                        {/* Placa Vehicular como Tag/Placa Real */}
+                        {res.plate && (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-mono font-black tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shadow-2xs">
+                            <Car className="w-3 h-3 text-slate-400 dark:text-slate-400 shrink-0" />
+                            <span>{res.plate}</span>
+                          </span>
+                        )}
                       </div>
 
                       {/* Fila 2: Nombre del Establecimiento */}
-                      <h3 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span>{res.parking}</span>
                       </h3>
 
-                      {/* Fila 3: Conductor y Horario */}
-                      <div className="flex flex-wrap items-center text-xs text-slate-500 gap-x-3 gap-y-1">
-                        <span className="flex items-center gap-1 text-slate-700">
-                          <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{res.customerName}</span>
-                        </span>
+                      {/* Fila 3: Conductor (si existe) y Horario */}
+                      <div className="flex flex-wrap items-center text-xs text-slate-500 dark:text-slate-400 gap-x-3 gap-y-1">
+                        {res.customerName && (
+                          <span className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{res.customerName}</span>
+                          </span>
+                        )}
 
-                        <span className="flex items-center gap-1 text-slate-500">
+                        <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                           <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           {isScheduled ? (
                             <span>Llegada estimada: {new Date(res.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -606,13 +650,13 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                       {/* Barra de Tiempo Transcurrido */}
                       {(isActive || isScheduled) && (
                         <div className="pt-1 max-w-xs">
-                          <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-0.5 font-medium">
+                          <div className="flex justify-between text-[10px] font-mono text-slate-400 dark:text-slate-400 mb-0.5 font-medium">
                             <span>{isActive ? 'Estancia en curso' : 'Ventana de llegada'}</span>
-                            <span className={isActive ? 'text-emerald-700 font-semibold' : 'text-cyan-700 font-semibold'}>
+                            <span className={isActive ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-cyan-600 dark:text-cyan-400 font-semibold'}>
                               {remainingText}
                             </span>
                           </div>
-                          <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div 
                               className={`h-full transition-all duration-500 ${
                                 isActive ? 'bg-emerald-600' : 'bg-cyan-600'
@@ -626,14 +670,14 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                   </div>
 
                   {/* Bloque Derecho: Importe y Acciones */}
-                  <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-2.5 border-t lg:border-t-0 pt-2.5 lg:pt-0 border-slate-100 shrink-0">
+                  <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-2.5 border-t lg:border-t-0 pt-2.5 lg:pt-0 border-slate-100 dark:border-slate-800 shrink-0">
                     
                     {/* Importe */}
                     <div className="text-left lg:text-right">
-                      <span className="text-[10px] text-slate-400 block font-mono">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-400 block font-mono">
                         {isScheduled ? 'Tarifa' : 'Importe'}
                       </span>
-                      <span className="text-base font-bold text-slate-900 font-mono">
+                      <span className="text-base font-bold text-slate-900 dark:text-white font-mono">
                         {isScheduled 
                           ? `S/ ${Number(res.ratePerHour || 5.0).toFixed(2)} /h`
                           : `S/ ${Number(res.cost).toFixed(2)}`}
@@ -669,7 +713,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                           }}
                           size="sm"
                           variant="outline"
-                          className="rounded-lg text-xs font-semibold gap-1 bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 h-8 px-2.5 cursor-pointer"
+                          className="rounded-lg text-xs font-semibold gap-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 h-8 px-2.5 cursor-pointer"
                           title="Registrar Salida (Check-out)"
                         >
                           <LogOut className="w-3.5 h-3.5 shrink-0" />
@@ -681,7 +725,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                       <Button
                         onClick={() => handleOpenPass(res)}
                         size="sm"
-                        className="rounded-lg text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-xs h-8 px-3 cursor-pointer"
+                        className="rounded-lg text-xs font-bold gap-1.5 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white border border-transparent dark:border-slate-700/80 shadow-xs h-8 px-3 cursor-pointer"
                       >
                         <QrCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         <span>Pase QR</span>
@@ -692,10 +736,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                         onClick={() => handlePrintReceipt(res)}
                         variant="outline"
                         size="sm"
-                        className="rounded-lg text-xs font-semibold gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border-slate-200 h-8 px-2.5 cursor-pointer"
+                        className="rounded-lg text-xs font-semibold gap-1.5 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 h-8 px-2.5 cursor-pointer"
                         title="Imprimir Comprobante"
                       >
-                        <Printer className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <Printer className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                         <span className="hidden sm:inline">Ticket</span>
                       </Button>
 
@@ -709,14 +753,13 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                               setFeedbackMessage(`Reserva ${res.code} cancelada. Plaza ${res.slot} disponible.`);
                             }
                           }}
-                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-md transition-colors cursor-pointer"
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2 py-1 rounded-md transition-colors cursor-pointer"
                         >
                           Cancelar
                         </button>
                       )}
                     </div>
                   </div>
-
                 </div>
               </div>
             );

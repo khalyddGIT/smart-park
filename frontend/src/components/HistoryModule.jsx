@@ -140,47 +140,65 @@ export const HistoryModule = () => {
       </div>
 
       {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Estancias</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-slate-900">{totalStays}</span>
-            <span className="text-xs text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-slate-400/10 dark:bg-slate-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Estancias</span>
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <Car className="w-4 h-4 stroke-[2.2]" />
+            </div>
+          </div>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">{totalStays}</span>
+            <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80">
               100% Auditadas
             </span>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Gasto Total Acumulado</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-emerald-700">S/ {totalSpent.toFixed(2)}</span>
-            <span className="text-xs text-slate-500 font-mono">Moneda: PEN</span>
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Gasto Total Acumulado</span>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <DollarSign className="w-4 h-4 stroke-[2.2]" />
+            </div>
           </div>
-        </Card>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">S/ {totalSpent.toFixed(2)}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Moneda: PEN</span>
+          </div>
+        </div>
 
-        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Costo Promedio / Estancia</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-slate-800">S/ {avgCost.toFixed(2)}</span>
-            <span className="text-xs text-slate-400">Tarifa media</span>
+        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-cyan-500/10 dark:bg-cyan-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Costo Promedio / Estancia</span>
+            <div className="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200/80 dark:border-cyan-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
+              <TrendingUp className="w-4 h-4 stroke-[2.2]" />
+            </div>
           </div>
-        </Card>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">S/ {avgCost.toFixed(2)}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">Tarifa media</span>
+          </div>
+        </div>
       </div>
 
       {/* Buscador y Filtros */}
-      <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col md:flex-row items-center justify-between gap-3">
+      <Card className="p-4 rounded-2xl border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-[#111827] flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative w-full md:w-96">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
           <Input
             type="text"
             placeholder="Buscar por placa, cochera, ID o boleta..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-xs font-semibold"
+            className="pl-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100"
           />
           {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">✕</button>
+            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-xs">✕</button>
           )}
         </div>
 
@@ -188,7 +206,7 @@ export const HistoryModule = () => {
           <select
             value={parkingFilter}
             onChange={(e) => setParkingFilter(e.target.value)}
-            className="h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
+            className="h-10 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 outline-none"
           >
             <option value="ALL">Todas las Cocheras</option>
             {establishments.map(e => (
@@ -199,7 +217,7 @@ export const HistoryModule = () => {
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
+            className="h-10 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 outline-none"
           >
             <option value="ALL">Todo el Historial</option>
             <option value="TODAY">Solo Hoy</option>
@@ -210,67 +228,67 @@ export const HistoryModule = () => {
       {/* Lista de Registros */}
       <div className="space-y-3">
         {filteredHistory.length === 0 ? (
-          <Card className="p-12 text-center rounded-3xl border-slate-200 bg-white space-y-2">
-            <Clock className="w-8 h-8 text-slate-300 mx-auto" />
-            <h3 className="font-bold text-slate-800 text-sm">No se encontraron estancias</h3>
-            <p className="text-xs text-slate-500">Prueba con otros términos de búsqueda.</p>
+          <Card className="p-12 text-center rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] space-y-2">
+            <Clock className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">No se encontraron estancias</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Prueba con otros términos de búsqueda.</p>
           </Card>
         ) : (
           filteredHistory.map((h) => (
             <Card 
               key={h.id} 
-              className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-slate-200 shadow-xs hover:shadow-md transition rounded-3xl bg-white"
+              className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md dark:shadow-black/50 transition rounded-2xl bg-white dark:bg-[#111827]"
             >
               <div className="flex items-start sm:items-center space-x-4">
                 {/* ID Tag */}
-                <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex flex-col items-center justify-center font-mono font-black text-xs shrink-0 shadow-xs">
+                <div className="w-14 h-14 rounded-2xl bg-slate-900 dark:bg-slate-800 text-white flex flex-col items-center justify-center font-mono font-black text-xs shrink-0 shadow-xs border border-transparent dark:border-slate-700">
                   <span className="text-[9px] text-emerald-400 opacity-80">STAY</span>
                   <span>{h.id.replace('ST-', '')}</span>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-extrabold text-slate-900 text-base">{h.parking}</h3>
+                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base">{h.parking}</h3>
                     <span className="bg-slate-950 text-white px-2 py-0.5 rounded-md font-mono font-black text-[11px] border border-slate-700 shadow-2xs">
                       🇵🇪 {h.plate}
                     </span>
                     {h.slot && (
-                      <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md font-mono font-bold text-[11px] border border-emerald-200">
+                      <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-md font-mono font-bold text-[11px] border border-emerald-200 dark:border-emerald-800/80">
                         Cajón {h.slot}
                       </span>
                     )}
                   </div>
 
-                  <p className="text-xs text-slate-500 flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4 shrink-0 text-emerald-600" /> 
-                      <strong>{h.date}</strong>
+                      <Calendar className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" /> 
+                      <strong className="text-slate-800 dark:text-slate-200">{h.date}</strong>
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-4 h-4 shrink-0 text-slate-400" /> 
                       {h.time} ({h.duration})
                     </span>
-                    <span className="font-mono text-slate-600 font-medium">
-                      Boleta: <strong>{h.invoice}</strong>
+                    <span className="font-mono text-slate-600 dark:text-slate-400 font-medium">
+                      Boleta: <strong className="text-slate-800 dark:text-slate-200">{h.invoice}</strong>
                     </span>
                   </p>
                 </div>
               </div>
 
               {/* Costo y Botón Ver Boleta */}
-              <div className="flex items-center space-x-4 justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+              <div className="flex items-center space-x-4 justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 dark:border-slate-800">
                 <div className="text-left md:text-right">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Liquidado</span>
-                  <span className="text-lg font-black text-emerald-700 font-mono">S/ {Number(h.cost).toFixed(2)}</span>
+                  <span className="text-lg font-black text-emerald-700 dark:text-emerald-400 font-mono">S/ {Number(h.cost).toFixed(2)}</span>
                 </div>
 
                 <Button
                   onClick={() => setSelectedReceipt(h)}
                   variant="outline"
                   size="sm"
-                  className="rounded-xl text-xs font-bold gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 h-9"
+                  className="rounded-xl text-xs font-bold gap-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 h-9"
                 >
-                  <Receipt className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <Receipt className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                   <span>Ver Boleta</span>
                 </Button>
               </div>
@@ -282,15 +300,15 @@ export const HistoryModule = () => {
       {/* Modal de Boleta Electrónica */}
       {selectedReceipt && (
         <Dialog open={!!selectedReceipt} onOpenChange={() => setSelectedReceipt(null)}>
-          <DialogContent className="max-w-md rounded-3xl p-6 bg-white shadow-2xl border-slate-200">
+          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-slate-900 shadow-2xl border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100">
             <DialogHeader>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-2">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mx-auto mb-2 border border-emerald-200 dark:border-emerald-800/80">
                 <Receipt className="w-6 h-6" />
               </div>
-              <DialogTitle className="text-xl font-black text-center text-slate-900">
+              <DialogTitle className="text-xl font-black text-center text-slate-900 dark:text-white">
                 Boleta de Venta Electrónica
               </DialogTitle>
-              <DialogDescription className="text-center text-xs font-mono text-slate-500">
+              <DialogDescription className="text-center text-xs font-mono text-slate-500 dark:text-slate-400">
                 RUC: 20608945123 • {selectedReceipt.invoice}
               </DialogDescription>
             </DialogHeader>

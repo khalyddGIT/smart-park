@@ -331,7 +331,20 @@ export const sanitizeEstablishment = (est, idx = 0) => {
     reference,
     latitude: lat, 
     longitude: lng, 
-    city: est.city && est.city.includes('Ayacucho') ? est.city : 'Ayacucho - Huamanga' 
+    city: est.city && est.city.includes('Ayacucho') ? est.city : 'Ayacucho - Huamanga',
+    rate: Number(est.rate || est.hourly_rate || 5.00),
+    rate_auto: Number(est.rate_auto ?? est.rate ?? est.hourly_rate ?? 5.00),
+    rate_suv: Number(est.rate_suv ?? 7.00),
+    rate_mototaxi: Number(est.rate_mototaxi ?? 3.50),
+    rate_moto: Number(est.rate_moto ?? 2.50),
+    night_shift_enabled: !!est.night_shift_enabled,
+    night_shift_start: est.night_shift_start || '20:00',
+    night_shift_end: est.night_shift_end || '06:00',
+    night_shift_surcharge: Number(est.night_shift_surcharge || 0.0),
+    require_reservation_prepay: !!est.require_reservation_prepay,
+    reservation_fee: Number(est.reservation_fee || 0.0),
+    min_stay_hours: Number(est.min_stay_hours || 1),
+    max_stay_hours: Number(est.max_stay_hours || 24)
   };
 };
 
@@ -529,6 +542,18 @@ export const EstablishmentProvider = ({ children }) => {
           camera_url: p.camera_url || '', 
           camera_enabled: !!p.camera_enabled, 
           camera_calibration: p.camera_calibration || null, 
+          rate_auto: p.rate_auto != null ? Number(p.rate_auto) : undefined,
+          rate_suv: p.rate_suv != null ? Number(p.rate_suv) : undefined,
+          rate_mototaxi: p.rate_mototaxi != null ? Number(p.rate_mototaxi) : undefined,
+          rate_moto: p.rate_moto != null ? Number(p.rate_moto) : undefined,
+          night_shift_enabled: p.night_shift_enabled,
+          night_shift_start: p.night_shift_start,
+          night_shift_end: p.night_shift_end,
+          night_shift_surcharge: p.night_shift_surcharge != null ? Number(p.night_shift_surcharge) : undefined,
+          require_reservation_prepay: p.require_reservation_prepay,
+          reservation_fee: p.reservation_fee != null ? Number(p.reservation_fee) : undefined,
+          min_stay_hours: p.min_stay_hours != null ? Number(p.min_stay_hours) : undefined,
+          max_stay_hours: p.max_stay_hours != null ? Number(p.max_stay_hours) : undefined,
           elements: null, 
           _needsFloorPlan: true
         }, idx));
@@ -809,10 +834,51 @@ export const EstablishmentProvider = ({ children }) => {
     const token = getAccessToken();
     if (token || true) {
       try {
-        const payload = { name: newEst.name, address: newEst.address, city: newEst.city || 'Ayacucho - Huamanga', latitude: newEst.latitude || -13.1604, longitude: newEst.longitude || -74.2259, hourly_rate: newEst.rate || 5, tolerance_minutes: Math.max(5, Math.min(60, Number(newEst.tolerance) || 15)), status: 'active', total_capacity: newEst.totalSlots || newEst.elements?.filter(e=>e.type==='slot').length || 10, image_url: newEst.image };
+        const payload = { 
+          name: newEst.name, 
+          address: newEst.address, 
+          city: newEst.city || 'Ayacucho - Huamanga', 
+          latitude: newEst.latitude || -13.1604, 
+          longitude: newEst.longitude || -74.2259, 
+          hourly_rate: newEst.rate || 5, 
+          tolerance_minutes: Math.max(5, Math.min(60, Number(newEst.tolerance) || 15)), 
+          status: 'active', 
+          total_capacity: newEst.totalSlots || newEst.elements?.filter(e=>e.type==='slot').length || 10, 
+          image_url: newEst.image,
+          rate_auto: newEst.rate_auto != null ? Number(newEst.rate_auto) : (Number(newEst.rate) || 5.0),
+          rate_suv: newEst.rate_suv != null ? Number(newEst.rate_suv) : 7.0,
+          rate_mototaxi: newEst.rate_mototaxi != null ? Number(newEst.rate_mototaxi) : 3.5,
+          rate_moto: newEst.rate_moto != null ? Number(newEst.rate_moto) : 2.5,
+          night_shift_enabled: !!newEst.night_shift_enabled,
+          night_shift_start: newEst.night_shift_start || '20:00',
+          night_shift_end: newEst.night_shift_end || '06:00',
+          night_shift_surcharge: Number(newEst.night_shift_surcharge || 0.0),
+          require_reservation_prepay: !!newEst.require_reservation_prepay,
+          reservation_fee: Number(newEst.reservation_fee || 0.0),
+          min_stay_hours: Number(newEst.min_stay_hours || 1),
+          max_stay_hours: Number(newEst.max_stay_hours || 24)
+        };
         const res = await api.post('/parkings', payload);
         if (res.data?.id) {
-          const created = { ...newEst, id: String(res.data.id), rate: res.data.hourly_rate, image: res.data.image_url, status: res.data.status === 'active' ? 'Operativo' : res.data.status };
+          const created = { 
+            ...newEst, 
+            id: String(res.data.id), 
+            rate: res.data.hourly_rate, 
+            rate_auto: res.data.rate_auto,
+            rate_suv: res.data.rate_suv,
+            rate_mototaxi: res.data.rate_mototaxi,
+            rate_moto: res.data.rate_moto,
+            night_shift_enabled: res.data.night_shift_enabled,
+            night_shift_start: res.data.night_shift_start,
+            night_shift_end: res.data.night_shift_end,
+            night_shift_surcharge: res.data.night_shift_surcharge,
+            require_reservation_prepay: res.data.require_reservation_prepay,
+            reservation_fee: res.data.reservation_fee,
+            min_stay_hours: res.data.min_stay_hours,
+            max_stay_hours: res.data.max_stay_hours,
+            image: res.data.image_url, 
+            status: res.data.status === 'active' ? 'Operativo' : res.data.status 
+          };
           setEstablishments(prev => [created, ...prev]);
           return created;
         }
@@ -847,6 +913,18 @@ export const EstablishmentProvider = ({ children }) => {
         if (updatedFields.level !== undefined) payload.level = updatedFields.level;
         if (updatedFields.latitude) payload.latitude = Number(updatedFields.latitude);
         if (updatedFields.longitude) payload.longitude = Number(updatedFields.longitude);
+        if (updatedFields.rate_auto !== undefined) payload.rate_auto = Number(updatedFields.rate_auto);
+        if (updatedFields.rate_suv !== undefined) payload.rate_suv = Number(updatedFields.rate_suv);
+        if (updatedFields.rate_mototaxi !== undefined) payload.rate_mototaxi = Number(updatedFields.rate_mototaxi);
+        if (updatedFields.rate_moto !== undefined) payload.rate_moto = Number(updatedFields.rate_moto);
+        if (updatedFields.night_shift_enabled !== undefined) payload.night_shift_enabled = !!updatedFields.night_shift_enabled;
+        if (updatedFields.night_shift_start !== undefined) payload.night_shift_start = updatedFields.night_shift_start;
+        if (updatedFields.night_shift_end !== undefined) payload.night_shift_end = updatedFields.night_shift_end;
+        if (updatedFields.night_shift_surcharge !== undefined) payload.night_shift_surcharge = Number(updatedFields.night_shift_surcharge);
+        if (updatedFields.require_reservation_prepay !== undefined) payload.require_reservation_prepay = !!updatedFields.require_reservation_prepay;
+        if (updatedFields.reservation_fee !== undefined) payload.reservation_fee = Number(updatedFields.reservation_fee);
+        if (updatedFields.min_stay_hours !== undefined) payload.min_stay_hours = Number(updatedFields.min_stay_hours);
+        if (updatedFields.max_stay_hours !== undefined) payload.max_stay_hours = Number(updatedFields.max_stay_hours);
         if (Object.keys(payload).length) await api.put(`/parkings/${numId}`, payload);
       } catch (e) { console.warn('updateEstablishment backend fail', e.response?.data); }
     }
@@ -1040,7 +1118,11 @@ export const EstablishmentProvider = ({ children }) => {
       actualExit: r.actual_exit ? parseIsoToDate(r.actual_exit).toISOString() : null,
       tolerance: tolMinutes,
       arrivalWindow: tolMinutes,
-      toleranceMinutes: tolMinutes
+      toleranceMinutes: tolMinutes,
+      vehicleType: r.vehicle_type || 'auto',
+      estimatedHours: r.estimated_hours || Math.max(1, Math.round((endMs - startMs) / 3600000)) || 1,
+      isNightShift: !!r.is_night_shift,
+      prepaid: !!r.prepaid
     };
   };
 
@@ -1140,7 +1222,9 @@ export const EstablishmentProvider = ({ children }) => {
         end_time: endISO,
         tolerance_minutes: tolMinutes,
         payment_method: bookingData.paymentMethod || bookingData.payment_method || null,
-        pay_now: !!bookingData.payNow
+        pay_now: !!bookingData.payNow,
+        vehicle_type: bookingData.vehicleType || bookingData.vehicle_type || 'auto',
+        estimated_hours: Number(bookingData.estimatedHours || bookingData.hours || 2)
       });
       setBookingError(null);
       const mapped = mapServerReservation(serverRes);

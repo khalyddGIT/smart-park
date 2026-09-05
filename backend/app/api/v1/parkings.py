@@ -611,7 +611,19 @@ async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(g
         tolerance_minutes=parking_in.tolerance_minutes,
         status=parking_in.status or "active",
         total_capacity=parking_in.total_capacity,
-        image_url=parking_in.image_url or "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800"
+        image_url=parking_in.image_url or "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800",
+        rate_auto=parking_in.rate_auto if parking_in.rate_auto is not None else 5.0,
+        rate_suv=parking_in.rate_suv if parking_in.rate_suv is not None else 7.0,
+        rate_mototaxi=parking_in.rate_mototaxi if parking_in.rate_mototaxi is not None else 3.5,
+        rate_moto=parking_in.rate_moto if parking_in.rate_moto is not None else 2.5,
+        night_shift_enabled=bool(parking_in.night_shift_enabled),
+        night_shift_start=parking_in.night_shift_start or "20:00",
+        night_shift_end=parking_in.night_shift_end or "06:00",
+        night_shift_surcharge=float(parking_in.night_shift_surcharge or 0.0),
+        require_reservation_prepay=bool(parking_in.require_reservation_prepay),
+        reservation_fee=float(parking_in.reservation_fee or 0.0),
+        min_stay_hours=int(parking_in.min_stay_hours or 1),
+        max_stay_hours=int(parking_in.max_stay_hours or 24)
     )
     db.add(db_parking)
     await db.commit()

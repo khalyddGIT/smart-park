@@ -172,6 +172,24 @@ class ParkingBase(BaseModel):
     camera_enabled: Optional[bool] = False
     camera_calibration: Optional[str] = None
 
+    # Tarifas diferenciadas por tipo de vehículo (configurables por Admin Local)
+    rate_auto: Optional[float] = Field(default=5.00, ge=0)
+    rate_suv: Optional[float] = Field(default=7.00, ge=0)
+    rate_mototaxi: Optional[float] = Field(default=3.50, ge=0)
+    rate_moto: Optional[float] = Field(default=2.50, ge=0)
+
+    # Configuración de Turno Noche (horario y recargo nocturno)
+    night_shift_enabled: Optional[bool] = False
+    night_shift_start: Optional[str] = "20:00"
+    night_shift_end: Optional[str] = "06:00"
+    night_shift_surcharge: Optional[float] = Field(default=0.0, ge=0)
+
+    # Políticas de cobro de reserva y estadía estimada
+    require_reservation_prepay: Optional[bool] = False
+    reservation_fee: Optional[float] = Field(default=0.0, ge=0)
+    min_stay_hours: Optional[int] = Field(default=1, ge=1, le=24)
+    max_stay_hours: Optional[int] = Field(default=24, ge=1, le=168)
+
 
 class ParkingCreate(ParkingBase):
     pass
@@ -195,6 +213,18 @@ class ParkingUpdate(BaseModel):
     camera_url: Optional[str] = None
     camera_enabled: Optional[bool] = None
     camera_calibration: Optional[str] = None
+    rate_auto: Optional[float] = None
+    rate_suv: Optional[float] = None
+    rate_mototaxi: Optional[float] = None
+    rate_moto: Optional[float] = None
+    night_shift_enabled: Optional[bool] = None
+    night_shift_start: Optional[str] = None
+    night_shift_end: Optional[str] = None
+    night_shift_surcharge: Optional[float] = None
+    require_reservation_prepay: Optional[bool] = None
+    reservation_fee: Optional[float] = None
+    min_stay_hours: Optional[int] = None
+    max_stay_hours: Optional[int] = None
 
 class ParkingResponse(ParkingBase):
     id: int
@@ -360,6 +390,8 @@ class ReservationCreate(BaseModel):
     payment_method: Optional[str] = None
     pay_now: Optional[bool] = False
     tolerance_minutes: Optional[int] = Field(default=15, ge=5, le=120, description="Tolerancia entre 5 y 120 minutos")
+    vehicle_type: Optional[str] = "auto"
+    estimated_hours: Optional[int] = Field(default=1, ge=1, le=168)
 
     @field_validator('license_plate')
     @classmethod
@@ -409,6 +441,10 @@ class ReservationResponse(BaseModel):
     parking_name: Optional[str] = None
     slot_code: Optional[str] = None
     tolerance_minutes: Optional[int] = 15
+    vehicle_type: Optional[str] = "auto"
+    estimated_hours: Optional[int] = 1
+    is_night_shift: Optional[bool] = False
+    prepaid: Optional[bool] = False
 
     class Config:
         from_attributes = True

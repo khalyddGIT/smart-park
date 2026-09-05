@@ -26,6 +26,23 @@ def _ensure_schema():
                 ("estacionamientos", "camera_url", "TEXT"),
                 ("estacionamientos", "camera_enabled", "BOOLEAN DEFAULT FALSE"),
                 ("estacionamientos", "camera_calibration", "TEXT"),
+                ("estacionamientos", "rate_auto", "FLOAT DEFAULT 5.0"),
+                ("estacionamientos", "rate_suv", "FLOAT DEFAULT 7.0"),
+                ("estacionamientos", "rate_mototaxi", "FLOAT DEFAULT 3.5"),
+                ("estacionamientos", "rate_moto", "FLOAT DEFAULT 2.5"),
+                ("estacionamientos", "night_shift_enabled", "BOOLEAN DEFAULT FALSE"),
+                ("estacionamientos", "night_shift_start", "VARCHAR(10) DEFAULT '20:00'"),
+                ("estacionamientos", "night_shift_end", "VARCHAR(10) DEFAULT '06:00'"),
+                ("estacionamientos", "night_shift_surcharge", "FLOAT DEFAULT 0.0"),
+                ("estacionamientos", "require_reservation_prepay", "BOOLEAN DEFAULT FALSE"),
+                ("estacionamientos", "reservation_fee", "FLOAT DEFAULT 0.0"),
+                ("estacionamientos", "min_stay_hours", "INTEGER DEFAULT 1"),
+                ("estacionamientos", "max_stay_hours", "INTEGER DEFAULT 24"),
+                ("reservas", "tolerance_minutes", "INTEGER DEFAULT 15"),
+                ("reservas", "vehicle_type", "VARCHAR(20) DEFAULT 'auto'"),
+                ("reservas", "estimated_hours", "INTEGER DEFAULT 1"),
+                ("reservas", "is_night_shift", "BOOLEAN DEFAULT FALSE"),
+                ("reservas", "prepaid", "BOOLEAN DEFAULT FALSE"),
             ]
             if str(engine.url).startswith("sqlite"):
                 for tbl, col, decl in lite_adds:

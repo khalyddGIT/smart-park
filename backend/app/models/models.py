@@ -86,6 +86,24 @@ class Parking(Base):
     # Calibración de la vista de cámara sobre el lienzo CAD: JSON {"x","y","w","h"} normalizado (0..1).
     camera_calibration = Column(Text, nullable=True)
 
+    # Tarifas diferenciadas por tipo de vehículo (configurables por Admin Local)
+    rate_auto = Column(Float, nullable=True, default=5.00)
+    rate_suv = Column(Float, nullable=True, default=7.00)
+    rate_mototaxi = Column(Float, nullable=True, default=3.50)
+    rate_moto = Column(Float, nullable=True, default=2.50)
+
+    # Configuración de Turno Noche (horario y recargo nocturno)
+    night_shift_enabled = Column(Boolean, default=False)
+    night_shift_start = Column(String(10), default="20:00")
+    night_shift_end = Column(String(10), default="06:00")
+    night_shift_surcharge = Column(Float, default=0.0)
+
+    # Políticas de cobro de reserva y estadía estimada
+    require_reservation_prepay = Column(Boolean, default=False)
+    reservation_fee = Column(Float, default=0.0)
+    min_stay_hours = Column(Integer, default=1)
+    max_stay_hours = Column(Integer, default=24)
+
     slots = relationship("Slot", back_populates="parking", cascade="all, delete-orphan")
     elements = relationship("FloorPlanElement", back_populates="parking", cascade="all, delete-orphan")
     cameras = relationship("CameraDevice", back_populates="parking", cascade="all, delete-orphan")
@@ -157,6 +175,10 @@ class Reservation(Base):
     status = Column(String(20), default=ReservationStatusEnum.SCHEDULED.value)
     qr_code = Column(String(255), nullable=False)
     tolerance_minutes = Column(Integer, default=15, nullable=True)
+    vehicle_type = Column(String(20), default="auto", nullable=True)
+    estimated_hours = Column(Integer, default=1, nullable=True)
+    is_night_shift = Column(Boolean, default=False, nullable=True)
+    prepaid = Column(Boolean, default=False, nullable=True)
 
     user = relationship("User", back_populates="reservations")
     parking = relationship("Parking")

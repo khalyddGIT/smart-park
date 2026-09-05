@@ -20,7 +20,8 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  ShieldCheck
+  ShieldCheck,
+  Moon
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -391,8 +392,45 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const isPlateValid = PLATE_REGEX.test(effectivePlate);
   const isFacturaValid = receiptType !== 'factura' || (/^(10|20)[0-9]{9}$/.test(rucNumber.trim()) && businessName.trim().length >= 3);
 
-  const baseHourlyRate = parking?.rate || 5.0;
-  const rawCost = baseHourlyRate * (Number(hours) || 1);
+  // Tarifas diferenciadas por tipo de vehículo
+  const categoryHourlyRate = useMemo(() => {
+    let r = parking?.rate || 5.0;
+    if (vehicleCategory === 'auto') r = parking?.rate_auto ?? r;
+    else if (vehicleCategory === 'camioneta' || vehicleCategory === 'suv') r = parking?.rate_suv ?? 7.0;
+    else if (vehicleCategory === 'mototaxi') r = parking?.rate_mototaxi ?? 3.5;
+    else if (vehicleCategory === 'moto') r = parking?.rate_moto ?? 2.5;
+    return Number(r);
+  }, [parking, vehicleCategory]);
+
+  // Turno noche dinámico según la hora actual
+  const isNightShiftActive = useMemo(() => {
+    if (!parking?.night_shift_enabled) return false;
+    const startStr = parking.night_shift_start || '20:00';
+    const endStr = parking.night_shift_end || '06:00';
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const [startH, startM] = startStr.split(':').map(Number);
+    const [endH, endM] = endStr.split(':').map(Number);
+    const startMinutes = (startH || 0) * 60 + (startM || 0);
+    const endMinutes = (endH || 0) * 60 + (endM || 0);
+
+    if (startMinutes <= endMinutes) {
+      return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+    } else {
+      return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+    }
+  }, [parking]);
+
+  const nightSurcharge = isNightShiftActive ? Number(parking?.night_shift_surcharge || 0) : 0;
+  const reservationFee = Number(parking?.reservation_fee || 0);
+  const effectiveHourlyRate = categoryHourlyRate + nightSurcharge;
+
+  const minStay = Number(parking?.min_stay_hours || 1);
+  const maxStay = Number(parking?.max_stay_hours || 24);
+  const stayHours = Math.max(minStay, Math.min(maxStay, Number(hours) || 2));
+
+  const rawCost = (effectiveHourlyRate * stayHours) + reservationFee;
   const discountRate = bookingModel === 'prepaid_discount' ? 0.10 : 0.0;
   const discountAmount = rawCost * discountRate;
   const finalTotalCost = Math.max(0, rawCost - discountAmount);
@@ -407,16 +445,22 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     const now = new Date();
     const chosenTolerance = Number(etaMinutes) || 15;
     const start = now;
-    const end = new Date(start.getTime() + Number(hours || 1) * 60 * 60 * 1000);
+    const end = new Date(start.getTime() + stayHours * 60 * 60 * 1000);
 
     const bookingPayload = {
       slotId: selectedSlot.id,
       slotCode: selectedSlot.code,
       slotType: selectedSlot.slotType || vehicleCategory,
       vehicleCategory,
+      vehicleType: vehicleCategory,
       parkingId: numericParkingId,
       parkingName: parking?.name || 'Smart Park Central',
-      hours: Number(hours) || 1,
+      hours: stayHours,
+      estimatedHours: stayHours,
+      isNightShift: isNightShiftActive,
+      nightSurcharge,
+      reservationFee,
+      prepaid: !!parking?.require_reservation_prepay,
       etaMinutes: chosenTolerance,
       arrivalWindow: chosenTolerance,
       toleranceMinutes: chosenTolerance,
@@ -432,8 +476,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       token: `SPK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
       startTime: start,
       expiresAt: end,
-      payNow: false,
-      paymentMethod: 'Pago en garita al salir'
+      payNow: !!parking?.require_reservation_prepay,
+      paymentMethod: parking?.require_reservation_prepay ? 'Abono digital inmediato' : 'Pago en garita al salir'
     };
 
     if (onReserveSlot) {
@@ -769,14 +813,14 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             {/* Categoría de Vehículo */}
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-1.5">
-                Vehículo
+                Tipo de Vehículo
               </label>
               <div className="grid grid-cols-4 gap-1.5">
                 {[
-                  { id: 'auto', label: 'Auto', icon: Car },
-                  { id: 'camioneta', label: 'Camioneta', icon: Truck },
-                  { id: 'mototaxi', label: 'Mototaxi', icon: Navigation },
-                  { id: 'moto', label: 'Moto', icon: Bike }
+                  { id: 'auto', label: 'Auto', icon: Car, rate: Number(parking?.rate_auto ?? parking?.rate ?? 5.0) },
+                  { id: 'camioneta', label: 'Camioneta', icon: Truck, rate: Number(parking?.rate_suv ?? 7.0) },
+                  { id: 'mototaxi', label: 'Mototaxi', icon: Navigation, rate: Number(parking?.rate_mototaxi ?? 3.5) },
+                  { id: 'moto', label: 'Moto', icon: Bike, rate: Number(parking?.rate_moto ?? 2.5) }
                 ].map((v) => {
                   const Icon = v.icon;
                   const isCur = vehicleCategory === v.id;
@@ -785,18 +829,30 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       key={v.id}
                       type="button"
                       onClick={() => setVehicleCategory(v.id)}
-                      className={`p-2 rounded-xl text-xs font-semibold transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                      className={`p-2 rounded-xl text-xs font-semibold transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
                         isCur 
-                          ? 'bg-emerald-600 text-white' 
+                          ? 'bg-emerald-600 text-white shadow-sm' 
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
-                      <span className="text-[10px]">{v.label}</span>
+                      <span className="text-[10px] font-bold">{v.label}</span>
+                      <span className="text-[9px] font-mono opacity-80">S/{v.rate.toFixed(1)}/h</span>
                     </button>
                   );
                 })}
               </div>
+
+              {isNightShiftActive && (
+                <div className="mt-2 bg-indigo-950/80 border border-indigo-700/60 rounded-xl p-2 flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-amber-300 font-bold text-[11px]">
+                    <Moon className="w-3.5 h-3.5" /> Turno Noche ({parking?.night_shift_start || '20:00'} - {parking?.night_shift_end || '06:00'})
+                  </span>
+                  <span className="text-amber-200 font-mono text-[10px] font-bold bg-amber-400/20 px-1.5 py-0.5 rounded">
+                    +S/ {nightSurcharge.toFixed(2)}/h
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Placa */}
@@ -890,6 +946,37 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </select>
             </div>
 
+            {/* Tiempo Estimado de Estadía */}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-semibold text-slate-300">
+                  Tiempo Estimado de Estadía
+                </label>
+                <span className="text-xs font-mono font-bold text-emerald-400">
+                  {stayHours} {stayHours === 1 ? 'hora' : 'horas'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[1, 2, 3, 4, 6, 8, 12, 24].filter(h => h >= minStay && h <= maxStay).map((h) => (
+                  <button
+                    key={h}
+                    type="button"
+                    onClick={() => setHours(h)}
+                    className={`flex-1 min-w-[34px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                      stayHours === h
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {h}h
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Límites de esta cochera: mín {minStay}h, máx {maxStay}h.
+              </p>
+            </div>
+
             {/* Comprobante SUNAT */}
             <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-2">
               <div className="flex items-center justify-between text-xs">
@@ -942,19 +1029,44 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             {/* Desglose de Reserva y Condiciones de Garita */}
             <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
-                <span>Tarifa de Sede:</span>
-                <span className="text-slate-200">S/ {baseHourlyRate.toFixed(2)} /h</span>
+                <span>Tarifa móvil ({vehicleCategory}):</span>
+                <span className="text-slate-200">S/ {categoryHourlyRate.toFixed(2)} /h</span>
               </div>
+              {isNightShiftActive && (
+                <div className="flex justify-between text-amber-300">
+                  <span>Recargo Turno Noche:</span>
+                  <span>+S/ {nightSurcharge.toFixed(2)} /h</span>
+                </div>
+              )}
               <div className="flex justify-between text-slate-400">
-                <span>Ventana de llegada (tolerancia):</span>
-                <span className="text-emerald-400 font-bold">{etaMinutes} min para presentarse</span>
+                <span>Estadía estimada:</span>
+                <span className="text-slate-200">{stayHours} {stayHours === 1 ? 'hora' : 'horas'}</span>
+              </div>
+              {reservationFee > 0 && (
+                <div className="flex justify-between text-slate-400">
+                  <span>Tasa de Reserva:</span>
+                  <span className="text-slate-200">S/ {reservationFee.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-slate-400">
+                <span>Ventana llegada (tolerancia):</span>
+                <span className="text-emerald-400 font-bold">{etaMinutes} min</span>
               </div>
               <div className="h-px bg-slate-800 my-1" />
-              <div className="flex justify-between font-semibold text-slate-300 items-center text-xs">
-                <span>Estadía a pagar:</span>
-                <span className="text-emerald-400 font-bold">
-                  En garita al ingresar/salir
-                </span>
+              <div className="flex justify-between font-bold text-sm items-center">
+                <span className="text-white font-sans">Total Estimado:</span>
+                <span className="text-emerald-400 font-mono">S/ {finalTotalCost.toFixed(2)}</span>
+              </div>
+              <div className="pt-1">
+                {parking?.require_reservation_prepay ? (
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 text-[11px] text-amber-300 font-sans leading-tight">
+                    🔒 <b>Prepago Requerido:</b> Esta sede solicita abono digital al reservar para confirmar tu espacio.
+                  </div>
+                ) : (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2 text-[11px] text-emerald-300 font-sans leading-tight">
+                    🟢 <b>Reserva Libre:</b> Pagas el importe al ingresar o salir en la garita.
+                  </div>
+                )}
               </div>
             </div>
 

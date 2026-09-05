@@ -29,7 +29,13 @@ import {
   LocateFixed,
   Save,
   ChevronRight,
-  Navigation
+  Navigation,
+  Moon,
+  Sun,
+  DollarSign,
+  ShieldCheck,
+  Bike,
+  Truck
 } from 'lucide-react';
 import { InteractiveFloorPlanDrawingStudio } from './InteractiveFloorPlanDrawingStudio';
 import { useEstablishments } from '../context/EstablishmentContext';
@@ -304,6 +310,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     city: 'Ayacucho - Huamanga',
     level: 'Nivel 1 - Superficie',
     rate: 5.00,
+    rate_auto: 5.00,
+    rate_suv: 7.00,
+    rate_mototaxi: 3.50,
+    rate_moto: 2.50,
+    night_shift_enabled: false,
+    night_shift_start: '20:00',
+    night_shift_end: '06:00',
+    night_shift_surcharge: 2.00,
+    require_reservation_prepay: false,
+    reservation_fee: 0.00,
+    min_stay_hours: 1,
+    max_stay_hours: 24,
     tolerance: 15,
     status: 'Operativo',
     owner: '',
@@ -457,6 +475,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       city: 'Ayacucho - Huamanga',
       level: 'Nivel 1 - Superficie',
       rate: 5.00,
+      rate_auto: 5.00,
+      rate_suv: 7.00,
+      rate_mototaxi: 3.50,
+      rate_moto: 2.50,
+      night_shift_enabled: false,
+      night_shift_start: '20:00',
+      night_shift_end: '06:00',
+      night_shift_surcharge: 2.00,
+      require_reservation_prepay: false,
+      reservation_fee: 0.00,
+      min_stay_hours: 1,
+      max_stay_hours: 24,
       tolerance: 15,
       status: 'Operativo',
       owner: 'Administración Cochera Huamanga',
@@ -492,6 +522,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       city: est.city || 'Ayacucho - Huamanga',
       level: est.level || 'Nivel 1 - Superficie',
       rate: est.rate || 5.00,
+      rate_auto: Number(est.rate_auto ?? est.rate ?? 5.00),
+      rate_suv: Number(est.rate_suv ?? 7.00),
+      rate_mototaxi: Number(est.rate_mototaxi ?? 3.50),
+      rate_moto: Number(est.rate_moto ?? 2.50),
+      night_shift_enabled: !!est.night_shift_enabled,
+      night_shift_start: est.night_shift_start || '20:00',
+      night_shift_end: est.night_shift_end || '06:00',
+      night_shift_surcharge: Number(est.night_shift_surcharge || 0.0),
+      require_reservation_prepay: !!est.require_reservation_prepay,
+      reservation_fee: Number(est.reservation_fee || 0.0),
+      min_stay_hours: Number(est.min_stay_hours || 1),
+      max_stay_hours: Number(est.max_stay_hours || 24),
       tolerance: est.tolerance ?? est.tolerance_minutes ?? 15,
       status: est.status || 'Operativo',
       owner: est.owner || '',
@@ -544,6 +586,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
         city: formData.city || 'Ayacucho - Huamanga',
         level: formData.level,
         rate: Number(formData.rate) || 5.00,
+        rate_auto: Number(formData.rate_auto) || 5.00,
+        rate_suv: Number(formData.rate_suv) || 7.00,
+        rate_mototaxi: Number(formData.rate_mototaxi) || 3.50,
+        rate_moto: Number(formData.rate_moto) || 2.50,
+        night_shift_enabled: !!formData.night_shift_enabled,
+        night_shift_start: formData.night_shift_start || '20:00',
+        night_shift_end: formData.night_shift_end || '06:00',
+        night_shift_surcharge: Number(formData.night_shift_surcharge) || 0.0,
+        require_reservation_prepay: !!formData.require_reservation_prepay,
+        reservation_fee: Number(formData.reservation_fee) || 0.0,
+        min_stay_hours: Number(formData.min_stay_hours) || 1,
+        max_stay_hours: Number(formData.max_stay_hours) || 24,
         tolerance: Math.max(5, Math.min(60, Number(formData.tolerance) || 15)),
         totalSlots: 6,
         status: formData.status,
@@ -575,6 +629,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
         city: formData.city,
         level: formData.level,
         rate: Number(formData.rate) || 5.00,
+        rate_auto: Number(formData.rate_auto) || 5.00,
+        rate_suv: Number(formData.rate_suv) || 7.00,
+        rate_mototaxi: Number(formData.rate_mototaxi) || 3.50,
+        rate_moto: Number(formData.rate_moto) || 2.50,
+        night_shift_enabled: !!formData.night_shift_enabled,
+        night_shift_start: formData.night_shift_start || '20:00',
+        night_shift_end: formData.night_shift_end || '06:00',
+        night_shift_surcharge: Number(formData.night_shift_surcharge) || 0.0,
+        require_reservation_prepay: !!formData.require_reservation_prepay,
+        reservation_fee: Number(formData.reservation_fee) || 0.0,
+        min_stay_hours: Number(formData.min_stay_hours) || 1,
+        max_stay_hours: Number(formData.max_stay_hours) || 24,
         tolerance: Math.max(5, Math.min(60, Number(formData.tolerance) || 15)),
         status: formData.status,
         owner: formData.owner,
@@ -1203,6 +1269,290 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         <p className="text-[11px] text-slate-600 leading-snug">
                           Si la reserva sigue en <b>programada</b> después de <b>{formData.tolerance} min</b> del inicio, el sistema la cancela automáticamente, libera el cajón y notifica al conductor via campana y push.
                         </p>
+                      </div>
+
+                      {/* Bloque: Tarifas Diferenciadas por Categoría de Vehículo */}
+                      <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                              Tarifas por Categoría de Vehículo
+                            </span>
+                            <p className="text-xs text-slate-600 font-medium">
+                              El sistema cobrará automáticamente según el tipo de móvil seleccionado por el conductor.
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <Check className="w-3 h-3 text-emerald-600" /> Tarifas Multi-Móvil
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                          {/* Auto / Sedán */}
+                          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
+                            <div className="flex items-center justify-between text-slate-700">
+                              <span className="text-xs font-bold flex items-center gap-1">
+                                <Car className="w-3.5 h-3.5 text-blue-600" /> Auto / Sedán
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-mono font-bold text-slate-400">S/</span>
+                              <Input
+                                type="number"
+                                step="0.50"
+                                min="1.00"
+                                value={formData.rate_auto}
+                                onChange={(e) => setFormData({ ...formData, rate_auto: parseFloat(e.target.value) || 0 })}
+                                className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
+                              />
+                            </div>
+                            <span className="text-[10px] text-slate-400 block font-medium">Por hora base</span>
+                          </div>
+
+                          {/* Camioneta / SUV */}
+                          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
+                            <div className="flex items-center justify-between text-slate-700">
+                              <span className="text-xs font-bold flex items-center gap-1">
+                                <Truck className="w-3.5 h-3.5 text-amber-600" /> Camioneta / SUV
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-mono font-bold text-slate-400">S/</span>
+                              <Input
+                                type="number"
+                                step="0.50"
+                                min="1.00"
+                                value={formData.rate_suv}
+                                onChange={(e) => setFormData({ ...formData, rate_suv: parseFloat(e.target.value) || 0 })}
+                                className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
+                              />
+                            </div>
+                            <span className="text-[10px] text-slate-400 block font-medium">Por hora base</span>
+                          </div>
+
+                          {/* Mototaxi / Trimóvil */}
+                          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
+                            <div className="flex items-center justify-between text-slate-700">
+                              <span className="text-xs font-bold flex items-center gap-1">
+                                <Car className="w-3.5 h-3.5 text-orange-500" /> Mototaxi / Torito
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-mono font-bold text-slate-400">S/</span>
+                              <Input
+                                type="number"
+                                step="0.50"
+                                min="0.50"
+                                value={formData.rate_mototaxi}
+                                onChange={(e) => setFormData({ ...formData, rate_mototaxi: parseFloat(e.target.value) || 0 })}
+                                className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
+                              />
+                            </div>
+                            <span className="text-[10px] text-slate-400 block font-medium">Por hora base</span>
+                          </div>
+
+                          {/* Moto Lineal */}
+                          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
+                            <div className="flex items-center justify-between text-slate-700">
+                              <span className="text-xs font-bold flex items-center gap-1">
+                                <Bike className="w-3.5 h-3.5 text-emerald-600" /> Moto Lineal
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-mono font-bold text-slate-400">S/</span>
+                              <Input
+                                type="number"
+                                step="0.50"
+                                min="0.50"
+                                value={formData.rate_moto}
+                                onChange={(e) => setFormData({ ...formData, rate_moto: parseFloat(e.target.value) || 0 })}
+                                className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
+                              />
+                            </div>
+                            <span className="text-[10px] text-slate-400 block font-medium">Por hora base</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bloque: Configuración de Turno Noche */}
+                      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 shadow-sm space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center shrink-0">
+                              <Moon className="w-4 h-4 text-amber-300" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                                Tarifa de Turno Noche (Horario Nocturno)
+                              </h4>
+                              <p className="text-[11px] text-slate-300 font-medium">
+                                Define si se cobra tarifa nocturna y a qué hora inicia y termina.
+                              </p>
+                            </div>
+                          </div>
+
+                          <label className="relative inline-flex items-center cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={!!formData.night_shift_enabled}
+                              onChange={(e) => setFormData({ ...formData, night_shift_enabled: e.target.checked })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            <span className="ml-2 text-xs font-bold text-white">
+                              {formData.night_shift_enabled ? 'Habilitado' : 'Desactivado'}
+                            </span>
+                          </label>
+                        </div>
+
+                        {formData.night_shift_enabled ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                                Hora de Inicio Noche
+                              </label>
+                              <Input
+                                type="time"
+                                value={formData.night_shift_start || '20:00'}
+                                onChange={(e) => setFormData({ ...formData, night_shift_start: e.target.value })}
+                                className="h-9 text-xs font-mono font-bold bg-slate-800/80 border-slate-700 text-white"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                                Hora de Fin Noche
+                              </label>
+                              <Input
+                                type="time"
+                                value={formData.night_shift_end || '06:00'}
+                                onChange={(e) => setFormData({ ...formData, night_shift_end: e.target.value })}
+                                className="h-9 text-xs font-mono font-bold bg-slate-800/80 border-slate-700 text-white"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                                Recargo Nocturno (S/ por hora)
+                              </label>
+                              <Input
+                                type="number"
+                                step="0.50"
+                                min="0.00"
+                                value={formData.night_shift_surcharge}
+                                onChange={(e) => setFormData({ ...formData, night_shift_surcharge: parseFloat(e.target.value) || 0 })}
+                                className="h-9 text-xs font-mono font-bold bg-slate-800/80 border-slate-700 text-white"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-3 text-[11px] text-amber-200/90 bg-white/5 border border-amber-400/20 rounded-xl p-2.5 flex items-center gap-2">
+                              <Moon className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                              <span>
+                                Durante el turno de <b>{formData.night_shift_start || '20:00'}</b> a <b>{formData.night_shift_end || '06:00'}</b>, se suma <b>+S/ {(Number(formData.night_shift_surcharge) || 0).toFixed(2)}/h</b> al costo horario de cada categoría.
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-400 italic">
+                            El turno noche está desactivado. Se aplicará la tarifa diurna estándar las 24 horas.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Bloque: Condiciones de Reserva & Tiempo Estimado */}
+                      <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2.5">
+                          <div>
+                            <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block font-mono">
+                              Políticas de Reserva & Tiempo de Estadía
+                            </span>
+                            <p className="text-xs text-emerald-900/80 font-medium">
+                              Configura si la reserva requiere pago previo o es libre en garita, y la duración estimada.
+                            </p>
+                          </div>
+                          <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                          {/* Switch Cobro Reserva / Prepago */}
+                          <div className="bg-white p-3.5 rounded-xl border border-emerald-200 shadow-2xs space-y-2">
+                            <label className="text-xs font-bold text-slate-800 block">
+                              Modalidad de Cobro de Reserva
+                            </label>
+                            <select
+                              value={formData.require_reservation_prepay ? 'prepay' : 'free'}
+                              onChange={(e) => setFormData({ ...formData, require_reservation_prepay: e.target.value === 'prepay' })}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 h-9 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
+                            >
+                              <option value="free">🟢 Reserva Libre (El conductor paga en garita)</option>
+                              <option value="prepay">🔒 Prepago Obligatorio (Pagar para emitir ticket)</option>
+                            </select>
+                            <p className="text-[11px] text-slate-500 leading-snug">
+                              {formData.require_reservation_prepay 
+                                ? 'Obliga al usuario a abonar el monto estimado o fianza antes de apartar el cajón.' 
+                                : 'Permite al usuario reservar gratis y pagar al finalizar su estadía en garita.'}
+                            </p>
+                          </div>
+
+                          {/* Tasa o Fianza de Reserva */}
+                          <div className="bg-white p-3.5 rounded-xl border border-emerald-200 shadow-2xs space-y-2">
+                            <label className="text-xs font-bold text-slate-800 block">
+                              Tasa / Fianza Fija de Reserva (S/)
+                            </label>
+                            <Input
+                              type="number"
+                              step="0.50"
+                              min="0.00"
+                              value={formData.reservation_fee}
+                              onChange={(e) => setFormData({ ...formData, reservation_fee: parseFloat(e.target.value) || 0 })}
+                              className="h-9 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                            <p className="text-[11px] text-slate-500 leading-snug">
+                              Monto fijo adicional por emitir la reserva (S/ 0.00 si no se cobra cargo por gestión).
+                            </p>
+                          </div>
+
+                          {/* Rango de Tiempo Estimado (Mín y Máx) */}
+                          <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-emerald-200 shadow-2xs space-y-2">
+                            <label className="text-xs font-bold text-slate-800 block">
+                              Tiempo Estimado de Estacionamiento Permitido
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <span className="text-[11px] text-slate-600 block mb-1 font-medium">Estadía Mínima</span>
+                                <div className="flex items-center gap-1.5">
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="12"
+                                    value={formData.min_stay_hours}
+                                    onChange={(e) => setFormData({ ...formData, min_stay_hours: parseInt(e.target.value) || 1 })}
+                                    className="h-8.5 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                                  />
+                                  <span className="text-xs font-semibold text-slate-500">horas</span>
+                                </div>
+                              </div>
+
+                              <div>
+                                <span className="text-[11px] text-slate-600 block mb-1 font-medium">Estadía Máxima</span>
+                                <div className="flex items-center gap-1.5">
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="72"
+                                    value={formData.max_stay_hours}
+                                    onChange={(e) => setFormData({ ...formData, max_stay_hours: parseInt(e.target.value) || 24 })}
+                                    className="h-8.5 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                                  />
+                                  <span className="text-xs font-semibold text-slate-500">horas</span>
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-snug pt-1">
+                              El usuario podrá seleccionar entre {formData.min_stay_hours || 1}h y {formData.max_stay_hours || 24}h al apartar su cajón, calculando el importe exacto en tiempo real.
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 

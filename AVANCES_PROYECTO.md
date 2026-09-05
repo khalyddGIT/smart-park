@@ -171,7 +171,37 @@ Se migró la arquitectura de autenticación hacia **Cookies HttpOnly**, blindand
 
 ---
 
-## 10. 📦 Historial de Commits en GitHub
+---
+
+## 10. ⚙️ Tarifas Multi-Vehículo, Turno Noche y Políticas de Reserva en Admin Local
+
+Se implementó el sistema completo y personalizable para que el Administrador de Cochera (Local Admin) configure y controle todas las reglas económicas y comerciales de su establecimiento, reflejándose en tiempo real en la reserva del conductor:
+
+- **1. Tarifas Diferenciadas por Tipo de Vehículo**:
+  - Parámetros individuales en base de datos: `rate_auto`, `rate_suv`, `rate_mototaxi`, `rate_moto` (con retrocompatibilidad a `hourly_rate`).
+  - Cálculo dinámico del costo según la categoría seleccionada por el conductor (Auto/Sedán, Camioneta/SUV, Mototaxi/Torito, Moto lineal).
+- **2. Configuración de Turno Noche**:
+  - Habilitador booleano `night_shift_enabled`.
+  - Horario nocturno configurable con horas de inicio y fin (`night_shift_start`, `night_shift_end`, ej. `20:00` a `06:00`), con soporte de cruce de medianoche.
+  - Recargo nocturno por hora `night_shift_surcharge` que se suma a la tarifa base del vehículo durante las horas de la noche.
+- **3. Políticas de Cobro y Prepago de Reserva**:
+  - Modalidad configurable: `require_reservation_prepay` (Reserva Libre con pago en garita vs Prepago obligatorio requerido para confirmar el cajón).
+  - Tasa fija de reserva o fianza `reservation_fee`.
+  - Límites de tiempo de permanencia configurable (`min_stay_hours`, `max_stay_hours`).
+- **4. Panel de Edición en Admin Local (`LocalEstablishmentManager.jsx`)**:
+  - Bloque visual con tarjetas dedicadas para fijar precios por vehículo, toggle de turno noche con horario y recargo, selector de modalidad de reserva y rangos de estadía.
+  - Persistencia completa en backend vía `POST /parkings` y `PUT /parkings/{id}`.
+- **5. Reserva Interactiva del Conductor (`CustomerInteractivePlanBooking.jsx`)**:
+  - Muestra la tarifa exacta por hora debajo de cada tipo de móvil.
+  - Alerta y recargo visual de Turno Noche en tiempo real.
+  - Selector de tiempo estimado de estadía ajustado a las restricciones de la cochera.
+  - Indicador claro de si la reserva es libre o requiere prepago.
+- **6. Suite de Pruebas Automatizadas**:
+  - Archivo de pruebas [`backend/app/tests/test_local_admin_pricing.py`](backend/app/tests/test_local_admin_pricing.py) que valida la actualización de tarifas, cálculo diurno y nocturno, y aplicación estricta de la política de prepago obligatorio.
+
+---
+
+## 11. 📦 Historial de Commits en GitHub
 
 Todos los cambios han sido compilados y subidos satisfactoriamente a la rama `master`:
 

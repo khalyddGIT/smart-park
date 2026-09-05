@@ -34,6 +34,33 @@ router = APIRouter(prefix="/reservations", tags=["Reservas & Pases QR"])
 
 from sqlalchemy.orm import selectinload
 
+def _is_time_in_night_shift(t: datetime, start_str: str, end_str: str) -> bool:
+    """Verifica si una hora cae dentro del rango de turno noche (ej. 20:00 a 06:00)."""
+    try:
+        t_time = t.time()
+        start_time = datetime.strptime((start_str or "20:00").strip(), "%H:%M").time()
+        end_time = datetime.strptime((end_str or "06:00").strip(), "%H:%M").time()
+
+        if start_time < end_time:
+            return start_time <= t_time <= end_time
+        else:
+            # Cruza la medianoche (ej. 20:00 de hoy a 06:00 de mañana)
+            return t_time >= start_time or t_time <= end_time
+    except Exception:
+        return False
+
+def get_parking_vehicle_rate(parking: Parking, vehicle_type: Optional[str]) -> float:
+    """Obtiene la tarifa horaria según el tipo de vehículo configurada por el admin local."""
+    vtype = (vehicle_type or "auto").strip().lower()
+    if vtype in ("suv", "camioneta", "truck", "pickup"):
+        return float(parking.rate_suv if parking.rate_suv is not None else parking.hourly_rate or 7.0)
+    elif vtype in ("mototaxi", "torito", "trimovil"):
+        return float(parking.rate_mototaxi if parking.rate_mototaxi is not None else parking.hourly_rate or 3.5)
+    elif vtype in ("moto", "motorcycle", "scooter", "bike"):
+        return float(parking.rate_moto if parking.rate_moto is not None else parking.hourly_rate or 2.5)
+    else:
+        return float(parking.rate_auto if parking.rate_auto is not None else parking.hourly_rate or 5.0)
+
 def _format_reservation_response(r: Reservation) -> ReservationResponse:
     resp = ReservationResponse.model_validate(r)
     try:
@@ -63,6 +90,11 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
 
     if resp.tolerance_minutes is None:
         resp.tolerance_minutes = 15
+
+    resp.vehicle_type = getattr(r, "vehicle_type", "auto") or "auto"
+    resp.estimated_hours = getattr(r, "estimated_hours", 1) or 1
+    resp.is_night_shift = bool(getattr(r, "is_night_shift", False))
+    resp.prepaid = bool(getattr(r, "prepaid", False))
 
     return resp
 
@@ -281,11 +313,38 @@ async def create_reservation(
     if not parking:
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
 
-    # Duración en horas
+    # Verificar política de prepago obligatorio
+    if getattr(parking, "require_reservation_prepay", False) and not getattr(res_in, "pay_now", False):
+        raise HTTPException(
+            status_code=400,
+            detail="Este establecimiento exige el pago anticipado para confirmar la reserva de plaza."
+        )
+
+    # Duración en horas y tiempo estimado
     duration = max(1.0, (_end - _start).total_seconds() / 3600.0)
-    total_cost = round(duration * parking.hourly_rate, 2)
+    estimated_hours = max(1, int(round(duration)))
+    vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
+
+    # Tarifa base según tipo de vehículo (auto, suv, mototaxi, moto)
+    base_vehicle_rate = get_parking_vehicle_rate(parking, vtype)
+
+    # Comprobar si aplica Turno Noche
+    is_night = False
+    night_surcharge = 0.0
+    if getattr(parking, "night_shift_enabled", False):
+        start_is_night = _is_time_in_night_shift(_start, parking.night_shift_start or "20:00", parking.night_shift_end or "06:00")
+        end_is_night = _is_time_in_night_shift(_end, parking.night_shift_start or "20:00", parking.night_shift_end or "06:00")
+        if start_is_night or end_is_night:
+            is_night = True
+            night_surcharge = float(parking.night_shift_surcharge or 0.0)
+
+    effective_rate = base_vehicle_rate + night_surcharge
+    reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0)
+    total_cost = round((duration * effective_rate) + reservation_fee, 2)
+
     reservation_code = f"RSV-{uuid.uuid4().hex[:6].upper()}"
     tol_min = int(res_in.tolerance_minutes or (parking.tolerance_minutes if parking and parking.tolerance_minutes else 15))
+    is_prepaid = bool(getattr(res_in, 'pay_now', False) and getattr(res_in, 'payment_method', None))
 
     db_res = Reservation(
         code=reservation_code,
@@ -298,7 +357,11 @@ async def create_reservation(
         total_cost=total_cost,
         status="scheduled",
         qr_code=f"SMARTPARK-{reservation_code}-{plate_clean}",
-        tolerance_minutes=tol_min
+        tolerance_minutes=tol_min,
+        vehicle_type=vtype,
+        estimated_hours=estimated_hours,
+        is_night_shift=is_night,
+        prepaid=is_prepaid
     )
 
     slot.status = "reserved"

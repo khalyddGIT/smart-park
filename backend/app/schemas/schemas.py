@@ -178,6 +178,15 @@ class ParkingBase(BaseModel):
     rate_mototaxi: Optional[float] = Field(default=3.50, ge=0)
     rate_moto: Optional[float] = Field(default=2.50, ge=0)
 
+    # Unidad de facturación: 'hour' o 'minute'
+    billing_unit: Optional[str] = "hour"
+    rate_minute_auto: Optional[float] = Field(default=0.08, ge=0)
+    rate_minute_suv: Optional[float] = Field(default=0.12, ge=0)
+    rate_minute_mototaxi: Optional[float] = Field(default=0.06, ge=0)
+    rate_minute_moto: Optional[float] = Field(default=0.04, ge=0)
+    min_stay_minutes: Optional[int] = Field(default=15, ge=1, le=1440)
+    max_stay_minutes: Optional[int] = Field(default=1440, ge=1, le=10080)
+
     # Configuración de Turno Noche (horario y recargo nocturno)
     night_shift_enabled: Optional[bool] = False
     night_shift_start: Optional[str] = "20:00"
@@ -217,6 +226,13 @@ class ParkingUpdate(BaseModel):
     rate_suv: Optional[float] = None
     rate_mototaxi: Optional[float] = None
     rate_moto: Optional[float] = None
+    billing_unit: Optional[str] = None
+    rate_minute_auto: Optional[float] = None
+    rate_minute_suv: Optional[float] = None
+    rate_minute_mototaxi: Optional[float] = None
+    rate_minute_moto: Optional[float] = None
+    min_stay_minutes: Optional[int] = None
+    max_stay_minutes: Optional[int] = None
     night_shift_enabled: Optional[bool] = None
     night_shift_start: Optional[str] = None
     night_shift_end: Optional[str] = None
@@ -392,6 +408,8 @@ class ReservationCreate(BaseModel):
     tolerance_minutes: Optional[int] = Field(default=15, ge=5, le=120, description="Tolerancia entre 5 y 120 minutos")
     vehicle_type: Optional[str] = "auto"
     estimated_hours: Optional[int] = Field(default=1, ge=1, le=168)
+    billing_unit: Optional[str] = "hour"
+    estimated_minutes: Optional[int] = Field(default=60, ge=1, le=10080)
 
     @field_validator('license_plate')
     @classmethod
@@ -443,6 +461,8 @@ class ReservationResponse(BaseModel):
     tolerance_minutes: Optional[int] = 15
     vehicle_type: Optional[str] = "auto"
     estimated_hours: Optional[int] = 1
+    billing_unit: Optional[str] = "hour"
+    estimated_minutes: Optional[int] = 60
     is_night_shift: Optional[bool] = False
     prepaid: Optional[bool] = False
 

@@ -201,12 +201,45 @@ Se implementó el sistema completo y personalizable para que el Administrador de
 
 ---
 
-## 11. 📦 Historial de Commits en GitHub
+## 11. ⏱️ Facturación Fraccionada por Minuto o por Hora y Control de Estadías
+
+Se añadió la capacidad para que el Administrador Local defina la **unidad de tarificación** del estacionamiento tanto **por hora** como **por minuto**, permitiendo un cobro fraccionado ultra-preciso para usuarios de estancias cortas o rotación rápida:
+
+- **1. Soporte en Modelos de Base de Datos y Auto-Migraciones**:
+  - En `Parking`:
+    - `billing_unit`: Columna que define la modalidad activa (`"hour"` | `"minute"`).
+    - `rate_minute_auto`, `rate_minute_suv`, `rate_minute_mototaxi`, `rate_minute_moto`: Tarifas base por minuto para cada categoría vehicular.
+    - `min_stay_minutes`, `max_stay_minutes`: Restricciones de tiempo de permanencia mínimo y máximo en minutos.
+  - En `Reservation`:
+    - `billing_unit`: Guarda la unidad aplicada en la transacción.
+    - `estimated_minutes`: Tiempo exacto en minutos estimado por el conductor.
+- **2. Lógica de Negocio y Cálculo Exacto en Backend (`reservations.py`)**:
+  - Función auxiliar `get_parking_minute_rate(parking, vehicle_type)` con equivalencias y precisión decimal.
+  - Si `billing_unit == "minute"`:
+    - Validación del tiempo mínimo en minutos (`min_stay_minutes`, permitiendo estancias desde 15 min sin exigir el umbral rígido de 30 min de las horas).
+    - Cálculo de costo: `total_cost = round((duration_minutes * (base_minute_rate + night_minute_surcharge)) + reservation_fee, 2)`.
+- **3. Panel de Configuración en Admin Local (`LocalEstablishmentManager.jsx`)**:
+  - Selector de modalidad de tarificación: toggle interactivo entre `⌛ Por Hora` y `⏱️ Por Minuto (Fracción PRO)`.
+  - Tarjetas de vehículos con doble entrada: tarifa por hora (S/ /h) y tarifa por minuto (S/ /min), calculando sugerencias recíprocas automáticas (`h / 60`).
+  - Control de tiempo estimado permitido: inputs para minutos (`min_stay_minutes`, `max_stay_minutes`) cuando se activa el modo minuto, o horas (`min_stay_hours`, `max_stay_hours`) en modo hora.
+- **4. Experiencia de Reserva del Conductor (`CustomerInteractivePlanBooking.jsx`)**:
+  - Botones de vehículo muestran la tarifa activa en tiempo real (`S/ X.XX/min` o `S/ X.X/h`).
+  - Selector de estadía dinámico: botones de minutos rápidos (`15m`, `30m`, `45m`, `1h`, `1.5h`, `2h`, `3h`, etc.) respetando los límites de la cochera.
+  - Desglose con fórmula detallada: `30 min × S/ 0.10/min = S/ 3.00`.
+- **5. Cobertura de Pruebas**:
+  - Prueba automatizada `test_reservation_pricing_by_minute_billing_unit` en `test_local_admin_pricing.py` validando la creación de cochera por minuto, rechazo por debajo de la estadía mínima, y cálculo exacto de costo.
+  - 75 de 75 pruebas pasando en el backend (`pytest`).
+  - Compilación exitosa en frontend con Vite en 9.1s.
+
+---
+
+## 12. 📦 Historial de Commits en GitHub
 
 Todos los cambios han sido compilados y subidos satisfactoriamente a la rama `master`:
 
 | Commit | Descripción |
 | :--- | :--- |
+| [`d34c15d`](https://github.com/khalyddGIT/smart-park/commit/d34c15d) | `feat(local-admin): agregar tarifas por tipo de vehiculo, turno noche y politicas de reserva` |
 | [`0bb81f0`](https://github.com/khalyddGIT/smart-park/commit/0bb81f0) | `docs: agregar documento de consolidacion de avances y correcciones del proyecto` |
 | [`0474946`](https://github.com/khalyddGIT/smart-park/commit/0474946) | `fix(reservas): corregir flujo de pase y ticket en reservas canceladas, detener contador y deshabilitar QR` |
 | [`807dda3`](https://github.com/khalyddGIT/smart-park/commit/807dda3) | `fix(reservas): corregir formato de tiempo, fechas y tolerancia en vista de reservas del usuario` |

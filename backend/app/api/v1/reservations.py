@@ -61,6 +61,30 @@ def get_parking_vehicle_rate(parking: Parking, vehicle_type: Optional[str]) -> f
     else:
         return float(parking.rate_auto if parking.rate_auto is not None else parking.hourly_rate or 5.0)
 
+def get_parking_minute_rate(parking: Parking, vehicle_type: Optional[str]) -> float:
+    """Obtiene la tarifa por minuto según el tipo de vehículo configurada por el admin local."""
+    vtype = (vehicle_type or "auto").strip().lower()
+    if vtype in ("suv", "camioneta", "truck", "pickup"):
+        if parking.rate_minute_suv is not None:
+            return float(parking.rate_minute_suv)
+        base = float(parking.rate_suv if parking.rate_suv is not None else parking.hourly_rate or 7.0)
+        return round(base / 60.0, 4)
+    elif vtype in ("mototaxi", "torito", "trimovil"):
+        if parking.rate_minute_mototaxi is not None:
+            return float(parking.rate_minute_mototaxi)
+        base = float(parking.rate_mototaxi if parking.rate_mototaxi is not None else parking.hourly_rate or 3.5)
+        return round(base / 60.0, 4)
+    elif vtype in ("moto", "motorcycle", "scooter", "bike"):
+        if parking.rate_minute_moto is not None:
+            return float(parking.rate_minute_moto)
+        base = float(parking.rate_moto if parking.rate_moto is not None else parking.hourly_rate or 2.5)
+        return round(base / 60.0, 4)
+    else:
+        if parking.rate_minute_auto is not None:
+            return float(parking.rate_minute_auto)
+        base = float(parking.rate_auto if parking.rate_auto is not None else parking.hourly_rate or 5.0)
+        return round(base / 60.0, 4)
+
 def _format_reservation_response(r: Reservation) -> ReservationResponse:
     resp = ReservationResponse.model_validate(r)
     try:
@@ -93,6 +117,8 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
 
     resp.vehicle_type = getattr(r, "vehicle_type", "auto") or "auto"
     resp.estimated_hours = getattr(r, "estimated_hours", 1) or 1
+    resp.billing_unit = getattr(r, "billing_unit", "hour") or "hour"
+    resp.estimated_minutes = getattr(r, "estimated_minutes", 60) or 60
     resp.is_night_shift = bool(getattr(r, "is_night_shift", False))
     resp.prepaid = bool(getattr(r, "prepaid", False))
 
@@ -215,6 +241,8 @@ async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
         "customer_name": user.full_name if user else "Conductor Registrado",
         "customer_phone": user.phone if user else None,
         "customer_email": user.email if user else None,
+        "billing_unit": getattr(reservation, "billing_unit", "hour") or "hour",
+        "estimated_minutes": getattr(reservation, "estimated_minutes", 60) or 60,
     }
 
 @router.get("/{reservation_id}", response_model=ReservationResponse)
@@ -247,8 +275,6 @@ async def create_reservation(
     _end = _naive_utc(res_in.end_time)
     if _end <= _start:
         raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior al inicio")
-    if (_end - _start).total_seconds() < 1800:
-        raise HTTPException(status_code=422, detail="Duración mínima 30 minutos")
 
     plate_clean = res_in.license_plate.strip().upper()
 
@@ -320,13 +346,19 @@ async def create_reservation(
             detail="Este establecimiento exige el pago anticipado para confirmar la reserva de plaza."
         )
 
-    # Duración en horas y tiempo estimado
-    duration = max(1.0, (_end - _start).total_seconds() / 3600.0)
-    estimated_hours = max(1, int(round(duration)))
-    vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
+    billing_unit = (res_in.billing_unit or getattr(parking, "billing_unit", "hour") or "hour").strip().lower()
+    total_seconds = (_end - _start).total_seconds()
+    duration_minutes = max(1, int(round(total_seconds / 60.0)))
 
-    # Tarifa base según tipo de vehículo (auto, suv, mototaxi, moto)
-    base_vehicle_rate = get_parking_vehicle_rate(parking, vtype)
+    if billing_unit == "minute":
+        min_stay_min = int(getattr(parking, "min_stay_minutes", 15) or 15)
+        if duration_minutes < min_stay_min:
+            raise HTTPException(status_code=422, detail=f"Duración mínima permitida para este local: {min_stay_min} minutos")
+    else:
+        if total_seconds < 1800:
+            raise HTTPException(status_code=422, detail="Duración mínima 30 minutos")
+
+    vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
 
     # Comprobar si aplica Turno Noche
     is_night = False
@@ -338,9 +370,21 @@ async def create_reservation(
             is_night = True
             night_surcharge = float(parking.night_shift_surcharge or 0.0)
 
-    effective_rate = base_vehicle_rate + night_surcharge
     reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0)
-    total_cost = round((duration * effective_rate) + reservation_fee, 2)
+
+    if billing_unit == "minute":
+        base_minute_rate = get_parking_minute_rate(parking, vtype)
+        night_minute_surcharge = (night_surcharge / 60.0) if night_surcharge else 0.0
+        effective_rate = base_minute_rate + night_minute_surcharge
+        total_cost = round((duration_minutes * effective_rate) + reservation_fee, 2)
+    else:
+        base_vehicle_rate = get_parking_vehicle_rate(parking, vtype)
+        effective_rate = base_vehicle_rate + night_surcharge
+        duration_for_calc = max(1.0, total_seconds / 3600.0)
+        total_cost = round((duration_for_calc * effective_rate) + reservation_fee, 2)
+
+    estimated_hours = max(1, int(round(total_seconds / 3600.0)))
+    estimated_minutes = int(res_in.estimated_minutes or duration_minutes)
 
     reservation_code = f"RSV-{uuid.uuid4().hex[:6].upper()}"
     tol_min = int(res_in.tolerance_minutes or (parking.tolerance_minutes if parking and parking.tolerance_minutes else 15))
@@ -360,6 +404,8 @@ async def create_reservation(
         tolerance_minutes=tol_min,
         vehicle_type=vtype,
         estimated_hours=estimated_hours,
+        billing_unit=billing_unit,
+        estimated_minutes=estimated_minutes,
         is_night_shift=is_night,
         prepaid=is_prepaid
     )

@@ -235,6 +235,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [hours, setHours] = useState(2);
+  const [stayMinutes, setStayMinutes] = useState(60);
   const [etaMinutes, setEtaMinutes] = useState(15);
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
@@ -392,7 +393,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const isPlateValid = PLATE_REGEX.test(effectivePlate);
   const isFacturaValid = receiptType !== 'factura' || (/^(10|20)[0-9]{9}$/.test(rucNumber.trim()) && businessName.trim().length >= 3);
 
-  // Tarifas diferenciadas por tipo de vehículo
+  const isMinuteBilling = parking?.billing_unit === 'minute';
+
+  // Tarifas diferenciadas por tipo de vehículo (por hora)
   const categoryHourlyRate = useMemo(() => {
     let r = parking?.rate || 5.0;
     if (vehicleCategory === 'auto') r = parking?.rate_auto ?? r;
@@ -400,6 +403,16 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     else if (vehicleCategory === 'mototaxi') r = parking?.rate_mototaxi ?? 3.5;
     else if (vehicleCategory === 'moto') r = parking?.rate_moto ?? 2.5;
     return Number(r);
+  }, [parking, vehicleCategory]);
+
+  // Tarifas diferenciadas por tipo de vehículo (por minuto)
+  const categoryMinuteRate = useMemo(() => {
+    let r = 0.08;
+    if (vehicleCategory === 'auto') r = parking?.rate_minute_auto ?? ((parking?.rate_auto ?? parking?.rate ?? 5.0) / 60);
+    else if (vehicleCategory === 'camioneta' || vehicleCategory === 'suv') r = parking?.rate_minute_suv ?? ((parking?.rate_suv ?? 7.0) / 60);
+    else if (vehicleCategory === 'mototaxi') r = parking?.rate_minute_mototaxi ?? ((parking?.rate_mototaxi ?? 3.5) / 60);
+    else if (vehicleCategory === 'moto') r = parking?.rate_minute_moto ?? ((parking?.rate_moto ?? 2.5) / 60);
+    return Number(Number(r).toFixed(2));
   }, [parking, vehicleCategory]);
 
   // Turno noche dinámico según la hora actual
@@ -423,14 +436,30 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   }, [parking]);
 
   const nightSurcharge = isNightShiftActive ? Number(parking?.night_shift_surcharge || 0) : 0;
+  const nightMinuteSurcharge = nightSurcharge / 60.0;
   const reservationFee = Number(parking?.reservation_fee || 0);
+
   const effectiveHourlyRate = categoryHourlyRate + nightSurcharge;
+  const effectiveMinuteRate = categoryMinuteRate + nightMinuteSurcharge;
+
+  const minStayMin = Number(parking?.min_stay_minutes || 15);
+  const maxStayMin = Number(parking?.max_stay_minutes || 1440);
 
   const minStay = Number(parking?.min_stay_hours || 1);
   const maxStay = Number(parking?.max_stay_hours || 24);
-  const stayHours = Math.max(minStay, Math.min(maxStay, Number(hours) || 2));
 
-  const rawCost = (effectiveHourlyRate * stayHours) + reservationFee;
+  const actualStayMinutes = isMinuteBilling 
+    ? Math.max(minStayMin, Math.min(maxStayMin, Number(stayMinutes) || 60))
+    : Math.max(minStay, Math.min(maxStay, Number(hours) || 2)) * 60;
+
+  const stayHours = isMinuteBilling
+    ? Number((actualStayMinutes / 60).toFixed(2))
+    : Math.max(minStay, Math.min(maxStay, Number(hours) || 2));
+
+  const rawCost = isMinuteBilling
+    ? (effectiveMinuteRate * actualStayMinutes) + reservationFee
+    : (effectiveHourlyRate * stayHours) + reservationFee;
+
   const discountRate = bookingModel === 'prepaid_discount' ? 0.10 : 0.0;
   const discountAmount = rawCost * discountRate;
   const finalTotalCost = Math.max(0, rawCost - discountAmount);
@@ -445,7 +474,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     const now = new Date();
     const chosenTolerance = Number(etaMinutes) || 15;
     const start = now;
-    const end = new Date(start.getTime() + stayHours * 60 * 60 * 1000);
+    const end = isMinuteBilling
+      ? new Date(start.getTime() + actualStayMinutes * 60 * 1000)
+      : new Date(start.getTime() + stayHours * 60 * 60 * 1000);
 
     const bookingPayload = {
       slotId: selectedSlot.id,
@@ -456,9 +487,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       parkingId: numericParkingId,
       parkingName: parking?.name || 'Smart Park Central',
       hours: stayHours,
-      estimatedHours: stayHours,
+      estimatedHours: Math.max(1, Math.round(stayHours)),
+      billingUnit: isMinuteBilling ? 'minute' : 'hour',
+      estimatedMinutes: actualStayMinutes,
       isNightShift: isNightShiftActive,
-      nightSurcharge,
+      nightSurcharge: isMinuteBilling ? nightMinuteSurcharge : nightSurcharge,
       reservationFee,
       prepaid: !!parking?.require_reservation_prepay,
       etaMinutes: chosenTolerance,
@@ -817,10 +850,34 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </label>
               <div className="grid grid-cols-4 gap-1.5">
                 {[
-                  { id: 'auto', label: 'Auto', icon: Car, rate: Number(parking?.rate_auto ?? parking?.rate ?? 5.0) },
-                  { id: 'camioneta', label: 'Camioneta', icon: Truck, rate: Number(parking?.rate_suv ?? 7.0) },
-                  { id: 'mototaxi', label: 'Mototaxi', icon: Navigation, rate: Number(parking?.rate_mototaxi ?? 3.5) },
-                  { id: 'moto', label: 'Moto', icon: Bike, rate: Number(parking?.rate_moto ?? 2.5) }
+                  { 
+                    id: 'auto', 
+                    label: 'Auto', 
+                    icon: Car, 
+                    rate: Number(parking?.rate_auto ?? parking?.rate ?? 5.0),
+                    minuteRate: Number(parking?.rate_minute_auto ?? ((parking?.rate_auto ?? parking?.rate ?? 5.0) / 60))
+                  },
+                  { 
+                    id: 'camioneta', 
+                    label: 'Camioneta', 
+                    icon: Truck, 
+                    rate: Number(parking?.rate_suv ?? 7.0),
+                    minuteRate: Number(parking?.rate_minute_suv ?? ((parking?.rate_suv ?? 7.0) / 60))
+                  },
+                  { 
+                    id: 'mototaxi', 
+                    label: 'Mototaxi', 
+                    icon: Navigation, 
+                    rate: Number(parking?.rate_mototaxi ?? 3.5),
+                    minuteRate: Number(parking?.rate_minute_mototaxi ?? ((parking?.rate_mototaxi ?? 3.5) / 60))
+                  },
+                  { 
+                    id: 'moto', 
+                    label: 'Moto', 
+                    icon: Bike, 
+                    rate: Number(parking?.rate_moto ?? 2.5),
+                    minuteRate: Number(parking?.rate_minute_moto ?? ((parking?.rate_moto ?? 2.5) / 60))
+                  }
                 ].map((v) => {
                   const Icon = v.icon;
                   const isCur = vehicleCategory === v.id;
@@ -837,7 +894,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     >
                       <Icon className="w-3.5 h-3.5" />
                       <span className="text-[10px] font-bold">{v.label}</span>
-                      <span className="text-[9px] font-mono opacity-80">S/{v.rate.toFixed(1)}/h</span>
+                      <span className="text-[9px] font-mono opacity-80">
+                        {isMinuteBilling 
+                          ? `S/${v.minuteRate.toFixed(2)}/min` 
+                          : `S/${v.rate.toFixed(1)}/h`}
+                      </span>
                     </button>
                   );
                 })}
@@ -849,7 +910,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     <Moon className="w-3.5 h-3.5" /> Turno Noche ({parking?.night_shift_start || '20:00'} - {parking?.night_shift_end || '06:00'})
                   </span>
                   <span className="text-amber-200 font-mono text-[10px] font-bold bg-amber-400/20 px-1.5 py-0.5 rounded">
-                    +S/ {nightSurcharge.toFixed(2)}/h
+                    {isMinuteBilling ? `+S/ ${nightMinuteSurcharge.toFixed(3)}/min` : `+S/ ${nightSurcharge.toFixed(2)}/h`}
                   </span>
                 </div>
               )}
@@ -950,31 +1011,60 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="text-xs font-semibold text-slate-300">
-                  Tiempo Estimado de Estadía
+                  {isMinuteBilling ? 'Tiempo Estimado de Estadía (Fracción Minutos)' : 'Tiempo Estimado de Estadía'}
                 </label>
                 <span className="text-xs font-mono font-bold text-emerald-400">
-                  {stayHours} {stayHours === 1 ? 'hora' : 'horas'}
+                  {isMinuteBilling 
+                    ? `${actualStayMinutes} min (${(actualStayMinutes/60).toFixed(1)}h)`
+                    : `${stayHours} ${stayHours === 1 ? 'hora' : 'horas'}`}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {[1, 2, 3, 4, 6, 8, 12, 24].filter(h => h >= minStay && h <= maxStay).map((h) => (
-                  <button
-                    key={h}
-                    type="button"
-                    onClick={() => setHours(h)}
-                    className={`flex-1 min-w-[34px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-                      stayHours === h
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
-                  >
-                    {h}h
-                  </button>
-                ))}
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1">
-                Límites de esta cochera: mín {minStay}h, máx {maxStay}h.
-              </p>
+
+              {isMinuteBilling ? (
+                <>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[15, 30, 45, 60, 90, 120, 180, 240, 360, 480].filter(m => m >= minStayMin && m <= maxStayMin).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setStayMinutes(m)}
+                        className={`flex-1 min-w-[42px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                          actualStayMinutes === m
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                        }`}
+                      >
+                        {m >= 60 && m % 60 === 0 ? `${m/60}h` : `${m}m`}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Tarifa por minuto: mín {minStayMin} min, máx {maxStayMin} min ({((maxStayMin)/60).toFixed(1)}h).
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[1, 2, 3, 4, 6, 8, 12, 24].filter(h => h >= minStay && h <= maxStay).map((h) => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() => setHours(h)}
+                        className={`flex-1 min-w-[34px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                          stayHours === h
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                        }`}
+                      >
+                        {h}h
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Límites de esta cochera: mín {minStay}h, máx {maxStay}h.
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Comprobante SUNAT */}
@@ -1030,18 +1120,38 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between text-slate-400">
                 <span>Tarifa móvil ({vehicleCategory}):</span>
-                <span className="text-slate-200">S/ {categoryHourlyRate.toFixed(2)} /h</span>
+                <span className="text-slate-200">
+                  {isMinuteBilling 
+                    ? `S/ ${categoryMinuteRate.toFixed(2)} /min` 
+                    : `S/ ${categoryHourlyRate.toFixed(2)} /h`}
+                </span>
               </div>
               {isNightShiftActive && (
                 <div className="flex justify-between text-amber-300">
                   <span>Recargo Turno Noche:</span>
-                  <span>+S/ {nightSurcharge.toFixed(2)} /h</span>
+                  <span>
+                    {isMinuteBilling 
+                      ? `+S/ ${nightMinuteSurcharge.toFixed(3)} /min` 
+                      : `+S/ ${nightSurcharge.toFixed(2)} /h`}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between text-slate-400">
                 <span>Estadía estimada:</span>
-                <span className="text-slate-200">{stayHours} {stayHours === 1 ? 'hora' : 'horas'}</span>
+                <span className="text-slate-200">
+                  {isMinuteBilling 
+                    ? `${actualStayMinutes} min (${(actualStayMinutes/60).toFixed(1)}h)`
+                    : `${stayHours} ${stayHours === 1 ? 'hora' : 'horas'}`}
+                </span>
               </div>
+              {isMinuteBilling && (
+                <div className="flex justify-between text-slate-400 text-[11px] pt-0.5 border-t border-slate-900">
+                  <span>Base estancia:</span>
+                  <span className="text-slate-300">
+                    {actualStayMinutes} min × S/ {effectiveMinuteRate.toFixed(2)} = S/ {(actualStayMinutes * effectiveMinuteRate).toFixed(2)}
+                  </span>
+                </div>
+              )}
               {reservationFee > 0 && (
                 <div className="flex justify-between text-slate-400">
                   <span>Tasa de Reserva:</span>

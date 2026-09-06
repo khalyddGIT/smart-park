@@ -337,6 +337,13 @@ export const sanitizeEstablishment = (est, idx = 0) => {
     rate_suv: Number(est.rate_suv ?? 7.00),
     rate_mototaxi: Number(est.rate_mototaxi ?? 3.50),
     rate_moto: Number(est.rate_moto ?? 2.50),
+    billing_unit: est.billing_unit || 'hour',
+    rate_minute_auto: Number(est.rate_minute_auto ?? ((est.rate_auto ?? est.rate ?? est.hourly_rate ?? 5.0) / 60).toFixed(2)),
+    rate_minute_suv: Number(est.rate_minute_suv ?? ((est.rate_suv ?? 7.0) / 60).toFixed(2)),
+    rate_minute_mototaxi: Number(est.rate_minute_mototaxi ?? ((est.rate_mototaxi ?? 3.5) / 60).toFixed(2)),
+    rate_minute_moto: Number(est.rate_minute_moto ?? ((est.rate_moto ?? 2.5) / 60).toFixed(2)),
+    min_stay_minutes: Number(est.min_stay_minutes || 15),
+    max_stay_minutes: Number(est.max_stay_minutes || 1440),
     night_shift_enabled: !!est.night_shift_enabled,
     night_shift_start: est.night_shift_start || '20:00',
     night_shift_end: est.night_shift_end || '06:00',
@@ -546,6 +553,13 @@ export const EstablishmentProvider = ({ children }) => {
           rate_suv: p.rate_suv != null ? Number(p.rate_suv) : undefined,
           rate_mototaxi: p.rate_mototaxi != null ? Number(p.rate_mototaxi) : undefined,
           rate_moto: p.rate_moto != null ? Number(p.rate_moto) : undefined,
+          billing_unit: p.billing_unit || 'hour',
+          rate_minute_auto: p.rate_minute_auto != null ? Number(p.rate_minute_auto) : undefined,
+          rate_minute_suv: p.rate_minute_suv != null ? Number(p.rate_minute_suv) : undefined,
+          rate_minute_mototaxi: p.rate_minute_mototaxi != null ? Number(p.rate_minute_mototaxi) : undefined,
+          rate_minute_moto: p.rate_minute_moto != null ? Number(p.rate_minute_moto) : undefined,
+          min_stay_minutes: p.min_stay_minutes != null ? Number(p.min_stay_minutes) : undefined,
+          max_stay_minutes: p.max_stay_minutes != null ? Number(p.max_stay_minutes) : undefined,
           night_shift_enabled: p.night_shift_enabled,
           night_shift_start: p.night_shift_start,
           night_shift_end: p.night_shift_end,
@@ -849,6 +863,13 @@ export const EstablishmentProvider = ({ children }) => {
           rate_suv: newEst.rate_suv != null ? Number(newEst.rate_suv) : 7.0,
           rate_mototaxi: newEst.rate_mototaxi != null ? Number(newEst.rate_mototaxi) : 3.5,
           rate_moto: newEst.rate_moto != null ? Number(newEst.rate_moto) : 2.5,
+          billing_unit: newEst.billing_unit || 'hour',
+          rate_minute_auto: newEst.rate_minute_auto != null ? Number(newEst.rate_minute_auto) : 0.08,
+          rate_minute_suv: newEst.rate_minute_suv != null ? Number(newEst.rate_minute_suv) : 0.12,
+          rate_minute_mototaxi: newEst.rate_minute_mototaxi != null ? Number(newEst.rate_minute_mototaxi) : 0.06,
+          rate_minute_moto: newEst.rate_minute_moto != null ? Number(newEst.rate_minute_moto) : 0.04,
+          min_stay_minutes: Number(newEst.min_stay_minutes || 15),
+          max_stay_minutes: Number(newEst.max_stay_minutes || 1440),
           night_shift_enabled: !!newEst.night_shift_enabled,
           night_shift_start: newEst.night_shift_start || '20:00',
           night_shift_end: newEst.night_shift_end || '06:00',
@@ -868,6 +889,13 @@ export const EstablishmentProvider = ({ children }) => {
             rate_suv: res.data.rate_suv,
             rate_mototaxi: res.data.rate_mototaxi,
             rate_moto: res.data.rate_moto,
+            billing_unit: res.data.billing_unit,
+            rate_minute_auto: res.data.rate_minute_auto,
+            rate_minute_suv: res.data.rate_minute_suv,
+            rate_minute_mototaxi: res.data.rate_minute_mototaxi,
+            rate_minute_moto: res.data.rate_minute_moto,
+            min_stay_minutes: res.data.min_stay_minutes,
+            max_stay_minutes: res.data.max_stay_minutes,
             night_shift_enabled: res.data.night_shift_enabled,
             night_shift_start: res.data.night_shift_start,
             night_shift_end: res.data.night_shift_end,
@@ -917,6 +945,13 @@ export const EstablishmentProvider = ({ children }) => {
         if (updatedFields.rate_suv !== undefined) payload.rate_suv = Number(updatedFields.rate_suv);
         if (updatedFields.rate_mototaxi !== undefined) payload.rate_mototaxi = Number(updatedFields.rate_mototaxi);
         if (updatedFields.rate_moto !== undefined) payload.rate_moto = Number(updatedFields.rate_moto);
+        if (updatedFields.billing_unit !== undefined) payload.billing_unit = updatedFields.billing_unit;
+        if (updatedFields.rate_minute_auto !== undefined) payload.rate_minute_auto = Number(updatedFields.rate_minute_auto);
+        if (updatedFields.rate_minute_suv !== undefined) payload.rate_minute_suv = Number(updatedFields.rate_minute_suv);
+        if (updatedFields.rate_minute_mototaxi !== undefined) payload.rate_minute_mototaxi = Number(updatedFields.rate_minute_mototaxi);
+        if (updatedFields.rate_minute_moto !== undefined) payload.rate_minute_moto = Number(updatedFields.rate_minute_moto);
+        if (updatedFields.min_stay_minutes !== undefined) payload.min_stay_minutes = Number(updatedFields.min_stay_minutes);
+        if (updatedFields.max_stay_minutes !== undefined) payload.max_stay_minutes = Number(updatedFields.max_stay_minutes);
         if (updatedFields.night_shift_enabled !== undefined) payload.night_shift_enabled = !!updatedFields.night_shift_enabled;
         if (updatedFields.night_shift_start !== undefined) payload.night_shift_start = updatedFields.night_shift_start;
         if (updatedFields.night_shift_end !== undefined) payload.night_shift_end = updatedFields.night_shift_end;
@@ -1121,6 +1156,8 @@ export const EstablishmentProvider = ({ children }) => {
       toleranceMinutes: tolMinutes,
       vehicleType: r.vehicle_type || 'auto',
       estimatedHours: r.estimated_hours || Math.max(1, Math.round((endMs - startMs) / 3600000)) || 1,
+      billingUnit: r.billing_unit || 'hour',
+      estimatedMinutes: r.estimated_minutes || Math.max(1, Math.round((endMs - startMs) / 60000)) || 60,
       isNightShift: !!r.is_night_shift,
       prepaid: !!r.prepaid
     };
@@ -1224,7 +1261,9 @@ export const EstablishmentProvider = ({ children }) => {
         payment_method: bookingData.paymentMethod || bookingData.payment_method || null,
         pay_now: !!bookingData.payNow,
         vehicle_type: bookingData.vehicleType || bookingData.vehicle_type || 'auto',
-        estimated_hours: Number(bookingData.estimatedHours || bookingData.hours || 2)
+        estimated_hours: Number(bookingData.estimatedHours || bookingData.hours || 2),
+        billing_unit: bookingData.billingUnit || bookingData.billing_unit || 'hour',
+        estimated_minutes: Number(bookingData.estimatedMinutes || bookingData.estimated_minutes || (bookingData.hours ? bookingData.hours * 60 : 60))
       });
       setBookingError(null);
       const mapped = mapServerReservation(serverRes);

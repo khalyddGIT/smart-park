@@ -214,3 +214,78 @@ async def test_require_reservation_prepay_policy():
         })
         assert success_resp.status_code == 201, success_resp.text
         assert success_resp.json()["prepaid"] is True
+
+@pytest.mark.asyncio
+async def test_reservation_pricing_by_minute_billing_unit():
+    admin_token, _ = await _register_and_get_token(role="local")
+    driver_token, _ = await _register_and_get_token(role="user")
+    transport = ASGITransport(app=app)
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    driver_headers = {"Authorization": f"Bearer {driver_token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # 1. Crear cochera con cobro por minuto
+        p_resp = await ac.post("/api/v1/parkings", headers=admin_headers, json={
+            "name": f"Cochera Minuto {uuid.uuid4().hex[:6]}",
+            "address": "Av. Independencia 345",
+            "city": "Ayacucho",
+            "hourly_rate": 6.0,
+            "billing_unit": "minute",
+            "rate_minute_auto": 0.10,
+            "rate_minute_suv": 0.15,
+            "rate_minute_moto": 0.05,
+            "min_stay_minutes": 15,
+            "max_stay_minutes": 720,
+            "total_capacity": 5,
+            "tolerance_minutes": 10
+        })
+        assert p_resp.status_code == 201, p_resp.text
+        parking = p_resp.json()
+        parking_id = parking["id"]
+        assert parking["billing_unit"] == "minute"
+        assert parking["rate_minute_auto"] == 0.10
+
+        slot_resp = await ac.post(f"/api/v1/parkings/{parking_id}/slots", headers=admin_headers, json={
+            "code": "MIN-01",
+            "slot_type": "auto"
+        })
+        slot_id = slot_resp.json()["id"]
+
+        # 2. Intento menor al tiempo mínimo (10 minutos < 15 minutos) -> 422
+        start_time = datetime.utcnow() + timedelta(minutes=10)
+        end_too_short = start_time + timedelta(minutes=10)
+        plate1 = f"M{uuid.uuid4().hex[:2].upper()}-001"
+        res_fail = await ac.post("/api/v1/reservations", headers=driver_headers, json={
+            "parking_id": parking_id,
+            "slot_id": slot_id,
+            "license_plate": plate1,
+            "start_time": start_time.isoformat(),
+            "end_time": end_too_short.isoformat(),
+            "vehicle_type": "auto",
+            "billing_unit": "minute",
+            "estimated_minutes": 10
+        })
+        assert res_fail.status_code == 422, res_fail.text
+        detail = res_fail.json()["detail"]
+        detail_str = str(detail).lower()
+        assert "mínima" in detail_str, res_fail.text
+
+        # 3. Reserva válida por 30 minutos (30 min * 0.10 = S/ 3.00)
+        end_valid = start_time + timedelta(minutes=30)
+        plate2 = f"M{uuid.uuid4().hex[:2].upper()}-002"
+        res_ok = await ac.post("/api/v1/reservations", headers=driver_headers, json={
+            "parking_id": parking_id,
+            "slot_id": slot_id,
+            "license_plate": plate2,
+            "start_time": start_time.isoformat(),
+            "end_time": end_valid.isoformat(),
+            "vehicle_type": "auto",
+            "billing_unit": "minute",
+            "estimated_minutes": 30
+        })
+        assert res_ok.status_code == 201, res_ok.text
+        res_data = res_ok.json()
+        assert res_data["billing_unit"] == "minute"
+        assert res_data["total_cost"] == 3.00
+        assert res_data["estimated_minutes"] == 30
+

@@ -92,6 +92,13 @@ class Parking(Base):
     rate_mototaxi = Column(Float, nullable=True, default=3.50)
     rate_moto = Column(Float, nullable=True, default=2.50)
 
+    # Modalidad y tarifas por minuto
+    billing_unit = Column(String(20), default="hour") # 'hour' o 'minute'
+    rate_minute_auto = Column(Float, nullable=True, default=0.08)
+    rate_minute_suv = Column(Float, nullable=True, default=0.12)
+    rate_minute_mototaxi = Column(Float, nullable=True, default=0.06)
+    rate_minute_moto = Column(Float, nullable=True, default=0.04)
+
     # Configuración de Turno Noche (horario y recargo nocturno)
     night_shift_enabled = Column(Boolean, default=False)
     night_shift_start = Column(String(10), default="20:00")
@@ -103,6 +110,8 @@ class Parking(Base):
     reservation_fee = Column(Float, default=0.0)
     min_stay_hours = Column(Integer, default=1)
     max_stay_hours = Column(Integer, default=24)
+    min_stay_minutes = Column(Integer, default=15)
+    max_stay_minutes = Column(Integer, default=1440)
 
     slots = relationship("Slot", back_populates="parking", cascade="all, delete-orphan")
     elements = relationship("FloorPlanElement", back_populates="parking", cascade="all, delete-orphan")
@@ -177,6 +186,8 @@ class Reservation(Base):
     tolerance_minutes = Column(Integer, default=15, nullable=True)
     vehicle_type = Column(String(20), default="auto", nullable=True)
     estimated_hours = Column(Integer, default=1, nullable=True)
+    estimated_minutes = Column(Integer, default=60, nullable=True)
+    billing_unit = Column(String(20), default="hour", nullable=True)
     is_night_shift = Column(Boolean, default=False, nullable=True)
     prepaid = Column(Boolean, default=False, nullable=True)
 

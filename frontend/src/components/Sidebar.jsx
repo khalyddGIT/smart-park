@@ -72,7 +72,7 @@ const SECTIONS_BY_ROLE = {
       items: [
         { id: 'dashboard', label: 'Espacios & Plano', shortLabel: 'Espacios', icon: Building2 },
         { id: 'reservations', label: 'Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
-        { id: 'anpr', label: 'Control LPR', shortLabel: 'Garita', icon: Camera },
+        { id: 'anpr', label: 'Control de Estadías', shortLabel: 'Garita', icon: Camera },
         { id: 'cameras', label: 'Monitoreo Cámara', shortLabel: 'Cámara', icon: Video },
         { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
         { id: 'staff', label: 'Personal', shortLabel: 'Personal', icon: Users },

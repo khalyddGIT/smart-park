@@ -28,13 +28,16 @@ import {
   FileText,
   ChevronDown,
   Compass,
-  CheckCircle2
+  CheckCircle2,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { QRCodeSVG } from 'qrcode.react';
 import { AyacuchoMap } from './AyacuchoMap';
 import { BrandLogo } from './BrandLogo';
+import { useTheme } from '../context/ThemeContext';
 
 // Curva elástica ultra fluida acelerada por hardware (GPU)
 const FLUID_EASE = [0.16, 1, 0.3, 1];
@@ -432,6 +435,7 @@ export const LandingPage = ({
   onSelectParking,
   onOpenTerms
 }) => {
+  const { theme, toggleTheme, isDark } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('todos');
   const [activeFaq, setActiveFaq] = useState(null);
@@ -524,9 +528,11 @@ export const LandingPage = ({
     <div
       ref={containerRef}
       style={{
-        background: 'linear-gradient(180deg, #F2F9F8 0%, #F8FCFB 35%, #EFF7F5 70%, #E6F3F0 100%)'
+        background: isDark
+          ? 'linear-gradient(180deg, #070D18 0%, #0A1424 35%, #08101E 70%, #050A14 100%)'
+          : 'linear-gradient(180deg, #F2F9F8 0%, #F8FCFB 35%, #EFF7F5 70%, #E6F3F0 100%)'
       }}
-      className="w-full min-h-screen text-[#111111] font-sans antialiased selection:bg-[#00827C] selection:text-white relative overflow-x-hidden"
+      className="w-full min-h-screen text-[#111111] dark:text-slate-100 font-sans antialiased selection:bg-[#00827C] selection:text-white relative overflow-x-hidden transition-colors"
     >
       {/* FONDO FLUIDO CON GRADIENTES SUAVES OPACADOS (SIN LÍNEAS NI CUADRADOS) */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -538,7 +544,7 @@ export const LandingPage = ({
             opacity: [0.4, 0.65, 0.4]
           }}
           transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-gradient-to-b from-emerald-200/40 via-teal-200/30 to-transparent rounded-full blur-[160px] transform-gpu pointer-events-none"
+          className="absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-gradient-to-b from-emerald-200/40 via-teal-200/30 to-transparent dark:from-emerald-900/20 dark:via-teal-900/10 rounded-full blur-[160px] transform-gpu pointer-events-none"
         />
 
         {/* Orbe Flotante 1: Esmeralda Suave */}
@@ -546,7 +552,7 @@ export const LandingPage = ({
           style={{ y: smoothBgOrb1 }}
           animate={{ scale: [1, 1.08, 1] }}
           transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-20 -right-20 w-[700px] h-[700px] bg-gradient-to-br from-emerald-300/30 via-teal-200/20 to-transparent rounded-full blur-[170px] transform-gpu pointer-events-none"
+          className="absolute -top-20 -right-20 w-[700px] h-[700px] bg-gradient-to-br from-emerald-300/30 via-teal-200/20 to-transparent dark:from-emerald-900/25 dark:via-teal-950/20 rounded-full blur-[170px] transform-gpu pointer-events-none"
         />
 
         {/* Orbe Flotante 2: Cyan Opacado */}
@@ -554,13 +560,13 @@ export const LandingPage = ({
           style={{ y: smoothBgOrb2 }}
           animate={{ scale: [1, 1.1, 1] }}
           transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          className="absolute top-[35%] -left-40 w-[750px] h-[750px] bg-gradient-to-tr from-cyan-200/30 via-emerald-200/25 to-transparent rounded-full blur-[180px] transform-gpu pointer-events-none"
+          className="absolute top-[35%] -left-40 w-[750px] h-[750px] bg-gradient-to-tr from-cyan-200/30 via-emerald-200/25 to-transparent dark:from-cyan-900/20 dark:via-emerald-950/20 rounded-full blur-[180px] transform-gpu pointer-events-none"
         />
 
         {/* Orbe Flotante 3: Menta Inferior */}
         <motion.div
           style={{ y: smoothBgOrb3 }}
-          className="absolute -bottom-20 -right-20 w-[700px] h-[700px] bg-gradient-to-tl from-teal-300/25 via-emerald-200/20 to-transparent rounded-full blur-[160px] transform-gpu pointer-events-none"
+          className="absolute -bottom-20 -right-20 w-[700px] h-[700px] bg-gradient-to-tl from-teal-300/25 via-emerald-200/20 to-transparent dark:from-teal-950/20 dark:via-emerald-950/15 rounded-full blur-[160px] transform-gpu pointer-events-none"
         />
 
       </div>
@@ -590,6 +596,17 @@ export const LandingPage = ({
           </nav>
 
           <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* Botón Alternar Tema Visual Sol / Luna */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title={`Tema actual: ${theme}. Clic para alternar modo claro/oscuro`}
+              aria-label="Alternar modo visual"
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-200 hover:text-white border border-emerald-500/30 transition cursor-pointer flex items-center justify-center shrink-0"
+            >
+              {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-emerald-200" />}
+            </button>
+
             <MagneticButton
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
               className="hidden sm:inline-flex text-xs font-bold text-emerald-200 hover:text-white bg-white/5 hover:bg-white/15 px-3.5 py-2 rounded-xl border border-emerald-500/30 transition-all duration-200 cursor-pointer"
@@ -631,6 +648,10 @@ export const LandingPage = ({
               <a href="#sistema" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Funcionamiento</a>
               <a href="#afiliacion" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Propietarios</a>
               <div className="pt-2 border-t border-emerald-500/20 flex flex-col gap-2">
+                <button type="button" onClick={toggleTheme} className="w-full py-2.5 bg-white/10 text-emerald-200 hover:text-white rounded-xl text-center font-bold flex items-center justify-center gap-2">
+                  {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-emerald-200" />}
+                  <span>{isDark ? 'Modo Claro' : 'Modo Oscuro'}</span>
+                </button>
                 <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenAuth && onOpenAuth('affiliation'); }} className="w-full py-2.5 bg-white/10 text-emerald-200 hover:text-white rounded-xl text-center font-bold">
                   Afiliar Cochera
                 </button>

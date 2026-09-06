@@ -93,24 +93,26 @@ export const ThemeProvider = ({ children }) => {
     return 'light';
   });
 
-  // Aplicar tema al DOM
-  useEffect(() => {
-    const root = document.documentElement;
-    root.setAttribute('data-theme', theme);
-
-    const isThemeDark = theme !== 'light';
-    if (isThemeDark) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-
+  // Aplicar tema al DOM inmediatamente antes del pintado
+  const applyThemeToDOM = (themeToApply) => {
     try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
+      const root = document.documentElement;
+      root.setAttribute('data-theme', themeToApply);
+      const isThemeDark = themeToApply !== 'light';
+      if (isThemeDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+      localStorage.setItem(THEME_STORAGE_KEY, themeToApply);
     } catch {}
+  };
+
+  useEffect(() => {
+    applyThemeToDOM(theme);
   }, [theme]);
 
-  // Manejar modo oscuro automático por horario
+  // Manejar modo oscuro automático por horario si está activo
   useEffect(() => {
     if (!autoDark) return;
 
@@ -118,8 +120,14 @@ export const ThemeProvider = ({ children }) => {
       const hour = new Date().getHours();
       const shouldBeDark = hour >= 19 || hour < 6;
       setThemeState(prev => {
-        if (shouldBeDark && prev === 'light') return 'dark';
-        if (!shouldBeDark && (prev === 'dark' || prev === 'midnight')) return 'light';
+        if (shouldBeDark && prev === 'light') {
+          applyThemeToDOM('dark');
+          return 'dark';
+        }
+        if (!shouldBeDark && (prev === 'dark' || prev === 'midnight')) {
+          applyThemeToDOM('light');
+          return 'light';
+        }
         return prev;
       });
     };
@@ -131,6 +139,7 @@ export const ThemeProvider = ({ children }) => {
 
   const setTheme = (newTheme) => {
     if (AVAILABLE_THEMES.some(t => t.id === newTheme)) {
+      applyThemeToDOM(newTheme);
       setThemeState(newTheme);
     }
   };
@@ -145,7 +154,9 @@ export const ThemeProvider = ({ children }) => {
   const isDark = theme !== 'light';
 
   const toggleTheme = () => {
-    setThemeState(prev => (prev === 'light' ? 'dark' : 'light'));
+    const next = isDark ? 'light' : 'dark';
+    applyThemeToDOM(next);
+    setThemeState(next);
   };
 
   return (

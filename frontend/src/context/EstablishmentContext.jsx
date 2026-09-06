@@ -69,25 +69,25 @@ export const INITIAL_ESTABLISHMENTS = [
       { id: 6, type: 'crosswalk', x: 500, y: 300, w: 80, h: 100, rot: 0 },
       { id: 7, type: 'gate', x: 40, y: 300, w: 30, h: 100, rot: 0, label: 'ACCESO GARITA ANPR' },
       
-      // Fila Norte (Compacta)
+      // Fila Norte (Diversificada: Auto, Camioneta, Mototaxi, Moto)
       { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
       { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', shaded: true, x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'ABC-123', color: '#ef4444' },
-      { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 14, type: 'slot', code: 'A-05', slotType: 'auto', x: 350, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 15, type: 'slot', code: 'A-06', slotType: 'auto', x: 600, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'XYZ-789', color: '#3b82f6' },
-      { id: 16, type: 'slot', code: 'A-07', slotType: 'auto', x: 665, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 17, type: 'slot', code: 'A-08', slotType: 'moto', x: 730, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
-      { id: 18, type: 'slot', code: 'A-09', slotType: 'moto', x: 775, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
+      { id: 12, type: 'slot', code: 'C-01', slotType: 'camioneta', shaded: true, x: 230, y: 72, w: 68, h: 112, rot: 0, status: 'free' },
+      { id: 13, type: 'slot', code: 'C-02', slotType: 'camioneta', x: 310, y: 72, w: 68, h: 112, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#0284c7' },
+      { id: 14, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 390, y: 85, w: 48, h: 85, rot: 0, status: 'free' },
+      { id: 15, type: 'slot', code: 'T-02', slotType: 'mototaxi', x: 450, y: 85, w: 48, h: 85, rot: 0, status: 'occupied', plate: '5612-4B', color: '#ca8a04' },
+      { id: 16, type: 'slot', code: 'M-01', slotType: 'moto', x: 520, y: 95, w: 38, h: 65, rot: 0, status: 'free' },
+      { id: 17, type: 'slot', code: 'M-02', slotType: 'moto', x: 570, y: 95, w: 38, h: 65, rot: 0, status: 'free' },
+      { id: 18, type: 'slot', code: 'A-03', slotType: 'auto', x: 630, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
 
-      // Fila Sur (Compacta)
+      // Fila Sur (Diversificada)
       { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'AYC-501', color: '#10b981' },
       { id: 21, type: 'slot', code: 'B-02', slotType: 'auto', x: 145, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 22, type: 'slot', code: 'B-03', slotType: 'auto', x: 210, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 23, type: 'slot', code: 'B-04', slotType: 'auto', x: 275, y: 480, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#6366f1' },
-      { id: 24, type: 'slot', code: 'B-05', slotType: 'auto', x: 600, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 25, type: 'slot', code: 'B-06', slotType: 'auto', x: 665, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 26, type: 'slot', code: 'B-07', slotType: 'auto', x: 730, y: 480, w: 56, h: 96, rot: 0, status: 'free' }
+      { id: 22, type: 'slot', code: 'C-03', slotType: 'camioneta', x: 220, y: 468, w: 68, h: 112, rot: 0, status: 'free' },
+      { id: 23, type: 'slot', code: 'C-04', slotType: 'camioneta', x: 300, y: 468, w: 68, h: 112, rot: 0, status: 'free' },
+      { id: 24, type: 'slot', code: 'T-03', slotType: 'mototaxi', x: 380, y: 485, w: 48, h: 85, rot: 0, status: 'free' },
+      { id: 25, type: 'slot', code: 'M-03', slotType: 'moto', x: 440, y: 495, w: 38, h: 65, rot: 0, status: 'free' },
+      { id: 26, type: 'slot', code: 'B-03', slotType: 'auto', x: 500, y: 480, w: 56, h: 96, rot: 0, status: 'free' }
     ]
   },
   {

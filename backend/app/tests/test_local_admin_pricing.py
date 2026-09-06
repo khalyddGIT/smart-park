@@ -160,6 +160,46 @@ async def test_reservation_pricing_by_vehicle_and_night_shift():
         assert data2["is_night_shift"] is True
 
 @pytest.mark.asyncio
+async def test_reservation_rejects_vehicle_type_slot_mismatch():
+    admin_token, _ = await _register_and_get_token(role="local")
+    driver_token, _ = await _register_and_get_token(role="user")
+    transport = ASGITransport(app=app)
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    driver_headers = {"Authorization": f"Bearer {driver_token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        p_resp = await ac.post("/api/v1/parkings", headers=admin_headers, json={
+            "name": f"Cochera Tipos {uuid.uuid4().hex[:6]}",
+            "address": "Jr. Lima 50",
+            "city": "Ayacucho",
+            "hourly_rate": 5.0,
+            "total_capacity": 3,
+            "tolerance_minutes": 15
+        })
+        parking_id = p_resp.json()["id"]
+
+        moto_slot = await ac.post(f"/api/v1/parkings/{parking_id}/slots", headers=admin_headers, json={
+            "code": "M-99",
+            "slot_type": "moto"
+        })
+        slot_moto_id = moto_slot.json()["id"]
+
+        start = datetime.utcnow() + timedelta(minutes=10)
+        end = start + timedelta(hours=1)
+        plate = f"C{uuid.uuid4().hex[:3].upper()}-404"
+
+        mismatch = await ac.post("/api/v1/reservations", headers=driver_headers, json={
+            "parking_id": parking_id,
+            "slot_id": slot_moto_id,
+            "license_plate": plate,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "vehicle_type": "camioneta"
+        })
+        assert mismatch.status_code == 400, mismatch.text
+        assert "cajón" in mismatch.json()["detail"].lower() or "tipo" in mismatch.json()["detail"].lower()
+
+@pytest.mark.asyncio
 async def test_require_reservation_prepay_policy():
     admin_token, _ = await _register_and_get_token(role="local")
     driver_token, _ = await _register_and_get_token(role="user")

@@ -61,8 +61,37 @@
       })();
     </script>
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js"></script>
+
+    <!-- Pre-paint Theme Initializer (Zero-FOUC para Producción) -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('smart_park_theme');
+          var validThemes = ['light', 'dark', 'midnight', 'high-contrast'];
+          var theme = (saved && validThemes.indexOf(saved) !== -1) ? saved : null;
+          if (!theme) {
+            var isAuto = localStorage.getItem('smart_park_theme_auto_dark') === 'true';
+            if (isAuto) {
+              var h = new Date().getHours();
+              theme = (h >= 19 || h < 6) ? 'dark' : 'light';
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              theme = 'dark';
+            } else {
+              theme = 'light';
+            }
+          }
+          var root = document.documentElement;
+          root.setAttribute('data-theme', theme);
+          if (theme !== 'light') {
+            root.classList.add('dark');
+          } else {
+            root.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="antialiased bg-[#FBFBFA] text-[#191919] font-sans selection:bg-[#EAEAEA] selection:text-black">
+  <body class="antialiased bg-[#F8FAFC] dark:bg-[#0B0F19] text-[#0F172A] dark:text-[#F8FAFC] font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-200">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

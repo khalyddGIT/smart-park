@@ -21,7 +21,8 @@ import {
   ZoomOut,
   Maximize2,
   ShieldCheck,
-  Moon
+  Moon,
+  Lock
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -193,6 +194,35 @@ const DEFAULT_FALLBACK_ELEMENTS = [
   { id: 26, type: 'slot', x: 700, y: 480, w: 56, h: 96, rot: 0, code: 'B-06', status: 'free', slotType: 'auto' },
   { id: 27, type: 'slot', x: 780, y: 480, w: 56, h: 96, rot: 0, code: 'B-07', status: 'free', slotType: 'auto' }
 ];
+
+const VEHICLE_SLOT_FAMILY = {
+  auto: 'auto',
+  car: 'auto',
+  standard: 'auto',
+  pmr: 'auto',
+  ev: 'auto',
+  camioneta: 'camioneta',
+  suv: 'camioneta',
+  truck: 'camioneta',
+  pickup: 'camioneta',
+  moto: 'moto',
+  motorcycle: 'moto',
+  bike: 'moto',
+  scooter: 'moto',
+  mototaxi: 'mototaxi',
+  torito: 'mototaxi',
+  trimovil: 'mototaxi',
+};
+
+const slotFamily = (slotType) => VEHICLE_SLOT_FAMILY[String(slotType || 'auto').toLowerCase()] || 'auto';
+const slotMatchesVehicle = (slotType, vehicleCategory) => slotFamily(slotType) === slotFamily(vehicleCategory);
+
+const SLOT_TYPE_LABEL = {
+  auto: 'Auto',
+  camioneta: 'Camioneta',
+  moto: 'Moto',
+  mototaxi: 'Mototaxi',
+};
 
 const mapServerSlot = (s) => ({
   id: s.id,
@@ -454,18 +484,24 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
   const slots = useMemo(() => elements.filter(e => e && e.type === 'slot'), [elements]);
   const freeSlots = useMemo(() => slots.filter(s => s.status === 'free'), [slots]);
+  const compatibleFreeSlots = useMemo(
+    () => freeSlots.filter((s) => slotMatchesVehicle(s.slotType, vehicleCategory)),
+    [freeSlots, vehicleCategory]
+  );
   const totalSlots = slots.length;
 
   useEffect(() => {
-    if (!selectedSlot && freeSlots.length > 0) {
-      setSelectedSlot(freeSlots[0]);
-    }
-  }, [selectedSlot, freeSlots]);
+    const stillCompatible = selectedSlot && compatibleFreeSlots.some(
+      (s) => s.id === selectedSlot.id || s.code === selectedSlot.code
+    );
+    if (stillCompatible) return;
+    setSelectedSlot(compatibleFreeSlots[0] || null);
+  }, [vehicleCategory, compatibleFreeSlots, selectedSlot]);
 
   const handleSlotClick = (slot) => {
-    if (slot.status === 'free') {
-      setSelectedSlot(slot);
-    }
+    if (slot.status !== 'free') return;
+    if (!slotMatchesVehicle(slot.slotType, vehicleCategory)) return;
+    setSelectedSlot(slot);
   };
 
   const baseHourlyRate = Number(parking?.hourly_rate ?? parking?.rate ?? 5.0);
@@ -552,7 +588,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const subtotalBase = finalTotalCost / 1.18;
   const igvAmount = finalTotalCost - subtotalBase;
 
-  const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && isPlateValid && isFacturaValid;
+  const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && slotMatchesVehicle(selectedSlot.slotType, vehicleCategory) && isPlateValid && isFacturaValid;
 
   const handleExecuteBooking = () => {
     if (!canReserve) return;
@@ -640,8 +676,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
           </div>
           <div className="h-6 w-px bg-slate-200" />
           <div>
-            <span className="text-slate-400 block text-[10px]">Disponibilidad</span>
-            <span className="font-bold text-emerald-700">{freeSlots.length} de {totalSlots} libres</span>
+            <span className="text-slate-400 block text-[10px]">Cajones {SLOT_TYPE_LABEL[slotFamily(vehicleCategory)] || 'Auto'}</span>
+            <span className="font-bold text-emerald-700">{compatibleFreeSlots.length} de {slots.filter(s => slotMatchesVehicle(s.slotType, vehicleCategory)).length} libres</span>
           </div>
         </div>
       </div>
@@ -695,6 +731,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
               <span className="font-bold text-cyan-300">Tu Plaza</span>
             </div>
+            <div className="flex items-center gap-1.5 text-slate-300">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <span>Otro tipo</span>
+            </div>
           </div>
 
           {/* Lienzo Arquitectónico Asfáltico Cenital */}
@@ -721,6 +761,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 const isSelected = selectedSlot?.id === el.id || selectedSlot?.code === el.code;
                 const slotType = el.slotType || 'auto';
                 const isPmr = slotType === 'pmr';
+                const isCompatible = slotMatchesVehicle(slotType, vehicleCategory);
+                const isBlockedByType = isFree && !isCompatible;
+                const typeLabel = SLOT_TYPE_LABEL[slotFamily(slotType)] || 'Auto';
 
                 return (
                   <div
@@ -733,13 +776,15 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       height: `${el.h}px`,
                       transform: `rotate(${el.rot || 0}deg)`
                     }}
-                    className={`absolute rounded-xl border-2 transition-all flex flex-col justify-between p-1.5 cursor-pointer overflow-hidden ${
+                    className={`absolute rounded-xl border-2 transition-all flex flex-col justify-between p-1.5 overflow-hidden ${
                       isSelected
-                        ? 'border-cyan-400 bg-cyan-950/90 ring-4 ring-cyan-400/40 z-30 shadow-[0_0_20px_rgba(34,211,238,0.35)] scale-[1.02]'
+                        ? 'border-cyan-400 bg-cyan-950/90 ring-4 ring-cyan-400/40 z-30 shadow-[0_0_20px_rgba(34,211,238,0.35)] scale-[1.02] cursor-pointer'
+                        : isBlockedByType
+                        ? 'border-amber-700/50 bg-[#0a0c10]/85 cursor-not-allowed z-5 opacity-55 grayscale-[0.4]'
                         : isPmr && isFree
-                        ? 'border-blue-500/80 bg-blue-950/40 text-blue-200 hover:border-blue-400 z-10'
+                        ? 'border-blue-500/80 bg-blue-950/40 text-blue-200 hover:border-blue-400 z-10 cursor-pointer'
                         : isFree
-                        ? 'border-slate-400/70 bg-[#111827]/80 text-slate-100 hover:border-emerald-400 hover:bg-[#152338] z-10'
+                        ? 'border-slate-400/70 bg-[#111827]/80 text-slate-100 hover:border-emerald-400 hover:bg-[#152338] z-10 cursor-pointer'
                         : 'border-slate-700/60 bg-[#0a0f18]/80 cursor-not-allowed z-5 opacity-90'
                     }`}
                   >
@@ -748,17 +793,27 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       <span className="text-white tracking-wider font-extrabold">{el.code}</span>
                       <div className="flex items-center gap-1">
                         {isPmr && <span className="text-[8px] bg-blue-600 text-white px-1 rounded-xs font-bold">PMR</span>}
-                        <div className={`w-2 h-2 rounded-full ${isFree ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-rose-500'}`} />
+                        <div className={`w-2 h-2 rounded-full ${
+                          isSelected ? 'bg-cyan-400 shadow-[0_0_6px_#22d3ee]'
+                            : isBlockedByType ? 'bg-amber-500'
+                            : isFree ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]'
+                            : 'bg-rose-500'
+                        }`} />
                       </div>
                     </div>
 
                     {/* Silueta Central del Vehículo o Área de Estacionamiento */}
                     <div className="flex items-center justify-center my-auto py-0.5 pointer-events-none z-10 w-full h-full">
-                      {isFree ? (
+                      {isBlockedByType ? (
+                        <div className="flex flex-col items-center justify-center gap-0.5">
+                          <Lock className="w-4 h-4 text-amber-500/90" />
+                          <span className="text-[7px] font-mono font-bold text-amber-400/90 uppercase tracking-tight">{typeLabel}</span>
+                        </div>
+                      ) : isFree ? (
                         <div className={`w-7 h-9 rounded-lg border border-dashed flex items-center justify-center ${isPmr ? 'border-blue-400/40 bg-blue-900/20' : 'border-slate-500/30'}`}>
                           {slotType === 'moto' ? (
                             <Bike className="w-4 h-4 text-slate-400" />
-                          ) : slotType === 'camioneta' ? (
+                          ) : slotType === 'camioneta' || slotType === 'suv' ? (
                             <Truck className="w-4 h-4 text-slate-400" />
                           ) : slotType === 'mototaxi' ? (
                             <Navigation className="w-4 h-4 text-slate-400 rotate-45" />
@@ -782,6 +837,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       {isSelected ? (
                         <span className="inline-block px-1.5 py-0.5 rounded bg-cyan-400 text-slate-950 font-black text-[9px] tracking-tight uppercase shadow-xs">
                           TU PLAZA
+                        </span>
+                      ) : isBlockedByType ? (
+                        <span className="text-amber-400 font-mono font-bold text-[8px] tracking-tight uppercase">
+                          Bloqueado
                         </span>
                       ) : isFree ? (
                         <span className="text-emerald-400 font-mono font-bold text-[9px] tracking-wide">
@@ -992,6 +1051,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   );
                 })}
               </div>
+              <p className="mt-1.5 text-[10px] text-slate-400 leading-snug">
+                En el plano solo se habilitan cajones de <span className="text-emerald-400 font-semibold">{SLOT_TYPE_LABEL[slotFamily(vehicleCategory)] || 'Auto'}</span>. El resto aparece bloqueado.
+                {compatibleFreeSlots.length === 0 && (
+                  <span className="block text-amber-400 mt-0.5">No hay cajones libres de este tipo en esta sede.</span>
+                )}
+              </p>
 
               {isNightShiftActive && (
                 <div className="mt-2 bg-indigo-950/80 border border-indigo-700/60 rounded-xl p-2 flex items-center justify-between text-xs">
@@ -1305,8 +1370,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             {!canReserve && effectivePlate && !isPlateValid && (
               <p className="text-[11px] text-rose-400 text-center mt-1 font-mono">La placa debe incluir un guión (ej: ABC-123).</p>
             )}
-            {!canReserve && isPlateValid && !isFacturaValid && (
-              <p className="text-[11px] text-rose-400 text-center mt-1">Completa los datos de la factura (RUC y razón social).</p>
+            {!canReserve && isPlateValid && isFacturaValid && compatibleFreeSlots.length === 0 && (
+              <p className="text-[11px] text-amber-400 text-center mt-1">No hay cajones libres del tipo elegido. Cambia de vehículo o de sede.</p>
             )}
           </div>
         </div>

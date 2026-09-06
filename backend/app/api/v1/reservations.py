@@ -85,6 +85,17 @@ def get_parking_minute_rate(parking: Parking, vehicle_type: Optional[str]) -> fl
         base = float(parking.rate_auto if parking.rate_auto is not None else parking.hourly_rate or 5.0)
         return round(base / 60.0, 4)
 
+def vehicle_slot_family(kind: Optional[str]) -> str:
+    """Normaliza tipo de vehículo / cajón a una familia comparable."""
+    v = (kind or "auto").strip().lower()
+    if v in ("suv", "camioneta", "truck", "pickup"):
+        return "camioneta"
+    if v in ("moto", "motorcycle", "scooter", "bike"):
+        return "moto"
+    if v in ("mototaxi", "torito", "trimovil"):
+        return "mototaxi"
+    return "auto"
+
 def _format_reservation_response(r: Reservation) -> ReservationResponse:
     resp = ReservationResponse.model_validate(r)
     try:
@@ -359,6 +370,12 @@ async def create_reservation(
             raise HTTPException(status_code=422, detail="Duración mínima 30 minutos")
 
     vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
+    slot_kind = getattr(slot, "slot_type", None) or "auto"
+    if vehicle_slot_family(slot_kind) != vehicle_slot_family(vtype):
+        raise HTTPException(
+            status_code=400,
+            detail=f"El cajón {slot.code} es para {slot_kind}, no para {vtype}. Elige un cajón de tu tipo de vehículo."
+        )
 
     # Comprobar si aplica Turno Noche
     is_night = False

@@ -73,19 +73,39 @@ import { Card, CardDescription } from './components/ui/card';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { SkeletonParkingCard } from './components/ui/skeleton';
+import {
+  canonicalizeTab,
+  clearRoleUrl,
+  isValidTabForRole,
+  parseRoleLocation,
+  readInitialParkingId,
+  syncRoleUrl,
+} from './utils/roleRoutes';
 
+// Wrapper: ruta pública /verify/* sin hooks, para no violar rules-of-hooks
 export const App = () => {
-  // Ruta pública de verificación de QR: /verify/RSV-XXXX (accesible sin login, escaneable con Google Lens)
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/verify/')) {
     return <VerifyReservationPage />;
   }
+  return <AppMain />;
+};
 
+const AppMain = () => {
   const { role, user } = useAuth();
   const { establishments, occupySlot, createReservation, bookingError, reservations, refreshMyReservations } = useEstablishments();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const parsed = parseRoleLocation(
+      typeof window !== 'undefined' ? window.location.pathname : '/',
+      typeof window !== 'undefined' ? window.location.search : ''
+    );
+    return parsed.matched ? canonicalizeTab(parsed.tab) : 'dashboard';
+  });
   const [bookingFeedback, setBookingFeedback] = useState(null);
   const [isPersonalStaff, setIsPersonalStaff] = useState(false);
   const [personalParkingId, setPersonalParkingId] = useState(null);
+  const [selectedParkingId, setSelectedParkingId] = useState(() => readInitialParkingId());
+  const skipNextUrlPushRef = React.useRef(false);
+  const didHydrateUrlRef = React.useRef(false);
   useEffect(() => {
     if (role !== 'local' || !user?.email) { setIsPersonalStaff(false); setPersonalParkingId(null); return; }
     if (['adminlocal@smartpark.com','superadmin@smartpark.com'].includes(user.email.toLowerCase())) { setIsPersonalStaff(false); setPersonalParkingId(null); return; }
@@ -102,22 +122,42 @@ export const App = () => {
     }).catch(()=>{});
   }, [role, user?.email]);
 
-  // Redirección segura entre vistas al cambiar de rol
+  // Si el rol autenticado no admite la vista actual, volver a dashboard
   useEffect(() => {
-    const validTabsByRole = {
-      user: ['dashboard', 'reservations', 'profile', 'vehicles', 'payments', 'incidents', 'history', 'reviews'],
-      local: ['dashboard', 'editor', 'reservations', 'profile', 'anpr', 'garita', 'cameras', 'incidents', 'staff', 'reports', 'audit', 'reviews'],
-      platform: ['dashboard', 'profile', 'finances', 'settings', 'affiliates', 'reservations', 'analytics', 'incidents', 'audit', 'users', 'resiliency']
-    };
-    if (!validTabsByRole[role]?.includes(activeTab)) {
+    if (!user || !role) return;
+    if (!isValidTabForRole(role, activeTab)) {
+      skipNextUrlPushRef.current = true;
       setActiveTab('dashboard');
     }
-  }, [role]);
+  }, [role, user]);
+
+  // Tras restaurar sesión (/auth/me o localStorage), reaplicar deep-link una sola vez
+  useEffect(() => {
+    if (!user || !role) {
+      didHydrateUrlRef.current = false;
+      return;
+    }
+    if (didHydrateUrlRef.current) return;
+    didHydrateUrlRef.current = true;
+    const parsed = parseRoleLocation(window.location.pathname, window.location.search);
+    if (!parsed.matched) return;
+    if (isValidTabForRole(role, parsed.tab)) {
+      const tab = canonicalizeTab(parsed.tab);
+      if (tab !== activeTab) {
+        skipNextUrlPushRef.current = true;
+        setActiveTab(tab);
+      }
+    }
+    if (parsed.parkingId && parsed.parkingId !== selectedParkingId) {
+      skipNextUrlPushRef.current = true;
+      setSelectedParkingId(parsed.parkingId);
+    }
+  }, [user, role]);
 
   // Listener para navegación reactiva entre módulos
   useEffect(() => {
     const handleNav = (e) => {
-      if (e?.detail) setActiveTab(e.detail);
+      if (e?.detail) setActiveTab(canonicalizeTab(e.detail));
     };
     window.addEventListener('smart_park_navigate_tab', handleNav);
     return () => window.removeEventListener('smart_park_navigate_tab', handleNav);
@@ -141,8 +181,6 @@ export const App = () => {
     setTimeout(() => setIsLoadingSedes(false), 250);
   };
 
-  // Estados de Reserva de Usuario
-  const [selectedParkingId, setSelectedParkingId] = useState(null);
   useEffect(()=>{ if(personalParkingId) setSelectedParkingId(personalParkingId); },[personalParkingId]);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -279,9 +317,11 @@ export const App = () => {
   useEffect(() => {
     if (!user) {
       setSelectedParkingId(null);
+      skipNextUrlPushRef.current = true;
       setActiveTab('dashboard');
       setShowAuthModal(false);
       setPendingParkingForBooking(null);
+      clearRoleUrl('replace');
     }
   }, [user]);
 
@@ -296,41 +336,69 @@ export const App = () => {
     }
   }, [user, pendingParkingForBooking]);
 
-  // --- Fix botón atrás en móvil: no cerrar la app, navegar dentro del SPA ---
+  // Persistir vista activa + parking en pathname real (producción / refresh)
+  useEffect(() => {
+    if (!user || !role) return;
+    const mode = skipNextUrlPushRef.current ? 'replace' : 'push';
+    skipNextUrlPushRef.current = false;
+    syncRoleUrl(role, activeTab, selectedParkingId, mode);
+  }, [activeTab, selectedParkingId, user, role]);
+
+  // --- Botón atrás: cierra overlays, luego restaura tab/parking desde la URL ---
   const lastBackPressRef = React.useRef(0);
   useEffect(() => {
-    try { window.history.replaceState({ appTab: activeTab, ts: Date.now() }, ''); } catch {}
-  }, []);
-  useEffect(() => {
-    try { window.history.pushState({ appTab: activeTab, ts: Date.now() }, ''); } catch {}
-  }, [activeTab]);
-  useEffect(() => {
-    if (selectedParkingId) {
-      try { window.history.pushState({ appTab: activeTab, parkingId: selectedParkingId }, ''); } catch {}
-    }
-  }, [selectedParkingId]);
-  useEffect(() => {
     const onPopState = () => {
-      if (showQRModal) { setShowQRModal(false); try { window.history.pushState({ appTab: activeTab }, ''); } catch {} return; }
-      if (showTermsModal) { setShowTermsModal(false); try { window.history.pushState({ appTab: activeTab }, ''); } catch {} return; }
-      if (showAuthModal) { setShowAuthModal(false); try { window.history.pushState({ appTab: activeTab }, ''); } catch {} return; }
-      if (selectedParkingId) { setSelectedParkingId(null); try { window.history.pushState({ appTab: activeTab }, ''); } catch {} return; }
-      if (activeTab !== 'dashboard') { setActiveTab('dashboard'); try { window.history.pushState({ appTab: 'dashboard' }, ''); } catch {} return; }
+      if (showQRModal) {
+        setShowQRModal(false);
+        skipNextUrlPushRef.current = true;
+        if (user && role) syncRoleUrl(role, activeTab, selectedParkingId, 'push');
+        return;
+      }
+      if (showTermsModal) {
+        setShowTermsModal(false);
+        skipNextUrlPushRef.current = true;
+        if (user && role) syncRoleUrl(role, activeTab, selectedParkingId, 'push');
+        return;
+      }
+      if (showAuthModal) {
+        setShowAuthModal(false);
+        skipNextUrlPushRef.current = true;
+        if (user && role) syncRoleUrl(role, activeTab, selectedParkingId, 'push');
+        return;
+      }
+
+      const parsed = parseRoleLocation(window.location.pathname, window.location.search);
+      if (parsed.matched) {
+        const nextTab = isValidTabForRole(role, parsed.tab) ? canonicalizeTab(parsed.tab) : 'dashboard';
+        skipNextUrlPushRef.current = true;
+        if (nextTab !== activeTab) setActiveTab(nextTab);
+        setSelectedParkingId(parsed.parkingId || null);
+        return;
+      }
+
+      if (activeTab !== 'dashboard' || selectedParkingId) {
+        skipNextUrlPushRef.current = true;
+        setSelectedParkingId(null);
+        setActiveTab('dashboard');
+        if (user && role) syncRoleUrl(role, 'dashboard', null, 'replace');
+        return;
+      }
+
       const now = Date.now();
       if (now - lastBackPressRef.current < 2000) return;
       lastBackPressRef.current = now;
-      try { window.history.pushState({ appTab: 'dashboard' }, ''); } catch {}
+      if (user && role) syncRoleUrl(role, 'dashboard', null, 'push');
       try {
         const el = document.createElement('div');
         el.textContent = 'Pulsa atrás de nuevo para salir';
         el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.3)';
         document.body.appendChild(el);
-        setTimeout(()=> el.remove(), 1800);
-      } catch {}
+        setTimeout(() => el.remove(), 1800);
+      } catch { /* ignore */ }
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, [activeTab, selectedParkingId, showQRModal, showTermsModal, showAuthModal]);
+  }, [activeTab, selectedParkingId, showQRModal, showTermsModal, showAuthModal, user, role]);
 
   const handleTabNavigation = (tab) => {
     if (!user && tab !== 'dashboard') {
@@ -338,13 +406,13 @@ export const App = () => {
       setShowAuthModal(true);
       return;
     }
-    setActiveTab(tab);
+    setActiveTab(canonicalizeTab(tab));
   };
 
   // Si el usuario no ha iniciado sesión, mostrar SIEMPRE la Landing Page de inicio
   if (!user) {
     return (
-      <div className="w-full bg-[#FBFBFA] text-[#191919] font-sans antialiased selection:bg-[#EAEAEA] selection:text-black">
+      <div className="w-full bg-[#FBFBFA] dark:bg-[#070B14] text-[#191919] dark:text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white transition-colors">
         <Toaster position="top-right" toastOptions={{ duration: 3500, style: { borderRadius: '14px', background: '#0f172a', color: '#fff', fontSize: '13px' } }} />
         
         <LandingPage

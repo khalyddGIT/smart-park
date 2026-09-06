@@ -548,7 +548,7 @@ export const VehiclesModule = () => {
         />
         {formData.license_plate && !/^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/.test(formData.license_plate.trim()) && (
           <p className="text-[11px] text-amber-600 font-medium mt-1 text-center">
-            ⚠️ La placa debe incluir obligatoriamente un guión (-) (ej: ABC-123 o 1234-5A)
+            Incluye un guión obligatorio (-) (ej: ABC-123 o 1234-5A)
           </p>
         )}
       </div>
@@ -740,10 +740,10 @@ export const VehiclesModule = () => {
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-900 leading-tight">
-              Gestión de Mis Vehículos
+              Mis Vehículos
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Administra tus placas autorizadas para el acceso automático en garitas.
+              {vehicles.length} {vehicles.length === 1 ? 'vehículo registrado' : 'vehículos registrados'} para acceso automático en garitas.
             </p>
           </div>
         </div>
@@ -755,69 +755,6 @@ export const VehiclesModule = () => {
           <Plus className="w-4 h-4" />
           <span>Registrar Nuevo Vehículo</span>
         </Button>
-      </div>
-
-      {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        
-        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-24 h-24 bg-slate-400/10 dark:bg-slate-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Vehículos Registrados
-            </span>
-            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
-              <Car className="w-4 h-4 stroke-[2.2]" />
-            </div>
-          </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
-              {vehicles.length}
-            </span>
-            <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80">
-              Activos
-            </span>
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Reconocimiento LPR / ANPR
-            </span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
-              <Camera className="w-4 h-4 stroke-[2.2]" />
-            </div>
-          </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-lg sm:text-xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
-              100% HABILITADO
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Apertura auto</span>
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/10 dark:bg-amber-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Vehículo Predeterminado
-            </span>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
-              <Star className="w-4 h-4 stroke-[2.2]" />
-            </div>
-          </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
-              {vehicles.find(v => v.isDefault)?.license_plate || 'Ninguno'}
-            </span>
-            <span className="text-xs text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800/80">
-              Principal
-            </span>
-          </div>
-        </div>
-
       </div>
 
       {/* Buscador y Filtros Compactos */}
@@ -930,16 +867,16 @@ export const VehiclesModule = () => {
                       </div>
                     </div>
 
-                    {/* Placa Estilo Matrícula Oficial Peruana */}
+                    {/* Placa Estilo Matrícula */}
                     <div className="bg-slate-950 text-white font-mono py-2 px-3 rounded-xl border border-slate-800 flex items-center justify-between shadow-2xs">
-                      <span className="text-[10px] text-slate-400 font-sans font-bold uppercase tracking-wider">
-                        🇵🇪 PERÚ
+                      <span className="text-[10px] text-slate-400 font-sans font-semibold tracking-wider">
+                        PERÚ
                       </span>
                       <span className="text-base font-black text-amber-400 tracking-widest font-mono">
                         {v.license_plate}
                       </span>
-                      <span className="text-[10px] text-emerald-400 font-bold">
-                        ONLINE
+                      <span className="text-[10px] font-sans font-semibold text-slate-400 uppercase">
+                        {v.vehicle_type || 'Auto'}
                       </span>
                     </div>
 

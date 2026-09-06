@@ -1310,11 +1310,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 space-y-3.5">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-200/80 pb-3">
                           <div>
-                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
-                              Tarifas por Categoría de Vehículo
-                            </span>
-                            <p className="text-xs text-slate-600 font-medium">
-                              Configura el cobro base por hora o por minuto fraccionado según las políticas de tu local.
+                            <h3 className="text-sm font-bold text-slate-900">Tarifas por Categoría</h3>
+                            <p className="text-xs text-slate-500">
+                              Cobro base por hora o fraccionado por minuto según la sede.
                             </p>
                           </div>
 
@@ -1323,48 +1321,37 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             <button
                               type="button"
                               onClick={() => setFormData({ ...formData, billing_unit: 'hour' })}
-                              className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                              className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
                                 formData.billing_unit !== 'minute' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                               }`}
                             >
-                              <span>⌛ Por Hora</span>
+                              Por hora
                             </button>
                             <button
                               type="button"
                               onClick={() => setFormData({ ...formData, billing_unit: 'minute' })}
-                              className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                              className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
                                 formData.billing_unit === 'minute' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                               }`}
                             >
-                              <span>⏱️ Por Minuto</span>
-                              <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1 rounded font-mono">FRACCIÓN</span>
+                              Por minuto
                             </button>
                           </div>
                         </div>
-
-                        {formData.billing_unit === 'minute' && (
-                          <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl p-2.5 text-xs flex items-center gap-2">
-                            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span>
-                              <b>Modo Por Minuto Activo:</b> La tarifa principal de cobro se basará en el precio por minuto. Las tarifas horarias se mantienen como referencia.
-                            </span>
-                          </div>
-                        )}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
                           {/* Auto / Sedán */}
                           <div className={`bg-white p-3 rounded-xl border transition shadow-2xs space-y-2 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/30' : 'border-slate-200'}`}>
                             <div className="flex items-center justify-between text-slate-700">
                               <span className="text-xs font-bold flex items-center gap-1">
-                                <Car className="w-3.5 h-3.5 text-blue-600" /> Auto / Sedán
+                                <Car className="w-3.5 h-3.5 text-slate-600" /> Auto / Sedán
                               </span>
                             </div>
 
                             <div className="space-y-1.5">
                               <div>
-                                <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por Minuto</span>
-                                  {formData.billing_unit === 'minute' && <span className="text-emerald-600 font-bold">Principal</span>}
+                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
+                                  <span>Por minuto</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs font-mono font-bold text-slate-400">S/</span>
@@ -1381,9 +1368,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               </div>
 
                               <div>
-                                <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por Hora</span>
-                                  {formData.billing_unit !== 'minute' && <span className="text-blue-600 font-bold">Principal</span>}
+                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
+                                  <span>Por hora</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs font-mono font-bold text-slate-400">S/</span>
@@ -1412,15 +1398,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           <div className={`bg-white p-3 rounded-xl border transition shadow-2xs space-y-2 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/30' : 'border-slate-200'}`}>
                             <div className="flex items-center justify-between text-slate-700">
                               <span className="text-xs font-bold flex items-center gap-1">
-                                <Truck className="w-3.5 h-3.5 text-amber-600" /> Camioneta / SUV
+                                <Truck className="w-3.5 h-3.5 text-slate-600" /> Camioneta / SUV
                               </span>
                             </div>
 
                             <div className="space-y-1.5">
                               <div>
-                                <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por Minuto</span>
-                                  {formData.billing_unit === 'minute' && <span className="text-emerald-600 font-bold">Principal</span>}
+                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
+                                  <span>Por minuto</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs font-mono font-bold text-slate-400">S/</span>
@@ -1437,9 +1422,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               </div>
 
                               <div>
-                                <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por Hora</span>
-                                  {formData.billing_unit !== 'minute' && <span className="text-blue-600 font-bold">Principal</span>}
+                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
+                                  <span>Por hora</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs font-mono font-bold text-slate-400">S/</span>
@@ -1468,15 +1452,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           <div className={`bg-white p-3 rounded-xl border transition shadow-2xs space-y-2 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/30' : 'border-slate-200'}`}>
                             <div className="flex items-center justify-between text-slate-700">
                               <span className="text-xs font-bold flex items-center gap-1">
-                                <Car className="w-3.5 h-3.5 text-orange-500" /> Mototaxi / Torito
+                                <Car className="w-3.5 h-3.5 text-slate-600" /> Mototaxi / Torito
                               </span>
                             </div>
 
                             <div className="space-y-1.5">
                               <div>
-                                <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por Minuto</span>
-                                  {formData.billing_unit === 'minute' && <span className="text-emerald-600 font-bold">Principal</span>}
+                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
+                                  <span>Por minuto</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs font-mono font-bold text-slate-400">S/</span>
@@ -1493,9 +1476,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               </div>
 
                               <div>
-                                <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por Hora</span>
-                                  {formData.billing_unit !== 'minute' && <span className="text-blue-600 font-bold">Principal</span>}
+                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
+                                  <span>Por hora</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs font-mono font-bold text-slate-400">S/</span>
@@ -1524,15 +1506,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           <div className={`bg-white p-3 rounded-xl border transition shadow-2xs space-y-2 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/30' : 'border-slate-200'}`}>
                             <div className="flex items-center justify-between text-slate-700">
                               <span className="text-xs font-bold flex items-center gap-1">
-                                <Bike className="w-3.5 h-3.5 text-emerald-600" /> Moto Lineal
+                                <Bike className="w-3.5 h-3.5 text-slate-600" /> Moto Lineal
                               </span>
                             </div>
 
                             <div className="space-y-1.5">
                               <div>
-                                <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por Minuto</span>
-                                  {formData.billing_unit === 'minute' && <span className="text-emerald-600 font-bold">Principal</span>}
+                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
+                                  <span>Por minuto</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs font-mono font-bold text-slate-400">S/</span>
@@ -1549,9 +1530,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               </div>
 
                               <div>
-                                <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por Hora</span>
-                                  {formData.billing_unit !== 'minute' && <span className="text-blue-600 font-bold">Principal</span>}
+                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
+                                  <span>Por hora</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs font-mono font-bold text-slate-400">S/</span>
@@ -1579,20 +1559,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
 
                       {/* Bloque: Configuración de Turno Noche */}
-                      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 shadow-sm space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center shrink-0">
-                              <Moon className="w-4 h-4 text-amber-300" />
-                            </div>
-                            <div>
-                              <h4 className="text-xs font-bold text-white flex items-center gap-2">
-                                Tarifa de Turno Noche (Horario Nocturno)
-                              </h4>
-                              <p className="text-[11px] text-slate-300 font-medium">
-                                Define si se cobra tarifa nocturna y a qué hora inicia y termina.
-                              </p>
-                            </div>
+                      <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 space-y-3.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900">Turno Noche</h3>
+                            <p className="text-xs text-slate-500">
+                              Horario nocturno con tarifa diferenciada.
+                            </p>
                           </div>
 
                           <label className="relative inline-flex items-center cursor-pointer select-none">
@@ -1602,8 +1575,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               onChange={(e) => setFormData({ ...formData, night_shift_enabled: e.target.checked })}
                               className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                            <span className="ml-2 text-xs font-bold text-white">
+                            <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                            <span className="ml-2 text-xs font-semibold text-slate-700">
                               {formData.night_shift_enabled ? 'Habilitado' : 'Desactivado'}
                             </span>
                           </label>
@@ -1612,32 +1585,32 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         {formData.night_shift_enabled ? (
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                             <div>
-                              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                                Hora de Inicio Noche
+                              <label className="text-xs font-semibold text-slate-700 block mb-1">
+                                Inicio
                               </label>
                               <Input
                                 type="time"
                                 value={formData.night_shift_start || '20:00'}
                                 onChange={(e) => setFormData({ ...formData, night_shift_start: e.target.value })}
-                                className="h-9 text-xs font-mono font-bold bg-slate-800/80 border-slate-700 text-white"
+                                className="h-9 text-xs font-mono font-bold bg-white border-slate-200 text-slate-900"
                               />
                             </div>
 
                             <div>
-                              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                                Hora de Fin Noche
+                              <label className="text-xs font-semibold text-slate-700 block mb-1">
+                                Fin
                               </label>
                               <Input
                                 type="time"
                                 value={formData.night_shift_end || '06:00'}
                                 onChange={(e) => setFormData({ ...formData, night_shift_end: e.target.value })}
-                                className="h-9 text-xs font-mono font-bold bg-slate-800/80 border-slate-700 text-white"
+                                className="h-9 text-xs font-mono font-bold bg-white border-slate-200 text-slate-900"
                               />
                             </div>
 
                             <div>
-                              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                                Recargo Nocturno (S/ por hora)
+                              <label className="text-xs font-semibold text-slate-700 block mb-1">
+                                Recargo por hora (S/)
                               </label>
                               <Input
                                 type="number"
@@ -1645,63 +1618,51 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                 min="0.00"
                                 value={formData.night_shift_surcharge}
                                 onChange={(e) => setFormData({ ...formData, night_shift_surcharge: parseFloat(e.target.value) || 0 })}
-                                className="h-9 text-xs font-mono font-bold bg-slate-800/80 border-slate-700 text-white"
+                                className="h-9 text-xs font-mono font-bold bg-white border-slate-200 text-slate-900"
                               />
-                            </div>
-
-                            <div className="sm:col-span-3 text-[11px] text-amber-200/90 bg-white/5 border border-amber-400/20 rounded-xl p-2.5 flex items-center gap-2">
-                              <Moon className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                              <span>
-                                Durante el turno de <b>{formData.night_shift_start || '20:00'}</b> a <b>{formData.night_shift_end || '06:00'}</b>, se suma <b>+S/ {(Number(formData.night_shift_surcharge) || 0).toFixed(2)}/h</b> al costo horario de cada categoría.
-                              </span>
                             </div>
                           </div>
                         ) : (
-                          <p className="text-xs text-slate-400 italic">
-                            El turno noche está desactivado. Se aplicará la tarifa diurna estándar las 24 horas.
+                          <p className="text-xs text-slate-500">
+                            Tarifa diurna aplicada las 24 horas.
                           </p>
                         )}
                       </div>
 
                       {/* Bloque: Condiciones de Reserva & Tiempo Estimado */}
-                      <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-4 space-y-3">
-                        <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2.5">
-                          <div>
-                            <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block font-mono">
-                              Políticas de Reserva & Tiempo de Estadía
-                            </span>
-                            <p className="text-xs text-emerald-900/80 font-medium">
-                              Configura si la reserva requiere pago previo o es libre en garita, y la duración estimada.
-                            </p>
-                          </div>
-                          <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                      <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 space-y-3.5">
+                        <div className="border-b border-slate-200/80 pb-3">
+                          <h3 className="text-sm font-bold text-slate-900">Políticas de Reserva</h3>
+                          <p className="text-xs text-slate-500">
+                            Condiciones de cobro y límites de tiempo de estadía.
+                          </p>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                           {/* Switch Cobro Reserva / Prepago */}
-                          <div className="bg-white p-3.5 rounded-xl border border-emerald-200 shadow-2xs space-y-2">
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
                             <label className="text-xs font-bold text-slate-800 block">
-                              Modalidad de Cobro de Reserva
+                              Modalidad de cobro
                             </label>
                             <select
                               value={formData.require_reservation_prepay ? 'prepay' : 'free'}
                               onChange={(e) => setFormData({ ...formData, require_reservation_prepay: e.target.value === 'prepay' })}
                               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 h-9 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
                             >
-                              <option value="free">🟢 Reserva Libre (El conductor paga en garita)</option>
-                              <option value="prepay">🔒 Prepago Obligatorio (Pagar para emitir ticket)</option>
+                              <option value="free">Reserva libre (pago en garita)</option>
+                              <option value="prepay">Prepago obligatorio (abono digital)</option>
                             </select>
-                            <p className="text-[11px] text-slate-500 leading-snug">
+                            <p className="text-[11px] text-slate-500">
                               {formData.require_reservation_prepay 
-                                ? 'Obliga al usuario a abonar el monto estimado o fianza antes de apartar el cajón.' 
-                                : 'Permite al usuario reservar gratis y pagar al finalizar su estadía en garita.'}
+                                ? 'El usuario abona antes de confirmar el cajón.' 
+                                : 'El usuario reserva gratis y abona en garita.'}
                             </p>
                           </div>
 
                           {/* Tasa o Fianza de Reserva */}
-                          <div className="bg-white p-3.5 rounded-xl border border-emerald-200 shadow-2xs space-y-2">
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
                             <label className="text-xs font-bold text-slate-800 block">
-                              Tasa / Fianza Fija de Reserva (S/)
+                              Tasa fija de reserva (S/)
                             </label>
                             <Input
                               type="number"
@@ -1711,26 +1672,21 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               onChange={(e) => setFormData({ ...formData, reservation_fee: parseFloat(e.target.value) || 0 })}
                               className="h-9 text-xs font-mono font-bold bg-slate-50 border-slate-200"
                             />
-                            <p className="text-[11px] text-slate-500 leading-snug">
-                              Monto fijo adicional por emitir la reserva (S/ 0.00 si no se cobra cargo por gestión).
+                            <p className="text-[11px] text-slate-500">
+                              Monto fijo adicional por gestión de reserva (S/ 0.00 si no aplica).
                             </p>
                           </div>
 
                           {/* Rango de Tiempo Estimado (Mín y Máx) */}
-                          <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-emerald-200 shadow-2xs space-y-2">
-                            <div className="flex items-center justify-between">
-                              <label className="text-xs font-bold text-slate-800 block">
-                                Tiempo Estimado de Estacionamiento Permitido
-                              </label>
-                              <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                                {formData.billing_unit === 'minute' ? 'Control en Minutos' : 'Control en Horas'}
-                              </span>
-                            </div>
+                          <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
+                            <label className="text-xs font-bold text-slate-800 block">
+                              Duración de estadía permitida
+                            </label>
 
                             {formData.billing_unit === 'minute' ? (
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Estadía Mínima</span>
+                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Mínimo</span>
                                   <div className="flex items-center gap-1.5">
                                     <Input
                                       type="number"
@@ -1741,12 +1697,12 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                       onChange={(e) => setFormData({ ...formData, min_stay_minutes: parseInt(e.target.value) || 15 })}
                                       className="h-8.5 text-xs font-mono font-bold bg-slate-50 border-slate-200"
                                     />
-                                    <span className="text-xs font-semibold text-slate-500">minutos</span>
+                                    <span className="text-xs text-slate-500">minutos</span>
                                   </div>
                                 </div>
 
                                 <div>
-                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Estadía Máxima</span>
+                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Máximo</span>
                                   <div className="flex items-center gap-1.5">
                                     <Input
                                       type="number"
@@ -1757,18 +1713,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                       onChange={(e) => setFormData({ ...formData, max_stay_minutes: parseInt(e.target.value) || 1440 })}
                                       className="h-8.5 text-xs font-mono font-bold bg-slate-50 border-slate-200"
                                     />
-                                    <span className="text-xs font-semibold text-slate-500">minutos ({((formData.max_stay_minutes || 1440)/60).toFixed(1)}h)</span>
+                                    <span className="text-xs text-slate-500">minutos</span>
                                   </div>
-                                </div>
-
-                                <div className="sm:col-span-2 text-[11px] text-slate-500 leading-snug pt-0.5">
-                                  En modo fraccionado, el conductor podrá reservar desde <b>{formData.min_stay_minutes || 15} min</b> hasta <b>{formData.max_stay_minutes || 1440} min ({((formData.max_stay_minutes || 1440)/60).toFixed(1)} horas)</b>.
                                 </div>
                               </div>
                             ) : (
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Estadía Mínima</span>
+                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Mínimo</span>
                                   <div className="flex items-center gap-1.5">
                                     <Input
                                       type="number"
@@ -1778,12 +1730,12 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                       onChange={(e) => setFormData({ ...formData, min_stay_hours: parseInt(e.target.value) || 1 })}
                                       className="h-8.5 text-xs font-mono font-bold bg-slate-50 border-slate-200"
                                     />
-                                    <span className="text-xs font-semibold text-slate-500">horas</span>
+                                    <span className="text-xs text-slate-500">horas</span>
                                   </div>
                                 </div>
 
                                 <div>
-                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Estadía Máxima</span>
+                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Máximo</span>
                                   <div className="flex items-center gap-1.5">
                                     <Input
                                       type="number"
@@ -1793,12 +1745,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                       onChange={(e) => setFormData({ ...formData, max_stay_hours: parseInt(e.target.value) || 24 })}
                                       className="h-8.5 text-xs font-mono font-bold bg-slate-50 border-slate-200"
                                     />
-                                    <span className="text-xs font-semibold text-slate-500">horas</span>
+                                    <span className="text-xs text-slate-500">horas</span>
                                   </div>
-                                </div>
-
-                                <div className="sm:col-span-2 text-[11px] text-slate-500 leading-snug pt-0.5">
-                                  El usuario podrá seleccionar entre {formData.min_stay_hours || 1}h y {formData.max_stay_hours || 24}h al apartar su cajón, calculando el importe exacto en tiempo real.
                                 </div>
                               </div>
                             )}

@@ -1007,21 +1007,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
             {/* Placa */}
             <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Car className="w-3.5 h-3.5 text-emerald-400" />
-                  Placa Vehicular
-                </label>
-                {vehicles.length > 0 ? (
-                  <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                    {vehicles.length} {vehicles.length === 1 ? 'auto registrado' : 'autos registrados'}
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                    Sin autos registrados
-                  </span>
-                )}
-              </div>
+              <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <Car className="w-3.5 h-3.5 text-emerald-400" />
+                Placa Vehicular
+              </label>
 
               {vehiclesLoading ? (
                 <div className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-400 flex items-center gap-2">
@@ -1040,8 +1029,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       </option>
                     ))}
                   </select>
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                    <span className="text-[10px] text-slate-400">Reserva con tu auto registrado.</span>
+                  <div className="flex items-center justify-end text-[11px] text-slate-400 pt-0.5">
                     <button
                       type="button"
                       onClick={() => {
@@ -1071,20 +1059,13 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-mono font-bold tracking-wider uppercase focus:outline-none"
                   />
                   {customPlateInput.length > 0 && !isPlateValid && (
-                    <p className="text-[10px] text-amber-400 font-mono flex items-center gap-1">
-                      <span>⚠️</span>
+                    <p className="text-[10px] text-amber-400 font-mono">
                       {!customPlateInput.includes('-')
-                        ? 'La placa debe incluir un guión obligatorio (-), ej: ABC-123'
-                        : 'Formato de placa inválido (ej: ABC-123 o 1234-5A)'}
+                        ? 'Incluye un guión obligatorio (ej: ABC-123)'
+                        : 'Formato inválido (ej: ABC-123 o 1234-5A)'}
                     </p>
                   )}
-                  {customPlateInput.length > 0 && isPlateValid && (
-                    <p className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-                      <span>✓</span> Placa con guión válida
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
-                    <span>Ingresa la placa para esta reserva.</span>
+                  <div className="flex items-center justify-end text-[10px] text-slate-400 pt-0.5">
                     <button
                       type="button"
                       onClick={() => {
@@ -1110,12 +1091,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 onChange={(e) => setEtaMinutes(Number(e.target.value))}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl h-9 px-3 text-xs font-mono font-semibold text-white outline-none cursor-pointer focus:border-emerald-500"
               >
-                <option value={10}>Llego en 10 minutos</option>
-                <option value={15}>Llego en 15 minutos</option>
-                <option value={20}>Llego en 20 minutos</option>
-                <option value={30}>Llego en 30 minutos</option>
-                <option value={45}>Llego en 45 minutos</option>
-                <option value={60}>Llego en 1 hora (60 min)</option>
+                <option value={10}>10 minutos</option>
+                <option value={15}>15 minutos</option>
+                <option value={20}>20 minutos</option>
+                <option value={30}>30 minutos</option>
+                <option value={45}>45 minutos</option>
+                <option value={60}>1 hora (60 min)</option>
               </select>
             </div>
 
@@ -1279,16 +1260,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 <span className="text-white font-sans">Total Estimado:</span>
                 <span className="text-emerald-400 font-mono">S/ {finalTotalCost.toFixed(2)}</span>
               </div>
-              <div className="pt-1">
-                {parking?.require_reservation_prepay ? (
-                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 text-[11px] text-amber-300 font-sans leading-tight">
-                    🔒 <b>Prepago Requerido:</b> Esta sede solicita abono digital al reservar para confirmar tu espacio.
-                  </div>
-                ) : (
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2 text-[11px] text-emerald-300 font-sans leading-tight">
-                    🟢 <b>Reserva Libre:</b> Pagas el importe al ingresar o salir en la garita.
-                  </div>
-                )}
+              <div className="flex justify-between text-slate-400">
+                <span>Modalidad:</span>
+                <span className="text-slate-200">
+                  {parking?.require_reservation_prepay ? 'Prepago digital previo' : 'Pago en garita'}
+                </span>
               </div>
             </div>
 
@@ -1327,10 +1303,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               <p className="text-[11px] text-amber-400 text-center mt-1">Ingresa o selecciona una placa para continuar.</p>
             )}
             {!canReserve && effectivePlate && !isPlateValid && (
-              <p className="text-[11px] text-rose-400 text-center mt-1 font-mono">⚠️ La placa debe incluir un guión obligatorio (ej: ABC-123).</p>
+              <p className="text-[11px] text-rose-400 text-center mt-1 font-mono">La placa debe incluir un guión (ej: ABC-123).</p>
             )}
             {!canReserve && isPlateValid && !isFacturaValid && (
-              <p className="text-[11px] text-rose-400 text-center mt-1">⚠️ Completa los datos de la Factura (RUC válido de 11 dígitos y Razón Social).</p>
+              <p className="text-[11px] text-rose-400 text-center mt-1">Completa los datos de la factura (RUC y razón social).</p>
             )}
           </div>
         </div>

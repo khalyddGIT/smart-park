@@ -392,9 +392,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     return () => { cancelled = true; };
   }, [parking?.id]);
 
-  const elements = planStatus === 'ready' && remotePlan
-    ? [...remotePlan.elements, ...remotePlan.slots]
-    : (planElements && planElements.length > 0 ? planElements : DEFAULT_FALLBACK_ELEMENTS);
+  const elements = useMemo(() => {
+    if (planStatus === 'ready' && remotePlan) {
+      return [...(remotePlan.elements || []), ...(remotePlan.slots || [])];
+    }
+    return planElements && planElements.length > 0 ? planElements : DEFAULT_FALLBACK_ELEMENTS;
+  }, [planStatus, remotePlan, planElements]);
 
   // Envolvente dinámica (Bounding Box): se ajusta a la extensión real de las plazas y vías
   const layoutBounds = useMemo(() => {
@@ -449,15 +452,15 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
   const effectiveScale = +(baseScale * userZoom).toFixed(3);
 
-  const slots = elements.filter(e => e && e.type === 'slot');
-  const freeSlots = slots.filter(s => s.status === 'free');
+  const slots = useMemo(() => elements.filter(e => e && e.type === 'slot'), [elements]);
+  const freeSlots = useMemo(() => slots.filter(s => s.status === 'free'), [slots]);
   const totalSlots = slots.length;
 
   useEffect(() => {
     if (!selectedSlot && freeSlots.length > 0) {
       setSelectedSlot(freeSlots[0]);
     }
-  }, [elements]);
+  }, [selectedSlot, freeSlots]);
 
   const handleSlotClick = (slot) => {
     if (slot.status === 'free') {
@@ -465,8 +468,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     }
   };
 
-  const arrivalWindow = Math.max(5, Math.min(60, Number(parking?.tolerance ?? parking?.tolerance_minutes ?? 15) || 15));
-  const effectivePlate = (useCustomPlate ? customPlateInput : selectedPlate).toUpperCase().trim().replace(/\s/g, '');
+  const baseHourlyRate = Number(parking?.hourly_rate ?? parking?.rate ?? 5.0);
+  const hasRegisteredVehicles = Array.isArray(vehicles) && vehicles.length > 0;
+  const effectivePlate = (hasRegisteredVehicles 
+    ? (selectedPlate || (vehicles[0]?.license_plate || '')) 
+    : customPlateInput
+  ).toUpperCase().trim().replace(/\s/g, '');
   const PLATE_REGEX = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/;
   const isPlateValid = PLATE_REGEX.test(effectivePlate);
   const isFacturaValid = receiptType !== 'factura' || (/^(10|20)[0-9]{9}$/.test(rucNumber.trim()) && businessName.trim().length >= 3);
@@ -624,8 +631,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
         <div className="flex items-center gap-4 text-xs font-mono">
           <div>
-            <span className="text-slate-400 block text-[10px]">Tarifa</span>
-            <span className="font-bold text-slate-900 text-sm">S/ {baseHourlyRate.toFixed(2)}/h</span>
+            <span className="text-slate-400 block text-[10px]">{isMinuteBilling ? 'Tarifa Minuto' : 'Tarifa Hora'}</span>
+            <span className="font-bold text-slate-900 text-sm">
+              {isMinuteBilling 
+                ? `S/ ${Number(parking?.rate_minute_auto ?? (baseHourlyRate / 60)).toFixed(2)}/min` 
+                : `S/ ${baseHourlyRate.toFixed(2)}/h`}
+            </span>
           </div>
           <div className="h-6 w-px bg-slate-200" />
           <div>

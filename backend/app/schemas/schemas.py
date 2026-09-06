@@ -106,7 +106,7 @@ class VehicleBase(BaseModel):
     def validate_vehicle_type(cls, v):
         if v is not None:
             v_clean = v.strip().lower()
-            valid_types = {'auto', 'car', 'moto', 'motorcycle', 'camioneta', 'truck', 'camion', 'van', 'bicicleta', 'otro'}
+            valid_types = {'auto', 'car', 'moto', 'motorcycle', 'suv', 'camioneta', 'truck', 'camion', 'van', 'bicicleta', 'bike', 'mototaxi', 'otro'}
             if v_clean not in valid_types:
                 raise ValueError(f"Tipo de vehículo inválido: {v}. Tipos permitidos: {', '.join(sorted(valid_types))}")
             return v_clean
@@ -137,7 +137,7 @@ class VehicleUpdate(BaseModel):
     def validate_vehicle_type(cls, v):
         if v is not None and v != '':
             v_clean = v.strip().lower()
-            valid_types = {'auto', 'car', 'moto', 'motorcycle', 'camioneta', 'truck', 'camion', 'van', 'bicicleta', 'otro'}
+            valid_types = {'auto', 'car', 'moto', 'motorcycle', 'suv', 'camioneta', 'truck', 'camion', 'van', 'bicicleta', 'bike', 'mototaxi', 'otro'}
             if v_clean not in valid_types:
                 raise ValueError(f"Tipo de vehículo inválido: {v}. Tipos permitidos: {', '.join(sorted(valid_types))}")
             return v_clean

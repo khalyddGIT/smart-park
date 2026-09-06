@@ -233,12 +233,34 @@ Se añadió la capacidad para que el Administrador Local defina la **unidad de t
 
 ---
 
-## 12. 📦 Historial de Commits en GitHub
+## 12. 🚘 Corrección en Guardado de Vehículos y Selección Estricta de Placa en Reservas
+
+Se corrigieron los errores que impedían el guardado de vehículos en el sistema y se ajustó la experiencia de reserva según las reglas de negocio solicitadas:
+
+- **1. Corrección del Fallo Crítico en Guardado de Vehículos (`backend/app/schemas/schemas.py`)**:
+  - En el validador `validate_vehicle_type`, el conjunto de tipos permitidos no incluía `'suv'`, `'mototaxi'` ni `'bike'`. Dado que el formulario de `VehiclesModule.jsx` tenía por defecto `vehicle_type = 'suv'` y ofrecía la opción "Camioneta SUV", toda creación con esta categoría era rechazada con código `422 Unprocessable Entity` ("Tipo de vehículo inválido: suv").
+  - Se incorporaron `'suv'`, `'mototaxi'`, `'bike'` tanto en `VehicleBase` como en `VehicleUpdate`.
+  - Se agregaron aserciones unitarias en `test_plate_and_field_validations.py` para garantizar soporte continuo de estos tipos de vehículo.
+- **2. Resiliencia y Persistencia en Frontend (`VehiclesModule.jsx`)**:
+  - Se eliminó el bloqueo que impedía guardar en `localStorage` si la sesión no tenía ID persistente (`key.endsWith('_guest')`).
+  - Se añadió pre-formateo inteligente de placas sin guión (ej: `ABC123` -> `ABC-123`, `1234AB` -> `1234-AB`) antes de la validación y guardado.
+  - Se añadió emisión del evento global `smart_park_vehicles_updated` en creación, edición y eliminación de vehículos para sincronización en tiempo real con otros componentes y pestañas sin requerir recarga.
+- **3. Regla de Selección Estricta en la Reserva (`CustomerInteractivePlanBooking.jsx`)**:
+  - **Usuario con autos registrados (`vehicles.length > 0`)**: Se muestra **únicamente el selector (`<select>`) de sus autos registrados**, eliminando el botón "Otra placa" para evitar placas arbitrarias no autorizadas. Cuenta con enlace directo `+ Gestionar autos` si desea dar de alta un nuevo vehículo.
+  - **Usuario sin autos registrados (`vehicles.length === 0`)**: Se muestra el campo de texto manual con auto-formato con guión (`ABC-123`), indicador visual de validez y enlace `+ Registrar en Mis Vehículos`.
+  - **Sincronización automática de tarifa**: Al elegir un auto del selector, se sincroniza la categoría (`auto`, `camioneta`, `moto`, `mototaxi`) para aplicar la tarifa diurna/nocturna y por hora/minuto correspondiente.
+- **4. Navegación Fluida (`App.jsx`)**:
+  - `App.jsx` escucha el evento `smart_park_navigate_tab` y provee la función `onNavigateToVehicles` para transicionar de la reserva a "Mis Vehículos" con un solo clic.
+
+---
+
+## 13. 📦 Historial de Commits en GitHub
 
 Todos los cambios han sido compilados y subidos satisfactoriamente a la rama `master`:
 
 | Commit | Descripción |
 | :--- | :--- |
+| [`2e7c90e`](https://github.com/khalyddGIT/smart-park/commit/2e7c90e) | `feat(pricing): soporte de tarificacion por minuto y hora para administradores locales` |
 | [`d34c15d`](https://github.com/khalyddGIT/smart-park/commit/d34c15d) | `feat(local-admin): agregar tarifas por tipo de vehiculo, turno noche y politicas de reserva` |
 | [`0bb81f0`](https://github.com/khalyddGIT/smart-park/commit/0bb81f0) | `docs: agregar documento de consolidacion de avances y correcciones del proyecto` |
 | [`0474946`](https://github.com/khalyddGIT/smart-park/commit/0474946) | `fix(reservas): corregir flujo de pase y ticket en reservas canceladas, detener contador y deshabilitar QR` |

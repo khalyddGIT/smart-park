@@ -72,7 +72,7 @@ export const fetchCarPhoto = async (brand, model, year = '2023', vehicleType = '
 };
 
 const VEHICLES_STORAGE_KEY_BASE = 'smart_park_vehicles_v2';
-const getVehiclesKey = () => {
+export const getVehiclesStorageKey = () => {
   try {
     const saved = localStorage.getItem('smart_park_user_session');
     if (saved) {
@@ -82,6 +82,7 @@ const getVehiclesKey = () => {
   } catch {}
   return `${VEHICLES_STORAGE_KEY_BASE}_guest`;
 };
+const getVehiclesKey = getVehiclesStorageKey;
 
 const COLOR_PALETTE = ['Negro', 'Blanco', 'Gris Plata', 'Rojo', 'Azul', 'Verde', 'Beige'];
 
@@ -178,9 +179,7 @@ export const VehiclesModule = () => {
   useEffect(() => {
     try {
       const key = getVehiclesKey();
-      if (!key.endsWith('_guest')) {
-        localStorage.setItem(key, JSON.stringify(vehicles));
-      }
+      localStorage.setItem(key, JSON.stringify(vehicles));
     } catch (e) {}
   }, [vehicles]);
   
@@ -336,10 +335,23 @@ export const VehiclesModule = () => {
   const handleSaveCreate = async (e) => {
     e.preventDefault();
     if (!formData.license_plate) return;
-    const plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
+    let plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
+    if (!plateClean.includes('-')) {
+      if (plateClean.length === 6) {
+        plateClean = plateClean.slice(0, 3) + '-' + plateClean.slice(3);
+      } else if (plateClean.length === 7) {
+        plateClean = plateClean.slice(0, 4) + '-' + plateClean.slice(4);
+      }
+    }
     const plateOk = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i.test(plateClean);
     if (!plateOk) { showToast('La placa debe incluir un guión obligatorio (ej: ABC-123 o 1234-AB)'); return; }
-    let img = formData.imageUrl || getDefaultCarImage(formData.vehicle_type);
+
+    const typeClean = (formData.vehicle_type || 'auto').trim().toLowerCase();
+    const brandClean = (formData.brand || '').trim() || 'Toyota';
+    const modelClean = (formData.model || '').trim() || 'Corolla';
+    const colorClean = (formData.color || '').trim() || 'Gris';
+    const yearClean = (formData.year || '').trim() || '2023';
+    let img = formData.imageUrl || getDefaultCarImage(typeClean);
     const plate = plateClean;
     
     const token = getAccessToken();
@@ -347,27 +359,30 @@ export const VehiclesModule = () => {
       try {
         const created = await apiCreateVehicle({ 
           license_plate: plate, 
-          vehicle_type: formData.vehicle_type || 'auto', 
-          brand: formData.brand.trim() || 'Toyota', 
-          model: formData.model.trim() || 'Corolla', 
-          color: formData.color.trim() || 'Gris',
-          year: formData.year || '2023',
+          vehicle_type: typeClean, 
+          brand: brandClean, 
+          model: modelClean, 
+          color: colorClean, 
+          year: yearClean, 
           notes: formData.notes || '',
           image_url: img
         });
         const newObj = { 
           id: created.id, 
           license_plate: created.license_plate, 
-          vehicle_type: created.vehicle_type, 
-          brand: created.brand, 
-          model: created.model, 
-          color: created.color, 
-          year: created.year || formData.year || '2023',
+          vehicle_type: created.vehicle_type || typeClean, 
+          brand: created.brand || brandClean, 
+          model: created.model || modelClean, 
+          color: created.color || colorClean, 
+          year: created.year || yearClean,
           notes: created.notes || formData.notes || '',
           isDefault: vehicles.length === 0, 
           imageUrl: created.image_url || img 
         };
-        setVehicles(prev => [newObj, ...prev]);
+        const updatedList = [newObj, ...vehicles];
+        setVehicles(updatedList);
+        try { localStorage.setItem(getVehiclesKey(), JSON.stringify(updatedList)); } catch {}
+        window.dispatchEvent(new CustomEvent('smart_park_vehicles_updated', { detail: updatedList }));
         setShowAddModal(false);
         showToast(`✓ Vehículo ${newObj.license_plate} registrado con éxito.`);
         return;
@@ -382,18 +397,20 @@ export const VehiclesModule = () => {
     const newObj = { 
       id: Date.now(), 
       license_plate: plate, 
-      vehicle_type: formData.vehicle_type || 'auto', 
-      brand: formData.brand.trim() || 'Toyota', 
-      model: formData.model.trim() || 'Corolla', 
-      year: formData.year || '2023', 
-      color: formData.color.trim() || 'Gris', 
-      notes: formData.notes,
+      vehicle_type: typeClean, 
+      brand: brandClean, 
+      model: modelClean, 
+      year: yearClean, 
+      color: colorClean, 
+      notes: formData.notes || '',
       isDefault: vehicles.length === 0, 
       imageUrl: img, 
       user_id: 1 
     };
     const updated = [newObj, ...vehicles];
     setVehicles(updated);
+    try { localStorage.setItem(getVehiclesKey(), JSON.stringify(updated)); } catch {}
+    window.dispatchEvent(new CustomEvent('smart_park_vehicles_updated', { detail: updated }));
     setShowAddModal(false);
     showToast(`✓ Vehículo ${newObj.license_plate} registrado.`);
   };
@@ -401,10 +418,22 @@ export const VehiclesModule = () => {
   const handleSaveEdit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!selectedVehicle) return;
-    const plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
+    let plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
+    if (!plateClean.includes('-')) {
+      if (plateClean.length === 6) {
+        plateClean = plateClean.slice(0, 3) + '-' + plateClean.slice(3);
+      } else if (plateClean.length === 7) {
+        plateClean = plateClean.slice(0, 4) + '-' + plateClean.slice(4);
+      }
+    }
     const plateOk = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i.test(plateClean);
     if (!plateOk) { showToast('La placa debe incluir un guión obligatorio (ej: ABC-123 o 1234-AB)'); return; }
 
+    const typeClean = (formData.vehicle_type || 'auto').trim().toLowerCase();
+    const brandClean = (formData.brand || '').trim() || 'Toyota';
+    const modelClean = (formData.model || '').trim() || 'Corolla';
+    const colorClean = (formData.color || '').trim() || 'Gris';
+    const yearClean = (formData.year || '').trim() || '2023';
     const plate = plateClean;
     const token = getAccessToken();
 
@@ -414,11 +443,11 @@ export const VehiclesModule = () => {
       try {
         const updatedServer = await updateVehicleApi(selectedVehicle.id, {
           license_plate: plate,
-          vehicle_type: formData.vehicle_type,
-          brand: formData.brand.trim() || 'Toyota',
-          model: formData.model.trim() || 'Corolla',
-          color: formData.color.trim() || 'Gris',
-          year: formData.year || '2023',
+          vehicle_type: typeClean,
+          brand: brandClean,
+          model: modelClean,
+          color: colorClean,
+          year: yearClean,
           notes: formData.notes || '',
           image_url: formData.imageUrl || selectedVehicle.imageUrl
         });
@@ -429,7 +458,7 @@ export const VehiclesModule = () => {
           brand: updatedServer.brand,
           model: updatedServer.model,
           color: updatedServer.color,
-          year: updatedServer.year || formData.year,
+          year: updatedServer.year || yearClean,
           notes: updatedServer.notes || formData.notes,
           imageUrl: updatedServer.image_url || formData.imageUrl || selectedVehicle.imageUrl
         };
@@ -442,11 +471,11 @@ export const VehiclesModule = () => {
       updatedObj = {
         ...selectedVehicle,
         license_plate: plate,
-        vehicle_type: formData.vehicle_type,
-        brand: formData.brand.trim(),
-        model: formData.model.trim(),
-        year: formData.year,
-        color: formData.color.trim(),
+        vehicle_type: typeClean,
+        brand: brandClean,
+        model: modelClean,
+        year: yearClean,
+        color: colorClean,
         notes: formData.notes,
         imageUrl: formData.imageUrl || selectedVehicle.imageUrl
       };
@@ -458,6 +487,7 @@ export const VehiclesModule = () => {
     try {
       localStorage.setItem(getVehiclesKey(), JSON.stringify(updatedList));
     } catch (err) {}
+    window.dispatchEvent(new CustomEvent('smart_park_vehicles_updated', { detail: updatedList }));
 
     setShowEditModal(false);
     setSelectedVehicle(null);
@@ -472,6 +502,10 @@ export const VehiclesModule = () => {
     }
     const updated = vehicles.filter(v => v.id !== id);
     setVehicles(updated);
+    try {
+      localStorage.setItem(getVehiclesKey(), JSON.stringify(updated));
+    } catch (err) {}
+    window.dispatchEvent(new CustomEvent('smart_park_vehicles_updated', { detail: updated }));
     showToast(`Vehículo ${plate} eliminado.`);
   };
 

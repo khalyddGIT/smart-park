@@ -203,6 +203,11 @@ def test_vehicle_create_valid():
     assert v.license_plate == "XYZ-789"
     assert v.vehicle_type == "auto"
 
+    # Tipos adicionales soportados: suv, mototaxi, bike
+    for vtype in ["suv", "mototaxi", "bike", "camioneta", "moto"]:
+        v_test = VehicleCreate(license_plate="XYZ-789", vehicle_type=vtype)
+        assert v_test.vehicle_type == vtype
+
 
 def test_vehicle_create_rejects_plate_without_hyphen():
     """VehicleCreate debe rechazar placas sin guión."""

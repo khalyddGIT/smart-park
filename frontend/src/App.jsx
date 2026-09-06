@@ -114,6 +114,15 @@ export const App = () => {
     }
   }, [role]);
 
+  // Listener para navegación reactiva entre módulos
+  useEffect(() => {
+    const handleNav = (e) => {
+      if (e?.detail) setActiveTab(e.detail);
+    };
+    window.addEventListener('smart_park_navigate_tab', handleNav);
+    return () => window.removeEventListener('smart_park_navigate_tab', handleNav);
+  }, []);
+
   // Filtros de Búsqueda para Conductor
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('todos'); // 'todos' | 'centro' | 'techados' | 'economicos'
@@ -562,6 +571,7 @@ export const App = () => {
                         parking={selectedParking} 
                         planElements={selectedParking.elements || []}
                         onReserveSlot={handleCustomerBooking}
+                        onNavigateToVehicles={() => setActiveTab('vehicles')}
                       />
                     </div>
                   ) : (

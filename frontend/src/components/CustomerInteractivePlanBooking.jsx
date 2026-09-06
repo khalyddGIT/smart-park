@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import api from '../services/api';
 import { useEstablishments } from '../context/EstablishmentContext';
 import { 
@@ -222,7 +222,7 @@ const mapServerElement = (e) => {
   };
 };
 
-export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onReserveSlot }) => {
+export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onReserveSlot, onNavigateToVehicles }) => {
   const { reservations, bookingError } = useEstablishments();
   
   const [baseScale, setBaseScale] = useState(1);
@@ -259,25 +259,103 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     ));
   }, [reservations]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadVehicles = useCallback(() => {
     setVehiclesLoading(true);
+    let initialList = [];
+    try {
+      const savedUser = localStorage.getItem('smart_park_user_session');
+      const u = savedUser ? JSON.parse(savedUser) : null;
+      const key = `smart_park_vehicles_v2_${u?.id || u?.email || 'guest'}`;
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          initialList = parsed;
+          setVehicles(parsed);
+          setSelectedPlate((curr) => {
+            const exists = parsed.some(v => v.license_plate === curr);
+            return exists ? curr : parsed[0].license_plate;
+          });
+          setUseCustomPlate(false);
+          setVehiclesLoading(false);
+        }
+      }
+    } catch {}
+
     api.get('/vehicles')
       .then((res) => {
-        if (cancelled) return;
         const list = Array.isArray(res.data) ? res.data : [];
+        if (list.length > 0) {
+          setVehicles(list);
+          setSelectedPlate((curr) => {
+            const exists = list.some(v => v.license_plate === curr);
+            return exists ? curr : list[0].license_plate;
+          });
+          setUseCustomPlate(false);
+          try {
+            const savedUser = localStorage.getItem('smart_park_user_session');
+            const u = savedUser ? JSON.parse(savedUser) : null;
+            const key = `smart_park_vehicles_v2_${u?.id || u?.email || 'guest'}`;
+            localStorage.setItem(key, JSON.stringify(list));
+          } catch {}
+        } else if (initialList.length === 0) {
+          setVehicles([]);
+          setUseCustomPlate(true);
+        }
+      })
+      .catch(() => {
+        if (initialList.length === 0) {
+          setVehicles([]);
+          setUseCustomPlate(true);
+        }
+      })
+      .finally(() => {
+        setVehiclesLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    loadVehicles();
+
+    const handleVehiclesUpdated = (e) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        const list = e.detail;
         setVehicles(list);
         if (list.length > 0) {
-          setSelectedPlate(list[0].license_plate);
+          setSelectedPlate((curr) => {
+            const exists = list.some(v => v.license_plate === curr);
+            return exists ? curr : list[0].license_plate;
+          });
           setUseCustomPlate(false);
         } else {
           setUseCustomPlate(true);
         }
-      })
-      .catch(() => { if (!cancelled) { setVehicles([]); setUseCustomPlate(true); } })
-      .finally(() => { if (!cancelled) setVehiclesLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+      } else {
+        loadVehicles();
+      }
+    };
+
+    window.addEventListener('smart_park_vehicles_updated', handleVehiclesUpdated);
+    window.addEventListener('storage', loadVehicles);
+    return () => {
+      window.removeEventListener('smart_park_vehicles_updated', handleVehiclesUpdated);
+      window.removeEventListener('storage', loadVehicles);
+    };
+  }, [loadVehicles]);
+
+  // Sincronizar automáticamente categoría según el vehículo seleccionado
+  useEffect(() => {
+    if (vehicles.length > 0 && selectedPlate) {
+      const match = vehicles.find(v => v.license_plate === selectedPlate);
+      if (match?.vehicle_type) {
+        const vt = match.vehicle_type.toLowerCase();
+        if (vt === 'suv' || vt === 'camioneta') setVehicleCategory('camioneta');
+        else if (vt === 'moto' || vt === 'motorcycle' || vt === 'bike') setVehicleCategory('moto');
+        else if (vt === 'mototaxi') setVehicleCategory('mototaxi');
+        else setVehicleCategory('auto');
+      }
+    }
+  }, [selectedPlate, vehicles]);
 
   const numericParkingId = useMemo(() => {
     if (!parking) return NaN;
@@ -917,44 +995,54 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             </div>
 
             {/* Placa */}
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-slate-300">
-                  Placa
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-emerald-400" />
+                  Placa Vehicular
                 </label>
-                {vehicles.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextMode = !useCustomPlate;
-                      setUseCustomPlate(nextMode);
-                      if (!nextMode && vehicles.length > 0) {
-                        setSelectedPlate(vehicles[0].license_plate);
-                      } else {
-                        setCustomPlateInput('');
-                      }
-                    }}
-                    className="text-[11px] text-emerald-400 hover:underline cursor-pointer"
-                  >
-                    {useCustomPlate ? 'Mis vehículos' : 'Otra placa'}
-                  </button>
+                {vehicles.length > 0 ? (
+                  <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    {vehicles.length} {vehicles.length === 1 ? 'auto registrado' : 'autos registrados'}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                    Sin autos registrados
+                  </span>
                 )}
               </div>
 
               {vehiclesLoading ? (
                 <div className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-400 flex items-center gap-2">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando...
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando vehículos...
                 </div>
-              ) : vehicles.length > 0 && !useCustomPlate ? (
-                <select 
-                  value={selectedPlate} 
-                  onChange={(e) => setSelectedPlate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white cursor-pointer focus:outline-none focus:border-emerald-500"
-                >
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.license_plate}>{v.license_plate} - {v.brand || 'Vehículo'}</option>
-                  ))}
-                </select>
+              ) : vehicles.length > 0 ? (
+                <div className="space-y-1.5">
+                  <select 
+                    value={selectedPlate} 
+                    onChange={(e) => setSelectedPlate(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white cursor-pointer focus:outline-none focus:border-emerald-500"
+                  >
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.license_plate}>
+                        {v.license_plate} - {v.brand || 'Vehículo'} {v.model || ''} ({v.vehicle_type ? v.vehicle_type.toUpperCase() : 'AUTO'})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                    <span className="text-[10px] text-slate-400">Reserva con tu auto registrado.</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onNavigateToVehicles) onNavigateToVehicles();
+                        else window.dispatchEvent(new CustomEvent('smart_park_navigate_tab', { detail: 'vehicles' }));
+                      }}
+                      className="text-[10px] text-emerald-400 hover:underline font-semibold cursor-pointer"
+                    >
+                      + Gestionar autos
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="space-y-1">
                   <input
@@ -984,6 +1072,19 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       <span>✓</span> Placa con guión válida
                     </p>
                   )}
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                    <span>Ingresa la placa para esta reserva.</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onNavigateToVehicles) onNavigateToVehicles();
+                        else window.dispatchEvent(new CustomEvent('smart_park_navigate_tab', { detail: 'vehicles' }));
+                      }}
+                      className="text-emerald-400 hover:underline font-semibold cursor-pointer"
+                    >
+                      + Registrar en Mis Vehículos
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

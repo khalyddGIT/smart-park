@@ -166,6 +166,7 @@ const AppMain = () => {
   // Filtros de Búsqueda para Conductor
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('todos'); // 'todos' | 'centro' | 'techados' | 'economicos'
+  const [selectedCompanyKey, setSelectedCompanyKey] = useState(null); // empresa elegida: null = nivel empresas, set = nivel sucursales
   const [isLoadingSedes, setIsLoadingSedes] = useState(false);
 
   // Efecto sutil de carga skeleton al cambiar filtros
@@ -268,9 +269,10 @@ const AppMain = () => {
 
   // Filtrado de establecimientos para la vista Conductor
   const filteredParkings = establishments.filter(p => {
-    const matchesSearch = 
+    const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.owner && p.owner.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (p.level && p.level.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (p.city && p.city.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -288,6 +290,32 @@ const AppMain = () => {
     }
     return true;
   });
+
+  // Agrupación por empresa para el conductor: Nivel 1 empresas, Nivel 2 sucursales.
+  // Clave = propietario normalizado; sedes sin propietario forman su propio grupo individual.
+  const companyGroups = React.useMemo(() => {
+    const groups = new Map();
+    for (const p of filteredParkings) {
+      const owner = (p.owner || '').trim();
+      const key = owner ? `empresa-${owner.toLowerCase()}` : `sede-${p.id}`;
+      if (!groups.has(key)) {
+        groups.set(key, { key, name: owner || p.name, isSingle: !owner, branches: [], totalSlots: 0, freeSlots: 0, minRate: Infinity, image: p.image || null });
+      }
+      const g = groups.get(key);
+      g.branches.push(p);
+      const elements = p.elements || [];
+      const total = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
+      const free = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
+      g.totalSlots += total;
+      g.freeSlots += free;
+      g.minRate = Math.min(g.minRate, Number(p.rate) || 5.0);
+      if (!g.image && p.image) g.image = p.image;
+    }
+    return [...groups.values()];
+  }, [filteredParkings]);
+
+  // Empresa activa (si el filtro la eliminó, se vuelve solo al nivel empresas)
+  const activeCompany = companyGroups.find(g => g.key === selectedCompanyKey) || null;
 
   // Cálculos consolidados para el Administrador de Plataforma
   const totalNetworkSlots = establishments.reduce((acc, curr) => {
@@ -317,6 +345,7 @@ const AppMain = () => {
   useEffect(() => {
     if (!user) {
       setSelectedParkingId(null);
+      setSelectedCompanyKey(null);
       skipNextUrlPushRef.current = true;
       setActiveTab('dashboard');
       setShowAuthModal(false);
@@ -497,7 +526,7 @@ const AppMain = () => {
                           <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
                           <Input
                             type="text"
-                            placeholder="Buscar cochera, jirón o avenida..."
+                            placeholder="Buscar empresa, cochera, jirón o avenida..."
                             value={searchQuery}
                             onChange={(e) => handleSearchChange(e.target.value)}
                             className="pl-10 h-10 border-slate-200 bg-white shadow-xs text-xs"
@@ -592,8 +621,8 @@ const AppMain = () => {
                   )}
 
                   {/* MAPA INTERACTIVO DE AYACUCHO */}
-                  <AyacuchoMap 
-                    parkings={establishments}
+                  <AyacuchoMap
+                    parkings={activeCompany ? activeCompany.branches : filteredParkings}
                     onSelectParking={(parking) => setSelectedParkingId(parking.id)} 
                     selectedParkingId={selectedParkingId} 
                   />
@@ -642,12 +671,12 @@ const AppMain = () => {
                         onNavigateToVehicles={() => setActiveTab('vehicles')}
                       />
                     </div>
-                  ) : (
-                    /* Grid de Tarjetas de Estacionamientos Disponibles con Skeleton Loader */
+                  ) : !activeCompany ? (
+                    /* Nivel 1: Empresas de estacionamiento */
                     <div className="space-y-3">
                       <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
                         <Building2 className="w-5 h-5 text-emerald-600" />
-                        <span>Sedes de Estacionamiento Registradas ({filteredParkings.length})</span>
+                        <span>Empresas de Estacionamiento ({companyGroups.length})</span>
                       </h2>
 
                       {isLoadingSedes ? (
@@ -658,7 +687,87 @@ const AppMain = () => {
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {filteredParkings.map((p) => {
+                          {companyGroups.map((g) => (
+                            <Card key={g.key} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                              <div>
+                                <div className="h-44 relative overflow-hidden bg-slate-100">
+                                  <img
+                                    src={g.image || FALLBACK_PARKING_IMAGE}
+                                    alt={g.name}
+                                    referrerPolicy="no-referrer"
+                                    crossOrigin="anonymous"
+                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      e.currentTarget.onerror = null;
+                                      e.currentTarget.src = FALLBACK_PARKING_IMAGE;
+                                    }}
+                                  />
+                                  <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-emerald-800 shadow-sm border border-slate-200">
+                                    {g.branches.length === 1 ? `S/ ${Number(g.branches[0].rate).toFixed(2)}/h` : `Desde S/ ${Number(g.minRate).toFixed(2)}/h`}
+                                  </div>
+                                  <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
+                                    {g.freeSlots} Libres de {g.totalSlots}
+                                  </div>
+                                  {g.branches.length > 1 && (
+                                    <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
+                                      {g.branches.length} sucursales
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="p-5 space-y-3">
+                                  <div>
+                                    <h3 className="font-extrabold text-slate-900 text-base leading-tight">{g.name}</h3>
+                                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                                      <Building2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                                      <span className="truncate">{g.branches.length === 1 ? (g.branches[0].address || 'Ayacucho - Huamanga') : `${g.branches.length} sedes disponibles`}</span>
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="p-5 pt-0 space-y-2.5">
+                                <Button
+                                  onClick={() => g.branches.length === 1 ? handleSelectParking(g.branches[0]) : setSelectedCompanyKey(g.key)}
+                                  className="w-full font-bold gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm cursor-pointer py-2.5 rounded-xl"
+                                >
+                                  <span>{g.branches.length === 1 ? 'Ver Plano & Reservar' : `Ver Sucursales (${g.branches.length})`}</span>
+                                  <ChevronRight className="w-4 h-4 text-emerald-400" />
+                                </Button>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Nivel 2: Sucursales de la empresa seleccionada */
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCompanyKey(null)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold transition cursor-pointer shrink-0"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                          <span>Empresas</span>
+                        </button>
+                        <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 min-w-0">
+                          <Building2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                          <span className="truncate">{activeCompany.name} ({activeCompany.branches.length} {activeCompany.branches.length === 1 ? 'sucursal' : 'sucursales'})</span>
+                        </h2>
+                      </div>
+
+                      {isLoadingSedes ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+                          {[...Array(6)].map((_, i) => (
+                            <SkeletonParkingCard key={i} />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {activeCompany.branches.map((p) => {
                             const elements = p.elements || [];
                             const totalSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
                             const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;

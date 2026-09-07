@@ -47,9 +47,8 @@ async def startup_db():
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            # Migración ligera multi-dialecto: columnas añadidas tras el primer despliegue.
-            # En PostgreSQL usamos ADD COLUMN IF NOT EXISTS; en SQLite verificamos PRAGMA
-            # porque no soporta IF NOT EXISTS en ADD COLUMN (antes fallaba en silencio).
+            # Migración ligera PostgreSQL: columnas añadidas tras el primer despliegue.
+            # (Se eliminó la rama SQLite: la app solo usa PostgreSQL en local y prod.)
             from sqlalchemy import text as _text
             lite_adds = [
                 ("estacionamientos", "description", "TEXT"),
@@ -91,7 +90,7 @@ async def startup_db():
                 ("reservas", "is_night_shift", "BOOLEAN DEFAULT FALSE"),
                 ("reservas", "prepaid", "BOOLEAN DEFAULT FALSE"),
             ]
-            if str(engine.url).startswith("sqlite"):
+            if str(engine.url).startswith("sqlite") and settings.TESTING:
                 for tbl, col, decl in lite_adds:
                     try:
                         rows = (await conn.execute(_text(f"PRAGMA table_info({tbl})"))).all()
@@ -114,8 +113,10 @@ async def startup_db():
                     pass
     except Exception as e:
         import logging
-        logging.warning(f"[smart-park] startup_db: no se pudo inicializar DB remota, continuando en modo degradado: {e}")
-        return
+        # Fail-fast: la BD es crítica. Arrancar "degradado" sin Postgres era
+        # lo que dejaba la app vacía y parecía pérdida de datos.
+        logging.error(f"[smart-park] startup_db: PostgreSQL no disponible, abortando arranque: {e}")
+        raise RuntimeError(f"[smart-park] No se pudo conectar a PostgreSQL: {e}")
     try:
         from app.db.session import AsyncSessionLocal
         async with AsyncSessionLocal() as session:
@@ -322,15 +323,39 @@ async def realtime_ws(ws: WebSocket):
     except Exception:
         await realtime.disconnect(ws)
 
-UPLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
+# Archivos subidos: en Railway el filesystem es efímero, así que UPLOADS_DIR
+# debe apuntar al Volume persistente (/data/uploads). En local/docker usa
+# backend/uploads. Se configura por variable de entorno.
+UPLOADS_DIR = os.getenv(
+    "UPLOADS_DIR",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads")),
+)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 STATIC_DIR = os.getenv("STATIC_DIR", "")
 
+def _safe_db_label() -> str:
+    try:
+        from app.db.session import engine as _engine
+        url = str(_engine.url)
+        if url.startswith("sqlite"):
+            return "sqlite (solo tests)"
+        host = _engine.url.host or "local"
+        db = _engine.url.database or ""
+        return f"postgresql://{host}/{db}"
+    except Exception:
+        return "unknown"
+
 @app.get("/health")
 def healthcheck():
-    return {"status": "ok", "service": "smart-park"}
+    return {
+        "status": "ok",
+        "service": "smart-park",
+        "environment": settings.ENVIRONMENT,
+        "db": _safe_db_label(),
+        "uploads_dir": UPLOADS_DIR,
+    }
 
 @app.get("/")
 def root():

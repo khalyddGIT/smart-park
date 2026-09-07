@@ -21,6 +21,13 @@ async def diagnostics_status(db: AsyncSession = Depends(get_db)):
     # DB
     db_ok = False
     db_latency_ms = None
+    db_engine = "unknown"
+    try:
+        from app.db.session import engine as _engine
+        _url = str(_engine.url)
+        db_engine = "sqlite (solo tests)" if _url.startswith("sqlite") else f"postgresql://{_engine.url.host}/{_engine.url.database}"
+    except Exception:
+        pass
     try:
         await db.execute(sql_text("SELECT 1"))
         db_ok = True
@@ -105,7 +112,7 @@ async def diagnostics_status(db: AsyncSession = Depends(get_db)):
     return {
         "overall": overall,
         "circuit_status": circuit_status,
-        "db": {"ok": db_ok, "latency_ms": db_latency_ms},
+        "db": {"ok": db_ok, "latency_ms": db_latency_ms, "engine": db_engine},
         "redis": {"ok": redis_ok, "latency_ms": redis_latency_ms, "detail": redis_detail},
         "rabbitmq": rabbitmq_status,
         "broker": {"mode": broker_mode, "queue_depth": queue_depth, "processed_count": processed_count},

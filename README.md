@@ -5,7 +5,7 @@
 [![TailwindCSS](https://img.shields.io/badge/Styles-Tailwind%20CSS%20v4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Leaflet](https://img.shields.io/badge/Maps-Leaflet%201.9-199900.svg?logo=leaflet&logoColor=white)](https://leafletjs.com/)
 [![Recharts](https://img.shields.io/badge/BI%20Analytics-Recharts-22c55e.svg)](https://recharts.org/)
-[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2015%20%7C%20SQLite-336791.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2016-336791.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Railway](https://img.shields.io/badge/Deploy-Railway%20Docker-purple.svg?logo=railway&logoColor=white)](https://railway.app/)
 [![Fabric.js](https://img.shields.io/badge/CAD%20Engine-Fabric.js%207-blue.svg)](https://fabricjs.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -162,7 +162,7 @@
 | **Business Intelligence** | Recharts 3 | Gráficos ejecutivos interactivos de recaudación y aforo |
 | **Backend RESTful** | FastAPI (Python 3.11+) + Uvicorn | API REST asíncrona de alto rendimiento |
 | **Tiempo Real** | Simulación en cliente (WebSocket en Roadmap) | Estados de garita, notificaciones y telemetría |
-| **Base de Datos** | PostgreSQL 15 (Railway) / SQLite (dev) | Persistencia relacional de usuarios, sedes y reservas |
+| **Base de Datos** | PostgreSQL 16 (única BD en local y Railway) | Persistencia relacional de usuarios, sedes y reservas |
 
 ---
 
@@ -191,7 +191,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 python -m uvicorn app.main:app --port 8000 --reload
 ```
-*API disponible en: `http://127.0.0.1:8000/docs` (Swagger UI). Sin `DATABASE_URL` el backend usa SQLite local automáticamente.*
+*API disponible en: `http://127.0.0.1:8000/docs` (Swagger UI). Requiere Postgres local: `docker compose up -d postgres` (puerto host `5434`) y `DATABASE_URL` en `backend/.env` (plantilla: `backend/.env.example`). **SQLite está deshabilitado**: sin Postgres el backend no arranca (fail-fast); solo la suite de tests (`TESTING=1`) usa SQLite aislado.*
 
 ### 3. Iniciar el Frontend (React + Vite):
 ```bash
@@ -205,15 +205,17 @@ npm run dev
 ```bash
 docker compose up --build
 ```
+Postgres 16 con healthcheck y volumen persistente `postgres_data` (host `5434`, red interna `5432`); el backend espera a que la BD esté sana y las fotos persisten en el volumen `backend_uploads`.
 
 ### 4. Despliegue en Producción (Railway.app)
 El proyecto se despliega como **un solo contenedor Docker multi-stage** (`Dockerfile` compila el frontend Vite y lo sirve desde FastAPI) configurado vía `railway.json`:
 
 | Variable obligatoria | Valor | Descripción |
 | :--- | :--- | :--- |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | Referencia al plugin PostgreSQL de Railway |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | Referencia al plugin PostgreSQL de Railway (única BD) |
 | `SECRET_KEY` | *(cadena aleatoria segura)* | Firma de tokens JWT |
 | `ENVIRONMENT` | `production` | Activa validaciones estrictas de arranque |
+| `UPLOADS_DIR` | `/data/uploads` | Persistencia de fotos (requiere Volume montado en `/data`) |
 
 > 🔒 En producción la aplicación **no arranca** si falta `DATABASE_URL` o `SECRET_KEY` (fail-fast), y el CORS queda restringido a los orígenes definidos en `CORS_ORIGINS`.
 
@@ -265,8 +267,8 @@ smart-park/
 │   ├── app/
 │   │   ├── api/v1/            # Endpoints REST (auth, parkings, reservations, vehicles,
 │   │   │                      #   staff, users, reviews, anpr)
-│   │   ├── core/              # config.py (settings + fail-fast), security.py (JWT/bcrypt), broker
-│   │   ├── db/                # Sesión asíncrona SQLAlchemy (PostgreSQL / SQLite dev)
+│   │   ├── core/              # config.py (settings solo-Postgres + fail-fast), security.py (JWT/bcrypt), broker
+│   │   ├── db/                # Sesión asíncrona SQLAlchemy (solo PostgreSQL; SQLite únicamente en tests)
 │   │   ├── models/            # Modelos relacionales en español
 │   │   ├── schemas/           # Esquemas Pydantic de validación
 │   │   ├── tests/             # Tests de API

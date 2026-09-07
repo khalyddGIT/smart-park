@@ -1,10 +1,19 @@
 """Fixtures globales de la suite de pruebas.
 
-Garantiza que la BD (SQLite archivo o PostgreSQL) tenga TODAS las tablas y las
-columnas añadidas por evoluciones recientes del modelo, sin depender del orden
-alfabético de ejecución ni de que el servidor FastAPI haya corrido su startup.
+La app solo usa PostgreSQL en local/producción. Los tests son la única
+excepción y usan un SQLite AISLADO y temporal (no los .db del proyecto),
+activado con TESTING=1 antes de importar la app.
 """
 import asyncio
+import os
+import tempfile
+
+# Debe ir antes de cualquier import de app.* (config lee env al importarse)
+os.environ["TESTING"] = "1"
+os.environ.setdefault(
+    "DATABASE_URL",
+    f"sqlite+aiosqlite:///{tempfile.gettempdir()}/smartpark_test.db",
+)
 import pytest
 
 

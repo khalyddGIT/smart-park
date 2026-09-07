@@ -39,9 +39,10 @@ GitHub / railway up ──► railway.json ──► Dockerfile (multi-stage)
 
 | Variable | Valor | Obligatoria | Descripción |
 | :--- | :--- | :---: | :--- |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | ✅ | Referencia al plugin PostgreSQL |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | ✅ | Referencia al plugin PostgreSQL (única BD del sistema) |
 | `SECRET_KEY` | *(cadena aleatoria segura)* | ✅ | Firma de tokens JWT |
 | `ENVIRONMENT` | `production` | ✅ | Activa fail-fast y CORS estricto |
+| `UPLOADS_DIR` | `/data/uploads` | ✅ | Persistencia de fotos (requiere Volume en `/data`, ver Paso 3b) |
 | `CORS_ORIGINS` | `https://tudominio.com,...` | ➖ | Orígenes adicionales permitidos (separados por coma) |
 
 Con la CLI:
@@ -49,10 +50,19 @@ Con la CLI:
 railway variables --service smart-park-web \
   --set 'DATABASE_URL=${{Postgres.DATABASE_URL}}' \
   --set "SECRET_KEY=$(openssl rand -hex 32)" \
-  --set "ENVIRONMENT=production"
+  --set "ENVIRONMENT=production" \
+  --set "UPLOADS_DIR=/data/uploads"
 ```
 
-> 🔒 **Fail-fast:** si falta `DATABASE_URL` o `SECRET_KEY` con `ENVIRONMENT=production`, el contenedor se detiene con error explícito en lugar de arrancar inseguro o con datos efímeros. El puerto lo asigna Railway automáticamente (no definir `PORT`).
+> 🔒 **Fail-fast:** si falta `DATABASE_URL` o `SECRET_KEY` con `ENVIRONMENT=production`, el contenedor se detiene con error explícito en lugar de arrancar inseguro o con datos efímeros. SQLite está deshabilitado fuera de tests: sin Postgres la app no arranca. El puerto lo asigna Railway automáticamente (no definir `PORT`).
+
+### Paso 3b: Volume para Fotos (Persistencia de Uploads)
+
+El filesystem del contenedor es **efímero**: sin Volume, las fotos de vehículos/placas se borran en cada deploy.
+
+1. En el servicio web → pestaña **Volumes** → **"+ New Volume"** → *Mount Path:* `/data`.
+2. Verifica que `UPLOADS_DIR=/data/uploads` esté definida (Paso 3). El `Dockerfile` ya crea esa ruta.
+3. En local/docker la persistencia equivalente es el volumen `backend_uploads` de `docker-compose.yml`.
 
 ### Paso 4: Despliegue Automático
 - Healthcheck: `GET /health` (timeout 120s, reinicio automático ante fallos).
@@ -65,9 +75,11 @@ railway variables --service smart-park-web \
 | Recurso | URL |
 | :--- | :--- |
 | Aplicación SPA | `https://tu-app.up.railway.app/` |
-| Healthcheck | `https://tu-app.up.railway.app/health` |
+| Healthcheck | `https://tu-app.up.railway.app/health` (incluye `db` y `uploads_dir` efectivos) |
 | Swagger Docs | `https://tu-app.up.railway.app/docs` |
 | API ejemplo | `https://tu-app.up.railway.app/api/v1/parkings` |
+
+> Si `/health` muestra `"db": "sqlite..."`, el deploy está mal configurado: revisa `DATABASE_URL` (solo se permite SQLite con `TESTING=1` en la suite de tests).
 
 ---
 

@@ -224,7 +224,7 @@ const LazyMapSection = ({ parkings, onSelectParking }) => {
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#EAF4F2]">
           <div className="w-9 h-9 rounded-full border-[3px] border-[#004D49]/20 border-t-[#004D49] animate-spin" />
-          <p className="text-xs font-bold text-[#004D49]/70 font-sans">Cargando mapa en vivo de Ayacucho…</p>
+          <p className="text-xs font-bold text-[#004D49]/70 dark:text-emerald-200/70 font-sans">Cargando mapa en vivo de Ayacucho…</p>
         </div>
       )}
     </div>
@@ -357,10 +357,10 @@ const StickyStorytellingSection = () => {
   return (
     <CinematicScrollSection id="sistema" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
       <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
-          Estaciona rápido y <span className="text-[#004D49]">sin complicaciones</span>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] dark:text-[#DFF7F0] tracking-tight">
+          Estaciona rápido y <span className="text-[#004D49] dark:text-emerald-300">sin complicaciones</span>
         </h2>
-        <p className="text-xs sm:text-sm text-[#004D49] max-w-lg mx-auto font-medium">
+        <p className="text-xs sm:text-sm text-[#004D49] dark:text-emerald-200/80 max-w-lg mx-auto font-medium">
           Sin descargar aplicaciones pesadas. Todo funciona directo desde tu navegador móvil.
         </p>
       </div>
@@ -386,12 +386,12 @@ const StickyStorytellingSection = () => {
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 font-bold ${
-                    isSelected ? 'bg-[#004D49] text-white' : 'bg-emerald-500/10 text-[#004D49]'
+                    isSelected ? 'bg-[#004D49] text-white' : 'bg-emerald-500/10 text-[#004D49] dark:text-emerald-300'
                   }`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-mono font-bold text-[#004D49] block">{s.num}</span>
+                    <span className="text-[10px] font-mono font-bold text-[#004D49] dark:text-emerald-300 block">{s.num}</span>
                     <h3 className="text-base font-bold text-slate-900">{s.title}</h3>
                     <p className="text-xs text-slate-600 leading-relaxed mt-1">{s.desc}</p>
                   </div>
@@ -680,7 +680,7 @@ export const LandingPage = ({
 
 
           {/* HERO TÍTULO EDITORIAL */}
-          <motion.h1 className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[60px] tracking-tight max-w-3xl mx-auto leading-[1.12] sm:leading-[1.08] text-[#002B29]">
+          <motion.h1 className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-[60px] tracking-tight max-w-3xl mx-auto leading-[1.12] sm:leading-[1.08] text-[#002B29] dark:text-[#E6FFF7]">
             Estacionamientos en Tiempo Real en Ayacucho
           </motion.h1>
 
@@ -688,7 +688,7 @@ export const LandingPage = ({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2, ease: FLUID_EASE }}
-            className="text-sm sm:text-base md:text-lg text-[#003835]/80 max-w-2xl mx-auto font-medium leading-relaxed text-center px-2"
+            className="text-sm sm:text-base md:text-lg text-[#003835]/80 dark:text-[#BFE3DA]/85 max-w-2xl mx-auto font-medium leading-relaxed text-center px-2"
           >
             Consulta disponibilidad de plazas en cocheras de Huamanga, reserva tu espacio y accede directo sin tickets físicos.
           </motion.p>
@@ -765,30 +765,30 @@ export const LandingPage = ({
       <CinematicScrollSection id="mapa" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
 
         <div className="max-w-3xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
-            Estacionamientos Conectados en <span className="text-[#004D49]">Huamanga</span>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] dark:text-[#DFF7F0] tracking-tight">
+            Estacionamientos Conectados en <span className="text-[#004D49] dark:text-emerald-300">Huamanga</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#004D49] max-w-md mx-auto font-medium">
+          <p className="text-xs sm:text-sm text-[#004D49] dark:text-emerald-200/80 max-w-md mx-auto font-medium">
             Consulta disponibilidad en vivo, precios por hora y navega directamente a la cochera.
           </p>
         </div>
 
         <div className="max-w-3xl mx-auto space-y-3 px-2">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#004D49]/60 pointer-events-none" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#004D49]/60 dark:text-emerald-300/60 pointer-events-none" />
             <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nombre, dirección o referencia…"
-              className="w-full h-12 pl-11 pr-10 rounded-2xl bg-white/95 backdrop-blur-md border border-[#004D49]/15 text-sm font-medium text-[#002B29] placeholder:text-[#004D49]/40 shadow-sm focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/50 transition"
+              className="w-full h-12 pl-11 pr-10 rounded-2xl bg-white/95 backdrop-blur-md border border-[#004D49]/15 text-sm font-medium text-[#002B29] dark:text-slate-100 placeholder:text-[#004D49]/40 dark:placeholder:text-slate-400/60 shadow-sm focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/50 transition"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
                 aria-label="Limpiar búsqueda"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[#004D49]/50 hover:text-[#002B29] hover:bg-[#004D49]/5 transition cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[#004D49]/50 dark:text-emerald-300/60 hover:text-[#002B29] dark:hover:text-emerald-200 hover:bg-[#004D49]/5 transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -812,10 +812,10 @@ export const LandingPage = ({
       <CinematicScrollSection id="caracteristicas" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-6xl mx-auto space-y-8">
         
         <div className="max-w-2xl mx-auto text-center space-y-2 px-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] tracking-tight">
-            Tecnología Diseñada para <span className="text-[#004D49]">Smart Park</span>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] dark:text-[#DFF7F0] tracking-tight">
+            Tecnología Diseñada para <span className="text-[#004D49] dark:text-emerald-300">Smart Park</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#004D49] max-w-lg mx-auto font-medium">
+          <p className="text-xs sm:text-sm text-[#004D49] dark:text-emerald-200/80 max-w-lg mx-auto font-medium">
             Una plataforma moderna que combina trazado 3D, visión artificial y pasarelas de pago digitales.
           </p>
         </div>
@@ -889,10 +889,10 @@ export const LandingPage = ({
       <CinematicScrollSection className="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 max-w-4xl mx-auto space-y-8">
 
         <div className="text-center space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-[#002B29] tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-[#002B29] dark:text-[#DFF7F0] tracking-tight">
             Preguntas Frecuentes
           </h2>
-          <p className="text-xs sm:text-sm text-[#004D49] font-medium">
+          <p className="text-xs sm:text-sm text-[#004D49] dark:text-emerald-200/80 font-medium">
             Resuelve tus dudas sobre el servicio de reserva y acceso.
           </p>
         </div>
@@ -908,10 +908,10 @@ export const LandingPage = ({
                 <button
                   type="button"
                   onClick={() => setActiveFaq(isOpen ? null : i)}
-                  className="w-full p-5 text-left flex items-center justify-between font-bold text-xs sm:text-sm text-slate-800 hover:text-[#004D49] cursor-pointer"
+                  className="w-full p-5 text-left flex items-center justify-between font-bold text-xs sm:text-sm text-slate-800 hover:text-[#004D49] dark:hover:text-emerald-300 cursor-pointer"
                 >
                   <span>{faq.q}</span>
-                  <ChevronDown className={`w-4 h-4 text-[#004D49] transition-transform duration-200 shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-[#004D49] dark:text-emerald-300 transition-transform duration-200 shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
                 <AnimatePresence>
                   {isOpen && (

@@ -4,9 +4,13 @@ from app.core.config import settings
 
 Base = declarative_base()
 
-# SQLite fallback por conveniencia en desarrollo si PostgreSQL no está levantado localmente
+# Solo PostgreSQL en local y producción (asyncpg). SQLite quedó eliminado
+# como BD de la app: solo se permite en la suite de tests (TESTING=1),
+# donde conftest.py apunta a una BD sqlite aislada y temporal.
 DATABASE_URL = settings.ASYNC_DATABASE_URL
-if "sqlite" in DATABASE_URL:
+if DATABASE_URL.startswith("sqlite"):
+    if not settings.TESTING:
+        raise RuntimeError("[smart-park] SQLite deshabilitado fuera de tests: configura PostgreSQL (DATABASE_URL).")
     engine = create_async_engine(DATABASE_URL, echo=False)
 else:
     # PostgreSQL en producción (Railway) o local

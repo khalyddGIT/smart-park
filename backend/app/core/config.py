@@ -47,29 +47,51 @@ class Settings(BaseSettings):
     RESERVATION_WORKER_ENABLED: bool = os.getenv("RESERVATION_WORKER_ENABLED", "True") == "True"
     RESERVATION_TOLERANCE_CHECK_INTERVAL: int = int(os.getenv("RESERVATION_TOLERANCE_CHECK_INTERVAL", "60"))
 
-    # Conexión a Base de Datos (DATABASE_URL en Railway / PostgreSQL estándar o SQLite local)
+    # Conexión a Base de Datos — SOLO PostgreSQL en local y producción.
+    # La persistencia se rompía porque existía un fallback a SQLite
+    # (smartpark_dev.db / smart_park.db, ignorados por git/docker y efímeros
+    # en Railway). Ese fallback queda eliminado: sin Postgres la app no arranca.
+    # Única excepción: la suite de tests (TESTING=1 o PYTEST_CURRENT_TEST),
+    # que puede usar SQLite aislado vía DATABASE_URL sqlite+aiosqlite://...
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
-    USE_SQLITE: bool = os.getenv("USE_SQLITE", "True" if not os.getenv("DATABASE_URL") else "False") == "True"
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres")
     POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "localhost")
     POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "smartpark_db")
-    
+
+    @property
+    def TESTING(self) -> bool:
+        return os.getenv("TESTING", "").lower() in ("true", "1", "yes") or "PYTEST_CURRENT_TEST" in os.environ
+
+    def _normalize_async_url(self, url: str) -> str:
+        url = url.strip()
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
     @property
     def ASYNC_DATABASE_URL(self) -> str:
         if self.DATABASE_URL:
             url = self.DATABASE_URL.strip()
-            if url.startswith("postgres://"):
-                url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-            elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
-                url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-            return url
+            if url.startswith("sqlite"):
+                if not self.TESTING:
+                    raise RuntimeError(
+                        "[smart-park] SQLite está deshabilitado: usa PostgreSQL "
+                        "(levanta `docker compose up -d postgres` y define DATABASE_URL). "
+                        "SQLite solo se permite con TESTING=1 para la suite de tests."
+                    )
+                return url
+            return self._normalize_async_url(url)
 
-        if self.USE_SQLITE:
-            return "sqlite+aiosqlite:///./smartpark_dev.db"
-        
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        # Sin DATABASE_URL se construye la URL de Postgres local por defecto.
+        # Sigue siendo PostgreSQL (no SQLite), así local y producción usan el mismo motor.
+        return (
+            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
     
     @property
     def SYNC_DATABASE_URL(self) -> str:
@@ -82,9 +104,18 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# Fail-fast: en producción es mejor no arrancar que arrancar inseguro o con datos efímeros
+# Fail-fast: sin Postgres no se arranca en ningún entorno (local o producción).
+# Arrancar con SQLite o en modo degradado era lo que hacía que los datos
+# "desaparecieran" al cambiar de BD o de deploy.
+if not settings.DATABASE_URL:
+    import logging
+    logging.warning(
+        "[smart-park] DATABASE_URL no definida: se usará Postgres "
+        f"{settings.POSTGRES_SERVER}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}. "
+        "Levanta `docker compose up -d postgres` para persistencia local."
+    )
 if settings.ENVIRONMENT == "production":
     if not settings.SECRET_KEY:
         raise RuntimeError("[smart-park] SECRET_KEY es obligatoria en producción (variable de entorno)")
     if not settings.DATABASE_URL:
-        raise RuntimeError("[smart-park] DATABASE_URL es obligatoria en producción (no se permite fallback a SQLite)")
+        raise RuntimeError("[smart-park] DATABASE_URL es obligatoria en producción (solo PostgreSQL)")

@@ -1,18 +1,25 @@
-version: '3.8'
-
 services:
-  # Base de Datos PostgreSQL
+  # Base de Datos PostgreSQL — ÚNICA BD del sistema (local y prod).
+  # El volumen postgres_data es lo que da persistencia real entre reinicios.
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: smartpark_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_DB: smartpark_db
     ports:
-      - "5432:5432"
+      # Host 5434: el 5432 lo ocupa un PostgreSQL nativo (v18) en esta máquina
+      # y cortaba las conexiones. Dentro de la red docker sigue siendo 5432.
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smartpark_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   # Backend FastAPI
   backend:
@@ -21,15 +28,23 @@ services:
       dockerfile: Dockerfile
     container_name: smartpark_backend
     environment:
+      ENVIRONMENT: development
+      # Solo PostgreSQL. SQLite está deshabilitado en la app (ver config.py):
+      # si Postgres no responde, el backend NO arranca en degradado.
+      DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/smartpark_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_SERVER: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: smartpark_db
+      UPLOADS_DIR: /app/uploads
     ports:
       - "8000:8000"
+    volumes:
+      - backend_uploads:/app/uploads
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   # Frontend React (Vite)
   frontend:
@@ -44,3 +59,4 @@ services:
 
 volumes:
   postgres_data:
+  backend_uploads:

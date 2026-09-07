@@ -32,6 +32,10 @@ COPY backend/app ./app
 COPY --from=frontend-build /build/dist ./static
 
 ENV STATIC_DIR=/app/static
+# En Railway el filesystem es efímero: monta un Volume en /data y define
+# UPLOADS_DIR=/data/uploads para que las fotos no se borren en cada deploy.
+ENV UPLOADS_DIR=/data/uploads
+RUN mkdir -p /data/uploads
 EXPOSE 8000
 
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

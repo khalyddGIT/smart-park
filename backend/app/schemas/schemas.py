@@ -149,6 +149,17 @@ class VehicleResponse(VehicleBase):
     class Config:
         from_attributes = True
 
+    # Lectura tolerante: registros legacy en BD con placas inválidas (sin guion)
+    # no deben tumbar TODO el listado GET /vehicles con 500. Se devuelven tal cual;
+    # la validación estricta sigue activa en Create/Update para no permitir nuevas.
+    @field_validator('license_plate', mode='before')
+    @classmethod
+    def validate_plate_read(cls, v):
+        try:
+            return validate_license_plate_format(v)
+        except ValueError:
+            return v.strip().upper() if isinstance(v, str) else v
+
 # ==========================================
 # 3. SCHEMAS DE ESTACIONAMIENTOS
 # ==========================================

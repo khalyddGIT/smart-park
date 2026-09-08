@@ -15,7 +15,13 @@ import {
   VolumeX,
   Plus,
   Minus,
-  RotateCcw
+  RotateCcw,
+  Car,
+  Footprints,
+  ExternalLink,
+  Loader2,
+  Compass,
+  CheckCircle2
 } from 'lucide-react';
 import { FALLBACK_PARKING_IMAGE } from './mapConfig';
 import { useAuth } from '../../context/AuthContext';
@@ -24,7 +30,9 @@ export const MapContainer3D = ({
   parkings = [], 
   onSelectParking, 
   selectedParkingId,
-  forceShowAdminPanel = false
+  forceShowAdminPanel = false,
+  routeTarget,
+  onClearRoute
 }) => {
   const { role, user } = useAuth();
   const mapContainerRef = useRef(null);
@@ -37,6 +45,8 @@ export const MapContainer3D = ({
   const [activeRoute, setActiveRoute] = useState(null);
   const [targetDest, setTargetDest] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState(''); // 'locating' | 'located' | 'fallback' | ''
+  const [activeProfile, setActiveProfile] = useState('driving');
 
   // Filtros Rápidos
   const [filterType, setFilterType] = useState('all');
@@ -115,12 +125,37 @@ export const MapContainer3D = ({
     }
   };
 
+  // Escuchar petición externa para trazar ruta (ej: botón Cómo Llegar de la ficha)
+  useEffect(() => {
+    if (!routeTarget) return;
+    const p = routeTarget.parking || routeTarget;
+    if (!p) return;
+
+    const lat = Number(p.latitude);
+    const lng = Number(p.longitude);
+    const isAyacuchoCoords = !isNaN(lat) && !isNaN(lng) && lat <= -13.0 && lat >= -13.35 && lng <= -74.0 && lng >= -74.4;
+    const coords = isAyacuchoCoords ? [lng, lat] : (DEFAULT_PARKING_COORDS[p.id] || [-74.2257, -13.1606]);
+
+    const execRoute = () => {
+      if (routesManagerRef.current && mapRef.current) {
+        handleCalculateRoute(coords, p.name || 'Estacionamiento', activeProfile || 'driving');
+      } else {
+        setTimeout(execRoute, 300);
+      }
+    };
+
+    execRoute();
+  }, [routeTarget]);
+
   // Trazar Ruta en Tiempo Real con GPS y Turn-by-Turn
   const handleCalculateRoute = async (destCoords, destName, profile = 'driving') => {
     if (!routesManagerRef.current) return;
     setTargetDest({ coords: destCoords, name: destName });
+    setActiveProfile(profile);
+    setGpsStatus('locating');
 
     let origin = [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat];
+    let isRealGps = false;
 
     // 1. Obtener la ubicación GPS real del navegador
     if (navigator.geolocation) {
@@ -128,32 +163,65 @@ export const MapContainer3D = ({
         const userPos = await new Promise((resolve) => {
           navigator.geolocation.getCurrentPosition(
             (pos) => resolve([pos.coords.longitude, pos.coords.latitude]),
-            () => resolve(null),
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 3000 }
+            (err) => {
+              console.warn('Geolocation error / permiso denegado:', err);
+              resolve(null);
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 4000 }
           );
         });
-        if (userPos) origin = userPos;
-      } catch (e) {}
+        if (userPos) {
+          origin = userPos;
+          isRealGps = true;
+          setGpsStatus('located');
+        } else {
+          setGpsStatus('fallback');
+        }
+      } catch (e) {
+        setGpsStatus('fallback');
+      }
+    } else {
+      setGpsStatus('fallback');
     }
+
+    setTimeout(() => {
+      setGpsStatus('');
+    }, 4500);
 
     // 2. Calcular ruta real con Mapbox Directions API desde la ubicación exacta del usuario
     const routeInfo = await routesManagerRef.current.drawRoute(origin, destCoords, destName, profile);
     if (routeInfo) {
-      setActiveRoute(routeInfo);
+      setActiveRoute({
+        ...routeInfo,
+        isRealGps,
+        destCoords,
+        destinationName: destName,
+        profile
+      });
     }
 
     // 3. Iniciar rastreo continuo en tiempo real conforme el usuario avance (watchPosition)
     routesManagerRef.current.startRealtimeTracking(destCoords, destName, (liveRouteData) => {
-      setActiveRoute(liveRouteData);
+      setActiveRoute((prev) => ({
+        ...(prev || {}),
+        ...liveRouteData,
+        isRealGps: true,
+        destCoords,
+        destinationName: destName,
+        profile
+      }));
     });
   };
 
   const handleClearRoute = () => {
     if (routesManagerRef.current) {
       routesManagerRef.current.clearRoute();
+      routesManagerRef.current.stopRealtimeTracking();
     }
     setActiveRoute(null);
     setTargetDest(null);
+    setGpsStatus('');
+    if (onClearRoute) onClearRoute();
   };
 
   // Filtrado reactivo de cocheras (Feature 5)
@@ -435,28 +503,100 @@ export const MapContainer3D = ({
         </div>
       )}
 
-      {/* Tarjeta de Ruta en Vivo */}
+      {/* Alerta de Estado del GPS */}
+      {gpsStatus === 'locating' && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-none bg-slate-900/95 backdrop-blur-md border border-cyan-500/60 text-cyan-300 px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2">
+          <Loader2 className="w-4 h-4 animate-spin text-cyan-400 shrink-0" />
+          <span>Obteniendo tu ubicación GPS en tiempo real...</span>
+        </div>
+      )}
+      {gpsStatus === 'located' && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-none bg-emerald-950/95 backdrop-blur-md border border-emerald-500/60 text-emerald-300 px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>¡Ubicación GPS detectada! Ruta trazada desde tu posición.</span>
+        </div>
+      )}
+      {gpsStatus === 'fallback' && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-none bg-amber-950/95 backdrop-blur-md border border-amber-500/60 text-amber-300 px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2">
+          <Compass className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>GPS no activo o denegado: Trazando desde el centro de Huamanga.</span>
+        </div>
+      )}
+
+      {/* Tarjeta de Ruta en Vivo con Controles de Perfil y Enlace a Google Maps */}
       {activeRoute && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-[95vw]">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white p-3 sm:px-4 sm:py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-wrap items-center justify-between gap-2.5 text-xs animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-[96vw] sm:max-w-max">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
             <Navigation className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span className="font-bold text-slate-200">
-              Ruta hacia <strong className="text-white">{activeRoute.destinationName}</strong>:
+            <span className="font-bold text-slate-200 truncate max-w-[130px] sm:max-w-[200px]" title={activeRoute.destinationName}>
+              Hacia <strong className="text-white">{activeRoute.destinationName}</strong>:
             </span>
-            <span className="font-mono font-black text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">{activeRoute.distanceKm}</span>
-            <span className="text-slate-400">•</span>
-            <span className="font-mono font-black text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">{activeRoute.durationMin}</span>
+            <span className="font-mono font-black text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800 shrink-0">
+              {activeRoute.distanceKm}
+            </span>
+            <span className="font-mono font-black text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800 shrink-0">
+              {activeRoute.durationMin}
+            </span>
           </div>
 
-          <button
-            type="button"
-            onClick={handleClearRoute}
-            className="px-2.5 py-1 bg-slate-800 hover:bg-rose-900 text-slate-300 hover:text-white rounded-lg font-bold text-[11px] transition cursor-pointer border border-slate-700 flex items-center gap-1 shrink-0 ml-2"
-          >
-            <X className="w-3 h-3" />
-            <span>Limpiar</span>
-          </button>
+          <div className="flex items-center gap-1.5 ml-auto">
+            {/* Selector de Modo: Auto vs A pie */}
+            {targetDest && (
+              <div className="flex items-center bg-slate-800/90 rounded-lg p-0.5 border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => handleCalculateRoute(targetDest.coords, targetDest.name, 'driving')}
+                  className={`p-1.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
+                    activeProfile === 'driving' 
+                      ? 'bg-cyan-600 text-white shadow-xs' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Ruta en Auto"
+                >
+                  <Car className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">Auto</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCalculateRoute(targetDest.coords, targetDest.name, 'walking')}
+                  className={`p-1.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
+                    activeProfile === 'walking' 
+                      ? 'bg-cyan-600 text-white shadow-xs' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Ruta a Pie"
+                >
+                  <Footprints className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">A pie</span>
+                </button>
+              </div>
+            )}
+
+            {/* Abrir en Google Maps si se desea app nativa */}
+            {activeRoute.destCoords && (
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${activeRoute.destCoords[1]},${activeRoute.destCoords[0]}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1.5 bg-blue-600/90 hover:bg-blue-600 text-white rounded-lg font-bold text-[11px] transition flex items-center gap-1 shadow-xs cursor-pointer"
+                title="Abrir en Google Maps"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Google Maps</span>
+              </a>
+            )}
+
+            {/* Limpiar ruta */}
+            <button
+              type="button"
+              onClick={handleClearRoute}
+              className="px-2.5 py-1.5 bg-slate-800 hover:bg-rose-900 text-slate-300 hover:text-white rounded-lg font-bold text-[11px] transition cursor-pointer border border-slate-700 flex items-center gap-1"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Limpiar</span>
+            </button>
+          </div>
         </div>
       )}
 

@@ -69,7 +69,8 @@ import {
   Phone,
   Clock,
   ExternalLink,
-  Moon
+  Moon,
+  Navigation
 } from 'lucide-react';
 
 import { Card, CardDescription } from './components/ui/card';
@@ -189,6 +190,18 @@ const AppMain = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [paymentTarget, setPaymentTarget] = useState(null);
+  const [routeTarget, setRouteTarget] = useState(null);
+
+  const handleTraceRouteToParking = (parking) => {
+    if (!parking) return;
+    setRouteTarget({ parking, timestamp: Date.now() });
+    setTimeout(() => {
+      const mapSection = document.getElementById('ayacucho-map-section');
+      if (mapSection) {
+        mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+  };
   
   // Reserva activa persistente real del conductor (status SCHEDULED o ACTIVE)
   const realActiveReservation = React.useMemo(() => {
@@ -645,11 +658,15 @@ const AppMain = () => {
                   )}
 
                   {/* MAPA INTERACTIVO DE AYACUCHO */}
-                  <AyacuchoMap
-                    parkings={activeCompany ? activeCompany.branches : filteredParkings}
-                    onSelectParking={(parking) => handleSelectParking(parking)} 
-                    selectedParkingId={selectedParkingId} 
-                  />
+                  <div id="ayacucho-map-section" className="scroll-mt-4">
+                    <AyacuchoMap
+                      parkings={activeCompany ? activeCompany.branches : filteredParkings}
+                      onSelectParking={(parking) => handleSelectParking(parking)} 
+                      selectedParkingId={selectedParkingId} 
+                      routeTarget={routeTarget}
+                      onClearRoute={() => setRouteTarget(null)}
+                    />
+                  </div>
 
                   {/* VISTA DEL PLANO O LISTADO DE TARJETAS DE SEDES */}
                   {selectedParking ? (
@@ -794,15 +811,15 @@ const AppMain = () => {
                                 <span>{selectedParking.phone}</span>
                               </a>
                             )}
-                            <a
-                              href={selectedParking.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selectedParking.name} ${selectedParking.address || 'Ayacucho'}`)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
+                              onClick={() => handleTraceRouteToParking(selectedParking)}
                               className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 shadow-2xs transition cursor-pointer"
+                              title="Trazar ruta GPS en el mapa interactivo"
                             >
-                              <ExternalLink className="w-4 h-4 text-blue-600" />
+                              <Navigation className="w-4 h-4 text-blue-600" />
                               <span>Cómo Llegar</span>
-                            </a>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -996,18 +1013,18 @@ const AppMain = () => {
                                             <span>{p.phone}</span>
                                           </span>
                                         )}
-                                        {p.mapsUrl && (
-                                          <a
-                                            href={p.mapsUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg border border-blue-200"
-                                          >
-                                            <ExternalLink className="w-3 h-3 text-blue-600 shrink-0" />
-                                            <span>Mapa</span>
-                                          </a>
-                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleTraceRouteToParking(p);
+                                          }}
+                                          className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg border border-blue-200 cursor-pointer shadow-2xs"
+                                          title="Trazar ruta GPS en el mapa hacia esta sede"
+                                        >
+                                          <Navigation className="w-3 h-3 text-blue-600 shrink-0" />
+                                          <span>Cómo llegar</span>
+                                        </button>
                                       </div>
                                     </div>
                                 </div>

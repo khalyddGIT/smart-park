@@ -50,7 +50,52 @@ export const getLocalUserCredentials = () => {
   }
 };
 
-// Helper para validar si un establecimiento/sucursal le pertenece al usuario actual (Admin Local)
+// Helper universal para extraer la jerarquía comercial: Empresa / Local Principal y Sucursal
+export const getEstablishmentHierarchy = (est) => {
+  if (!est) return { companyName: 'Estacionamiento', branchName: 'Sede Principal', isBranch: false };
+
+  const fullName = (est.name || '').trim();
+  const explicitCompany = (est.company_name || est.companyName || est.business_name || '').trim();
+
+  // 1. Si tiene un nombre de empresa/local explícito
+  if (explicitCompany) {
+    let branch = fullName;
+    if (fullName.toLowerCase().startsWith(explicitCompany.toLowerCase())) {
+      branch = fullName.slice(explicitCompany.length).replace(/^[\s\-–—:]+/, '').trim();
+    }
+    const hasDistinctBranch = !!branch && branch.toLowerCase() !== explicitCompany.toLowerCase();
+    return {
+      companyName: explicitCompany,
+      branchName: hasDistinctBranch ? branch : (est.address || fullName),
+      isBranch: hasDistinctBranch
+    };
+  }
+
+  // 2. Si el nombre contiene separadores estándar " - ", " – " o " — "
+  // Ej: "Smart Park Plaza Mayor - Planta Baja" -> Empresa: "Smart Park Plaza Mayor", Sucursal: "Planta Baja"
+  // Ej: "Cochera Central - Sucursal Jr. Cusco" -> Empresa: "Cochera Central", Sucursal: "Sucursal Jr. Cusco"
+  const splitMatch = fullName.match(/^(.*?)\s*[-–—]\s*(.+)$/);
+  if (splitMatch) {
+    const mainPart = splitMatch[1].trim();
+    const branchPart = splitMatch[2].trim();
+    if (mainPart.length >= 2 && !/^(nivel|piso|planta)\s*\d*$/i.test(mainPart)) {
+      return {
+        companyName: mainPart,
+        branchName: branchPart || 'Sede Principal',
+        isBranch: true
+      };
+    }
+  }
+
+  // 3. Local único / standalone (sin sucursales registradas por nombre)
+  return {
+    companyName: fullName,
+    branchName: fullName,
+    isBranch: false
+  };
+};
+
+// Helper estricto para validar si un establecimiento/sucursal le pertenece al usuario actual (Admin Local)
 export const isMyEstablishment = (est, user, role) => {
   if (!est) return false;
   if (role === 'platform') return true; // Super Admin ve todas
@@ -58,28 +103,53 @@ export const isMyEstablishment = (est, user, role) => {
   if (!user) return false;
 
   const userEmail = (user.email || '').trim().toLowerCase();
-  const userName = (user.name || '').trim().toLowerCase();
   const estEmail = (est.email || '').trim().toLowerCase();
-  const estOwner = (est.owner || '').trim().toLowerCase();
-  const estName = (est.name || '').trim().toLowerCase();
+  const estAdminEmail = (est.admin_email || est.adminEmail || '').trim().toLowerCase();
+  const estId = String(est.id || '');
 
-  // 1. Coincidencia directa por correo asignado a la sede
-  if (userEmail && estEmail && userEmail === estEmail) return true;
+  // 1. Coincidencia directa por correo de acceso o correo de administración de la sede
+  if (userEmail && (userEmail === estEmail || userEmail === estAdminEmail)) return true;
 
-  // 2. Cuenta semilla demo adminlocal@smartpark.com es administradora de Smart Park Plaza Mayor (EST-01 y EST-02)
+  // 2. Asignación directa por ID de cochera en la sesión del usuario
+  if (user.parking_id && String(user.parking_id) === estId) return true;
+  if (user.establishmentId && String(user.establishmentId) === estId) return true;
+
+  // 3. Cuenta semilla demo adminlocal@smartpark.com es administradora exclusiva de Smart Park Plaza Mayor (EST-01 y EST-02)
   if (userEmail === 'adminlocal@smartpark.com') {
-    if (est.id === 'EST-01' || est.id === 'EST-02' || String(est.id) === '1' || String(est.id) === '2') return true;
+    if (estId === 'EST-01' || estId === 'EST-02' || estId === '1' || estId === '2') return true;
     if (estEmail === 'contacto@plazamayorpark.pe') return true;
-    if (estOwner.includes('plaza mayor') || estName.includes('plaza mayor')) return true;
+    const { companyName } = getEstablishmentHierarchy(est);
+    if (companyName.toLowerCase().includes('plaza mayor')) return true;
+    return false;
   }
 
-  // 3. Coincidencia por nombre de local / razón social
-  if (user.establishmentName && (estName.includes(user.establishmentName.toLowerCase()) || estOwner.includes(user.establishmentName.toLowerCase()))) return true;
-  if (userName && estOwner && (userName === estOwner || estOwner.includes(userName) || userName.includes(estOwner))) return true;
+  // 4. Verificación en credenciales locales persistentes (smart_park_local_user_credentials_v1)
+  try {
+    const credsRaw = localStorage.getItem(LOCAL_USER_CREDENTIALS_KEY);
+    if (credsRaw) {
+      const creds = JSON.parse(credsRaw);
+      const myCred = creds[userEmail];
+      if (myCred && myCred.parkingId && String(myCred.parkingId) === estId) return true;
+    }
+  } catch {}
 
-  // 4. Asignación directa por ID de cochera (staff de garita o asignado)
-  if (user.parking_id && String(user.parking_id) === String(est.id)) return true;
-  if (user.establishmentId && String(user.establishmentId) === String(est.id)) return true;
+  // 5. Verificación en administradores aprobados persistentes (smart_park_approved_admins_v1)
+  try {
+    const approvedRaw = localStorage.getItem('smart_park_approved_admins_v1');
+    if (approvedRaw) {
+      const approvedList = JSON.parse(approvedRaw);
+      if (Array.isArray(approvedList)) {
+        const match = approvedList.find(a => (a.email || '').trim().toLowerCase() === userEmail && String(a.establishmentId || '') === estId);
+        if (match) return true;
+      }
+    }
+  } catch {}
+
+  // 6. Si el usuario tiene una empresa/local registrado (user.establishmentName)
+  if (user.establishmentName) {
+    const { companyName } = getEstablishmentHierarchy(est);
+    if (companyName.toLowerCase() === user.establishmentName.trim().toLowerCase()) return true;
+  }
 
   return false;
 };
@@ -409,6 +479,10 @@ export const sanitizeEstablishment = (est, idx = 0) => {
     latitude: lat, 
     longitude: lng, 
     city: est.city && est.city.includes('Ayacucho') ? est.city : 'Ayacucho - Huamanga',
+    company_name: est.company_name || est.companyName || '',
+    companyName: est.companyName || est.company_name || '',
+    admin_email: est.admin_email || est.adminEmail || '',
+    adminEmail: est.adminEmail || est.admin_email || '',
     owner: est.owner || '',
     ruc: est.ruc || '',
     phone: est.phone || '',
@@ -1242,18 +1316,33 @@ export const EstablishmentProvider = ({ children }) => {
           max_stay_hours: Number(newEst.max_stay_hours || 24),
           allow_open_stay: newEst.allow_open_stay !== undefined ? !!newEst.allow_open_stay : true
         };
+        const hierarchy = getEstablishmentHierarchy(newEst);
+        const effectiveCompany = newEst.company_name || newEst.companyName || hierarchy.companyName;
+        const effectiveAdminEmail = adminCredentials?.email || (role === 'local' ? user?.email : newEst.email) || newEst.email || '';
+
         const res = await api.post('/parkings', payload);
         if (res.data?.id) {
-          if (adminCredentials && adminCredentials.email) {
+          const credsToAssign = adminCredentials || (role === 'local' && user?.email ? {
+            email: user.email,
+            fullName: user.name || newEst.owner,
+            phone: user.phone || newEst.phone
+          } : null);
+
+          if (credsToAssign && credsToAssign.email) {
             try {
-              await api.post(`/parkings/${res.data.id}/admin-credentials`, adminCredentials);
+              await api.post(`/parkings/${res.data.id}/admin-credentials`, credsToAssign);
             } catch (errCred) {
               console.warn('Could not assign admin credentials on addEstablishment', errCred);
             }
           }
+
           const created = sanitizeEstablishment({ 
             ...newEst, 
             id: String(res.data.id), 
+            company_name: effectiveCompany,
+            companyName: effectiveCompany,
+            admin_email: effectiveAdminEmail,
+            adminEmail: effectiveAdminEmail,
             owner: res.data.owner || newEst.owner || '',
             ruc: res.data.ruc || newEst.ruc || '',
             description: res.data.description || newEst.description || '',
@@ -1294,8 +1383,18 @@ export const EstablishmentProvider = ({ children }) => {
         }
       } catch (e) { console.warn('addEstablishment backend fallback', e.response?.data); }
     }
-    setEstablishments(prev => [newEst, ...prev]);
-    return newEst;
+    const hierarchy = getEstablishmentHierarchy(newEst);
+    const effectiveCompany = newEst.company_name || newEst.companyName || hierarchy.companyName;
+    const effectiveAdminEmail = adminCredentials?.email || (role === 'local' ? user?.email : newEst.email) || newEst.email || '';
+    const fallbackCreated = sanitizeEstablishment({
+      ...newEst,
+      company_name: effectiveCompany,
+      companyName: effectiveCompany,
+      admin_email: effectiveAdminEmail,
+      adminEmail: effectiveAdminEmail
+    });
+    setEstablishments(prev => [fallbackCreated, ...prev]);
+    return fallbackCreated;
   };
 
   // Actualizar datos de un establecimiento - persistente
@@ -1826,6 +1925,7 @@ export const EstablishmentProvider = ({ children }) => {
       setEstablishments,
       myEstablishments,
       isMyEstablishment,
+      getEstablishmentHierarchy,
       reservations,
       setReservations,
       affiliationRequests,

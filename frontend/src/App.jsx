@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
-import { useEstablishments, isMyEstablishment } from './context/EstablishmentContext';
+import { useEstablishments, isMyEstablishment, getEstablishmentHierarchy } from './context/EstablishmentContext';
 import api from './services/api';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -294,18 +294,30 @@ const AppMain = () => {
     return true;
   });
 
-  // Agrupación por empresa para el conductor: Nivel 1 empresas, Nivel 2 sucursales.
-  // Clave = propietario normalizado; sedes sin propietario forman su propio grupo individual.
+  // Agrupación por empresa / establecimiento para el conductor: Nivel 1 empresas/locales, Nivel 2 sucursales.
+  // Usamos getEstablishmentHierarchy para derivar limpiamente el nombre de la empresa y sucursal.
   const companyGroups = React.useMemo(() => {
     const groups = new Map();
     for (const p of filteredParkings) {
-      const owner = (p.owner || '').trim();
-      const key = owner ? `empresa-${owner.toLowerCase()}` : `sede-${p.id}`;
+      const hierarchy = getEstablishmentHierarchy(p);
+      const companyName = hierarchy.companyName;
+      const key = `empresa-${companyName.toLowerCase()}`;
       if (!groups.has(key)) {
-        groups.set(key, { key, name: owner || p.name, isSingle: !owner, branches: [], totalSlots: 0, freeSlots: 0, minRate: Infinity, image: p.image || null });
+        groups.set(key, { 
+          key, 
+          name: companyName, 
+          branches: [], 
+          totalSlots: 0, 
+          freeSlots: 0, 
+          minRate: Infinity, 
+          image: p.image || null 
+        });
       }
       const g = groups.get(key);
-      g.branches.push(p);
+      g.branches.push({
+        ...p,
+        branchDisplayName: hierarchy.branchName || p.name
+      });
       const elements = p.elements || [];
       const total = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
       const free = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
@@ -798,7 +810,7 @@ const AppMain = () => {
                     <div className="space-y-3">
                       <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
                         <Building2 className="w-5 h-5 text-emerald-600" />
-                        <span>Empresas de Estacionamiento ({companyGroups.length})</span>
+                        <span>Establecimientos de Estacionamiento ({companyGroups.length})</span>
                       </h2>
 
                       {isLoadingSedes ? (
@@ -810,7 +822,11 @@ const AppMain = () => {
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {companyGroups.map((g) => (
-                            <Card key={g.key} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                            <Card 
+                              key={g.key} 
+                              onClick={() => g.branches.length === 1 ? handleSelectParking(g.branches[0]) : setSelectedCompanyKey(g.key)}
+                              className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer group"
+                            >
                               <div>
                                 <div className="h-44 relative overflow-hidden bg-slate-100">
                                   <img
@@ -831,19 +847,23 @@ const AppMain = () => {
                                   <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
                                     {g.freeSlots} Libres de {g.totalSlots}
                                   </div>
-                                  {g.branches.length > 1 && (
+                                  {g.branches.length > 1 ? (
                                     <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
                                       {g.branches.length} sucursales
+                                    </div>
+                                  ) : (
+                                    <div className="absolute top-3 left-3 bg-emerald-900/80 backdrop-blur-md text-emerald-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
+                                      Local Principal
                                     </div>
                                   )}
                                 </div>
 
                                 <div className="p-5 space-y-3">
                                   <div>
-                                    <h3 className="font-extrabold text-slate-900 text-base leading-tight">{g.name}</h3>
+                                    <h3 className="font-extrabold text-slate-900 text-base leading-tight group-hover:text-emerald-700 transition-colors">{g.name}</h3>
                                     <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
                                       <Building2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                                      <span className="truncate">{g.branches.length === 1 ? (g.branches[0].address || 'Ayacucho - Huamanga') : `${g.branches.length} sedes disponibles`}</span>
+                                      <span className="truncate">{g.branches.length === 1 ? (g.branches[0].address || 'Ayacucho - Huamanga') : `${g.branches.length} sucursales disponibles`}</span>
                                     </p>
                                   </div>
                                 </div>
@@ -851,7 +871,10 @@ const AppMain = () => {
 
                               <div className="p-5 pt-0 space-y-2.5">
                                 <Button
-                                  onClick={() => g.branches.length === 1 ? handleSelectParking(g.branches[0]) : setSelectedCompanyKey(g.key)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    g.branches.length === 1 ? handleSelectParking(g.branches[0]) : setSelectedCompanyKey(g.key);
+                                  }}
                                   className="w-full font-bold gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm cursor-pointer py-2.5 rounded-xl"
                                 >
                                   <span>{g.branches.length === 1 ? 'Ver Plano & Reservar' : `Ver Sucursales (${g.branches.length})`}</span>
@@ -873,7 +896,7 @@ const AppMain = () => {
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold transition cursor-pointer shrink-0"
                         >
                           <ArrowLeft className="w-4 h-4" />
-                          <span>Empresas</span>
+                          <span>Volver a Locales</span>
                         </button>
                         <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 min-w-0">
                           <Building2 className="w-5 h-5 text-emerald-600 shrink-0" />
@@ -925,7 +948,7 @@ const AppMain = () => {
                                     <div className="p-5 space-y-3">
                                       <div>
                                         <div className="flex items-center justify-between gap-1.5">
-                                          <h3 className="font-extrabold text-slate-900 text-base leading-tight truncate">{p.name}</h3>
+                                          <h3 className="font-extrabold text-slate-900 text-base leading-tight truncate">{p.branchDisplayName || p.name}</h3>
                                           <span className="shrink-0 text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">
                                             Tol: {p.tolerance || 15}m
                                           </span>

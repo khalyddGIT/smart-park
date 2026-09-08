@@ -607,8 +607,7 @@ async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(g
     owner_val = parking_in.owner
     email_val = parking_in.email
     if current_user.role == "local":
-        if not email_val:
-            email_val = current_user.email
+        email_val = current_user.email
         if not owner_val:
             owner_val = current_user.full_name or "Administración Local"
 

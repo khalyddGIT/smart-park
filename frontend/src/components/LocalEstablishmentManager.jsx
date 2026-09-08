@@ -40,7 +40,7 @@ import {
   Layers
 } from 'lucide-react';
 import { InteractiveFloorPlanDrawingStudio } from './InteractiveFloorPlanDrawingStudio';
-import { useEstablishments, isMyEstablishment } from '../context/EstablishmentContext';
+import { useEstablishments, isMyEstablishment, getEstablishmentHierarchy } from '../context/EstablishmentContext';
 import { useAuth } from '../context/AuthContext';
 
 // Imagen de respaldo SVG ultra confiable para cuando la red no tenga acceso a Unsplash
@@ -481,16 +481,23 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     setIsEditingNew(true);
     setSelectedEstablishment(null);
 
-    const defaultOwner = localGroup?.owner || localGroup?.name || user?.name || 'Administración Local';
-    const defaultName = localGroup ? `${localGroup.name} - Nueva Sucursal` : (user?.establishmentName ? `${user.establishmentName} - Sucursal Central` : '');
+    const companyName = localGroup ? (localGroup.companyName || localGroup.name) : (user?.establishmentName || '');
+    const defaultOwner = localGroup?.owner || companyName || user?.name || 'Administración Local';
+    const nextBranchNum = localGroup?.branches ? localGroup.branches.length + 1 : 1;
+    const defaultName = localGroup 
+      ? `${companyName} - Sucursal ${nextBranchNum}` 
+      : (user?.establishmentName ? `${user.establishmentName} - Sede Central` : '');
     const defaultPhone = localGroup?.phone || user?.phone || '+51 966 123 456';
-    const defaultEmail = localGroup?.email || user?.email || 'contacto@smartpark.pe';
+    const defaultEmail = user?.email || localGroup?.email || 'contacto@smartpark.pe';
     const defaultRuc = localGroup?.ruc || ('20' + Math.floor(100000000 + Math.random() * 900000000));
     const defaultAddress = localGroup?.address || 'Jr. 28 de Julio 320, Huamanga';
     const defaultCity = localGroup?.city || 'Ayacucho - Huamanga';
 
     setFormData({
       name: defaultName,
+      company_name: companyName,
+      companyName: companyName,
+      admin_email: user?.email || '',
       address: defaultAddress,
       reference: 'Ingreso vehicular principal',
       city: defaultCity,
@@ -840,26 +847,17 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     const groups = new Map();
 
     filteredEstablishments.forEach((est) => {
-      let localName = (est.owner || '').trim();
-      let branchName = est.name;
-
-      if (est.name.includes(' - ')) {
-        const parts = est.name.split(' - ');
-        if (!localName || localName.toLowerCase().includes('administración') || localName.toLowerCase().includes('socio') || localName.toLowerCase().includes('consorcio')) {
-          localName = parts[0].trim();
-        }
-        branchName = parts.slice(1).join(' - ').trim();
-      } else if (!localName) {
-        localName = est.name;
-      }
-
-      const groupKey = localName.toLowerCase().trim();
+      const hierarchy = getEstablishmentHierarchy(est);
+      const companyName = hierarchy.companyName;
+      const branchName = hierarchy.branchName;
+      const groupKey = companyName.toLowerCase().trim();
 
       if (!groups.has(groupKey)) {
         groups.set(groupKey, {
           key: groupKey,
-          name: localName,
-          owner: est.owner || localName,
+          name: companyName,
+          companyName: companyName,
+          owner: est.owner || companyName,
           ruc: est.ruc || '',
           phone: est.phone || '',
           whatsapp: est.whatsapp || '',

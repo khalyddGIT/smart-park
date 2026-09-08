@@ -163,6 +163,17 @@ async def create_charge(
         desc = "Reserva Smart Park"
     desc = desc[:80]
 
+    raw_phone = getattr(current_user, "phone", "") or "999999999"
+    clean_phone = "".join(filter(str.isdigit, str(raw_phone)))
+    if len(clean_phone) < 6:
+        clean_phone = "999999999"
+    elif len(clean_phone) > 15:
+        clean_phone = clean_phone[-9:]
+
+    user_name_parts = (current_user.full_name or "Conductor").strip().split()
+    first_name = user_name_parts[0][:50] if user_name_parts else "Conductor"
+    last_name = " ".join(user_name_parts[1:])[:50] if len(user_name_parts) > 1 else "Cliente"
+
     culqi_payload = {
         "amount": body.amount_cents,
         "currency_code": currency_code,
@@ -173,9 +184,9 @@ async def create_charge(
             "address": "Av. Javier Prado 123",
             "address_city": "Lima",
             "country_code": "PE",
-            "first_name": (current_user.full_name or "Smart Park")[:50],
-            "last_name": "Cliente",
-            "phone_number": getattr(current_user, "phone", "") or "999999999",
+            "first_name": first_name,
+            "last_name": last_name,
+            "phone_number": clean_phone,
         },
     }
 

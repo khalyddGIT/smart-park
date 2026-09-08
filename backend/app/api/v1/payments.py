@@ -158,12 +158,17 @@ async def create_charge(
 
     email = (body.email or current_user.email or "conductor@smartpark.com").strip()
 
+    desc = (body.description or "Reserva Smart Park").strip()
+    if len(desc) < 5:
+        desc = "Reserva Smart Park"
+    desc = desc[:80]
+
     culqi_payload = {
         "amount": body.amount_cents,
         "currency_code": currency_code,
         "email": email,
         "source_id": body.token_id.strip(),
-        "description": body.description[:80],
+        "description": desc,
         "antifraud_details": {
             "address": "Av. Javier Prado 123",
             "address_city": "Lima",
@@ -205,7 +210,7 @@ async def create_charge(
                 status="succeeded",
                 method=detected_method,
                 culqi_charge_id=str(data.get("id", ""))[:100] if isinstance(data, dict) else None,
-                description=body.description[:200],
+                description=desc,
             )
             db.add(payment)
             await db.commit()
@@ -216,9 +221,15 @@ async def create_charge(
                 data["reservation_paid"] = bool(body.reservation_id)
             return data
         if outcome.get("type") != "venta_exitosa" and outcome:
+            user_msg = outcome.get("user_message") or data.get("user_message") or ""
+            merchant_msg = outcome.get("merchant_message") or data.get("merchant_message") or ""
+            if merchant_msg and merchant_msg != user_msg:
+                detail_msg = f"{user_msg} — {merchant_msg}".strip(" —")
+            else:
+                detail_msg = user_msg or merchant_msg or "Pago no autorizado por la pasarela"
             raise HTTPException(
                 status_code=402,
-                detail=data.get("user_message") or outcome.get("user_message") or data.get("merchant_message") or "Pago rechazado por Culqi",
+                detail=detail_msg,
             )
         return data
 

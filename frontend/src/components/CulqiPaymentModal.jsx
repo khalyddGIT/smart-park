@@ -7,36 +7,26 @@ import {
   CreditCard, 
   Lock, 
   ShieldCheck, 
-  QrCode, 
   CheckCircle2, 
   AlertCircle, 
-  RefreshCw, 
   Smartphone, 
-  ArrowRight, 
   Printer, 
-  Copy, 
-  Check, 
-  Building, 
   Eye, 
   EyeOff,
   ExternalLink,
-  ShieldAlert,
-  Wallet,
-  Sparkles,
   Loader2
 } from 'lucide-react';
 
-// Credenciales públicas para frontend (el secreto CULQI_SECRET_KEY y PAYPAL_CLIENT_SECRET residen en el backend)
+// Credenciales públicas para frontend
 export const CULQI_PUBLIC_KEY = import.meta.env.VITE_CULQI_PUBLIC_KEY || 'pk_test_ZqUyhWj5y7nmIHax';
 export const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'BAADoNYpVsJd20zFA2pZHva0nt7lYj4GnPqKFDFI_7Cdta0qd-FqG4g8wmndZYuPPcEAmSO-ukcu2mJDR0';
 export const PAYPAL_EXCHANGE_RATE = Number(import.meta.env.VITE_PAYPAL_EXCHANGE_RATE || 0.27);
 
 // Tarjetas de prueba oficiales de Culqi Sandbox
 const CULQI_TEST_CARDS = [
-  { label: 'Visa Aprobada', number: '4242424242424242', exp: '12/28', cvv: '123', brand: 'VISA', type: 'success' },
-  { label: 'Mastercard Aprobada', number: '5555555555554444', exp: '09/27', cvv: '456', brand: 'MASTERCARD', type: 'success' },
-  { label: 'Amex Aprobada', number: '378282246310005', exp: '11/26', cvv: '1234', brand: 'AMEX', type: 'success' },
-  { label: 'Fondos Insuficientes', number: '4000000000000002', exp: '10/26', cvv: '999', brand: 'VISA', type: 'declined' },
+  { label: 'Visa Aprobada', number: '4242424242424242', exp: '12/28', cvv: '123', brand: 'VISA' },
+  { label: 'Mastercard Aprobada', number: '5555555555554444', exp: '09/27', cvv: '456', brand: 'MASTERCARD' },
+  { label: 'Amex Aprobada', number: '378282246310005', exp: '11/26', cvv: '1234', brand: 'AMEX' },
 ];
 
 export const CulqiPaymentModal = ({ 
@@ -50,12 +40,12 @@ export const CulqiPaymentModal = ({
   onPaymentSuccess,
   reservationId = null
 }) => {
-  const [activeMethod, setActiveMethod] = useState('paypal'); // 'paypal' | 'card' | 'yape' | 'plin' | 'pagoefectivo'
+  // Solo los 3 métodos de pago 100% operativos
+  const [activeMethod, setActiveMethod] = useState('card'); // 'card' | 'yape' | 'paypal'
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
-  const [copiedCIP, setCopiedCIP] = useState(false);
   const [showCVV, setShowCVV] = useState(false);
 
   // PayPal SDK Loading State
@@ -63,27 +53,19 @@ export const CulqiPaymentModal = ({
   const [paypalSdkLoading, setPaypalSdkLoading] = useState(false);
   const [paypalSdkError, setPaypalSdkError] = useState('');
   const paypalContainerRef = useRef(null);
-  const paypalButtonsRendered = useRef(false);
 
   // Culqi Checkout v4 SDK Loading State
   const [culqiSdkLoaded, setCulqiSdkLoaded] = useState(false);
-  const [useDirectForm, setUseDirectForm] = useState(false);
 
-  // Formulario Tarjeta Culqi Directo
+  // Formulario Tarjeta Culqi
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
   const [cardHolder, setCardHolder] = useState('CARLOS MENDOZA');
-  const [installments, setInstallments] = useState(1);
-  const [saveCard, setSaveCard] = useState(true);
 
-  // Formulario Yape
-  const [yapePhone, setYapePhone] = useState('966 123 456');
-  const [yapeOtp, setYapeOtp] = useState('');
-  const [qrTimer, setQrTimer] = useState(120);
-
-  // CIP informativo
-  const [cipCode] = useState(`CIP-${Math.floor(10000000 + Math.random() * 90000000)}`);
+  // Formulario Yape Culqi (Pre-cargado con datos oficiales de sandbox para facilitar pruebas)
+  const [yapePhone, setYapePhone] = useState('900000001');
+  const [yapeOtp, setYapeOtp] = useState('123456');
 
   // Cálculos de moneda
   const amountPen = Number(amount) || 10.00;
@@ -106,12 +88,8 @@ export const CulqiPaymentModal = ({
       script.id = scriptId;
       script.src = 'https://checkout.culqi.com/js/v4';
       script.async = true;
-      script.onload = () => {
-        setCulqiSdkLoaded(true);
-      };
-      script.onerror = () => {
-        console.warn('No se pudo cargar https://checkout.culqi.com/js/v4');
-      };
+      script.onload = () => setCulqiSdkLoaded(true);
+      script.onerror = () => console.warn('No se pudo cargar el script de Culqi Checkout v4');
       document.body.appendChild(script);
     } else {
       if (window.Culqi) {
@@ -122,22 +100,13 @@ export const CulqiPaymentModal = ({
     }
   }, [isOpen, paymentSuccess]);
 
-  // Temporizador para QR de Yape/Plin
-  useEffect(() => {
-    let interval;
-    if (isOpen && (activeMethod === 'yape' || activeMethod === 'plin') && qrTimer > 0 && !paymentSuccess) {
-      interval = setInterval(() => setQrTimer(prev => (prev > 0 ? prev - 1 : 120)), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isOpen, activeMethod, qrTimer, paymentSuccess]);
-
   // Cargar SDK oficial de PayPal dinámicamente
   useEffect(() => {
     if (!isOpen || paymentSuccess) return;
 
     const clientId = PAYPAL_CLIENT_ID?.trim();
     if (!clientId) {
-      setPaypalSdkError('VITE_PAYPAL_CLIENT_ID no está configurado.');
+      setPaypalSdkError('Credencial PayPal no disponible.');
       return;
     }
 
@@ -160,7 +129,7 @@ export const CulqiPaymentModal = ({
         setPaypalSdkLoading(false);
       };
       script.onerror = () => {
-        setPaypalSdkError('No se pudo cargar el SDK oficial de PayPal. Verifica tu conexión a internet.');
+        setPaypalSdkError('No se pudo cargar PayPal. Verifica tu conexión a internet.');
         setPaypalSdkLoading(false);
       };
       document.body.appendChild(script);
@@ -182,15 +151,13 @@ export const CulqiPaymentModal = ({
     const container = document.getElementById('paypal-button-container');
     if (!container) return;
 
-    // Limpiar contenedor anterior antes de volver a montar
     container.innerHTML = '';
-    paypalButtonsRendered.current = false;
 
     try {
       window.paypal.Buttons({
         style: {
           layout: 'vertical',
-          color: 'gold',
+          color: 'blue',
           shape: 'rect',
           label: 'paypal',
           height: 44
@@ -220,7 +187,7 @@ export const CulqiPaymentModal = ({
         },
         onApprove: async (data) => {
           setIsProcessing(true);
-          setProcessingStep('Capturando pago en el servidor...');
+          setProcessingStep('Confirmando pago con PayPal...');
           try {
             const res = await api.post('/payments/paypal/capture-order', {
               order_id: data.orderID,
@@ -240,17 +207,15 @@ export const CulqiPaymentModal = ({
         },
         onCancel: () => {
           setIsProcessing(false);
-          setErrorMsg('Transacción de PayPal cancelada por el usuario.');
+          setErrorMsg('Transacción cancelada.');
         },
         onError: (err) => {
           setIsProcessing(false);
-          setErrorMsg(`Error en el botón de PayPal: ${err?.message || 'Problema de conexión con PayPal'}`);
+          setErrorMsg(`Error en PayPal: ${err?.message || 'Problema de conexión con la pasarela'}`);
         }
       }).render('#paypal-button-container');
-
-      paypalButtonsRendered.current = true;
     } catch (e) {
-      console.error('Error renderizando botones de PayPal:', e);
+      console.error('Error renderizando PayPal:', e);
     }
   }, [isOpen, activeMethod, paypalSdkLoaded, amountPen, reservationId, concept, paymentSuccess]);
 
@@ -277,8 +242,7 @@ export const CulqiPaymentModal = ({
     if (clean.startsWith('4')) return 'VISA';
     if (clean.startsWith('5')) return 'MASTERCARD';
     if (clean.startsWith('3')) return 'AMEX';
-    if (clean.startsWith('6')) return 'DINERS';
-    return 'GENÉRICA';
+    return 'TARJETA';
   };
 
   const fillTestCard = (preset) => {
@@ -296,27 +260,25 @@ export const CulqiPaymentModal = ({
     return { month, year };
   };
 
-  // Abrir Checkout Oficial de Culqi (Ventana Emergente Oficial de Culqi Perú)
+  // Abrir Checkout Flotante Oficial de Culqi
   const handleOpenCulqiCheckout = () => {
     setErrorMsg('');
     const pk = (CULQI_PUBLIC_KEY || '').trim();
     if (!pk || !pk.startsWith('pk_')) {
-      setErrorMsg('Llave pública de Culqi no configurada en el frontend (VITE_CULQI_PUBLIC_KEY).');
+      setErrorMsg('Llave pública de Culqi no configurada.');
       return;
     }
 
     if (!window.Culqi) {
-      setErrorMsg('Cargando pasarela oficial de Culqi... Por favor, intenta de nuevo en unos segundos.');
+      setErrorMsg('Cargando pasarela Culqi... Por favor, reintenta en un momento.');
       return;
     }
 
     const amountCents = Math.round(Number(amountPen) * 100);
 
-    // Configurar Culqi v4
     window.Culqi.publicKey = pk;
-
     window.Culqi.settings({
-      title: 'Smart-Park Ayacucho',
+      title: 'Smart-Park',
       currency: 'PEN',
       amount: amountCents,
       description: (concept || 'Reserva Smart-Park').slice(0, 80),
@@ -327,36 +289,24 @@ export const CulqiPaymentModal = ({
         paymentMethods: {
           tarjeta: true,
           yape: true,
-          billetera: true,
-          bancaMovil: true,
-          agente: true,
+          billetera: false,
+          bancaMovil: false,
+          agente: false,
           cuotealo: false,
         }
       }
     });
 
-    window.Culqi.options({
-      style: {
-        logo: 'https://smart-park-web-production.up.railway.app/favicon.ico',
-        bannerColor: '#0f172a',
-        buttonBackground: '#10b981',
-        menuColor: '#10b981',
-        linksColor: '#10b981',
-        priceColor: '#10b981'
-      }
-    });
-
-    // Callback global obligatorio de Culqi v4
     window.culqi = async () => {
       if (window.Culqi.token) {
         const tokenId = window.Culqi.token.id;
         const email = window.Culqi.token.email || customerEmail;
-        const cardBrand = window.Culqi.token.iin?.card_brand || window.Culqi.token.card_brand || 'VISA/MASTERCARD';
-        const last4 = window.Culqi.token.client?.card_number?.slice(-4) || window.Culqi.token.card_number?.slice(-4) || '****';
+        const cardBrand = window.Culqi.token.iin?.card_brand || window.Culqi.token.card_brand || 'TARJETA';
+        const last4 = window.Culqi.token.client?.card_number?.slice(-4) || '****';
 
         window.Culqi.close();
         setIsProcessing(true);
-        setProcessingStep('Validando pago con Culqi en el servidor...');
+        setProcessingStep('Validando transacción con Culqi...');
 
         try {
           const payload = {
@@ -377,17 +327,15 @@ export const CulqiPaymentModal = ({
             amount: Number(amountPen),
             currency: 'PEN',
             currencySymbol: 'S/',
-            method: `Tarjeta / Yape (${cardBrand})`,
+            method: `Tarjeta Culqi (${cardBrand})`,
             cardBrand: cardBrand,
             last4: last4,
-            cardHolder: window.Culqi.token.client?.first_name || cardHolder || 'CONDUCTOR SMART-PARK',
+            cardHolder: window.Culqi.token.client?.first_name || cardHolder || 'CONDUCTOR',
             email: email,
-            installments: 1,
-            invoiceNumber: data.invoice_number || `B001-${String(data.id || '').slice(-6) || Math.floor(100000 + Math.random() * 900000)}`,
+            invoiceNumber: data.invoice_number || `B001-${String(data.id || '').slice(-6) || '001234'}`,
             date: new Date().toLocaleString('es-PE'),
-            authorizationCode: data.authorization_code || data.auth_code || `AUT-${String(data.id || '').slice(-6) || '---'}`,
+            authorizationCode: data.authorization_code || data.auth_code || `AUT-${String(data.id || '').slice(-6)}`,
             status: 'PAID',
-            gateway: 'CULQI CHECKOUT OFICIAL (PCI-DSS)',
             raw: data,
           };
 
@@ -395,8 +343,8 @@ export const CulqiPaymentModal = ({
           setPaymentSuccess(chargeData);
         } catch (err) {
           setIsProcessing(false);
-          const detail = err.response?.data?.detail || err.message || 'Error al procesar el cobro con Culqi';
-          setErrorMsg(`Pago rechazado por Culqi: ${detail}`);
+          const detail = err.response?.data?.detail || err.message || 'Error al procesar el cobro';
+          setErrorMsg(detail);
         }
       } else if (window.Culqi.order) {
         window.Culqi.close();
@@ -411,14 +359,14 @@ export const CulqiPaymentModal = ({
     window.Culqi.open();
   };
 
-  // Procesar Pago con Tarjeta Culqi Directo
+  // Procesar Pago Directo con Tarjeta (Culqi Token + Charge)
   const handleProcessCulqiCard = async (e) => {
     if (e) e.preventDefault();
     setErrorMsg('');
 
     const cleanCard = cardNumber.replace(/\s/g, '');
     if (cleanCard.length < 15) {
-      setErrorMsg('Ingresa un número de tarjeta válido (15-16 dígitos).');
+      setErrorMsg('Ingresa un número de tarjeta válido (15 o 16 dígitos).');
       return;
     }
     if (cardCvv.length < 3) {
@@ -431,18 +379,18 @@ export const CulqiPaymentModal = ({
     }
     const { month, year } = parseExpiry(cardExpiry);
     if (!month || !year || Number(month) < 1 || Number(month) > 12) {
-      setErrorMsg('Vencimiento inválido.');
+      setErrorMsg('Fecha de vencimiento no válida.');
       return;
     }
 
     const pk = (CULQI_PUBLIC_KEY || '').trim();
     if (!pk || !pk.startsWith('pk_')) {
-      setErrorMsg('Llave pública de Culqi no configurada en el frontend (VITE_CULQI_PUBLIC_KEY).');
+      setErrorMsg('Llave pública de Culqi no configurada.');
       return;
     }
 
     setIsProcessing(true);
-    setProcessingStep('Tokenizando tarjeta con Culqi...');
+    setProcessingStep('Tokenizando tarjeta...');
 
     let tokenId;
     try {
@@ -462,18 +410,18 @@ export const CulqiPaymentModal = ({
       });
       const tokenData = await tokenResp.json().catch(() => ({}));
       if (!tokenResp.ok) {
-        const msg = tokenData.user_message || tokenData.merchant_message || tokenData.message || `Error al tokenizar (${tokenResp.status})`;
+        const msg = tokenData.user_message || tokenData.merchant_message || tokenData.message || `Error (${tokenResp.status})`;
         throw new Error(msg);
       }
       tokenId = tokenData.id;
-      if (!tokenId) throw new Error('Culqi no devolvió token (id vacío)');
+      if (!tokenId) throw new Error('No se generó el token de la tarjeta.');
     } catch (err) {
       setIsProcessing(false);
-      setErrorMsg(err.message?.includes('Failed to fetch') ? 'No se pudo conectar con Culqi para tokenizar. Verifica tu conexión.' : `Error al tokenizar: ${err.message}`);
+      setErrorMsg(`Error al procesar tarjeta: ${err.message}`);
       return;
     }
 
-    setProcessingStep('Efectuando cobro en el servidor...');
+    setProcessingStep('Confirmando pago...');
     try {
       const amountCents = Math.round(Number(amountPen) * 100);
       const payload = {
@@ -496,15 +444,13 @@ export const CulqiPaymentModal = ({
         currencySymbol: 'S/',
         method: `Tarjeta ${getCardBrand(cardNumber)}`,
         cardBrand: getCardBrand(cardNumber),
-        last4: cleanCard.slice(-4) || '4242',
-        cardHolder: cardHolder || 'CARLOS MENDOZA',
+        last4: cleanCard.slice(-4),
+        cardHolder: cardHolder || 'CONDUCTOR',
         email: customerEmail,
-        installments: Number(installments),
-        invoiceNumber: data.invoice_number || `B001-${String(data.id || '').slice(-6) || Math.floor(100000 + Math.random() * 900000)}`,
+        invoiceNumber: data.invoice_number || `B001-${String(data.id || '').slice(-6) || '001234'}`,
         date: new Date().toLocaleString('es-PE'),
-        authorizationCode: data.authorization_code || data.auth_code || `AUT-${String(data.id || '').slice(-6) || '---'}`,
+        authorizationCode: data.authorization_code || data.auth_code || `AUT-${String(data.id || '').slice(-6)}`,
         status: 'PAID',
-        gateway: 'CULQI PERÚ (PCI-DSS)',
         raw: data,
       };
 
@@ -512,40 +458,31 @@ export const CulqiPaymentModal = ({
       setPaymentSuccess(chargeData);
     } catch (err) {
       setIsProcessing(false);
-      const status = err.response?.status;
-      const detail = err.response?.data?.detail || err.message || 'Error desconocido';
-      if (status === 401) {
-        setErrorMsg('Sesión expirada. Inicia sesión nuevamente para pagar.');
-      } else if (status === 503) {
-        setErrorMsg(`${detail} — El cobro no pudo procesarse.`);
-      } else if (status === 402) {
-        setErrorMsg(`Pago rechazado por Culqi: ${detail}`);
-      } else {
-        setErrorMsg(`El cobro no pudo procesarse: ${detail}`);
-      }
+      const detail = err.response?.data?.detail || err.message || 'Error al procesar el cobro';
+      setErrorMsg(detail);
     }
   };
 
-  // Procesar Pago con Yape Oficial Culqi (API v2 /tokens/yape + /v2/charges)
+  // Procesar Pago con Yape (API oficial Culqi: /tokens/yape + /v2/charges)
   const handleProcessCulqiYape = async (e) => {
     if (e) e.preventDefault();
     setErrorMsg('');
 
     const cleanPhone = (yapePhone || '').replace(/\D/g, '');
     if (cleanPhone.length !== 9 || !cleanPhone.startsWith('9')) {
-      setErrorMsg('Ingresa un número de celular Yape válido (9 dígitos comenzando con 9).');
+      setErrorMsg('Ingresa un número de celular válido de 9 dígitos (inicia con 9). En sandbox usa 900000001.');
       return;
     }
 
     const cleanOtp = (yapeOtp || '').replace(/\D/g, '');
     if (cleanOtp.length !== 6) {
-      setErrorMsg('Ingresa el código de aprobación de 6 dígitos generado en tu aplicación Yape.');
+      setErrorMsg('Ingresa el código de aprobación de 6 dígitos. En sandbox usa 123456.');
       return;
     }
 
     const pk = (CULQI_PUBLIC_KEY || '').trim();
     if (!pk || !pk.startsWith('pk_')) {
-      setErrorMsg('Llave pública de Culqi no configurada en el frontend (VITE_CULQI_PUBLIC_KEY).');
+      setErrorMsg('Llave pública de Culqi no configurada.');
       return;
     }
 
@@ -556,7 +493,6 @@ export const CulqiPaymentModal = ({
     let tokenId;
 
     try {
-      // POST oficial de Culqi para tokenizar Yape
       const tokenResp = await fetch('https://api.culqi.com/v2/tokens/yape', {
         method: 'POST',
         headers: {
@@ -580,19 +516,19 @@ export const CulqiPaymentModal = ({
     } catch (err) {
       setIsProcessing(false);
       setErrorMsg(err.message?.includes('Failed to fetch') 
-        ? 'No se pudo conectar con Culqi para autorizar Yape. Verifica tu conexión a internet.' 
+        ? 'No se pudo conectar con Culqi. Revisa tu conexión a internet.' 
         : `Error en Yape: ${err.message}`
       );
       return;
     }
 
-    setProcessingStep('Confirmando cobro Yape en el servidor...');
+    setProcessingStep('Confirmando cobro con Yape...');
     try {
       const payload = {
         amount_cents: amountCents,
         currency: 'PEN',
         token_id: tokenId,
-        description: (concept || 'Reserva Smart Park - Yape').slice(0, 80),
+        description: (concept || 'Reserva Smart Park').slice(0, 80),
         email: customerEmail,
         payment_method: 'yape',
       };
@@ -607,17 +543,15 @@ export const CulqiPaymentModal = ({
         amount: Number(amountPen),
         currency: 'PEN',
         currencySymbol: 'S/',
-        method: 'Yape Oficial (Culqi BCP)',
+        method: 'Yape (BCP / Culqi)',
         cardBrand: 'YAPE',
         last4: cleanPhone.slice(-4),
         cardHolder: `Yape: ${cleanPhone}`,
         email: customerEmail,
-        installments: 1,
-        invoiceNumber: data.invoice_number || `B001-${String(data.id || '').slice(-6) || Math.floor(100000 + Math.random() * 900000)}`,
+        invoiceNumber: data.invoice_number || `B001-${String(data.id || '').slice(-6) || '001234'}`,
         date: new Date().toLocaleString('es-PE'),
-        authorizationCode: data.authorization_code || data.auth_code || `AUT-${String(data.id || '').slice(-6) || 'YAPE'}`,
+        authorizationCode: data.authorization_code || data.auth_code || `AUT-YAPE-${String(data.id || '').slice(-4)}`,
         status: 'PAID',
-        gateway: 'CULQI YAPE (PCI-DSS)',
         raw: data,
       };
 
@@ -625,17 +559,8 @@ export const CulqiPaymentModal = ({
       setPaymentSuccess(chargeData);
     } catch (err) {
       setIsProcessing(false);
-      const status = err.response?.status;
-      const detail = err.response?.data?.detail || err.message || 'Error desconocido';
-      if (status === 401) {
-        setErrorMsg('Sesión expirada. Inicia sesión nuevamente para pagar.');
-      } else if (status === 503) {
-        setErrorMsg(`${detail} — El cobro no pudo procesarse.`);
-      } else if (status === 402) {
-        setErrorMsg(`Pago con Yape rechazado por Culqi: ${detail}`);
-      } else {
-        setErrorMsg(`El cobro de Yape no pudo procesarse: ${detail}`);
-      }
+      const detail = err.response?.data?.detail || err.message || 'Error al procesar el pago con Yape';
+      setErrorMsg(detail);
     }
   };
 
@@ -662,273 +587,375 @@ export const CulqiPaymentModal = ({
     }
   };
 
-  const handleCopyCIP = () => {
-    navigator.clipboard.writeText(cipCode.replace('CIP-', ''));
-    setCopiedCIP(true);
-    setTimeout(() => setCopiedCIP(false), 2000);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={handleResetAndClose}>
-      <DialogContent className="max-w-lg w-[95vw] sm:w-full rounded-2xl sm:rounded-3xl p-4 sm:p-6 bg-white border-slate-200 shadow-2xl overflow-y-auto max-h-[92vh]">
+      <DialogContent className="max-w-md w-[95vw] sm:w-full rounded-2xl sm:rounded-3xl p-5 sm:p-6 bg-white border border-slate-200/80 shadow-2xl overflow-y-auto max-h-[92vh]">
         
-        {/* Cabecera del Checkout */}
-        <DialogHeader className="border-b border-slate-100 pb-3 space-y-1">
+        {/* Cabecera Minimalista Ejecutiva */}
+        <DialogHeader className="border-b border-slate-100 pb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#003087] to-[#0079C1] text-white flex items-center justify-center font-black text-xs shadow-xs">
-                <Wallet className="w-5 h-5" />
-              </div>
-              <div>
-                <DialogTitle className="text-base font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-                  <span>Smart-Park Checkout</span>
-                  <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
-                    Seguro
-                  </span>
-                </DialogTitle>
-                <p className="text-[11px] text-slate-500">Pasarelas certificadas • PayPal REST & Culqi PCI-DSS</p>
-              </div>
+            <div className="space-y-0.5">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                {parkingName} • Espacio {slotCode}
+              </span>
+              <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">
+                Completar Pago
+              </DialogTitle>
             </div>
 
             <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Total a Pagar</span>
-              <div className="flex flex-col items-end leading-none">
-                <span className="text-lg font-black text-emerald-600 font-mono">S/ {amountPen.toFixed(2)}</span>
-                <span className="text-[10px] font-mono font-bold text-slate-400">≈ ${amountUsd.toFixed(2)} USD</span>
+              <div className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                S/ {amountPen.toFixed(2)}
               </div>
+              <span className="text-[11px] font-medium text-slate-400 font-mono block">
+                ≈ ${amountUsd.toFixed(2)} USD
+              </span>
             </div>
           </div>
         </DialogHeader>
 
-        {/* PANTALLA DE PAGO EXITOSO CON VOUCHER FISCAL */}
+        {/* PANTALLA DE ÉXITO */}
         {paymentSuccess ? (
-          <div className="py-2 space-y-4 animate-in fade-in">
-            <div className="text-center space-y-1.5">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
-                <CheckCircle2 className="w-7 h-7 shrink-0" />
+          <div className="py-3 space-y-5 animate-in fade-in">
+            <div className="text-center space-y-1.5 pt-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
+                <CheckCircle2 className="w-6 h-6 shrink-0" />
               </div>
-              <h3 className="text-lg font-black text-slate-900">
-                {paymentSuccess.method?.includes('PayPal') ? '¡Pago Confirmado con PayPal!' : '¡Pago Aprobado con Éxito!'}
+              <h3 className="text-lg font-bold text-slate-900">
+                ¡Pago confirmado!
               </h3>
-              <p className="text-xs text-slate-500">Tu transacción fue autorizada y liquidada satisfactoriamente.</p>
+              <p className="text-xs text-slate-500">
+                Tu reserva ha sido asegurada correctamente.
+              </p>
             </div>
 
-            {/* Voucher Oficial */}
-            <div className="bg-slate-950 text-white p-5 rounded-3xl shadow-xl space-y-3 font-mono border border-slate-800 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
-
-              <div className="flex justify-between items-center border-b border-slate-800 pb-2.5">
-                <div>
-                  <span className="text-[10px] text-emerald-400 font-bold block uppercase tracking-wider">SMART PARK PERÚ S.A.C.</span>
-                  <span className="text-[9px] text-slate-400">
-                    RUC: 20608912341 • BOLETA {paymentSuccess.invoiceNumber || 'B001-000001'}
-                  </span>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-400 font-mono uppercase bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
-                  ✓ LIQUIDADO
+            {/* Recibo minimalista */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/70 space-y-2.5 text-xs font-mono">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200/60 text-slate-600">
+                <span className="font-sans font-medium text-slate-500">Comprobante</span>
+                <span className="font-bold text-slate-800">{paymentSuccess.invoiceNumber || 'B001-000001'}</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span className="font-sans font-medium text-slate-500">Método</span>
+                <span className="font-semibold text-slate-800">{paymentSuccess.method}</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span className="font-sans font-medium text-slate-500">Transacción</span>
+                <span className="font-mono text-[11px] text-slate-700 truncate max-w-[180px]">
+                  {paymentSuccess.chargeId || paymentSuccess.capture_id || paymentSuccess.order_id}
                 </span>
               </div>
-
-              <div className="space-y-1.5 text-xs">
-                <div className="flex justify-between text-slate-300">
-                  <span className="font-sans">Cochera:</span>
-                  <strong className="text-white font-sans">{parkingName}</strong>
-                </div>
-                <div className="flex justify-between text-slate-300">
-                  <span className="font-sans">Cajón Reservado:</span>
-                  <strong className="text-emerald-400 font-mono">{slotCode}</strong>
-                </div>
-                <div className="flex justify-between text-slate-300">
-                  <span className="font-sans">Medio de Pago:</span>
-                  <span className="text-white font-bold">{paymentSuccess.method}</span>
-                </div>
-                {paymentSuccess.payer_email && (
-                  <div className="flex justify-between text-slate-300">
-                    <span className="font-sans">Titular / Email:</span>
-                    <span className="text-slate-200">{paymentSuccess.payer_name || paymentSuccess.payer_email}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-slate-300">
-                  <span className="font-sans">ID de Cargo / Transacción:</span>
-                  <span className="text-slate-400 text-[10px] break-all">{paymentSuccess.chargeId || paymentSuccess.capture_id || paymentSuccess.order_id}</span>
-                </div>
-                <div className="flex justify-between text-slate-300">
-                  <span className="font-sans">Autorización:</span>
-                  <span className="text-emerald-400 font-bold">{paymentSuccess.authorizationCode}</span>
-                </div>
-                <div className="flex justify-between text-slate-300">
-                  <span className="font-sans">Fecha y Hora:</span>
-                  <span className="text-slate-400 text-[10px]">{paymentSuccess.date}</span>
-                </div>
-              </div>
-
-              <div className="border-t border-slate-800 pt-2.5 flex justify-between items-baseline">
-                <span className="font-sans text-slate-400 text-xs">Monto Total Liquidado:</span>
-                <div className="text-right">
-                  <span className="text-xl font-black text-emerald-400 font-mono block">S/ {Number(paymentSuccess.amount).toFixed(2)} PEN</span>
-                  {paymentSuccess.amount_usd && (
-                    <span className="text-[10px] text-slate-400 font-mono">(${Number(paymentSuccess.amount_usd).toFixed(2)} USD)</span>
-                  )}
-                </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span className="font-sans font-medium text-slate-500">Total</span>
+                <span className="font-bold text-emerald-600 text-sm">S/ {Number(paymentSuccess.amount).toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2.5 pt-1">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => window.print()}
-                className="flex-1 py-3 text-xs font-bold gap-1.5 rounded-2xl border-slate-300 cursor-pointer"
+                className="flex-1 py-2.5 text-xs font-semibold rounded-xl border-slate-200 hover:bg-slate-50 cursor-pointer gap-1.5"
               >
-                <Printer className="w-4 h-4 shrink-0 text-slate-600" />
-                <span>Imprimir Voucher</span>
+                <Printer className="w-3.5 h-3.5 text-slate-500" />
+                <span>Imprimir</span>
               </Button>
               <Button
                 type="button"
                 onClick={handleResetAndClose}
-                className="flex-1 py-3 text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl cursor-pointer shadow-md"
+                className="flex-1 py-2.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl cursor-pointer shadow-sm"
               >
                 <span>Ver Mi Pase QR →</span>
               </Button>
             </div>
           </div>
         ) : (
-          <div className="space-y-4 my-1">
+          <div className="space-y-4 pt-1">
             
-            {/* Selector de Métodos de Pago */}
-            <div className="grid grid-cols-5 gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200">
-              
-              {/* TAB 1: PAYPAL */}
+            {/* Segmented Control - Métodos de Pago */}
+            <div className="grid grid-cols-3 p-1 bg-slate-100/90 rounded-xl gap-1">
+              <button
+                type="button"
+                onClick={() => { setActiveMethod('card'); setErrorMsg(''); }}
+                className={`py-2 px-2 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeMethod === 'card' 
+                    ? 'bg-white text-slate-900 shadow-xs' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Tarjeta</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActiveMethod('yape'); setErrorMsg(''); }}
+                className={`py-2 px-2 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeMethod === 'yape' 
+                    ? 'bg-white text-purple-900 shadow-xs' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5 text-purple-600" />
+                <span>Yape</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => { setActiveMethod('paypal'); setErrorMsg(''); }}
-                className={`py-2 px-0.5 sm:px-1 text-[10px] sm:text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
-                  activeMethod === 'paypal' ? 'bg-[#003087] text-white shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
+                className={`py-2 px-2 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeMethod === 'paypal' 
+                    ? 'bg-white text-[#003087] shadow-xs' 
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="7.056 3 37.351 45" className="w-4 h-4 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="7.056 3 37.351 45" className="w-3.5 h-3.5">
                   <path fill="#002991" d="M38.914 13.35c0 5.574-5.144 12.15-12.927 12.15H18.49l-.368 2.322L16.373 39H7.056l5.605-36h15.095c5.083 0 9.082 2.833 10.555 6.77a9.7 9.7 0 0 1 .603 3.58"/>
                   <path fill="#60cdff" d="M44.284 23.7A12.894 12.894 0 0 1 31.53 34.5h-5.206L24.157 48H14.89l1.483-9l1.75-11.178l.367-2.322h7.497c7.773 0 12.927-6.576 12.927-12.15c3.825 1.974 6.055 5.963 5.37 10.35"/>
                   <path fill="#008cff" d="M38.914 13.35C37.31 12.511 35.365 12 33.248 12h-12.64L18.49 25.5h7.497c7.773 0 12.927-6.576 12.927-12.15"/>
                 </svg>
-                <span className="truncate max-w-full">PayPal</span>
-              </button>
-
-              {/* TAB 2: TARJETA CULQI */}
-              <button
-                type="button"
-                onClick={() => { setActiveMethod('card'); setErrorMsg(''); }}
-                className={`py-2 px-0.5 sm:px-1 text-[10px] sm:text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
-                  activeMethod === 'card' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <CreditCard className="w-4 h-4 shrink-0 text-emerald-600" />
-                <span className="truncate max-w-full">Tarjeta</span>
-              </button>
-
-              {/* TAB 3: YAPE */}
-              <button
-                type="button"
-                onClick={() => { setActiveMethod('yape'); setErrorMsg(''); }}
-                className={`py-2 px-0.5 sm:px-1 text-[10px] sm:text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
-                  activeMethod === 'yape' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <Smartphone className="w-4 h-4 shrink-0 text-purple-600" />
-                <span className="truncate max-w-full">Yape</span>
-              </button>
-
-              {/* TAB 4: PLIN */}
-              <button
-                type="button"
-                onClick={() => { setActiveMethod('plin'); setErrorMsg(''); }}
-                className={`py-2 px-0.5 sm:px-1 text-[10px] sm:text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
-                  activeMethod === 'plin' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <QrCode className="w-4 h-4 shrink-0 text-sky-600" />
-                <span className="truncate max-w-full">Plin</span>
-              </button>
-
-              {/* TAB 5: CIP */}
-              <button
-                type="button"
-                onClick={() => { setActiveMethod('pagoefectivo'); setErrorMsg(''); }}
-                className={`py-2 px-0.5 sm:px-1 text-[10px] sm:text-[11px] font-bold rounded-xl transition flex flex-col items-center gap-1 cursor-pointer ${
-                  activeMethod === 'pagoefectivo' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <Building className="w-4 h-4 shrink-0 text-amber-600" />
-                <span className="truncate max-w-full">Agentes</span>
+                <span>PayPal</span>
               </button>
             </div>
 
+            {/* Mensaje de Error Limpio */}
             {errorMsg && (
-              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 animate-in fade-in">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{errorMsg}</span>
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs flex items-start gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                <span className="leading-snug">{errorMsg}</span>
               </div>
             )}
 
-            {/* 1. MÉTODO: PAYPAL (SMART BUTTONS & BACKEND CAPTURE) */}
-            {activeMethod === 'paypal' && (
-              <div className="space-y-4">
-                
-                {/* Banner Oficial PayPal */}
-                <div className="bg-gradient-to-br from-[#00246B] via-[#003087] to-[#0079C1] p-4 rounded-3xl text-white shadow-md space-y-2 border border-blue-400/30 relative overflow-hidden">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center p-1 shadow-xs shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="7.056 3 37.351 45" className="w-5 h-5">
-                          <path fill="#002991" d="M38.914 13.35c0 5.574-5.144 12.15-12.927 12.15H18.49l-.368 2.322L16.373 39H7.056l5.605-36h15.095c5.083 0 9.082 2.833 10.555 6.77a9.7 9.7 0 0 1 .603 3.58"/>
-                          <path fill="#60cdff" d="M44.284 23.7A12.894 12.894 0 0 1 31.53 34.5h-5.206L24.157 48H14.89l1.483-9l1.75-11.178l.367-2.322h7.497c7.773 0 12.927-6.576 12.927-12.15c3.825 1.974 6.055 5.963 5.37 10.35"/>
-                          <path fill="#008cff" d="M38.914 13.35C37.31 12.511 35.365 12 33.248 12h-12.64L18.49 25.5h7.497c7.773 0 12.927-6.576 12.927-12.15"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <span className="text-xs font-black tracking-wide block">PayPal Checkout Express</span>
-                        <span className="text-[10px] text-blue-200 font-mono">Sandbox Testbed Habilitado</span>
+            {/* 1. TAB TARJETA */}
+            {activeMethod === 'card' && (
+              <div className="space-y-4 pt-1">
+                {/* Atajos de prueba rápidos */}
+                <div className="flex items-center justify-between text-[11px] text-slate-500">
+                  <span className="font-medium">Tarjetas de prueba:</span>
+                  <div className="flex gap-1.5">
+                    {CULQI_TEST_CARDS.slice(0, 2).map((c, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => fillTestCard(c)}
+                        className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[10px] font-semibold cursor-pointer transition"
+                      >
+                        {c.brand}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <form onSubmit={handleProcessCulqiCard} className="space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Número de Tarjeta
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder="4242 4242 4242 4242"
+                        value={cardNumber}
+                        onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                        className="font-mono text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white pr-14"
+                        required
+                      />
+                      <span className="absolute right-3 top-2.5 text-[10px] font-mono font-bold text-slate-400">
+                        {getCardBrand(cardNumber)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                        Vencimiento
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="MM/AA"
+                        maxLength={5}
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
+                        className="font-mono text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white text-center"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                        CVV
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type={showCVV ? "text" : "password"}
+                          placeholder="123"
+                          maxLength={4}
+                          value={cardCvv}
+                          onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
+                          className="font-mono text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white text-center pr-8"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCVV(!showCVV)}
+                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        >
+                          {showCVV ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-mono">
-                      SANDBOX
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Nombre en la Tarjeta
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="CARLOS MENDOZA"
+                      value={cardHolder}
+                      onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
+                      className="text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white uppercase font-medium"
+                      required
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={isProcessing}
+                    className="w-full py-3 h-11 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl cursor-pointer shadow-sm gap-2 mt-3 transition active:scale-[0.99]"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+                        <span>{processingStep}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                        <span>Pagar S/ {amountPen.toFixed(2)}</span>
+                      </>
+                    )}
+                  </Button>
+                </form>
+
+                {/* Alternativa con checkout modal de Culqi */}
+                <div className="pt-2 border-t border-slate-100 text-center">
+                  <button
+                    type="button"
+                    onClick={handleOpenCulqiCheckout}
+                    className="text-[11px] font-medium text-slate-500 hover:text-slate-800 inline-flex items-center gap-1 cursor-pointer transition"
+                  >
+                    <span>O usar ventana emergente oficial de Culqi</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 2. TAB YAPE */}
+            {activeMethod === 'yape' && (
+              <div className="space-y-4 pt-1">
+                {/* Banner de Ayuda Rápida Sandbox */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50 border border-purple-100 text-purple-900 text-xs">
+                  <div className="space-y-0.5">
+                    <span className="font-semibold block text-[11px]">Prueba en Sandbox</span>
+                    <span className="font-mono text-[10px] text-purple-700">900000001 • OTP 123456</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setYapePhone('900000001');
+                      setYapeOtp('123456');
+                      setErrorMsg('');
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white border border-purple-200 text-purple-900 text-[11px] font-semibold hover:bg-purple-100/50 cursor-pointer shadow-2xs transition"
+                  >
+                    Cargar
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Número de Celular Yape
+                    </label>
+                    <Input
+                      type="tel"
+                      maxLength={9}
+                      placeholder="900000001"
+                      value={yapePhone}
+                      onChange={(e) => setYapePhone(e.target.value.replace(/\D/g, ''))}
+                      className="font-mono text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white"
+                    />
+                    <span className="text-[10px] text-slate-400 block mt-1">
+                      Exactamente 9 dígitos
                     </span>
                   </div>
 
-                  <div className="pt-2 border-t border-white/10 flex justify-between items-baseline text-xs font-mono">
-                    <span className="text-blue-100 font-sans text-[11px]">Conversión oficial PayPal:</span>
-                    <div className="text-right">
-                      <strong className="text-white text-sm">S/ {amountPen.toFixed(2)} PEN</strong>
-                      <span className="text-amber-300 font-bold ml-1.5">≈ ${amountUsd.toFixed(2)} USD</span>
-                    </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Código de Aprobación
+                    </label>
+                    <Input
+                      type="text"
+                      maxLength={6}
+                      placeholder="123456"
+                      value={yapeOtp}
+                      onChange={(e) => setYapeOtp(e.target.value.replace(/\D/g, ''))}
+                      className="font-mono text-center text-sm font-bold tracking-widest h-11 bg-slate-50/60 border-slate-200 focus:bg-white"
+                    />
+                    <span className="text-[10px] text-slate-400 block mt-1">
+                      Código de 6 dígitos generado en tu app Yape (Menú → Código de aprobación)
+                    </span>
                   </div>
-                  <p className="text-[9px] text-blue-200 italic leading-tight">
-                    * PayPal procesa en USD (tipo de cambio referencial 1 PEN = ${PAYPAL_EXCHANGE_RATE.toFixed(2)} USD).
-                  </p>
+
+                  <Button 
+                    type="button" 
+                    disabled={isProcessing}
+                    onClick={handleProcessCulqiYape} 
+                    className="w-full py-3 h-11 text-xs font-bold bg-[#730073] hover:bg-[#5e005e] text-white rounded-xl cursor-pointer shadow-sm gap-2 mt-3 transition active:scale-[0.99] disabled:opacity-50"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                        <span>{processingStep}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                        <span>Pagar con Yape S/ {amountPen.toFixed(2)}</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* 3. TAB PAYPAL */}
+            {activeMethod === 'paypal' && (
+              <div className="space-y-4 pt-1">
+                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between text-xs text-blue-900">
+                  <span className="font-medium">Total a debitar en PayPal:</span>
+                  <span className="font-mono font-bold text-sm">${amountUsd.toFixed(2)} USD</span>
                 </div>
 
-                {/* Contenedor de Botones de PayPal */}
                 <div className="space-y-3">
-                  <div className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
-                    <span>Selecciona tu forma de pago con PayPal:</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Popup seguro oficial</span>
-                  </div>
-
                   {paypalSdkLoading && (
-                    <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-2">
-                      <RefreshCw className="w-6 h-6 animate-spin text-blue-600 mx-auto" />
-                      <p className="text-xs font-bold text-slate-700">Cargando pasarela oficial de PayPal...</p>
+                    <div className="p-6 text-center space-y-2">
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-600 mx-auto" />
+                      <p className="text-xs text-slate-500">Cargando PayPal...</p>
                     </div>
                   )}
 
                   {paypalSdkError && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1">
-                      <span className="font-bold block">Aviso de conexión PayPal:</span>
-                      <span>{paypalSdkError}</span>
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
+                      {paypalSdkError}
                     </div>
                   )}
 
-                  {/* Smart Buttons Container */}
+                  {/* Contenedor de Botones de PayPal */}
                   <div 
                     id="paypal-button-container" 
                     ref={paypalContainerRef}
@@ -936,358 +963,19 @@ export const CulqiPaymentModal = ({
                   />
 
                   {isProcessing && (
-                    <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-blue-900 flex items-center justify-center gap-2 animate-pulse font-bold">
-                      <RefreshCw className="w-4 h-4 shrink-0 animate-spin text-blue-700" />
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-center gap-2 font-medium">
+                      <Loader2 className="w-4 h-4 shrink-0 animate-spin text-blue-700" />
                       <span>{processingStep || 'Procesando con PayPal...'}</span>
                     </div>
                   )}
-
-                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-700 block uppercase font-mono">Credenciales Sandbox Aplicadas:</span>
-                    <div className="text-[10px] font-mono text-slate-500 break-all">
-                      <span>Client ID: </span>
-                      <strong className="text-slate-800">{PAYPAL_CLIENT_ID.slice(0, 16)}...{PAYPAL_CLIENT_ID.slice(-8)}</strong>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            {/* 2. MÉTODO: TARJETA CULQI */}
-            {activeMethod === 'card' && (
-              <div className="space-y-4">
-                
-                {/* Botón Principal: Checkout Oficial Culqi v4 (Popup Nativo) */}
-                <div className="p-4 rounded-3xl bg-slate-900 text-white border border-emerald-500/40 shadow-xl space-y-3 relative overflow-hidden">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-md">
-                        CQ
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-black tracking-wide text-white">Culqi Checkout Oficial</h4>
-                        <span className="text-[10px] text-emerald-400 font-mono">Pasarela Bancaria PCI-DSS v4</span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-mono">
-                      SANDBOX EN VIVO
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-slate-300 leading-snug">
-                    Abre la ventana flotante oficial certificada de <strong>Culqi Perú</strong> con soporte para todas las tarjetas Visa, Mastercard, AMEX y Diners.
-                  </p>
-
-                  <Button
-                    type="button"
-                    onClick={handleOpenCulqiCheckout}
-                    disabled={isProcessing}
-                    className="w-full py-4 text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-2xl cursor-pointer shadow-lg gap-2 transition transform active:scale-95"
-                  >
-                    <Sparkles className="w-4 h-4 shrink-0 text-slate-950" />
-                    <span>Pagar con Checkout Oficial de Culqi (S/ {amountPen.toFixed(2)})</span>
-                    <ExternalLink className="w-4 h-4 shrink-0 text-slate-950" />
-                  </Button>
-
-                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] font-mono text-slate-400">
-                    <span>Llave pública: {CULQI_PUBLIC_KEY.slice(0, 12)}...{CULQI_PUBLIC_KEY.slice(-4)}</span>
-                    <span className="text-emerald-400 font-bold">SSL 256-bit</span>
-                  </div>
-                </div>
-
-                {/* Toggle para Formulario Directo */}
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setUseDirectForm(!useDirectForm)}
-                    className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center justify-between w-full p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 transition cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4 text-slate-500" />
-                      <span>{useDirectForm ? 'Ocultar formulario directo de tarjeta' : 'O pagar ingresando los datos directamente aquí'}</span>
-                    </span>
-                    <span className="text-[11px] text-emerald-700 font-bold">{useDirectForm ? '▲' : '▼'}</span>
-                  </button>
-                </div>
-
-                {useDirectForm && (
-                  <div className="space-y-3.5 pt-1 animate-in fade-in">
-                    <div className="bg-gradient-to-tr from-slate-900 via-slate-800 to-emerald-950 p-4 rounded-2xl text-white shadow-lg space-y-3 border border-slate-700 relative overflow-hidden">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-mono tracking-widest text-emerald-400 font-bold">SMART-PARK CULQI DIRECT</span>
-                        <span className="text-xs font-black tracking-wider bg-white/10 px-2 py-0.5 rounded">
-                          {getCardBrand(cardNumber)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-5 shrink-0 rounded bg-amber-400/80 border border-amber-300 flex items-center justify-center">
-                          <div className="w-4 h-3 border border-amber-600 rounded-xs opacity-60" />
-                        </div>
-                        <span className="text-xs font-mono text-slate-400">••••</span>
-                      </div>
-                      <div className="font-mono text-sm tracking-widest font-black text-slate-100">
-                        {cardNumber || '•••• •••• •••• ••••'}
-                      </div>
-                      <div className="flex justify-between items-end text-[10px] font-mono text-slate-300">
-                        <div>
-                          <span className="text-[8px] text-slate-400 block uppercase">Titular</span>
-                          <span className="font-bold tracking-tight">{cardHolder || 'NOMBRE DEL TITULAR'}</span>
-                        </div>
-                        <div>
-                          <span className="text-[8px] text-slate-400 block uppercase">Vence</span>
-                          <span className="font-bold">{cardExpiry || 'MM/AA'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Tarjetas de Prueba Culqi (Sandbox):</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {CULQI_TEST_CARDS.map((tc, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => fillTestCard(tc)}
-                            className={`text-[10px] font-mono px-2 py-1 rounded-lg border font-bold transition cursor-pointer ${
-                              tc.type === 'success' 
-                                ? 'bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-500 hover:bg-emerald-50' 
-                                : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
-                            }`}
-                          >
-                            {tc.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <form onSubmit={handleProcessCulqiCard} className="space-y-3">
-                      <div>
-                        <label className="text-xs font-bold text-slate-700 block mb-1">Número de Tarjeta *</label>
-                        <div className="relative">
-                          <CreditCard className="w-4 h-4 shrink-0 absolute left-3 top-3 text-slate-400" />
-                          <Input
-                            type="text"
-                            placeholder="4242 4242 4242 4242"
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                            className="pl-9 font-mono font-bold text-xs h-10 bg-slate-50/80 border-slate-300"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs font-bold text-slate-700 block mb-1">Vencimiento *</label>
-                          <Input
-                            type="text"
-                            placeholder="MM/AA"
-                            value={cardExpiry}
-                            onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                            className="font-mono font-bold text-xs h-10 bg-slate-50/80 border-slate-300 text-center"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-bold text-slate-700 block mb-1">CVV *</label>
-                          <div className="relative">
-                            <Input
-                              type={showCVV ? "text" : "password"}
-                              placeholder="123"
-                              maxLength={4}
-                              value={cardCvv}
-                              onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
-                              className="font-mono font-bold text-xs h-10 bg-slate-50/80 border-slate-300 text-center pr-8"
-                              required
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowCVV(!showCVV)}
-                              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
-                            >
-                              {showCVV ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold text-slate-700 block mb-1">Nombre del Titular *</label>
-                        <Input
-                          type="text"
-                          placeholder="Como figura en el plástico"
-                          value={cardHolder}
-                          onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
-                          className="text-xs h-10 bg-slate-50/80 border-slate-300 uppercase font-mono"
-                          required
-                        />
-                      </div>
-
-                      <Button
-                        type="submit"
-                        disabled={isProcessing}
-                        className="w-full py-4 text-xs font-black bg-slate-900 hover:bg-slate-800 text-white rounded-2xl cursor-pointer shadow-md gap-2 mt-2"
-                      >
-                        {isProcessing ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 shrink-0 animate-spin" />
-                            <span>{processingStep}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="w-4 h-4 shrink-0 text-emerald-400" />
-                            <span>Pagar S/ {amountPen.toFixed(2)} con Tarjeta Directa</span>
-                            <ArrowRight className="w-4 h-4 shrink-0 text-emerald-400" />
-                          </>
-                        )}
-                      </Button>
-                    </form>
-                  </div>
-                )}
-
-              </div>
-            )}
-
-            {/* 3. MÉTODO: YAPE (CULQI OFICIAL BCP) */}
-            {activeMethod === 'yape' && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-3xl bg-purple-50/70 border border-purple-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-purple-950 flex items-center gap-1.5">
-                      <Smartphone className="w-4 h-4 text-purple-700" />
-                      <span>Pago Oficial con Yape (Culqi)</span>
-                    </span>
-                    <span className="text-[10px] font-mono font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full border border-purple-300">
-                      Culqi v2 • BCP
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-600">
-                    Ingresa tu número de celular registrado y el código de aprobación de 6 dígitos generado en tu aplicación Yape.
-                  </p>
-
-                  {/* Preset Sandbox */}
-                  <div className="p-2.5 rounded-2xl bg-purple-100/70 border border-purple-200 flex items-center justify-between">
-                    <div className="text-[11px] text-purple-950">
-                      <span className="font-black">Prueba Sandbox:</span>
-                      <span className="block text-[10px] text-purple-800 font-mono font-semibold">900000001 • OTP: 123456</span>
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setYapePhone('900000001');
-                        setYapeOtp('123456');
-                        setErrorMsg('');
-                      }}
-                      className="text-[10px] font-bold h-7 px-2.5 bg-white text-purple-950 border-purple-300 hover:bg-purple-50 cursor-pointer"
-                    >
-                      Llenar Prueba
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2.5 pt-1">
-                    <div>
-                      <label className="text-xs font-bold text-purple-950 block mb-1">Número de Celular Yape</label>
-                      <Input
-                        type="tel"
-                        maxLength={9}
-                        placeholder="900000001"
-                        value={yapePhone}
-                        onChange={(e) => setYapePhone(e.target.value.replace(/\D/g, ''))}
-                        className="font-mono font-bold text-xs h-10 bg-white border-purple-300 text-slate-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-purple-950 block mb-1">Código de Aprobación Yape (6 dígitos)</label>
-                      <Input
-                        type="text"
-                        maxLength={6}
-                        placeholder="123456"
-                        value={yapeOtp}
-                        onChange={(e) => setYapeOtp(e.target.value.replace(/\D/g, ''))}
-                        className="font-mono font-black text-center text-base tracking-widest h-11 bg-white border-purple-300 text-purple-950"
-                      />
-                      <span className="text-[10px] text-purple-700 block mt-1">
-                        Abre Yape → Menú → "Código de aprobación" (vigente por pocos minutos).
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  type="button" 
-                  disabled={isProcessing}
-                  onClick={handleProcessCulqiYape} 
-                  className="w-full py-4 text-xs font-black bg-purple-700 hover:bg-purple-600 text-white rounded-2xl cursor-pointer shadow-md gap-2 transition disabled:opacity-50"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                      <span>{processingStep || 'Procesando con Culqi Yape...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Smartphone className="w-4 h-4 shrink-0" />
-                      <span>Pagar con Yape S/ {amountPen.toFixed(2)}</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-
-            {/* 4. MÉTODO: PLIN */}
-            {activeMethod === 'plin' && (
-              <div className="space-y-4 text-center">
-                <div className="p-4 rounded-3xl bg-sky-50/70 border border-sky-200 space-y-3">
-                  <h4 className="text-xs font-black text-sky-950">Plin Interoperable</h4>
-                  <p className="text-xs text-slate-600">Escanea desde BBVA, Interbank o Scotiabank.</p>
-                  <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border-2 border-sky-300 shadow-md flex items-center justify-center relative">
-                    <QrCode className="w-28 h-28 text-slate-800" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-8 h-8 shrink-0 bg-sky-600 text-white font-black text-[10px] rounded-lg flex items-center justify-center shadow">PLIN</div>
-                    </div>
-                  </div>
-                </div>
-                <Button 
-                  type="button" 
-                  onClick={() => setErrorMsg('Usa la pasarela de PayPal o Tarjeta para procesar cobros digitales instantáneos.')}
-                  className="w-full py-4 text-xs font-black bg-sky-600 hover:bg-sky-500 text-white rounded-2xl cursor-pointer shadow-md gap-2"
-                >
-                  <QrCode className="w-4 h-4 shrink-0" />
-                  <span>Confirmar Recepción Plin</span>
-                </Button>
-              </div>
-            )}
-
-            {/* 5. MÉTODO: PAGOEFECTIVO CIP */}
-            {activeMethod === 'pagoefectivo' && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-3xl bg-amber-50/70 border border-amber-200 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-amber-950">PagoEfectivo CIP</span>
-                    <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-mono">Agentes y Bodegas</span>
-                  </div>
-                  <p className="text-[11px] text-slate-600">Paga en efectivo en cualquier agente KasNet, BCP o Western Union indicando este código:</p>
-                  <div className="bg-white p-3.5 rounded-2xl border border-amber-300 flex items-center justify-between font-mono">
-                    <div>
-                      <span className="text-[9px] text-slate-400 uppercase font-bold block">Código CIP Generado</span>
-                      <span className="text-lg font-black text-slate-900 tracking-wider">{cipCode}</span>
-                    </div>
-                    <button type="button" onClick={handleCopyCIP} className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold rounded-xl flex items-center gap-1 cursor-pointer transition">
-                      {copiedCIP ? <Check className="w-4 h-4 shrink-0 text-emerald-600" /> : <Copy className="w-4 h-4 shrink-0" />}
-                      <span>{copiedCIP ? 'Copiado' : 'Copiar'}</span>
-                    </button>
-                  </div>
                 </div>
               </div>
             )}
 
-            {/* Footer de Seguridad */}
-            <div className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1.5 pt-1 border-t border-slate-100">
-              <ShieldCheck className="w-4 h-4 shrink-0 text-blue-600" />
-              <span>Transacciones protegidas con PayPal REST API & Culqi PCI-DSS • Encriptación TLS 1.3</span>
+            {/* Micro-footer de seguridad */}
+            <div className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1.5 pt-3 border-t border-slate-100">
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+              <span>Conexión cifrada de extremo a extremo SSL 256-bit</span>
             </div>
 
           </div>

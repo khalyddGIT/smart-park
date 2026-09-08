@@ -207,7 +207,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
       >
         {/* Navegación y Secciones */}
         <div className="p-2 space-y-3.5 overflow-y-auto overflow-x-hidden flex-1">
-          {currentSections.map((sec, idx) => (
+          {(currentSections || []).map((sec, idx) => (
             <div key={idx} className="space-y-1">
               {!isCollapsed && (
                 <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider px-2 block truncate">
@@ -215,7 +215,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
                 </span>
               )}
               <nav className="space-y-0.5">
-                {sec.items.map((item) => {
+                {(sec.items || []).map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   return (
@@ -291,7 +291,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0B0F19]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.5)] px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around select-none will-change-transform"
         style={{ touchAction: 'manipulation' }}
       >
-        {mobileNavButtons.map((item) => {
+        {(mobileNavButtons || []).map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
 
@@ -386,7 +386,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 pt-1">
-              {allItems.map((item) => {
+              {(allItems || []).map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 return (

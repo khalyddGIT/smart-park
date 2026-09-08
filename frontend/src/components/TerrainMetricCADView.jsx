@@ -24,7 +24,8 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
-export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "Ayacucho - Centro Histórico" }) => {
+export const TerrainMetricCADView = ({ slots = [], onSlotsChange, parkingLocation = "Ayacucho - Centro Histórico" }) => {
+  const safeSlots = Array.isArray(slots) ? slots : [];
   // Dimensiones del Lote en Metros Reales (Escala 1:1)
   const [lotLength, setLotLength] = useState(36); // 36 metros de largo
   const [lotWidth, setLotWidth] = useState(24);   // 24 metros de ancho
@@ -36,7 +37,7 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
   const SCALE = 20; 
 
   const totalAreaM2 = lotLength * lotWidth;
-  const totalStalls = slots.length;
+  const totalStalls = safeSlots.length;
   const pmrCount = 0;
   const pmrRatio = 0;
   const pmrCompliant = true;
@@ -259,7 +260,7 @@ export const TerrainMetricCADView = ({ slots, onSlotsChange, parkingLocation = "
 
           {/* RENDERIZADO DE CAJONES MÉTRICOS */}
           <div className="absolute inset-0">
-            {slots.map((slot) => {
+            {safeSlots.map((slot) => {
               const isSelected = slot.id === selectedElementId;
               const isFree = slot.status === 'free';
               const isPMR = false;

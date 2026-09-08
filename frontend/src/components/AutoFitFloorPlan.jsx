@@ -15,6 +15,7 @@ export const AutoFitFloorPlan = ({
 }) => {
   const containerRef = useRef(null);
   const [scale, setScale] = useState(0.5);
+  const safeElements = Array.isArray(elements) ? elements : [];
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -58,9 +59,18 @@ export const AutoFitFloorPlan = ({
           }} 
           className="relative bg-[#2a3752] shadow-2xl rounded-2xl shrink-0 transition-transform duration-200 ease-out border border-slate-600/50"
         >
-          {elements.map((el) => {
-            if (el.type === 'slot') {
-              const status = el.status || 'free';
+          {safeElements.length === 0 ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 text-slate-400">
+              <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center mb-2">
+                <span className="text-xl">🅿️</span>
+              </div>
+              <p className="text-xs font-bold text-slate-300">Cargando distribución del plano...</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Sincronizando cajones en vivo</p>
+            </div>
+          ) : (
+            safeElements.map((el) => {
+              if (el.type === 'slot') {
+                const status = el.status || 'free';
               const isFree = status === 'free';
               const isReserved = status === 'reserved';
               const isOut = status === 'out_of_service' || status === 'disabled';
@@ -136,7 +146,8 @@ export const AutoFitFloorPlan = ({
               );
             }
             return null;
-          })}
+          })
+        )}
         </div>
       </div>
     </div>

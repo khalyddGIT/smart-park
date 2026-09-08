@@ -95,7 +95,7 @@ export const App = () => {
 
 const AppMain = () => {
   const { role, user } = useAuth();
-  const { establishments, occupySlot, createReservation, bookingError, reservations, refreshMyReservations } = useEstablishments();
+  const { establishments, occupySlot, createReservation, bookingError, reservations, refreshMyReservations, ensureFloorPlan } = useEstablishments();
   const [activeTab, setActiveTab] = useState(() => {
     const parsed = parseRoleLocation(
       typeof window !== 'undefined' ? window.location.pathname : '/',
@@ -1068,11 +1068,17 @@ const AppMain = () => {
                   </div>
                   {/* Solo mapa del parking del establecimiento para el trabajador */}
                   {(() => {
-                    const localEsts = establishments.filter(e => isMyEstablishment(e, user, role));
+                    const localEsts = (establishments || []).filter(e => isMyEstablishment(e, user, role));
                     const est = localEsts.find(e => String(e.id) === String(selectedParkingId)) || localEsts[0] || establishments[0];
                     if (!est) return <div className="p-6 text-center text-xs text-slate-500">Sin sede asignada</div>;
-                    const free = (est.elements || []).filter(e => e.type === 'slot' && e.status === 'free').length;
-                    const total = (est.elements || []).filter(e => e.type === 'slot').length || 0;
+                    
+                    if (est && est.elements === null && ensureFloorPlan) {
+                      ensureFloorPlan(est.id);
+                    }
+
+                    const elements = Array.isArray(est.elements) ? est.elements : [];
+                    const free = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
+                    const total = elements.filter(e => e.type === 'slot').length || est.totalSlots || 0;
                     const occupied = total - free;
                     return (
                       <div className="space-y-3">
@@ -1082,14 +1088,14 @@ const AppMain = () => {
                               <span className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs font-bold text-emerald-800">Sede asignada: {est.name} — S/ {Number(est.rate).toFixed(2)}/h</span>
                             ) : (
                               <select value={est.id} onChange={e => setSelectedParkingId(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none">
-                                {localEsts.map(p => <option key={p.id} value={p.id}>{p.name} — S/ {Number(p.rate).toFixed(2)}/h</option>)}
+                                {(localEsts || []).map(p => <option key={p.id} value={p.id}>{p.name} — S/ {Number(p.rate).toFixed(2)}/h</option>)}
                               </select>
                             )}
                             <span className="text-xs font-mono font-bold text-emerald-700">{free} libres / {occupied} ocupados</span>
                           </div>
                           <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg">{isPersonalStaff ? 'Asignada' : 'Solo Lectura'}</span>
                         </div>
-                        <AutoFitFloorPlan elements={est.elements} name={est.name} />
+                        <AutoFitFloorPlan elements={elements} name={est.name} />
                         <p className="text-[11px] text-center text-slate-500">Para registrar entradas/salidas usa <b>Garita → Walk-in</b> (toca un cajón libre en el mapa de arriba) o <b>Scanner</b>.</p>
                       </div>
                     );

@@ -817,28 +817,10 @@ const AppMain = () => {
                   ) : !activeCompany ? (
                     /* Nivel 1: Empresas de estacionamiento */
                     <div className="space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                          <Building2 className="w-5 h-5 text-emerald-600" />
-                          <span>Establecimientos de Estacionamiento ({companyGroups.length})</span>
-                        </h2>
-                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                          <span className="text-xs font-semibold text-slate-500 mr-1">Tarifas:</span>
-                          {RATES_FILTERS.map(f => (
-                            <button
-                              key={f.id}
-                              onClick={() => setSelectedRateFilter(f.id)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                                selectedRateFilter === f.id
-                                  ? 'bg-slate-900 text-white shadow-xs'
-                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-                              }`}
-                            >
-                              {f.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                        <Building2 className="w-5 h-5 text-emerald-600" />
+                        <span>Establecimientos de Estacionamiento ({companyGroups.length})</span>
+                      </h2>
 
                       {isLoadingSedes ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
@@ -846,7 +828,7 @@ const AppMain = () => {
                             <SkeletonParkingCard key={i} />
                           ))}
                         </div>
-                      ) : groupedEstablishments.length === 0 ? (
+                      ) : companyGroups.length === 0 ? (
                         <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm p-8 max-w-md mx-auto">
                           <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                           <h3 className="text-base font-bold text-slate-800 mb-1">Sin cocheras disponibles</h3>
@@ -854,7 +836,7 @@ const AppMain = () => {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => { setSearchTerm(''); setSelectedRateFilter('all'); }}
+                            onClick={() => { handleSearchChange(''); handleFilterChange('todos'); }}
                             className="rounded-xl text-xs font-bold"
                           >
                             Restablecer búsqueda
@@ -862,7 +844,7 @@ const AppMain = () => {
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {groupedEstablishments.map((g) => (
+                          {companyGroups.map((g) => (
                             <Card 
                               key={g.key} 
                               onClick={() => g.branches.length === 1 ? handleSelectParking(g.branches[0]) : setSelectedCompanyKey(g.key)}

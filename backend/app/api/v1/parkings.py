@@ -5,6 +5,7 @@ import secrets
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 from app.db.session import get_db
 from app.models.models import Parking, Slot, FloorPlanElement, Reservation, CameraDevice, User, Staff
 from app.schemas.schemas import (
@@ -873,11 +874,13 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
 # =======================================================
 
 class ParkingAdminCredentialsIn(BaseModel):
-    email: str = Field(..., min_length=4)
-    password: Optional[str] = Field(None, min_length=8)
+    email: str = Field(..., min_length=3)
+    password: Optional[str] = Field(None, min_length=6)
     fullName: Optional[str] = None
     full_name: Optional[str] = None
     phone: Optional[str] = None
+    previousEmail: Optional[str] = None
+    previous_email: Optional[str] = None
 
     class Config:
         populate_by_name = True
@@ -886,6 +889,10 @@ class ParkingAdminCredentialsIn(BaseModel):
     def resolved_full_name(self) -> Optional[str]:
         return self.fullName or self.full_name
 
+    @property
+    def resolved_previous_email(self) -> Optional[str]:
+        return self.previousEmail or self.previous_email
+
 
 class ParkingAdminCredentialsResponse(BaseModel):
     parking_id: int
@@ -893,7 +900,11 @@ class ParkingAdminCredentialsResponse(BaseModel):
     admin_name: Optional[str] = None
     admin_email: Optional[str] = None
     admin_phone: Optional[str] = None
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
     has_account: bool = False
+    has_admin: bool = False
     is_active: bool = True
     role: str = "local"
     temp_password: Optional[str] = None
@@ -938,7 +949,7 @@ async def get_parking_admin_credentials(
     is_active = True
     role_name = "local"
     if target_email:
-        user_res = await db.execute(select(User).where(User.email == target_email.strip().lower()))
+        user_res = await db.execute(select(User).where(func.lower(User.email) == target_email.strip().lower()))
         user = user_res.scalars().first()
         if user:
             has_account = True
@@ -953,7 +964,11 @@ async def get_parking_admin_credentials(
         admin_name=admin_name,
         admin_email=target_email,
         admin_phone=admin_phone,
+        email=target_email,
+        full_name=admin_name,
+        phone=admin_phone,
         has_account=has_account,
+        has_admin=has_account,
         is_active=is_active,
         role=role_name
     )
@@ -974,13 +989,25 @@ async def set_parking_admin_credentials(
     email = body.email.strip().lower()
     full_name = (body.resolved_full_name or parking.owner or "Administrador de Sede").strip()
     phone = (body.phone or parking.phone or "").strip() or None
+    prev_email = (body.resolved_previous_email or parking.email or "").strip().lower() or None
 
-    raw_password = body.password if body.password and len(body.password) >= 8 else f"SmartPark_{secrets.token_hex(3).upper()}!"
+    new_password = body.password.strip() if body.password and len(body.password.strip()) >= 6 else None
 
     # 1. Crear o actualizar cuenta User con rol 'local'
-    user_res = await db.execute(select(User).where(User.email == email))
+    user_res = await db.execute(select(User).where(func.lower(User.email) == email))
     user = user_res.scalars().first()
+
+    # Si no existe usuario con el nuevo email, verificar si existía con el email previo de la sede
+    if not user and prev_email and prev_email != email:
+        prev_user_res = await db.execute(select(User).where(func.lower(User.email) == prev_email))
+        prev_user = prev_user_res.scalars().first()
+        if prev_user:
+            # Migrar email del usuario existente manteniendo su contraseña y estado
+            user = prev_user
+            user.email = email
+
     if not user:
+        raw_password = new_password or f"SmartPark_{secrets.token_hex(3).upper()}!"
         user = User(
             full_name=full_name,
             email=email,
@@ -996,14 +1023,23 @@ async def set_parking_admin_credentials(
         if phone:
             user.phone = phone
         user.role = "local"
-        user.hashed_password = get_password_hash(raw_password)
         user.is_active = True
+        if new_password:
+            user.hashed_password = get_password_hash(new_password)
+            raw_password = new_password
+        else:
+            raw_password = None  # Se conserva la contraseña actual
+
     await db.commit()
     await db.refresh(user)
 
     # 2. Vincular como Staff de la sede
-    staff_res = await db.execute(select(Staff).where(Staff.email == email))
+    staff_res = await db.execute(select(Staff).where(func.lower(Staff.email) == email))
     staff_member = staff_res.scalars().first()
+    if not staff_member and prev_email:
+        prev_staff_res = await db.execute(select(Staff).where(func.lower(Staff.email) == prev_email))
+        staff_member = prev_staff_res.scalars().first()
+
     if not staff_member:
         prev_admin_res = await db.execute(
             select(Staff).where(Staff.parking_id == parking.id, Staff.position.ilike("%administrador%"))
@@ -1059,7 +1095,11 @@ async def set_parking_admin_credentials(
         admin_name=full_name,
         admin_email=email,
         admin_phone=phone,
+        email=email,
+        full_name=full_name,
+        phone=phone,
         has_account=True,
+        has_admin=True,
         is_active=True,
         role="local",
         temp_password=raw_password,

@@ -202,3 +202,101 @@ def test_approve_affiliation_with_snake_case_payload():
 
     asyncio.run(_run())
 
+
+def test_update_credentials_email_only_preserves_password():
+    """Al cambiar solo el email y dejar la contraseña vacía, la contraseña actual se debe conservar intacta."""
+    async def _run():
+        transport = ASGITransport(app=app)
+        async with AsyncSessionLocal() as db:
+            res = await db.execute(select(User).where(User.role == 'platform'))
+            superadmin = res.scalars().first()
+            if not superadmin:
+                superadmin = User(
+                    full_name='Super Admin Plataforma',
+                    email='superadmin_test@smartpark.pe',
+                    hashed_password=get_password_hash('SuperAdminPass123!'),
+                    role='platform',
+                    is_active=True
+                )
+                db.add(superadmin)
+                await db.commit()
+                await db.refresh(superadmin)
+            token = create_access_token(subject=superadmin.id)
+
+        headers = {'Authorization': f'Bearer {token}'}
+        uid = uuid.uuid4().hex[:6]
+        original_email = f'admin.orig.{uid}@smartpark.pe'
+        new_email = f'admin.nuevo.{uid}@smartpark.pe'
+        existing_password = 'PasswordOriginal2026!'
+
+        async with AsyncClient(transport=transport, base_url='http://test') as ac:
+            # 1. Crear credenciales iniciales
+            r1 = await ac.post(
+                '/api/v1/parkings/1/admin-credentials',
+                json={'email': original_email, 'password': existing_password, 'fullName': 'Admin Inicial'},
+                headers=headers
+            )
+            assert r1.status_code == 200
+
+            # 2. Login con credenciales iniciales funciona
+            l1 = await ac.post('/api/v1/auth/login', json={'email': original_email, 'password': existing_password})
+            assert l1.status_code == 200
+
+            # 3. SuperAdmin cambia SOLO el email (password=None, previous_email provisto)
+            r2 = await ac.post(
+                '/api/v1/parkings/1/admin-credentials',
+                json={'email': new_email, 'previous_email': original_email, 'fullName': 'Admin Inicial'},
+                headers=headers
+            )
+            assert r2.status_code == 200
+            assert r2.json()['admin_email'] == new_email
+
+            # 4. Login con nuevo email y la MISMA contraseña existente funciona
+            l2 = await ac.post('/api/v1/auth/login', json={'email': new_email, 'password': existing_password})
+            assert l2.status_code == 200
+            assert l2.json()['user']['email'] == new_email
+            assert l2.json()['user']['role'] == 'local'
+
+    asyncio.run(_run())
+
+
+def test_update_credentials_password_only_and_6_char_password():
+    """Actualizar la contraseña a una clave de 6 caracteres funciona y permite iniciar sesión."""
+    async def _run():
+        transport = ASGITransport(app=app)
+        async with AsyncSessionLocal() as db:
+            res = await db.execute(select(User).where(User.role == 'platform'))
+            superadmin = res.scalars().first()
+            token = create_access_token(subject=superadmin.id)
+
+        headers = {'Authorization': f'Bearer {token}'}
+        uid = uuid.uuid4().hex[:6]
+        email = f'admin.passonly.{uid}@smartpark.pe'
+        initial_pass = 'InitialPass123#'
+        new_short_pass = '123456'
+
+        async with AsyncClient(transport=transport, base_url='http://test') as ac:
+            # 1. Crear
+            r1 = await ac.post(
+                '/api/v1/parkings/1/admin-credentials',
+                json={'email': email, 'password': initial_pass},
+                headers=headers
+            )
+            assert r1.status_code == 200
+
+            # 2. Actualizar solo password con 6 caracteres
+            r2 = await ac.post(
+                '/api/v1/parkings/1/admin-credentials',
+                json={'email': email, 'password': new_short_pass},
+                headers=headers
+            )
+            assert r2.status_code == 200
+            assert r2.json()['temp_password'] == new_short_pass
+
+            # 3. Login con la nueva contraseña de 6 caracteres funciona
+            l = await ac.post('/api/v1/auth/login', json={'email': email, 'password': new_short_pass})
+            assert l.status_code == 200
+            assert l.json()['user']['role'] == 'local'
+
+    asyncio.run(_run())
+

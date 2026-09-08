@@ -372,22 +372,29 @@ export const AffiliatedParkingsModule = () => {
 
     try {
       const info = await getParkingCredentials(parking.id);
-      if (info && info.has_admin) {
+      const email = (info?.admin_email || info?.email || parking.email || '').trim();
+      const name = (info?.admin_name || info?.full_name || parking.owner || '').trim();
+      const phone = (info?.admin_phone || info?.phone || parking.phone || '').trim();
+      const hasExisting = !!(info?.has_account || info?.has_admin || info?.admin_email || parking.email);
+
+      if (hasExisting) {
         setCredentialsForm({
-          adminEmail: info.email || '',
+          adminEmail: email,
+          previousEmail: email,
           adminPassword: '',
-          adminName: info.full_name || parking.owner || '',
-          adminPhone: info.phone || parking.phone || '',
+          adminName: name,
+          adminPhone: phone,
           showPassword: false,
           hasExistingAdmin: true
         });
       } else {
         const autoPass = generateSecurePassword('SP');
         setCredentialsForm({
-          adminEmail: parking.email || '',
+          adminEmail: email,
+          previousEmail: email,
           adminPassword: autoPass,
-          adminName: parking.owner || '',
-          adminPhone: parking.phone || '',
+          adminName: name,
+          adminPhone: phone,
           showPassword: false,
           hasExistingAdmin: false
         });
@@ -410,16 +417,19 @@ export const AffiliatedParkingsModule = () => {
 
     setSavingCredentials(true);
     try {
-      const email = credentialsForm.adminEmail.trim();
+      const email = credentialsForm.adminEmail.trim().toLowerCase();
       const fullName = credentialsForm.adminName.trim();
       const phone = credentialsForm.adminPhone.trim();
-      const password = credentialsForm.adminPassword ? credentialsForm.adminPassword : undefined;
+      const password = credentialsForm.adminPassword ? credentialsForm.adminPassword.trim() : undefined;
+      const previousEmail = credentialsForm.previousEmail ? credentialsForm.previousEmail.trim().toLowerCase() : undefined;
 
       const payload = {
         email,
         full_name: fullName,
         fullName: fullName,
-        phone
+        phone,
+        previous_email: previousEmail,
+        previousEmail: previousEmail
       };
       if (password) {
         payload.password = password;
@@ -428,17 +438,15 @@ export const AffiliatedParkingsModule = () => {
       const res = await assignParkingCredentials(credentialsSede.id, payload);
       setShowCredentialsModal(false);
 
-      if (password) {
-        setCredentialsResult({
-          title: 'Credenciales de Sede Actualizadas',
-          parkingName: credentialsSede.name,
-          email,
-          password,
-          role: 'Administrador de Sede (Local)',
-          phone,
-          ownerName: fullName
-        });
-      }
+      setCredentialsResult({
+        title: 'Credenciales de Sede Actualizadas',
+        parkingName: credentialsSede.name,
+        email,
+        password: password || res?.temp_password || '(Contraseña actual mantenida sin cambios)',
+        role: 'Administrador de Sede (Local)',
+        phone,
+        ownerName: fullName
+      });
 
       notify(`✓ Credenciales guardadas para "${credentialsSede.name}"`);
     } catch (err) {

@@ -14,17 +14,27 @@ export const saveLocalUserCredential = (cred) => {
   try {
     if (!cred || !cred.email) return;
     const emailKey = cred.email.trim().toLowerCase();
+    const prevEmailKey = (cred.previousEmail || cred.previous_email || '').trim().toLowerCase();
     const existingRaw = localStorage.getItem(LOCAL_USER_CREDENTIALS_KEY);
     const existing = existingRaw ? JSON.parse(existingRaw) : {};
+
+    const prevEntry = existing[emailKey] || (prevEmailKey ? existing[prevEmailKey] : null) || (cred.parkingId ? Object.values(existing).find(c => String(c.parkingId) === String(cred.parkingId)) : null);
+    const finalPassword = cred.password || cred.temporary_password || prevEntry?.password || '';
+
     existing[emailKey] = {
       email: emailKey,
-      password: cred.password || cred.temporary_password || existing[emailKey]?.password || '',
-      full_name: cred.full_name || cred.name || cred.fullName || existing[emailKey]?.full_name || 'Administrador',
-      phone: cred.phone || existing[emailKey]?.phone || '',
-      role: cred.role || existing[emailKey]?.role || 'local',
-      parkingId: cred.parkingId || cred.establishmentId || existing[emailKey]?.parkingId || null,
+      password: finalPassword,
+      full_name: cred.full_name || cred.name || cred.fullName || prevEntry?.full_name || 'Administrador',
+      phone: cred.phone || prevEntry?.phone || '',
+      role: cred.role || prevEntry?.role || 'local',
+      parkingId: cred.parkingId || cred.establishmentId || prevEntry?.parkingId || null,
       updatedAt: new Date().toISOString()
     };
+
+    if (prevEmailKey && prevEmailKey !== emailKey && existing[prevEmailKey]) {
+      delete existing[prevEmailKey];
+    }
+
     localStorage.setItem(LOCAL_USER_CREDENTIALS_KEY, JSON.stringify(existing));
   } catch (e) {
     console.warn('saveLocalUserCredential error', e);
@@ -1072,13 +1082,21 @@ export const EstablishmentProvider = ({ children }) => {
     const fullName = credentialsData?.full_name || credentialsData?.fullName || credentialsData?.adminName || '';
     const phone = credentialsData?.phone || credentialsData?.adminPhone || '';
     const password = credentialsData?.password || credentialsData?.adminPassword || '';
+    const previousEmail = (credentialsData?.previous_email || credentialsData?.previousEmail || '').trim().toLowerCase();
+
+    // Obtener contraseña previa si la nueva no fue especificada
+    const localCreds = getLocalUserCredentials();
+    const prevCred = localCreds[email] || (previousEmail ? localCreds[previousEmail] : null) || Object.values(localCreds).find(c => String(c.parkingId) === String(parkingId));
+    const effectivePassword = password || prevCred?.password || '';
 
     const payload = {
       email,
       password: password || undefined,
       fullName: fullName || undefined,
       full_name: fullName || undefined,
-      phone: phone || undefined
+      phone: phone || undefined,
+      previous_email: previousEmail || undefined,
+      previousEmail: previousEmail || undefined
     };
 
     let serverResult = null;
@@ -1091,7 +1109,11 @@ export const EstablishmentProvider = ({ children }) => {
         await fetchParkings();
       }
     } catch (e) {
-      console.warn('assignParkingCredentials backend warning (using local sync fallback)', e);
+      console.error('assignParkingCredentials backend error', e);
+      if (e?.response?.data?.detail) {
+        throw new Error(e.response.data.detail);
+      }
+      throw e;
     }
 
     // Actualizar sede localmente (email, owner, phone)
@@ -1115,33 +1137,35 @@ export const EstablishmentProvider = ({ children }) => {
     if (email) {
       saveLocalUserCredential({
         email,
-        password,
+        password: effectivePassword,
         full_name: fullName,
         phone,
         role: 'local',
-        parkingId
+        parkingId,
+        previousEmail
       });
       const newAdmin = {
         id: Date.now(),
         name: fullName,
         email,
         phone,
-        password,
+        password: effectivePassword,
         establishmentId: String(parkingId),
         role: 'local'
       };
-      setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== email)]);
+      setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== email && (!previousEmail || a.email !== previousEmail))]);
     }
 
     return serverResult || {
       status: 'success',
       parking_id: parkingId,
       has_account: true,
+      has_admin: true,
       is_active: true,
       role: 'local',
       admin_email: email,
       admin_name: fullName,
-      temp_password: password,
+      temp_password: effectivePassword,
       message: 'Credenciales guardadas y sincronizadas'
     };
   };

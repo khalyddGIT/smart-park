@@ -31,7 +31,10 @@ import {
   CheckCircle2,
   TrendingUp,
   Sun,
-  Moon
+  Moon,
+  Star,
+  ChevronLeft,
+  Quote
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -430,6 +433,368 @@ const StickyStorytellingSection = () => {
   );
 };
 
+// 16. CARRUSEL INTERACTIVO DE TESTIMONIOS Y RESEÑAS (AYACUCHO)
+const TestimonialsCarouselSection = () => {
+  const [filter, setFilter] = useState('todos'); // 'todos' | 'conductor' | 'propietario'
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const testimonials = useMemo(() => [
+    {
+      id: 1,
+      roleType: 'conductor',
+      name: 'Carlos M. Huamán',
+      role: 'Conductor Frecuente',
+      detail: 'Toyota Yaris · Gris Plata',
+      location: 'Huamanga Centro',
+      rating: 5,
+      avatarBg: 'from-emerald-500 to-teal-700',
+      initials: 'CH',
+      quote: 'Encontrar estacionamiento un sábado por la tarde cerca a la Plaza Mayor era una pesadilla. Con Smart Park reservo desde mi casa y la cámara de garita reconoce mi placa al instante. Cero estrés y sin monedas exactas.',
+      date: 'Hace 3 días',
+      highlight: 'Entrada en 3 segundos',
+      badge: 'Conductor Verificado'
+    },
+    {
+      id: 2,
+      roleType: 'propietario',
+      name: 'Rosaura Quispe de Morales',
+      role: 'Propietaria de Cochera El Portal',
+      detail: '42 Cajones · 2 Niveles',
+      location: 'Jr. 28 de Julio, Ayacucho',
+      rating: 5,
+      avatarBg: 'from-cyan-500 to-blue-700',
+      initials: 'RQ',
+      quote: 'Antes teníamos descuadres de caja en el turno de la noche y no sabíamos cuántos autos entraban. Ahora audito los cobros en efectivo y Yape en tiempo real desde mi celular. Las reservas nos aumentaron los ingresos más de 30%.',
+      date: 'Hace 1 semana',
+      highlight: '+30% Ingresos Auditados',
+      badge: 'Cochera Verificada'
+    },
+    {
+      id: 3,
+      roleType: 'conductor',
+      name: 'Ing. Miguel Ángel Barrientos',
+      role: 'Usuario Diario por Trabajo',
+      detail: 'Kia Sportage · Negro',
+      location: 'Zona Bancaria / Poder Judicial',
+      rating: 5,
+      avatarBg: 'from-amber-500 to-orange-700',
+      initials: 'MB',
+      quote: 'El trazado de ruta 3D te guía exacto esquivando calles con tráfico o cerradas. Además, la ventana de 15 minutos de tolerancia es una tranquilidad enorme para los que lidiamos con el tráfico de Huamanga.',
+      date: 'Hace 2 semanas',
+      highlight: '15 min de Tolerancia',
+      badge: 'Conductor Verificado'
+    },
+    {
+      id: 4,
+      roleType: 'propietario',
+      name: 'David Cárdenas Pariona',
+      role: 'Administrador de Playa San Juan',
+      detail: '28 Cajones · Techado',
+      location: 'Jr. Bellido, Ayacucho',
+      rating: 5,
+      avatarBg: 'from-teal-500 to-emerald-800',
+      initials: 'DC',
+      quote: 'Diseñé el plano de mi local en 10 minutos con el editor 2D sin pagar software caro. El sistema de garita es tan rápido que el operador registra cada entrada con solo apretar la tecla Enter.',
+      date: 'Hace 5 días',
+      highlight: 'Editor 2D sin Costos',
+      badge: 'Cochera Verificada'
+    },
+    {
+      id: 5,
+      roleType: 'conductor',
+      name: 'Lucía Vivanco Rivas',
+      role: 'Emprendedora & Conductora',
+      detail: 'Hyundai Grand i10 · Rojo',
+      location: 'Mercado Magdalena & Centro',
+      rating: 5,
+      avatarBg: 'from-pink-500 to-rose-700',
+      initials: 'LV',
+      quote: 'Pagar con Yape o Plin directo y no tener que buscar monedas en la guantera a medianoche me da muchísima seguridad. El Pase Digital con QR funciona de inmediato. ¡Smart Park hacía falta en Ayacucho!',
+      date: 'Hace 4 días',
+      highlight: 'Pagos Yape/Plin Inmediatos',
+      badge: 'Conductora Verificada'
+    }
+  ], []);
+
+  const filtered = useMemo(() => {
+    if (filter === 'todos') return testimonials;
+    return testimonials.filter(t => t.roleType === filter);
+  }, [testimonials, filter]);
+
+  // Si se cambia de filtro, resetear el índice al inicio
+  const handleFilterChange = (newFilter) => {
+    setFilter(newFilter);
+    setCurrentIndex(0);
+  };
+
+  // Auto-play cada 4.5 segundos con pausa si el cursor está encima
+  useEffect(() => {
+    if (isPaused || filtered.length <= 1) return;
+    const timer = setInterval(() => {
+      setDirection(1);
+      setCurrentIndex((prev) => (prev + 1) % filtered.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [isPaused, filtered.length]);
+
+  const paginate = (newDirection) => {
+    setDirection(newDirection);
+    if (newDirection === 1) {
+      setCurrentIndex((prev) => (prev + 1) % filtered.length);
+    } else {
+      setCurrentIndex((prev) => (prev - 1 + filtered.length) % filtered.length);
+    }
+  };
+
+  const item = filtered[currentIndex] || filtered[0];
+
+  const variants = {
+    enter: (dir) => ({
+      x: dir > 0 ? 100 : -100,
+      opacity: 0,
+      scale: 0.96
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        x: { type: 'spring', stiffness: 280, damping: 28 },
+        opacity: { duration: 0.35 },
+        scale: { duration: 0.35 }
+      }
+    },
+    exit: (dir) => ({
+      x: dir > 0 ? -100 : 100,
+      opacity: 0,
+      scale: 0.96,
+      transition: {
+        x: { type: 'spring', stiffness: 280, damping: 28 },
+        opacity: { duration: 0.25 },
+        scale: { duration: 0.25 }
+      }
+    })
+  };
+
+  return (
+    <CinematicScrollSection id="testimonios" className="py-14 sm:py-24 px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto space-y-10">
+      
+      {/* Encabezado de la Sección */}
+      <div className="max-w-2xl mx-auto text-center space-y-3">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold tracking-wide">
+          <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>EXPERIENCIAS REALES EN AYACUCHO</span>
+        </div>
+
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-[#002B29] dark:text-[#DFF7F0] tracking-tight">
+          La confianza de quienes ya <span className="text-[#004D49] dark:text-emerald-300">estacionan sin vueltas</span>
+        </h2>
+        
+        <p className="text-xs sm:text-sm text-[#004D49]/80 dark:text-emerald-200/80 font-medium max-w-xl mx-auto">
+          Conductores y administradores de playas en Huamanga comparten cómo Smart Park modernizó su día a día.
+        </p>
+
+        {/* Resumen de Calificación Social Proof */}
+        <div className="pt-2 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <div className="flex items-center gap-1">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400 drop-shadow-xs" />
+            ))}
+          </div>
+          <span className="font-extrabold text-slate-900 dark:text-white font-mono">4.9 / 5.0</span>
+          <span className="text-slate-400">•</span>
+          <span>Basado en más de 350 conductores y 18 sedes</span>
+        </div>
+      </div>
+
+      {/* Selector de Filtros por Categoría */}
+      <div className="flex justify-center">
+        <div className="inline-flex p-1 rounded-2xl bg-slate-200/70 dark:bg-slate-800/80 border border-slate-300/60 dark:border-slate-700 backdrop-blur-md shadow-inner text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => handleFilterChange('todos')}
+            className={`px-4 py-1.5 rounded-xl transition cursor-pointer ${
+              filter === 'todos'
+                ? 'bg-white dark:bg-[#0f1d30] text-emerald-800 dark:text-emerald-300 shadow-xs border border-slate-200/60 dark:border-emerald-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Todos ({testimonials.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => handleFilterChange('conductor')}
+            className={`px-4 py-1.5 rounded-xl transition cursor-pointer ${
+              filter === 'conductor'
+                ? 'bg-white dark:bg-[#0f1d30] text-emerald-800 dark:text-emerald-300 shadow-xs border border-slate-200/60 dark:border-emerald-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Conductores ({testimonials.filter(t => t.roleType === 'conductor').length})
+          </button>
+          <button
+            type="button"
+            onClick={() => handleFilterChange('propietario')}
+            className={`px-4 py-1.5 rounded-xl transition cursor-pointer ${
+              filter === 'propietario'
+                ? 'bg-white dark:bg-[#0f1d30] text-emerald-800 dark:text-emerald-300 shadow-xs border border-slate-200/60 dark:border-emerald-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Dueños de Cochera ({testimonials.filter(t => t.roleType === 'propietario').length})
+          </button>
+        </div>
+      </div>
+
+      {/* Contenedor del Carrusel Animado */}
+      <div
+        className="relative max-w-3xl mx-auto"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        {/* Glow de fondo */}
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 rounded-3xl blur-2xl -z-10 pointer-events-none" />
+
+        {/* Tarjeta del Slide con Gestos Táctiles y Transición de Resorte */}
+        <div className="overflow-hidden min-h-[300px] sm:min-h-[260px] flex items-center justify-center p-1 sm:p-2">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={item.id}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.25}
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -40 || info.velocity.x < -300) {
+                  paginate(1);
+                } else if (info.offset.x > 40 || info.velocity.x > 300) {
+                  paginate(-1);
+                }
+              }}
+              className="w-full bg-white/95 dark:bg-[#0c1626]/95 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-[#004D49]/20 dark:border-slate-800 shadow-[0_20px_50px_rgba(0,77,73,0.12)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col justify-between space-y-6 select-none cursor-grab active:cursor-grabbing"
+            >
+              {/* Header de la Tarjeta */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  {/* Avatar con Gradiente */}
+                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.avatarBg} text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-emerald-950/20 shrink-0`}>
+                    {item.initials}
+                  </div>
+
+                  {/* Nombre y Rol */}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">
+                        {item.name}
+                      </h3>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        {item.badge}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-[#004D49] dark:text-emerald-300/90 font-semibold mt-0.5">
+                      {item.role} <span className="text-slate-400 font-normal">· {item.detail}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tag de Destacado */}
+                <div className="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 shrink-0">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span>{item.highlight}</span>
+                </div>
+              </div>
+
+              {/* Comentario y Comilla */}
+              <div className="relative pl-1 sm:pl-2">
+                <Quote className="w-8 h-8 text-emerald-500/20 dark:text-emerald-400/20 absolute -top-3 -left-2 rotate-180 -z-10" />
+                <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-relaxed font-normal italic">
+                  "{item.quote}"
+                </p>
+              </div>
+
+              {/* Footer de la tarjeta con Estrellas y Fecha */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="flex text-amber-400">
+                    {[...Array(item.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-amber-400" />
+                    ))}
+                  </div>
+                  <span className="font-extrabold text-slate-900 dark:text-white font-mono ml-1">5.0</span>
+                  <span className="text-slate-400 hidden sm:inline">·</span>
+                  <span className="text-slate-500 dark:text-slate-400 hidden sm:inline flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-emerald-500" /> {item.location}
+                  </span>
+                </div>
+
+                <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                  {item.date}
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Botones Flotantes Prev / Next */}
+        <button
+          type="button"
+          onClick={() => paginate(-1)}
+          className="absolute -left-3 sm:-left-6 top-1/2 -translate-y-1/2 w-10 sm:w-12 h-10 sm:h-12 rounded-2xl bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 shadow-lg hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer z-20 backdrop-blur-md group"
+          aria-label="Testimonio anterior"
+        >
+          <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-slate-200 group-hover:-translate-x-0.5 transition-transform" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => paginate(1)}
+          className="absolute -right-3 sm:-right-6 top-1/2 -translate-y-1/2 w-10 sm:w-12 h-10 sm:h-12 rounded-2xl bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 shadow-lg hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer z-20 backdrop-blur-md group"
+          aria-label="Siguiente testimonio"
+        >
+          <ChevronRight className="w-5 h-5 text-slate-700 dark:text-slate-200 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+
+        {/* Indicadores de Paginación (Pills) */}
+        <div className="flex items-center justify-center gap-2 pt-6">
+          {filtered.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                setDirection(i > currentIndex ? 1 : -1);
+                setCurrentIndex(i);
+              }}
+              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                currentIndex === i
+                  ? 'w-8 bg-[#004D49] dark:bg-emerald-400'
+                  : 'w-2 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
+              }`}
+              aria-label={`Ir al testimonio ${i + 1}`}
+            />
+          ))}
+        </div>
+
+        {/* Nota interactiva sutil */}
+        <p className="text-[11px] text-center text-slate-400 dark:text-slate-500 font-medium pt-2 flex items-center justify-center gap-1.5">
+          <span>Desliza para explorar</span>
+          <span>•</span>
+          <span>Se pausa al pasar el cursor</span>
+        </p>
+
+      </div>
+
+    </CinematicScrollSection>
+  );
+};
+
 export const LandingPage = ({
   establishments = [],
   onOpenAuth,
@@ -592,6 +957,9 @@ export const LandingPage = ({
             <a href="#caracteristicas" className="px-3.5 py-1.5 rounded-xl text-emerald-100/90 hover:text-white hover:bg-white/10 transition-all duration-200">
               Tecnología
             </a>
+            <a href="#testimonios" className="px-3.5 py-1.5 rounded-xl text-emerald-100/90 hover:text-white hover:bg-white/10 transition-all duration-200">
+              Testimonios
+            </a>
           </nav>
 
           <div className="flex items-center space-x-2 sm:space-x-3">
@@ -645,6 +1013,7 @@ export const LandingPage = ({
               <a href="#mapa" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Mapa 3D en Vivo</a>
               <a href="#perspectiva" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Conductores & Dueños</a>
               <a href="#caracteristicas" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Tecnología</a>
+              <a href="#testimonios" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Testimonios</a>
               <div className="pt-2 border-t border-emerald-500/20 flex flex-col gap-2">
                 <button type="button" onClick={toggleTheme} className="w-full py-2.5 bg-white/10 text-emerald-200 hover:text-white rounded-xl text-center font-bold flex items-center justify-center gap-2">
                   {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-emerald-200" />}
@@ -1074,6 +1443,11 @@ export const LandingPage = ({
           15. STICKY STORYTELLING: SECCIÓN PRINCIPAL
           ========================================================================= */}
       <StickyStorytellingSection />
+
+      {/* =========================================================================
+          16. CARRUSEL INTERACTIVO DE TESTIMONIOS Y RESEÑAS
+          ========================================================================= */}
+      <TestimonialsCarouselSection />
 
       {/* =========================================================================
           PREGUNTAS FRECUENTES (FAQS ACCORDION)

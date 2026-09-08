@@ -266,7 +266,16 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [hours, setHours] = useState(2);
   const [stayMinutes, setStayMinutes] = useState(60);
+  const [isOpenStay, setIsOpenStay] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState(15);
+
+  useEffect(() => {
+    const defaultTol = Number(parking?.tolerance ?? parking?.tolerance_minutes ?? 15);
+    if (!isNaN(defaultTol) && defaultTol > 0) {
+      setEtaMinutes(defaultTol);
+    }
+  }, [parking?.tolerance, parking?.tolerance_minutes]);
+
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [selectedPlate, setSelectedPlate] = useState('');
@@ -607,8 +616,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       vehicleType: vehicleCategory,
       parkingId: numericParkingId,
       parkingName: parking?.name || 'Smart Park Central',
-      hours: stayHours,
-      estimatedHours: Math.max(1, Math.round(stayHours)),
+      hours: isOpenStay ? 1 : stayHours,
+      estimatedHours: isOpenStay ? 1 : Math.max(1, Math.round(stayHours)),
+      isOpenStay: !!isOpenStay,
+      is_open_stay: !!isOpenStay,
       billingUnit: isMinuteBilling ? 'minute' : 'hour',
       estimatedMinutes: actualStayMinutes,
       isNightShift: isNightShiftActive,
@@ -1148,20 +1159,28 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
             {/* Tiempo Estimado de Llegada (ETA) */}
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
-                Tiempo Estimado de Llegada (ETA)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-300">
+                  Tiempo Estimado de Llegada (ETA)
+                </label>
+                {(parking?.tolerance || parking?.tolerance_minutes) && (
+                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">
+                    Tolerancia local: {parking?.tolerance || parking?.tolerance_minutes} min
+                  </span>
+                )}
+              </div>
               <select
                 value={etaMinutes}
                 onChange={(e) => setEtaMinutes(Number(e.target.value))}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl h-9 px-3 text-xs font-mono font-semibold text-white outline-none cursor-pointer focus:border-emerald-500"
               >
-                <option value={10}>10 minutos</option>
-                <option value={15}>15 minutos</option>
-                <option value={20}>20 minutos</option>
-                <option value={30}>30 minutos</option>
-                <option value={45}>45 minutos</option>
-                <option value={60}>1 hora (60 min)</option>
+                {Array.from(new Set([10, 15, 20, 25, 30, 45, 60, Number(parking?.tolerance ?? parking?.tolerance_minutes ?? 15)].filter(n => typeof n === 'number' && n > 0)))
+                  .sort((a, b) => a - b)
+                  .map((val) => (
+                    <option key={val} value={val}>
+                      {val} minutos {val === Number(parking?.tolerance ?? parking?.tolerance_minutes) ? '(Tolerancia oficial del local)' : ''}
+                    </option>
+                  ))}
               </select>
             </div>
 
@@ -1172,7 +1191,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   {isMinuteBilling ? 'Tiempo Estimado de Estadía (Fracción Minutos)' : 'Tiempo Estimado de Estadía'}
                 </label>
                 <span className="text-xs font-mono font-bold text-emerald-400">
-                  {isMinuteBilling 
+                  {isOpenStay 
+                    ? 'Hora (Libre) • Abierto'
+                    : isMinuteBilling 
                     ? `${actualStayMinutes} min (${(actualStayMinutes/60).toFixed(1)}h)`
                     : `${stayHours} ${stayHours === 1 ? 'hora' : 'horas'}`}
                 </span>
@@ -1181,13 +1202,30 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               {isMinuteBilling ? (
                 <>
                   <div className="flex items-center gap-1.5 flex-wrap">
+                    {parking?.allow_open_stay !== false && (
+                      <button
+                        type="button"
+                        onClick={() => setIsOpenStay(true)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
+                          isOpenStay
+                            ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
+                            : 'bg-slate-950 text-emerald-400 hover:text-emerald-300 border border-emerald-800/60'
+                        }`}
+                      >
+                        <Clock className="w-3 h-3" />
+                        <span>Hora (libre)</span>
+                      </button>
+                    )}
                     {[15, 30, 45, 60, 90, 120, 180, 240, 360, 480].filter(m => m >= minStayMin && m <= maxStayMin).map((m) => (
                       <button
                         key={m}
                         type="button"
-                        onClick={() => setStayMinutes(m)}
+                        onClick={() => {
+                          setIsOpenStay(false);
+                          setStayMinutes(m);
+                        }}
                         className={`flex-1 min-w-[42px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-                          actualStayMinutes === m
+                          !isOpenStay && actualStayMinutes === m
                             ? 'bg-emerald-600 text-white shadow-sm'
                             : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                         }`}
@@ -1197,19 +1235,38 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     ))}
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1">
-                    Tarifa por minuto: mín {minStayMin} min, máx {maxStayMin} min ({((maxStayMin)/60).toFixed(1)}h).
+                    {isOpenStay 
+                      ? '⏱️ Estadía libre: Pagas en garita según el tiempo exacto transcurrido.'
+                      : `Tarifa por minuto: mín ${minStayMin} min, máx ${maxStayMin} min (${((maxStayMin)/60).toFixed(1)}h).`}
                   </p>
                 </>
               ) : (
                 <>
                   <div className="flex items-center gap-1.5 flex-wrap">
+                    {parking?.allow_open_stay !== false && (
+                      <button
+                        type="button"
+                        onClick={() => setIsOpenStay(true)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
+                          isOpenStay
+                            ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
+                            : 'bg-slate-950 text-emerald-400 hover:text-emerald-300 border border-emerald-800/60'
+                        }`}
+                      >
+                        <Clock className="w-3 h-3" />
+                        <span>Hora (libre)</span>
+                      </button>
+                    )}
                     {[1, 2, 3, 4, 6, 8, 12, 24].filter(h => h >= minStay && h <= maxStay).map((h) => (
                       <button
                         key={h}
                         type="button"
-                        onClick={() => setHours(h)}
+                        onClick={() => {
+                          setIsOpenStay(false);
+                          setHours(h);
+                        }}
                         className={`flex-1 min-w-[34px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-                          stayHours === h
+                          !isOpenStay && stayHours === h
                             ? 'bg-emerald-600 text-white'
                             : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                         }`}
@@ -1219,7 +1276,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     ))}
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1">
-                    Límites de esta cochera: mín {minStay}h, máx {maxStay}h.
+                    {isOpenStay 
+                      ? '⏱️ Estadía libre: Sin límite forzado. Pagas en garita al salir según las horas consumidas.'
+                      : `Límites de esta cochera: mín ${minStay}h, máx ${maxStay}h.`}
                   </p>
                 </>
               )}
@@ -1296,8 +1355,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
               <div className="flex justify-between text-slate-400">
                 <span>Estadía estimada:</span>
-                <span className="text-slate-200">
-                  {isMinuteBilling 
+                <span className={`font-bold ${isOpenStay ? 'text-emerald-400' : 'text-slate-200'}`}>
+                  {isOpenStay 
+                    ? 'Hora (Libre) • Tiempo Abierto'
+                    : isMinuteBilling 
                     ? `${actualStayMinutes} min (${(actualStayMinutes/60).toFixed(1)}h)`
                     : `${stayHours} ${stayHours === 1 ? 'hora' : 'horas'}`}
                 </span>

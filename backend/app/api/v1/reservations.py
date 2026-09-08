@@ -132,6 +132,7 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
     resp.estimated_minutes = getattr(r, "estimated_minutes", 60) or 60
     resp.is_night_shift = bool(getattr(r, "is_night_shift", False))
     resp.prepaid = bool(getattr(r, "prepaid", False))
+    resp.is_open_stay = bool(getattr(r, "is_open_stay", False))
 
     return resp
 
@@ -424,7 +425,8 @@ async def create_reservation(
         billing_unit=billing_unit,
         estimated_minutes=estimated_minutes,
         is_night_shift=is_night,
-        prepaid=is_prepaid
+        prepaid=is_prepaid,
+        is_open_stay=bool(getattr(res_in, "is_open_stay", False))
     )
 
     slot.status = "reserved"

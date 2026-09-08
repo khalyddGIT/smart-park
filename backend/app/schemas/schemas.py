@@ -174,11 +174,17 @@ class ParkingBase(BaseModel):
     status: Optional[str] = "active"
     total_capacity: int = Field(default=30, gt=0)
     image_url: Optional[str] = None
+    owner: Optional[str] = None
+    ruc: Optional[str] = None
     description: Optional[str] = None
     phone: Optional[str] = None
+    whatsapp: Optional[str] = None
     email: Optional[str] = None
+    schedule: Optional[str] = None
     reference: Optional[str] = None
     level: Optional[str] = None
+    maps_url: Optional[str] = None
+    socials: Optional[str] = None
     camera_url: Optional[str] = None
     camera_enabled: Optional[bool] = False
     camera_calibration: Optional[str] = None
@@ -209,6 +215,7 @@ class ParkingBase(BaseModel):
     reservation_fee: Optional[float] = Field(default=0.0, ge=0)
     min_stay_hours: Optional[int] = Field(default=1, ge=1, le=24)
     max_stay_hours: Optional[int] = Field(default=24, ge=1, le=168)
+    allow_open_stay: Optional[bool] = True
 
 
 class ParkingCreate(ParkingBase):
@@ -225,11 +232,17 @@ class ParkingUpdate(BaseModel):
     status: Optional[str] = None
     total_capacity: Optional[int] = None
     image_url: Optional[str] = None
+    owner: Optional[str] = None
+    ruc: Optional[str] = None
     description: Optional[str] = None
     phone: Optional[str] = None
+    whatsapp: Optional[str] = None
     email: Optional[str] = None
+    schedule: Optional[str] = None
     reference: Optional[str] = None
     level: Optional[str] = None
+    maps_url: Optional[str] = None
+    socials: Optional[str] = None
     camera_url: Optional[str] = None
     camera_enabled: Optional[bool] = None
     camera_calibration: Optional[str] = None
@@ -252,6 +265,7 @@ class ParkingUpdate(BaseModel):
     reservation_fee: Optional[float] = None
     min_stay_hours: Optional[int] = None
     max_stay_hours: Optional[int] = None
+    allow_open_stay: Optional[bool] = None
 
 class ParkingResponse(ParkingBase):
     id: int
@@ -421,6 +435,7 @@ class ReservationCreate(BaseModel):
     estimated_hours: Optional[int] = Field(default=1, ge=1, le=168)
     billing_unit: Optional[str] = "hour"
     estimated_minutes: Optional[int] = Field(default=60, ge=1, le=10080)
+    is_open_stay: Optional[bool] = False
 
     @field_validator('license_plate')
     @classmethod
@@ -476,6 +491,7 @@ class ReservationResponse(BaseModel):
     estimated_minutes: Optional[int] = 60
     is_night_shift: Optional[bool] = False
     prepaid: Optional[bool] = False
+    is_open_stay: Optional[bool] = False
 
     class Config:
         from_attributes = True

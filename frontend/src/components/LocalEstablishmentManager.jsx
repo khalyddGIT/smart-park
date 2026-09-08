@@ -329,6 +329,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     reservation_fee: 0.00,
     min_stay_hours: 1,
     max_stay_hours: 24,
+    allow_open_stay: true,
     tolerance: 15,
     status: 'Operativo',
     owner: '',
@@ -501,6 +502,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       reservation_fee: 0.00,
       min_stay_hours: 1,
       max_stay_hours: 24,
+      allow_open_stay: true,
       tolerance: 15,
       status: 'Operativo',
       owner: 'Administración Cochera Huamanga',
@@ -555,6 +557,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       reservation_fee: Number(est.reservation_fee || 0.0),
       min_stay_hours: Number(est.min_stay_hours || 1),
       max_stay_hours: Number(est.max_stay_hours || 24),
+      allow_open_stay: est.allow_open_stay !== undefined ? !!est.allow_open_stay : true,
       tolerance: est.tolerance ?? est.tolerance_minutes ?? 15,
       status: est.status || 'Operativo',
       owner: est.owner || '',
@@ -575,128 +578,135 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
   };
 
   // Guardar formulario
-  const handleSaveForm = (e) => {
+  const handleSaveForm = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       alert('Por favor ingresa el nombre de la sede.');
       return;
     }
 
-    if (isEditingNew) {
-      const defaultNewElements = [
-        { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
-        { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
-        { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
-        { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
-        { id: 5, type: 'road', x: 60, y: 280, w: 980, h: 120, rot: 0, label: 'CARRIL VIAL PRINCIPAL' },
-        { id: 6, type: 'crosswalk', x: 520, y: 280, w: 80, h: 120, rot: 0 },
-        { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'GARITA ANPR' },
-        { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-        { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 180, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-        { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 265, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
-        { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 350, y: 70, w: 80, h: 140, rot: 0, status: 'free' },
-        { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
-        { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 165, y: 470, w: 50, h: 140, rot: 0, status: 'free' }
-      ];
+    try {
+      if (isEditingNew) {
+        const defaultNewElements = [
+          { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
+          { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
+          { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
+          { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
+          { id: 5, type: 'road', x: 60, y: 280, w: 980, h: 120, rot: 0, label: 'CARRIL VIAL PRINCIPAL' },
+          { id: 6, type: 'crosswalk', x: 520, y: 280, w: 80, h: 120, rot: 0 },
+          { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'GARITA ANPR' },
+          { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
+          { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 180, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
+          { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 265, y: 70, w: 75, h: 140, rot: 0, status: 'free' },
+          { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 350, y: 70, w: 80, h: 140, rot: 0, status: 'free' },
+          { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 470, w: 75, h: 140, rot: 0, status: 'free' },
+          { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 165, y: 470, w: 50, h: 140, rot: 0, status: 'free' }
+        ];
 
-      const newEst = {
-        id: `EST-${Math.floor(10 + Math.random() * 90)}`,
-        name: formData.name,
-        address: formData.address,
-        reference: formData.reference,
-        city: formData.city || 'Ayacucho - Huamanga',
-        level: formData.level,
-        rate: Number(formData.rate) || 5.00,
-        rate_auto: Number(formData.rate_auto) || 5.00,
-        rate_suv: Number(formData.rate_suv) || 7.00,
-        rate_mototaxi: Number(formData.rate_mototaxi) || 3.50,
-        rate_moto: Number(formData.rate_moto) || 2.50,
-        billing_unit: formData.billing_unit || 'hour',
-        rate_minute_auto: Number(formData.rate_minute_auto) || 0.08,
-        rate_minute_suv: Number(formData.rate_minute_suv) || 0.12,
-        rate_minute_mototaxi: Number(formData.rate_minute_mototaxi) || 0.06,
-        rate_minute_moto: Number(formData.rate_minute_moto) || 0.04,
-        min_stay_minutes: Number(formData.min_stay_minutes) || 15,
-        max_stay_minutes: Number(formData.max_stay_minutes) || 1440,
-        night_shift_enabled: !!formData.night_shift_enabled,
-        night_shift_start: formData.night_shift_start || '20:00',
-        night_shift_end: formData.night_shift_end || '06:00',
-        night_shift_surcharge: Number(formData.night_shift_surcharge) || 0.0,
-        require_reservation_prepay: !!formData.require_reservation_prepay,
-        reservation_fee: Number(formData.reservation_fee) || 0.0,
-        min_stay_hours: Number(formData.min_stay_hours) || 1,
-        max_stay_hours: Number(formData.max_stay_hours) || 24,
-        tolerance: Math.max(5, Math.min(60, Number(formData.tolerance) || 15)),
-        totalSlots: 6,
-        status: formData.status,
-        owner: formData.owner || 'Administración Local',
-        ruc: formData.ruc,
-        phone: formData.phone,
-        whatsapp: formData.whatsapp,
-        email: formData.email,
-        schedule: formData.schedule,
-        description: formData.description,
-        image: formData.image,
-        latitude: Number(formData.latitude) || -13.1604,
-        longitude: Number(formData.longitude) || -74.2259,
-        mapsUrl: formData.mapsUrl || `https://maps.google.com/?q=${formData.latitude},${formData.longitude}`,
-        socials: formData.socials,
-        commission: '12%',
-        elements: defaultNewElements
-      };
+        const newEst = {
+          id: `EST-${Math.floor(10 + Math.random() * 90)}`,
+          name: formData.name,
+          address: formData.address,
+          reference: formData.reference,
+          city: formData.city || 'Ayacucho - Huamanga',
+          level: formData.level,
+          rate: Number(formData.rate) || 5.00,
+          rate_auto: Number(formData.rate_auto) || 5.00,
+          rate_suv: Number(formData.rate_suv) || 7.00,
+          rate_mototaxi: Number(formData.rate_mototaxi) || 3.50,
+          rate_moto: Number(formData.rate_moto) || 2.50,
+          billing_unit: formData.billing_unit || 'hour',
+          rate_minute_auto: Number(formData.rate_minute_auto) || 0.08,
+          rate_minute_suv: Number(formData.rate_minute_suv) || 0.12,
+          rate_minute_mototaxi: Number(formData.rate_minute_mototaxi) || 0.06,
+          rate_minute_moto: Number(formData.rate_minute_moto) || 0.04,
+          min_stay_minutes: Number(formData.min_stay_minutes) || 15,
+          max_stay_minutes: Number(formData.max_stay_minutes) || 1440,
+          night_shift_enabled: !!formData.night_shift_enabled,
+          night_shift_start: formData.night_shift_start || '20:00',
+          night_shift_end: formData.night_shift_end || '06:00',
+          night_shift_surcharge: Number(formData.night_shift_surcharge) || 0.0,
+          require_reservation_prepay: !!formData.require_reservation_prepay,
+          reservation_fee: Number(formData.reservation_fee) || 0.0,
+          min_stay_hours: Number(formData.min_stay_hours) || 1,
+          max_stay_hours: Number(formData.max_stay_hours) || 24,
+          allow_open_stay: formData.allow_open_stay !== undefined ? !!formData.allow_open_stay : true,
+          tolerance: Math.max(5, Math.min(60, Number(formData.tolerance) || 15)),
+          totalSlots: 6,
+          status: formData.status,
+          owner: formData.owner || 'Administración Local',
+          ruc: formData.ruc,
+          phone: formData.phone,
+          whatsapp: formData.whatsapp,
+          email: formData.email,
+          schedule: formData.schedule,
+          description: formData.description,
+          image: formData.image,
+          latitude: Number(formData.latitude) || -13.1604,
+          longitude: Number(formData.longitude) || -74.2259,
+          mapsUrl: formData.mapsUrl || `https://maps.google.com/?q=${formData.latitude},${formData.longitude}`,
+          socials: formData.socials,
+          commission: '12%',
+          elements: defaultNewElements
+        };
 
-      addEstablishment(newEst);
-      showToast(`✓ Sede "${newEst.name}" registrada exitosamente.`);
-    } else {
-      if (!selectedEstablishment) return;
+        await addEstablishment(newEst);
+        showToast(`✓ Sede "${newEst.name}" registrada exitosamente.`);
+      } else {
+        if (!selectedEstablishment) return;
 
-      const updated = {
-        name: formData.name,
-        address: formData.address,
-        reference: formData.reference,
-        city: formData.city,
-        level: formData.level,
-        rate: Number(formData.rate) || 5.00,
-        rate_auto: Number(formData.rate_auto) || 5.00,
-        rate_suv: Number(formData.rate_suv) || 7.00,
-        rate_mototaxi: Number(formData.rate_mototaxi) || 3.50,
-        rate_moto: Number(formData.rate_moto) || 2.50,
-        billing_unit: formData.billing_unit || 'hour',
-        rate_minute_auto: Number(formData.rate_minute_auto) || 0.08,
-        rate_minute_suv: Number(formData.rate_minute_suv) || 0.12,
-        rate_minute_mototaxi: Number(formData.rate_minute_mototaxi) || 0.06,
-        rate_minute_moto: Number(formData.rate_minute_moto) || 0.04,
-        min_stay_minutes: Number(formData.min_stay_minutes) || 15,
-        max_stay_minutes: Number(formData.max_stay_minutes) || 1440,
-        night_shift_enabled: !!formData.night_shift_enabled,
-        night_shift_start: formData.night_shift_start || '20:00',
-        night_shift_end: formData.night_shift_end || '06:00',
-        night_shift_surcharge: Number(formData.night_shift_surcharge) || 0.0,
-        require_reservation_prepay: !!formData.require_reservation_prepay,
-        reservation_fee: Number(formData.reservation_fee) || 0.0,
-        min_stay_hours: Number(formData.min_stay_hours) || 1,
-        max_stay_hours: Number(formData.max_stay_hours) || 24,
-        tolerance: Math.max(5, Math.min(60, Number(formData.tolerance) || 15)),
-        status: formData.status,
-        owner: formData.owner,
-        ruc: formData.ruc,
-        phone: formData.phone,
-        whatsapp: formData.whatsapp,
-        email: formData.email,
-        schedule: formData.schedule,
-        description: formData.description,
-        image: formData.image,
-        latitude: Number(formData.latitude) || -13.1604,
-        longitude: Number(formData.longitude) || -74.2259,
-        mapsUrl: formData.mapsUrl,
-        socials: formData.socials
-      };
+        const updated = {
+          name: formData.name,
+          address: formData.address,
+          reference: formData.reference,
+          city: formData.city,
+          level: formData.level,
+          rate: Number(formData.rate) || 5.00,
+          rate_auto: Number(formData.rate_auto) || 5.00,
+          rate_suv: Number(formData.rate_suv) || 7.00,
+          rate_mototaxi: Number(formData.rate_mototaxi) || 3.50,
+          rate_moto: Number(formData.rate_moto) || 2.50,
+          billing_unit: formData.billing_unit || 'hour',
+          rate_minute_auto: Number(formData.rate_minute_auto) || 0.08,
+          rate_minute_suv: Number(formData.rate_minute_suv) || 0.12,
+          rate_minute_mototaxi: Number(formData.rate_minute_mototaxi) || 0.06,
+          rate_minute_moto: Number(formData.rate_minute_moto) || 0.04,
+          min_stay_minutes: Number(formData.min_stay_minutes) || 15,
+          max_stay_minutes: Number(formData.max_stay_minutes) || 1440,
+          night_shift_enabled: !!formData.night_shift_enabled,
+          night_shift_start: formData.night_shift_start || '20:00',
+          night_shift_end: formData.night_shift_end || '06:00',
+          night_shift_surcharge: Number(formData.night_shift_surcharge) || 0.0,
+          require_reservation_prepay: !!formData.require_reservation_prepay,
+          reservation_fee: Number(formData.reservation_fee) || 0.0,
+          min_stay_hours: Number(formData.min_stay_hours) || 1,
+          max_stay_hours: Number(formData.max_stay_hours) || 24,
+          allow_open_stay: formData.allow_open_stay !== undefined ? !!formData.allow_open_stay : true,
+          tolerance: Math.max(5, Math.min(60, Number(formData.tolerance) || 15)),
+          status: formData.status,
+          owner: formData.owner,
+          ruc: formData.ruc,
+          phone: formData.phone,
+          whatsapp: formData.whatsapp,
+          email: formData.email,
+          schedule: formData.schedule,
+          description: formData.description,
+          image: formData.image,
+          latitude: Number(formData.latitude) || -13.1604,
+          longitude: Number(formData.longitude) || -74.2259,
+          mapsUrl: formData.mapsUrl,
+          socials: formData.socials
+        };
 
-      updateEstablishment(selectedEstablishment.id, updated);
-      showToast(`✓ Datos y coordenadas de "${formData.name}" actualizados.`);
+        await updateEstablishment(selectedEstablishment.id, updated);
+        showToast(`✓ Datos y coordenadas de "${formData.name}" guardados y persistidos.`);
+      }
+
+      setActiveViewMode('list');
+    } catch (err) {
+      console.error('Error al guardar sede:', err);
+      showToast('Ocurrió un error al guardar la sede en el servidor.');
     }
-
-    setActiveViewMode('list');
   };
 
   // Eliminar establecimiento
@@ -1674,6 +1684,33 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             />
                             <p className="text-[11px] text-slate-500">
                               Monto fijo adicional por gestión de reserva (S/ 0.00 si no aplica).
+                            </p>
+                          </div>
+
+                          {/* Opción Hora (Libre) */}
+                          <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Opción "Hora (Libre)" en Reservas</span>
+                              </label>
+                              <label className="relative inline-flex items-center cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.allow_open_stay !== false}
+                                  onChange={(e) => setFormData({ ...formData, allow_open_stay: e.target.checked })}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                                <span className="ml-2 text-xs font-semibold text-slate-700">
+                                  {formData.allow_open_stay !== false ? 'Habilitado' : 'Desactivado'}
+                                </span>
+                              </label>
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-snug">
+                              {formData.allow_open_stay !== false 
+                                ? 'Habilitado: Los clientes verán la opción "Hora (libre)" al reservar plaza. Podrán ingresar y permanecer el tiempo que necesiten sin fijar un límite rígido; el cobro final se liquidará en garita por el tiempo real utilizado.'
+                                : 'Desactivado: Los clientes deberán seleccionar obligatoriamente una cantidad fija de horas para confirmar su reserva.'}
                             </p>
                           </div>
 

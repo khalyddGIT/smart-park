@@ -329,3 +329,141 @@ async def test_reservation_pricing_by_minute_billing_unit():
         assert res_data["total_cost"] == 3.00
         assert res_data["estimated_minutes"] == 30
 
+
+@pytest.mark.asyncio
+async def test_local_admin_can_update_all_establishment_profile_and_contact_fields():
+    """Verifica que el admin local pueda editar y persistir todos los datos de la sede:
+    owner, ruc, whatsapp, schedule, socials, maps_url, description, etc."""
+    token, _ = await _register_and_get_token(role="local")
+    admin_headers = {"Authorization": f"Bearer {token}"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+
+        # Crear cochera
+        p_res = await ac.post("/api/v1/parkings", headers=admin_headers, json={
+            "name": "Cochera Test Perfil",
+            "address": "Jr. 28 de Julio 123",
+            "city": "Ayacucho",
+            "latitude": -13.1604,
+            "longitude": -74.2259,
+            "hourly_rate": 5.0,
+            "owner": "Empresa Inicial",
+            "ruc": "20123456789",
+            "phone": "+51 966 000 111",
+            "whatsapp": "51966000111",
+            "schedule": "Lunes a Domingo: 24 Horas"
+        })
+        assert p_res.status_code == 201, p_res.text
+        pid = p_res.json()["id"]
+
+        # Actualizar todos los campos como lo hace Editar Sede
+        update_payload = {
+            "name": "Smart Park Plaza Mayor - Centro Histórico",
+            "address": "Portal Unión 42, Huamanga",
+            "reference": "A media cuadra de la Catedral",
+            "city": "Ayacucho - Huamanga",
+            "level": "Nivel 1 - Superficie",
+            "owner": "Inversiones Plaza Mayor Huamanga SAC",
+            "ruc": "20608945123",
+            "phone": "+51 966 123 456",
+            "whatsapp": "51966123456",
+            "email": "contacto@plazamayorpark.pe",
+            "schedule": "Lunes a Domingo: 06:00 - 23:00",
+            "description": "Estacionamiento seguro con garita ANPR en el centro de Huamanga.",
+            "maps_url": "https://maps.google.com/?q=-13.1604,-74.2259",
+            "socials": '{"facebook":"fb.com/smartpark","instagram":"instagr.am/smartpark"}',
+            "rate_auto": 6.0,
+            "rate_suv": 8.0,
+            "rate_mototaxi": 4.0,
+            "rate_moto": 3.0,
+            "billing_unit": "minute",
+            "rate_minute_auto": 0.10,
+            "night_shift_enabled": True,
+            "night_shift_start": "21:00",
+            "night_shift_end": "05:00",
+            "night_shift_surcharge": 2.50
+        }
+
+        put_res = await ac.put(f"/api/v1/parkings/{pid}", headers=admin_headers, json=update_payload)
+        assert put_res.status_code == 200, put_res.text
+        data = put_res.json()
+
+        assert data["name"] == "Smart Park Plaza Mayor - Centro Histórico"
+        assert data["owner"] == "Inversiones Plaza Mayor Huamanga SAC"
+        assert data["ruc"] == "20608945123"
+        assert data["whatsapp"] == "51966123456"
+        assert data["schedule"] == "Lunes a Domingo: 06:00 - 23:00"
+        assert data["description"] == "Estacionamiento seguro con garita ANPR en el centro de Huamanga."
+        assert data["maps_url"] == "https://maps.google.com/?q=-13.1604,-74.2259"
+        assert data["socials"] == '{"facebook":"fb.com/smartpark","instagram":"instagr.am/smartpark"}'
+        assert data["rate_auto"] == 6.0
+
+        # Verificar que GET /parkings/{id} y GET /parkings devuelven todos estos datos
+        get_res = await ac.get(f"/api/v1/parkings/{pid}")
+        assert get_res.status_code == 200
+        get_data = get_res.json()
+        assert get_data["owner"] == "Inversiones Plaza Mayor Huamanga SAC"
+        assert get_data["whatsapp"] == "51966123456"
+        assert get_data["schedule"] == "Lunes a Domingo: 06:00 - 23:00"
+        assert get_data["maps_url"] == "https://maps.google.com/?q=-13.1604,-74.2259"
+
+@pytest.mark.asyncio
+async def test_local_admin_can_toggle_allow_open_stay_and_reserve():
+    admin_token, _ = await _register_and_get_token(role="local")
+    driver_token, _ = await _register_and_get_token(role="user")
+    transport = ASGITransport(app=app)
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    driver_headers = {"Authorization": f"Bearer {driver_token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # 1. Crear cochera con allow_open_stay = True
+        create_resp = await ac.post("/api/v1/parkings", headers=admin_headers, json={
+            "name": f"Cochera Hora Libre {uuid.uuid4().hex[:6]}",
+            "address": "Jr. 28 de Julio 300",
+            "city": "Ayacucho",
+            "hourly_rate": 5.0,
+            "allow_open_stay": True
+        })
+        assert create_resp.status_code == 201
+        p_data = create_resp.json()
+        pid = p_data["id"]
+        assert p_data["allow_open_stay"] is True
+
+        # Crear cajón
+        slot_resp = await ac.post(f"/api/v1/parkings/{pid}/slots", headers=admin_headers, json={
+            "code": "HL-01",
+            "slot_type": "auto",
+            "status": "free",
+            "pos_x": 100,
+            "pos_y": 100,
+            "width": 60,
+            "height": 100,
+            "rotation": 0
+        })
+        assert slot_resp.status_code == 201
+        sid = slot_resp.json()["id"]
+
+        # 2. Conductor crea reserva con is_open_stay = True (Hora Libre)
+        from datetime import datetime, timedelta
+        start = datetime.utcnow() + timedelta(minutes=10)
+        end = start + timedelta(hours=2)
+        res_resp = await ac.post("/api/v1/reservations", headers=driver_headers, json={
+            "parking_id": pid,
+            "slot_id": sid,
+            "license_plate": f"HLB-{uuid.uuid4().hex[:3].upper()}",
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "is_open_stay": True
+        })
+        assert res_resp.status_code == 201, res_resp.text
+        res_data = res_resp.json()
+        assert res_data["is_open_stay"] is True
+
+        # 3. Admin actualiza a allow_open_stay = False
+        put_resp = await ac.put(f"/api/v1/parkings/{pid}", headers=admin_headers, json={
+            "allow_open_stay": False
+        })
+        assert put_resp.status_code == 200
+        assert put_resp.json()["allow_open_stay"] is False
+
+
+

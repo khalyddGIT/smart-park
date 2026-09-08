@@ -76,11 +76,17 @@ class Parking(Base):
     total_capacity = Column(Integer, default=30)
     image_url = Column(Text, nullable=True)
     # Campos visibles en el panel del conductor (antes solo vivían en localStorage del admin)
+    owner = Column(String(150), nullable=True)
+    ruc = Column(String(20), nullable=True)
     description = Column(Text, nullable=True)
     phone = Column(String(30), nullable=True)
+    whatsapp = Column(String(30), nullable=True)
     email = Column(String(150), nullable=True)
+    schedule = Column(String(120), nullable=True)
     reference = Column(String(255), nullable=True)
     level = Column(String(100), nullable=True)
+    maps_url = Column(Text, nullable=True)
+    socials = Column(Text, nullable=True)
     camera_url = Column(Text, nullable=True)
     camera_enabled = Column(Boolean, default=False)
     # Calibración de la vista de cámara sobre el lienzo CAD: JSON {"x","y","w","h"} normalizado (0..1).
@@ -112,6 +118,7 @@ class Parking(Base):
     max_stay_hours = Column(Integer, default=24)
     min_stay_minutes = Column(Integer, default=15)
     max_stay_minutes = Column(Integer, default=1440)
+    allow_open_stay = Column(Boolean, default=True)
 
     slots = relationship("Slot", back_populates="parking", cascade="all, delete-orphan")
     elements = relationship("FloorPlanElement", back_populates="parking", cascade="all, delete-orphan")
@@ -190,6 +197,7 @@ class Reservation(Base):
     billing_unit = Column(String(20), default="hour", nullable=True)
     is_night_shift = Column(Boolean, default=False, nullable=True)
     prepaid = Column(Boolean, default=False, nullable=True)
+    is_open_stay = Column(Boolean, default=False, nullable=True)
 
     user = relationship("User", back_populates="reservations")
     parking = relationship("Parking")

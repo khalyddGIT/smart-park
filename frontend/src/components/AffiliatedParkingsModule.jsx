@@ -22,7 +22,18 @@ import {
   XCircle,
   Mail,
   Phone,
-  Car
+  Car,
+  KeyRound,
+  Shield,
+  Lock,
+  Eye,
+  EyeOff,
+  Copy,
+  ExternalLink,
+  MessageSquare,
+  Sparkles,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { useEstablishments } from '../context/EstablishmentContext';
 
@@ -34,7 +45,9 @@ export const AffiliatedParkingsModule = () => {
     deleteEstablishment,
     affiliationRequests = [],
     approveAffiliationRequest,
-    rejectAffiliationRequest
+    rejectAffiliationRequest,
+    getParkingCredentials,
+    assignParkingCredentials
   } = useEstablishments();
 
   // 'establishments' | 'requests'
@@ -52,9 +65,44 @@ export const AffiliatedParkingsModule = () => {
     level: 'Nivel 1 - Superficie',
     rate: 5.00,
     commission: '12%',
-    owner: ''
+    owner: '',
+    phone: '',
+    createAdminAccount: true,
+    adminEmail: '',
+    adminPassword: '',
+    showAdminPassword: false
   });
   const [toast, setToast] = useState(null);
+
+  // Estados para Modal de Aprobación con Credenciales
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [approvingRequest, setApprovingRequest] = useState(null);
+  const [approveForm, setApproveForm] = useState({
+    adminEmail: '',
+    adminPassword: '',
+    adminName: '',
+    adminPhone: '',
+    showPassword: false
+  });
+  const [approvingLoading, setApprovingLoading] = useState(false);
+
+  // Estados para Modal de Ver / Asignar Credenciales a Sede Activa
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [credentialsSede, setCredentialsSede] = useState(null);
+  const [credentialsForm, setCredentialsForm] = useState({
+    adminEmail: '',
+    adminPassword: '',
+    adminName: '',
+    adminPhone: '',
+    showPassword: false,
+    hasExistingAdmin: false
+  });
+  const [credentialsLoading, setCredentialsLoading] = useState(false);
+  const [savingCredentials, setSavingCredentials] = useState(false);
+
+  // Estados para Diálogo de Credenciales Generadas (Éxito + Compartir por WhatsApp)
+  const [credentialsResult, setCredentialsResult] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   const notify = (msg) => {
     setToast(msg);
@@ -63,7 +111,56 @@ export const AffiliatedParkingsModule = () => {
 
   const pendingRequestsCount = affiliationRequests.filter(r => r.status === 'PENDING').length;
 
+  // Generador de contraseñas seguras y legibles
+  const generateSecurePassword = (prefix = 'SP') => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$';
+    let rand = '';
+    for (let i = 0; i < 6; i++) {
+      rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const num = Math.floor(100 + Math.random() * 900);
+    return `${prefix}@${num}${rand.slice(0, 3)}`;
+  };
+
+  // Helper para construir el enlace de WhatsApp con el mensaje formateado
+  const getWhatsAppMessageUrl = (creds) => {
+    if (!creds) return '#';
+    const targetPhone = creds.phone ? String(creds.phone).replace(/[^0-9]/g, '') : '';
+    const phoneWithCode = targetPhone.startsWith('51') ? targetPhone : `51${targetPhone}`;
+    const appUrl = window.location.origin;
+    const text = `*ACCESO DE ADMINISTRADOR - SMART PARK*\n\n` +
+      `Estimado(a) *${creds.ownerName || 'Administrador(a)'}*, su estacionamiento *"${creds.parkingName}"* ha sido habilitado en nuestra plataforma.\n\n` +
+      `🔑 *Sus Credenciales Oficiales:*\n` +
+      `• *Plataforma:* ${appUrl}\n` +
+      `• *Usuario / Correo:* ${creds.email}\n` +
+      `• *Contraseña de Acceso:* ${creds.password}\n` +
+      `• *Rol Asignado:* Administrador de Sede (Local)\n\n` +
+      `Desde su panel podrá:\n` +
+      `1. Monitorear ocupación y mapa en vivo.\n` +
+      `2. Gestionar cobros, tarifas por minuto/hora y penalidades.\n` +
+      `3. Registrar ingresos con lectura de placas ANPR y garita.\n\n` +
+      `¡Bienvenido(a) a la red Smart Park!`;
+    return targetPhone ? `https://wa.me/${phoneWithCode}?text=${encodeURIComponent(text)}` : null;
+  };
+
+  const copyCredentialsToClipboard = (creds) => {
+    if (!creds) return;
+    const appUrl = window.location.origin;
+    const text = `=== CREDENCIALES SMART PARK ===\n` +
+      `Sede: ${creds.parkingName}\n` +
+      `Plataforma: ${appUrl}\n` +
+      `Usuario / Correo: ${creds.email}\n` +
+      `Contraseña: ${creds.password}\n` +
+      `Rol: Administrador de Sede (Local)\n` +
+      (creds.phone ? `Teléfono: ${creds.phone}\n` : '') +
+      `==============================`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
   const handleOpenAdd = () => {
+    const autoPass = generateSecurePassword('SP');
     setFormData({ 
       name: '', 
       address: '', 
@@ -71,7 +168,12 @@ export const AffiliatedParkingsModule = () => {
       level: 'Nivel 1 - Superficie',
       rate: 5.00, 
       commission: '12%', 
-      owner: 'Inversiones Ayacucho S.A.C.' 
+      owner: 'Inversiones Ayacucho S.A.C.',
+      phone: '',
+      createAdminAccount: true,
+      adminEmail: '',
+      adminPassword: autoPass,
+      showAdminPassword: false
     });
     setShowAddModal(true);
   };
@@ -85,12 +187,18 @@ export const AffiliatedParkingsModule = () => {
       level: p.level || 'Nivel 1 - Superficie',
       rate: p.rate || 5.00,
       commission: p.commission || '12%',
-      owner: p.owner || 'Socio Comercial'
+      owner: p.owner || 'Socio Comercial',
+      phone: p.phone || '',
+      allow_open_stay: p.allow_open_stay !== false,
+      createAdminAccount: false,
+      adminEmail: '',
+      adminPassword: '',
+      showAdminPassword: false
     });
     setShowEditModal(true);
   };
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.name) return;
 
@@ -119,14 +227,37 @@ export const AffiliatedParkingsModule = () => {
       rate: Number(formData.rate) || 5.00,
       commission: formData.commission || '12%',
       owner: formData.owner || 'Socio Comercial',
+      phone: formData.phone || '',
       status: 'Operativo',
       image: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800',
       elements: defaultNewElements
     };
 
-    addEstablishment(newObj);
+    let adminCredentials = null;
+    if (formData.createAdminAccount && formData.adminEmail && formData.adminPassword) {
+      adminCredentials = {
+        email: formData.adminEmail.trim(),
+        password: formData.adminPassword,
+        full_name: formData.owner || formData.name,
+        phone: formData.phone || ''
+      };
+    }
+
+    await addEstablishment(newObj, adminCredentials);
     setShowAddModal(false);
     notify(`Establecimiento "${newObj.name}" afiliado a la red.`);
+
+    if (adminCredentials) {
+      setCredentialsResult({
+        title: '¡Sede Creada y Administrador Asignado!',
+        parkingName: newObj.name,
+        email: adminCredentials.email,
+        password: adminCredentials.password,
+        role: 'Administrador de Sede (Local)',
+        phone: adminCredentials.phone,
+        ownerName: adminCredentials.full_name
+      });
+    }
   };
 
   const handleEdit = (e) => {
@@ -140,7 +271,9 @@ export const AffiliatedParkingsModule = () => {
       level: formData.level,
       rate: Number(formData.rate),
       commission: formData.commission,
-      owner: formData.owner
+      owner: formData.owner,
+      phone: formData.phone,
+      allow_open_stay: formData.allow_open_stay !== false
     };
 
     updateEstablishment(selectedParking.id, updated);
@@ -163,11 +296,52 @@ export const AffiliatedParkingsModule = () => {
     notify(`Establecimiento "${name}" eliminado de la red.`);
   };
 
-  // Handler para Aprobar Solicitud de Cochera
-  const handleApproveRequest = (req) => {
-    const res = approveAffiliationRequest(req.id);
-    if (res) {
-      notify(`✓ Solicitud aprobada: "${req.parkingName}" activada y cuenta creada para ${req.email}`);
+  // Abrir Modal para Aprobar Solicitud con formulario de credenciales
+  const handleOpenApproveModal = (req) => {
+    setApprovingRequest(req);
+    const suggestedPassword = generateSecurePassword('SP');
+    setApproveForm({
+      adminEmail: req.email || '',
+      adminPassword: suggestedPassword,
+      adminName: req.ownerName || '',
+      adminPhone: req.phone || '',
+      showPassword: false
+    });
+    setShowApproveModal(true);
+  };
+
+  // Confirmar Aprobación con Credenciales
+  const handleConfirmApprove = async (e) => {
+    e.preventDefault();
+    if (!approvingRequest) return;
+    setApprovingLoading(true);
+
+    try {
+      const res = await approveAffiliationRequest(approvingRequest.id, {
+        admin_email: approveForm.adminEmail.trim(),
+        admin_password: approveForm.adminPassword,
+        admin_name: approveForm.adminName.trim(),
+        admin_phone: approveForm.adminPhone.trim()
+      });
+
+      setShowApproveModal(false);
+
+      // Mostrar modal con credenciales listas para compartir
+      setCredentialsResult({
+        title: '¡Sede Aprobada y Activada Exitosamente!',
+        parkingName: approvingRequest.parkingName,
+        email: res?.admin_credentials?.email || approveForm.adminEmail,
+        password: res?.admin_credentials?.temporary_password || approveForm.adminPassword,
+        role: 'Administrador de Sede (Local)',
+        phone: approveForm.adminPhone,
+        ownerName: approveForm.adminName
+      });
+
+      notify(`✓ Solicitud aprobada: "${approvingRequest.parkingName}" activada en el sistema`);
+    } catch (err) {
+      notify(`Error al aprobar solicitud: ${err.message || 'Error inesperado'}`);
+    } finally {
+      setApprovingLoading(false);
     }
   };
 
@@ -176,6 +350,84 @@ export const AffiliatedParkingsModule = () => {
     if (!window.confirm(`¿Rechazar la solicitud de "${req.parkingName}"?`)) return;
     rejectAffiliationRequest(req.id, 'No cumple con los requisitos del local');
     notify(`Solicitud de "${req.parkingName}" rechazada.`);
+  };
+
+  // Abrir Modal de Credenciales para Sede Activa
+  const handleOpenCredentialsModal = async (parking) => {
+    setCredentialsSede(parking);
+    setShowCredentialsModal(true);
+    setCredentialsLoading(true);
+
+    try {
+      const info = await getParkingCredentials(parking.id);
+      if (info && info.has_admin) {
+        setCredentialsForm({
+          adminEmail: info.email || '',
+          adminPassword: '',
+          adminName: info.full_name || parking.owner || '',
+          adminPhone: info.phone || parking.phone || '',
+          showPassword: false,
+          hasExistingAdmin: true
+        });
+      } else {
+        const autoPass = generateSecurePassword('SP');
+        setCredentialsForm({
+          adminEmail: parking.email || '',
+          adminPassword: autoPass,
+          adminName: parking.owner || '',
+          adminPhone: parking.phone || '',
+          showPassword: false,
+          hasExistingAdmin: false
+        });
+      }
+    } catch (err) {
+      console.warn('Error fetching credentials', err);
+    } finally {
+      setCredentialsLoading(false);
+    }
+  };
+
+  // Guardar o Actualizar Credenciales de Sede Activa
+  const handleSaveCredentials = async (e) => {
+    e.preventDefault();
+    if (!credentialsSede) return;
+    if (!credentialsForm.adminEmail) {
+      alert('El correo electrónico es requerido');
+      return;
+    }
+
+    setSavingCredentials(true);
+    try {
+      const payload = {
+        email: credentialsForm.adminEmail.trim(),
+        full_name: credentialsForm.adminName.trim(),
+        phone: credentialsForm.adminPhone.trim()
+      };
+      if (credentialsForm.adminPassword) {
+        payload.password = credentialsForm.adminPassword;
+      }
+
+      const res = await assignParkingCredentials(credentialsSede.id, payload);
+      setShowCredentialsModal(false);
+
+      if (credentialsForm.adminPassword) {
+        setCredentialsResult({
+          title: 'Credenciales de Sede Actualizadas',
+          parkingName: credentialsSede.name,
+          email: credentialsForm.adminEmail,
+          password: credentialsForm.adminPassword,
+          role: 'Administrador de Sede (Local)',
+          phone: credentialsForm.adminPhone,
+          ownerName: credentialsForm.adminName
+        });
+      }
+
+      notify(`✓ Credenciales guardadas para "${credentialsSede.name}"`);
+    } catch (err) {
+      notify(`Error al actualizar credenciales: ${err.message || 'Error'}`);
+    } finally {
+      setSavingCredentials(false);
+    }
   };
 
   const filteredEstablishments = establishments.filter(p => {
@@ -205,7 +457,7 @@ export const AffiliatedParkingsModule = () => {
             <span>Red de Estacionamientos & Afiliaciones</span>
           </h1>
           <p className="text-xs text-slate-500">
-            Administra las sedes activas y aprueba las solicitudes de registro de nuevas cocheras.
+            Administra las sedes activas, asigna credenciales a los administradores de local y gestiona las solicitudes entrantes.
           </p>
         </div>
 
@@ -299,7 +551,7 @@ export const AffiliatedParkingsModule = () => {
 
                     <h3 className="font-extrabold text-slate-900 text-base mb-1">{p.name}</h3>
                     <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
-                      <MapPin className="w-4 h-4 shrink-0 text-slate-400 shrink-0" />
+                      <MapPin className="w-4 h-4 shrink-0 text-slate-400" />
                       <span className="truncate">{p.city || 'Ayacucho'} • {p.address}</span>
                     </p>
 
@@ -319,31 +571,46 @@ export const AffiliatedParkingsModule = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                  <div className="space-y-2 pt-3 border-t border-slate-100">
+                    {/* Botón de Credenciales Superadmin */}
                     <Button 
-                      onClick={() => toggleStatus(p.id)} 
+                      onClick={() => handleOpenCredentialsModal(p)}
                       variant="outline" 
                       size="sm" 
-                      className="flex-1 text-xs font-bold rounded-xl h-8"
+                      className="w-full text-xs font-bold rounded-xl h-8.5 border-amber-300 text-amber-900 bg-amber-50/60 hover:bg-amber-100/80 flex items-center justify-center gap-1.5 transition"
                     >
-                      {p.status === 'Operativo' ? 'Pausar' : 'Reanudar'}
+                      <KeyRound className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Credenciales de Acceso</span>
                     </Button>
-                    <Button 
-                      onClick={() => handleOpenEdit(p)} 
-                      variant="ghost" 
-                      size="sm" 
-                      className="p-2 text-slate-600 hover:text-slate-900 rounded-xl"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      onClick={() => handleDelete(p.id, p.name)} 
-                      variant="ghost" 
-                      size="sm" 
-                      className="p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        onClick={() => toggleStatus(p.id)} 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 text-xs font-bold rounded-xl h-8"
+                      >
+                        {p.status === 'Operativo' ? 'Pausar' : 'Reanudar'}
+                      </Button>
+                      <Button 
+                        onClick={() => handleOpenEdit(p)} 
+                        variant="ghost" 
+                        size="sm" 
+                        className="p-2 text-slate-600 hover:text-slate-900 rounded-xl"
+                        title="Editar información de sede"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        onClick={() => handleDelete(p.id, p.name)} 
+                        variant="ghost" 
+                        size="sm" 
+                        className="p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl"
+                        title="Eliminar sede"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               );
@@ -363,7 +630,7 @@ export const AffiliatedParkingsModule = () => {
             <div className="text-xs text-amber-900 space-y-1">
               <p className="font-bold">Bandeja de Solicitudes de Nuevas Cocheras</p>
               <p className="text-amber-800 leading-relaxed">
-                Cuando un propietario solicita afiliar su estacionamiento desde la pantalla de bienvenida, sus datos aparecen aquí. Al presionar <strong>"Aprobar y Habilitar Cuenta"</strong>, el sistema crea la cochera automáticamente y habilita el acceso para que el dueño inicie sesión con su correo.
+                Cuando un propietario solicita afiliar su establecimiento, sus datos aparecen aquí. Al presionar <strong>"Aprobar y Asignar Credenciales"</strong>, podrás configurar o generar su contraseña segura, crear la cuenta oficial con rol <strong>local</strong> y enviarle sus credenciales por WhatsApp en 1 clic.
               </p>
             </div>
           </div>
@@ -452,12 +719,12 @@ export const AffiliatedParkingsModule = () => {
                           Rechazar
                         </Button>
                         <Button
-                          onClick={() => handleApproveRequest(req)}
+                          onClick={() => handleOpenApproveModal(req)}
                           size="sm"
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl h-9 shadow-xs"
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl h-9 shadow-xs flex items-center justify-center gap-1.5"
                         >
-                          <Check className="w-4 h-4 mr-1.5" />
-                          <span>Aprobar y Habilitar Cuenta</span>
+                          <KeyRound className="w-3.5 h-3.5" />
+                          <span>Aprobar y Asignar Credenciales</span>
                         </Button>
                       </div>
                     )}
@@ -466,9 +733,9 @@ export const AffiliatedParkingsModule = () => {
                       <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-emerald-700">
                         <span className="flex items-center gap-1 font-semibold">
                           <CheckCircle2 className="w-4 h-4" />
-                          <span>Cuenta habilitada para login ({req.email})</span>
+                          <span>Cuenta habilitada ({req.email})</span>
                         </span>
-                        <span className="text-[10px] text-slate-400 font-mono">Sede Activa</span>
+                        <span className="text-[10px] text-slate-400 font-mono">Sede Operativa</span>
                       </div>
                     )}
 
@@ -481,7 +748,393 @@ export const AffiliatedParkingsModule = () => {
         </div>
       )}
 
-      {/* Modal Crear Afiliado Manual */}
+      {/* =========================================================================
+          MODAL 1: APROBAR COCHERA Y ASIGNAR CREDENCIALES
+          ========================================================================= */}
+      <Dialog open={showApproveModal} onOpenChange={setShowApproveModal}>
+        <DialogContent className="max-w-md bg-white rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-emerald-600" />
+              <span>Aprobar Sede y Asignar Credenciales</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Crea la cuenta de usuario para el administrador de <strong>"{approvingRequest?.parkingName}"</strong> con rol de local.
+            </DialogDescription>
+          </DialogHeader>
+
+          {approvingRequest && (
+            <form onSubmit={handleConfirmApprove} className="space-y-4 mt-2">
+              {/* Resumen del establecimiento */}
+              <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-2xl text-xs space-y-1">
+                <p className="font-bold text-slate-800 flex items-center justify-between">
+                  <span>{approvingRequest.parkingName}</span>
+                  <span className="text-emerald-700 font-black">S/ {Number(approvingRequest.rate).toFixed(2)}/h</span>
+                </p>
+                <p className="text-slate-500 text-[11px] truncate">
+                  {approvingRequest.address}, {approvingRequest.city} • {approvingRequest.capacity} plazas
+                </p>
+              </div>
+
+              {/* Correo / Usuario */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Correo Electrónico (Usuario de Acceso) *
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    type="email"
+                    required
+                    value={approveForm.adminEmail}
+                    onChange={(e) => setApproveForm({ ...approveForm, adminEmail: e.target.value })}
+                    placeholder="propietario@ejemplo.com"
+                    className="pl-9 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Nombre del Administrador */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo</label>
+                  <Input
+                    type="text"
+                    value={approveForm.adminName}
+                    onChange={(e) => setApproveForm({ ...approveForm, adminName: e.target.value })}
+                    placeholder="Juan Pérez"
+                    className="text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
+                  <div className="relative">
+                    <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Input
+                      type="text"
+                      value={approveForm.adminPhone}
+                      onChange={(e) => setApproveForm({ ...approveForm, adminPhone: e.target.value })}
+                      placeholder="966 123 456"
+                      className="pl-8 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Contraseña */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700">Contraseña de Acceso *</label>
+                  <button
+                    type="button"
+                    onClick={() => setApproveForm({ ...approveForm, adminPassword: generateSecurePassword('SP') })}
+                    className="text-[11px] text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Regenerar</span>
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    type={approveForm.showPassword ? "text" : "password"}
+                    required
+                    value={approveForm.adminPassword}
+                    onChange={(e) => setApproveForm({ ...approveForm, adminPassword: e.target.value })}
+                    placeholder="Contraseña segura"
+                    className="pl-9 pr-10 text-xs font-mono font-bold"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setApproveForm({ ...approveForm, showPassword: !approveForm.showPassword })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {approveForm.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  El propietario podrá iniciar sesión inmediatamente con este usuario y contraseña.
+                </p>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowApproveModal(false)} 
+                  disabled={approvingLoading}
+                  className="flex-1 text-xs rounded-xl"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={approvingLoading}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
+                >
+                  {approvingLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Creando Cuenta...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Aprobar y Habilitar</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* =========================================================================
+          MODAL 2: GESTIONAR CREDENCIALES DE SEDE ACTIVA
+          ========================================================================= */}
+      <Dialog open={showCredentialsModal} onOpenChange={setShowCredentialsModal}>
+        <DialogContent className="max-w-md bg-white rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-amber-600" />
+              <span>Credenciales de Acceso</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Administra el usuario y contraseña del administrador del local para <strong>"{credentialsSede?.name}"</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          {credentialsLoading ? (
+            <div className="py-8 flex flex-col items-center justify-center space-y-2 text-slate-500">
+              <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+              <p className="text-xs">Consultando credenciales...</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSaveCredentials} className="space-y-4 mt-2">
+              {credentialsForm.hasExistingAdmin ? (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-2xl text-xs flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Esta sede ya tiene una cuenta activa vinculada:</p>
+                    <p className="font-mono text-[11px] mt-0.5">{credentialsForm.adminEmail}</p>
+                    <p className="text-[10px] text-emerald-700 mt-1">
+                      Si especificas una nueva contraseña abajo, se actualizará. De lo contrario, se conservará la contraseña existente.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-2xl text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Sin cuenta asignada todavía</p>
+                    <p className="text-[11px] text-amber-700 mt-0.5">
+                      Ingresa el correo y genera una contraseña para crear el usuario con rol "local".
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Correo Electrónico *</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    type="email"
+                    required
+                    value={credentialsForm.adminEmail}
+                    onChange={(e) => setCredentialsForm({ ...credentialsForm, adminEmail: e.target.value })}
+                    placeholder="admin@cochera.com"
+                    className="pl-9 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo</label>
+                  <Input
+                    type="text"
+                    value={credentialsForm.adminName}
+                    onChange={(e) => setCredentialsForm({ ...credentialsForm, adminName: e.target.value })}
+                    placeholder="Nombre del encargado"
+                    className="text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono</label>
+                  <div className="relative">
+                    <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Input
+                      type="text"
+                      value={credentialsForm.adminPhone}
+                      onChange={(e) => setCredentialsForm({ ...credentialsForm, adminPhone: e.target.value })}
+                      placeholder="966 000 000"
+                      className="pl-8 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700">
+                    {credentialsForm.hasExistingAdmin ? 'Nueva Contraseña (Opcional)' : 'Contraseña de Acceso *'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setCredentialsForm({ ...credentialsForm, adminPassword: generateSecurePassword('SP') })}
+                    className="text-[11px] text-amber-700 hover:text-amber-800 font-bold flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Generar Segura</span>
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    type={credentialsForm.showPassword ? "text" : "password"}
+                    required={!credentialsForm.hasExistingAdmin}
+                    value={credentialsForm.adminPassword}
+                    onChange={(e) => setCredentialsForm({ ...credentialsForm, adminPassword: e.target.value })}
+                    placeholder={credentialsForm.hasExistingAdmin ? "Dejar en blanco para mantener la actual" : "Contraseña de acceso"}
+                    className="pl-9 pr-10 text-xs font-mono font-bold"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCredentialsForm({ ...credentialsForm, showPassword: !credentialsForm.showPassword })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {credentialsForm.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowCredentialsModal(false)}
+                  disabled={savingCredentials}
+                  className="flex-1 text-xs rounded-xl"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={savingCredentials}
+                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
+                >
+                  {savingCredentials ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Guardar Credenciales</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* =========================================================================
+          MODAL 3: DIÁLOGO DE CREDENCIALES RESULTANTES (COPIAR & WHATSAPP)
+          ========================================================================= */}
+      <Dialog open={!!credentialsResult} onOpenChange={(open) => !open && setCredentialsResult(null)}>
+        <DialogContent className="max-w-md bg-white rounded-3xl p-6">
+          <DialogHeader>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2 mx-auto">
+              <KeyRound className="w-6 h-6" />
+            </div>
+            <DialogTitle className="text-lg font-black text-slate-900 text-center">
+              {credentialsResult?.title || 'Credenciales Listas'}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 text-center">
+              Comparte las credenciales oficiales de acceso con el administrador del local.
+            </DialogDescription>
+          </DialogHeader>
+
+          {credentialsResult && (
+            <div className="space-y-4 mt-2">
+              {/* Tarjeta Visual de Credenciales */}
+              <div className="bg-slate-900 text-white p-4 rounded-2xl space-y-3 font-mono text-xs border border-slate-800">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-800 text-[11px] text-slate-400">
+                  <span className="truncate max-w-[200px]">{credentialsResult.parkingName}</span>
+                  <span className="text-emerald-400 font-bold">ROL: LOCAL</span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-sans">ENLACE DE ACCESO:</span>
+                  <span className="text-slate-200 text-xs break-all">{window.location.origin}</span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-sans">USUARIO / CORREO:</span>
+                  <span className="text-emerald-400 font-bold text-sm select-all">{credentialsResult.email}</span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-sans">CONTRASEÑA:</span>
+                  <span className="text-amber-300 font-bold text-sm tracking-wider select-all">{credentialsResult.password}</span>
+                </div>
+              </div>
+
+              {/* Botones de acción */}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => copyCredentialsToClipboard(credentialsResult)}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs rounded-xl h-10 flex items-center justify-center gap-1.5"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-600" />
+                        <span className="text-emerald-700">¡Copiado al Portapapeles!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 text-slate-600" />
+                        <span>Copiar Credenciales</span>
+                      </>
+                    )}
+                  </Button>
+
+                  {getWhatsAppMessageUrl(credentialsResult) && (
+                    <a
+                      href={getWhatsAppMessageUrl(credentialsResult)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl h-10 flex items-center justify-center gap-1.5 transition shadow-xs"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Enviar WhatsApp</span>
+                    </a>
+                  )}
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => setCredentialsResult(null)}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl h-9"
+                >
+                  Entendido / Cerrar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* =========================================================================
+          MODAL 4: CREAR AFILIADO MANUAL
+          ========================================================================= */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
         <DialogContent className="max-w-md bg-white rounded-3xl p-6">
           <DialogHeader>
@@ -490,7 +1143,7 @@ export const AffiliatedParkingsModule = () => {
               <span>Afiliar Nueva Sede Manualmente</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Registra un nuevo local comercial en la red consolidada de Smart Park.
+              Registra un nuevo local comercial y asígnale su cuenta de administrador de local.
             </DialogDescription>
           </DialogHeader>
 
@@ -538,6 +1191,89 @@ export const AffiliatedParkingsModule = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Titular / Empresa</label>
+                <Input
+                  value={formData.owner}
+                  onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
+                  placeholder="Inversiones Ayacucho"
+                  className="text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
+                <Input
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="966 123 456"
+                  className="text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Credenciales de Acceso para el Local */}
+            <div className="border-t border-slate-200 pt-3 space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.createAdminAccount}
+                  onChange={(e) => setFormData({ ...formData, createAdminAccount: e.target.checked })}
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Crear cuenta de acceso para el Administrador del Local</span>
+                </span>
+              </label>
+
+              {formData.createAdminAccount && (
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl space-y-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Correo de Acceso (Usuario) *</label>
+                    <Input
+                      type="email"
+                      required={formData.createAdminAccount}
+                      placeholder="admin@cochera.com"
+                      value={formData.adminEmail}
+                      onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
+                      className="text-xs bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-slate-700">Contraseña de Acceso *</label>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, adminPassword: generateSecurePassword('SP') })}
+                        className="text-[10px] text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Regenerar</span>
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type={formData.showAdminPassword ? "text" : "password"}
+                        required={formData.createAdminAccount}
+                        value={formData.adminPassword}
+                        onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
+                        className="text-xs bg-white pr-9 font-mono font-bold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, showAdminPassword: !formData.showAdminPassword })}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {formData.showAdminPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setShowAddModal(false)} className="flex-1 text-xs">
                 Cancelar
@@ -550,7 +1286,9 @@ export const AffiliatedParkingsModule = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal Editar Afiliado */}
+      {/* =========================================================================
+          MODAL 5: EDITAR AFILIADO
+          ========================================================================= */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="max-w-md bg-white rounded-3xl p-6">
           <DialogHeader>
@@ -596,6 +1334,21 @@ export const AffiliatedParkingsModule = () => {
                   className="text-xs"
                 />
               </div>
+            </div>
+
+            <div className="pt-1">
+              <label className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Habilitar opción "Hora (Libre)"</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={formData.allow_open_stay !== false}
+                  onChange={(e) => setFormData({ ...formData, allow_open_stay: e.target.checked })}
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+              </label>
             </div>
 
             <div className="flex gap-2 pt-2">

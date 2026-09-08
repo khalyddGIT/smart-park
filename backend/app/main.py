@@ -57,6 +57,12 @@ async def startup_db():
                 ("estacionamientos", "reference", "VARCHAR(255)"),
                 ("estacionamientos", "level", "VARCHAR(100)"),
                 ("estacionamientos", "camera_url", "TEXT"),
+                ("estacionamientos", "owner", "VARCHAR(150)"),
+                ("estacionamientos", "ruc", "VARCHAR(20)"),
+                ("estacionamientos", "whatsapp", "VARCHAR(30)"),
+                ("estacionamientos", "schedule", "VARCHAR(120)"),
+                ("estacionamientos", "socials", "TEXT"),
+                ("estacionamientos", "maps_url", "TEXT"),
                 ("estacionamientos", "camera_enabled", "BOOLEAN DEFAULT FALSE"),
                 ("estacionamientos", "camera_calibration", "TEXT"),
                 ("estacionamientos", "rate_auto", "FLOAT DEFAULT 5.0"),
@@ -78,6 +84,7 @@ async def startup_db():
                 ("estacionamientos", "max_stay_hours", "INTEGER DEFAULT 24"),
                 ("estacionamientos", "min_stay_minutes", "INTEGER DEFAULT 15"),
                 ("estacionamientos", "max_stay_minutes", "INTEGER DEFAULT 1440"),
+                ("estacionamientos", "allow_open_stay", "BOOLEAN DEFAULT TRUE"),
                 ("usuarios", "avatar_url", "TEXT"),
                 ("vehiculos", "image_url", "TEXT"),
                 ("vehiculos", "year", "VARCHAR(10) DEFAULT '2023'"),
@@ -89,6 +96,7 @@ async def startup_db():
                 ("reservas", "billing_unit", "VARCHAR(20) DEFAULT 'hour'"),
                 ("reservas", "is_night_shift", "BOOLEAN DEFAULT FALSE"),
                 ("reservas", "prepaid", "BOOLEAN DEFAULT FALSE"),
+                ("reservas", "is_open_stay", "BOOLEAN DEFAULT FALSE"),
             ]
             if str(engine.url).startswith("sqlite") and settings.TESTING:
                 for tbl, col, decl in lite_adds:
@@ -133,7 +141,21 @@ async def startup_db():
                     hourly_rate=5.00,
                     tolerance_minutes=15,
                     total_capacity=20,
-                    image_url="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800"
+                    image_url="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800",
+                    owner="Inversiones Plaza Mayor Huamanga",
+                    ruc="20608945123",
+                    phone="+51 966 123 456",
+                    whatsapp="51966123456",
+                    email="contacto@plazamayorpark.pe",
+                    schedule="Lunes a Domingo: 24 Horas (Abierto 24/7)",
+                    reference="Frente a la Catedral de Huamanga",
+                    level="Nivel 1 - Superficie",
+                    description="Estacionamiento céntrico con garita inteligente ANPR y acceso asfaltado a pocos metros de la Plaza Mayor de Huamanga.",
+                    maps_url="https://maps.google.com/?q=-13.1604,-74.2259",
+                    rate_auto=5.00,
+                    rate_suv=7.00,
+                    rate_mototaxi=3.50,
+                    rate_moto=2.50
                 )
                 p2 = Parking(
                     name="Smart Park Jr. Bellido Colonial",
@@ -144,7 +166,21 @@ async def startup_db():
                     hourly_rate=4.50,
                     tolerance_minutes=10,
                     total_capacity=15,
-                    image_url="https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800"
+                    image_url="https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800",
+                    owner="Cocheras Coloniales Ayacucho",
+                    ruc="20609874123",
+                    phone="+51 966 456 789",
+                    whatsapp="51966456789",
+                    email="bellido@smartpark.pe",
+                    schedule="Lunes a Sábado: 06:00 - 23:00",
+                    reference="A 2 cuadras de la Plaza Mayor",
+                    level="Playa Abierta",
+                    description="Cochera colonial céntrica y segura con cámaras de vigilancia.",
+                    maps_url="https://maps.google.com/?q=-13.1631,-74.2236",
+                    rate_auto=4.50,
+                    rate_suv=6.50,
+                    rate_mototaxi=3.00,
+                    rate_moto=2.00
                 )
                 p3 = Parking(
                     name="Smart Park Mercado Mariscal Cáceres",
@@ -155,7 +191,21 @@ async def startup_db():
                     hourly_rate=3.50,
                     tolerance_minutes=15,
                     total_capacity=25,
-                    image_url="https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800"
+                    image_url="https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800",
+                    owner="Consorcio Comercial Cáceres",
+                    ruc="20607788991",
+                    phone="+51 966 789 012",
+                    whatsapp="51966789012",
+                    email="mercado@smartpark.pe",
+                    schedule="Lunes a Domingo: 05:00 - 22:00",
+                    reference="Frente al pabellón comercial",
+                    level="Nivel 1 - Superficie",
+                    description="Amplio estacionamiento techado para autos, camionetas y mototaxis junto al mercado.",
+                    maps_url="https://maps.google.com/?q=-13.1565,-74.2215",
+                    rate_auto=3.50,
+                    rate_suv=5.00,
+                    rate_mototaxi=2.50,
+                    rate_moto=1.50
                 )
                 session.add_all([p1, p2, p3])
                 await session.commit()

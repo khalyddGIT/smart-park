@@ -27,6 +27,12 @@ def _ensure_schema():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
             lite_adds = [
+                ("estacionamientos", "owner", "VARCHAR(150)"),
+                ("estacionamientos", "ruc", "VARCHAR(20)"),
+                ("estacionamientos", "whatsapp", "VARCHAR(30)"),
+                ("estacionamientos", "schedule", "VARCHAR(120)"),
+                ("estacionamientos", "socials", "TEXT"),
+                ("estacionamientos", "maps_url", "TEXT"),
                 ("estacionamientos", "description", "TEXT"),
                 ("estacionamientos", "phone", "VARCHAR(30)"),
                 ("estacionamientos", "email", "VARCHAR(150)"),
@@ -54,6 +60,7 @@ def _ensure_schema():
                 ("estacionamientos", "max_stay_hours", "INTEGER DEFAULT 24"),
                 ("estacionamientos", "min_stay_minutes", "INTEGER DEFAULT 15"),
                 ("estacionamientos", "max_stay_minutes", "INTEGER DEFAULT 1440"),
+                ("estacionamientos", "allow_open_stay", "BOOLEAN DEFAULT TRUE"),
                 ("reservas", "tolerance_minutes", "INTEGER DEFAULT 15"),
                 ("reservas", "vehicle_type", "VARCHAR(20) DEFAULT 'auto'"),
                 ("reservas", "estimated_hours", "INTEGER DEFAULT 1"),
@@ -61,6 +68,7 @@ def _ensure_schema():
                 ("reservas", "billing_unit", "VARCHAR(20) DEFAULT 'hour'"),
                 ("reservas", "is_night_shift", "BOOLEAN DEFAULT FALSE"),
                 ("reservas", "prepaid", "BOOLEAN DEFAULT FALSE"),
+                ("reservas", "is_open_stay", "BOOLEAN DEFAULT FALSE"),
             ]
             if str(engine.url).startswith("sqlite"):
                 for tbl, col, decl in lite_adds:

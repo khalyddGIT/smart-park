@@ -1,17 +1,19 @@
 from typing import List, Optional
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Form
+import secrets
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import Parking, Slot, FloorPlanElement, Reservation, CameraDevice
+from app.models.models import Parking, Slot, FloorPlanElement, Reservation, CameraDevice, User, Staff
 from app.schemas.schemas import (
     ParkingCreate, ParkingUpdate, ParkingResponse,
     SlotBase, SlotCreate, SlotUpdate, SlotResponse,
     FloorPlanElementBase, FloorPlanElementCreate, FloorPlanElementResponse, FloorPlanSyncRequest,
     CameraDeviceCreate, CameraDeviceUpdate, CameraDeviceResponse
 )
-from app.core.security import require_role
+from app.core.security import require_role, get_password_hash, hash_pin
 from app.core.realtime import realtime
 from app.core.cache import cache_get_json, cache_set_json, cache_delete
 
@@ -612,6 +614,17 @@ async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(g
         status=parking_in.status or "active",
         total_capacity=parking_in.total_capacity,
         image_url=parking_in.image_url or "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800",
+        owner=parking_in.owner,
+        ruc=parking_in.ruc,
+        description=parking_in.description,
+        phone=parking_in.phone,
+        whatsapp=parking_in.whatsapp,
+        email=parking_in.email,
+        schedule=parking_in.schedule,
+        reference=parking_in.reference,
+        level=parking_in.level,
+        maps_url=parking_in.maps_url,
+        socials=parking_in.socials,
         rate_auto=parking_in.rate_auto if parking_in.rate_auto is not None else 5.0,
         rate_suv=parking_in.rate_suv if parking_in.rate_suv is not None else 7.0,
         rate_mototaxi=parking_in.rate_mototaxi if parking_in.rate_mototaxi is not None else 3.5,
@@ -630,7 +643,8 @@ async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(g
         require_reservation_prepay=bool(parking_in.require_reservation_prepay),
         reservation_fee=float(parking_in.reservation_fee or 0.0),
         min_stay_hours=int(parking_in.min_stay_hours or 1),
-        max_stay_hours=int(parking_in.max_stay_hours or 24)
+        max_stay_hours=int(parking_in.max_stay_hours or 24),
+        allow_open_stay=parking_in.allow_open_stay if parking_in.allow_open_stay is not None else True
     )
     db.add(db_parking)
     await db.commit()
@@ -830,3 +844,197 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
         "slots_count": total,
         "elements_count": len(new_elems)
     }
+
+
+# =======================================================
+# 4. GESTIÓN DE CREDENCIALES DEL ADMINISTRADOR LOCAL
+# =======================================================
+
+class ParkingAdminCredentialsIn(BaseModel):
+    email: str = Field(..., min_length=4)
+    password: Optional[str] = Field(None, min_length=8)
+    fullName: Optional[str] = Field(None, alias="fullName")
+    phone: Optional[str] = None
+
+    class Config:
+        populate_by_name = True
+
+
+class ParkingAdminCredentialsResponse(BaseModel):
+    parking_id: int
+    parking_name: str
+    admin_name: Optional[str] = None
+    admin_email: Optional[str] = None
+    admin_phone: Optional[str] = None
+    has_account: bool = False
+    is_active: bool = True
+    role: str = "local"
+    temp_password: Optional[str] = None
+    message: Optional[str] = None
+
+
+@router.get("/{parking_id}/admin-credentials", response_model=ParkingAdminCredentialsResponse)
+async def get_parking_admin_credentials(
+    parking_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(write_required)
+):
+    parking_res = await db.execute(select(Parking).where(Parking.id == parking_id))
+    parking = parking_res.scalars().first()
+    if not parking:
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+
+    # 1. Resolver email y nombre del administrador
+    target_email = parking.email
+    admin_name = parking.owner or "Administrador"
+    admin_phone = parking.phone
+
+    staff_res = await db.execute(
+        select(Staff).where(Staff.parking_id == parking_id).order_by(Staff.id.desc())
+    )
+    staff_members = staff_res.scalars().all()
+    admin_staff = next((s for s in staff_members if target_email and s.email == target_email), None)
+    if not admin_staff:
+        admin_staff = next((s for s in staff_members if "admin" in (s.position or "").lower()), None)
+    if not admin_staff and staff_members:
+        admin_staff = next((s for s in staff_members if s.email), staff_members[0])
+
+    if admin_staff:
+        if not target_email and admin_staff.email:
+            target_email = admin_staff.email
+        if admin_staff.full_name:
+            admin_name = admin_staff.full_name
+        if not admin_phone and admin_staff.dni:
+            admin_phone = admin_staff.dni
+
+    has_account = False
+    is_active = True
+    role_name = "local"
+    if target_email:
+        user_res = await db.execute(select(User).where(User.email == target_email.strip().lower()))
+        user = user_res.scalars().first()
+        if user:
+            has_account = True
+            is_active = user.is_active
+            role_name = user.role or "local"
+            admin_name = user.full_name or admin_name
+            admin_phone = user.phone or admin_phone
+
+    return ParkingAdminCredentialsResponse(
+        parking_id=parking.id,
+        parking_name=parking.name,
+        admin_name=admin_name,
+        admin_email=target_email,
+        admin_phone=admin_phone,
+        has_account=has_account,
+        is_active=is_active,
+        role=role_name
+    )
+
+
+@router.post("/{parking_id}/admin-credentials", response_model=ParkingAdminCredentialsResponse)
+async def set_parking_admin_credentials(
+    parking_id: int,
+    body: ParkingAdminCredentialsIn,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(write_required)
+):
+    parking_res = await db.execute(select(Parking).where(Parking.id == parking_id))
+    parking = parking_res.scalars().first()
+    if not parking:
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+
+    email = body.email.strip().lower()
+    full_name = (body.fullName or parking.owner or "Administrador de Sede").strip()
+    phone = (body.phone or parking.phone or "").strip() or None
+
+    raw_password = body.password if body.password and len(body.password) >= 8 else f"SmartPark_{secrets.token_hex(3).upper()}!"
+
+    # 1. Crear o actualizar cuenta User con rol 'local'
+    user_res = await db.execute(select(User).where(User.email == email))
+    user = user_res.scalars().first()
+    if not user:
+        user = User(
+            full_name=full_name,
+            email=email,
+            phone=phone,
+            hashed_password=get_password_hash(raw_password),
+            role="local",
+            is_active=True,
+            security_pin=hash_pin(f"{secrets.randbelow(10000):04d}")
+        )
+        db.add(user)
+    else:
+        user.full_name = full_name
+        if phone:
+            user.phone = phone
+        user.role = "local"
+        user.hashed_password = get_password_hash(raw_password)
+        user.is_active = True
+    await db.commit()
+    await db.refresh(user)
+
+    # 2. Vincular como Staff de la sede
+    staff_res = await db.execute(select(Staff).where(Staff.email == email))
+    staff_member = staff_res.scalars().first()
+    if not staff_member:
+        prev_admin_res = await db.execute(
+            select(Staff).where(Staff.parking_id == parking.id, Staff.position.ilike("%administrador%"))
+        )
+        staff_member = prev_admin_res.scalars().first()
+
+    if not staff_member:
+        staff_member = Staff(
+            parking_id=parking.id,
+            full_name=full_name,
+            dni=f"DNI{secrets.randbelow(90000000) + 10000000}",
+            position="Administrador de Sede",
+            shift="Completo",
+            status="active",
+            email=email,
+            security_pin=hash_pin("1234")
+        )
+        db.add(staff_member)
+    else:
+        staff_member.parking_id = parking.id
+        staff_member.full_name = full_name
+        staff_member.email = email
+        staff_member.position = "Administrador de Sede"
+        staff_member.status = "active"
+
+    # 3. Actualizar Parking
+    parking.email = email
+    parking.owner = full_name
+    if phone:
+        parking.phone = phone
+    await db.commit()
+    await db.refresh(parking)
+
+    await invalidate_parkings_cache()
+
+    from app.core.audit_service import record_audit_event
+    await record_audit_event(
+        db=db,
+        action="Asignación de Credenciales de Sede",
+        target=f"Sede #{parking.id} '{parking.name}' -> Administrador: {email}",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        role=current_user.role,
+        severity="Info",
+        parking_id=parking.id,
+        parking_name=parking.name,
+        details={"admin_email": email, "admin_name": full_name}
+    )
+
+    return ParkingAdminCredentialsResponse(
+        parking_id=parking.id,
+        parking_name=parking.name,
+        admin_name=full_name,
+        admin_email=email,
+        admin_phone=phone,
+        has_account=True,
+        is_active=True,
+        role="local",
+        temp_password=raw_password,
+        message=f"Credenciales de administrador asignadas exitosamente para la sede '{parking.name}'"
+    )

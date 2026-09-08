@@ -332,6 +332,16 @@ export const sanitizeEstablishment = (est, idx = 0) => {
     latitude: lat, 
     longitude: lng, 
     city: est.city && est.city.includes('Ayacucho') ? est.city : 'Ayacucho - Huamanga',
+    owner: est.owner || '',
+    ruc: est.ruc || '',
+    phone: est.phone || '',
+    whatsapp: est.whatsapp || '',
+    email: est.email || '',
+    schedule: est.schedule || 'Lunes a Domingo: 24 Horas',
+    description: est.description || '',
+    mapsUrl: est.mapsUrl || est.maps_url || (lat && lng ? `https://maps.google.com/?q=${lat},${lng}` : ''),
+    socials: typeof est.socials === 'string' ? (() => { try { return JSON.parse(est.socials); } catch { return {}; } })() : (est.socials || { facebook: '', instagram: '', tiktok: '', website: '' }),
+    tolerance: Math.max(5, Math.min(120, Number(est.tolerance ?? est.tolerance_minutes ?? 15))),
     rate: Number(est.rate || est.hourly_rate || 5.00),
     rate_auto: Number(est.rate_auto ?? est.rate ?? est.hourly_rate ?? 5.00),
     rate_suv: Number(est.rate_suv ?? 7.00),
@@ -351,7 +361,8 @@ export const sanitizeEstablishment = (est, idx = 0) => {
     require_reservation_prepay: !!est.require_reservation_prepay,
     reservation_fee: Number(est.reservation_fee || 0.0),
     min_stay_hours: Number(est.min_stay_hours || 1),
-    max_stay_hours: Number(est.max_stay_hours || 24)
+    max_stay_hours: Number(est.max_stay_hours || 24),
+    allow_open_stay: est.allow_open_stay !== undefined ? !!est.allow_open_stay : true
   };
 };
 
@@ -541,11 +552,17 @@ export const EstablishmentProvider = ({ children }) => {
           image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', 
           totalSlots: p.total_capacity, 
           available_slots: p.available_slots, 
+          owner: p.owner || '',
+          ruc: p.ruc || '',
           description: p.description || '', 
           phone: p.phone || '', 
+          whatsapp: p.whatsapp || '',
           email: p.email || '', 
+          schedule: p.schedule || 'Lunes a Domingo: 24 Horas',
           reference: p.reference || '', 
-          level: p.level || '', 
+          level: p.level || 'Nivel 1 - Superficie', 
+          mapsUrl: p.maps_url || (p.latitude && p.longitude ? `https://maps.google.com/?q=${p.latitude},${p.longitude}` : ''),
+          socials: typeof p.socials === 'string' ? (() => { try { return JSON.parse(p.socials); } catch { return {}; } })() : (p.socials || {}),
           camera_url: p.camera_url || '', 
           camera_enabled: !!p.camera_enabled, 
           camera_calibration: p.camera_calibration || null, 
@@ -568,6 +585,7 @@ export const EstablishmentProvider = ({ children }) => {
           reservation_fee: p.reservation_fee != null ? Number(p.reservation_fee) : undefined,
           min_stay_hours: p.min_stay_hours != null ? Number(p.min_stay_hours) : undefined,
           max_stay_hours: p.max_stay_hours != null ? Number(p.max_stay_hours) : undefined,
+          allow_open_stay: p.allow_open_stay !== undefined ? !!p.allow_open_stay : true,
           elements: null, 
           _needsFloorPlan: true
         }, idx));
@@ -777,9 +795,10 @@ export const EstablishmentProvider = ({ children }) => {
   };
 
   // Aprobar: persiste en servidor (crea cochera real) y refresca lista
-  const approveAffiliationRequest = async (requestId) => {
+  // Aprobar: persiste en servidor (crea cochera real con credenciales) y refresca lista
+  const approveAffiliationRequest = async (requestId, credentialsData = null) => {
     try {
-      const res = await api.put(`/affiliation-requests/${requestId}/approve`);
+      const res = await api.put(`/affiliation-requests/${requestId}/approve`, credentialsData || {});
       await fetchParkings();
       // Recargar solicitudes para reflejar APPROVED
       try {
@@ -808,14 +827,55 @@ export const EstablishmentProvider = ({ children }) => {
       const req = affiliationRequests.find(r => String(r.id) === String(requestId));
       if (!req) return null;
       const newEstId = `EST-${Date.now().toString().slice(-4)}`;
+      const adminEmail = (credentialsData?.adminEmail || req.email).toLowerCase();
+      const adminName = credentialsData?.adminName || req.ownerName;
+      const adminPassword = credentialsData?.adminPassword || `SmartPark_${Date.now().toString().slice(-4)}!`;
       const newEstablishment = {
-        id: newEstId, name: req.parkingName, address: req.address || 'Jr. 28 de Julio 100', city: req.city || 'Ayacucho - Huamanga', level: 'Nivel 1 - Superficie', rate: Number(req.rate) || 5.0, status: 'Operativo', owner: req.ownerName, ruc: '20' + Math.floor(100000000 + Math.random() * 900000000), phone: req.phone || '+51 966 000 000', whatsapp: (req.phone || '').replace(/\D/g, '') || '51966000000', email: req.email || 'cochera@smartpark.pe', schedule: 'Lunes a Domingo: 24 Horas', description: req.notes || 'Estacionamiento afiliado', latitude: -13.1606 + (Math.random() - 0.5) * 0.008, longitude: -74.2257 + (Math.random() - 0.5) * 0.008, mapsUrl: `https://maps.google.com/?q=-13.1606,-74.2257`, socials: { facebook: '', instagram: '', tiktok: '', website: '' }, commission: '10%', image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', elements: [{ id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 }, { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 }, { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 }, { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 }, { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 }, { id: 6, type: 'crosswalk', x: 500, y: 250, w: 80, h: 200, rot: 0 }, { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'ACCESO GARITA ANPR' }, { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' }, { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 145, y: 480, w: 38, h: 65, rot: 0, status: 'free' }]
+        id: newEstId, name: req.parkingName, address: req.address || 'Jr. 28 de Julio 100', city: req.city || 'Ayacucho - Huamanga', level: 'Nivel 1 - Superficie', rate: Number(req.rate) || 5.0, status: 'Operativo', owner: adminName, ruc: '20' + Math.floor(100000000 + Math.random() * 900000000), phone: req.phone || '+51 966 000 000', whatsapp: (req.phone || '').replace(/\D/g, '') || '51966000000', email: adminEmail, schedule: 'Lunes a Domingo: 24 Horas', description: req.notes || 'Estacionamiento afiliado', latitude: -13.1606 + (Math.random() - 0.5) * 0.008, longitude: -74.2257 + (Math.random() - 0.5) * 0.008, mapsUrl: `https://maps.google.com/?q=-13.1606,-74.2257`, socials: { facebook: '', instagram: '', tiktok: '', website: '' }, commission: '10%', image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', elements: [{ id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 }, { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 }, { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 }, { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 }, { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 }, { id: 6, type: 'crosswalk', x: 500, y: 250, w: 80, h: 200, rot: 0 }, { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'ACCESO GARITA ANPR' }, { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' }, { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 145, y: 480, w: 38, h: 65, rot: 0, status: 'free' }]
       };
       setEstablishments(prev => [newEstablishment, ...prev]);
-      const newAdmin = { id: Date.now(), name: req.ownerName, email: req.email.toLowerCase(), phone: req.phone, establishmentId: newEstId, establishmentName: req.parkingName, role: 'local' };
-      setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== req.email.toLowerCase())]);
+      const newAdmin = { id: Date.now(), name: adminName, email: adminEmail, phone: req.phone, establishmentId: newEstId, establishmentName: req.parkingName, role: 'local' };
+      setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== adminEmail)]);
       setAffiliationRequests(prev => prev.map(r => String(r.id) === String(requestId) ? { ...r, status: 'APPROVED', approvedAt: new Date().toISOString(), establishmentId: newEstId } : r));
-      return { establishment: newEstablishment, admin: newAdmin };
+      return { 
+        status: 'approved',
+        parking_id: newEstId,
+        parking_name: req.parkingName,
+        admin_email: adminEmail,
+        admin_password: adminPassword,
+        admin_name: adminName,
+        admin_phone: req.phone,
+        message: 'Sede aprobada con credenciales' 
+      };
+    }
+  };
+
+  // Obtener credenciales del administrador local de una sede
+  const getParkingCredentials = async (parkingId) => {
+    try {
+      const match = String(parkingId).match(/\d+/);
+      const numId = match ? Number(match[0]) : Number(parkingId);
+      if (isNaN(numId)) return null;
+      const res = await api.get(`/parkings/${numId}/admin-credentials`);
+      return res.data;
+    } catch (e) {
+      console.warn('getParkingCredentials error', e);
+      return null;
+    }
+  };
+
+  // Asignar o resetear credenciales del administrador local de una sede
+  const assignParkingCredentials = async (parkingId, credentialsData) => {
+    try {
+      const match = String(parkingId).match(/\d+/);
+      const numId = match ? Number(match[0]) : Number(parkingId);
+      if (isNaN(numId)) throw new Error('ID de sede inválido');
+      const res = await api.post(`/parkings/${numId}/admin-credentials`, credentialsData);
+      await fetchParkings();
+      return res.data;
+    } catch (e) {
+      console.warn('assignParkingCredentials error', e);
+      throw e;
     }
   };
 
@@ -844,7 +904,7 @@ export const EstablishmentProvider = ({ children }) => {
   };
 
   // Agregar nuevo establecimiento manual - intenta Backend API primero
-  const addEstablishment = async (newEst) => {
+  const addEstablishment = async (newEst, adminCredentials = null) => {
     const token = getAccessToken();
     if (token || true) {
       try {
@@ -859,6 +919,17 @@ export const EstablishmentProvider = ({ children }) => {
           status: 'active', 
           total_capacity: newEst.totalSlots || newEst.elements?.filter(e=>e.type==='slot').length || 10, 
           image_url: newEst.image,
+          owner: newEst.owner || '',
+          ruc: newEst.ruc || '',
+          description: newEst.description || '',
+          phone: newEst.phone || '',
+          whatsapp: newEst.whatsapp || '',
+          email: adminCredentials?.email || newEst.email || '',
+          schedule: newEst.schedule || 'Lunes a Domingo: 24 Horas',
+          reference: newEst.reference || '',
+          level: newEst.level || 'Nivel 1 - Superficie',
+          maps_url: newEst.mapsUrl || newEst.maps_url || '',
+          socials: typeof newEst.socials === 'object' ? JSON.stringify(newEst.socials) : (newEst.socials || ''),
           rate_auto: newEst.rate_auto != null ? Number(newEst.rate_auto) : (Number(newEst.rate) || 5.0),
           rate_suv: newEst.rate_suv != null ? Number(newEst.rate_suv) : 7.0,
           rate_mototaxi: newEst.rate_mototaxi != null ? Number(newEst.rate_mototaxi) : 3.5,
@@ -877,13 +948,32 @@ export const EstablishmentProvider = ({ children }) => {
           require_reservation_prepay: !!newEst.require_reservation_prepay,
           reservation_fee: Number(newEst.reservation_fee || 0.0),
           min_stay_hours: Number(newEst.min_stay_hours || 1),
-          max_stay_hours: Number(newEst.max_stay_hours || 24)
+          max_stay_hours: Number(newEst.max_stay_hours || 24),
+          allow_open_stay: newEst.allow_open_stay !== undefined ? !!newEst.allow_open_stay : true
         };
         const res = await api.post('/parkings', payload);
         if (res.data?.id) {
-          const created = { 
+          if (adminCredentials && adminCredentials.email) {
+            try {
+              await api.post(`/parkings/${res.data.id}/admin-credentials`, adminCredentials);
+            } catch (errCred) {
+              console.warn('Could not assign admin credentials on addEstablishment', errCred);
+            }
+          }
+          const created = sanitizeEstablishment({ 
             ...newEst, 
             id: String(res.data.id), 
+            owner: res.data.owner || newEst.owner || '',
+            ruc: res.data.ruc || newEst.ruc || '',
+            description: res.data.description || newEst.description || '',
+            phone: res.data.phone || newEst.phone || '',
+            whatsapp: res.data.whatsapp || newEst.whatsapp || '',
+            email: res.data.email || newEst.email || '',
+            schedule: res.data.schedule || newEst.schedule || 'Lunes a Domingo: 24 Horas',
+            reference: res.data.reference || newEst.reference || '',
+            level: res.data.level || newEst.level || '',
+            mapsUrl: res.data.maps_url || newEst.mapsUrl || '',
+            socials: res.data.socials ? (typeof res.data.socials === 'string' ? JSON.parse(res.data.socials) : res.data.socials) : (newEst.socials || {}),
             rate: res.data.hourly_rate, 
             rate_auto: res.data.rate_auto,
             rate_suv: res.data.rate_suv,
@@ -906,8 +996,9 @@ export const EstablishmentProvider = ({ children }) => {
             max_stay_hours: res.data.max_stay_hours,
             image: res.data.image_url, 
             status: res.data.status === 'active' ? 'Operativo' : res.data.status 
-          };
+          });
           setEstablishments(prev => [created, ...prev]);
+          await fetchParkings();
           return created;
         }
       } catch (e) { console.warn('addEstablishment backend fallback', e.response?.data); }
@@ -918,29 +1009,47 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Actualizar datos de un establecimiento - persistente
   const updateEstablishment = async (id, updatedFields) => {
+    // 1. Actualización inmediata local
     setEstablishments(prev => {
       const next = prev.map(est => String(est.id) === String(id) ? sanitizeEstablishment({ ...est, ...updatedFields }) : est);
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
-    const numId = Number(id);
+
+    // 2. Resolver ID numérico para el backend
+    let numId = Number(id);
+    if (isNaN(numId)) {
+      const match = String(id).match(/\d+/);
+      if (match) numId = Number(match[0]);
+    }
+
     if (!isNaN(numId)) {
       try {
         const payload = {};
-        if (updatedFields.name) payload.name = updatedFields.name;
-        if (updatedFields.address) payload.address = updatedFields.address;
-        if (updatedFields.city) payload.city = updatedFields.city || 'Ayacucho - Huamanga';
-        if (updatedFields.rate) payload.hourly_rate = Number(updatedFields.rate);
-        if (updatedFields.tolerance !== undefined) payload.tolerance_minutes = Math.max(5, Math.min(60, Number(updatedFields.tolerance) || 15));
-        if (updatedFields.status) payload.status = updatedFields.status === 'Operativo' ? 'active' : updatedFields.status;
-        if (updatedFields.image) payload.image_url = updatedFields.image;
+        if (updatedFields.name !== undefined) payload.name = updatedFields.name;
+        if (updatedFields.address !== undefined) payload.address = updatedFields.address;
+        if (updatedFields.city !== undefined) payload.city = updatedFields.city || 'Ayacucho - Huamanga';
+        if (updatedFields.owner !== undefined) payload.owner = updatedFields.owner;
+        if (updatedFields.ruc !== undefined) payload.ruc = updatedFields.ruc;
         if (updatedFields.description !== undefined) payload.description = updatedFields.description;
         if (updatedFields.phone !== undefined) payload.phone = updatedFields.phone;
+        if (updatedFields.whatsapp !== undefined) payload.whatsapp = updatedFields.whatsapp;
         if (updatedFields.email !== undefined) payload.email = updatedFields.email;
+        if (updatedFields.schedule !== undefined) payload.schedule = updatedFields.schedule;
         if (updatedFields.reference !== undefined) payload.reference = updatedFields.reference;
         if (updatedFields.level !== undefined) payload.level = updatedFields.level;
-        if (updatedFields.latitude) payload.latitude = Number(updatedFields.latitude);
-        if (updatedFields.longitude) payload.longitude = Number(updatedFields.longitude);
+        if (updatedFields.mapsUrl !== undefined || updatedFields.maps_url !== undefined) {
+          payload.maps_url = updatedFields.mapsUrl || updatedFields.maps_url;
+        }
+        if (updatedFields.socials !== undefined) {
+          payload.socials = typeof updatedFields.socials === 'object' ? JSON.stringify(updatedFields.socials) : String(updatedFields.socials);
+        }
+        if (updatedFields.rate !== undefined) payload.hourly_rate = Number(updatedFields.rate);
+        if (updatedFields.tolerance !== undefined) payload.tolerance_minutes = Math.max(5, Math.min(60, Number(updatedFields.tolerance) || 15));
+        if (updatedFields.status !== undefined) payload.status = updatedFields.status === 'Operativo' ? 'active' : updatedFields.status;
+        if (updatedFields.image !== undefined) payload.image_url = updatedFields.image;
+        if (updatedFields.latitude !== undefined) payload.latitude = Number(updatedFields.latitude);
+        if (updatedFields.longitude !== undefined) payload.longitude = Number(updatedFields.longitude);
         if (updatedFields.rate_auto !== undefined) payload.rate_auto = Number(updatedFields.rate_auto);
         if (updatedFields.rate_suv !== undefined) payload.rate_suv = Number(updatedFields.rate_suv);
         if (updatedFields.rate_mototaxi !== undefined) payload.rate_mototaxi = Number(updatedFields.rate_mototaxi);
@@ -960,7 +1069,13 @@ export const EstablishmentProvider = ({ children }) => {
         if (updatedFields.reservation_fee !== undefined) payload.reservation_fee = Number(updatedFields.reservation_fee);
         if (updatedFields.min_stay_hours !== undefined) payload.min_stay_hours = Number(updatedFields.min_stay_hours);
         if (updatedFields.max_stay_hours !== undefined) payload.max_stay_hours = Number(updatedFields.max_stay_hours);
-        if (Object.keys(payload).length) await api.put(`/parkings/${numId}`, payload);
+        if (updatedFields.allow_open_stay !== undefined) payload.allow_open_stay = !!updatedFields.allow_open_stay;
+        
+        if (Object.keys(payload).length) {
+          await api.put(`/parkings/${numId}`, payload);
+          // Re-sincronizar de inmediato para reflejar datos frescos en todas las pestañas y roles
+          await fetchParkings();
+        }
       } catch (e) { console.warn('updateEstablishment backend fail', e.response?.data); }
     }
   };
@@ -1159,7 +1274,8 @@ export const EstablishmentProvider = ({ children }) => {
       billingUnit: r.billing_unit || 'hour',
       estimatedMinutes: r.estimated_minutes || Math.max(1, Math.round((endMs - startMs) / 60000)) || 60,
       isNightShift: !!r.is_night_shift,
-      prepaid: !!r.prepaid
+      prepaid: !!r.prepaid,
+      isOpenStay: !!r.is_open_stay
     };
   };
 
@@ -1425,6 +1541,8 @@ export const EstablishmentProvider = ({ children }) => {
       approveAffiliationRequest,
       rejectAffiliationRequest,
       isApprovedAdminEmail,
+      getParkingCredentials,
+      assignParkingCredentials,
       addEstablishment,
       updateEstablishment,
       updateEstablishmentPlan,

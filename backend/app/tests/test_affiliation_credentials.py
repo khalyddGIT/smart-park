@@ -139,3 +139,66 @@ def test_set_parking_admin_credentials_and_login():
             assert login_res.json()['user']['role'] == 'local'
 
     asyncio.run(_run())
+
+
+def test_approve_affiliation_with_snake_case_payload():
+    async def _run():
+        transport = ASGITransport(app=app)
+        
+        async with AsyncSessionLocal() as db:
+            res = await db.execute(select(User).where(User.role == 'platform'))
+            superadmin = res.scalars().first()
+            if not superadmin:
+                superadmin = User(
+                    full_name='Super Admin Plataforma',
+                    email='superadmin_test@smartpark.pe',
+                    hashed_password=get_password_hash('SuperAdminPass123!'),
+                    role='platform',
+                    is_active=True
+                )
+                db.add(superadmin)
+                await db.commit()
+                await db.refresh(superadmin)
+            
+            token = create_access_token(subject=superadmin.id)
+        
+        headers = {'Authorization': f'Bearer {token}'}
+        uid = uuid.uuid4().hex[:6]
+        owner_email = f'afiliado.snake.{uid}@gmail.com'
+        owner_name = f'Don Snake {uid}'
+        parking_name = f'Cochera Snake {uid}'
+        chosen_password = 'SnakePassword2026!#'
+
+        async with AsyncClient(transport=transport, base_url='http://test') as ac:
+            req_res = await ac.post('/api/v1/affiliation-requests', json={
+                'parkingName': parking_name,
+                'ownerName': owner_name,
+                'email': owner_email,
+                'capacity': 20,
+                'rate': 4.50
+            })
+            assert req_res.status_code == 201
+            req_id = req_res.json()['id']
+
+            # Enviar formato snake_case como hace el frontend
+            approve_res = await ac.put(f'/api/v1/affiliation-requests/{req_id}/approve', json={
+                'admin_email': owner_email,
+                'admin_password': chosen_password,
+                'admin_name': owner_name,
+                'admin_phone': '987654321'
+            }, headers=headers)
+            assert approve_res.status_code == 200
+            approve_data = approve_res.json()
+            assert approve_data['admin_password'] == chosen_password
+            assert approve_data['admin_email'] == owner_email
+
+            # Comprobar que puede hacer login con las credenciales actualizadas
+            login_res = await ac.post('/api/v1/auth/login', json={
+                'email': owner_email.upper(),  # Prueba también case insensitivity
+                'password': chosen_password
+            })
+            assert login_res.status_code == 200
+            assert login_res.json()['user']['role'] == 'local'
+
+    asyncio.run(_run())
+

@@ -10,6 +10,7 @@ from google.auth.transport import requests as google_requests
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt, JWTError
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
@@ -124,7 +125,8 @@ async def login_user(user_in: UserLogin, request: Request, response: Response, d
         )
         raise HTTPException(status_code=429, detail="Demasiados intentos de inicio de sesión. Espera un minuto e inténtalo de nuevo.")
 
-    result = await db.execute(select(User).where(User.email == user_in.email))
+    clean_email = user_in.email.strip().lower()
+    result = await db.execute(select(User).where(func.lower(User.email) == clean_email))
     user = result.scalars().first()
     from app.core.audit_service import record_audit_event
 

@@ -58,6 +58,7 @@ class UserLogin(BaseModel):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
+    password: Optional[str] = None
     avatar_url: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None

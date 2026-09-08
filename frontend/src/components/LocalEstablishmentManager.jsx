@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -35,10 +35,13 @@ import {
   DollarSign,
   ShieldCheck,
   Bike,
-  Truck
+  Truck,
+  Store,
+  Layers
 } from 'lucide-react';
 import { InteractiveFloorPlanDrawingStudio } from './InteractiveFloorPlanDrawingStudio';
-import { useEstablishments } from '../context/EstablishmentContext';
+import { useEstablishments, isMyEstablishment } from '../context/EstablishmentContext';
+import { useAuth } from '../context/AuthContext';
 
 // Imagen de respaldo SVG ultra confiable para cuando la red no tenga acceso a Unsplash
 export const FALLBACK_PARKING_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500' width='800' height='500'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230f172a'/%3E%3Cstop offset='100%25' stop-color='%231e293b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3Ccircle cx='400' cy='210' r='85' fill='%2310b981' fill-opacity='0.15'/%3E%3Cpath d='M345 250 L455 250 L430 175 L370 175 Z' fill='%2310b981' fill-opacity='0.6'/%3E%3Crect x='330' y='250' width='140' height='40' rx='10' fill='%2310b981'/%3E%3Ccircle cx='365' cy='290' r='14' fill='%230f172a'/%3E%3Ccircle cx='435' cy='290' r='14' fill='%230f172a'/%3E%3Ctext x='400' y='370' font-family='system-ui, sans-serif' font-size='22' font-weight='bold' fill='%23f8fafc' text-anchor='middle'%3ESmart Park Huamanga%3C/text%3E%3Ctext x='400' y='402' font-family='system-ui, sans-serif' font-size='14' fill='%2394a3b8' text-anchor='middle'%3EEstacionamiento Seguro y Conectado%3C/text%3E%3C/svg%3E";
@@ -283,6 +286,7 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
 };
 
 export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) => {
+  const { role, user } = useAuth();
   const { 
     establishments, 
     addEstablishment, 
@@ -472,15 +476,24 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     e.target.value = ''; // Permitir volver a seleccionar el mismo archivo
   };
 
-  // Abrir vista para crear
-  const handleOpenAdd = () => {
+  // Abrir vista para crear nueva sede / sucursal
+  const handleOpenAdd = (localGroup = null) => {
     setIsEditingNew(true);
     setSelectedEstablishment(null);
+
+    const defaultOwner = localGroup?.owner || localGroup?.name || user?.name || 'Administración Local';
+    const defaultName = localGroup ? `${localGroup.name} - Nueva Sucursal` : (user?.establishmentName ? `${user.establishmentName} - Sucursal Central` : '');
+    const defaultPhone = localGroup?.phone || user?.phone || '+51 966 123 456';
+    const defaultEmail = localGroup?.email || user?.email || 'contacto@smartpark.pe';
+    const defaultRuc = localGroup?.ruc || ('20' + Math.floor(100000000 + Math.random() * 900000000));
+    const defaultAddress = localGroup?.address || 'Jr. 28 de Julio 320, Huamanga';
+    const defaultCity = localGroup?.city || 'Ayacucho - Huamanga';
+
     setFormData({
-      name: '',
-      address: 'Jr. 28 de Julio 320, Huamanga',
-      reference: 'A media cuadra de la Plaza Mayor',
-      city: 'Ayacucho - Huamanga',
+      name: defaultName,
+      address: defaultAddress,
+      reference: 'Ingreso vehicular principal',
+      city: defaultCity,
       level: 'Nivel 1 - Superficie',
       rate: 5.00,
       rate_auto: 5.00,
@@ -505,13 +518,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       allow_open_stay: true,
       tolerance: 15,
       status: 'Operativo',
-      owner: 'Administración Cochera Huamanga',
-      ruc: '20' + Math.floor(100000000 + Math.random() * 900000000),
-      phone: '+51 966 123 456',
-      whatsapp: '51966123456',
-      email: 'contacto@cocherahuamanga.pe',
+      owner: defaultOwner,
+      ruc: defaultRuc,
+      phone: defaultPhone,
+      whatsapp: defaultPhone.replace(/\D/g, ''),
+      email: defaultEmail,
       schedule: 'Lunes a Domingo: 24 Horas (Abierto 24/7)',
-      description: 'Estacionamiento seguro con cámaras ANPR en zona céntrica de Huamanga.',
+      description: `Sucursal y punto de atención de ${defaultOwner} con garita ANPR digital.`,
       image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800',
       latitude: -13.1604,
       longitude: -74.2259,
@@ -804,12 +817,77 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     }
   };
 
-  const filteredEstablishments = establishments.filter(est => 
-    est.name.toLowerCase().includes(search.toLowerCase()) ||
-    est.address.toLowerCase().includes(search.toLowerCase()) ||
-    est.level.toLowerCase().includes(search.toLowerCase()) ||
-    (est.city && est.city.toLowerCase().includes(search.toLowerCase()))
-  );
+  // 1. Filtrar los establecimientos que le pertenecen exclusivamente al admin local autenticado
+  const myFilteredEstablishments = useMemo(() => {
+    return establishments.filter(est => isMyEstablishment(est, user, role));
+  }, [establishments, user, role]);
+
+  // 2. Aplicar filtro de búsqueda sobre las sedes autorizadas
+  const filteredEstablishments = useMemo(() => {
+    if (!search.trim()) return myFilteredEstablishments;
+    const q = search.toLowerCase();
+    return myFilteredEstablishments.filter(est => 
+      est.name.toLowerCase().includes(q) ||
+      est.address.toLowerCase().includes(q) ||
+      (est.level && est.level.toLowerCase().includes(q)) ||
+      (est.owner && est.owner.toLowerCase().includes(q)) ||
+      (est.city && est.city.toLowerCase().includes(q))
+    );
+  }, [myFilteredEstablishments, search]);
+
+  // 3. Agrupación por Establecimiento / Local Principal -> Sucursales
+  const establishmentGroups = useMemo(() => {
+    const groups = new Map();
+
+    filteredEstablishments.forEach((est) => {
+      let localName = (est.owner || '').trim();
+      let branchName = est.name;
+
+      if (est.name.includes(' - ')) {
+        const parts = est.name.split(' - ');
+        if (!localName || localName.toLowerCase().includes('administración') || localName.toLowerCase().includes('socio') || localName.toLowerCase().includes('consorcio')) {
+          localName = parts[0].trim();
+        }
+        branchName = parts.slice(1).join(' - ').trim();
+      } else if (!localName) {
+        localName = est.name;
+      }
+
+      const groupKey = localName.toLowerCase().trim();
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          key: groupKey,
+          name: localName,
+          owner: est.owner || localName,
+          ruc: est.ruc || '',
+          phone: est.phone || '',
+          whatsapp: est.whatsapp || '',
+          email: est.email || '',
+          city: est.city || 'Ayacucho - Huamanga',
+          address: est.address || '',
+          branches: [],
+          totalSlots: 0,
+          freeSlots: 0
+        });
+      }
+
+      const g = groups.get(groupKey);
+      g.branches.push({ ...est, branchDisplayName: branchName });
+
+      const elements = est.elements || [];
+      const total = elements.filter(e => e.type === 'slot').length || est.totalSlots || 0;
+      const free = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
+      g.totalSlots += total;
+      g.freeSlots += free;
+      if (!g.phone && est.phone) g.phone = est.phone;
+      if (!g.ruc && est.ruc) g.ruc = est.ruc;
+      if (!g.email && est.email) g.email = est.email;
+      if (!g.address && est.address) g.address = est.address;
+    });
+
+    return Array.from(groups.values());
+  }, [filteredEstablishments]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -822,7 +900,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       )}
 
       {/* =========================================================================
-          VISTA 1: LISTADO PRINCIPAL CRUD (PADRÓN DE SEDES)
+          VISTA 1: LISTADO PRINCIPAL CRUD (LOCALES Y SUCURSALES)
           ========================================================================= */}
       {activeViewMode === 'list' && (
         <div className="space-y-6">
@@ -836,12 +914,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 <span className="truncate">Gestión de Sedes & Establecimientos</span>
               </h1>
               <p className="text-xs text-slate-500 mt-1.5 max-w-2xl">
-                Edita imágenes, coordenadas GPS en el mapa, tarifas, redes sociales y planos.
+                {role === 'local'
+                  ? 'Gestiona tu local comercial, sus sucursales, planos CAD y tarifas en tiempo real.'
+                  : 'Supervisión global de empresas, establecimientos y sucursales conectadas.'}
               </p>
             </div>
             <Button
-              onClick={handleOpenAdd}
-              className="w-full lg:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs gap-2 shadow-lg shadow-emerald-600/20 rounded-xl h-10 px-5 shrink-0 whitespace-nowrap"
+              onClick={() => handleOpenAdd(null)}
+              className="w-full lg:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs gap-2 shadow-lg shadow-emerald-600/20 rounded-xl h-10 px-5 shrink-0 whitespace-nowrap cursor-pointer"
             >
               <Plus className="w-4 h-4 shrink-0" />
               <span>Registrar Nueva Sede / Nivel</span>
@@ -854,137 +934,264 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none z-10 shrink-0" strokeWidth={2.2} />
               <Input
                 type="text"
-                placeholder="Buscar por nombre de cochera, dirección o ciudad..."
+                placeholder="Buscar por nombre de sucursal, dirección o ciudad..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10 h-10 border-slate-200 bg-white rounded-xl text-xs focus-visible:ring-emerald-500 w-full"
               />
             </div>
-            <div className="bg-white px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 border border-slate-200 shadow-2xs flex items-center justify-center gap-1.5 shrink-0">
-              <span>Total Sedes:</span>
-              <span className="font-mono font-bold text-slate-900">{establishments.length}</span>
+            <div className="bg-white px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 border border-slate-200 shadow-2xs flex items-center justify-center gap-2 shrink-0">
+              <span className="text-slate-400">Locales:</span>
+              <span className="font-mono font-bold text-slate-900">{establishmentGroups.length}</span>
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-400">Sucursales:</span>
+              <span className="font-mono font-bold text-emerald-700">{filteredEstablishments.length}</span>
             </div>
           </div>
 
-          {/* Grid de Establecimientos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredEstablishments.map((est) => {
-              const elements = est.elements || [];
-              const totalSlots = elements.filter(e => e.type === 'slot').length || est.totalSlots || 0;
-              const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
+          {/* ESTADO VACÍO */}
+          {establishmentGroups.length === 0 && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-2xs">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+                <Building2 className="w-8 h-8" />
+              </div>
+              <div className="max-w-md mx-auto space-y-1">
+                <h3 className="text-base font-black text-slate-900">
+                  {search ? 'No se encontraron sucursales' : 'No tienes sedes ni sucursales registradas'}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {search
+                    ? `No hay coincidencias para "${search}". Intenta con otro término.`
+                    : 'Registra tu primer establecimiento y sucursal para activar el plano interactivo CAD, garita ANPR y reservas.'}
+                </p>
+              </div>
+              {!search && (
+                <Button
+                  onClick={() => handleOpenAdd(null)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-2 rounded-xl h-10 px-6 shadow-md shadow-emerald-600/20 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Registrar Mi Primer Establecimiento</span>
+                </Button>
+              )}
+            </div>
+          )}
 
-              return (
-                <div key={est.id} className="border border-slate-200/90 shadow-2xs hover:shadow-md transition overflow-hidden rounded-2xl bg-white flex flex-col justify-between group">
-                  <div>
-                    {/* Imagen Limpia del Local (Sin Badges Flotantes) */}
-                    <div className="h-44 relative bg-slate-100 overflow-hidden">
-                      <img 
-                        src={est.image || FALLBACK_PARKING_IMAGE} 
-                        alt={est.name} 
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
-                        className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-500"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = FALLBACK_PARKING_IMAGE;
-                        }}
-                      />
-                    </div>
-
-                    {/* Datos Principales */}
-                    <div className="p-4 space-y-3">
-                      <div>
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-bold text-slate-900 text-sm leading-tight">{est.name}</h3>
-                          <span className="font-mono font-bold text-emerald-700 text-xs shrink-0">
-                            S/ {Number(est.rate).toFixed(2)}/h
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                          <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-                          <span className="truncate">{est.address} {est.reference ? `(${est.reference})` : ''}</span>
-                        </p>
-                      </div>
-
-                      {/* Capacidad y Estado */}
-                      <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                        <span className="font-medium">
-                          {freeSlots} libres de {totalSlots} plazas
-                        </span>
-                        <span className="text-emerald-700 font-semibold">
-                          {est.status || 'Operativo'}
-                        </span>
-                      </div>
-
-                      {/* Coordenadas & Enlace de Mapa */}
-                      <div className="flex items-center justify-between gap-2 text-xs p-2.5 rounded-xl border border-slate-100 bg-slate-50 font-mono">
-                        <span className="flex items-center gap-1.5 truncate text-slate-600">
-                          <Navigation className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                          <span className="truncate">{est.latitude ? `${Number(est.latitude).toFixed(4)}, ${Number(est.longitude).toFixed(4)}` : 'Sin GPS'}</span>
-                        </span>
-                        {est.latitude && (
-                          <a 
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${est.latitude},${est.longitude}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 shrink-0 bg-white px-2 py-0.5 rounded-lg border border-slate-200 transition text-[11px]"
-                          >
-                            <span>Maps</span>
-                            <ExternalLink className="w-3 h-3 shrink-0" />
-                          </a>
-                        )}
-                      </div>
-                    </div>
+          {/* LISTADO AGRUPADO: LOCAL / ESTABLECIMIENTO -> SUS SUCURSALES */}
+          {establishmentGroups.map((group) => (
+            <div key={group.key} className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden space-y-5 p-5 sm:p-6 transition">
+              {/* CABECERA DEL ESTABLECIMIENTO / LOCAL */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+                <div className="flex items-start gap-3.5 min-w-0">
+                  <div className="p-3 rounded-2xl bg-slate-900 text-emerald-400 shrink-0 shadow-sm">
+                    <Store className="w-6 h-6" />
                   </div>
-
-                  {/* Acciones en Una Sola Fila Limpia y Equilibrada */}
-                  <div className="p-3.5 pt-2.5 border-t border-slate-100 flex items-center gap-1.5">
-                    <Button
-                      type="button"
-                      onClick={() => handleOpenPlan(est, 'editor_cad')}
-                      className="flex-1 h-8.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold gap-1.5 rounded-xl shadow-xs cursor-pointer"
-                    >
-                      <Grid className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span>Plano</span>
-                    </Button>
-
-                    <Button
-                      type="button"
-                      onClick={() => handleOpenPlan(est, 'viewer_2d')}
-                      variant="outline"
-                      className="h-8.5 px-2.5 text-slate-700 bg-white hover:bg-slate-50 border-slate-200 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
-                      title="Ver Plano"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span>Ver</span>
-                    </Button>
-
-                    <Button
-                      type="button"
-                      onClick={() => handleOpenEdit(est)}
-                      variant="outline"
-                      className="h-8.5 px-2.5 text-slate-700 bg-white hover:bg-slate-50 border-slate-200 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
-                      title="Editar información de la sede"
-                    >
-                      <Edit3 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span>Editar</span>
-                    </Button>
-
-                    <Button
-                      type="button"
-                      onClick={() => handleDelete(est.id, est.name)}
-                      variant="ghost"
-                      className="h-8.5 w-8.5 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl shrink-0 flex items-center justify-center cursor-pointer transition-colors"
-                      title="Eliminar Sede"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                    </Button>
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        Local Principal
+                      </span>
+                      {group.ruc && (
+                        <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                          RUC: {group.ruc}
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-black text-slate-900 truncate">
+                      {group.name}
+                    </h2>
+                    <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+                      {group.address && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{group.address}</span>
+                        </span>
+                      )}
+                      {group.phone && (
+                        <span className="flex items-center gap-1">
+                          <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{group.phone}</span>
+                        </span>
+                      )}
+                      {group.email && (
+                        <span className="flex items-center gap-1">
+                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{group.email}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Métricas consolidadas del Local + Botón para agregar sucursal a este local */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs">
+                    <div className="space-y-0.5">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sucursales</div>
+                      <div className="font-black text-slate-900 font-mono text-sm leading-none">{group.branches.length}</div>
+                    </div>
+                    <div className="h-6 w-px bg-slate-200"></div>
+                    <div className="space-y-0.5">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capacidad Total</div>
+                      <div className="font-bold text-emerald-700 font-mono text-xs leading-none">
+                        {group.freeSlots} libres / {group.totalSlots}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={() => handleOpenAdd(group)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs gap-1.5 shadow-md shadow-emerald-600/20 rounded-xl h-10 px-4 shrink-0 cursor-pointer"
+                    title={`Registrar una nueva sucursal dentro de ${group.name}`}
+                  >
+                    <Plus className="w-4 h-4 shrink-0" />
+                    <span>+ Agregar Sucursal a este Local</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* SECCIÓN SUCURSALES DE ESTE LOCAL */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-emerald-600" />
+                    <span>Sucursales y Sedes de {group.name} ({group.branches.length})</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                    Cada sucursal opera con su plano CAD, garita y configuración propia
+                  </span>
+                </div>
+
+                {/* Grid de Sucursales de este Local */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {group.branches.map((est) => {
+                    const elements = est.elements || [];
+                    const totalSlots = elements.filter(e => e.type === 'slot').length || est.totalSlots || 0;
+                    const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
+
+                    return (
+                      <div key={est.id} className="border border-slate-200/90 shadow-2xs hover:shadow-md transition overflow-hidden rounded-2xl bg-white flex flex-col justify-between group">
+                        <div>
+                          {/* Imagen de la Sucursal */}
+                          <div className="h-40 relative bg-slate-100 overflow-hidden">
+                            <img 
+                              src={est.image || FALLBACK_PARKING_IMAGE} 
+                              alt={est.name} 
+                              referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
+                              className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-500"
+                              loading="lazy"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = FALLBACK_PARKING_IMAGE;
+                              }}
+                            />
+                            <div className="absolute top-2.5 right-2.5 bg-slate-900/85 backdrop-blur-md text-emerald-400 px-2.5 py-1 rounded-xl text-xs font-mono font-bold border border-emerald-500/30">
+                              S/ {Number(est.rate).toFixed(2)}/h
+                            </div>
+                            {est.level && (
+                              <div className="absolute bottom-2.5 left-2.5 bg-white/90 backdrop-blur-md text-slate-800 px-2 py-0.5 rounded-lg text-[10px] font-bold border border-slate-200">
+                                {est.level}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Datos Principales */}
+                          <div className="p-4 space-y-3">
+                            <div>
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="font-bold text-slate-900 text-sm leading-tight">
+                                  {est.branchDisplayName || est.name}
+                                </h4>
+                                <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full shrink-0 ${est.status === 'Operativo' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
+                                  {est.status || 'Operativo'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                                <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                                <span className="truncate">{est.address} {est.reference ? `(${est.reference})` : ''}</span>
+                              </p>
+                            </div>
+
+                            {/* Capacidad */}
+                            <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                              <span className="font-medium">Ocupación:</span>
+                              <span className="font-mono font-bold text-emerald-700">
+                                {freeSlots} libres / {totalSlots} plazas
+                              </span>
+                            </div>
+
+                            {/* Coordenadas & Enlace de Mapa */}
+                            <div className="flex items-center justify-between gap-2 text-xs p-2 rounded-xl border border-slate-100 bg-slate-50 font-mono">
+                              <span className="flex items-center gap-1.5 truncate text-slate-600 text-[11px]">
+                                <Navigation className="w-3 h-3 shrink-0 text-slate-400" />
+                                <span className="truncate">{est.latitude ? `${Number(est.latitude).toFixed(4)}, ${Number(est.longitude).toFixed(4)}` : 'Sin GPS'}</span>
+                              </span>
+                              {est.latitude && (
+                                <a 
+                                  href={`https://www.google.com/maps/dir/?api=1&destination=${est.latitude},${est.longitude}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 shrink-0 bg-white px-2 py-0.5 rounded-lg border border-slate-200 transition text-[11px]"
+                                >
+                                  <span>Maps</span>
+                                  <ExternalLink className="w-3 h-3 shrink-0" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Acciones de la Sucursal */}
+                        <div className="p-3.5 pt-2.5 border-t border-slate-100 flex items-center gap-1.5 bg-slate-50/40">
+                          <Button
+                            type="button"
+                            onClick={() => handleOpenPlan(est, 'editor_cad')}
+                            className="flex-1 h-8.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold gap-1.5 rounded-xl shadow-xs cursor-pointer"
+                          >
+                            <Grid className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Plano</span>
+                          </Button>
+
+                          <Button
+                            type="button"
+                            onClick={() => handleOpenPlan(est, 'viewer_2d')}
+                            variant="outline"
+                            className="h-8.5 px-2.5 text-slate-700 bg-white hover:bg-slate-50 border-slate-200 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
+                            title="Ver Plano"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span>Ver</span>
+                          </Button>
+
+                          <Button
+                            type="button"
+                            onClick={() => handleOpenEdit(est)}
+                            variant="outline"
+                            className="h-8.5 px-2.5 text-slate-700 bg-white hover:bg-slate-50 border-slate-200 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
+                            title="Editar información de la sucursal"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span>Editar</span>
+                          </Button>
+
+                          <Button
+                            type="button"
+                            onClick={() => handleDelete(est.id, est.name)}
+                            variant="ghost"
+                            className="h-8.5 w-8.5 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl shrink-0 flex items-center justify-center cursor-pointer transition-colors"
+                            title="Eliminar Sucursal"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

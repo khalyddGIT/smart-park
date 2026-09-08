@@ -317,24 +317,36 @@ export const AffiliatedParkingsModule = () => {
     setApprovingLoading(true);
 
     try {
+      const chosenPassword = approveForm.adminPassword;
+      const chosenEmail = approveForm.adminEmail.trim();
+      const chosenName = approveForm.adminName.trim();
+      const chosenPhone = approveForm.adminPhone.trim();
+
       const res = await approveAffiliationRequest(approvingRequest.id, {
-        admin_email: approveForm.adminEmail.trim(),
-        admin_password: approveForm.adminPassword,
-        admin_name: approveForm.adminName.trim(),
-        admin_phone: approveForm.adminPhone.trim()
+        admin_email: chosenEmail,
+        admin_password: chosenPassword,
+        admin_name: chosenName,
+        admin_phone: chosenPhone,
+        adminEmail: chosenEmail,
+        adminPassword: chosenPassword,
+        adminName: chosenName,
+        adminPhone: chosenPhone
       });
 
       setShowApproveModal(false);
+
+      const resultingPassword = res?.admin_password || res?.admin_credentials?.temporary_password || chosenPassword;
+      const resultingEmail = res?.admin_email || res?.admin_credentials?.email || chosenEmail;
 
       // Mostrar modal con credenciales listas para compartir
       setCredentialsResult({
         title: '¡Sede Aprobada y Activada Exitosamente!',
         parkingName: approvingRequest.parkingName,
-        email: res?.admin_credentials?.email || approveForm.adminEmail,
-        password: res?.admin_credentials?.temporary_password || approveForm.adminPassword,
+        email: resultingEmail,
+        password: resultingPassword,
         role: 'Administrador de Sede (Local)',
-        phone: approveForm.adminPhone,
-        ownerName: approveForm.adminName
+        phone: chosenPhone,
+        ownerName: chosenName
       });
 
       notify(`✓ Solicitud aprobada: "${approvingRequest.parkingName}" activada en el sistema`);
@@ -398,27 +410,33 @@ export const AffiliatedParkingsModule = () => {
 
     setSavingCredentials(true);
     try {
+      const email = credentialsForm.adminEmail.trim();
+      const fullName = credentialsForm.adminName.trim();
+      const phone = credentialsForm.adminPhone.trim();
+      const password = credentialsForm.adminPassword ? credentialsForm.adminPassword : undefined;
+
       const payload = {
-        email: credentialsForm.adminEmail.trim(),
-        full_name: credentialsForm.adminName.trim(),
-        phone: credentialsForm.adminPhone.trim()
+        email,
+        full_name: fullName,
+        fullName: fullName,
+        phone
       };
-      if (credentialsForm.adminPassword) {
-        payload.password = credentialsForm.adminPassword;
+      if (password) {
+        payload.password = password;
       }
 
       const res = await assignParkingCredentials(credentialsSede.id, payload);
       setShowCredentialsModal(false);
 
-      if (credentialsForm.adminPassword) {
+      if (password) {
         setCredentialsResult({
           title: 'Credenciales de Sede Actualizadas',
           parkingName: credentialsSede.name,
-          email: credentialsForm.adminEmail,
-          password: credentialsForm.adminPassword,
+          email,
+          password,
           role: 'Administrador de Sede (Local)',
-          phone: credentialsForm.adminPhone,
-          ownerName: credentialsForm.adminName
+          phone,
+          ownerName: fullName
         });
       }
 

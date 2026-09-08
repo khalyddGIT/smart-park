@@ -97,6 +97,10 @@ async def update_user(
     
     prev_active = user.is_active
     update_data = user_in.model_dump(exclude_unset=True)
+    if "password" in update_data:
+        pwd = update_data.pop("password")
+        if pwd and len(pwd) >= 8:
+            user.hashed_password = get_password_hash(pwd)
     for key, value in update_data.items():
         setattr(user, key, value)
     

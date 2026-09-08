@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Shield, UserCheck, KeyRound, Plus, Edit3, Search, Check, Lock, Power, Info, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { saveLocalUserCredential } from '../context/EstablishmentContext';
 import api from '../services/api';
 
 // Formatea la fecha ISO del backend a texto corto
@@ -112,6 +113,12 @@ export const UserRolesModule = () => {
         email: formData.email.trim(),
         password: formData.password,
       });
+      saveLocalUserCredential({
+        email: formData.email.trim(),
+        password: formData.password,
+        full_name: formData.full_name.trim(),
+        role: 'user'
+      });
       setShowAddModal(false);
       notify(`Usuario "${formData.full_name.trim()}" creado con rol Conductor (user).`);
       await loadUsers(); // refresh post-mutación
@@ -120,20 +127,39 @@ export const UserRolesModule = () => {
     }
   };
 
-  // PUT /users/{id} — solo full_name y phone (el email no es editable vía API).
+  // PUT /users/{id} — actualiza full_name, phone y opcionalmente password
   // Si el rol cambió en el formulario, se aplica además PUT /users/{id}/role.
   const handleEdit = async (e) => {
     e.preventDefault();
     if (!selectedUser) return;
 
+    if (formData.password && formData.password.length < 8) {
+      notify('La contraseña debe tener al menos 8 caracteres si deseas cambiarla.');
+      return;
+    }
+
     try {
-      await api.put(`/users/${selectedUser.id}`, {
+      const payload = {
         full_name: formData.full_name.trim(),
         phone: formData.phone.trim(),
-      });
+      };
+      if (formData.password && formData.password.length >= 8) {
+        payload.password = formData.password;
+      }
+
+      await api.put(`/users/${selectedUser.id}`, payload);
       if (formData.role !== selectedUser.role) {
         await api.put(`/users/${selectedUser.id}/role`, { role: formData.role });
       }
+
+      saveLocalUserCredential({
+        email: selectedUser.email,
+        password: formData.password || undefined,
+        full_name: formData.full_name.trim(),
+        phone: formData.phone.trim(),
+        role: formData.role
+      });
+
       setShowEditModal(false);
       notify(`Usuario "${formData.full_name}" actualizado.`);
       await loadUsers();
@@ -504,6 +530,18 @@ export const UserRolesModule = () => {
                 <option value="local">Operador de Garita</option>
                 <option value="platform">Super Admin</option>
               </select>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Nueva Contraseña (opcional)</label>
+              <Input
+                type="password"
+                placeholder="•••••••• (dejar en blanco para conservar actual)"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                minLength={8}
+                className="text-xs"
+              />
+              <span className="text-[10px] text-slate-400">Mínimo 8 caracteres para cambiar la clave de acceso.</span>
             </div>
 
             <Button type="submit" className="w-full font-bold text-xs py-3 bg-emerald-600 hover:bg-emerald-700 mt-2">

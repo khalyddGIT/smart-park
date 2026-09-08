@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
-import { useEstablishments } from './context/EstablishmentContext';
+import { useEstablishments, isMyEstablishment } from './context/EstablishmentContext';
 import api from './services/api';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -1034,11 +1034,12 @@ const AppMain = () => {
                   </div>
                   {/* Solo mapa del parking del establecimiento para el trabajador */}
                   {(() => {
-                    const est = establishments.find(e=>String(e.id)===String(selectedParkingId)) || establishments[0];
-                    if(!est) return <div className="p-6 text-center text-xs text-slate-500">Sin sede asignada</div>;
-                    const free=(est.elements||[]).filter(e=>e.type==='slot' && e.status==='free').length;
-                    const total=(est.elements||[]).filter(e=>e.type==='slot').length || 0;
-                    const occupied=total-free;
+                    const localEsts = establishments.filter(e => isMyEstablishment(e, user, role));
+                    const est = localEsts.find(e => String(e.id) === String(selectedParkingId)) || localEsts[0] || establishments[0];
+                    if (!est) return <div className="p-6 text-center text-xs text-slate-500">Sin sede asignada</div>;
+                    const free = (est.elements || []).filter(e => e.type === 'slot' && e.status === 'free').length;
+                    const total = (est.elements || []).filter(e => e.type === 'slot').length || 0;
+                    const occupied = total - free;
                     return (
                       <div className="space-y-3">
                         <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -1046,8 +1047,8 @@ const AppMain = () => {
                             {isPersonalStaff ? (
                               <span className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs font-bold text-emerald-800">Sede asignada: {est.name} — S/ {Number(est.rate).toFixed(2)}/h</span>
                             ) : (
-                              <select value={est.id} onChange={e=>setSelectedParkingId(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none">
-                                {establishments.map(p=> <option key={p.id} value={p.id}>{p.name} — S/ {Number(p.rate).toFixed(2)}/h</option>)}
+                              <select value={est.id} onChange={e => setSelectedParkingId(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none">
+                                {localEsts.map(p => <option key={p.id} value={p.id}>{p.name} — S/ {Number(p.rate).toFixed(2)}/h</option>)}
                               </select>
                             )}
                             <span className="text-xs font-mono font-bold text-emerald-700">{free} libres / {occupied} ocupados</span>

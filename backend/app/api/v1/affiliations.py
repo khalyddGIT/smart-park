@@ -16,13 +16,33 @@ platform_required = require_role("platform")
 
 
 class AffiliationApproveBody(BaseModel):
-    adminEmail: Optional[str] = Field(None, alias="adminEmail")
-    adminPassword: Optional[str] = Field(None, alias="adminPassword")
-    adminName: Optional[str] = Field(None, alias="adminName")
-    adminPhone: Optional[str] = Field(None, alias="adminPhone")
+    adminEmail: Optional[str] = None
+    admin_email: Optional[str] = None
+    adminPassword: Optional[str] = None
+    admin_password: Optional[str] = None
+    adminName: Optional[str] = None
+    admin_name: Optional[str] = None
+    adminPhone: Optional[str] = None
+    admin_phone: Optional[str] = None
 
     class Config:
         populate_by_name = True
+
+    @property
+    def resolved_email(self) -> Optional[str]:
+        return self.adminEmail or self.admin_email
+
+    @property
+    def resolved_password(self) -> Optional[str]:
+        return self.adminPassword or self.admin_password
+
+    @property
+    def resolved_name(self) -> Optional[str]:
+        return self.adminName or self.admin_name
+
+    @property
+    def resolved_phone(self) -> Optional[str]:
+        return self.adminPhone or self.admin_phone
 
 
 class AffiliationCreate(BaseModel):
@@ -117,12 +137,13 @@ async def approve_request(
         raise HTTPException(status_code=400, detail=f"Solicitud ya está {req.status}")
 
     # Determinar credenciales y datos del administrador local
-    admin_email = (body.adminEmail if body and body.adminEmail else req.email).strip().lower()
-    admin_name = (body.adminName if body and body.adminName else req.owner_name).strip()
-    admin_phone = (body.adminPhone if body and body.adminPhone else req.phone or "").strip() or None
+    admin_email = (body.resolved_email if body and body.resolved_email else req.email).strip().lower()
+    admin_name = (body.resolved_name if body and body.resolved_name else req.owner_name).strip()
+    admin_phone = (body.resolved_phone if body and body.resolved_phone else req.phone or "").strip() or None
     
-    if body and body.adminPassword and len(body.adminPassword) >= 8:
-        raw_password = body.adminPassword
+    cand_password = body.resolved_password if body else None
+    if cand_password and len(cand_password) >= 8:
+        raw_password = cand_password
     else:
         # Generar contraseña segura y legible por defecto
         raw_password = f"SmartPark_{secrets.token_hex(3).upper()}!"
@@ -221,6 +242,12 @@ async def approve_request(
         "admin_password": raw_password,
         "admin_name": admin_name,
         "admin_phone": admin_phone,
+        "admin_credentials": {
+            "email": admin_email,
+            "temporary_password": raw_password,
+            "full_name": admin_name,
+            "phone": admin_phone
+        },
         "message": f"Sede '{parking.name}' aprobada y credenciales de acceso creadas para {admin_email}"
     }
 

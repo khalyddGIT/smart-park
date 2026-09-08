@@ -875,11 +875,16 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
 class ParkingAdminCredentialsIn(BaseModel):
     email: str = Field(..., min_length=4)
     password: Optional[str] = Field(None, min_length=8)
-    fullName: Optional[str] = Field(None, alias="fullName")
+    fullName: Optional[str] = None
+    full_name: Optional[str] = None
     phone: Optional[str] = None
 
     class Config:
         populate_by_name = True
+
+    @property
+    def resolved_full_name(self) -> Optional[str]:
+        return self.fullName or self.full_name
 
 
 class ParkingAdminCredentialsResponse(BaseModel):
@@ -967,7 +972,7 @@ async def set_parking_admin_credentials(
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
 
     email = body.email.strip().lower()
-    full_name = (body.fullName or parking.owner or "Administrador de Sede").strip()
+    full_name = (body.resolved_full_name or parking.owner or "Administrador de Sede").strip()
     phone = (body.phone or parking.phone or "").strip() or None
 
     raw_password = body.password if body.password and len(body.password) >= 8 else f"SmartPark_{secrets.token_hex(3).upper()}!"

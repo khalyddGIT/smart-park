@@ -7,6 +7,38 @@ const STORAGE_KEY = 'smart_park_unified_establishments_v2';
 const RESERVATIONS_STORAGE_KEY_BASE = 'smart_park_unified_reservations_v2';
 const REQUESTS_STORAGE_KEY = 'smart_park_affiliation_requests_v1';
 const APPROVED_ADMINS_STORAGE_KEY = 'smart_park_approved_admins_v1';
+export const LOCAL_USER_CREDENTIALS_KEY = 'smart_park_local_user_credentials_v1';
+
+// Helper para persistir credenciales de usuarios/admins locales tanto en modo online como offline
+export const saveLocalUserCredential = (cred) => {
+  try {
+    if (!cred || !cred.email) return;
+    const emailKey = cred.email.trim().toLowerCase();
+    const existingRaw = localStorage.getItem(LOCAL_USER_CREDENTIALS_KEY);
+    const existing = existingRaw ? JSON.parse(existingRaw) : {};
+    existing[emailKey] = {
+      email: emailKey,
+      password: cred.password || cred.temporary_password || existing[emailKey]?.password || '',
+      full_name: cred.full_name || cred.name || cred.fullName || existing[emailKey]?.full_name || 'Administrador',
+      phone: cred.phone || existing[emailKey]?.phone || '',
+      role: cred.role || existing[emailKey]?.role || 'local',
+      parkingId: cred.parkingId || cred.establishmentId || existing[emailKey]?.parkingId || null,
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(LOCAL_USER_CREDENTIALS_KEY, JSON.stringify(existing));
+  } catch (e) {
+    console.warn('saveLocalUserCredential error', e);
+  }
+};
+
+export const getLocalUserCredentials = () => {
+  try {
+    const raw = localStorage.getItem(LOCAL_USER_CREDENTIALS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+};
 
 // Helper para validar si un establecimiento/sucursal le pertenece al usuario actual (Admin Local)
 export const isMyEstablishment = (est, user, role) => {
@@ -839,8 +871,25 @@ export const EstablishmentProvider = ({ children }) => {
   // Aprobar: persiste en servidor (crea cochera real) y refresca lista
   // Aprobar: persiste en servidor (crea cochera real con credenciales) y refresca lista
   const approveAffiliationRequest = async (requestId, credentialsData = null) => {
+    const adminEmail = (credentialsData?.admin_email || credentialsData?.adminEmail || '').trim().toLowerCase();
+    const adminPassword = credentialsData?.admin_password || credentialsData?.adminPassword || '';
+    const adminName = credentialsData?.admin_name || credentialsData?.adminName || '';
+    const adminPhone = credentialsData?.admin_phone || credentialsData?.adminPhone || '';
+
+    // Preparar payload dual para compatibilidad total
+    const payload = credentialsData ? {
+      adminEmail: adminEmail || undefined,
+      admin_email: adminEmail || undefined,
+      adminPassword: adminPassword || undefined,
+      admin_password: adminPassword || undefined,
+      adminName: adminName || undefined,
+      admin_name: adminName || undefined,
+      adminPhone: adminPhone || undefined,
+      admin_phone: adminPhone || undefined
+    } : {};
+
     try {
-      const res = await api.put(`/affiliation-requests/${requestId}/approve`, credentialsData || {});
+      const res = await api.put(`/affiliation-requests/${requestId}/approve`, payload);
       await fetchParkings();
       // Recargar solicitudes para reflejar APPROVED
       try {
@@ -862,63 +911,239 @@ export const EstablishmentProvider = ({ children }) => {
           })));
         }
       } catch {}
+
+      const effectiveEmail = res.data?.admin_email || adminEmail;
+      const effectivePassword = res.data?.admin_password || res.data?.admin_credentials?.temporary_password || adminPassword;
+      const effectiveName = res.data?.admin_name || adminName;
+      const effectivePhone = res.data?.admin_phone || adminPhone;
+
+      // Registrar en almacenamiento local persistente para garantizar acceso inmediato
+      if (effectiveEmail) {
+        saveLocalUserCredential({
+          email: effectiveEmail,
+          password: effectivePassword,
+          full_name: effectiveName,
+          phone: effectivePhone,
+          role: 'local',
+          parkingId: res.data?.parking_id
+        });
+        const newAdmin = {
+          id: Date.now(),
+          name: effectiveName,
+          email: effectiveEmail,
+          phone: effectivePhone,
+          password: effectivePassword,
+          establishmentId: String(res.data?.parking_id || ''),
+          establishmentName: res.data?.parking_name || '',
+          role: 'local'
+        };
+        setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== effectiveEmail)]);
+      }
+
       return res.data;
     } catch (e) {
       console.warn('approve affiliation fallback local', e?.response?.data);
-      // Fallback local idéntico al anterior (mantiene compatibilidad offline)
+      // Fallback local resiliente (mantiene compatibilidad offline)
       const req = affiliationRequests.find(r => String(r.id) === String(requestId));
       if (!req) return null;
       const newEstId = `EST-${Date.now().toString().slice(-4)}`;
-      const adminEmail = (credentialsData?.adminEmail || req.email).toLowerCase();
-      const adminName = credentialsData?.adminName || req.ownerName;
-      const adminPassword = credentialsData?.adminPassword || `SmartPark_${Date.now().toString().slice(-4)}!`;
+      const fallbackEmail = (adminEmail || req.email || '').trim().toLowerCase();
+      const fallbackName = adminName || req.ownerName || 'Administrador Local';
+      const fallbackPassword = adminPassword || `SmartPark_${Date.now().toString().slice(-4)}!`;
+
       const newEstablishment = {
-        id: newEstId, name: req.parkingName, address: req.address || 'Jr. 28 de Julio 100', city: req.city || 'Ayacucho - Huamanga', level: 'Nivel 1 - Superficie', rate: Number(req.rate) || 5.0, status: 'Operativo', owner: adminName, ruc: '20' + Math.floor(100000000 + Math.random() * 900000000), phone: req.phone || '+51 966 000 000', whatsapp: (req.phone || '').replace(/\D/g, '') || '51966000000', email: adminEmail, schedule: 'Lunes a Domingo: 24 Horas', description: req.notes || 'Estacionamiento afiliado', latitude: -13.1606 + (Math.random() - 0.5) * 0.008, longitude: -74.2257 + (Math.random() - 0.5) * 0.008, mapsUrl: `https://maps.google.com/?q=-13.1606,-74.2257`, socials: { facebook: '', instagram: '', tiktok: '', website: '' }, commission: '10%', image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', elements: [{ id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 }, { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 }, { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 }, { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 }, { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 }, { id: 6, type: 'crosswalk', x: 500, y: 250, w: 80, h: 200, rot: 0 }, { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'ACCESO GARITA ANPR' }, { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' }, { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 145, y: 480, w: 38, h: 65, rot: 0, status: 'free' }]
+        id: newEstId,
+        name: req.parkingName,
+        address: req.address || 'Jr. 28 de Julio 100',
+        city: req.city || 'Ayacucho - Huamanga',
+        level: 'Nivel 1 - Superficie',
+        rate: Number(req.rate) || 5.0,
+        status: 'Operativo',
+        owner: fallbackName,
+        ruc: '20' + Math.floor(100000000 + Math.random() * 900000000),
+        phone: req.phone || '+51 966 000 000',
+        whatsapp: (req.phone || '').replace(/\D/g, '') || '51966000000',
+        email: fallbackEmail,
+        schedule: 'Lunes a Domingo: 24 Horas',
+        description: req.notes || 'Estacionamiento afiliado',
+        latitude: -13.1606 + (Math.random() - 0.5) * 0.008,
+        longitude: -74.2257 + (Math.random() - 0.5) * 0.008,
+        mapsUrl: `https://maps.google.com/?q=-13.1606,-74.2257`,
+        socials: { facebook: '', instagram: '', tiktok: '', website: '' },
+        commission: '10%',
+        image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800',
+        elements: [{ id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 }, { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 }, { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 }, { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 }, { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 }, { id: 6, type: 'crosswalk', x: 500, y: 250, w: 80, h: 200, rot: 0 }, { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'ACCESO GARITA ANPR' }, { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' }, { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 145, y: 480, w: 38, h: 65, rot: 0, status: 'free' }]
       };
       setEstablishments(prev => [newEstablishment, ...prev]);
-      const newAdmin = { id: Date.now(), name: adminName, email: adminEmail, phone: req.phone, establishmentId: newEstId, establishmentName: req.parkingName, role: 'local' };
-      setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== adminEmail)]);
+
+      saveLocalUserCredential({
+        email: fallbackEmail,
+        password: fallbackPassword,
+        full_name: fallbackName,
+        phone: req.phone,
+        role: 'local',
+        parkingId: newEstId
+      });
+
+      const newAdmin = {
+        id: Date.now(),
+        name: fallbackName,
+        email: fallbackEmail,
+        phone: req.phone,
+        password: fallbackPassword,
+        establishmentId: newEstId,
+        establishmentName: req.parkingName,
+        role: 'local'
+      };
+      setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== fallbackEmail)]);
       setAffiliationRequests(prev => prev.map(r => String(r.id) === String(requestId) ? { ...r, status: 'APPROVED', approvedAt: new Date().toISOString(), establishmentId: newEstId } : r));
-      return { 
+
+      return {
         status: 'approved',
         parking_id: newEstId,
         parking_name: req.parkingName,
-        admin_email: adminEmail,
-        admin_password: adminPassword,
-        admin_name: adminName,
+        admin_email: fallbackEmail,
+        admin_password: fallbackPassword,
+        admin_name: fallbackName,
         admin_phone: req.phone,
-        message: 'Sede aprobada con credenciales' 
+        admin_credentials: {
+          email: fallbackEmail,
+          temporary_password: fallbackPassword,
+          full_name: fallbackName,
+          phone: req.phone
+        },
+        message: 'Sede aprobada con credenciales'
       };
     }
   };
 
   // Obtener credenciales del administrador local de una sede
   const getParkingCredentials = async (parkingId) => {
+    let serverData = null;
     try {
       const match = String(parkingId).match(/\d+/);
       const numId = match ? Number(match[0]) : Number(parkingId);
-      if (isNaN(numId)) return null;
-      const res = await api.get(`/parkings/${numId}/admin-credentials`);
-      return res.data;
+      if (!isNaN(numId)) {
+        const res = await api.get(`/parkings/${numId}/admin-credentials`);
+        serverData = res.data;
+      }
     } catch (e) {
-      console.warn('getParkingCredentials error', e);
-      return null;
+      console.warn('getParkingCredentials server not available, checking local store', e);
     }
+    if (serverData) return serverData;
+
+    // Fallback local: buscar en approvedAdmins o local credentials o en el establecimiento
+    const est = establishments.find(e => String(e.id) === String(parkingId));
+    const targetEmail = (est?.email || '').toLowerCase();
+    const localCreds = getLocalUserCredentials();
+    const matchedCred = localCreds[targetEmail] || Object.values(localCreds).find(c => String(c.parkingId) === String(parkingId));
+    const approved = approvedAdmins.find(a => a.email === targetEmail || String(a.establishmentId) === String(parkingId));
+
+    if (matchedCred || approved) {
+      return {
+        parking_id: parkingId,
+        parking_name: est?.name || 'Sede',
+        admin_name: matchedCred?.full_name || approved?.name || est?.owner || 'Administrador',
+        admin_email: matchedCred?.email || approved?.email || est?.email || '',
+        admin_phone: matchedCred?.phone || approved?.phone || est?.phone || '',
+        has_account: true,
+        has_admin: true,
+        is_active: true,
+        role: 'local'
+      };
+    }
+
+    return est ? {
+      parking_id: parkingId,
+      parking_name: est.name,
+      admin_name: est.owner || '',
+      admin_email: est.email || '',
+      admin_phone: est.phone || '',
+      has_account: !!est.email,
+      has_admin: !!est.email,
+      is_active: true,
+      role: 'local'
+    } : null;
   };
 
   // Asignar o resetear credenciales del administrador local de una sede
   const assignParkingCredentials = async (parkingId, credentialsData) => {
+    const email = (credentialsData?.email || '').trim().toLowerCase();
+    const fullName = credentialsData?.full_name || credentialsData?.fullName || credentialsData?.adminName || '';
+    const phone = credentialsData?.phone || credentialsData?.adminPhone || '';
+    const password = credentialsData?.password || credentialsData?.adminPassword || '';
+
+    const payload = {
+      email,
+      password: password || undefined,
+      fullName: fullName || undefined,
+      full_name: fullName || undefined,
+      phone: phone || undefined
+    };
+
+    let serverResult = null;
     try {
       const match = String(parkingId).match(/\d+/);
       const numId = match ? Number(match[0]) : Number(parkingId);
-      if (isNaN(numId)) throw new Error('ID de sede inválido');
-      const res = await api.post(`/parkings/${numId}/admin-credentials`, credentialsData);
-      await fetchParkings();
-      return res.data;
+      if (!isNaN(numId)) {
+        const res = await api.post(`/parkings/${numId}/admin-credentials`, payload);
+        serverResult = res.data;
+        await fetchParkings();
+      }
     } catch (e) {
-      console.warn('assignParkingCredentials error', e);
-      throw e;
+      console.warn('assignParkingCredentials backend warning (using local sync fallback)', e);
     }
+
+    // Actualizar sede localmente (email, owner, phone)
+    setEstablishments(prev => {
+      const updated = prev.map(est => {
+        if (String(est.id) === String(parkingId)) {
+          return {
+            ...est,
+            email: email || est.email,
+            owner: fullName || est.owner,
+            phone: phone || est.phone
+          };
+        }
+        return est;
+      });
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    // Guardar credenciales en el store local persistente
+    if (email) {
+      saveLocalUserCredential({
+        email,
+        password,
+        full_name: fullName,
+        phone,
+        role: 'local',
+        parkingId
+      });
+      const newAdmin = {
+        id: Date.now(),
+        name: fullName,
+        email,
+        phone,
+        password,
+        establishmentId: String(parkingId),
+        role: 'local'
+      };
+      setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== email)]);
+    }
+
+    return serverResult || {
+      status: 'success',
+      parking_id: parkingId,
+      has_account: true,
+      is_active: true,
+      role: 'local',
+      admin_email: email,
+      admin_name: fullName,
+      temp_password: password,
+      message: 'Credenciales guardadas y sincronizadas'
+    };
   };
 
   // Rechazar: persiste en servidor
@@ -1604,7 +1829,9 @@ export const EstablishmentProvider = ({ children }) => {
       checkInReservation,
       checkOutReservation,
       completeReservation,
-      resetToDefaults
+      resetToDefaults,
+      saveLocalUserCredential,
+      getLocalUserCredentials
     }}>
       {children}
     </EstablishmentContext.Provider>

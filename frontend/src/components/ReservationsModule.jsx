@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useEstablishments, parseIsoToDate } from '../context/EstablishmentContext';
+import { useEstablishments, parseIsoToDate, isMyEstablishment } from '../context/EstablishmentContext';
 import api, { getAccessToken } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
+import { AutoFitFloorPlan } from './AutoFitFloorPlan';
 import { 
   CalendarCheck, 
   Search, 
@@ -34,7 +35,17 @@ import {
   SlidersHorizontal,
   FileText,
   HelpCircle,
-  MessageSquare
+  MessageSquare,
+  Building2,
+  Eye,
+  ShieldCheck,
+  Activity,
+  Compass,
+  Scan,
+  Timer,
+  ChevronDown,
+  Hash,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -43,7 +54,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { DigitalAccessPassModal } from './DigitalAccessPassModal';
 
 export const ReservationsModule = ({ onNavigateToBooking }) => {
-  const { role } = useAuth();
+  const { user, role } = useAuth();
   const { 
     establishments, 
     reservations, 
@@ -51,7 +62,11 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
     bookingError,
     updateReservationStatus, 
     cancelReservation, 
-    completeReservation 
+    completeReservation,
+    checkInReservation,
+    checkOutReservation,
+    ensureFloorPlan,
+    fetchParkings
   } = useEstablishments();
 
   // Vista activa: 'list' | 'analytics'
@@ -106,6 +121,162 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
   // Establecimiento seleccionado para nueva reserva
   const activeEstablishment = establishments.find(e => e.id === selectedParkingId) || establishments[0];
   const availableSlots = (activeEstablishment?.elements || []).filter(el => el.type === 'slot' && el.status === 'free');
+
+  // Sedes asociadas al usuario actual
+  const myEstablishments = useMemo(() => {
+    return (establishments || []).filter(e => isMyEstablishment(e, user, role));
+  }, [establishments, user, role]);
+
+  const [currentParkingId, setCurrentParkingId] = useState(() => {
+    return myEstablishments[0]?.id || establishments[0]?.id || '';
+  });
+
+  useEffect(() => {
+    if (!currentParkingId && myEstablishments[0]?.id) {
+      setCurrentParkingId(myEstablishments[0].id);
+    }
+  }, [myEstablishments, currentParkingId]);
+
+  const activeLocalEst = useMemo(() => {
+    return myEstablishments.find(e => String(e.id) === String(currentParkingId)) ||
+           establishments.find(e => String(e.id) === String(currentParkingId)) ||
+           myEstablishments[0] ||
+           establishments[0];
+  }, [myEstablishments, establishments, currentParkingId]);
+
+  // Hidratar plano CAD automáticamente cuando no se hayan cargado los elements
+  useEffect(() => {
+    if (activeLocalEst && activeLocalEst.elements === null && activeLocalEst.id && ensureFloorPlan) {
+      ensureFloorPlan(activeLocalEst.id);
+    }
+  }, [activeLocalEst?.id, activeLocalEst?.elements, ensureFloorPlan]);
+
+  // Modos de vista para Admin Local y Personal: 'stay' | 'floorplan' | 'list'
+  const [operatorViewMode, setOperatorViewMode] = useState('stay');
+  const [inspectedSlotCode, setInspectedSlotCode] = useState(null);
+  const [entrySearchQuery, setEntrySearchQuery] = useState('');
+  const [entryStayHours, setEntryStayHours] = useState(2);
+
+  // Elementos y cajones del plano de la sede activa
+  const localElements = Array.isArray(activeLocalEst?.elements) ? activeLocalEst.elements : [];
+  const localSlots = useMemo(() => localElements.filter(e => e.type === 'slot'), [localElements]);
+  const freeLocalSlots = useMemo(() => localSlots.filter(s => s.status === 'free'), [localSlots]);
+  const occupiedLocalSlots = useMemo(() => localSlots.filter(s => s.status !== 'free' && s.status !== 'reserved' && s.status !== 'out_of_service' && s.status !== 'disabled'), [localSlots]);
+  const reservedLocalSlots = useMemo(() => localSlots.filter(s => s.status === 'reserved'), [localSlots]);
+
+  // Vehículos actualmente dentro en esta sede
+  const activeVehiclesInEst = useMemo(() => {
+    return reservations.filter(r => {
+      const pid = String(r.parkingId || r.parking_id || '');
+      const matchesPid = !activeLocalEst?.id || pid === String(activeLocalEst.id);
+      return matchesPid && r.status === 'ACTIVE';
+    });
+  }, [reservations, activeLocalEst]);
+
+  // Próximas reservas programadas en esta sede
+  const scheduledInEst = useMemo(() => {
+    return reservations.filter(r => {
+      const pid = String(r.parkingId || r.parking_id || '');
+      const matchesPid = !activeLocalEst?.id || pid === String(activeLocalEst.id);
+      return matchesPid && r.status === 'SCHEDULED';
+    });
+  }, [reservations, activeLocalEst]);
+
+  // Coincidencia en vivo en el buscador de Entrada Express
+  const cleanEntryQuery = entrySearchQuery.trim().toUpperCase();
+  const entryMatch = useMemo(() => {
+    if (!cleanEntryQuery) return null;
+    const cleanPlateQ = cleanEntryQuery.replace(/[^A-Z0-9]/g, '');
+    
+    // Buscar en reservas
+    const candidate = reservations.find(r => {
+      const isThisParking = !activeLocalEst?.id || String(r.parkingId || r.parking_id) === String(activeLocalEst.id);
+      const codeMatch = (r.code || '').toUpperCase() === cleanEntryQuery || (r.code || '').toUpperCase().includes(cleanEntryQuery);
+      const tokenMatch = (r.token || r.access_token || '').toUpperCase().includes(cleanEntryQuery);
+      const plateClean = (r.plate || r.license_plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const plateMatch = plateClean && cleanPlateQ && (plateClean === cleanPlateQ || plateClean.includes(cleanPlateQ));
+      return isThisParking && (codeMatch || tokenMatch || plateMatch);
+    }) || reservations.find(r => {
+      const codeMatch = (r.code || '').toUpperCase() === cleanEntryQuery || (r.code || '').toUpperCase().includes(cleanEntryQuery);
+      const tokenMatch = (r.token || r.access_token || '').toUpperCase().includes(cleanEntryQuery);
+      const plateClean = (r.plate || r.license_plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const plateMatch = plateClean && cleanPlateQ && (plateClean === cleanPlateQ || plateClean.includes(cleanPlateQ));
+      return codeMatch || tokenMatch || plateMatch;
+    });
+
+    return candidate || null;
+  }, [reservations, cleanEntryQuery, activeLocalEst]);
+
+  // Acción rápida de Check-in (Ingreso)
+  const handleQuickCheckIn = async (resTarget, customHours = null) => {
+    if (!resTarget) return;
+    setIsProcessingCheckIn(true);
+    const hrs = customHours || resTarget.hours || 2;
+    const resp = await checkInReservation(resTarget.code, hrs);
+    setIsProcessingCheckIn(false);
+    if (resp?.ok) {
+      setFeedbackMessage(`✓ ¡Ingreso registrado! Vehículo ${resTarget.plate} en plaza ${resTarget.slot}.`);
+      setEntrySearchQuery('');
+      if (activeLocalEst?.id && ensureFloorPlan) ensureFloorPlan(activeLocalEst.id, true);
+    } else {
+      setFeedbackMessage(resp?.message || 'Error al registrar ingreso.');
+    }
+    setTimeout(() => setFeedbackMessage(''), 4000);
+  };
+
+  // Acción rápida de Check-out (Salida)
+  const handleQuickCheckOut = async (code, plateVal = '') => {
+    const resp = await checkOutReservation(code);
+    if (resp?.ok) {
+      setFeedbackMessage(resp.message || `✓ Salida registrada para ${plateVal || code}. Cajón liberado.`);
+      if (activeLocalEst?.id && ensureFloorPlan) ensureFloorPlan(activeLocalEst.id, true);
+    } else {
+      setFeedbackMessage(resp?.message || 'Error al registrar salida.');
+    }
+    setTimeout(() => setFeedbackMessage(''), 4000);
+  };
+
+  // Acción rápida de Ingreso Directo Presencial (Walk-in)
+  const handleQuickWalkIn = async (customPlate = '', targetSlot = '') => {
+    const slotCode = targetSlot || inspectedSlotCode || freeLocalSlots[0]?.code;
+    const plateToUse = (customPlate || entrySearchQuery).trim().toUpperCase();
+    if (!plateToUse) {
+      setFeedbackMessage('✕ Ingresa la placa para registrar el ingreso.');
+      setTimeout(() => setFeedbackMessage(''), 3000);
+      return;
+    }
+    if (!slotCode) {
+      setFeedbackMessage('✕ No hay cajones disponibles en este momento en esta sede.');
+      setTimeout(() => setFeedbackMessage(''), 3000);
+      return;
+    }
+    const rate = Number(activeLocalEst?.rate || 5.0);
+    const now = new Date();
+    const newRes = await createReservation({
+      parkingId: activeLocalEst.id,
+      parkingName: activeLocalEst.name,
+      slotCode: slotCode,
+      customerName: 'Conductor en Garita',
+      customerPhone: '+51 966 000 000',
+      plate: plateToUse,
+      hours: entryStayHours,
+      rate: rate,
+      totalCost: rate * entryStayHours,
+      startTime: now.toISOString(),
+      expiresAt: new Date(now.getTime() + entryStayHours * 3600000).toISOString()
+    });
+    if (!newRes || newRes.error || !newRes.code) {
+      setFeedbackMessage(`✕ No se pudo emitir el ingreso: ${newRes?.error || bookingError || 'Error de servidor'}`);
+      setTimeout(() => setFeedbackMessage(''), 4000);
+      return;
+    }
+    await checkInReservation(newRes.code, entryStayHours);
+    setFeedbackMessage(`✓ ¡Ingreso directo registrado! Plaza ${slotCode} ocupada por ${plateToUse}.`);
+    setEntrySearchQuery('');
+    setInspectedSlotCode(null);
+    if (activeLocalEst?.id && ensureFloorPlan) ensureFloorPlan(activeLocalEst.id, true);
+    setTimeout(() => setFeedbackMessage(''), 4000);
+  };
 
   // Filtrado de reservas
   const filteredReservations = reservations.filter(r => {
@@ -375,6 +546,741 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
         </div>
       )}
 
+      {/* Barra de Control de Sede & Pestañas de Modo para Admin Local y Plataforma */}
+      {role !== 'user' && (
+        <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Selector de Sede y Métricas en Vivo */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+              <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              {myEstablishments.length > 1 ? (
+                <select
+                  value={currentParkingId}
+                  onChange={e => setCurrentParkingId(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-pointer"
+                >
+                  {myEstablishments.map(est => (
+                    <option key={est.id} value={est.id} className="text-slate-900 bg-white dark:bg-slate-800 dark:text-white">
+                      {est.name} (S/ {Number(est.rate || 5).toFixed(2)}/h)
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-xs font-black text-slate-800 dark:text-slate-100">
+                  {activeLocalEst?.name || 'Mi Cochera'}
+                </span>
+              )}
+            </div>
+
+            {/* Chips de estado en vivo de la sede */}
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {freeLocalSlots.length} libres
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+              {occupiedLocalSlots.length} ocupados
+            </span>
+            {reservedLocalSlots.length > 0 && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                {reservedLocalSlots.length} reservados
+              </span>
+            )}
+            <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 hidden sm:inline">
+              Tarifa: S/ {Number(activeLocalEst?.rate || 5).toFixed(2)}/h
+            </span>
+          </div>
+
+          {/* Selector Segmentado de Modos de Vista */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80 gap-1 self-start md:self-auto">
+            <button
+              type="button"
+              onClick={() => setOperatorViewMode('stay')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                operatorViewMode === 'stay'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-black'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Car className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Control de Estadía & Entrada</span>
+              {activeVehiclesInEst.length > 0 && (
+                <span className="px-1.5 py-0.2 text-[10px] rounded-full bg-emerald-500 text-white font-mono">
+                  {activeVehiclesInEst.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOperatorViewMode('floorplan')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                operatorViewMode === 'floorplan'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-black'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5 text-cyan-500" />
+              <span>Plano del Local</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOperatorViewMode('list')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                operatorViewMode === 'list'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-black'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              <span>Historial</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* VISTA 1: CONTROL DE ESTADÍA & ENTRADA EXPRESS (ADMIN LOCAL / PLATAFORMA) */}
+      {role !== 'user' && operatorViewMode === 'stay' && (
+        <div className="space-y-6 animate-in fade-in">
+          {/* HERO: ENTRADA EXPRESS Y VALIDACIÓN DE RESERVAS */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Scan className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Control de Entrada Express en Garita</span>
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Valida conductores con reserva previa (por código o placa) o registra entradas presenciales al instante.
+                </p>
+              </div>
+              <span className="text-[11px] font-mono text-slate-400 self-start sm:self-auto">
+                Presiona <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold">Enter</kbd> para validar
+              </span>
+            </div>
+
+            {/* Input de Búsqueda / Escáner */}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Escribe código de reserva (ej: RSV-...), token o placa vehicular (ej: ABC-123)..."
+                value={entrySearchQuery}
+                onChange={(e) => setEntrySearchQuery(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (entryMatch && entryMatch.status === 'SCHEDULED') {
+                      handleQuickCheckIn(entryMatch, entryStayHours);
+                    } else if (!entryMatch && cleanEntryQuery.length >= 4) {
+                      handleQuickWalkIn(cleanEntryQuery);
+                    }
+                  }
+                }}
+                className="w-full h-12 pl-12 pr-28 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-colors"
+              />
+              {entrySearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setEntrySearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-2 py-1 rounded cursor-pointer"
+                >
+                  ✕ Limpiar
+                </button>
+              )}
+            </div>
+
+            {/* TARJETA DE RESULTADO: COINCIDENCIA DE RESERVA ENCONTRADA */}
+            {entryMatch && (
+              <div className={`p-4 rounded-xl border animate-in fade-in transition-all ${
+                entryMatch.status === 'SCHEDULED'
+                  ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/60'
+                  : entryMatch.status === 'ACTIVE'
+                  ? 'bg-cyan-50/50 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
+                  : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'
+              }`}>
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  
+                  {/* Información del vehículo y reserva */}
+                  <div className="flex items-start gap-3.5">
+                    <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center font-mono font-black shrink-0 ${
+                      entryMatch.status === 'SCHEDULED'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : entryMatch.status === 'ACTIVE'
+                        ? 'bg-cyan-600 text-white shadow-xs'
+                        : 'bg-slate-800 text-slate-300'
+                    }`}>
+                      <span className="text-[8px] uppercase tracking-tighter opacity-80">Plaza</span>
+                      <span className="text-base font-black leading-tight">{entryMatch.slot}</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono font-extrabold text-sm text-slate-900 dark:text-white">
+                          {entryMatch.code}
+                        </span>
+                        {entryMatch.status === 'SCHEDULED' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                            <Check className="w-3 h-3" />
+                            Listo para Ingresar
+                          </span>
+                        )}
+                        {entryMatch.status === 'ACTIVE' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-cyan-100 dark:bg-cyan-900/60 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700">
+                            <Car className="w-3 h-3" />
+                            Actualmente en Estancia
+                          </span>
+                        )}
+                        {entryMatch.status === 'COMPLETED' && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                            Finalizada
+                          </span>
+                        )}
+                        {entryMatch.status === 'CANCELLED' && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400">
+                            Cancelada
+                          </span>
+                        )}
+
+                        {/* Badge de prepagado */}
+                        {(paidIds.has(Number(entryMatch.id)) || entryMatch.prepaid) ? (
+                          <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                            ✓ Prepagado en línea
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                            Cobro al salir
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
+                        <span className="font-mono font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                          {entryMatch.plate}
+                        </span>
+                        {entryMatch.customerName && (
+                          <span className="flex items-center gap-1">
+                            <User className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{entryMatch.customerName}</span>
+                          </span>
+                        )}
+                        {entryMatch.customerPhone && (
+                          <span className="flex items-center gap-1 font-mono">
+                            <Phone className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{entryMatch.customerPhone}</span>
+                          </span>
+                        )}
+                        <span className="text-slate-400">·</span>
+                        <span>Sede: <strong>{entryMatch.parking}</strong></span>
+                        <span>· Horas acordadas: <strong>{entryMatch.hours || 2}h</strong></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Acciones del resultado */}
+                  <div className="flex flex-wrap items-center gap-2 self-end lg:self-center">
+                    {entryMatch.status === 'SCHEDULED' && (
+                      <>
+                        <div className="flex items-center gap-1 mr-1">
+                          <span className="text-xs text-slate-500 font-semibold">Estadía:</span>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 4, 8].map(h => (
+                              <button
+                                key={h}
+                                type="button"
+                                onClick={() => setEntryStayHours(h)}
+                                className={`px-2 py-1 rounded-lg text-xs font-bold font-mono transition-colors cursor-pointer ${
+                                  entryStayHours === h
+                                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                                }`}
+                              >
+                                {h}h
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <Button
+                          type="button"
+                          disabled={isProcessingCheckIn}
+                          onClick={() => handleQuickCheckIn(entryMatch, entryStayHours)}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs h-10 px-4 rounded-xl gap-2 shadow-sm cursor-pointer"
+                        >
+                          <LogIn className="w-4 h-4" />
+                          <span>Registrar Ingreso ({entryStayHours}h)</span>
+                        </Button>
+                      </>
+                    )}
+
+                    {entryMatch.status === 'ACTIVE' && (
+                      <Button
+                        type="button"
+                        onClick={() => handleQuickCheckOut(entryMatch.code, entryMatch.plate)}
+                        className="bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold text-xs h-10 px-4 rounded-xl gap-2 shadow-xs cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Registrar Salida / Liberar Plaza</span>
+                      </Button>
+                    )}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleOpenPass(entryMatch)}
+                      className="h-10 text-xs rounded-xl gap-1.5"
+                    >
+                      <QrCode className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Pase QR</span>
+                    </Button>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* CASO: NO HAY COINCIDENCIA PREVIA PERO EL OPERADOR INGRESÓ UNA PLACA (WALK-IN) */}
+            {!entryMatch && cleanEntryQuery.length >= 4 && (
+              <div className="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/90 dark:border-amber-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <Car className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                      Sin reserva previa para &quot;{cleanEntryQuery}&quot;
+                    </p>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                      Puedes registrar su entrada directa (Walk-in) en el cajón disponible más cercano.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center">
+                  <Button
+                    type="button"
+                    disabled={freeLocalSlots.length === 0}
+                    onClick={() => handleQuickWalkIn(cleanEntryQuery, freeLocalSlots[0]?.code)}
+                    className="bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 text-white font-black text-xs h-9 px-4 rounded-xl gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-emerald-400 dark:text-white" />
+                    <span>Registrar en Plaza {freeLocalSlots[0]?.code || 'Sin cajón'}</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* GRID OPERATIVO: VEHÍCULOS DENTRO & PRÓXIMAS LLEGADAS */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            
+            {/* PANEL 1: VEHÍCULOS EN ESTANCIA (7 COLS) */}
+            <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Car className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    Vehículos en Estancia Actual
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                    {activeVehiclesInEst.length} dentro
+                  </span>
+                </div>
+                <span className="text-xs font-semibold text-slate-400">
+                  {activeLocalEst?.name}
+                </span>
+              </div>
+
+              {activeVehiclesInEst.length === 0 ? (
+                <div className="p-8 text-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 space-y-2">
+                  <Car className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No hay vehículos estacionados actualmente</p>
+                  <p className="text-[11px] text-slate-400">Los vehículos registrados como activos aparecerán en este panel en tiempo real.</p>
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+                  {activeVehiclesInEst.map(v => {
+                    const startDt = parseIsoToDate(v.startTime);
+                    const mins = Math.max(0, Math.round((Date.now() - startDt.getTime()) / 60000));
+                    const hoursElapsed = Math.floor(mins / 60);
+                    const minsRemainder = mins % 60;
+                    const bookedHours = Number(v.hours) || 2;
+                    const isOverdue = mins > (bookedHours * 60);
+
+                    return (
+                      <div
+                        key={v.code}
+                        className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                          isOverdue 
+                            ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50' 
+                            : 'bg-slate-50/70 dark:bg-slate-800/50 border-slate-200/80 dark:border-slate-700/80'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-slate-900 dark:bg-slate-800 text-white font-mono font-black flex flex-col items-center justify-center shrink-0 border border-slate-700">
+                            <span className="text-[8px] uppercase opacity-70">Plaza</span>
+                            <span className="text-sm">{v.slot}</span>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-black text-sm text-slate-900 dark:text-white">
+                                {v.plate}
+                              </span>
+                              {isOverdue && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/80 px-1.5 py-0.5 rounded">
+                                  <AlertTriangle className="w-3 h-3" /> Exceso de tiempo
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                              <span>Ingresó: {formatTime12h(v.startTime)}</span>
+                              <span>·</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                {hoursElapsed > 0 ? `${hoursElapsed}h ${minsRemainder}m` : `${mins} min`} dentro
+                              </span>
+                              <span>·</span>
+                              <span>Contratado: {bookedHours}h</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-center">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleQuickCheckOut(v.code, v.plate)}
+                            className="h-8 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 text-white gap-1 cursor-pointer"
+                          >
+                            <LogOut className="w-3.5 h-3.5" />
+                            <span>Salida</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handlePrintReceipt(v)}
+                            className="h-8 px-2 rounded-lg text-xs"
+                            title="Imprimir ticket"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-slate-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* PANEL 2: PRÓXIMAS LLEGADAS DE HOY (5 COLS) */}
+            <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    Próximas Llegadas Programadas
+                  </h3>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800">
+                  {scheduledInEst.length}
+                </span>
+              </div>
+
+              {scheduledInEst.length === 0 ? (
+                <div className="p-8 text-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 space-y-2">
+                  <Clock className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No hay reservas programadas pendientes</p>
+                  <p className="text-[11px] text-slate-400">Las reservas realizadas por conductores para hoy se listarán aquí para darles ingreso rápido.</p>
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+                  {scheduledInEst.map(s => {
+                    const tolMin = Number(s.toleranceMinutes || 15);
+                    const remainingText = getRemainingTimeText(s.startTime, s.expiresAt, 'SCHEDULED', tolMin);
+                    return (
+                      <div
+                        key={s.code}
+                        className="p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-cyan-300 transition-all space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-xs bg-slate-900 text-white px-2 py-0.5 rounded">
+                              {s.slot}
+                            </span>
+                            <span className="font-mono font-bold text-xs text-slate-800 dark:text-slate-200">
+                              {s.plate}
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">
+                            {formatTime12h(s.startTime)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                          <span className="truncate max-w-[140px] text-slate-700 dark:text-slate-300">
+                            {s.customerName || 'Conductor'}
+                          </span>
+                          <span className="text-[11px] text-slate-400">
+                            {remainingText}
+                          </span>
+                        </div>
+
+                        <div className="pt-1 flex items-center justify-end gap-1.5 border-t border-slate-100 dark:border-slate-800">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleQuickCheckIn(s)}
+                            className="h-7 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg gap-1 px-2.5"
+                          >
+                            <LogIn className="w-3 h-3" />
+                            <span>Ingreso</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOpenPass(s)}
+                            className="h-7 text-xs rounded-lg px-2"
+                          >
+                            <QrCode className="w-3 h-3 text-slate-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* VISTA 2: PLANO CAD EN VIVO & INSPECCIÓN DE PLAZAS */}
+      {role !== 'user' && operatorViewMode === 'floorplan' && (
+        <div className="space-y-4 animate-in fade-in">
+          {/* Cabecera del Plano con Resumen Semántico */}
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Compass className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                <span>Plano CAD Interactivo en Tiempo Real — {activeLocalEst?.name}</span>
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Toca cualquier cajón para inspeccionar el vehículo estacionado, ver reservas asociadas o registrar entradas y salidas.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 font-bold font-mono">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" /> {freeLocalSlots.length} Libres
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 font-bold font-mono">
+                <span className="w-2 h-2 rounded-full bg-rose-500" /> {occupiedLocalSlots.length} Ocupados
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 font-bold font-mono">
+                <span className="w-2 h-2 rounded-full bg-amber-500" /> {reservedLocalSlots.length} Reservados
+              </span>
+            </div>
+          </div>
+
+          {/* Grid: Plano CAD (8 cols) + Ficha de Inspección (4 cols) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            
+            {/* Plano interactivo */}
+            <div className="lg:col-span-8 bg-[#1c253b] rounded-2xl border-2 border-slate-700 p-2 sm:p-3 shadow-xl space-y-2">
+              <AutoFitFloorPlan
+                elements={localElements}
+                name={activeLocalEst?.name}
+                selectable={true}
+                allowInspectAll={true}
+                selectedSlot={inspectedSlotCode}
+                onSelectSlot={(slotCode) => setInspectedSlotCode(slotCode)}
+                containerHeightClass="h-[480px] sm:h-[540px] lg:h-[600px]"
+              />
+              <div className="flex items-center justify-center gap-4 text-[11px] font-medium text-slate-300 py-1 flex-wrap">
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" /> Verde = Libre</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-rose-500" /> Rojo = Ocupado</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-amber-500" /> Ámbar = Reservado</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-cyan-500" /> Azul = Seleccionado</span>
+              </div>
+            </div>
+
+            {/* Ficha Dinámica de Inspección */}
+            <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs space-y-4">
+              {inspectedSlotCode ? (() => {
+                const inspectedEl = localSlots.find(s => s.code === inspectedSlotCode);
+                const status = inspectedEl?.status || 'free';
+                const isFree = status === 'free';
+                const isReserved = status === 'reserved';
+                const isOccupied = !isFree && !isReserved && status !== 'out_of_service' && status !== 'disabled';
+
+                // Buscar si hay reserva asociada activa o programada
+                const slotRes = reservations.find(r => 
+                  String(r.parkingId || r.parking_id) === String(activeLocalEst?.id) &&
+                  (r.slot === inspectedSlotCode || r.slot_code === inspectedSlotCode) &&
+                  (r.status === 'ACTIVE' || r.status === 'SCHEDULED')
+                );
+
+                return (
+                  <div className="space-y-4 animate-in fade-in">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center font-mono font-black ${
+                          isFree ? 'bg-emerald-600 text-white' : isReserved ? 'bg-amber-600 text-white' : 'bg-rose-600 text-white'
+                        }`}>
+                          <span className="text-[8px] uppercase opacity-80">Plaza</span>
+                          <span className="text-base">{inspectedSlotCode}</span>
+                        </div>
+                        <div>
+                          <h3 className="font-black text-sm text-slate-900 dark:text-white">Ficha de Plaza {inspectedSlotCode}</h3>
+                          <p className="text-[11px] text-slate-400">{activeLocalEst?.name}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => setInspectedSlotCode(null)} className="text-slate-400 hover:text-slate-600 text-xs p-1">✕</button>
+                    </div>
+
+                    {/* Estado de la plaza */}
+                    <div className="p-3 rounded-xl border flex items-center justify-between text-xs font-bold">
+                      <span className="text-slate-500">Estado actual:</span>
+                      <span className={`px-2.5 py-0.5 rounded-full font-extrabold ${
+                        isFree 
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' 
+                          : isReserved 
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' 
+                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                      }`}>
+                        {isFree ? '● LIBRE' : isReserved ? '● RESERVADA' : '● OCUPADA'}
+                      </span>
+                    </div>
+
+                    {/* Detalle si está OCUPADO */}
+                    {isOccupied && (
+                      <div className="space-y-3 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Vehículo / Placa:</span>
+                          <strong className="font-mono font-black text-sm text-slate-900 dark:text-white">
+                            {slotRes?.plate || 'Vehículo presente'}
+                          </strong>
+                        </div>
+                        {slotRes?.customerName && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Conductor:</span>
+                            <span className="text-slate-800 dark:text-slate-200 font-semibold">{slotRes.customerName}</span>
+                          </div>
+                        )}
+                        {slotRes?.startTime && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Hora de ingreso:</span>
+                            <span className="font-mono text-slate-700 dark:text-slate-300">{formatTime12h(slotRes.startTime)}</span>
+                          </div>
+                        )}
+                        {slotRes?.expiresAt && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Salida estimada:</span>
+                            <span className="font-mono text-slate-700 dark:text-slate-300">{formatTime12h(slotRes.expiresAt)}</span>
+                          </div>
+                        )}
+
+                        <Button
+                          type="button"
+                          onClick={() => handleQuickCheckOut(slotRes?.code || inspectedSlotCode, slotRes?.plate || '')}
+                          className="w-full mt-2 bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold text-xs h-10 rounded-xl gap-2 cursor-pointer shadow-xs"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Registrar Salida / Liberar Plaza</span>
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Detalle si está RESERVADO */}
+                    {isReserved && (
+                      <div className="space-y-3 p-3.5 bg-amber-50/60 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-900/60 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-amber-800 dark:text-amber-300">Código de Reserva:</span>
+                          <strong className="font-mono font-black text-amber-950 dark:text-amber-200">{slotRes?.code || 'RSV-PENDIENTE'}</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-amber-800 dark:text-amber-300">Vehículo esperado:</span>
+                          <strong className="font-mono font-black text-amber-950 dark:text-amber-200">{slotRes?.plate || '—'}</strong>
+                        </div>
+                        {slotRes?.customerName && (
+                          <div className="flex justify-between">
+                            <span className="text-amber-800 dark:text-amber-300">Conductor:</span>
+                            <span className="font-bold text-amber-950 dark:text-amber-200">{slotRes.customerName}</span>
+                          </div>
+                        )}
+                        {slotRes?.startTime && (
+                          <div className="flex justify-between">
+                            <span className="text-amber-800 dark:text-amber-300">Hora esperada:</span>
+                            <span className="font-mono font-bold text-amber-950 dark:text-amber-200">{formatTime12h(slotRes.startTime)}</span>
+                          </div>
+                        )}
+
+                        {slotRes && (
+                          <Button
+                            type="button"
+                            onClick={() => handleQuickCheckIn(slotRes)}
+                            className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 rounded-xl gap-2 cursor-pointer shadow-xs"
+                          >
+                            <LogIn className="w-4 h-4" />
+                            <span>Registrar Ingreso / Abrir Barrera</span>
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Detalle si está LIBRE */}
+                    {isFree && (
+                      <div className="space-y-3 p-3.5 bg-emerald-50/50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-900/60 text-xs">
+                        <p className="text-emerald-800 dark:text-emerald-300 font-medium">
+                          Esta plaza está completamente libre y disponible. Puedes asignar un vehículo en ventanilla en 1 clic:
+                        </p>
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                            Placa del vehículo:
+                          </label>
+                          <Input
+                            type="text"
+                            placeholder="ABC-123"
+                            value={entrySearchQuery}
+                            onChange={e => setEntrySearchQuery(e.target.value.toUpperCase())}
+                            className="h-10 font-mono font-black uppercase text-sm"
+                          />
+                        </div>
+
+                        <Button
+                          type="button"
+                          disabled={!entrySearchQuery.trim()}
+                          onClick={() => handleQuickWalkIn(entrySearchQuery, inspectedSlotCode)}
+                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 rounded-xl gap-2 cursor-pointer shadow-xs"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Registrar Ingreso en Plaza {inspectedSlotCode}</span>
+                        </Button>
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })() : (
+                <div className="p-8 text-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3 text-slate-400">
+                  <Compass className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Ninguna plaza seleccionada</p>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Haz clic en cualquier cajón del plano CAD (libre, ocupado o reservado) para ver su ficha en vivo y gestionar su estado.
+                  </p>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* VISTA 3 (LISTA): TABLERO DE FILTROS & HISTORIAL COMPLETO */}
+      {(role === 'user' || operatorViewMode === 'list') && (
+        <div className="space-y-6 animate-in fade-in">
       {/* =========================================================================
           MÉTRICAS KPI COMPACTAS Y LIMPIAS
           ========================================================================= */}
@@ -840,6 +1746,8 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
           })
         )}
       </div>
+    </div>
+    )}
 
       {/* =========================================================================
           MODAL: NUEVA RESERVA EN GARITA (VENTANILLA)

@@ -200,15 +200,16 @@ export const MapContainer3D = ({
       const isSelected = String(selectedParkingId) === String(p.id);
 
       const el = document.createElement('div');
-      el.className = `marker-3d-pin cursor-pointer transition-all duration-200 ${isSelected ? 'scale-110 z-30' : 'z-10'}`;
+      el.className = `marker-3d-pin cursor-pointer transition-transform duration-200 hover:scale-105 ${isSelected ? 'scale-110 z-30' : 'z-10'}`;
       el.innerHTML = `
-        <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl shadow-2xl border ${
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg border transition-all ${
           isSelected
-            ? 'bg-slate-900 text-white border-slate-900 ring-2 ring-emerald-400'
-            : 'bg-white/95 text-slate-900 border-slate-200 hover:border-slate-400'
+            ? 'bg-slate-900 text-white border-emerald-400 ring-4 ring-emerald-400/30'
+            : 'bg-white text-slate-900 border-slate-200/90 hover:border-slate-400 hover:shadow-xl'
         }">
+          <span class="w-2 h-2 rounded-full ${freeSlots > 0 ? 'bg-emerald-500' : 'bg-rose-500'} shrink-0"></span>
           <span class="text-xs font-mono font-black">${rateFormatted}</span>
-          <span class="text-[10px] font-mono text-slate-500 border-l border-slate-200 pl-1.5 font-bold">${freeSlots} lib</span>
+          <span class="text-[10px] font-mono text-slate-500 border-l border-slate-200 pl-1 font-bold">${freeSlots} lib</span>
         </div>
       `;
 
@@ -216,31 +217,77 @@ export const MapContainer3D = ({
         .setLngLat(coords)
         .addTo(map);
 
-      // Card Popup 3D con SVG vectoriales en lugar de emoticons
+      // Card Popup con diseño editorial, elegante y sin choque visual
       const popupContent = document.createElement('div');
       popupContent.innerHTML = `
-        <div style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; min-width: 240px; padding: 4px;">
-          ${(p.image || FALLBACK_PARKING_IMAGE) ? `
-            <div style="width: 100%; height: 110px; border-radius: 8px; overflow: hidden; margin-bottom: 10px; position: relative;">
-              <img src="${p.image || FALLBACK_PARKING_IMAGE}" style="width: 100%; height: 100%; object-fit: cover;" />
+        <div style="font-family: inherit; width: 275px; overflow: hidden;">
+          <!-- Cabecera Fotográfica con Badges Flotantes -->
+          <div style="position: relative; width: 100%; height: 125px; overflow: hidden; background: #0f172a;">
+            <img 
+              src="${p.image || FALLBACK_PARKING_IMAGE}" 
+              style="width: 100%; height: 100%; object-fit: cover;" 
+              alt="${p.name}" 
+              loading="lazy"
+            />
+            <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(15,23,42,0.4) 0%, transparent 45%, rgba(15,23,42,0.7) 100%);"></div>
+            
+            <!-- Badge Cupos Libres -->
+            <div style="position: absolute; top: 8px; left: 8px; display: flex; items-center; gap: 5px; background: rgba(5, 150, 105, 0.95); backdrop-filter: blur(6px); color: white; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; font-family: monospace; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+              <span style="width: 6px; height: 6px; border-radius: 9999px; background: #6ee7b7; display: inline-block;"></span>
+              <span>${freeSlots} libres</span>
             </div>
-          ` : ''}
-          <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${p.name}</div>
-          <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">${p.address}</div>
-          
-          <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-            <button id="btn-route-${p.id}" style="flex: 1; background: #0284c7; color: white; border: none; padding: 7px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-              <span>Cómo llegar</span>
+
+            <!-- Botón Cerrar Discreto -->
+            <button id="btn-close-${p.id}" type="button" style="position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 9999px; background: rgba(15, 23, 42, 0.7); border: none; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; cursor: pointer; backdrop-filter: blur(4px); transition: background 0.15s;">
+              ✕
             </button>
-            <button id="btn-select-${p.id}" style="flex: 1; background: #0f172a; color: white; border: none; padding: 7px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-              <span>Ver Plano</span>
-            </button>
+
+            <!-- Tarifa por Hora -->
+            <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(6px); color: #0f172a; padding: 3px 9px; border-radius: 10px; font-size: 12px; font-weight: 900; font-family: monospace; box-shadow: 0 2px 5px rgba(0,0,0,0.18);">
+              ${rateFormatted}/h
+            </div>
+          </div>
+
+          <!-- Cuerpo de Datos y Navegación -->
+          <div style="padding: 12px 14px 14px 14px; background: #ffffff;">
+            <div style="font-size: 13.5px; font-weight: 900; color: #0f172a; line-height: 1.25; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">
+              ${p.name}
+            </div>
+            <div style="font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 4px; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span style="overflow: hidden; text-overflow: ellipsis;">${p.address || 'Ayacucho - Huamanga'}</span>
+            </div>
+
+            <!-- Acciones -->
+            <div style="display: flex; gap: 7px;">
+              <button id="btn-route-${p.id}" type="button" style="flex: 1; height: 36px; background: #f8fafc; color: #334155; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.15s ease;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                <span>Cómo llegar</span>
+              </button>
+              <button id="btn-select-${p.id}" type="button" style="flex: 1.2; height: 36px; background: #0f172a; color: #ffffff; border: none; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.15s ease; box-shadow: 0 2px 6px rgba(15,23,42,0.18);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+                <span>Ver Plano</span>
+              </button>
+            </div>
           </div>
         </div>
       `;
 
-      const popup = new mapboxgl.Popup({ offset: 25, closeButton: false }).setDOMContent(popupContent);
+      const popup = new mapboxgl.Popup({
+        offset: {
+          'top': [0, 12],
+          'top-left': [0, 12],
+          'top-right': [0, 12],
+          'bottom': [0, -20],
+          'bottom-left': [0, -20],
+          'bottom-right': [0, -20],
+          'left': [16, 0],
+          'right': [-16, 0]
+        },
+        closeButton: false,
+        closeOnClick: true,
+        maxWidth: '290px'
+      }).setDOMContent(popupContent);
       marker.setPopup(popup);
 
       el.addEventListener('click', () => {
@@ -256,13 +303,23 @@ export const MapContainer3D = ({
       });
 
       marker.getPopup().on('open', () => {
+        const btnClose = document.getElementById(`btn-close-${p.id}`);
+        if (btnClose) {
+          btnClose.onclick = () => { popup.remove(); };
+        }
         const btnSelect = document.getElementById(`btn-select-${p.id}`);
         if (btnSelect) {
-          btnSelect.onclick = () => { if (onSelectParking) onSelectParking(p); };
+          btnSelect.onclick = () => {
+            popup.remove();
+            if (onSelectParking) onSelectParking(p);
+          };
         }
         const btnRoute = document.getElementById(`btn-route-${p.id}`);
         if (btnRoute) {
-          btnRoute.onclick = () => { handleCalculateRoute(coords, p.name); };
+          btnRoute.onclick = () => {
+            popup.remove();
+            handleCalculateRoute(coords, p.name);
+          };
         }
       });
 

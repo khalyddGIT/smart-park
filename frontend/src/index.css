@@ -709,3 +709,54 @@ html.dark body,
   background: #94a3b8;
 }
 
+/* ── Estilos Premium para Popups y Marcadores de Mapbox en Smart Park ── */
+.mapboxgl-popup {
+  z-index: 50 !important;
+  max-width: 300px !important;
+}
+
+.mapboxgl-popup-content {
+  padding: 0 !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(15, 23, 42, 0.08) !important;
+  overflow: hidden !important;
+}
+
+.dark .mapboxgl-popup-content {
+  background: #151d2f !important;
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: #ffffff !important;
+}
+
+.dark .mapboxgl-popup-tip {
+  border-top-color: #151d2f !important;
+}
+
+.mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+  border-bottom-color: #ffffff !important;
+}
+
+.dark .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+  border-bottom-color: #151d2f !important;
+}
+
+.mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+  border-right-color: #ffffff !important;
+}
+
+.dark .mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+  border-right-color: #151d2f !important;
+}
+
+.mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-left-color: #ffffff !important;
+}
+
+.dark .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-left-color: #151d2f !important;
+}
+

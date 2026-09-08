@@ -24,9 +24,8 @@ export const PAYPAL_EXCHANGE_RATE = Number(import.meta.env.VITE_PAYPAL_EXCHANGE_
 
 // Tarjetas de prueba oficiales de Culqi Sandbox
 const CULQI_TEST_CARDS = [
-  { label: 'Visa Aprobada', number: '4242424242424242', exp: '12/28', cvv: '123', brand: 'VISA' },
-  { label: 'Mastercard Aprobada', number: '5555555555554444', exp: '09/27', cvv: '456', brand: 'MASTERCARD' },
-  { label: 'Amex Aprobada', number: '378282246310005', exp: '11/26', cvv: '1234', brand: 'AMEX' },
+  { label: 'Visa Aprobada', number: '4111111111111111', exp: '12/28', cvv: '123', brand: 'VISA' },
+  { label: 'Visa Débito', number: '4111110000000013', exp: '10/28', cvv: '123', brand: 'VISA' },
 ];
 
 export const CulqiPaymentModal = ({ 
@@ -57,13 +56,13 @@ export const CulqiPaymentModal = ({
   // Culqi Checkout v4 SDK Loading State
   const [culqiSdkLoaded, setCulqiSdkLoaded] = useState(false);
 
-  // Formulario Tarjeta Culqi
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
+  // Formulario Tarjeta Culqi (Pre-cargado con tarjeta oficial Visa de Culqi Sandbox)
+  const [cardNumber, setCardNumber] = useState('4111 1111 1111 1111');
+  const [cardExpiry, setCardExpiry] = useState('12/28');
+  const [cardCvv, setCardCvv] = useState('123');
   const [cardHolder, setCardHolder] = useState('CARLOS MENDOZA');
 
-  // Formulario Yape Culqi (Pre-cargado con datos oficiales de sandbox para facilitar pruebas)
+  // Formulario Yape Culqi (Pre-cargado con datos oficiales de sandbox para pruebas inmediatas)
   const [yapePhone, setYapePhone] = useState('900000001');
   const [yapeOtp, setYapeOtp] = useState('123456');
 
@@ -233,6 +232,17 @@ export const CulqiPaymentModal = ({
     const digits = val.replace(/\D/g, '').substring(0, 4);
     if (digits.length >= 3) {
       return `${digits.substring(0, 2)}/${digits.substring(2, 4)}`;
+    }
+    return digits;
+  };
+
+  const formatPhone = (val) => {
+    const digits = (val || '').replace(/\D/g, '').substring(0, 9);
+    if (digits.length > 6) {
+      return `${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}`;
+    }
+    if (digits.length > 3) {
+      return `${digits.substring(0, 3)} ${digits.substring(3)}`;
     }
     return digits;
   };
@@ -468,15 +478,25 @@ export const CulqiPaymentModal = ({
     if (e) e.preventDefault();
     setErrorMsg('');
 
-    const cleanPhone = (yapePhone || '').replace(/\D/g, '');
+    let cleanPhone = (yapePhone || '').replace(/\D/g, '');
+    // Tolerancia inteligente: Si el usuario escribió en sandbox 9 seguido de ceros y 1 (ej: 90000001 con 6 ceros en vez de 7)
+    if (/^90+1$/.test(cleanPhone)) {
+      cleanPhone = '900000001';
+      setYapePhone('900000001');
+    }
+
     if (cleanPhone.length !== 9 || !cleanPhone.startsWith('9')) {
-      setErrorMsg('Ingresa un número de celular válido de 9 dígitos (inicia con 9). En sandbox usa 900000001.');
+      setErrorMsg('Ingresa un número de celular de 9 dígitos que inicie con 9 (ej. 900 000 001).');
       return;
     }
 
-    const cleanOtp = (yapeOtp || '').replace(/\D/g, '');
+    let cleanOtp = (yapeOtp || '').replace(/\D/g, '');
+    if (!cleanOtp) {
+      cleanOtp = '123456';
+      setYapeOtp('123456');
+    }
     if (cleanOtp.length !== 6) {
-      setErrorMsg('Ingresa el código de aprobación de 6 dígitos. En sandbox usa 123456.');
+      setErrorMsg('Ingresa el código de aprobación de 6 dígitos (en sandbox usa 123456).');
       return;
     }
 
@@ -730,21 +750,25 @@ export const CulqiPaymentModal = ({
             {/* 1. TAB TARJETA */}
             {activeMethod === 'card' && (
               <div className="space-y-4 pt-1">
-                {/* Atajos de prueba rápidos */}
-                <div className="flex items-center justify-between text-[11px] text-slate-500">
-                  <span className="font-medium">Tarjetas de prueba:</span>
-                  <div className="flex gap-1.5">
-                    {CULQI_TEST_CARDS.slice(0, 2).map((c, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => fillTestCard(c)}
-                        className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[10px] font-semibold cursor-pointer transition"
-                      >
-                        {c.brand}
-                      </button>
-                    ))}
+                {/* Banner de Ayuda Rápida Sandbox para Tarjeta */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100/90 border border-slate-200 text-slate-900 text-xs">
+                  <div className="space-y-0.5">
+                    <span className="font-semibold block text-[11px]">Prueba en Sandbox (Visa Culqi)</span>
+                    <span className="font-mono text-[10px] text-slate-600">4111 1111 1111 1111 • 12/28 • 123</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCardNumber('4111 1111 1111 1111');
+                      setCardExpiry('12/28');
+                      setCardCvv('123');
+                      setCardHolder('CARLOS MENDOZA');
+                      setErrorMsg('');
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-800 text-[11px] font-semibold hover:bg-slate-200/50 cursor-pointer shadow-2xs transition"
+                  >
+                    Cargar
+                  </button>
                 </div>
 
                 <form onSubmit={handleProcessCulqiCard} className="space-y-3">
@@ -755,7 +779,7 @@ export const CulqiPaymentModal = ({
                     <div className="relative">
                       <Input
                         type="text"
-                        placeholder="4242 4242 4242 4242"
+                        placeholder="4111 1111 1111 1111"
                         value={cardNumber}
                         onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                         className="font-mono text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white pr-14"
@@ -860,8 +884,8 @@ export const CulqiPaymentModal = ({
                 {/* Banner de Ayuda Rápida Sandbox */}
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50 border border-purple-100 text-purple-900 text-xs">
                   <div className="space-y-0.5">
-                    <span className="font-semibold block text-[11px]">Prueba en Sandbox</span>
-                    <span className="font-mono text-[10px] text-purple-700">900000001 • OTP 123456</span>
+                    <span className="font-semibold block text-[11px]">Prueba en Sandbox (Yape BCP)</span>
+                    <span className="font-mono text-[10px] text-purple-700">900 000 001 • OTP 123456</span>
                   </div>
                   <button
                     type="button"
@@ -883,14 +907,14 @@ export const CulqiPaymentModal = ({
                     </label>
                     <Input
                       type="tel"
-                      maxLength={9}
-                      placeholder="900000001"
-                      value={yapePhone}
-                      onChange={(e) => setYapePhone(e.target.value.replace(/\D/g, ''))}
+                      maxLength={11}
+                      placeholder="900 000 001"
+                      value={formatPhone(yapePhone)}
+                      onChange={(e) => setYapePhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
                       className="font-mono text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white"
                     />
                     <span className="text-[10px] text-slate-400 block mt-1">
-                      Exactamente 9 dígitos
+                      Exactamente 9 dígitos (ej. 900 000 001)
                     </span>
                   </div>
 
@@ -903,7 +927,7 @@ export const CulqiPaymentModal = ({
                       maxLength={6}
                       placeholder="123456"
                       value={yapeOtp}
-                      onChange={(e) => setYapeOtp(e.target.value.replace(/\D/g, ''))}
+                      onChange={(e) => setYapeOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       className="font-mono text-center text-sm font-bold tracking-widest h-11 bg-slate-50/60 border-slate-200 focus:bg-white"
                     />
                     <span className="text-[10px] text-slate-400 block mt-1">

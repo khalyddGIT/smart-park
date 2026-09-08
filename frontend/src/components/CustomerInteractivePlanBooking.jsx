@@ -519,7 +519,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     ? (selectedPlate || (vehicles[0]?.license_plate || '')) 
     : customPlateInput
   ).toUpperCase().trim().replace(/\s/g, '');
-  const PLATE_REGEX = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/;
+  const PLATE_REGEX = /^[A-Z0-9]{2,4}[- ]?[A-Z0-9]{2,4}$/i;
   const isPlateValid = PLATE_REGEX.test(effectivePlate);
   const isFacturaValid = receiptType !== 'factura' || (/^(10|20)[0-9]{9}$/.test(rucNumber.trim()) && businessName.trim().length >= 3);
 

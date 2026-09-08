@@ -557,16 +557,25 @@ async def check_in_reservation(
     else:
         stay_hours = 1.0
 
-    # Recalcular costo estimado con la tarifa de la sede
+    # Recalcular costo estimado con la tarifa diferenciada de la sede
     parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
     parking = parking_res.scalars().first()
-    hourly_rate = parking.hourly_rate if parking else 5.0
 
     reservation.status = "active"
     reservation.actual_entry = now
     # FASE 2: La estadía corre desde el momento exacto del ingreso real
     reservation.end_time = now + timedelta(hours=stay_hours)
-    reservation.total_cost = round(hourly_rate * stay_hours, 2)
+    
+    # Si el operador especificó una duración diferente a la reserva original, recalcular con tarifa diferenciada
+    if hours_stay is not None and hours_stay > 0 and parking:
+        vtype = getattr(reservation, "vehicle_type", "auto")
+        vehicle_rate = get_parking_vehicle_rate(parking, vtype)
+        night_surcharge = float(parking.night_shift_surcharge or 0.0) if getattr(reservation, "is_night_shift", False) else 0.0
+        reservation.total_cost = round((vehicle_rate + night_surcharge) * stay_hours, 2)
+    elif not reservation.total_cost and parking:
+        vtype = getattr(reservation, "vehicle_type", "auto")
+        vehicle_rate = get_parking_vehicle_rate(parking, vtype)
+        reservation.total_cost = round(vehicle_rate * stay_hours, 2)
 
     # El cajón pasa a ocupado mientras dure la estancia
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))

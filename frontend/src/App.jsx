@@ -647,7 +647,7 @@ const AppMain = () => {
                   {/* MAPA INTERACTIVO DE AYACUCHO */}
                   <AyacuchoMap
                     parkings={activeCompany ? activeCompany.branches : filteredParkings}
-                    onSelectParking={(parking) => setSelectedParkingId(parking.id)} 
+                    onSelectParking={(parking) => handleSelectParking(parking)} 
                     selectedParkingId={selectedParkingId} 
                   />
 

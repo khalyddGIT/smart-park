@@ -69,6 +69,17 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     const verifyUrl = `${window.location.origin}/verify/${encodeURIComponent(id)}`;
     const qrPayload = verifyUrl;
 
+    const isPrepaid = !!(
+      reservation.prepaid || 
+      reservation.payNow || 
+      (typeof reservation.paymentMethod === 'string' && (
+        reservation.paymentMethod.toLowerCase().includes('pagado') ||
+        reservation.paymentMethod.toLowerCase().includes('culqi') ||
+        reservation.paymentMethod.toLowerCase().includes('paypal') ||
+        reservation.paymentMethod.toLowerCase().includes('tarjeta')
+      ))
+    );
+
     return {
       dbId,
       id,
@@ -88,7 +99,8 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       arrivalDeadline,
       entryTime,
       stayExpiresAt,
-      qrPayload
+      qrPayload,
+      isPrepaid
     };
   }, [reservation, localActualEntry]);
 
@@ -476,10 +488,16 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
           {/* Total */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-xs border border-transparent dark:border-slate-700">
             <span className="text-slate-300 dark:text-slate-300">
-              {isCancelled ? 'Importe de reserva:' : isCompleted ? 'Total pagado:' : 'Total a pagar en garita:'}
+              {isCancelled 
+                ? 'Importe de reserva:' 
+                : isCompleted 
+                ? 'Total pagado:' 
+                : passData.isPrepaid 
+                ? 'Total prepagado (Abonado):' 
+                : 'Total a pagar en garita:'}
             </span>
             <span className={`text-sm font-mono font-bold ${isCancelled ? 'text-rose-400' : 'text-emerald-400'}`}>
-              {isCancelled ? 'S/ 0.00 (Anulada)' : `S/ ${passData.cost.toFixed(2)}`}
+              {isCancelled ? 'S/ 0.00 (Anulada)' : passData.isPrepaid ? `S/ ${passData.cost.toFixed(2)} (Pagado)` : `S/ ${passData.cost.toFixed(2)}`}
             </span>
           </div>
 

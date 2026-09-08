@@ -30,9 +30,14 @@ else:
         "https://smart-park-web-production.up.railway.app",
     ]
 
+railway_public_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+if railway_public_domain and f"https://{railway_public_domain}" not in CORS_ORIGINS:
+    CORS_ORIGINS.append(f"https://{railway_public_domain}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.up\.railway\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

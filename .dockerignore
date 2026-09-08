@@ -4,13 +4,19 @@
 node_modules
 frontend/node_modules
 backend/venv
+backend/.venv
 backend/__pycache__
 backend/app/__pycache__
 backend/.pytest_cache
+backend/app/tests
 backend/.env
 backend/*.db
-public
+backend/*.sqlite
+backend/uploads/*
+backend/backups/*
 skills-lock.json
 *.log
-DOCUMENTACION_AVANCE_*.md
-Sistema de Estacionamiento/
+docs/
+tools/
+frontend/e2e/
+*.md

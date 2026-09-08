@@ -62,16 +62,20 @@ async def _cancel_expired_once() -> int:
                 cancelled += 1
                 # notificar en tiempo real (el frontend lo convierte en notificación)
                 try:
-                    await realtime.broadcast("reservations:cancelled", {
+                    c_payload = {
                         "reservation_id": r.id,
                         "code": r.code,
                         "user_id": r.user_id,
                         "parking_id": r.parking_id,
                         "slot_id": r.slot_id,
+                        "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", "") if slot else "",
+                        "status": "free",
                         "reason": "tolerancia_vencida",
                         "tolerance_minutes": tol,
                         "deadline": deadline.isoformat(),
-                    })
+                    }
+                    await realtime.broadcast("reservations:cancelled", c_payload)
+                    await realtime.broadcast("spaces:update", c_payload)
                 except Exception:
                     pass
             else:

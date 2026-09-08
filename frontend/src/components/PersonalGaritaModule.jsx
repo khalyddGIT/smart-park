@@ -112,7 +112,7 @@ export const PersonalGaritaModule = () => {
     setPlate('');
     setTimeout(() => setFeedback(''), 3000);
     fetchGaritaReservations();
-    try { await fetchParkings(); await ensureFloorPlan(String(currentEst.id)); } catch {}
+    try { await fetchParkings(); await ensureFloorPlan(String(currentEst.id), true); } catch {}
   };
 
   const handleSalida = async (code) => {
@@ -120,7 +120,7 @@ export const PersonalGaritaModule = () => {
     setFeedback(r.message || 'Salida OK');
     setTimeout(()=>setFeedback(''),3000);
     fetchGaritaReservations();
-    try { await fetchParkings(); await ensureFloorPlan(String(currentEst.id)); } catch {}
+    try { await fetchParkings(); await ensureFloorPlan(String(currentEst.id), true); } catch {}
   };
 
   return (

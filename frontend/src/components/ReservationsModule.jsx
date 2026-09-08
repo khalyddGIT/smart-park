@@ -144,12 +144,18 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
            establishments[0];
   }, [myEstablishments, establishments, currentParkingId]);
 
-  // Hidratar plano CAD automáticamente cuando no se hayan cargado los elements
+  // Hidratar plano CAD automáticamente cuando no se hayan cargado los elements y refrescar periódicamente
   useEffect(() => {
-    if (activeLocalEst && activeLocalEst.elements === null && activeLocalEst.id && ensureFloorPlan) {
-      ensureFloorPlan(activeLocalEst.id);
+    if (activeLocalEst && activeLocalEst.id && ensureFloorPlan) {
+      ensureFloorPlan(activeLocalEst.id, true);
     }
-  }, [activeLocalEst?.id, activeLocalEst?.elements, ensureFloorPlan]);
+    const iv = setInterval(() => {
+      if (document.visibilityState === 'visible' && activeLocalEst?.id && ensureFloorPlan) {
+        ensureFloorPlan(activeLocalEst.id, true);
+      }
+    }, 5000);
+    return () => clearInterval(iv);
+  }, [activeLocalEst?.id, ensureFloorPlan]);
 
   // Modos de vista para Admin Local y Personal: 'stay' | 'floorplan' | 'list'
   const [operatorViewMode, setOperatorViewMode] = useState('stay');

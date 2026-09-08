@@ -434,7 +434,14 @@ async def create_reservation(
     db.add(db_res)
     await db.commit()
     try:
-        await realtime.broadcast("reservations:updated")
+        broadcast_payload = {
+            "parking_id": db_res.parking_id,
+            "slot_id": db_res.slot_id,
+            "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", ""),
+            "status": "reserved"
+        }
+        await realtime.broadcast("reservations:updated", broadcast_payload)
+        await realtime.broadcast("spaces:update", broadcast_payload)
     except Exception:
         pass
     await db.refresh(db_res)
@@ -496,7 +503,14 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
 
     await db.commit()
     try:
-        await realtime.broadcast("reservations:updated")
+        broadcast_payload = {
+            "parking_id": reservation.parking_id,
+            "slot_id": reservation.slot_id,
+            "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", "") if slot else "",
+            "status": "free"
+        }
+        await realtime.broadcast("reservations:updated", broadcast_payload)
+        await realtime.broadcast("spaces:update", broadcast_payload)
     except Exception:
         pass
     await db.refresh(reservation)
@@ -592,7 +606,14 @@ async def check_in_reservation(
     try:
         await invalidate_parkings_cache()
         await invalidate_finances_cache()
-        await realtime.broadcast("reservations:updated")
+        broadcast_payload = {
+            "parking_id": reservation.parking_id,
+            "slot_id": reservation.slot_id,
+            "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", "") if slot else "",
+            "status": "occupied"
+        }
+        await realtime.broadcast("reservations:updated", broadcast_payload)
+        await realtime.broadcast("spaces:update", broadcast_payload)
     except Exception:
         pass
     await db.refresh(reservation)
@@ -634,7 +655,14 @@ async def check_out_reservation(
     try:
         await invalidate_parkings_cache()
         await invalidate_finances_cache()
-        await realtime.broadcast("reservations:updated")
+        broadcast_payload = {
+            "parking_id": reservation.parking_id,
+            "slot_id": reservation.slot_id,
+            "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", "") if slot else "",
+            "status": "free"
+        }
+        await realtime.broadcast("reservations:updated", broadcast_payload)
+        await realtime.broadcast("spaces:update", broadcast_payload)
     except Exception:
         pass
     await db.refresh(reservation)
@@ -658,7 +686,14 @@ async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get
     await db.delete(reservation)
     await db.commit()
     try:
-        await realtime.broadcast("reservations:updated")
+        broadcast_payload = {
+            "parking_id": reservation.parking_id,
+            "slot_id": reservation.slot_id,
+            "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", "") if slot else "",
+            "status": "free"
+        }
+        await realtime.broadcast("reservations:updated", broadcast_payload)
+        await realtime.broadcast("spaces:update", broadcast_payload)
     except Exception:
         pass
     return {"status": "success", "message": f"Reserva {reservation_id} eliminada exitosamente"}

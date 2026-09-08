@@ -772,6 +772,35 @@ async def get_floor_plan(parking_id: int, db: AsyncSession = Depends(get_db)):
     slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
     slots = slots_res.scalars().all()
 
+    # Reconciliar estado de cajones con reservas activas/programadas en tiempo real
+    res_query = await db.execute(
+        select(Reservation).where(
+            Reservation.parking_id == parking_id,
+            Reservation.status.in_(["scheduled", "active"])
+        )
+    )
+    active_reservations = res_query.scalars().all()
+    res_status_by_slot_id = {r.slot_id: r.status for r in active_reservations if r.slot_id}
+
+    modified = False
+    for s in slots:
+        expected_status = None
+        if s.id in res_status_by_slot_id:
+            r_status = res_status_by_slot_id[s.id]
+            expected_status = "occupied" if r_status == "active" else "reserved"
+        elif s.status in ("reserved", "occupied"):
+            expected_status = "free"
+
+        if expected_status and s.status != expected_status:
+            s.status = expected_status
+            modified = True
+
+    if modified:
+        try:
+            await db.commit()
+        except Exception:
+            pass
+
     elem_res = await db.execute(select(FloorPlanElement).where(FloorPlanElement.parking_id == parking_id))
     elements = elem_res.scalars().all()
 

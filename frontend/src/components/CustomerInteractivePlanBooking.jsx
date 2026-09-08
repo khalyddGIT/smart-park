@@ -414,22 +414,47 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     }
     let cancelled = false;
     setPlanStatus('loading');
-    api.get(`/parkings/${numericParkingId}/floor-plan`)
-      .then((res) => {
-        if (cancelled) return;
-        setRemotePlan({
-          slots: (res.data?.slots || []).map(mapServerSlot),
-          elements: (res.data?.elements || []).map(mapServerElement)
+    const fetchPlan = () => {
+      api.get(`/parkings/${numericParkingId}/floor-plan`)
+        .then((res) => {
+          if (cancelled) return;
+          setRemotePlan({
+            slots: (res.data?.slots || []).map(mapServerSlot),
+            elements: (res.data?.elements || []).map(mapServerElement)
+          });
+          setPlanStatus('ready');
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setPlanErrorDetail(err?.response?.data?.detail || '');
+          setPlanStatus('error');
         });
-        setPlanStatus('ready');
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setPlanErrorDetail(err?.response?.data?.detail || '');
-        setPlanStatus('error');
-      });
-    return () => { cancelled = true; };
-  }, [parking?.id]);
+    };
+
+    fetchPlan();
+
+    // Sincronización en vivo cada 4 segundos mientras el modal esté activo
+    const iv = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchPlan();
+      }
+    }, 4000);
+
+    // Escucha eventos globales de floorplan actualizado
+    const handleGlobalUpdate = (e) => {
+      const pid = e?.detail?.parkingId;
+      if (pid && String(pid) === String(numericParkingId)) {
+        fetchPlan();
+      }
+    };
+    window.addEventListener('smart_park_floorplan_updated', handleGlobalUpdate);
+
+    return () => { 
+      cancelled = true; 
+      clearInterval(iv);
+      window.removeEventListener('smart_park_floorplan_updated', handleGlobalUpdate);
+    };
+  }, [parking?.id, numericParkingId]);
 
   const elements = useMemo(() => {
     if (planStatus === 'ready' && remotePlan) {

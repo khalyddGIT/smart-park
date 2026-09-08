@@ -678,19 +678,28 @@ export const EstablishmentProvider = ({ children }) => {
       const res = await api.get(`/parkings/${numId}/floor-plan`);
       const slots = (Array.isArray(res.data?.slots) ? res.data.slots : []).map(mapServerSlot);
       const elements = (Array.isArray(res.data?.elements) ? res.data.elements : []).map(mapServerElement);
+      const fullElements = [...elements, ...slots];
       setEstablishments(prev => prev.map(est => String(est.id) === key
-        ? { ...est, elements: [...elements, ...slots], _needsFloorPlan: false }
+        ? { ...est, elements: fullElements, _needsFloorPlan: false }
         : est
       ));
+      try {
+        window.dispatchEvent(new CustomEvent('smart_park_floorplan_updated', {
+          detail: { parkingId: key, elements: fullElements, slots }
+        }));
+      } catch {}
+      return fullElements;
     } catch {
       hydratedPlansRef.current.delete(key);
     }
   };
 
   // Garantiza que un establecimiento tenga su plano cargado antes de abrirlo (uso desde UI)
-  const ensureFloorPlan = (id) => {
+  const ensureFloorPlan = (id, force = false) => {
     const est = establishments.find(e => String(e.id) === String(id));
-    if (est && est.elements === null) return hydrateFloorPlan(id);
+    if (force || !est || est.elements === null || est._needsFloorPlan) {
+      return hydrateFloorPlan(id, force);
+    }
   };
 
   const fetchParkings = async () => {
@@ -805,16 +814,21 @@ export const EstablishmentProvider = ({ children }) => {
           try {
             const msg = JSON.parse(ev.data);
             if (msg.event === 'pong') return;
-            if (msg.event === 'parkings:updated' || msg.event === 'refresh') fetchParkings();
+            if (msg.event === 'parkings:updated' || msg.event === 'refresh') {
+              fetchParkings();
+              const pid = msg.payload?.parking_id || msg.payload?.parkingId;
+              if (pid) try { hydrateFloorPlan(String(pid), true); } catch {}
+            }
             if (msg.event === 'spaces:update') {
               const pid = msg.payload?.parking_id;
               const slotCode = msg.payload?.slot_code;
+              const slotId = msg.payload?.slot_id;
               const newStatus = msg.payload?.status;
-              if (pid && slotCode && newStatus) {
+              if (pid && (slotCode || slotId) && newStatus) {
                 setEstablishments(prev => prev.map(est => {
                   if (String(est.id) === String(pid)) {
                     const nextElements = (est.elements || []).map(el => {
-                      if (el.type === 'slot' && el.code === slotCode) {
+                      if (el.type === 'slot' && (el.code === slotCode || String(el.id) === String(slotId))) {
                         return { ...el, status: newStatus };
                       }
                       return el;
@@ -823,15 +837,16 @@ export const EstablishmentProvider = ({ children }) => {
                   }
                   return est;
                 }));
+                try { hydrateFloorPlan(String(pid), true); } catch {}
               }
             }
-            if (msg.event === 'reservations:updated' || msg.event === 'refresh') {
+            if (msg.event === 'reservations:updated' || msg.event === 'reservations:cancelled' || msg.event === 'refresh') {
               if (getAccessToken()) refreshMyReservations();
               // Cajón reservado/ocupado cambia plano, refrescar para que no siga disponible
               fetchParkings();
               // Si hay parking_id en payload, hidratar solo ese plano para feedback instantáneo
               const pid = msg.payload?.parking_id || msg.payload?.parkingId;
-              if(pid) try{ hydrateFloorPlan(String(pid)); }catch{}
+              if (pid) try { hydrateFloorPlan(String(pid), true); } catch {}
             }
             if (msg.event === 'incidents:updated' || msg.event === 'reviews:updated') { /* NotificationContext hace su propio polling */ }
           } catch {}
@@ -1776,7 +1791,7 @@ export const EstablishmentProvider = ({ children }) => {
       const mapped = mapServerReservation(serverRes);
       // Refrescar lista completa y plano (para que cajón pase a reservado en vivo)
       await refreshMyReservations();
-      try { await fetchParkings(); await hydrateFloorPlan(String(parkingIdNum)); } catch {}
+      try { await fetchParkings(); await hydrateFloorPlan(String(parkingIdNum), true); } catch {}
       return mapped;
     } catch (e) {
       const raw = e?.response?.data?.detail;
@@ -1799,16 +1814,7 @@ export const EstablishmentProvider = ({ children }) => {
         await refreshMyReservations();
         // Refrescar plano real del servidor para que el cajón aparezca libre
         try {
-          const pid = Number(target.parkingId);
-          if (!isNaN(pid)) {
-            const res = await api.get(`/parkings/${pid}/floor-plan`);
-            const slots = Array.isArray(res.data?.slots) ? res.data.slots : [];
-            const slotMap = new Map(slots.map(s => [String(s.code), s.status]));
-            setEstablishments(prev => prev.map(est => {
-              if (String(est.id) !== String(pid)) return est;
-              return { ...est, elements: (est.elements || []).map(el => el.type === 'slot' && slotMap.has(el.code) ? { ...el, status: slotMap.get(el.code) } : el) };
-            }));
-          }
+          if (target.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
         } catch {}
         return { ok: true, message: `Reserva ${code} cancelada. Plaza ${target.slot} liberada.` };
       } catch (e) {

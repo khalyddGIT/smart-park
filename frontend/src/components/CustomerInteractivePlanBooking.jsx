@@ -521,7 +521,6 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   ).toUpperCase().trim().replace(/\s/g, '');
   const PLATE_REGEX = /^[A-Z0-9]{2,4}[- ]?[A-Z0-9]{2,4}$/i;
   const isPlateValid = PLATE_REGEX.test(effectivePlate);
-  const isFacturaValid = receiptType !== 'factura' || (/^(10|20)[0-9]{9}$/.test(rucNumber.trim()) && businessName.trim().length >= 3);
 
   const isMinuteBilling = parking?.billing_unit === 'minute';
 
@@ -597,16 +596,14 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const subtotalBase = finalTotalCost / 1.18;
   const igvAmount = finalTotalCost - subtotalBase;
 
-  const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && slotMatchesVehicle(selectedSlot.slotType, vehicleCategory) && isPlateValid && isFacturaValid;
+  const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && slotMatchesVehicle(selectedSlot.slotType, vehicleCategory) && isPlateValid;
 
   const handleExecuteBooking = () => {
     if (!canReserve) return;
     const now = new Date();
     const chosenTolerance = Number(etaMinutes) || 15;
     const start = now;
-    const end = isMinuteBilling
-      ? new Date(start.getTime() + actualStayMinutes * 60 * 1000)
-      : new Date(start.getTime() + stayHours * 60 * 60 * 1000);
+    const end = new Date(start.getTime() + Math.max(120, chosenTolerance + 60) * 60 * 1000);
 
     const bookingPayload = {
       slotId: selectedSlot.id,
@@ -616,12 +613,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       vehicleType: vehicleCategory,
       parkingId: numericParkingId,
       parkingName: parking?.name || 'Smart Park Central',
-      hours: isOpenStay ? 1 : stayHours,
-      estimatedHours: isOpenStay ? 1 : Math.max(1, Math.round(stayHours)),
-      isOpenStay: !!isOpenStay,
-      is_open_stay: !!isOpenStay,
+      hours: 1,
+      estimatedHours: 1,
+      isOpenStay: true,
+      is_open_stay: true,
       billingUnit: isMinuteBilling ? 'minute' : 'hour',
-      estimatedMinutes: actualStayMinutes,
+      estimatedMinutes: 60,
       isNightShift: isNightShiftActive,
       nightSurcharge: isMinuteBilling ? nightMinuteSurcharge : nightSurcharge,
       reservationFee,
@@ -630,13 +627,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       arrivalWindow: chosenTolerance,
       toleranceMinutes: chosenTolerance,
       plate: effectivePlate.split(' ')[0],
-      rawCost,
-      discountAmount,
-      totalCost: finalTotalCost,
+      rawCost: reservationFee > 0 ? reservationFee : categoryHourlyRate,
+      discountAmount: 0,
+      totalCost: parking?.require_reservation_prepay ? reservationFee : categoryHourlyRate,
       bookingModel,
-      receiptType,
-      rucNumber: receiptType === 'factura' ? rucNumber : undefined,
-      businessName: receiptType === 'factura' ? businessName : undefined,
+      receiptType: 'boleta',
       code: `RSV-${Date.now().toString().slice(-6)}`,
       token: `SPK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
       startTime: start,
@@ -1062,12 +1057,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   );
                 })}
               </div>
-              <p className="mt-1.5 text-[10px] text-slate-400 leading-snug">
-                En el plano solo se habilitan cajones de <span className="text-emerald-400 font-semibold">{SLOT_TYPE_LABEL[slotFamily(vehicleCategory)] || 'Auto'}</span>. El resto aparece bloqueado.
-                {compatibleFreeSlots.length === 0 && (
-                  <span className="block text-amber-400 mt-0.5">No hay cajones libres de este tipo en esta sede.</span>
-                )}
-              </p>
+              {compatibleFreeSlots.length === 0 && (
+                <p className="mt-1.5 text-[11px] text-amber-400 font-medium">
+                  ⚠️ No hay cajones disponibles de {SLOT_TYPE_LABEL[slotFamily(vehicleCategory)] || 'este tipo'} en esta sede.
+                </p>
+              )}
 
               {isNightShiftActive && (
                 <div className="mt-2 bg-indigo-950/80 border border-indigo-700/60 rounded-xl p-2 flex items-center justify-between text-xs">
@@ -1177,13 +1171,14 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
             {/* Tiempo Estimado de Llegada (ETA) */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-slate-300">
-                  Tiempo Estimado de Llegada (ETA)
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                  ¿En cuánto tiempo llegas? (ETA)
                 </label>
                 {(parking?.tolerance || parking?.tolerance_minutes) && (
-                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">
-                    Tolerancia local: {parking?.tolerance || parking?.tolerance_minutes} min
+                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-full">
+                    Tolerancia: {parking?.tolerance || parking?.tolerance_minutes} min
                   </span>
                 )}
               </div>
@@ -1196,220 +1191,50 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   .sort((a, b) => a - b)
                   .map((val) => (
                     <option key={val} value={val}>
-                      {val} minutos {val === Number(parking?.tolerance ?? parking?.tolerance_minutes) ? '(Tolerancia oficial del local)' : ''}
+                      Llegada en ~{val} minutos {val === Number(parking?.tolerance ?? parking?.tolerance_minutes) ? '(Tolerancia oficial del local)' : ''}
                     </option>
                   ))}
               </select>
             </div>
 
-            {/* Tiempo Estimado de Estadía */}
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-semibold text-slate-300">
-                  {isMinuteBilling ? 'Tiempo Estimado de Estadía (Fracción Minutos)' : 'Tiempo Estimado de Estadía'}
-                </label>
-                <span className="text-xs font-mono font-bold text-emerald-400">
-                  {isOpenStay 
-                    ? 'Hora (Libre) • Abierto'
-                    : isMinuteBilling 
-                    ? `${actualStayMinutes} min (${(actualStayMinutes/60).toFixed(1)}h)`
-                    : `${stayHours} ${stayHours === 1 ? 'hora' : 'horas'}`}
-                </span>
-              </div>
-
-              {isMinuteBilling ? (
-                <>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {parking?.allow_open_stay !== false && (
-                      <button
-                        type="button"
-                        onClick={() => setIsOpenStay(true)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
-                          isOpenStay
-                            ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
-                            : 'bg-slate-950 text-emerald-400 hover:text-emerald-300 border border-emerald-800/60'
-                        }`}
-                      >
-                        <Clock className="w-3 h-3" />
-                        <span>Hora (libre)</span>
-                      </button>
-                    )}
-                    {[15, 30, 45, 60, 90, 120, 180, 240, 360, 480].filter(m => m >= minStayMin && m <= maxStayMin).map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => {
-                          setIsOpenStay(false);
-                          setStayMinutes(m);
-                        }}
-                        className={`flex-1 min-w-[42px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-                          !isOpenStay && actualStayMinutes === m
-                            ? 'bg-emerald-600 text-white shadow-sm'
-                            : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                        }`}
-                      >
-                        {m >= 60 && m % 60 === 0 ? `${m/60}h` : `${m}m`}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    {isOpenStay 
-                      ? '⏱️ Estadía libre: Pagas en garita según el tiempo exacto transcurrido.'
-                      : `Tarifa por minuto: mín ${minStayMin} min, máx ${maxStayMin} min (${((maxStayMin)/60).toFixed(1)}h).`}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {parking?.allow_open_stay !== false && (
-                      <button
-                        type="button"
-                        onClick={() => setIsOpenStay(true)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
-                          isOpenStay
-                            ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
-                            : 'bg-slate-950 text-emerald-400 hover:text-emerald-300 border border-emerald-800/60'
-                        }`}
-                      >
-                        <Clock className="w-3 h-3" />
-                        <span>Hora (libre)</span>
-                      </button>
-                    )}
-                    {[1, 2, 3, 4, 6, 8, 12, 24].filter(h => h >= minStay && h <= maxStay).map((h) => (
-                      <button
-                        key={h}
-                        type="button"
-                        onClick={() => {
-                          setIsOpenStay(false);
-                          setHours(h);
-                        }}
-                        className={`flex-1 min-w-[34px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-                          !isOpenStay && stayHours === h
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                        }`}
-                      >
-                        {h}h
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    {isOpenStay 
-                      ? '⏱️ Estadía libre: Sin límite forzado. Pagas en garita al salir según las horas consumidas.'
-                      : `Límites de esta cochera: mín ${minStay}h, máx ${maxStay}h.`}
-                  </p>
-                </>
-              )}
-            </div>
-
-            {/* Comprobante SUNAT */}
-            <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400">Comprobante SUNAT:</span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setReceiptType('boleta')}
-                    className={`px-2 py-0.5 rounded-md text-xs font-semibold ${receiptType === 'boleta' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                  >
-                    Boleta
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReceiptType('factura')}
-                    className={`px-2 py-0.5 rounded-md text-xs font-semibold ${receiptType === 'factura' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                  >
-                    Factura
-                  </button>
-                </div>
-              </div>
-
-              {receiptType === 'factura' && (
-                <div className="space-y-1.5 pt-1 border-t border-slate-800">
-                  <input
-                    type="text"
-                    value={rucNumber}
-                    onChange={(e) => setRucNumber(e.target.value.replace(/[^0-9]/g, '').slice(0, 11))}
-                    placeholder="RUC (11 dígitos, inicia con 10 o 20)"
-                    maxLength={11}
-                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2 py-1 text-xs font-mono"
-                  />
-                  {rucNumber.length > 0 && !/^(10|20)[0-9]{9}$/.test(rucNumber) && (
-                    <p className="text-[10px] text-amber-400">RUC debe tener 11 dígitos y comenzar con 10 o 20.</p>
-                  )}
-                  <input
-                    type="text"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Razón Social (mín. 3 caracteres)"
-                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2 py-1 text-xs"
-                  />
-                  {businessName.length > 0 && businessName.trim().length < 3 && (
-                    <p className="text-[10px] text-amber-400">Razón social debe tener al menos 3 caracteres.</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Desglose de Reserva y Condiciones de Garita */}
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs font-mono">
-              <div className="flex justify-between text-slate-400">
-                <span>Tarifa móvil ({vehicleCategory}):</span>
-                <span className="text-slate-200">
+            {/* Resumen Ejecutivo de Reserva y Tarifa */}
+            <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 space-y-2 text-xs">
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-slate-400">Tarifa ({vehicleCategory.toUpperCase()}):</span>
+                <span className="font-mono font-bold text-white">
                   {isMinuteBilling 
                     ? `S/ ${categoryMinuteRate.toFixed(2)} /min` 
                     : `S/ ${categoryHourlyRate.toFixed(2)} /h`}
                 </span>
               </div>
               {isNightShiftActive && (
-                <div className="flex justify-between text-amber-300">
+                <div className="flex items-center justify-between text-amber-300 text-[11px]">
                   <span>Recargo Turno Noche:</span>
-                  <span>
-                    {isMinuteBilling 
-                      ? `+S/ ${nightMinuteSurcharge.toFixed(3)} /min` 
-                      : `+S/ ${nightSurcharge.toFixed(2)} /h`}
+                  <span className="font-mono font-semibold">
+                    +{isMinuteBilling ? `S/ ${nightMinuteSurcharge.toFixed(3)}/min` : `S/ ${nightSurcharge.toFixed(2)}/h`}
                   </span>
                 </div>
               )}
-              <div className="flex justify-between text-slate-400">
-                <span>Estadía estimada:</span>
-                <span className={`font-bold ${isOpenStay ? 'text-emerald-400' : 'text-slate-200'}`}>
-                  {isOpenStay 
-                    ? 'Hora (Libre) • Tiempo Abierto'
-                    : isMinuteBilling 
-                    ? `${actualStayMinutes} min (${(actualStayMinutes/60).toFixed(1)}h)`
-                    : `${stayHours} ${stayHours === 1 ? 'hora' : 'horas'}`}
-                </span>
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-slate-400">Llegada prevista:</span>
+                <span className="text-emerald-400 font-mono font-semibold">~{etaMinutes} min</span>
               </div>
-              {isMinuteBilling && (
-                <div className="flex justify-between text-slate-400 text-[11px] pt-0.5 border-t border-slate-900">
-                  <span>Base estancia:</span>
-                  <span className="text-slate-300">
-                    {actualStayMinutes} min × S/ {effectiveMinuteRate.toFixed(2)} = S/ {(actualStayMinutes * effectiveMinuteRate).toFixed(2)}
-                  </span>
+              <div className="h-px bg-slate-800/80 my-1" />
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400">Cobro de estadía:</span>
+                <span className="text-slate-200 font-medium">Registrado por trabajador en garita al salir</span>
+              </div>
+              {reservationFee > 0 ? (
+                <div className="flex items-center justify-between text-amber-300 pt-1 border-t border-slate-800/80 font-mono">
+                  <span>Tasa de reserva (prepago):</span>
+                  <span className="font-bold">S/ {reservationFee.toFixed(2)}</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                  <span>Reserva:</span>
+                  <span className="text-emerald-400 font-medium">Sin costo previo (Pagas en garita al salir)</span>
                 </div>
               )}
-              {reservationFee > 0 && (
-                <div className="flex justify-between text-slate-400">
-                  <span>Tasa de Reserva:</span>
-                  <span className="text-slate-200">S/ {reservationFee.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-slate-400">
-                <span>Ventana llegada (tolerancia):</span>
-                <span className="text-emerald-400 font-bold">{etaMinutes} min</span>
-              </div>
-              <div className="h-px bg-slate-800 my-1" />
-              <div className="flex justify-between font-bold text-sm items-center">
-                <span className="text-white font-sans">Total Estimado:</span>
-                <span className="text-emerald-400 font-mono">S/ {finalTotalCost.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-400">
-                <span>Modalidad:</span>
-                <span className="text-slate-200">
-                  {parking?.require_reservation_prepay ? 'Prepago digital previo' : 'Pago en garita'}
-                </span>
-              </div>
             </div>
 
             {/* Aviso si ya cuenta con reserva activa */}
@@ -1449,7 +1274,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             {!canReserve && effectivePlate && !isPlateValid && (
               <p className="text-[11px] text-rose-400 text-center mt-1 font-mono">La placa debe incluir un guión (ej: ABC-123).</p>
             )}
-            {!canReserve && isPlateValid && isFacturaValid && compatibleFreeSlots.length === 0 && (
+            {!canReserve && isPlateValid && compatibleFreeSlots.length === 0 && (
               <p className="text-[11px] text-amber-400 text-center mt-1">No hay cajones libres del tipo elegido. Cambia de vehículo o de sede.</p>
             )}
           </div>

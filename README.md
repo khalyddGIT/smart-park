@@ -226,21 +226,11 @@ railway up   # despliegue directo con la CLI
 
 ---
 
-## 🌍 Producción y Usuarios Semilla
+## 🌍 Entornos y Verificación de Servicios
 
-- **App:** https://smart-park-web-production.up.railway.app
-- **Healthcheck:** `/health` · **Swagger:** `/docs`
-
-Cuentas creadas automáticamente en el primer arranque (semilla idempotente):
-
-| Rol | Correo | Contraseña | PIN |
-| :--- | :--- | :--- | :--- |
-| 🚗 Conductor demo | `usuario@smartpark.com` | `password123` | `1234` |
-| 🏢 Admin Local | `adminlocal@smartpark.com` | `SmartParkLocal2026!` | `4826` |
-| 🌐 Super Admin | `superadmin@smartpark.com` | `SmartParkSuperAdmin2026!` | `7391` |
-| 🚪 Operador Garita | `operador.garita@smartpark.pe` | `Operador2026!` | `2580` |
-
-> ⚠️ Rotar estas credenciales antes de un uso real en producción.
+- **Healthcheck del Sistema:** `/health` (Monitorea el estado del servicio y conectividad con PostgreSQL)
+- **Documentación de API:** `/docs` (Swagger UI interactivo) y `/redoc`
+- **Seguridad & RBAC:** Autenticación por JSON Web Tokens (JWT) y autorización basada en roles (`user`, `local`, `platform`). Las credenciales y accesos se gestionan de forma segura a través de variables de entorno o mediante el panel administrativo de la plataforma.
 
 ---
 

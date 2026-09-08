@@ -136,13 +136,7 @@ npm run dev
 
 La aplicación queda disponible en `http://localhost:5173` y la documentación interactiva de la API en `http://127.0.0.1:8000/docs`. Como alternativa todo-en-uno existe `docker compose up --build`, que levanta PostgreSQL, el backend y el frontend contenerizados.
 
-En el primer arranque, los seeds crean tres usuarios demo listos para probar cada rol:
-
-| Rol | Correo | Contraseña | PIN |
-| :--- | :--- | :--- | :--- |
-| 🚗 Conductor demo | `usuario@smartpark.com` | `password123` | `1234` |
-| 🏢 Admin Local | `adminlocal@smartpark.com` | `SmartParkLocal2026!` | `4826` |
-| 🌐 Super Admin | `superadmin@smartpark.com` | `SmartParkSuperAdmin2026!` | `7391` |
+En el primer arranque, la base de datos inicializa los roles del sistema (`user`, `local`, `platform`) con control de acceso RBAC. Las cuentas administrativas y credenciales maestras se configuran mediante variables de entorno seguras en el servidor.
 
 ---
 
@@ -319,7 +313,7 @@ curl https://smart-park-web-production.up.railway.app/api/v1/parkings
 # 4. Autenticación (recordar: full_name es obligatorio)
 curl -X POST https://smart-park-web-production.up.railway.app/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"usuario@smartpark.com","password":"password123","full_name":"Usuario Demo"}'
+  -d '{"email":"usuario@ejemplo.com","password":"<tu_contrasena>","full_name":"Usuario Demo"}'
 # Esperado: HTTP 200 con access_token JWT
 
 # 5. Historial de deployments

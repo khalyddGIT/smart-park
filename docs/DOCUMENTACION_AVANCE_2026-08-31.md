@@ -26,12 +26,12 @@ En esta iteración se resolvieron las discrepancias de persistencia y sincroniza
 - **Diagnóstico:** El procedimiento `startup_db()` omitía el poblado inicial de datos cuando detectaba `ENVIRONMENT=production`. Al arrancar en Railway por primera vez, la base de datos PostgreSQL carecía de las cuentas administrativas preconfiguradas.
 - **Solución:** Se implementó un algoritmo de *Upsert* idempotente en `backend/app/main.py` que verifica e inserta/actualiza las credenciales y hashes de PIN para los 4 roles del sistema en cada arranque del servidor:
 
-| Rol | Correo Electrónico | Contraseña | PIN Hasheado | Tabla en BD |
-| :--- | :--- | :--- | :--- | :--- |
-| **🌐 Super Admin** | `superadmin@smartpark.com` | `SmartParkSuperAdmin2026!` | `7391` | `usuarios` (`role: platform`) |
-| **🏢 Admin Local** | `adminlocal@smartpark.com` | `SmartParkLocal2026!` | `4826` | `usuarios` (`role: local`) |
-| **🚗 Conductor Demo** | `usuario@smartpark.com` | `password123` | `1234` | `usuarios` (`role: user`) |
-| **🚪 Operador Garita** | `operador.garita@smartpark.pe` | `Operador2026!` | `2580` | `usuarios` y `personal` (`parking_id: 1`) |
+| Rol | Rol en Sistema | Tabla en BD |
+| :--- | :--- | :--- |
+| **🌐 Super Admin** | `role: platform` | `usuarios` |
+| **🏢 Admin Local** | `role: local` | `usuarios` |
+| **🚗 Conductor Demo** | `role: user` | `usuarios` |
+| **🚪 Operador Garita** | `role: local` | `usuarios` y `personal` |
 
 ### 3. Registro de Vehículos sin Restricciones de Formato
 - **Diagnóstico:** La expresión regular anterior `/^([A-Z]{3}-[0-9]{3}|[0-9]{4}-[A-Z]{2}|[A-Z]{2}-[0-9]{4})$/` en Pydantic (`schemas.py`) y React (`VehiclesModule.jsx`) rechazaba matrículas alfanuméricas peruanas modernas (`A1B-234`, `V1A892`, `C8A-710`) o placas sin guión (`ABC123`).

@@ -238,7 +238,7 @@ async def startup_db():
                 ]
                 session.add_all(slots + elems)
                 
-            # Garantizar la persistencia y credenciales exactas de las 4 cuentas principales del sistema en PostgreSQL
+            # Garantizar la persistencia de las cuentas del sistema en PostgreSQL
             from app.models.models import Staff
             system_accounts = [
                 {
@@ -247,7 +247,8 @@ async def startup_db():
                     "password": os.getenv("SUPERADMIN_PASSWORD") or "SmartParkSuperAdmin2026!",
                     "pin": os.getenv("SUPERADMIN_PIN") or "7391",
                     "role": "platform",
-                    "phone": "+51 999999999"
+                    "phone": "+51 999999999",
+                    "force_update_password": bool(os.getenv("SUPERADMIN_PASSWORD"))
                 },
                 {
                     "email": "adminlocal@smartpark.com",
@@ -255,23 +256,26 @@ async def startup_db():
                     "password": os.getenv("ADMINLOCAL_PASSWORD") or "SmartParkLocal2026!",
                     "pin": os.getenv("ADMINLOCAL_PIN") or "4826",
                     "role": "local",
-                    "phone": "+51 988888888"
+                    "phone": "+51 988888888",
+                    "force_update_password": bool(os.getenv("ADMINLOCAL_PASSWORD"))
                 },
                 {
                     "email": "usuario@smartpark.com",
                     "full_name": "Usuario Conductor Demo",
-                    "password": "password123",
-                    "pin": "1234",
+                    "password": os.getenv("DEMO_USER_PASSWORD") or "password123",
+                    "pin": os.getenv("DEMO_USER_PIN") or "1234",
                     "role": "user",
-                    "phone": "+51 987654321"
+                    "phone": "+51 987654321",
+                    "force_update_password": bool(os.getenv("DEMO_USER_PASSWORD"))
                 },
                 {
                     "email": "operador.garita@smartpark.pe",
                     "full_name": "Operador de Garita",
-                    "password": "Operador2026!",
-                    "pin": "2580",
+                    "password": os.getenv("OPERATOR_PASSWORD") or "Operador2026!",
+                    "pin": os.getenv("OPERATOR_PIN") or "2580",
                     "role": "local",
-                    "phone": "+51 977777777"
+                    "phone": "+51 977777777",
+                    "force_update_password": bool(os.getenv("OPERATOR_PASSWORD"))
                 }
             ]
 
@@ -280,10 +284,11 @@ async def startup_db():
                 existing_u = res_u.scalars().first()
                 if existing_u:
                     existing_u.full_name = acc["full_name"]
-                    existing_u.hashed_password = get_password_hash(acc["password"])
-                    existing_u.security_pin = hash_pin(acc["pin"])
                     existing_u.role = acc["role"]
                     existing_u.is_active = True
+                    if acc.get("force_update_password"):
+                        existing_u.hashed_password = get_password_hash(acc["password"])
+                        existing_u.security_pin = hash_pin(acc["pin"])
                 else:
                     new_u = User(
                         full_name=acc["full_name"],
@@ -305,7 +310,6 @@ async def startup_db():
                 staff_entry = res_staff.scalars().first()
                 if staff_entry:
                     staff_entry.parking_id = first_p.id
-                    staff_entry.security_pin = hash_pin("2580")
                     staff_entry.status = "active"
                 else:
                     new_staff = Staff(
@@ -316,7 +320,7 @@ async def startup_db():
                         shift="Rotativo",
                         status="active",
                         email="operador.garita@smartpark.pe",
-                        security_pin=hash_pin("2580")
+                        security_pin=hash_pin(os.getenv("OPERATOR_PIN") or "2580")
                     )
                     session.add(new_staff)
                 await session.commit()

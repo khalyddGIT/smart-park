@@ -93,8 +93,7 @@ La desalineación inicial en 1920×1080 se debía a `CarParkPos` del `carPark.mp
   cd frontend; npm run dev -- --host 127.0.0.1 --port 5173
   # → http://127.0.0.1:5173 (módulo Cámaras → Imagen/WebCam/Cámara IP, Debug activo)
   # → http://127.0.0.1:8000/docs
-  ```
-- Credenciales seed: `superadmin@smartpark.com` / `SmartParkSuperAdmin2026!`, `adminlocal@smartpark.com` / `SmartParkLocal2026!`, `usuario@smartpark.com` / `password123`.
+- Cuentas del sistema configuradas con roles RBAC (`platform`, `local`, `user`).
 
 ---
 

@@ -33,6 +33,8 @@ class ChargeRequest(BaseModel):
     description: str = Field(default="Reserva Smart Park", max_length=200)
     reservation_id: Optional[int] = None
     email: Optional[str] = None
+    payment_method: Optional[str] = Field(default="card", description="Medio de pago: 'card' o 'yape'")
+
 
 
 class PayPalCreateOrderRequest(BaseModel):
@@ -189,14 +191,19 @@ async def create_charge(
 
     if resp.status_code in (200, 201):
         outcome = data.get("outcome", {}) if isinstance(data, dict) else {}
-        if outcome.get("type") == "venta_exitosa" or (data.get("outcome") is None and resp.status_code == 201):
+        if outcome.get("type") == "venta_exitosa" or (data.get("outcome") is None and resp.status_code in (200, 201)):
+            src_info = data.get("source", {}) if isinstance(data, dict) and isinstance(data.get("source"), dict) else {}
+            detected_method = (
+                "yape" if (body.payment_method == "yape" or src_info.get("type") == "yape" or "yape" in str(data.get("description", "")).lower())
+                else "card"
+            )
             payment = Payment(
                 reservation_id=body.reservation_id,
                 user_id=current_user.id,
                 amount_cents=body.amount_cents,
                 currency=currency_code,
                 status="succeeded",
-                method="card",
+                method=detected_method,
                 culqi_charge_id=str(data.get("id", ""))[:100] if isinstance(data, dict) else None,
                 description=body.description[:200],
             )
@@ -205,6 +212,7 @@ async def create_charge(
             await db.refresh(payment)
             if isinstance(data, dict):
                 data["payment_id"] = payment.id
+                data["payment_method"] = detected_method
                 data["reservation_paid"] = bool(body.reservation_id)
             return data
         if outcome.get("type") != "venta_exitosa" and outcome:

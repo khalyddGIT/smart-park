@@ -32,3 +32,22 @@ def test_paypal_access_token_generation():
         import pytest as _pytest
         _pytest.skip(f"PayPal sandbox API inalcanzable en entorno offline: {exc}")
 
+
+def test_culqi_charge_request_schema():
+    from app.api.v1.payments import ChargeRequest
+    # Valida campos requeridos y tipos
+    req = ChargeRequest(
+        amount_cents=1500,
+        token_id="tkn_test_1234567890",
+        payment_method="yape"
+    )
+    assert req.amount_cents == 1500
+    assert req.token_id == "tkn_test_1234567890"
+    assert req.payment_method == "yape"
+    assert req.currency == "PEN"
+
+    # Falla con monto <= 0
+    with pytest.raises(Exception):
+        ChargeRequest(amount_cents=0, token_id="tkn_test_123")
+
+

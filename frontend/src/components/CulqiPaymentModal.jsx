@@ -231,7 +231,6 @@ export const CulqiPaymentModal = ({
             const captureData = res.data;
             setIsProcessing(false);
             setPaymentSuccess(captureData);
-            if (onPaymentSuccess) onPaymentSuccess(captureData);
           } catch (err) {
             setIsProcessing(false);
             const msg = err.response?.data?.detail || err.message || 'Fallo al confirmar el pago en PayPal';
@@ -393,7 +392,6 @@ export const CulqiPaymentModal = ({
 
           setIsProcessing(false);
           setPaymentSuccess(chargeData);
-          if (onPaymentSuccess) onPaymentSuccess(chargeData);
         } catch (err) {
           setIsProcessing(false);
           const detail = err.response?.data?.detail || err.message || 'Error al procesar el cobro con Culqi';
@@ -511,7 +509,6 @@ export const CulqiPaymentModal = ({
 
       setIsProcessing(false);
       setPaymentSuccess(chargeData);
-      if (onPaymentSuccess) onPaymentSuccess(chargeData);
     } catch (err) {
       setIsProcessing(false);
       const status = err.response?.status;
@@ -528,11 +525,140 @@ export const CulqiPaymentModal = ({
     }
   };
 
-  const handleResetAndClose = () => {
+  // Procesar Pago con Yape Oficial Culqi (API v2 /tokens/yape + /v2/charges)
+  const handleProcessCulqiYape = async (e) => {
+    if (e) e.preventDefault();
+    setErrorMsg('');
+
+    const cleanPhone = (yapePhone || '').replace(/\D/g, '');
+    if (cleanPhone.length !== 9 || !cleanPhone.startsWith('9')) {
+      setErrorMsg('Ingresa un número de celular Yape válido (9 dígitos comenzando con 9).');
+      return;
+    }
+
+    const cleanOtp = (yapeOtp || '').replace(/\D/g, '');
+    if (cleanOtp.length !== 6) {
+      setErrorMsg('Ingresa el código de aprobación de 6 dígitos generado en tu aplicación Yape.');
+      return;
+    }
+
+    const pk = (CULQI_PUBLIC_KEY || '').trim();
+    if (!pk || !pk.startsWith('pk_')) {
+      setErrorMsg('Llave pública de Culqi no configurada en el frontend (VITE_CULQI_PUBLIC_KEY).');
+      return;
+    }
+
+    setIsProcessing(true);
+    setProcessingStep('Validando código Yape con Culqi...');
+
+    const amountCents = Math.round(Number(amountPen) * 100);
+    let tokenId;
+
+    try {
+      // POST oficial de Culqi para tokenizar Yape
+      const tokenResp = await fetch('https://api.culqi.com/v2/tokens/yape', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${pk}`,
+        },
+        body: JSON.stringify({
+          otp: cleanOtp,
+          number_phone: cleanPhone,
+          amount: amountCents,
+        }),
+      });
+
+      const tokenData = await tokenResp.json().catch(() => ({}));
+      if (!tokenResp.ok) {
+        const msg = tokenData.user_message || tokenData.merchant_message || tokenData.message || `Error al validar Yape (${tokenResp.status})`;
+        throw new Error(msg);
+      }
+      tokenId = tokenData.id;
+      if (!tokenId) throw new Error('Culqi no devolvió un identificador de token para Yape.');
+    } catch (err) {
+      setIsProcessing(false);
+      setErrorMsg(err.message?.includes('Failed to fetch') 
+        ? 'No se pudo conectar con Culqi para autorizar Yape. Verifica tu conexión a internet.' 
+        : `Error en Yape: ${err.message}`
+      );
+      return;
+    }
+
+    setProcessingStep('Confirmando cobro Yape en el servidor...');
+    try {
+      const payload = {
+        amount_cents: amountCents,
+        currency: 'PEN',
+        token_id: tokenId,
+        description: (concept || 'Reserva Smart Park - Yape').slice(0, 80),
+        email: customerEmail,
+        payment_method: 'yape',
+      };
+      if (reservationId) payload.reservation_id = reservationId;
+
+      const res = await api.post('/payments/charge', payload);
+      const data = res.data;
+
+      const chargeData = {
+        chargeId: data.id || data.chargeId || tokenId,
+        tokenId: tokenId,
+        amount: Number(amountPen),
+        currency: 'PEN',
+        currencySymbol: 'S/',
+        method: 'Yape Oficial (Culqi BCP)',
+        cardBrand: 'YAPE',
+        last4: cleanPhone.slice(-4),
+        cardHolder: `Yape: ${cleanPhone}`,
+        email: customerEmail,
+        installments: 1,
+        invoiceNumber: data.invoice_number || `B001-${String(data.id || '').slice(-6) || Math.floor(100000 + Math.random() * 900000)}`,
+        date: new Date().toLocaleString('es-PE'),
+        authorizationCode: data.authorization_code || data.auth_code || `AUT-${String(data.id || '').slice(-6) || 'YAPE'}`,
+        status: 'PAID',
+        gateway: 'CULQI YAPE (PCI-DSS)',
+        raw: data,
+      };
+
+      setIsProcessing(false);
+      setPaymentSuccess(chargeData);
+    } catch (err) {
+      setIsProcessing(false);
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail || err.message || 'Error desconocido';
+      if (status === 401) {
+        setErrorMsg('Sesión expirada. Inicia sesión nuevamente para pagar.');
+      } else if (status === 503) {
+        setErrorMsg(`${detail} — El cobro no pudo procesarse.`);
+      } else if (status === 402) {
+        setErrorMsg(`Pago con Yape rechazado por Culqi: ${detail}`);
+      } else {
+        setErrorMsg(`El cobro de Yape no pudo procesarse: ${detail}`);
+      }
+    }
+  };
+
+  const handleProceedToPass = () => {
+    const receipt = paymentSuccess;
     setPaymentSuccess(null);
     setErrorMsg('');
     setIsProcessing(false);
-    onClose();
+    if (onPaymentSuccess && receipt) {
+      onPaymentSuccess(receipt);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleResetAndClose = () => {
+    if (paymentSuccess) {
+      handleProceedToPass();
+    } else {
+      setPaymentSuccess(null);
+      setErrorMsg('');
+      setIsProcessing(false);
+      onClose();
+    }
   };
 
   const handleCopyCIP = () => {
@@ -1022,35 +1148,90 @@ export const CulqiPaymentModal = ({
               </div>
             )}
 
-            {/* 3. MÉTODO: YAPE */}
+            {/* 3. MÉTODO: YAPE (CULQI OFICIAL BCP) */}
             {activeMethod === 'yape' && (
               <div className="space-y-4">
                 <div className="p-4 rounded-3xl bg-purple-50/70 border border-purple-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-purple-950">Pago con Yape QR</span>
-                    <span className="text-[10px] font-mono font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full">Billetera Digital</span>
+                    <span className="text-xs font-black text-purple-950 flex items-center gap-1.5">
+                      <Smartphone className="w-4 h-4 text-purple-700" />
+                      <span>Pago Oficial con Yape (Culqi)</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full border border-purple-300">
+                      Culqi v2 • BCP
+                    </span>
                   </div>
-                  <p className="text-xs text-slate-600">Escanea o usa tu código de aprobación de Yape para pagar.</p>
-                  <div className="space-y-2">
+                  <p className="text-[11px] text-slate-600">
+                    Ingresa tu número de celular registrado y el código de aprobación de 6 dígitos generado en tu aplicación Yape.
+                  </p>
+
+                  {/* Preset Sandbox */}
+                  <div className="p-2.5 rounded-2xl bg-purple-100/70 border border-purple-200 flex items-center justify-between">
+                    <div className="text-[11px] text-purple-950">
+                      <span className="font-black">Prueba Sandbox:</span>
+                      <span className="block text-[10px] text-purple-800 font-mono font-semibold">900000001 • OTP: 123456</span>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setYapePhone('900000001');
+                        setYapeOtp('123456');
+                        setErrorMsg('');
+                      }}
+                      className="text-[10px] font-bold h-7 px-2.5 bg-white text-purple-950 border-purple-300 hover:bg-purple-50 cursor-pointer"
+                    >
+                      Llenar Prueba
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2.5 pt-1">
                     <div>
-                      <label className="text-xs font-bold text-purple-900 block mb-1">Número de Celular Yape</label>
-                      <Input type="tel" value={yapePhone} onChange={(e) => setYapePhone(e.target.value)} className="font-mono font-bold text-xs h-10 bg-white border-purple-300" />
+                      <label className="text-xs font-bold text-purple-950 block mb-1">Número de Celular Yape</label>
+                      <Input
+                        type="tel"
+                        maxLength={9}
+                        placeholder="900000001"
+                        value={yapePhone}
+                        onChange={(e) => setYapePhone(e.target.value.replace(/\D/g, ''))}
+                        className="font-mono font-bold text-xs h-10 bg-white border-purple-300 text-slate-900"
+                      />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-purple-900 block mb-1">Código de Aprobación (6 dígitos)</label>
-                      <Input type="text" maxLength={6} placeholder="123456" value={yapeOtp} onChange={(e) => setYapeOtp(e.target.value.replace(/\D/g, ''))} className="font-mono font-black text-center text-base tracking-widest h-11 bg-white border-purple-300" />
+                      <label className="text-xs font-bold text-purple-950 block mb-1">Código de Aprobación Yape (6 dígitos)</label>
+                      <Input
+                        type="text"
+                        maxLength={6}
+                        placeholder="123456"
+                        value={yapeOtp}
+                        onChange={(e) => setYapeOtp(e.target.value.replace(/\D/g, ''))}
+                        className="font-mono font-black text-center text-base tracking-widest h-11 bg-white border-purple-300 text-purple-950"
+                      />
+                      <span className="text-[10px] text-purple-700 block mt-1">
+                        Abre Yape → Menú → "Código de aprobación" (vigente por pocos minutos).
+                      </span>
                     </div>
                   </div>
                 </div>
+
                 <Button 
                   type="button" 
-                  onClick={() => {
-                    setErrorMsg('Para pagos en vivo con billeteras usa PayPal o Tarjeta. La integración bancaria BCP Yape requiere terminal POS.');
-                  }} 
-                  className="w-full py-4 text-xs font-black bg-purple-700 hover:bg-purple-600 text-white rounded-2xl cursor-pointer shadow-md gap-2"
+                  disabled={isProcessing}
+                  onClick={handleProcessCulqiYape} 
+                  className="w-full py-4 text-xs font-black bg-purple-700 hover:bg-purple-600 text-white rounded-2xl cursor-pointer shadow-md gap-2 transition disabled:opacity-50"
                 >
-                  <Smartphone className="w-4 h-4 shrink-0" />
-                  <span>Validar Yape S/ {amountPen.toFixed(2)}</span>
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                      <span>{processingStep || 'Procesando con Culqi Yape...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Smartphone className="w-4 h-4 shrink-0" />
+                      <span>Pagar con Yape S/ {amountPen.toFixed(2)}</span>
+                    </>
+                  )}
                 </Button>
               </div>
             )}

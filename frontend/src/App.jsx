@@ -1179,7 +1179,7 @@ const AppMain = () => {
               ...paymentTarget.enrichedData,
               status: 'confirmed',
               payNow: true,
-              paymentMethod: receipt?.paymentMethod || 'Culqi / PayPal (Pagado)'
+              paymentMethod: receipt?.method || receipt?.paymentMethod || 'Culqi / PayPal (Pagado)'
             };
             setActiveReservation(paidEnriched);
             setShowQRModal(true);

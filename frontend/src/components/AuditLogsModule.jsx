@@ -62,7 +62,15 @@ export const AuditLogsModule = () => {
     }
     try {
       const params = { limit: 100 };
-      if (parkingFilter !== 'ALL') params.parking_id = Number(parkingFilter);
+      if (parkingFilter !== 'ALL') {
+        const num = Number(parkingFilter);
+        if (!isNaN(num)) {
+          params.parking_id = num;
+        } else {
+          const match = String(parkingFilter).match(/\d+/);
+          if (match) params.parking_id = Number(match[0]);
+        }
+      }
       if (severityFilter !== 'ALL') params.severity = severityFilter;
       const res = await api.get('/audit/logs', { params });
       if (Array.isArray(res.data)) setRawData(res.data);
@@ -138,6 +146,7 @@ export const AuditLogsModule = () => {
   }, [sortedData, pageIndex, pageSize]);
 
   const handleSort = (field) => {
+    setPageIndex(0);
     if (sortField === field) {
       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {

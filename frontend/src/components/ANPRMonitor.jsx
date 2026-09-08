@@ -193,12 +193,12 @@ export const ANPRMonitor = () => {
           startTime: nowDate.toISOString(),
           expiresAt: new Date(nowDate.getTime() + entryHours * 3600000).toISOString()
         });
-        if (res) {
+        if (res && !res.error && res.code) {
           await checkInReservation(res.code);
           setFormResult({ matched: true, message: `Ingreso registrado. Ticket ${res.code} en cajón ${entrySlot} por ${entryHours}h.` });
           addAuditLog({ type: 'GARITA', action: 'INGRESO_MANUAL', plate, slot: entrySlot, status: 'ACTIVO', detail: `Ticket ${res.code} creado en garita.` });
         } else {
-          setFormResult({ matched: false, message: 'No se pudo registrar el ingreso. El cajón puede estar ocupado.' });
+          setFormResult({ matched: false, message: `No se pudo registrar el ingreso: ${res?.error || 'Cajón no disponible.'}` });
         }
       }
       setEntryPlate('');

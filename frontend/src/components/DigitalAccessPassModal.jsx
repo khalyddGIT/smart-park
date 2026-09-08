@@ -52,6 +52,10 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     const cost = Number(reservation.cost || reservation.totalCost || reservation.total_cost || 10.0);
     const vehicleCategory = reservation.vehicleCategory || reservation.slotType || 'Auto';
     const toleranceMinutes = Number(reservation.arrivalWindow || reservation.tolerance || reservation.toleranceMinutes || reservation.tolerance_minutes || 15);
+    const parkingAddress = reservation.parkingAddress || reservation.address || reservation.parking_address || 'Ayacucho - Huamanga';
+    const mapsUrl = reservation.mapsUrl || reservation.maps_url || null;
+    const latitude = reservation.latitude || reservation.lat || null;
+    const longitude = reservation.longitude || reservation.lng || null;
     
     const startTime = parseIsoToDate(reservation.startTime || reservation.start_time);
     
@@ -70,6 +74,10 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       id,
       token,
       parkingName,
+      parkingAddress,
+      mapsUrl,
+      latitude,
+      longitude,
       slotCode,
       plate,
       hours,
@@ -137,12 +145,20 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
   };
 
   const openGoogleMaps = () => {
-    const query = encodeURIComponent(`${passData.parkingName} Ayacucho Peru`);
+    if (passData.mapsUrl) {
+      window.open(passData.mapsUrl, '_blank');
+      return;
+    }
+    const query = (passData.latitude && passData.longitude)
+      ? `${passData.latitude},${passData.longitude}`
+      : encodeURIComponent(`${passData.parkingName} ${passData.parkingAddress || ''} Ayacucho Peru`);
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
   };
 
   const openWaze = () => {
-    const query = encodeURIComponent(`${passData.parkingName} Ayacucho Peru`);
+    const query = (passData.latitude && passData.longitude)
+      ? `${passData.latitude},${passData.longitude}`
+      : encodeURIComponent(`${passData.parkingName} ${passData.parkingAddress || ''} Ayacucho Peru`);
     window.open(`https://waze.com/ul?q=${query}&navigate=yes`, '_blank');
   };
 
@@ -232,8 +248,8 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
           <div>
             <h2 className="text-base font-bold text-white">{passData.parkingName}</h2>
             <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3.5 h-3.5 text-slate-400" /> 
-              <span>Portal Unión 42, Centro Histórico</span>
+              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> 
+              <span className="truncate">{passData.parkingAddress || 'Ayacucho - Huamanga'}</span>
             </p>
           </div>
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${

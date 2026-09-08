@@ -462,7 +462,12 @@ export const AffiliatedParkingsModule = () => {
       (p.city && p.city.toLowerCase().includes(search.toLowerCase())) ||
       (p.address && p.address.toLowerCase().includes(search.toLowerCase()));
     
-    const matchesStatus = statusFilter === 'all' || p.status.toLowerCase() === statusFilter.toLowerCase();
+    const s = (p.status || '').toLowerCase();
+    const sf = statusFilter.toLowerCase();
+    const matchesStatus = sf === 'all' || 
+      (sf === 'operativo' && (s === 'operativo' || s === 'active')) ||
+      (sf === 'mantenimiento' && (s === 'mantenimiento' || s === 'maintenance')) ||
+      s === sf;
     return matchesSearch && matchesStatus;
   });
 

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Star, MessageSquare, Plus, Reply, Trash2, Check, Filter, ShieldCheck, ThumbsUp, Building2, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useEstablishments } from '../context/EstablishmentContext';
 import api from '../services/api';
 
 // Formatea la fecha ISO del backend a texto relativo/corto
@@ -22,6 +23,7 @@ const formatDate = (iso) => {
 
 export const ReviewsModule = () => {
   const { role, user } = useAuth();
+  const { myEstablishments } = useEstablishments();
   const [reviews, setReviews] = useState([]);
   const [parkingsMap, setParkingsMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -122,13 +124,24 @@ export const ReviewsModule = () => {
     }
   };
 
-  const filtered = reviews.filter(r => {
+  const myParkingIds = useMemo(() => {
+    return new Set((myEstablishments || []).map(e => String(e.id)));
+  }, [myEstablishments]);
+
+  const scopedReviews = useMemo(() => {
+    if (role === 'local') {
+      return reviews.filter(r => myParkingIds.has(String(r.parking_id)));
+    }
+    return reviews;
+  }, [reviews, role, myParkingIds]);
+
+  const filtered = scopedReviews.filter(r => {
     if (ratingFilter === 'all') return true;
     return r.rating === Number(ratingFilter);
   });
 
-  const avgRating = reviews.length > 0
-    ? (reviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / reviews.length).toFixed(1)
+  const avgRating = scopedReviews.length > 0
+    ? (scopedReviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / scopedReviews.length).toFixed(1)
     : '—';
 
   return (

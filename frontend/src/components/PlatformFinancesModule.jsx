@@ -45,8 +45,14 @@ export const PlatformFinancesModule = () => {
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
   const [toast, setToast] = useState(null);
-  // Liquidaciones locales (sin persistencia): solo registro contable en memoria
-  const [localSettled, setLocalSettled] = useState(() => new Set());
+  // Liquidaciones locales persistentes en navegador
+  const [localSettled, setLocalSettled] = useState(() => {
+    try {
+      const saved = localStorage.getItem('smart_park_settled_payouts_v1');
+      if (saved) return new Set(JSON.parse(saved));
+    } catch {}
+    return new Set();
+  });
 
   const notify = (msg) => {
     setToast(msg);
@@ -131,6 +137,9 @@ export const PlatformFinancesModule = () => {
     setLocalSettled((prev) => {
       const next = new Set(prev);
       next.add(selectedPayout.parkingId);
+      try {
+        localStorage.setItem('smart_park_settled_payouts_v1', JSON.stringify([...next]));
+      } catch {}
       return next;
     });
     setShowPayoutModal(false);

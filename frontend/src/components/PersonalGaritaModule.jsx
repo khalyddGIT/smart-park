@@ -81,7 +81,7 @@ export const PersonalGaritaModule = () => {
     const now=new Date();
     const isPendiente = payMethod==='pendiente';
     const res=await createReservation({parkingId: currentEst.id, slotCode: slot, plate: plate.trim().toUpperCase(), hours, startTime: now.toISOString(), expiresAt: new Date(now.getTime()+hours*3600000).toISOString(), paymentMethod: isPendiente? null : payMethod, payNow: !isPendiente});
-    if(!res){ setFeedback('Cajón ocupado'); setTimeout(()=>setFeedback(''),2500); return; }
+    if(!res || res.error || !res.code){ setFeedback(`Error: ${res?.error || 'Cajón no disponible'}`); setTimeout(()=>setFeedback(''),3000); return; }
     await checkInReservation(res.code);
     setFeedback(`${slot} • ${plate.toUpperCase()} ingreso OK ${isPendiente?' (pendiente)':`(${payMethod})`}`);
     setSlot(''); setPlate('');

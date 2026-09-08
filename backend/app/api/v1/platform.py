@@ -146,7 +146,7 @@ async def create_broadcast(
     row = await _load_settings_row(db)
     data = json.loads(row.data) if row.data else {}
     broadcasts = data.get("broadcasts", [])
-    sent_count = 1426 if body.target == "ALL" else (680 if body.target == "user" else 320)
+    sent_count = 1426 if body.target == "ALL" else (680 if body.target in ("user", "CONDUCTORES") else 320)
     entry = {
         "id": f"BRD-{len(broadcasts)+1:03d}",
         "title": body.title,

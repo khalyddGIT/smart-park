@@ -137,7 +137,7 @@ export const StaffModule = () => {
       position: 'Operador de Garita',
       shift: 'Mañana (07:00 - 15:00)',
       status: 'Activo',
-      parking_id: 1,
+      parking_id: defaultParkingId || (validEstablishments[0]?.id ? Number(validEstablishments[0].id) : ''),
       email: '',
       password: '',
       security_pin: '',
@@ -160,7 +160,7 @@ export const StaffModule = () => {
       position: m.position || 'Operador de Garita',
       shift: m.shift || 'Mañana (07:00 - 15:00)',
       status: m.status || 'Activo',
-      parking_id: m.parking_id || 1,
+      parking_id: m.parking_id || defaultParkingId || (validEstablishments[0]?.id ? Number(validEstablishments[0].id) : ''),
       email: m.email || '',
       password: '',
       security_pin: '',
@@ -198,6 +198,18 @@ export const StaffModule = () => {
       notify('Selecciona una sede válida.');
       return;
     }
+
+    if (formData.password && formData.password.trim() && formData.password.trim().length < 8) {
+      notify('La contraseña de acceso debe tener al menos 8 caracteres.');
+      return;
+    }
+
+    const pin = (formData.security_pin || '').trim();
+    if (pin && !/^\d{4}$/.test(pin)) {
+      notify('El PIN de garita debe tener exactamente 4 dígitos numéricos.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     const payload = {
@@ -215,19 +227,10 @@ export const StaffModule = () => {
     }
 
     if (formData.password && formData.password.trim()) {
-      if (formData.password.trim().length < 8) {
-        notify('La contraseña de acceso debe tener al menos 8 caracteres.');
-        return;
-      }
       payload.password = formData.password.trim();
     }
 
-    const pin = (formData.security_pin || '').trim();
     if (pin) {
-      if (!/^\d{4}$/.test(pin)) {
-        notify('El PIN de garita debe tener exactamente 4 dígitos numéricos.');
-        return;
-      }
       payload.security_pin = pin;
     }
 

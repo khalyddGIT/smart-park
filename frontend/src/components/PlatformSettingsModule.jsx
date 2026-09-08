@@ -246,13 +246,21 @@ export const PlatformSettingsModule = () => {
 
   const handleSaveSettings = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    let serverOk = false;
     try {
       await api.put('/platform/settings', settings);
-    } catch {}
+      serverOk = true;
+    } catch (err) {
+      console.warn('Could not persist settings to server, saving locally', err);
+    }
     try {
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     } catch (err) {}
-    notify('✓ Ajustes maestros de la plataforma guardados exitosamente (persistidos en servidor).');
+    if (serverOk) {
+      notify('✓ Ajustes maestros de la plataforma guardados exitosamente (persistidos en servidor).');
+    } else {
+      notify('✓ Ajustes guardados localmente (sin conexión al servidor).');
+    }
   };
 
   const handleSendBroadcast = async (e) => {
@@ -420,7 +428,7 @@ export const PlatformSettingsModule = () => {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto shrink-0">
           <Button
             type="button"
-            onClick={handleExportBackup}
+            onClick={handleDownloadLatestBackup}
             variant="outline"
             className="w-full sm:w-auto border-slate-200 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs gap-2 h-10 px-3 cursor-pointer justify-center"
             title="Exportar respaldo completo del sistema en JSON"

@@ -71,6 +71,12 @@ async def reply_review(
     if not review:
         raise HTTPException(status_code=404, detail="Reseña no encontrada")
 
+    if current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
+        p_res = await db.execute(select(Parking).where(Parking.id == review.parking_id))
+        parking = p_res.scalars().first()
+        if not parking or not parking.email or parking.email.strip().lower() != current_user.email.strip().lower():
+            raise HTTPException(status_code=403, detail="No tienes permiso para responder reseñas de esta cochera")
+
     review.response = reply_in.response
     await db.commit()
     try:

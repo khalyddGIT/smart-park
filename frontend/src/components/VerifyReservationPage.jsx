@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 // Helper para parsear datetimes ISO con zona horaria UTC explícita
 const parseUtcDate = (isoStr) => {
@@ -55,14 +56,18 @@ const formatTimeOnly = (d) => {
 };
 
 export const VerifyReservationPage = () => {
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const codeFromQuery = searchParams ? (searchParams.get('code') || searchParams.get('token') || searchParams.get('id')) : null;
   const codeFromPath = typeof window !== 'undefined' 
-    ? decodeURIComponent(window.location.pathname.replace(/^\/verify\//, '').split('?')[0].split('#')[0]) 
+    ? decodeURIComponent(window.location.pathname.replace(/^\/verify\/?/, '').split('?')[0].split('#')[0]) 
     : '';
-  const code = codeFromPath || '';
+  const initialCode = (codeFromQuery || codeFromPath || '').trim();
+  const [code, setCode] = useState(initialCode);
+  const [inputCode, setInputCode] = useState('');
   
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!initialCode);
   const [now, setNow] = useState(Date.now());
   const [actionLoading, setActionLoading] = useState(false);
   const [actionFeedback, setActionFeedback] = useState(null);
@@ -73,11 +78,15 @@ export const VerifyReservationPage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const loadVerification = () => {
-    if (!code) return;
+  const loadVerification = (targetCode) => {
+    const c = (targetCode || code || '').trim();
+    if (!c) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
-    api.get(`/reservations/verify/${encodeURIComponent(code)}`)
+    api.get(`/reservations/verify/${encodeURIComponent(c)}`)
       .then(res => {
         setData(res.data);
         setError(null);
@@ -91,7 +100,9 @@ export const VerifyReservationPage = () => {
   };
 
   useEffect(() => {
-    loadVerification();
+    if (code) {
+      loadVerification(code);
+    }
   }, [code]);
 
   // Cálculos de tiempo real con UTC
@@ -149,6 +160,18 @@ export const VerifyReservationPage = () => {
 
   // Acciones operativas para garita (Check-in / Check-out)
   const token = getAccessToken();
+  const isStaffOrAdmin = useMemo(() => {
+    try {
+      const rawUser = localStorage.getItem('smart_park_user_v1');
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        if (u.role === 'local' || u.role === 'platform' || u.role === 'operator') {
+          return true;
+        }
+      }
+    } catch {}
+    return false;
+  }, []);
 
   const handleCheckIn = async () => {
     if (!data?.id) return;
@@ -180,13 +203,47 @@ export const VerifyReservationPage = () => {
         status: 'completed', 
         actual_exit: new Date().toISOString() 
       }));
-      setActionFeedback({ type: 'success', text: '✓ Salida registrada. Cajón liberado.' });
+      setActionFeedback({ type: 'success', text: '✓ Salida registrada. Estancia finalizada con éxito.' });
     } catch (err) {
-      setActionFeedback({ type: 'error', text: err?.response?.data?.detail || 'Error al registrar salida.' });
+      setActionFeedback({ type: 'error', text: err?.response?.data?.detail || 'Error al registrar salida en garita.' });
     } finally {
       setActionLoading(false);
     }
   };
+
+  if (!code) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6">
+        <Card className="max-w-md w-full p-8 text-center space-y-5 bg-slate-900 border-slate-800 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-950/80 border border-emerald-700/50 flex items-center justify-center mx-auto text-emerald-400">
+            <ShieldCheck className="w-8 h-8" />
+          </div>
+          <div>
+            <h1 className="text-xl font-black text-white">Verificación de Reserva</h1>
+            <p className="text-xs text-slate-400 mt-1">Ingresa el código alfanumérico de tu reserva o ticket para consultar su estado en tiempo real.</p>
+          </div>
+          <form onSubmit={(e) => { e.preventDefault(); if (inputCode.trim()) setCode(inputCode.trim()); }} className="space-y-3">
+            <Input
+              type="text"
+              placeholder="Ej. RSV-00123 o código de ticket"
+              value={inputCode}
+              onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+              className="bg-slate-950 border-slate-700 text-center font-mono font-bold text-sm tracking-wider text-emerald-400 h-11"
+              autoFocus
+            />
+            <Button type="submit" disabled={!inputCode.trim()} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 rounded-xl shadow-md cursor-pointer">
+              Consultar Reserva
+            </Button>
+          </form>
+          <div className="pt-2 border-t border-slate-800/60">
+            <a href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition">
+              <ArrowLeft className="w-3.5 h-3.5" /> Volver al Inicio
+            </a>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -499,8 +556,8 @@ export const VerifyReservationPage = () => {
             </span>
           </div>
 
-          {/* Acciones de Garita (si el operador cuenta con sesión) */}
-          {token && (
+          {/* Acciones de Garita (si el operador o admin cuenta con sesión activa) */}
+          {token && isStaffOrAdmin && (
             <div className="space-y-2 pt-1 border-t border-slate-800">
               <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Operaciones en Garita:

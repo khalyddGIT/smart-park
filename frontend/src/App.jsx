@@ -85,9 +85,9 @@ import {
   syncRoleUrl,
 } from './utils/roleRoutes';
 
-// Wrapper: ruta pública /verify/* sin hooks, para no violar rules-of-hooks
+// Wrapper: ruta pública /verify/* o /verify?code=... sin hooks, para no violar rules-of-hooks
 export const App = () => {
-  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/verify/')) {
+  if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/verify') || window.location.pathname === '/verify')) {
     return <VerifyReservationPage />;
   }
   return <AppMain />;
@@ -209,7 +209,7 @@ const AppMain = () => {
   }, [realActiveReservation]);
 
   // Obtener el establecimiento actualmente seleccionado en tiempo real desde el context
-  const selectedParking = establishments.find(e => e.id === selectedParkingId) || null;
+  const selectedParking = establishments.find(e => String(e.id) === String(selectedParkingId)) || null;
 
   // Reserva de Plaza por Conductor - soporta hold (pago en garita) vs prepago con pasarela de pago
   const handleCustomerBooking = async (bookingData) => {
@@ -228,7 +228,14 @@ const AppMain = () => {
         rate: selectedParking.rate,
         startTime: bookingData.startTime,
         expiresAt: bookingData.expiresAt,
-        toleranceMinutes: bookingData.toleranceMinutes || bookingData.arrivalWindow || bookingData.etaMinutes || 15
+        toleranceMinutes: bookingData.toleranceMinutes || bookingData.arrivalWindow || bookingData.etaMinutes || 15,
+        vehicleType: bookingData.vehicleType || 'auto',
+        payNow: !!bookingData.payNow,
+        billingUnit: bookingData.billingUnit || 'hour',
+        estimatedMinutes: bookingData.estimatedMinutes,
+        estimatedHours: bookingData.estimatedHours,
+        bookingModel: bookingData.bookingModel || (bookingData.payNow ? 'prepaid_discount' : 'postpaid'),
+        paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'tarjeta' : 'efectivo')
       });
       if (!newRes || newRes.error) {
         const msg = newRes?.error || bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
@@ -243,6 +250,7 @@ const AppMain = () => {
         arrivalWindow: bookingData.arrivalWindow ?? newRes.toleranceMinutes ?? 15,
         toleranceMinutes: bookingData.toleranceMinutes ?? newRes.toleranceMinutes ?? 15,
         payNow: !!bookingData.payNow,
+        vehicleType: bookingData.vehicleType || 'auto',
         paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'Prepago asegurado' : 'Pago en garita al salir')
       };
 
@@ -255,6 +263,7 @@ const AppMain = () => {
           parkingName: newRes.parkingName || selectedParking.name,
           slotCode: newRes.slotCode || bookingData.slotCode || 'A-01',
           customerEmail: user?.email || 'conductor@smartpark.com',
+          requirePrepay: !!selectedParking.require_reservation_prepay,
           enrichedData: enriched
         });
       } else {
@@ -1139,7 +1148,18 @@ const AppMain = () => {
         isOpen={!!paymentTarget}
         onClose={() => {
           if (paymentTarget) {
-            setActiveReservation(paymentTarget.enrichedData);
+            if (paymentTarget.requirePrepay) {
+              setBookingFeedback('Esta cochera requiere pago anticipado para validar la reserva. El pago no fue procesado.');
+              setTimeout(() => setBookingFeedback(null), 5000);
+              setPaymentTarget(null);
+              return;
+            }
+            const holdEnriched = {
+              ...paymentTarget.enrichedData,
+              payNow: false,
+              paymentMethod: 'Pago en garita al salir'
+            };
+            setActiveReservation(holdEnriched);
             setShowQRModal(true);
             setSelectedParkingId(null);
             setPaymentTarget(null);

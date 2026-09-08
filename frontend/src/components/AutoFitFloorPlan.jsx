@@ -60,8 +60,26 @@ export const AutoFitFloorPlan = ({
         >
           {elements.map((el) => {
             if (el.type === 'slot') {
-              const isFree = el.status === 'free';
+              const status = el.status || 'free';
+              const isFree = status === 'free';
+              const isReserved = status === 'reserved';
+              const isOut = status === 'out_of_service' || status === 'disabled';
+              const isOccupied = !isFree && !isReserved && !isOut;
               const isSel = selectedSlot === el.code;
+
+              let slotClass = '';
+              if (isSel) {
+                slotClass = 'bg-emerald-500 text-white border-emerald-300 z-30 shadow-lg ring-2 ring-emerald-400/50 scale-105';
+              } else if (isFree) {
+                slotClass = 'bg-emerald-950/60 text-emerald-300 border-emerald-500/70 hover:bg-emerald-900/80 hover:border-emerald-400 hover:scale-105 cursor-pointer z-10';
+              } else if (isReserved) {
+                slotClass = 'bg-amber-950/60 text-amber-300 border-amber-500/70 opacity-90 cursor-not-allowed z-0';
+              } else if (isOut) {
+                slotClass = 'bg-slate-900/80 text-slate-500 border-slate-700/60 opacity-60 cursor-not-allowed z-0';
+              } else {
+                slotClass = 'bg-rose-950/70 text-rose-300 border-rose-600/60 opacity-80 cursor-not-allowed z-0';
+              }
+
               return (
                 <button
                   type="button"
@@ -75,15 +93,14 @@ export const AutoFitFloorPlan = ({
                     height: el.h || 100,
                     transform: el.rot ? `rotate(${el.rot}deg)` : undefined
                   }}
-                  className={`absolute rounded-xl border-2 flex flex-col items-center justify-center font-mono transition-all duration-150 ${
-                    isSel
-                      ? 'bg-emerald-500 text-white border-emerald-300 z-30 shadow-xl ring-4 ring-emerald-400/40 scale-105'
-                      : isFree
-                      ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/80 hover:bg-emerald-800/80 hover:border-emerald-400 hover:scale-105 cursor-pointer z-10'
-                      : 'bg-rose-950/70 text-rose-300 border-rose-600/60 opacity-70 cursor-not-allowed z-0'
-                  }`}
+                  className={`absolute rounded-xl border-2 flex flex-col items-center justify-center font-mono transition-all duration-150 p-1 ${slotClass}`}
                 >
-                  <span className="text-xs font-black tracking-wider">{el.code}</span>
+                  <span className="text-xs font-black">{el.code}</span>
+                  {!isFree && !isSel && (
+                    <span className="text-[8px] font-bold mt-0.5 tracking-tight">
+                      {isReserved ? 'RESERV.' : isOut ? 'FUERA' : 'OCUPADO'}
+                    </span>
+                  )}
                 </button>
               );
             }
@@ -101,9 +118,9 @@ export const AutoFitFloorPlan = ({
                 <div 
                   key={el.id} 
                   style={{ left: el.x, top: el.y, width: el.w, height: el.h }} 
-                  className="absolute bg-slate-800/90 border-y-2 border-dashed border-amber-400/60 flex items-center justify-center text-[11px] font-black tracking-widest text-amber-300 shadow-inner"
+                  className="absolute bg-slate-800/90 border-y border-dashed border-amber-400/40 flex items-center justify-center text-[10px] font-semibold text-amber-300/80 shadow-inner tracking-wider"
                 >
-                  CARRIL DE CIRCULACIÓN
+                  Circulación
                 </div>
               );
             }
@@ -112,9 +129,9 @@ export const AutoFitFloorPlan = ({
                 <div 
                   key={el.id} 
                   style={{ left: el.x, top: el.y, width: el.w, height: el.h }} 
-                  className="absolute bg-emerald-950 border-2 border-emerald-400 rounded-xl flex items-center justify-center text-[10px] font-black text-emerald-300 shadow-lg tracking-wider"
+                  className="absolute bg-emerald-950/90 border border-emerald-400 rounded-xl flex items-center justify-center text-[10px] font-bold text-emerald-300 shadow-md"
                 >
-                  CONTROL GARITA
+                  Garita
                 </div>
               );
             }

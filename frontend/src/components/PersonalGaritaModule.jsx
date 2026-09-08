@@ -77,15 +77,40 @@ export const PersonalGaritaModule = () => {
   },[garitaReservations, reservations, currentEst]);
 
   const handleIngreso = async () => {
-    if(!slot || !plate.trim()){ setFeedback('Elige cajón y placa'); setTimeout(()=>setFeedback(''),2500); return; }
-    const now=new Date();
-    const isPendiente = payMethod==='pendiente';
-    const res=await createReservation({parkingId: currentEst.id, slotCode: slot, plate: plate.trim().toUpperCase(), hours, startTime: now.toISOString(), expiresAt: new Date(now.getTime()+hours*3600000).toISOString(), paymentMethod: isPendiente? null : payMethod, payNow: !isPendiente});
-    if(!res || res.error || !res.code){ setFeedback(`Error: ${res?.error || 'Cajón no disponible'}`); setTimeout(()=>setFeedback(''),3000); return; }
+    const targetSlot = slot || freeSlots[0]?.code;
+    const cleanPlate = plate.trim().toUpperCase();
+    if (!cleanPlate) {
+      setFeedback('Ingresa la placa del vehículo');
+      setTimeout(() => setFeedback(''), 2500);
+      return;
+    }
+    if (!targetSlot) {
+      setFeedback('No hay cajones libres disponibles en esta cochera');
+      setTimeout(() => setFeedback(''), 3000);
+      return;
+    }
+    const now = new Date();
+    const isPendiente = payMethod === 'pendiente';
+    const res = await createReservation({
+      parkingId: currentEst.id,
+      slotCode: targetSlot,
+      plate: cleanPlate,
+      hours,
+      startTime: now.toISOString(),
+      expiresAt: new Date(now.getTime() + hours * 3600000).toISOString(),
+      paymentMethod: isPendiente ? null : payMethod,
+      payNow: !isPendiente
+    });
+    if (!res || res.error || !res.code) {
+      setFeedback(`Error: ${res?.error || 'Cajón no disponible'}`);
+      setTimeout(() => setFeedback(''), 3000);
+      return;
+    }
     await checkInReservation(res.code);
-    setFeedback(`${slot} • ${plate.toUpperCase()} ingreso OK ${isPendiente?' (pendiente)':`(${payMethod})`}`);
-    setSlot(''); setPlate('');
-    setTimeout(()=>setFeedback(''),3000);
+    setFeedback(`${targetSlot} • ${cleanPlate} registrado exitosamente ${isPendiente ? '(pago al salir)' : `(${payMethod})`}`);
+    setSlot('');
+    setPlate('');
+    setTimeout(() => setFeedback(''), 3000);
     fetchGaritaReservations();
     try { await fetchParkings(); await ensureFloorPlan(String(currentEst.id)); } catch {}
   };
@@ -143,13 +168,39 @@ export const PersonalGaritaModule = () => {
           <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm flex-1">
             <h3 className="text-sm font-black text-slate-900 border-b border-slate-100 pb-2">Registrar ingreso presencial</h3>
             <div>
-              <label className="text-xs font-bold text-slate-700">Placa del vehículo</label>
-              <Input placeholder="ABC-123" value={plate} onChange={e=>setPlate(e.target.value.toUpperCase())} className="h-11 font-mono font-black uppercase mt-1 text-slate-900 border-slate-300 focus:border-emerald-500"/>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700">Placa del vehículo</label>
+                <span className="text-[11px] text-slate-400">Presiona Enter para registrar</span>
+              </div>
+              <Input 
+                placeholder="ABC-123" 
+                value={plate} 
+                onChange={e => {
+                  let val = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+                  if (!val.includes('-') && val.length > 3) {
+                    val = val.slice(0, 3) + '-' + val.slice(3);
+                  }
+                  setPlate(val.slice(0, 9));
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && plate.trim()) {
+                    e.preventDefault();
+                    handleIngreso();
+                  }
+                }}
+                className="h-11 font-mono font-black uppercase mt-1 text-slate-900 border-slate-300 focus:border-emerald-500 text-base tracking-wider"
+              />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700">Cajón seleccionado</label>
-              <div className={`mt-1 h-11 flex items-center px-3.5 border rounded-xl text-sm font-mono font-black transition-all ${slot ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
-                {slot ? `Cajón ${slot}` : '— Toca un cajón verde en el mapa'}
+              <label className="text-xs font-bold text-slate-700">Cajón asignado</label>
+              <div className={`mt-1 h-11 flex items-center px-3.5 border rounded-xl text-xs font-mono font-bold transition-all ${
+                slot 
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
+                  : freeSlots.length > 0 
+                  ? 'bg-slate-50 border-slate-200 text-slate-600' 
+                  : 'bg-rose-50 border-rose-200 text-rose-600'
+              }`}>
+                {slot ? `Cajón seleccionado: ${slot}` : freeSlots.length > 0 ? `Automático: ${freeSlots[0]?.code} (o toca otro en el plano)` : 'Sin cajones libres'}
               </div>
             </div>
             <div>
@@ -159,22 +210,26 @@ export const PersonalGaritaModule = () => {
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700">Método de Pago</label>
+              <label className="text-xs font-bold text-slate-700">Método de pago</label>
               <select value={payMethod} onChange={e=>setPayMethod(e.target.value)} className="mt-1 w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500">
                 <option value="efectivo">Efectivo (en garita)</option>
                 <option value="yape">Yape</option>
                 <option value="plin">Plin</option>
                 <option value="tarjeta">Tarjeta Débito/Crédito</option>
                 <option value="transferencia">Transferencia bancaria</option>
-                <option value="pendiente">Pendiente — Pago al salir</option>
+                <option value="pendiente">Pendiente — Cobrar al salir</option>
               </select>
             </div>
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-600">Monto Total a Cobrar</span>
+              <span className="text-xs font-bold text-slate-600">Total a cobrar</span>
               <span className="text-xl font-black font-mono text-slate-900">S/ {(Number(currentEst?.rate||5)*hours).toFixed(2)}</span>
             </div>
-            <Button onClick={handleIngreso} disabled={!slot || !plate.trim()} className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md disabled:opacity-40 transition-all">
-              + Registrar Ingreso
+            <Button 
+              onClick={handleIngreso} 
+              disabled={!plate.trim() || (!slot && freeSlots.length === 0)} 
+              className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md disabled:opacity-40 transition-all cursor-pointer"
+            >
+              + Registrar Ingreso ({slot || freeSlots[0]?.code || 'Sin cupo'})
             </Button>
           </div>
 

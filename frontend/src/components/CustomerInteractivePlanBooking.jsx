@@ -515,7 +515,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
   const baseHourlyRate = Number(parking?.hourly_rate ?? parking?.rate ?? 5.0);
   const hasRegisteredVehicles = Array.isArray(vehicles) && vehicles.length > 0;
-  const effectivePlate = (hasRegisteredVehicles 
+  const effectivePlate = ((hasRegisteredVehicles && !useCustomPlate)
     ? (selectedPlate || (vehicles[0]?.license_plate || '')) 
     : customPlateInput
   ).toUpperCase().trim().replace(/\s/g, '');
@@ -1092,7 +1092,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 <div className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-400 flex items-center gap-2">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando vehículos...
                 </div>
-              ) : vehicles.length > 0 ? (
+              ) : vehicles.length > 0 && !useCustomPlate ? (
                 <div className="space-y-1.5">
                   <select 
                     value={selectedPlate} 
@@ -1105,21 +1105,28 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       </option>
                     ))}
                   </select>
-                  <div className="flex items-center justify-end text-[11px] text-slate-400 pt-0.5">
+                  <div className="flex items-center justify-between text-xs text-slate-400 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setUseCustomPlate(true)}
+                      className="text-emerald-400 hover:underline font-semibold cursor-pointer"
+                    >
+                      + Ingresar otra placa
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
                         if (onNavigateToVehicles) onNavigateToVehicles();
                         else window.dispatchEvent(new CustomEvent('smart_park_navigate_tab', { detail: 'vehicles' }));
                       }}
-                      className="text-[10px] text-emerald-400 hover:underline font-semibold cursor-pointer"
+                      className="text-slate-400 hover:text-slate-200 cursor-pointer"
                     >
-                      + Gestionar autos
+                      Gestionar autos
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <input
                     type="text"
                     value={customPlateInput}
@@ -1135,22 +1142,33 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-mono font-bold tracking-wider uppercase focus:outline-none"
                   />
                   {customPlateInput.length > 0 && !isPlateValid && (
-                    <p className="text-[10px] text-amber-400 font-mono">
+                    <p className="text-xs text-amber-400 font-mono">
                       {!customPlateInput.includes('-')
-                        ? 'Incluye un guión obligatorio (ej: ABC-123)'
+                        ? 'Incluye un guión (ej: ABC-123)'
                         : 'Formato inválido (ej: ABC-123 o 1234-5A)'}
                     </p>
                   )}
-                  <div className="flex items-center justify-end text-[10px] text-slate-400 pt-0.5">
+                  <div className="flex items-center justify-between text-xs text-slate-400 pt-0.5">
+                    {vehicles.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setUseCustomPlate(false)}
+                        className="text-emerald-400 hover:underline font-semibold cursor-pointer"
+                      >
+                        ← Seleccionar de mis autos
+                      </button>
+                    ) : (
+                      <span className="text-[11px] text-slate-500">Formato: ABC-123</span>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
                         if (onNavigateToVehicles) onNavigateToVehicles();
                         else window.dispatchEvent(new CustomEvent('smart_park_navigate_tab', { detail: 'vehicles' }));
                       }}
-                      className="text-emerald-400 hover:underline font-semibold cursor-pointer"
+                      className="text-slate-400 hover:text-slate-200 cursor-pointer"
                     >
-                      + Registrar en Mis Vehículos
+                      Mis autos
                     </button>
                   </div>
                 </div>

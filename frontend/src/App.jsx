@@ -618,8 +618,8 @@ const AppMain = () => {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-md">
-                              {realActiveReservation.status === 'SCHEDULED' ? 'Llegando al Estacionamiento' : 'Estadía en Curso'}
+                            <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-md">
+                              {realActiveReservation.status === 'SCHEDULED' ? 'En camino' : 'Estancia activa'}
                             </span>
                             <span className="text-xs text-emerald-100 font-mono font-bold">
                               {realActiveReservation.code}
@@ -817,10 +817,28 @@ const AppMain = () => {
                   ) : !activeCompany ? (
                     /* Nivel 1: Empresas de estacionamiento */
                     <div className="space-y-3">
-                      <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                        <Building2 className="w-5 h-5 text-emerald-600" />
-                        <span>Establecimientos de Estacionamiento ({companyGroups.length})</span>
-                      </h2>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                          <Building2 className="w-5 h-5 text-emerald-600" />
+                          <span>Establecimientos de Estacionamiento ({companyGroups.length})</span>
+                        </h2>
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                          <span className="text-xs font-semibold text-slate-500 mr-1">Tarifas:</span>
+                          {RATES_FILTERS.map(f => (
+                            <button
+                              key={f.id}
+                              onClick={() => setSelectedRateFilter(f.id)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                                selectedRateFilter === f.id
+                                  ? 'bg-slate-900 text-white shadow-xs'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                              }`}
+                            >
+                              {f.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
                       {isLoadingSedes ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
@@ -828,9 +846,23 @@ const AppMain = () => {
                             <SkeletonParkingCard key={i} />
                           ))}
                         </div>
+                      ) : groupedEstablishments.length === 0 ? (
+                        <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm p-8 max-w-md mx-auto">
+                          <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                          <h3 className="text-base font-bold text-slate-800 mb-1">Sin cocheras disponibles</h3>
+                          <p className="text-xs text-slate-500 mb-4">No encontramos locales con los filtros seleccionados.</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => { setSearchTerm(''); setSelectedRateFilter('all'); }}
+                            className="rounded-xl text-xs font-bold"
+                          >
+                            Restablecer búsqueda
+                          </Button>
+                        </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {companyGroups.map((g) => (
+                          {groupedEstablishments.map((g) => (
                             <Card 
                               key={g.key} 
                               onClick={() => g.branches.length === 1 ? handleSelectParking(g.branches[0]) : setSelectedCompanyKey(g.key)}
@@ -856,15 +888,6 @@ const AppMain = () => {
                                   <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
                                     {g.freeSlots} Libres de {g.totalSlots}
                                   </div>
-                                  {g.branches.length > 1 ? (
-                                    <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
-                                      {g.branches.length} sucursales
-                                    </div>
-                                  ) : (
-                                    <div className="absolute top-3 left-3 bg-emerald-900/80 backdrop-blur-md text-emerald-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
-                                      Local Principal
-                                    </div>
-                                  )}
                                 </div>
 
                                 <div className="p-5 space-y-3">
@@ -948,9 +971,6 @@ const AppMain = () => {
                                     </div>
                                     <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
                                       {freeSlots} Libres de {totalSlots}
-                                    </div>
-                                    <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
-                                      {p.level}
                                     </div>
                                   </div>
 

@@ -259,7 +259,7 @@ export const UserRolesModule = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-400">Conductores (Clientes)</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Conductores</span>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stats.user}</p>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200">
@@ -269,7 +269,7 @@ export const UserRolesModule = () => {
 
         <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-400">Operadores de Garita</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Operadores de Garita</span>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stats.local}</p>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
@@ -279,7 +279,7 @@ export const UserRolesModule = () => {
 
         <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-400">Super Admins Plataforma</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Super Admins</span>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stats.platform}</p>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-600 dark:text-purple-400">

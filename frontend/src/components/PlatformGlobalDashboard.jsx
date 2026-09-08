@@ -174,16 +174,12 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
       <div className="bg-slate-900 dark:bg-[#0E1526] text-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="space-y-2 relative z-10">
-          <div className="inline-flex items-center gap-2 bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 px-3 py-1 rounded-full text-xs font-mono font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Red Multi-Tenant Ayacucho • Telemetría en Vivo</span>
-          </div>
+        <div className="space-y-1.5 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             Panel Ejecutivo del Propietario
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
-            Supervisión integral de recaudación bruta, comisiones de la plataforma, ocupación en tiempo real y red de cocheras afiliadas.
+            Supervisión integral de recaudación bruta, comisiones, aforo en tiempo real y cocheras afiliadas en Ayacucho.
           </p>
         </div>
 
@@ -349,9 +345,9 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block mt-0.5">Locales en red</span>
             </div>
 
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800/70 flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>100% LPR Activo</span>
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800/70 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>Red activa</span>
             </div>
           </div>
 
@@ -386,7 +382,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <Card className="lg:col-span-2 p-6 rounded-3xl border-slate-200/90 dark:border-slate-800/80 shadow-xs bg-white dark:bg-[#151D2F] space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-3">
             <div>
               <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 shrink-0 text-emerald-500" />
@@ -394,20 +390,40 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">Distribución de ingresos brutos y comisiones activas por establecimiento afiliado.</p>
             </div>
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 self-start sm:self-center">
+              {[
+                { key: 'hoy', label: 'Hoy' },
+                { key: 'semana', label: 'Semana' },
+                { key: 'mes', label: 'Mes' }
+              ].map(t => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => handleTimeRangeChange(t.key)}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    timeRange === t.key
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="h-[280px] w-full pt-2">
             {revenueTimeline.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-2">
                 <BarChart3 className="w-8 h-8" />
-                <span className="text-xs font-bold">Sin recaudación aún. Crea reservas para visualizar el ranking.</span>
+                <span className="text-xs font-bold">Sin recaudación registrada para este período.</span>
               </div>
             ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={revenueTimeline} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
                 <XAxis dataKey="day" stroke="#94A3B8" fontSize={10} tickLine={false} interval={0} angle={-15} textAnchor="end" height={50} />
-                <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} tickFormatter={(v) => `S/ ${v}`} />
+                <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} tickFormatter={(v) => (v >= 1000 ? `S/ ${(v/1000).toFixed(1)}k` : `S/ ${v}`)} />
                 <Tooltip 
                   formatter={(value, name) => [
                     `S/ ${Number(value).toFixed(2)}`,
@@ -488,10 +504,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-extrabold text-slate-900 dark:text-white text-sm">{b.name}</span>
-                    <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 font-mono">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      LPR Online
-                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Sede operativa" />
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                     <MapPin className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />

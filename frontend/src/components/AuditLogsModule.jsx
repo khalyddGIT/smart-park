@@ -528,7 +528,7 @@ export const AuditLogsModule = () => {
                 {/* Metadatos Generales */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block mb-0.5">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">
                       Operador / Identidad
                     </span>
                     <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -536,14 +536,14 @@ export const AuditLogsModule = () => {
                       <span>{selectedLog.operator}</span>
                     </div>
                     {selectedLog.role && (
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 block">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5 block">
                         Rol: {selectedLog.role}
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block mb-0.5">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">
                       Terminal / IP de Origen
                     </span>
                     <div className="font-mono font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -553,7 +553,7 @@ export const AuditLogsModule = () => {
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block mb-0.5">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">
                       Sede / Entidad Vinculada
                     </span>
                     <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
@@ -563,7 +563,7 @@ export const AuditLogsModule = () => {
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block mb-0.5">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">
                       Severidad & Cumplimiento
                     </span>
                     <div className="font-semibold text-slate-800 dark:text-slate-200">
@@ -574,7 +574,7 @@ export const AuditLogsModule = () => {
 
                 {/* Recurso / Objetivo afectado */}
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block mb-1.5">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">
                     Recurso o Parámetro Afectado
                   </span>
                   <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 font-mono text-xs font-semibold text-emerald-800 dark:text-emerald-400 border border-slate-200 dark:border-slate-800 break-words">
@@ -585,9 +585,9 @@ export const AuditLogsModule = () => {
                 {/* Visor de Metadatos Técnicos JSON */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
                       <Code2 className="w-3.5 h-3.5" />
-                      Metadatos Técnicos Estructurados (JSON)
+                      Metadatos Técnicos (JSON)
                     </span>
                     {selectedLog.details && (
                       <Button

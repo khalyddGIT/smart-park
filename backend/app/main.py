@@ -336,6 +336,14 @@ async def startup_db():
         import logging
         logging.warning(f"[smart-park] reservation-worker no iniciado: {e}")
 
+    # Worker de respaldos automáticos diarios (PostgreSQL / volumen persistente /data/backups)
+    try:
+        from app.core.backup_worker import start_backup_worker
+        start_backup_worker()
+    except Exception as e:
+        import logging
+        logging.warning(f"[smart-park] backup-worker no iniciado: {e}")
+
 # Conectar todos los routers v1
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(parkings.router, prefix=settings.API_V1_STR)
@@ -358,6 +366,8 @@ from app.api.v1 import platform as platform_router
 app.include_router(platform_router.router, prefix=settings.API_V1_STR)
 from app.api.v1 import settings as platform_settings_router
 app.include_router(platform_settings_router.router, prefix=settings.API_V1_STR)
+from app.api.v1 import backups as backups_router
+app.include_router(backups_router.router, prefix=settings.API_V1_STR)
 
 # Canal WebSocket en tiempo real (mismo origen, sin servicio extra)
 @app.websocket("/api/v1/ws")
@@ -399,12 +409,14 @@ def _safe_db_label() -> str:
 
 @app.get("/health")
 def healthcheck():
+    from app.services.backup_service import BACKUPS_DIR
     return {
         "status": "ok",
         "service": "smart-park",
         "environment": settings.ENVIRONMENT,
         "db": _safe_db_label(),
         "uploads_dir": UPLOADS_DIR,
+        "backups_dir": BACKUPS_DIR,
     }
 
 @app.get("/")

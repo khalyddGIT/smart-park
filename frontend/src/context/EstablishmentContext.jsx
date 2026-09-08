@@ -1,11 +1,46 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { getAccessToken, listMyReservations, createReservationApi, cancelReservationApi } from '../services/api';
 import api from '../services/api';
+import { useAuth } from './AuthContext';
 
 const STORAGE_KEY = 'smart_park_unified_establishments_v2';
 const RESERVATIONS_STORAGE_KEY_BASE = 'smart_park_unified_reservations_v2';
 const REQUESTS_STORAGE_KEY = 'smart_park_affiliation_requests_v1';
 const APPROVED_ADMINS_STORAGE_KEY = 'smart_park_approved_admins_v1';
+
+// Helper para validar si un establecimiento/sucursal le pertenece al usuario actual (Admin Local)
+export const isMyEstablishment = (est, user, role) => {
+  if (!est) return false;
+  if (role === 'platform') return true; // Super Admin ve todas
+  if (role !== 'local') return true;   // Conductor ve todas las activas en su módulo
+  if (!user) return false;
+
+  const userEmail = (user.email || '').trim().toLowerCase();
+  const userName = (user.name || '').trim().toLowerCase();
+  const estEmail = (est.email || '').trim().toLowerCase();
+  const estOwner = (est.owner || '').trim().toLowerCase();
+  const estName = (est.name || '').trim().toLowerCase();
+
+  // 1. Coincidencia directa por correo asignado a la sede
+  if (userEmail && estEmail && userEmail === estEmail) return true;
+
+  // 2. Cuenta semilla demo adminlocal@smartpark.com es administradora de Smart Park Plaza Mayor (EST-01 y EST-02)
+  if (userEmail === 'adminlocal@smartpark.com') {
+    if (est.id === 'EST-01' || est.id === 'EST-02' || String(est.id) === '1' || String(est.id) === '2') return true;
+    if (estEmail === 'contacto@plazamayorpark.pe') return true;
+    if (estOwner.includes('plaza mayor') || estName.includes('plaza mayor')) return true;
+  }
+
+  // 3. Coincidencia por nombre de local / razón social
+  if (user.establishmentName && (estName.includes(user.establishmentName.toLowerCase()) || estOwner.includes(user.establishmentName.toLowerCase()))) return true;
+  if (userName && estOwner && (userName === estOwner || estOwner.includes(userName) || userName.includes(estOwner))) return true;
+
+  // 4. Asignación directa por ID de cochera (staff de garita o asignado)
+  if (user.parking_id && String(user.parking_id) === String(est.id)) return true;
+  if (user.establishmentId && String(user.establishmentId) === String(est.id)) return true;
+
+  return false;
+};
 
 // Helper para aislar datos por usuario - evita fuga entre usuarios
 const getCurrentUserKey = () => {
@@ -369,6 +404,8 @@ export const sanitizeEstablishment = (est, idx = 0) => {
 const EstablishmentContext = createContext();
 
 export const EstablishmentProvider = ({ children }) => {
+  const { user, role } = useAuth();
+
   const [establishments, setEstablishments] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -383,6 +420,11 @@ export const EstablishmentProvider = ({ children }) => {
     }
     return INITIAL_ESTABLISHMENTS.map((e, idx) => sanitizeEstablishment(e, idx));
   });
+
+  // Establecimientos filtrados que le pertenecen exclusivamente al usuario autenticado (Admin Local)
+  const myEstablishments = React.useMemo(() => {
+    return establishments.filter(est => isMyEstablishment(est, user, role));
+  }, [establishments, user, role]);
 
   const [reservations, setReservations] = useState(() => {
     try {
@@ -919,12 +961,12 @@ export const EstablishmentProvider = ({ children }) => {
           status: 'active', 
           total_capacity: newEst.totalSlots || newEst.elements?.filter(e=>e.type==='slot').length || 10, 
           image_url: newEst.image,
-          owner: newEst.owner || '',
+          owner: newEst.owner || (role === 'local' ? (user?.name || 'Administración Local') : ''),
           ruc: newEst.ruc || '',
           description: newEst.description || '',
-          phone: newEst.phone || '',
-          whatsapp: newEst.whatsapp || '',
-          email: adminCredentials?.email || newEst.email || '',
+          phone: newEst.phone || (role === 'local' ? (user?.phone || '') : ''),
+          whatsapp: newEst.whatsapp || (role === 'local' ? (user?.phone || '') : ''),
+          email: adminCredentials?.email || newEst.email || (role === 'local' ? (user?.email || '') : ''),
           schedule: newEst.schedule || 'Lunes a Domingo: 24 Horas',
           reference: newEst.reference || '',
           level: newEst.level || 'Nivel 1 - Superficie',
@@ -1533,6 +1575,8 @@ export const EstablishmentProvider = ({ children }) => {
     <EstablishmentContext.Provider value={{
       establishments,
       setEstablishments,
+      myEstablishments,
+      isMyEstablishment,
       reservations,
       setReservations,
       affiliationRequests,

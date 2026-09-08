@@ -71,9 +71,11 @@ htmlcov/
 backend/*.db
 backend/*.sqlite
 
-# --- Uploads de usuarios (fotos de vehículos/placas) ---
-# Persistencia real por volumen Docker / Railway Volume, nunca en git.
+# --- Uploads y Respaldos locales (fotos y backups) ---
+# Persistencia real por volumen Docker / Railway Volume (/data), nunca en git.
 backend/uploads/*
+backups/
+backend/backups/
 
 # --- Environment & Secret Keys ---
 .env

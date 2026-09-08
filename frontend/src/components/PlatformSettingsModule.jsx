@@ -38,7 +38,12 @@ import {
   BellRing,
   Sparkles,
   ShieldCheck,
-  Power
+  Power,
+  Database,
+  HardDrive,
+  RefreshCw,
+  History,
+  CalendarClock
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useEstablishments } from '../context/EstablishmentContext';
@@ -192,6 +197,24 @@ export const PlatformSettingsModule = () => {
     return () => { cancelled = true; };
   }, []);
 
+  // Estado real de respaldos desde el backend (PostgreSQL / volumen persistente /data/backups)
+  const [backupStatus, setBackupStatus] = useState(null);
+  const [loadingBackup, setLoadingBackup] = useState(false);
+  const [generatingBackup, setGeneratingBackup] = useState(false);
+  const [showBackupsHistory, setShowBackupsHistory] = useState(false);
+
+  const fetchBackupStatus = async () => {
+    try {
+      setLoadingBackup(true);
+      const res = await api.get('/backups/status');
+      setBackupStatus(res.data);
+    } catch (err) {
+      console.error('Error al consultar estado de respaldos:', err);
+    } finally {
+      setLoadingBackup(false);
+    }
+  };
+
   // Cargar configuración real del servidor (con fallback a localStorage)
   useEffect(() => {
     let cancelled = false;
@@ -206,6 +229,7 @@ export const PlatformSettingsModule = () => {
       } catch {}
     };
     loadPlatformData();
+    fetchBackupStatus();
     return () => { cancelled = true; };
   }, []);
 
@@ -284,8 +308,59 @@ export const PlatformSettingsModule = () => {
     notify('Comunicado eliminado del registro histórico.');
   };
 
-  // Exportar respaldo de datos en formato JSON
-  const handleExportBackup = () => {
+  // Generar snapshot inmediato de PostgreSQL en el servidor (/data/backups)
+  const handleGenerateServerBackup = async () => {
+    try {
+      setGeneratingBackup(true);
+      const res = await api.post('/backups/generate');
+      notify(`✓ Respaldo generado en servidor: ${res.data.filename} (${res.data.total_records} registros, ${res.data.size_kb} KB)`);
+      await fetchBackupStatus();
+    } catch (err) {
+      notify('Error al generar respaldo en el servidor', 'error');
+    } finally {
+      setGeneratingBackup(false);
+    }
+  };
+
+  // Descargar el último respaldo real de la base de datos desde el backend
+  const handleDownloadLatestBackup = async () => {
+    try {
+      setLoadingBackup(true);
+      const res = await api.get('/backups/download/latest', { responseType: 'blob' });
+      const filename = backupStatus?.latest_backup?.filename || `smartpark_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      notify('✓ Respaldo real de PostgreSQL descargado en JSON.');
+    } catch (err) {
+      // Fallback a exportación desde el cliente si la red o API falla
+      handleExportBackupClientFallback();
+    } finally {
+      setLoadingBackup(false);
+    }
+  };
+
+  // Descargar un archivo de respaldo específico del historial
+  const handleDownloadSpecificBackup = async (filename) => {
+    try {
+      const res = await api.get(`/backups/download/${encodeURIComponent(filename)}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      notify(`✓ Archivo ${filename} descargado.`);
+    } catch (err) {
+      notify('Error al descargar archivo de respaldo', 'error');
+    }
+  };
+
+  // Fallback de exportación en navegador si no hay conexión al backend
+  const handleExportBackupClientFallback = () => {
     const backupData = {
       app: 'Smart-Park',
       version: '2.0',
@@ -306,13 +381,13 @@ export const PlatformSettingsModule = () => {
     };
 
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `smart-park-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    notify('✓ Respaldo completo del sistema descargado en JSON.');
+    notify('✓ Respaldo de contingencia descargado en JSON.');
   };
 
   return (
@@ -678,25 +753,134 @@ export const PlatformSettingsModule = () => {
               )}
             </Card>
 
-            <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between space-y-4">
-              <div className="space-y-2">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <Download className="w-5 h-5" />
+            <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between space-y-4 lg:col-span-2">
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs">
+                      <Database className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900">Respaldos de Base de Datos en Producción</h3>
+                      <p className="text-[11px] text-slate-500 leading-tight">
+                        Copia integral de todas las tablas de PostgreSQL (usuarios, tarifas, reservas, transacciones, auditoría) firmada con SHA-256.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" />
+                      {backupStatus?.database_engine || 'PostgreSQL'}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                      <HardDrive className="w-3 h-3" />
+                      {backupStatus?.is_persistent_volume ? '/data/backups (Volumen)' : 'Local'}
+                    </span>
+                  </div>
                 </div>
-                <h3 className="text-sm font-black text-slate-900">Respaldo Integral</h3>
-                <p className="text-[11px] text-slate-500 leading-tight">
-                  Descarga un volcado en formato JSON con la totalidad de configuraciones, cocheras afiliadas y registro histórico.
-                </p>
+
+                {/* Métricas y Estado Actual */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                      <CalendarClock className="w-3 h-3 text-slate-400" />
+                      Frecuencia
+                    </p>
+                    <p className="text-xs font-black text-slate-800">Diario (cada 24h)</p>
+                    <p className="text-[10px] text-slate-400">Retención: {backupStatus?.retention_count || 14} días</p>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Último snapshot</p>
+                    <p className="text-xs font-mono font-bold text-emerald-700 truncate">
+                      {backupStatus?.latest_backup?.created_at
+                        ? new Date(backupStatus.latest_backup.created_at).toLocaleString()
+                        : (loadingBackup ? 'Consultando...' : 'Sin respaldos previos')}
+                    </p>
+                    <p className="text-[10px] text-slate-400 truncate">
+                      {backupStatus?.latest_backup?.filename || 'Pendiente'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Volumen & Registros</p>
+                    <p className="text-xs font-mono font-bold text-slate-800">
+                      {backupStatus?.latest_backup?.metadata?.total_records != null
+                        ? `${backupStatus.latest_backup.metadata.total_records} filas`
+                        : '—'}
+                      {' '}• {backupStatus?.latest_backup?.size_kb || 0} KB
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      Total archivados: {backupStatus?.total_backups_stored || 0} copias
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <Button
-                type="button"
-                onClick={handleExportBackup}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm gap-2 h-10 cursor-pointer justify-center"
-              >
-                <Download className="w-4 h-4 text-emerald-400" />
-                <span>Descargar Backup JSON</span>
-              </Button>
+              {/* Botones de Acción */}
+              <div className="space-y-2 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    disabled={generatingBackup}
+                    onClick={handleGenerateServerBackup}
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs gap-2 h-10 cursor-pointer justify-center"
+                  >
+                    <RefreshCw className={`w-4 h-4 text-emerald-400 ${generatingBackup ? 'animate-spin' : ''}`} />
+                    <span>{generatingBackup ? 'Generando snapshot...' : 'Crear Snapshot Ahora (Servidor)'}</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    disabled={loadingBackup}
+                    onClick={handleDownloadLatestBackup}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs gap-2 h-10 cursor-pointer justify-center"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Descargar Último Respaldo (JSON)</span>
+                  </Button>
+                </div>
+
+                {backupStatus?.available_backups?.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowBackupsHistory(!showBackupsHistory)}
+                    className="w-full text-center text-xs font-bold text-slate-600 hover:text-slate-900 py-1 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <History className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{showBackupsHistory ? '▲ Ocultar historial de archivos' : `▼ Ver historial de archivos en el volumen (${backupStatus.total_backups_stored})`}</span>
+                  </button>
+                )}
+
+                {/* Lista Histórica Desplegable */}
+                {showBackupsHistory && backupStatus?.available_backups && (
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 max-h-48 overflow-y-auto animate-in fade-in">
+                    <p className="text-[11px] font-bold text-slate-700">Archivos almacenados en volumen persistente (/data/backups):</p>
+                    <div className="space-y-1.5">
+                      {backupStatus.available_backups.map((b) => (
+                        <div key={b.filename} className="flex items-center justify-between text-[11px] p-2 bg-white rounded-xl border border-slate-200">
+                          <div className="truncate pr-2">
+                            <p className="font-mono font-bold text-slate-800 truncate">{b.filename}</p>
+                            <p className="text-[10px] text-slate-400">
+                              {new Date(b.created_at).toLocaleString()} • {b.size_kb} KB
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleDownloadSpecificBackup(b.filename)}
+                            className="h-7 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[10px] font-bold gap-1 cursor-pointer"
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>Descargar</span>
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </Card>
           </div>
         </div>

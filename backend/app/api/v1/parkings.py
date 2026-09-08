@@ -603,6 +603,14 @@ async def scan_camera_device(parking_id: int, cam_id: int, db: AsyncSession = De
 
 @router.post("", response_model=ParkingResponse, status_code=status.HTTP_201_CREATED)
 async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
+    owner_val = parking_in.owner
+    email_val = parking_in.email
+    if current_user.role == "local":
+        if not email_val:
+            email_val = current_user.email
+        if not owner_val:
+            owner_val = current_user.full_name or "Administración Local"
+
     db_parking = Parking(
         name=parking_in.name,
         address=parking_in.address,
@@ -614,12 +622,12 @@ async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(g
         status=parking_in.status or "active",
         total_capacity=parking_in.total_capacity,
         image_url=parking_in.image_url or "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800",
-        owner=parking_in.owner,
+        owner=owner_val,
         ruc=parking_in.ruc,
         description=parking_in.description,
         phone=parking_in.phone,
         whatsapp=parking_in.whatsapp,
-        email=parking_in.email,
+        email=email_val,
         schedule=parking_in.schedule,
         reference=parking_in.reference,
         level=parking_in.level,
@@ -659,6 +667,13 @@ async def update_parking(parking_id: int, parking_in: ParkingUpdate, db: AsyncSe
     parking = result.scalars().first()
     if not parking:
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+
+    if current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
+        is_owner = bool(parking.email and parking.email.strip().lower() == current_user.email.strip().lower())
+        if not is_owner:
+            staff_res = await db.execute(select(Staff).where(Staff.email == current_user.email, Staff.parking_id == parking.id))
+            if not staff_res.scalars().first():
+                raise HTTPException(status_code=403, detail="No tienes permiso para modificar este estacionamiento")
     
     update_data = parking_in.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -676,6 +691,13 @@ async def delete_parking(parking_id: int, db: AsyncSession = Depends(get_db), cu
     parking = result.scalars().first()
     if not parking:
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+
+    if current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
+        is_owner = bool(parking.email and parking.email.strip().lower() == current_user.email.strip().lower())
+        if not is_owner:
+            staff_res = await db.execute(select(Staff).where(Staff.email == current_user.email, Staff.parking_id == parking.id))
+            if not staff_res.scalars().first():
+                raise HTTPException(status_code=403, detail="No tienes permiso para eliminar este estacionamiento")
     
     await db.delete(parking)
     await db.commit()

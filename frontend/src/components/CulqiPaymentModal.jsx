@@ -22,7 +22,8 @@ import {
   ExternalLink,
   ShieldAlert,
   Wallet,
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 
 // Credenciales públicas para frontend (el secreto CULQI_SECRET_KEY y PAYPAL_CLIENT_SECRET residen en el backend)

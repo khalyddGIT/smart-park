@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Monitoreo y actualización semanal de dependencias de Python (Backend)
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Monitoreo y actualización semanal de dependencias de Node.js (Frontend)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

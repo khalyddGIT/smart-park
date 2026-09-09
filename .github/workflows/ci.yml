@@ -32,9 +32,10 @@ jobs:
       - name: Run Pytest Suite
         env:
           TESTING: '1'
+          PYTHONPATH: '.'
           SECRET_KEY: 'smartpark-ci-test-secret-key-minimum-32-chars-long'
         run: |
-          pytest -q
+          python -m pytest -q
 
   frontend-ci:
     name: Frontend Build (Vite)

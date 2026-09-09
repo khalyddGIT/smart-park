@@ -262,6 +262,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const [remotePlan, setRemotePlan] = useState(null);
   const [planStatus, setPlanStatus] = useState('idle');
   const [planErrorDetail, setPlanErrorDetail] = useState('');
+  const [collisionAlert, setCollisionAlert] = useState(null);
 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [hours, setHours] = useState(2);
@@ -449,10 +450,47 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     };
     window.addEventListener('smart_park_floorplan_updated', handleGlobalUpdate);
 
+    // Sincronización instantánea de espacios vía WebSocket (smart_park_spaces_live)
+    const handleSpacesLive = (e) => {
+      const detail = e?.detail;
+      if (!detail) return;
+      const pid = detail.parking_id || detail.parkingId;
+      if (pid && String(pid) === String(numericParkingId)) {
+        const slotCode = detail.slot_code || detail.slotCode;
+        const newStatus = detail.status; // 'free', 'occupied', 'reserved'
+
+        // Anti-colisión: si el usuario tenía seleccionado este cajón y fue ocupado o reservado
+        setSelectedSlot((currentSelected) => {
+          if (currentSelected && slotCode && (currentSelected.code === slotCode || String(currentSelected.id) === String(detail.slot_id))) {
+            if (newStatus !== 'free') {
+              setCollisionAlert(`El cajón ${slotCode} acaba de ser reservado u ocupado por otro vehículo. Por favor selecciona otro.`);
+              setTimeout(() => setCollisionAlert(null), 6000);
+              return null;
+            }
+          }
+          return currentSelected;
+        });
+
+        // Actualización instantánea en el modelo de dibujo 2D del canvas
+        setRemotePlan((prev) => {
+          if (!prev || !prev.slots) return prev;
+          const updatedSlots = prev.slots.map((s) => {
+            if ((slotCode && s.code === slotCode) || (detail.slot_id && String(s.id) === String(detail.slot_id))) {
+              return { ...s, status: newStatus };
+            }
+            return s;
+          });
+          return { ...prev, slots: updatedSlots };
+        });
+      }
+    };
+    window.addEventListener('smart_park_spaces_live', handleSpacesLive);
+
     return () => { 
       cancelled = true; 
       clearInterval(iv);
       window.removeEventListener('smart_park_floorplan_updated', handleGlobalUpdate);
+      window.removeEventListener('smart_park_spaces_live', handleSpacesLive);
     };
   }, [parking?.id, numericParkingId]);
 
@@ -683,6 +721,13 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
         <div className="p-3 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs flex items-center gap-2">
           <Loader2 className="w-4 h-4 text-slate-500 shrink-0 animate-spin" />
           <span>Cargando plano de la sede...</span>
+        </div>
+      )}
+
+      {collisionAlert && (
+        <div className="p-3 bg-amber-500/15 border border-amber-500/40 text-amber-900 dark:text-amber-200 rounded-xl text-xs flex items-center gap-2 shadow-sm animate-bounce">
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+          <span className="font-semibold">{collisionAlert}</span>
         </div>
       )}
 
@@ -1269,6 +1314,14 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 <p className="text-[11px] text-slate-400 leading-relaxed">
                   Cuentas con la reserva <span className="font-mono font-bold text-white">{activeUserReservation.code || activeUserReservation.id}</span> ({activeUserReservation.plate || activeUserReservation.license_plate}).
                 </p>
+              </div>
+            )}
+
+            {/* Aviso si hubo colisión en vivo */}
+            {collisionAlert && (
+              <div className="p-2.5 bg-amber-950/80 border border-amber-600/70 rounded-xl text-xs text-amber-200 flex items-start gap-2 animate-bounce">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <span className="text-[11px] leading-snug">{collisionAlert}</span>
               </div>
             )}
 

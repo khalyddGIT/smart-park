@@ -31,7 +31,7 @@ import { playTone, isAudioMuted, toggleAudioMute } from '../utils/soundEffects';
 import api from '../services/api';
 
 export const PersonalGaritaModule = () => {
-  const { establishments, reservations, createReservation, checkInReservation, checkOutReservation, ensureFloorPlan, fetchParkings } = useEstablishments();
+  const { establishments, reservations, createReservation, checkInReservation, checkOutReservation, ensureFloorPlan, fetchParkings, wsConnected } = useEstablishments();
   const { user } = useAuth();
   const [assignedParkingId, setAssignedParkingId] = useState(null);
   const [audioMuted, setAudioMutedState] = useState(isAudioMuted());
@@ -149,7 +149,28 @@ export const PersonalGaritaModule = () => {
     }, 5000);
     const onVis = () => { if (document.visibilityState === 'visible') fetchGaritaReservations(); };
     document.addEventListener('visibilitychange', onVis);
-    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
+
+    // Sincronización reactiva instantánea vía WebSocket
+    const handleLiveSync = (e) => {
+      const detail = e?.detail;
+      if (!detail) return;
+      const pid = String(detail.parking_id || detail.parkingId || '');
+      if (!pid || pid === String(currentEst?.id)) {
+        fetchGaritaReservations();
+        if (currentEst?.id) {
+          ensureFloorPlan(currentEst.id, true);
+        }
+      }
+    };
+    window.addEventListener('smart_park_reservation_live', handleLiveSync);
+    window.addEventListener('smart_park_spaces_live', handleLiveSync);
+
+    return () => { 
+      clearInterval(iv); 
+      document.removeEventListener('visibilitychange', onVis); 
+      window.removeEventListener('smart_park_reservation_live', handleLiveSync);
+      window.removeEventListener('smart_park_spaces_live', handleLiveSync);
+    };
   }, [currentEst?.id]);
 
   const freeSlots = useMemo(() => (currentEst?.elements || []).filter(e => e.type === 'slot' && e.status === 'free'), [currentEst]);
@@ -382,10 +403,18 @@ export const PersonalGaritaModule = () => {
       {/* Header de Garita */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-base font-black text-slate-900 leading-snug">{currentEst?.name || 'Mi Cochera'}</h2>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-300">
               Garita Activa
+            </span>
+            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 transition-colors ${
+              wsConnected 
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' 
+                : 'bg-amber-50 text-amber-700 border border-amber-300'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span>{wsConnected ? '● En Vivo (WebSocket)' : '○ Reconectando...'}</span>
             </span>
           </div>
           <p className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">

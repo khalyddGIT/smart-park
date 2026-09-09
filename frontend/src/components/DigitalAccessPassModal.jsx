@@ -34,6 +34,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
   const [isUpdating, setIsUpdating] = useState(false);
   const [localStatus, setLocalStatus] = useState(null);
   const [localActualEntry, setLocalActualEntry] = useState(null);
+  const [liveBanner, setLiveBanner] = useState(null);
   const qrRef = useRef(null);
 
   useEffect(() => {
@@ -42,6 +43,87 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       setLocalActualEntry(reservation.actual_entry || reservation.actualEntry || null);
     }
   }, [reservation]);
+
+  // Sincronización instantánea vía WebSocket (smart_park_reservation_live)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const playSuccessChime = () => {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.35);
+      } catch {}
+    };
+
+    const handleLiveEvent = (ev) => {
+      const detail = ev.detail;
+      if (!detail || !reservation) return;
+
+      const currentDbId = reservation.id;
+      const currentCode = reservation.code;
+
+      const matches = (
+        (detail.reservation_id && currentDbId && String(detail.reservation_id) === String(currentDbId)) ||
+        (detail.code && currentCode && String(detail.code).trim().toLowerCase() === String(currentCode).trim().toLowerCase())
+      );
+
+      if (!matches) return;
+
+      if (detail.reservation_status === 'active') {
+        setLocalStatus('active');
+        const entryTime = detail.actual_entry || new Date().toISOString();
+        setLocalActualEntry(entryTime);
+        playSuccessChime();
+        try {
+          if ('vibrate' in navigator) navigator.vibrate([100, 50, 150]);
+        } catch {}
+        setLiveBanner('¡Ingreso validado en Garita! Tu estadía comenzó.');
+        setTimeout(() => setLiveBanner(null), 6000);
+        onReservationUpdated?.({
+          ...reservation,
+          status: 'active',
+          actual_entry: entryTime
+        });
+      } else if (detail.reservation_status === 'completed') {
+        setLocalStatus('completed');
+        playSuccessChime();
+        try {
+          if ('vibrate' in navigator) navigator.vibrate(200);
+        } catch {}
+        setLiveBanner('¡Salida registrada por el operador! Gracias por tu visita.');
+        setTimeout(() => setLiveBanner(null), 6000);
+        onReservationUpdated?.({
+          ...reservation,
+          status: 'completed',
+          actual_exit: detail.actual_exit || new Date().toISOString(),
+          amount_paid: detail.amount_paid
+        });
+      } else if (detail.reservation_status === 'cancelled') {
+        setLocalStatus('cancelled');
+        setLiveBanner('Esta reserva ha sido cancelada.');
+        setTimeout(() => setLiveBanner(null), 5000);
+        onReservationUpdated?.({
+          ...reservation,
+          status: 'cancelled'
+        });
+      }
+    };
+
+    window.addEventListener('smart_park_reservation_live', handleLiveEvent);
+    return () => window.removeEventListener('smart_park_reservation_live', handleLiveEvent);
+  }, [isOpen, reservation, onReservationUpdated]);
 
   const passData = useMemo(() => {
     if (!reservation) return null;
@@ -409,6 +491,12 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
         </div>
 
         <div className="p-4 space-y-3">
+          {liveBanner && (
+            <div className="p-2.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs flex items-center gap-2 animate-bounce">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0"></span>
+              <span className="font-semibold">{liveBanner}</span>
+            </div>
+          )}
 
           {/* Tarjeta Pase Digital Tipo Boarding Pass */}
           <div 

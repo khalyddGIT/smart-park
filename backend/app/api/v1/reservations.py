@@ -441,7 +441,15 @@ async def create_reservation(
             "parking_id": db_res.parking_id,
             "slot_id": db_res.slot_id,
             "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", ""),
-            "status": "reserved"
+            "status": "reserved",
+            "reservation_id": db_res.id,
+            "code": db_res.code,
+            "reservation_status": db_res.status,
+            "license_plate": db_res.license_plate,
+            "start_time": db_res.start_time.isoformat() if db_res.start_time else None,
+            "end_time": db_res.end_time.isoformat() if db_res.end_time else None,
+            "total_cost": db_res.total_cost,
+            "tolerance_minutes": getattr(db_res, "tolerance_minutes", 15)
         }
         await realtime.broadcast("reservations:updated", broadcast_payload)
         await realtime.broadcast("spaces:update", broadcast_payload)
@@ -510,7 +518,10 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
             "parking_id": reservation.parking_id,
             "slot_id": reservation.slot_id,
             "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", "") if slot else "",
-            "status": "free"
+            "status": "free",
+            "reservation_id": reservation.id,
+            "code": reservation.code,
+            "reservation_status": "cancelled"
         }
         await realtime.broadcast("reservations:updated", broadcast_payload)
         await realtime.broadcast("spaces:update", broadcast_payload)
@@ -613,7 +624,14 @@ async def check_in_reservation(
             "parking_id": reservation.parking_id,
             "slot_id": reservation.slot_id,
             "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", "") if slot else "",
-            "status": "occupied"
+            "status": "occupied",
+            "reservation_id": reservation.id,
+            "code": reservation.code,
+            "reservation_status": "active",
+            "license_plate": reservation.license_plate,
+            "actual_entry": reservation.actual_entry.isoformat() if reservation.actual_entry else None,
+            "start_time": reservation.start_time.isoformat() if reservation.start_time else None,
+            "end_time": reservation.end_time.isoformat() if reservation.end_time else None
         }
         await realtime.broadcast("reservations:updated", broadcast_payload)
         await realtime.broadcast("spaces:update", broadcast_payload)
@@ -688,7 +706,14 @@ async def check_out_reservation(
             "parking_id": reservation.parking_id,
             "slot_id": reservation.slot_id,
             "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", "") if slot else "",
-            "status": "free"
+            "status": "free",
+            "reservation_id": reservation.id,
+            "code": reservation.code,
+            "reservation_status": "completed",
+            "actual_entry": reservation.actual_entry.isoformat() if reservation.actual_entry else None,
+            "actual_exit": reservation.actual_exit.isoformat() if reservation.actual_exit else None,
+            "amount_paid": getattr(reservation, "amount_paid", 0.0),
+            "payment_method": getattr(reservation, "payment_method", "efectivo")
         }
         await realtime.broadcast("reservations:updated", broadcast_payload)
         await realtime.broadcast("spaces:update", broadcast_payload)

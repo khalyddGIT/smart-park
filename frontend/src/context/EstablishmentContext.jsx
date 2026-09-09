@@ -586,6 +586,8 @@ export const EstablishmentProvider = ({ children }) => {
     return [];
   });
 
+  const [wsConnected, setWsConnected] = useState(false);
+
   // Guardar en localStorage siempre que cambie
   useEffect(() => {
     try {
@@ -810,10 +812,25 @@ export const EstablishmentProvider = ({ children }) => {
     const connectWs = () => {
       try {
         ws = new WebSocket(getWsUrl());
+        ws.onopen = () => {
+          setWsConnected(true);
+        };
         ws.onmessage = (ev) => {
           try {
             const msg = JSON.parse(ev.data);
             if (msg.event === 'pong') return;
+
+            // Disparar eventos CustomEvent tipados para sincronización instantánea de componentes reactivos
+            if (msg.payload) {
+              try {
+                if (msg.event === 'spaces:update') {
+                  window.dispatchEvent(new CustomEvent('smart_park_spaces_live', { detail: msg.payload }));
+                } else if (msg.event && (msg.event.startsWith('reservations:') || msg.event === 'reservations:updated')) {
+                  window.dispatchEvent(new CustomEvent('smart_park_reservation_live', { detail: msg.payload }));
+                }
+              } catch {}
+            }
+
             if (msg.event === 'parkings:updated' || msg.event === 'refresh') {
               fetchParkings();
               const pid = msg.payload?.parking_id || msg.payload?.parkingId;
@@ -841,6 +858,20 @@ export const EstablishmentProvider = ({ children }) => {
               }
             }
             if (msg.event === 'reservations:updated' || msg.event === 'reservations:cancelled' || msg.event === 'refresh') {
+              if (msg.payload?.reservation_id && msg.payload?.reservation_status) {
+                setReservations(prev => (prev || []).map(r => {
+                  if (String(r.id) === String(msg.payload.reservation_id) || (msg.payload.code && r.code === msg.payload.code)) {
+                    return {
+                      ...r,
+                      status: msg.payload.reservation_status,
+                      ...(msg.payload.actual_entry ? { actual_entry: msg.payload.actual_entry, actualEntry: msg.payload.actual_entry } : {}),
+                      ...(msg.payload.actual_exit ? { actual_exit: msg.payload.actual_exit, actualExit: msg.payload.actual_exit } : {}),
+                      ...(msg.payload.amount_paid !== undefined ? { amount_paid: msg.payload.amount_paid } : {})
+                    };
+                  }
+                  return r;
+                }));
+              }
               if (getAccessToken()) refreshMyReservations();
               // Cajón reservado/ocupado cambia plano, refrescar para que no siga disponible
               fetchParkings();
@@ -851,11 +882,19 @@ export const EstablishmentProvider = ({ children }) => {
             if (msg.event === 'incidents:updated' || msg.event === 'reviews:updated') { /* NotificationContext hace su propio polling */ }
           } catch {}
         };
-        ws.onclose = () => { wsReconnectTimer = setTimeout(connectWs, 3000); };
-        ws.onerror = () => { try { ws.close(); } catch {} };
+        ws.onclose = () => { 
+          setWsConnected(false);
+          wsReconnectTimer = setTimeout(connectWs, 3000); 
+        };
+        ws.onerror = () => { 
+          setWsConnected(false);
+          try { ws.close(); } catch {} 
+        };
         const ping = setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) try { ws.send('ping'); } catch {} }, 25000);
         ws.addEventListener('close', () => clearInterval(ping));
-      } catch {}
+      } catch {
+        setWsConnected(false);
+      }
     };
     connectWs();
 
@@ -1971,7 +2010,8 @@ export const EstablishmentProvider = ({ children }) => {
       completeReservation,
       resetToDefaults,
       saveLocalUserCredential,
-      getLocalUserCredentials
+      getLocalUserCredentials,
+      wsConnected
     }}>
       {children}
     </EstablishmentContext.Provider>

@@ -34,22 +34,29 @@ def hash_pin(pin: str) -> str:
 def verify_pin_hash(plain_pin: str, stored_pin: str) -> bool:
     """
     Verifica un PIN contra su valor almacenado.
-    Soporta filas legacy con PIN en texto plano (comparación timing-safe)
-    para permitir migración perezosa a hashes.
+    Soporta hashes passlib (pbkdf2_sha256, bcrypt) y filas legacy con PIN en texto plano.
     """
-    if not stored_pin:
+    if not stored_pin or not plain_pin:
         return False
-    if stored_pin.startswith(("pbkdf2_sha256$", "bcrypt$", "$2")):
-        try:
+    try:
+        if pwd_context.identify(stored_pin) is not None:
             return pwd_context.verify(plain_pin, stored_pin)
-        except Exception:
-            return False
-    # Legacy en texto plano
+    except Exception:
+        pass
+    # Legacy en texto plano (comparación timing-safe)
     import hmac
-    return hmac.compare_digest(stored_pin.encode("utf-8"), plain_pin.encode("utf-8"))
+    try:
+        return hmac.compare_digest(stored_pin.strip().encode("utf-8"), plain_pin.strip().encode("utf-8"))
+    except Exception:
+        return False
 
 def is_pin_hashed(stored_pin: str) -> bool:
-    return bool(stored_pin) and stored_pin.startswith(("pbkdf2_sha256$", "bcrypt$", "$2"))
+    if not stored_pin:
+        return False
+    try:
+        return pwd_context.identify(stored_pin) is not None
+    except Exception:
+        return False
 
 def create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     import uuid

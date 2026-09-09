@@ -102,6 +102,45 @@ const formatCategoryName = (type = '') => {
   return 'Automóvil / Sedán';
 };
 
+export const getSoatStatus = (expiryDate) => {
+  if (!expiryDate) return { status: 'none', label: 'SOAT no registrado', color: 'slate', detail: '' };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const parts = String(expiryDate).split('-');
+  const exp = parts.length === 3 ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])) : new Date(expiryDate);
+  exp.setHours(0, 0, 0, 0);
+  if (isNaN(exp.getTime())) return { status: 'none', label: 'SOAT no registrado', color: 'slate', detail: '' };
+  
+  const diffTime = exp.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return {
+      status: 'expired',
+      label: `🚨 SOAT Vencido (${Math.abs(diffDays)} d)`,
+      detail: `Venció el ${exp.toLocaleDateString('es-PE')}`,
+      color: 'rose',
+      daysLeft: diffDays
+    };
+  } else if (diffDays <= 30) {
+    return {
+      status: 'warning',
+      label: `⚠️ Por vencer (${diffDays} d)`,
+      detail: `Vence el ${exp.toLocaleDateString('es-PE')}`,
+      color: 'amber',
+      daysLeft: diffDays
+    };
+  } else {
+    return {
+      status: 'valid',
+      label: `✓ SOAT Vigente`,
+      detail: `Hasta el ${exp.toLocaleDateString('es-PE')}`,
+      color: 'emerald',
+      daysLeft: diffDays
+    };
+  }
+};
+
 export const VehiclesModule = () => {
   const fileInputRef = useRef(null);
   const webcamRef = useRef(null);
@@ -135,6 +174,7 @@ export const VehiclesModule = () => {
             model: v.model, 
             color: v.color, 
             year: v.year || '2023',
+            soat_expiry: v.soat_expiry || v.soatExpiry || '',
             notes: v.notes || '',
             isDefault: false, 
             imageUrl: v.image_url || v.imageUrl || getDefaultCarImage(v.vehicle_type) 
@@ -195,6 +235,7 @@ export const VehiclesModule = () => {
     model: '', 
     year: '2023', 
     color: 'Gris', 
+    soat_expiry: '',
     imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800',
     notes: ''
   });
@@ -214,6 +255,7 @@ export const VehiclesModule = () => {
       model: '', 
       year: '2023', 
       color: 'Gris', 
+      soat_expiry: '',
       imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800',
       notes: ''
     });
@@ -229,6 +271,7 @@ export const VehiclesModule = () => {
       model: v.model || '',
       year: v.year || '2023',
       color: v.color || 'Gris',
+      soat_expiry: v.soat_expiry || v.soatExpiry || '',
       imageUrl: v.imageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800',
       notes: v.notes || ''
     });
@@ -375,6 +418,7 @@ export const VehiclesModule = () => {
           model: created.model || modelClean, 
           color: created.color || colorClean, 
           year: created.year || yearClean,
+          soat_expiry: formData.soat_expiry || '',
           notes: created.notes || formData.notes || '',
           isDefault: vehicles.length === 0, 
           imageUrl: created.image_url || img 
@@ -402,6 +446,7 @@ export const VehiclesModule = () => {
       model: modelClean, 
       year: yearClean, 
       color: colorClean, 
+      soat_expiry: formData.soat_expiry || '',
       notes: formData.notes || '',
       isDefault: vehicles.length === 0, 
       imageUrl: img, 
@@ -459,6 +504,7 @@ export const VehiclesModule = () => {
           model: updatedServer.model,
           color: updatedServer.color,
           year: updatedServer.year || yearClean,
+          soat_expiry: formData.soat_expiry !== undefined ? formData.soat_expiry : (selectedVehicle.soat_expiry || ''),
           notes: updatedServer.notes || formData.notes,
           imageUrl: updatedServer.image_url || formData.imageUrl || selectedVehicle.imageUrl
         };
@@ -476,6 +522,7 @@ export const VehiclesModule = () => {
         model: modelClean,
         year: yearClean,
         color: colorClean,
+        soat_expiry: formData.soat_expiry !== undefined ? formData.soat_expiry : (selectedVehicle.soat_expiry || ''),
         notes: formData.notes,
         imageUrl: formData.imageUrl || selectedVehicle.imageUrl
       };
@@ -627,6 +674,33 @@ export const VehiclesModule = () => {
             </button>
           ))}
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            Vencimiento de SOAT (Opcional)
+          </span>
+          <span className="text-[10px] text-slate-400 font-normal">Alerta preventiva de vigencia</span>
+        </label>
+        <Input
+          type="date"
+          value={formData.soat_expiry || ''}
+          onChange={(e) => setFormData({ ...formData, soat_expiry: e.target.value })}
+          className="text-xs h-10 bg-white border-slate-200"
+        />
+        {formData.soat_expiry && (() => {
+          const s = getSoatStatus(formData.soat_expiry);
+          return (
+            <p className={`text-[11px] font-semibold mt-1 flex items-center gap-1 ${
+              s.status === 'expired' ? 'text-rose-600' : s.status === 'warning' ? 'text-amber-600' : 'text-emerald-600'
+            }`}>
+              <span>{s.label}</span>
+              {s.detail && <span className="text-slate-500 font-normal">· {s.detail}</span>}
+            </p>
+          );
+        })()}
       </div>
 
       <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
@@ -879,6 +953,32 @@ export const VehiclesModule = () => {
                         {v.vehicle_type || 'Auto'}
                       </span>
                     </div>
+
+                    {/* Alerta Preventiva de SOAT */}
+                    {(() => {
+                      const soat = getSoatStatus(v.soat_expiry);
+                      return (
+                        <div className={`py-1.5 px-2.5 rounded-xl text-xs flex items-center justify-between border font-medium transition-colors ${
+                          soat.status === 'expired'
+                            ? 'bg-rose-50 border-rose-200 text-rose-800'
+                            : soat.status === 'warning'
+                            ? 'bg-amber-50 border-amber-200 text-amber-800'
+                            : soat.status === 'valid'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                            : 'bg-slate-50 border-slate-200/80 text-slate-500'
+                        }`}>
+                          <span className="font-bold flex items-center gap-1.5 text-[11px]">
+                            {soat.status === 'valid' && <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                            {soat.label}
+                          </span>
+                          {soat.detail ? (
+                            <span className="text-[10px] font-mono opacity-85">{soat.detail}</span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">Sin registrar</span>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Observaciones si existen */}
                     {v.notes && (

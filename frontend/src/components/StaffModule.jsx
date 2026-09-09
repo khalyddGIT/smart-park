@@ -606,7 +606,10 @@ export const StaffModule = () => {
                         </div>
                         <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
                           <span>Rol: <strong className="text-emerald-400 uppercase">{s.system_role || 'local'}</strong></span>
-                          <span>PIN: <strong className="text-slate-200 font-mono">••••</strong></span>
+                          <span className="flex items-center gap-1">
+                            <span>PIN Express:</span>
+                            <strong className="text-emerald-300 font-mono bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-800/60">Activo (4 dígitos)</strong>
+                          </span>
                         </div>
                       </div>
                     ) : (
@@ -843,7 +846,7 @@ export const StaffModule = () => {
 
               <p className="text-[10px] text-slate-400 leading-relaxed pt-1 flex items-start gap-1.5">
                 <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                <span>El trabajador podrá acceder al sistema ingresando su correo y contraseña en la pantalla de <strong>Iniciar Sesión</strong>.</span>
+                <span>El colaborador podrá ingresar con su correo y contraseña o rápidamente con su DNI y PIN Express de 4 dígitos en caseta.</span>
               </p>
             </div>
 

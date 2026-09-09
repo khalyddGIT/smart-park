@@ -21,7 +21,9 @@ import {
   ShieldCheck,
   FileText,
   QrCode,
-  Sparkles
+  Sparkles,
+  Download,
+  Navigation
 } from 'lucide-react';
 
 import { parseIsoToDate } from '../context/EstablishmentContext';
@@ -167,6 +169,122 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       ? `${passData.latitude},${passData.longitude}`
       : encodeURIComponent(`${passData.parkingName} ${passData.parkingAddress || ''} Ayacucho Peru`);
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+  };
+
+  const openWaze = () => {
+    if (passData.latitude && passData.longitude) {
+      window.open(`https://waze.com/ul?ll=${passData.latitude},${passData.longitude}&navigate=yes`, '_blank');
+    } else {
+      const q = encodeURIComponent(`${passData.parkingName} Ayacucho Peru`);
+      window.open(`https://waze.com/ul?q=${q}&navigate=yes`, '_blank');
+    }
+  };
+
+  // Descarga del Pase QR offline en PNG para mostrarlo sin conexión en garita
+  const handleDownloadOfflinePass = () => {
+    if (!qrRef.current) return;
+    const svgEl = qrRef.current.querySelector('svg');
+    if (!svgEl) return;
+
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    canvas.width = 400;
+    canvas.height = 560;
+
+    img.onload = () => {
+      // Fondo oscuro elegante
+      ctx.fillStyle = '#0f172a';
+      if (ctx.roundRect) ctx.roundRect(0, 0, 400, 560, 24);
+      else ctx.rect(0, 0, 400, 560);
+      ctx.fill();
+
+      // Header
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
+      ctx.fillText('SMART PARK · PASE DIGITAL OFFLINE', 28, 42);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px system-ui, -apple-system, sans-serif';
+      const pName = passData.parkingName.length > 24 ? passData.parkingName.slice(0, 24) + '...' : passData.parkingName;
+      ctx.fillText(pName, 28, 70);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px system-ui, -apple-system, sans-serif';
+      const pAddr = (passData.parkingAddress || 'Ayacucho - Huamanga').slice(0, 36);
+      ctx.fillText(pAddr, 28, 90);
+
+      // Línea divisoria punteada
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(20, 110);
+      ctx.lineTo(380, 110);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Marco contenedor del QR
+      ctx.fillStyle = '#ffffff';
+      if (ctx.roundRect) ctx.roundRect(85, 125, 230, 230, 16);
+      else ctx.rect(85, 125, 230, 230);
+      ctx.fill();
+
+      // QR Code
+      ctx.drawImage(img, 100, 140, 200, 200);
+
+      // Token
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 13px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`TOKEN: ${passData.token}`, 200, 380);
+
+      // Card de datos
+      ctx.fillStyle = '#1e293b';
+      if (ctx.roundRect) ctx.roundRect(28, 400, 344, 95, 12);
+      else ctx.rect(28, 400, 344, 95);
+      ctx.fill();
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.fillText('PLACA', 45, 425);
+      ctx.fillText('CAJÓN', 140, 425);
+      ctx.fillText('CÓDIGO', 225, 425);
+      ctx.fillText('TOLERANCIA', 305, 425);
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 15px monospace';
+      ctx.fillText(passData.plate, 45, 447);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px monospace';
+      ctx.fillText(passData.slotCode, 140, 447);
+      ctx.fillText(passData.id, 225, 447);
+
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.fillText(`${passData.toleranceMinutes} min`, 305, 447);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.fillText(`Emitido: ${new Date().toLocaleDateString('es-PE')} · Válido para escanear en garita`, 45, 478);
+
+      // Footer
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.fillText('Pase digital guardado · Funciona 100% offline en caseta', 200, 532);
+
+      const a = document.createElement('a');
+      a.download = `smartpark_pase_${passData.plate}_${passData.id}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    };
+
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgData)}`;
   };
 
   // Cancelar Reserva Justa (Libera el cajón sin penalidad dentro de la tolerancia)
@@ -378,24 +496,59 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               </p>
             </div>
 
-            {/* Aviso Preventivo Compacto de Tolerancia (solo reservas en ruta) */}
-            {isScheduled && secondsRemaining !== null && secondsRemaining > 0 && secondsRemaining <= 600 && (
-              <div className={`my-2 p-2.5 rounded-xl border text-xs flex items-center gap-2 ${
-                secondsRemaining <= 300 
-                  ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 text-rose-900 dark:text-rose-300' 
-                  : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-900 dark:text-amber-300'
-              }`}>
-                <AlertCircle className={`w-4 h-4 shrink-0 ${secondsRemaining <= 300 ? 'text-rose-600' : 'text-amber-600'}`} />
-                <div className="leading-snug">
-                  <span className="font-bold">
-                    {secondsRemaining <= 300 ? '¡Tiempo crítico de llegada!' : 'Llegada requerida en curso:'}
-                  </span>{' '}
-                  <span>
-                    Faltan {Math.ceil(secondsRemaining / 60)} min antes de que el cajón sea liberado.
-                  </span>
+            {/* Barra de progreso de tolerancia en vivo (verde ➔ ámbar ➔ rojo) */}
+            {isScheduled && secondsRemaining !== null && (() => {
+              const toleranceTotalSec = (passData.toleranceMinutes || 15) * 60;
+              const toleranceProgressPct = Math.max(0, Math.min(100, Math.round((secondsRemaining / toleranceTotalSec) * 100)));
+              const isToleranceCritical = toleranceProgressPct <= 20;
+              const isToleranceWarning = toleranceProgressPct <= 50 && toleranceProgressPct > 20;
+              const toleranceBarColor = isToleranceCritical 
+                ? 'bg-rose-500 animate-pulse' 
+                : isToleranceWarning 
+                ? 'bg-amber-500' 
+                : 'bg-emerald-500';
+
+              return (
+                <div className={`my-2 p-2.5 rounded-xl border text-xs space-y-1.5 transition-colors ${
+                  isToleranceCritical 
+                    ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 text-rose-900 dark:text-rose-300' 
+                    : isToleranceWarning 
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-900 dark:text-amber-300'
+                    : 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-300'
+                }`}>
+                  <div className="flex items-center justify-between font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className={`w-3.5 h-3.5 shrink-0 ${
+                        isToleranceCritical ? 'text-rose-600' : isToleranceWarning ? 'text-amber-600' : 'text-emerald-600'
+                      }`} />
+                      <span>Tolerancia de llegada:</span>
+                    </div>
+                    <span className="font-mono font-bold">
+                      {timeLeft || '--:--'}
+                    </span>
+                  </div>
+
+                  {/* Barra de Progreso Dinámica */}
+                  <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-1000 ${toleranceBarColor}`}
+                      style={{ width: `${toleranceProgressPct}%` }}
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center text-[10px] opacity-90">
+                    <span>
+                      {isToleranceCritical 
+                        ? '🚨 ¡Crítico! En minutos el cajón será liberado automáticamente'
+                        : isToleranceWarning 
+                        ? '⚠️ Acércate a la cochera dentro de la tolerancia'
+                        : '✓ En ruta · Tiempo a favor para ingresar'}
+                    </span>
+                    <span className="font-mono font-bold">{toleranceProgressPct}%</span>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Separador Perforado */}
             <div className="border-t border-dashed border-slate-200 dark:border-slate-700 my-2.5"></div>
@@ -468,35 +621,56 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
             </Button>
           )}
 
-          {/* Navegación Google Maps Exclusiva (Waze eliminado) */}
+          {/* Navegación GPS Directa con 1 Toque: Google Maps y Waze */}
           {!isCancelled && !isCompleted && (
-            <button
-              type="button"
-              onClick={openGoogleMaps}
-              className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs"
-            >
-              <Compass className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>Cómo llegar con Google Maps</span>
-              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={openGoogleMaps}
+                className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs group"
+              >
+                <Compass className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+                <span>Google Maps</span>
+              </button>
+              <button
+                type="button"
+                onClick={openWaze}
+                className="py-2.5 px-3 rounded-xl border border-sky-200 dark:border-sky-800/80 bg-sky-50/80 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-800 dark:text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs group"
+              >
+                <Navigation className="w-4 h-4 text-sky-600 dark:text-sky-400 group-hover:scale-110 transition-transform" />
+                <span>Waze</span>
+              </button>
+            </div>
           )}
 
-          {/* Acciones Secundarias */}
-          <div className="flex gap-2 pt-0.5">
+          {/* Acciones Secundarias con Descarga Offline PNG */}
+          <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+            <Button
+              type="button"
+              onClick={handleDownloadOfflinePass}
+              variant="outline"
+              className="text-[11px] font-bold gap-1 rounded-xl h-9 px-2 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer shadow-2xs"
+              title="Descargar imagen PNG para mostrar sin internet en garita"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span className="truncate">Guardar PNG</span>
+            </Button>
+
             <Button
               type="button"
               onClick={handlePrintPass}
               variant="outline"
-              className="flex-1 text-xs font-semibold gap-1.5 rounded-xl h-9.5 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer shadow-2xs"
+              className="text-[11px] font-semibold gap-1 rounded-xl h-9 px-2 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer shadow-2xs"
+              title="Imprimir pase en papel o PDF"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-500" />
-              <span>Imprimir Pase</span>
+              <Printer className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span className="truncate">Imprimir</span>
             </Button>
 
             <Button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold h-9.5 rounded-xl text-xs cursor-pointer shadow-sm"
+              className="bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold h-9 rounded-xl text-xs cursor-pointer shadow-sm"
             >
               Cerrar
             </Button>

@@ -96,5 +96,30 @@ def test_create_and_login_worker():
                 "full_name": "Juan Pérez Garita"
             })
             assert old_login_res.status_code == 401
+
+            # 7. Iniciar sesión Express con PIN (usando el DNI)
+            pin_dni_res = await ac.post("/api/v1/auth/login-pin", json={
+                "identifier": worker_dni,
+                "pin": "5678"
+            })
+            assert pin_dni_res.status_code == 200
+            pin_data = pin_dni_res.json()
+            assert "access_token" in pin_data
+            assert pin_data["user"]["email"] == worker_email
+
+            # 8. Iniciar sesión Express con PIN (usando el Email)
+            pin_email_res = await ac.post("/api/v1/auth/login-pin", json={
+                "identifier": worker_email,
+                "pin": "5678"
+            })
+            assert pin_email_res.status_code == 200
+            assert "access_token" in pin_email_res.json()
+
+            # 9. PIN incorrecto debe ser rechazado
+            bad_pin_res = await ac.post("/api/v1/auth/login-pin", json={
+                "identifier": worker_dni,
+                "pin": "0000"
+            })
+            assert bad_pin_res.status_code == 401
     
     asyncio.run(_run())

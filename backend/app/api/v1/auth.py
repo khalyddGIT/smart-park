@@ -14,8 +14,8 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import User
-from app.schemas.schemas import UserCreate, UserLogin, UserResponse, Token, PinVerify
+from app.models.models import User, Staff
+from app.schemas.schemas import UserCreate, UserLogin, UserResponse, Token, PinVerify, PinLoginRequest
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user, verify_pin_hash, is_pin_hashed, hash_pin
 from app.core.cache import rate_limit_hit, blacklist_token
@@ -158,6 +158,114 @@ async def login_user(user_in: UserLogin, request: Request, response: Response, d
     await record_audit_event(
         db=db,
         action="Inicio de Sesión Exitoso",
+        target=f"Usuario #{user.id} ({user.role})",
+        user_id=user.id,
+        user_email=user.email,
+        role=user.role,
+        severity="Info",
+        request=request,
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+
+@router.post("/login-pin", response_model=Token)
+async def login_pin(
+    pin_req: PinLoginRequest,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db)
+):
+    """Inicio de sesión express con PIN de 4 dígitos para garita y pantallas táctiles."""
+    clean_ident = (pin_req.identifier or "").strip()
+    clean_pin = (pin_req.pin or "").strip()
+
+    if not clean_ident or not clean_pin:
+        raise HTTPException(status_code=400, detail="Identificador (Email o DNI) y PIN requeridos")
+
+    # Rate limit anti fuerza bruta en login por PIN (5 intentos por minuto por IP)
+    allowed, attempts = await rate_limit_hit(f"ratelimit:login_pin:{_client_ip(request)}", LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW)
+    if not allowed:
+        from app.core.audit_service import record_audit_event
+        await record_audit_event(
+            db=db,
+            action="Bloqueo Rate-Limit PIN Garita",
+            target=f"IP bloqueada temporalmente: {_client_ip(request)}",
+            severity="Crítico",
+            request=request,
+            details={"identificador_intentado": clean_ident, "intentos": attempts},
+        )
+        raise HTTPException(status_code=429, detail="Demasiados intentos de acceso con PIN. Espera un minuto e inténtalo de nuevo.")
+
+    from app.core.audit_service import record_audit_event
+
+    # 1. Buscar usuario por email o teléfono/DNI
+    res_user = await db.execute(
+        select(User).where(
+            (func.lower(User.email) == clean_ident.lower()) |
+            (User.phone == clean_ident)
+        )
+    )
+    user = res_user.scalars().first()
+
+    # 2. Si no se encontró directo en User, buscar en Staff por DNI o email
+    if not user:
+        staff_res = await db.execute(
+            select(Staff).where(
+                (Staff.dni == clean_ident) |
+                (func.lower(Staff.email) == clean_ident.lower())
+            )
+        )
+        staff_member = staff_res.scalars().first()
+        if staff_member and staff_member.email:
+            res_linked_user = await db.execute(select(User).where(func.lower(User.email) == staff_member.email.lower()))
+            user = res_linked_user.scalars().first()
+            if user and not user.security_pin and staff_member.security_pin:
+                user.security_pin = staff_member.security_pin
+
+    if not user:
+        await record_audit_event(
+            db=db,
+            action="Intento Fallido de Login PIN Garita",
+            target=f"Identificador: {clean_ident}",
+            severity="Advertencia",
+            request=request,
+            details={"motivo": "Usuario o colaborador no encontrado"},
+        )
+        raise HTTPException(status_code=401, detail="Credenciales de garita inválidas")
+
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Usuario inactivo o suspendido")
+
+    # 3. Validar PIN de seguridad (soporta hash y migración perezosa)
+    stored_pin = user.security_pin
+    pin_valid = verify_pin_hash(clean_pin, stored_pin) if stored_pin else False
+
+    if not pin_valid:
+        await record_audit_event(
+            db=db,
+            action="Intento Fallido de Login PIN Garita",
+            target=f"Usuario #{user.id} ({user.email})",
+            severity="Advertencia",
+            request=request,
+            details={"motivo": "PIN de seguridad incorrecto"},
+        )
+        raise HTTPException(status_code=401, detail="PIN de seguridad incorrecto")
+
+    # Migrar a hash si estaba en texto plano
+    if stored_pin and not is_pin_hashed(stored_pin):
+        user.security_pin = hash_pin(clean_pin)
+        await db.commit()
+
+    access_token = create_access_token(subject=user.id)
+    _set_auth_cookie(response, access_token)
+
+    await record_audit_event(
+        db=db,
+        action="Inicio de Sesión Express PIN",
         target=f"Usuario #{user.id} ({user.role})",
         user_id=user.id,
         user_email=user.email,

@@ -84,6 +84,10 @@ class Token(BaseModel):
 class PinVerify(BaseModel):
     pin: str
 
+class PinLoginRequest(BaseModel):
+    identifier: str  # Email o DNI / teléfono del operador
+    pin: str
+
 # ==========================================
 # 2. SCHEMAS DE VEHÍCULOS
 # ==========================================

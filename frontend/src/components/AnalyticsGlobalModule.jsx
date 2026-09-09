@@ -26,6 +26,10 @@ import {
   Loader2,
   Star,
   Check,
+  CreditCard,
+  Wallet,
+  Banknote,
+  QrCode,
 } from 'lucide-react';
 import api, { getAccessToken } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -222,6 +226,44 @@ export const AnalyticsGlobalModule = () => {
     return { total, count: valid.length, cancelled: filteredReservations.length - valid.length };
   }, [filteredReservations, financesSummary, role]);
 
+  // Desglose financiero por método de cobro (Efectivo vs Yape/Plin vs Tarjeta POS)
+  const paymentMethodBreakdown = useMemo(() => {
+    const valid = filteredReservations.filter((r) => r.status !== 'cancelled');
+    const buckets = {
+      cash: { label: 'Efectivo en Garita', total: 0, count: 0, color: '#10b981', type: 'Efectivo' },
+      digital: { label: 'Yape / Plin (Billeteras QR)', total: 0, count: 0, color: '#06b6d4', type: 'Billetera Digital' },
+      card: { label: 'Tarjeta POS / Culqi Digital', total: 0, count: 0, color: '#8b5cf6', type: 'Tarjeta / Pasarela' }
+    };
+
+    valid.forEach((r) => {
+      const method = (r.payment_method || r.paymentMethod || '').toLowerCase();
+      const cost = Number(r.total_cost || r.amount_paid || 0);
+
+      if (method.includes('yape') || method.includes('plin') || method.includes('billetera')) {
+        buckets.digital.total += cost;
+        buckets.digital.count += 1;
+      } else if (method.includes('tarjeta') || method.includes('culqi') || method.includes('pos') || method.includes('card') || method.includes('paypal')) {
+        buckets.card.total += cost;
+        buckets.card.count += 1;
+      } else {
+        buckets.cash.total += cost;
+        buckets.cash.count += 1;
+      }
+    });
+
+    const sumTotal = Object.values(buckets).reduce((sum, b) => sum + b.total, 0);
+    const divisor = sumTotal > 0 ? sumTotal : 1;
+    return Object.entries(buckets).map(([key, data]) => ({
+      key,
+      label: data.label,
+      type: data.type,
+      total: data.total,
+      count: data.count,
+      color: data.color,
+      percent: sumTotal > 0 ? Math.round((data.total / divisor) * 100) : 0
+    }));
+  }, [filteredReservations]);
+
   // Ocupación por sede: prioriza floor-plan (conteo real de slots), fallback a available_slots/total_capacity
   const ocupacionPorSede = useMemo(() => {
     return parkings.map((p) => {
@@ -377,6 +419,12 @@ export const AnalyticsGlobalModule = () => {
     lines.push(`Recaudacion_total_PEN,${revenueStats.total.toFixed(2)}`);
     lines.push(`Estancias_no_canceladas,${revenueStats.count}`);
     lines.push(`Reservas_canceladas_en_rango,${revenueStats.cancelled}`);
+    lines.push('');
+    lines.push('## Desglose de recaudacion por metodo de cobro (Efectivo vs Yape/Plin vs Tarjeta)');
+    lines.push('Metodo,Total_PEN,Transacciones,Porcentaje');
+    paymentMethodBreakdown.forEach((m) => {
+      lines.push(`"${m.label}",${m.total.toFixed(2)},${m.count},${m.percent}%`);
+    });
 
     const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = window.URL.createObjectURL(blob);
@@ -487,6 +535,63 @@ export const AnalyticsGlobalModule = () => {
           </div>
         </Card>
       </div>
+
+      {/* Desglose Financiero por Método de Cobro (Efectivo vs Yape/Plin vs Tarjeta POS) */}
+      <Card className="p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div>
+            <h3 className="text-subheading text-slate-900 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-600" />
+              Desglose Financiero por Medio de Cobro
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Distribución de ingresos según medio utilizado por los conductores en rango {timeRange}.
+            </p>
+          </div>
+          <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-xl w-fit">
+            Total Auditado: S/ {revenueStats.total.toFixed(2)}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+          {paymentMethodBreakdown.map((item) => (
+            <div 
+              key={item.key} 
+              className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full shrink-0" 
+                    style={{ backgroundColor: item.color }} 
+                  />
+                  <span className="text-xs font-bold text-slate-800">{item.label}</span>
+                </div>
+                <span className="text-xs font-black font-mono px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-700">
+                  {item.percent}%
+                </span>
+              </div>
+
+              <div>
+                <p className="text-xl font-mono font-black text-slate-900">
+                  S/ {item.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {item.count} {item.count === 1 ? 'transacción registrada' : 'transacciones registradas'}
+                </p>
+              </div>
+
+              {/* Barra de progreso porcentual */}
+              <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                <div 
+                  className="h-full rounded-full transition-all duration-500" 
+                  style={{ width: `${item.percent}%`, backgroundColor: item.color }} 
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {/* Gráficos Recharts — datos reales */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

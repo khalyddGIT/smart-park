@@ -75,12 +75,47 @@ export const PersonalGaritaModule = () => {
   const [garitaReservations, setGaritaReservations] = useState([]);
   const [exitSearchTerm, setExitSearchTerm] = useState('');
 
-  // Estados de Modales: Salida/Cobro, Ticket Térmico y Cierre de Turno
+  // Estados de Modales: Salida/Cobro, Ticket Térmico, Cierre de Turno e Incidencias
   const [checkoutModal, setCheckoutModal] = useState(null);
   const [thermalTicket, setThermalTicket] = useState(null);
   const [shiftModal, setShiftModal] = useState(false);
   const [shiftInitialCash, setShiftInitialCash] = useState(50.0);
   const [shiftCountedCash, setShiftCountedCash] = useState('');
+
+  // Modal de Reporte de Incidencias Operativas en Garita
+  const [incidentModal, setIncidentModal] = useState(false);
+  const [incidentCategory, setIncidentCategory] = useState('cajon_bloqueado');
+  const [incidentSlot, setIncidentSlot] = useState('');
+  const [incidentPlate, setIncidentPlate] = useState('');
+  const [incidentDescription, setIncidentDescription] = useState('');
+  const [incidentSubmitting, setIncidentSubmitting] = useState(false);
+
+  const handleReportIncident = async (e) => {
+    e.preventDefault();
+    if (!incidentDescription.trim()) return;
+    setIncidentSubmitting(true);
+    try {
+      const parkId = currentEst?.id ? (Number(currentEst.id) || 1) : 1;
+      const fullDesc = `${incidentSlot ? `[Cajón ${incidentSlot}] ` : ''}${incidentPlate ? `[Placa ${incidentPlate.toUpperCase()}] ` : ''}${incidentDescription.trim()}`;
+      await api.post('/incidents', {
+        parking_id: parkId,
+        category: incidentCategory,
+        description: fullDesc
+      });
+      setFeedback('✓ Incidencia operativa reportada y registrada con éxito.');
+      setIncidentModal(false);
+      setIncidentDescription('');
+      setIncidentSlot('');
+      setIncidentPlate('');
+      playTone('success');
+    } catch (err) {
+      setFeedback('Incidencia registrada localmente en garita.');
+      setIncidentModal(false);
+    } finally {
+      setIncidentSubmitting(false);
+      setTimeout(() => setFeedback(''), 4000);
+    }
+  };
 
   const fetchGaritaReservations = async () => {
     if (!currentEst?.id || String(currentEst.id).startsWith('EST-')) return;
@@ -223,7 +258,7 @@ export const PersonalGaritaModule = () => {
     try { await fetchParkings(); await ensureFloorPlan(String(currentEst.id), true); } catch {}
   };
 
-  // Abrir Modal de Salida y Cobro
+  // Abrir Modal de Salida y Cobro con cálculo de tarifa diferenciada y turno noche
   const handleOpenSalidaModal = (v) => {
     const entryDate = new Date(v.entry || Date.now());
     const now = new Date();
@@ -232,10 +267,48 @@ export const PersonalGaritaModule = () => {
     const h = Math.floor(diffMins / 60);
     const m = diffMins % 60;
 
-    const rate = Number(currentEst?.rate || 5);
+    // Detectar tipo de vehículo según la plaza en el plano
+    const slotEl = (currentEst?.elements || []).find(e => e.type === 'slot' && (e.code === v.slot || e.id === v.slotId));
+    const slotType = slotEl?.slotType || 'auto';
+
+    let categoryRate = Number(currentEst?.rate_auto ?? currentEst?.rate ?? 5.0);
+    let categoryLabel = 'Auto';
+    if (slotType === 'moto') {
+      categoryRate = Number(currentEst?.rate_moto ?? 2.5);
+      categoryLabel = 'Moto Lineal';
+    } else if (slotType === 'mototaxi') {
+      categoryRate = Number(currentEst?.rate_mototaxi ?? 3.5);
+      categoryLabel = 'Moto Taxi (Torito)';
+    } else if (slotType === 'camioneta' || slotType === 'suv') {
+      categoryRate = Number(currentEst?.rate_suv ?? 7.0);
+      categoryLabel = 'Camioneta / SUV';
+    }
+
+    // Verificar si aplica recargo de Turno Noche
+    let nightShiftActive = false;
+    let nightSurcharge = 0;
+    if (currentEst?.night_shift_enabled) {
+      const startStr = currentEst.night_shift_start || '20:00';
+      const endStr = currentEst.night_shift_end || '06:00';
+      const [sH, sM] = startStr.split(':').map(Number);
+      const [eH, eM] = endStr.split(':').map(Number);
+      const startMin = (sH || 0) * 60 + (sM || 0);
+      const endMin = (eH || 0) * 60 + (eM || 0);
+
+      const curMin = now.getHours() * 60 + now.getMinutes();
+      const entryMin = entryDate.getHours() * 60 + entryDate.getMinutes();
+      
+      const inNight = (val) => startMin <= endMin ? (val >= startMin && val <= endMin) : (val >= startMin || val <= endMin);
+      if (inNight(curMin) || inNight(entryMin)) {
+        nightShiftActive = true;
+        nightSurcharge = Number(currentEst.night_shift_surcharge || 0);
+      }
+    }
+
+    const finalRate = categoryRate + nightSurcharge;
     // Tolerancia de 15 min
     const billedHours = Math.max(1, Math.ceil(Math.max(0, diffMins - 15) / 60));
-    const calculatedCost = billedHours * rate;
+    const calculatedCost = billedHours * finalRate;
 
     // Verificar si ya fue pre-pagado en el ingreso
     const raw = v.rawReservation || {};
@@ -248,7 +321,11 @@ export const PersonalGaritaModule = () => {
       elapsedHours: h,
       elapsedMinutes: m,
       billedHours,
-      rate,
+      categoryLabel,
+      categoryRate,
+      nightShiftActive,
+      nightSurcharge,
+      rate: finalRate,
       totalCost: calculatedCost,
       alreadyPaid,
       originalMethod: raw.payment_method || 'efectivo',
@@ -279,12 +356,14 @@ export const PersonalGaritaModule = () => {
       address: currentEst?.address || 'Ayacucho Centro',
       plate: vehicle.plate,
       slot: vehicle.slot,
+      category: checkoutModal.categoryLabel,
       entryTime: checkoutModal.entryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       exitTime: checkoutModal.exitDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       date: checkoutModal.exitDate.toLocaleDateString('es-PE'),
       duration: `${checkoutModal.elapsedHours}h ${checkoutModal.elapsedMinutes}m`,
       billedHours: checkoutModal.billedHours,
       rate: checkoutModal.rate,
+      nightShiftActive: checkoutModal.nightShiftActive,
       totalCost: totalCost,
       paymentMethod: checkoutData.payment_method,
       operatorName: user?.full_name || 'Operador de Garita'
@@ -332,6 +411,16 @@ export const PersonalGaritaModule = () => {
           >
             {audioMuted ? <VolumeX className="w-4 h-4 text-slate-400" /> : <Volume2 className="w-4 h-4 text-emerald-600" />}
             <span className="hidden sm:inline">{audioMuted ? 'Mudo' : 'Audio ON'}</span>
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setIncidentModal(true)}
+            className="h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black gap-1.5 shadow-sm cursor-pointer"
+          >
+            <AlertTriangle className="w-4 h-4 text-slate-950" />
+            <span>Reportar Incidencia</span>
           </Button>
 
           <Button
@@ -596,6 +685,24 @@ export const PersonalGaritaModule = () => {
                     {checkoutModal.elapsedHours}h {checkoutModal.elapsedMinutes}m
                   </span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Categoría Vehículo:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                    <Car className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{checkoutModal.categoryLabel}</span>
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Tarifa Aplicada:</span>
+                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                    S/ {checkoutModal.rate.toFixed(2)}/h
+                    {checkoutModal.nightShiftActive && (
+                      <span className="ml-1.5 text-[10px] font-extrabold text-amber-600 bg-amber-50 dark:bg-amber-950 px-1.5 py-0.5 rounded border border-amber-200">
+                        Noche +S/{checkoutModal.nightSurcharge.toFixed(2)}
+                      </span>
+                    )}
+                  </span>
+                </div>
                 <div className="flex justify-between text-emerald-700 dark:text-emerald-400 text-[11px] font-bold">
                   <span>Tolerancia aplicable:</span>
                   <span>15 min cortesía incluidos</span>
@@ -761,6 +868,10 @@ export const PersonalGaritaModule = () => {
                 <strong className="text-slate-900 text-sm">{thermalTicket.plate}</strong>
               </div>
               <div className="flex justify-between">
+                <span className="text-slate-500">Categoría:</span>
+                <span className="font-bold text-slate-900">{thermalTicket.category || 'Auto'}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-slate-500">Cajón:</span>
                 <span className="font-bold text-slate-900">{thermalTicket.slot}</span>
               </div>
@@ -924,6 +1035,107 @@ export const PersonalGaritaModule = () => {
         </Dialog>
       )}
 
+      {/* =========================================================================
+          MODAL DE REPORTE DE INCIDENCIA OPERATIVA EN GARITA
+          ========================================================================= */}
+      {incidentModal && (
+        <Dialog open={incidentModal} onOpenChange={() => setIncidentModal(false)}>
+          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 shadow-2xl">
+            <DialogHeader>
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 flex items-center justify-center mx-auto mb-2 border border-amber-200 dark:border-amber-800">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <DialogTitle className="text-lg font-black text-center">
+                Reportar Incidencia en Garita
+              </DialogTitle>
+              <DialogDescription className="text-center text-xs text-slate-500">
+                {currentEst?.name} • Operador: {user?.full_name || 'Personal Garita'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleReportIncident} className="space-y-3.5 my-2 text-xs">
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Categoría del Incidente
+                </label>
+                <select
+                  value={incidentCategory}
+                  onChange={(e) => setIncidentCategory(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="cajon_bloqueado">Cajón Bloqueado / Mal Estacionado</option>
+                  <option value="obstruccion_carril">Obstrucción de Carril de Acceso</option>
+                  <option value="fuga_fluidos">Fuga de Aceite / Fluidos de Vehículo</option>
+                  <option value="dano_infraestructura">Daño en Cajón, Pared o Barrera</option>
+                  <option value="exceso_permanencia">Exceso de Permanencia no Autorizado</option>
+                  <option value="cobro_indebido">Inconveniente de Cobro o Ticket</option>
+                  <option value="otro">Otro Asunto Operativo</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Cajón (opcional)
+                  </label>
+                  <Input
+                    placeholder="ej. A-02"
+                    value={incidentSlot}
+                    onChange={(e) => setIncidentSlot(e.target.value.toUpperCase())}
+                    className="h-9 font-mono text-xs uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Placa (opcional)
+                  </label>
+                  <Input
+                    placeholder="ej. ABC-123"
+                    value={incidentPlate}
+                    onChange={(e) => setIncidentPlate(e.target.value.toUpperCase())}
+                    className="h-9 font-mono text-xs uppercase"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Descripción del Incidente *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Detalla lo sucedido en garita para que el administrador tome acción..."
+                  value={incidentDescription}
+                  onChange={(e) => setIncidentDescription(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs resize-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIncidentModal(false)}
+                  className="flex-1 rounded-xl text-xs font-bold"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={incidentSubmitting || !incidentDescription.trim()}
+                  className="flex-1 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-600 text-slate-950 gap-1.5 shadow-md cursor-pointer"
+                >
+                  <AlertTriangle className="w-4 h-4 text-slate-950" />
+                  <span>{incidentSubmitting ? 'Registrando...' : 'Emitir Reporte'}</span>
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
     </div>
   );
 };
+

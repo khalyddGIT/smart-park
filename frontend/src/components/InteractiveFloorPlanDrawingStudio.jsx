@@ -54,12 +54,15 @@ import {
   ArrowUpDown,
   ArrowLeftRight,
   Box,
-  Truck
+  Truck,
+  Printer,
+  Hash
 } from 'lucide-react';
 
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 
 // ============================================================
 // ============================================================
@@ -697,6 +700,63 @@ export const InteractiveFloorPlanDrawingStudio = ({
       setSelectedId(null);
       setHasUnsavedChanges(true);
     }
+  };
+
+  const [showRenumberDialog, setShowRenumberDialog] = useState(false);
+  const [renumberPrefix, setRenumberPrefix] = useState('A-');
+
+  // Renumeración automática secuencial inteligente (top-to-bottom, left-to-right)
+  const handleAutoRenumberSlots = (customPrefix = 'A-') => {
+    const slots = elements.filter(e => e.type === 'slot');
+    if (slots.length === 0) {
+      setMessage('No hay plazas de estacionamiento en el plano para renumerar.');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    const sorted = [...slots].sort((a, b) => {
+      const rowA = Math.floor(a.y / 90);
+      const rowB = Math.floor(b.y / 90);
+      if (rowA !== rowB) return rowA - rowB;
+      return a.x - b.x;
+    });
+
+    const codeMap = new Map();
+    sorted.forEach((s, idx) => {
+      codeMap.set(s.id, `${customPrefix}${String(idx + 1).padStart(2, '0')}`);
+    });
+
+    const updated = elements.map(el => {
+      if (el.type === 'slot' && codeMap.has(el.id)) {
+        return { ...el, code: codeMap.get(el.id) };
+      }
+      return el;
+    });
+
+    setElements(updated);
+    pushHistory(updated);
+    setMessage(`✓ ${slots.length} plazas renumeradas correlativamente con prefijo "${customPrefix}".`);
+    setTimeout(() => setMessage(''), 3500);
+  };
+
+  // Alternar masivamente cubiertas (techado/aire libre)
+  const handleToggleAllShaded = () => {
+    const slots = elements.filter(e => e.type === 'slot');
+    if (slots.length === 0) return;
+    const allShaded = slots.every(s => !!s.shaded);
+    const targetState = !allShaded;
+
+    const updated = elements.map(el => {
+      if (el.type === 'slot') {
+        return { ...el, shaded: targetState };
+      }
+      return el;
+    });
+
+    setElements(updated);
+    pushHistory(updated);
+    setMessage(targetState ? '✓ Todas las plazas marcadas como TECHADAS.' : '✓ Plazas marcadas como AL AIRE LIBRE.');
+    setTimeout(() => setMessage(''), 3500);
   };
 
   // Guardar plano con auto-saneamiento y deduplicación de códigos
@@ -1496,6 +1556,17 @@ export const InteractiveFloorPlanDrawingStudio = ({
             </button>
           </div>
 
+          {/* Imprimir / Exportar Plano */}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 shrink-0 cursor-pointer transition"
+            title="Imprimir o exportar plano CAD para garita"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-400" />
+            <span className="hidden sm:inline">Imprimir Plano</span>
+          </button>
+
           {/* Guardar Cambios */}
           {!readOnly && (
             <Button 
@@ -1608,6 +1679,26 @@ export const InteractiveFloorPlanDrawingStudio = ({
             >
               <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
               <span>+ Fila</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowRenumberDialog(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 text-purple-300 hover:bg-purple-950/60 hover:text-white border border-purple-800/60 transition cursor-pointer shadow-xs"
+              title="Renumerar secuencialmente todas las plazas (ej. A-01, A-02...)"
+            >
+              <Hash className="w-3.5 h-3.5 text-purple-400" />
+              <span>Renumerar</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToggleAllShaded}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 text-amber-300 hover:bg-amber-950/60 hover:text-white border border-amber-800/60 transition cursor-pointer shadow-xs"
+              title="Alternar cubierta techada para todas las plazas"
+            >
+              <Umbrella className="w-3.5 h-3.5 text-amber-400" />
+              <span>Cubiertas</span>
             </button>
 
             <div className="h-5 w-px bg-slate-800 mx-0.5" />
@@ -2863,6 +2954,76 @@ export const InteractiveFloorPlanDrawingStudio = ({
         confirmText="Sí, eliminar"
         onConfirm={confirmDeleteSelected}
       />
+
+      {/* Modal de Renumeración Rápida / Secuencial */}
+      {showRenumberDialog && (
+        <Dialog open={showRenumberDialog} onOpenChange={setShowRenumberDialog}>
+          <DialogContent className="max-w-sm rounded-3xl p-5 bg-slate-900 text-white border border-slate-800 shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-sm font-black flex items-center gap-2">
+                <Hash className="w-4 h-4 text-purple-400" />
+                <span>Renumerar Plazas Secuencialmente</span>
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-400">
+                Ordena todas las plazas de arriba a abajo y de izquierda a derecha asignando códigos correlativos.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 my-2 text-xs">
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                  Prefijo de Plaza
+                </label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {['A-', 'B-', 'C-', 'P1-', 'N-'].map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setRenumberPrefix(p)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition cursor-pointer ${
+                        renumberPrefix === p ? 'bg-purple-600 text-white border-purple-500' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <Input
+                  value={renumberPrefix}
+                  onChange={(e) => setRenumberPrefix(e.target.value.toUpperCase())}
+                  placeholder="ej. A- o SECTOR-"
+                  className="mt-2 h-9 font-mono font-bold text-xs bg-slate-950 border-slate-800 text-white"
+                />
+              </div>
+
+              <p className="text-[11px] text-slate-400 bg-slate-950 p-2.5 rounded-xl border border-slate-800 font-mono">
+                Ejemplo: {renumberPrefix || 'A-'}01, {renumberPrefix || 'A-'}02, {renumberPrefix || 'A-'}03 ...
+              </p>
+
+              <div className="flex items-center gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowRenumberDialog(false)}
+                  className="flex-1 rounded-xl text-xs font-bold bg-slate-800 border-slate-700 text-slate-300"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    handleAutoRenumberSlots(renumberPrefix || 'A-');
+                    setShowRenumberDialog(false);
+                  }}
+                  className="flex-1 rounded-xl text-xs font-black bg-purple-600 hover:bg-purple-500 text-white shadow-md cursor-pointer"
+                >
+                  Aplicar Códigos
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

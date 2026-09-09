@@ -1862,17 +1862,26 @@ export const EstablishmentProvider = ({ children }) => {
   };
 
   // Check-Out de garita: PUT /reservations/{id}/check-out → status completed
-  const checkOutReservation = async (code) => {
+  const checkOutReservation = async (code, checkoutData = {}) => {
     const target = reservations.find(r => r.code === code || String(r.id) === String(code));
     if (!target) return { ok: false, message: 'Reserva no encontrada.' };
     if (!isBackendReservation(target)) {
       return { ok: false, message: 'Esta reserva aún no está registrada en el servidor; no se puede registrar la salida.' };
     }
     try {
-      await api.put(`/reservations/${target.id}/check-out`);
+      const payload = {};
+      if (checkoutData.payment_method) payload.payment_method = checkoutData.payment_method;
+      if (checkoutData.amount_paid !== undefined && checkoutData.amount_paid !== null) {
+        payload.amount_paid = Number(checkoutData.amount_paid);
+      }
+      const res = await api.put(`/reservations/${target.id}/check-out`, payload);
       await refreshMyReservations();
       if (target.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
-      return { ok: true, message: `Salida registrada para ${target.plate}. Cajón ${target.slot} liberado.` };
+      return { 
+        ok: true, 
+        message: `Salida registrada para ${target.plate}. Cajón ${target.slot} liberado.`,
+        data: res.data
+      };
     } catch (e) {
       const s = e?.response?.status;
       return {

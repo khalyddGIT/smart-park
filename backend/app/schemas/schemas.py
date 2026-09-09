@@ -493,6 +493,8 @@ class ReservationResponse(BaseModel):
     is_night_shift: Optional[bool] = False
     prepaid: Optional[bool] = False
     is_open_stay: Optional[bool] = False
+    payment_method: Optional[str] = "efectivo"
+    amount_paid: Optional[float] = 0.0
 
     class Config:
         from_attributes = True
@@ -504,6 +506,10 @@ class ReservationResponse(BaseModel):
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat()
+
+class ReservationCheckOut(BaseModel):
+    payment_method: Optional[str] = "efectivo"
+    amount_paid: Optional[float] = None
 
 # ==========================================
 # 7. SCHEMAS DE RESEÑAS & CALIFICACIONES

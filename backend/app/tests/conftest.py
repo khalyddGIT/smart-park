@@ -69,6 +69,8 @@ def _ensure_schema():
                 ("reservas", "is_night_shift", "BOOLEAN DEFAULT FALSE"),
                 ("reservas", "prepaid", "BOOLEAN DEFAULT FALSE"),
                 ("reservas", "is_open_stay", "BOOLEAN DEFAULT FALSE"),
+                ("reservas", "payment_method", "VARCHAR(50) DEFAULT 'efectivo'"),
+                ("reservas", "amount_paid", "FLOAT DEFAULT 0.0"),
             ]
             if str(engine.url).startswith("sqlite"):
                 for tbl, col, decl in lite_adds:

@@ -198,6 +198,8 @@ class Reservation(Base):
     is_night_shift = Column(Boolean, default=False, nullable=True)
     prepaid = Column(Boolean, default=False, nullable=True)
     is_open_stay = Column(Boolean, default=False, nullable=True)
+    payment_method = Column(String(50), default="efectivo", nullable=True)
+    amount_paid = Column(Float, default=0.0, nullable=True)
 
     user = relationship("User", back_populates="reservations")
     parking = relationship("Parking")

@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
 import uuid
+import math
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import Reservation, Slot, Parking, Payment
-from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationResponse
+from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationResponse, ReservationCheckOut
 from app.core.security import get_current_user, require_role
 from app.core.realtime import realtime
 from app.core.cache import cache_delete
@@ -255,6 +256,8 @@ async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
         "customer_email": user.email if user else None,
         "billing_unit": getattr(reservation, "billing_unit", "hour") or "hour",
         "estimated_minutes": getattr(reservation, "estimated_minutes", 60) or 60,
+        "payment_method": getattr(reservation, "payment_method", "efectivo") or "efectivo",
+        "amount_paid": float(getattr(reservation, "amount_paid", 0.0) or 0.0),
     }
 
 @router.get("/{reservation_id}", response_model=ReservationResponse)
@@ -622,6 +625,7 @@ async def check_in_reservation(
 @router.put("/{reservation_id}/check-out", response_model=ReservationResponse)
 async def check_out_reservation(
     reservation_id: int, 
+    checkout_in: Optional[ReservationCheckOut] = None,
     db: AsyncSession = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ):
@@ -637,8 +641,33 @@ async def check_out_reservation(
     if reservation.status != "active":
         raise HTTPException(status_code=400, detail=f"Solo se puede hacer check-out de reservas activas (estado actual: {reservation.status})")
 
+    now = datetime.utcnow()
     reservation.status = "completed"
-    reservation.actual_exit = datetime.utcnow()
+    reservation.actual_exit = now
+
+    # Reconciliación de costo de estadía si no se especificó monto fijo
+    if checkout_in and checkout_in.amount_paid is not None:
+        reservation.total_cost = float(checkout_in.amount_paid)
+        reservation.amount_paid = float(checkout_in.amount_paid)
+    else:
+        # Calcular según tiempo real y tarifa del parking
+        p_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
+        parking = p_res.scalars().first()
+        rate = float(parking.hourly_rate or 5.0) if parking else 5.0
+
+        entry_time = reservation.actual_entry or reservation.start_time or now
+        diff_seconds = max(0, (now - entry_time).total_seconds())
+        # Tolerancia de cortesía de 15 minutos: si se pasa de 60 min pero menos de 75 min, cuenta como 1 hora
+        tol_sec = (reservation.tolerance_minutes or 15) * 60
+        billed_hours = max(1, math.ceil(max(0, diff_seconds - tol_sec) / 3600))
+        calculated_cost = round(rate * billed_hours, 2)
+        if getattr(reservation, "is_open_stay", False) or calculated_cost > (reservation.total_cost or 0):
+            reservation.total_cost = calculated_cost
+        if not getattr(reservation, "amount_paid", None):
+            reservation.amount_paid = reservation.total_cost
+
+    if checkout_in and checkout_in.payment_method:
+        reservation.payment_method = checkout_in.payment_method
 
     # Liberar el cajón al terminar la estancia
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))

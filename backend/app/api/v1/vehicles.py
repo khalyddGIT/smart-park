@@ -132,6 +132,7 @@ async def create_vehicle(vehicle_in: VehicleCreate, db: AsyncSession = Depends(g
         model=vehicle_in.model,
         color=vehicle_in.color,
         year=vehicle_in.year or "2023",
+        soat_expiry=vehicle_in.soat_expiry,
         notes=vehicle_in.notes or "",
         image_url=vehicle_in.image_url
     )

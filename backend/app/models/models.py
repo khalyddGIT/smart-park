@@ -56,6 +56,7 @@ class Vehicle(Base):
     model = Column(String(50), nullable=True)
     color = Column(String(30), nullable=True)
     year = Column(String(10), nullable=True, default="2023")
+    soat_expiry = Column(String(20), nullable=True)
     notes = Column(Text, nullable=True)
     image_url = Column(Text, nullable=True)
 

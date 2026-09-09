@@ -27,7 +27,7 @@ import { BrandLogo } from './BrandLogo';
 import { TermsAndConditionsModal } from './TermsAndConditionsModal';
 
 export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMode = 'login' }) => {
-  const { user, loginWithGoogle, loginWithEmail, registerUser } = useAuth();
+  const { user, loginWithGoogle, loginWithEmail, loginWithPin, registerUser } = useAuth();
   const { createAffiliationRequest } = useEstablishments();
 
   // Cerrar modal automáticamente si ya existe una sesión de usuario activa
@@ -37,7 +37,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
     }
   }, [user, isModal, onClose]);
 
-  // 'login' | 'register' | 'affiliation' | 'forgot_password'
+  // 'login' | 'pin_express' | 'register' | 'affiliation' | 'forgot_password'
   const [authMode, setAuthMode] = useState(defaultAuthMode);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
@@ -49,6 +49,11 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
   // Estados Formulario Login
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  // Estados Formulario PIN Express (Garita / Operadores)
+  const [pinIdentifier, setPinIdentifier] = useState('');
+  const [pinCode, setPinCode] = useState('');
+  const [isPinSubmitting, setIsPinSubmitting] = useState(false);
 
   // Estados Formulario Registro Conductor
   const [driverName, setDriverName] = useState('');
@@ -80,6 +85,28 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
     loginWithEmail(loginEmail.trim(), loginPassword).catch(err => {
       setErrorMsg(err?.message || 'No se pudo iniciar sesión');
     });
+  };
+
+  // Submit PIN Express (Garita / Operadores)
+  const handlePinSubmit = async (e) => {
+    e.preventDefault();
+    if (!pinIdentifier.trim()) {
+      setErrorMsg('Ingresa tu DNI o Correo registrado');
+      return;
+    }
+    if (!pinCode.trim()) {
+      setErrorMsg('Ingresa tu PIN de seguridad (4-6 dígitos)');
+      return;
+    }
+    setErrorMsg('');
+    setIsPinSubmitting(true);
+    try {
+      await loginWithPin(pinIdentifier.trim(), pinCode.trim());
+    } catch (err) {
+      setErrorMsg(err?.message || 'PIN o usuario incorrecto');
+    } finally {
+      setIsPinSubmitting(false);
+    }
   };
 
   // Submit Registro Conductor
@@ -164,24 +191,37 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       <main className="w-full max-w-[440px] my-auto relative z-10 py-3">
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl shadow-slate-200/60 dark:shadow-black/50 space-y-5">
           
-          {/* Tabs principales para Conductor/Usuario: Iniciar Sesión | Crear Cuenta */}
-          {(authMode === 'login' || authMode === 'register') && (
-            <div className="grid grid-cols-2 p-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 text-xs font-bold shadow-inner">
+          {/* Tabs principales: Correo | ⚡ PIN Garita | Crear Cuenta */}
+          {(authMode === 'login' || authMode === 'pin_express' || authMode === 'register') && (
+            <div className="grid grid-cols-3 p-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 text-xs font-bold shadow-inner gap-1">
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
-                className={`py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center truncate ${
                   authMode === 'login'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md font-extrabold scale-[1.02]'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
                 }`}
               >
-                Iniciar Sesión
+                Correo
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('pin_express'); setErrorMsg(''); }}
+                className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1 truncate ${
+                  authMode === 'pin_express'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-md font-extrabold scale-[1.02]'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
+                }`}
+                title="Acceso Rápido para Garita y Operadores con PIN de 4-6 dígitos"
+              >
+                <KeyRound className="w-3.5 h-3.5 shrink-0" />
+                <span>PIN Garita</span>
               </button>
               <button
                 type="button"
                 onClick={() => { setAuthMode('register'); setErrorMsg(''); }}
-                className={`py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center truncate ${
                   authMode === 'register'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md font-extrabold scale-[1.02]'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
@@ -289,6 +329,78 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                 </Button>
               </form>
 
+            </div>
+          )}
+
+          {/* =========================================================================
+              MODO PIN EXPRESS (GARITA / OPERADORES / PERSONAL)
+              ========================================================================= */}
+          {authMode === 'pin_express' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="text-center pb-1">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mx-auto mb-1.5">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">Acceso Rápido Garita con PIN</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Ingreso veloz para operadores y personal de turno</p>
+              </div>
+
+              <form onSubmit={handlePinSubmit} className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">DNI o Correo Registrado *</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
+                      type="text"
+                      required
+                      placeholder="Ej. 70889900 o staff@smartpark.com"
+                      value={pinIdentifier}
+                      onChange={(e) => setPinIdentifier(e.target.value)}
+                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10.5 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">PIN de Seguridad (4 - 6 dígitos) *</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      maxLength={6}
+                      pattern="[0-9]*"
+                      inputMode="numeric"
+                      placeholder="••••"
+                      value={pinCode}
+                      onChange={(e) => setPinCode(e.target.value.replace(/\D/g, ''))}
+                      className="pl-10 pr-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-base tracking-widest font-mono text-center h-10.5 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">Código numérico personal configurado en el módulo de personal.</p>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isPinSubmitting}
+                  className="w-full h-10.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/25 mt-1 transition cursor-pointer"
+                >
+                  <span>{isPinSubmitting ? 'Verificando PIN...' : 'Ingresar a Garita'}</span>
+                  <ArrowRight className="w-4 h-4 ml-1.5 text-white" />
+                </Button>
+              </form>
+
+              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex items-start space-x-2">
+                <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <span>¿Olvidaste tu PIN? Solicita su restablecimiento al Administrador de tu sede en el panel de Personal.</span>
+              </div>
             </div>
           )}
 

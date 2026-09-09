@@ -98,6 +98,7 @@ class VehicleBase(BaseModel):
     model: Optional[str] = None
     color: Optional[str] = None
     year: Optional[str] = "2023"
+    soat_expiry: Optional[str] = None
     notes: Optional[str] = None
     image_url: Optional[str] = None
 
@@ -127,6 +128,7 @@ class VehicleUpdate(BaseModel):
     model: Optional[str] = None
     color: Optional[str] = None
     year: Optional[str] = None
+    soat_expiry: Optional[str] = None
     notes: Optional[str] = None
     image_url: Optional[str] = None
 

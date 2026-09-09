@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { setAccessToken, getAccessToken, register as apiRegister, login as apiLogin, googleAuth as apiGoogleAuth } from '../services/api';
+import { setAccessToken, getAccessToken, register as apiRegister, login as apiLogin, googleAuth as apiGoogleAuth, loginWithPinApi } from '../services/api';
 import api from '../services/api';
 
 const AuthContext = createContext();
@@ -280,6 +280,35 @@ export const AuthProvider = ({ children }) => {
     return newAdmin;
   };
 
+  // Autenticación rápida por PIN Express (Garita / Operadores / Administradores)
+  const loginWithPin = async (identifier, pin) => {
+    const cleanId = (identifier || '').trim();
+    const cleanPin = (pin || '').trim();
+    if (!cleanId) throw new Error('Ingresa tu DNI o Correo');
+    if (!cleanPin) throw new Error('Ingresa tu PIN de seguridad (4-6 dígitos)');
+
+    const data = await loginWithPinApi(cleanId, cleanPin);
+    if (data?.access_token && data?.user) {
+      setAccessToken(data.access_token);
+      const serverUser = data.user;
+      const u = {
+        id: serverUser.id,
+        name: serverUser.full_name,
+        email: serverUser.email,
+        phone: serverUser.phone,
+        avatar: serverUser.avatar_url || null,
+        role: serverUser.role || 'local',
+        parking_id: serverUser.parking_id || null,
+        isGoogleAuth: false
+      };
+      setUser(u);
+      setRole(u.role);
+      setPinVerified(true);
+      return u;
+    }
+    throw new Error('Respuesta inválida del servidor al validar PIN');
+  };
+
   // Cerrar Sesión Definitivo
   const logout = () => {
     // Revocar el token en el servidor (blacklist Redis) y borrar la cookie HttpOnly en el navegador
@@ -301,6 +330,7 @@ export const AuthProvider = ({ children }) => {
       setPinVerified,
       loginWithGoogle,
       loginWithEmail,
+      loginWithPin,
       registerUser,
       registerEstablishmentAdmin,
       logout,

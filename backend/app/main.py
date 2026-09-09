@@ -93,6 +93,7 @@ async def startup_db():
                 ("usuarios", "avatar_url", "TEXT"),
                 ("vehiculos", "image_url", "TEXT"),
                 ("vehiculos", "year", "VARCHAR(10) DEFAULT '2023'"),
+                ("vehiculos", "soat_expiry", "VARCHAR(20)"),
                 ("vehiculos", "notes", "TEXT"),
                 ("reservas", "tolerance_minutes", "INTEGER DEFAULT 15"),
                 ("reservas", "vehicle_type", "VARCHAR(20) DEFAULT 'auto'"),

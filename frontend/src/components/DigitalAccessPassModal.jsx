@@ -186,7 +186,13 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     const svgEl = qrRef.current.querySelector('svg');
     if (!svgEl) return;
 
-    const svgData = new XMLSerializer().serializeToString(svgEl);
+    let svgData = new XMLSerializer().serializeToString(svgEl);
+    if (!svgData.includes('xmlns="http://www.w3.org/2000/svg"') && !svgData.includes("xmlns='http://www.w3.org/2000/svg'")) {
+      svgData = svgData.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+    if (!svgData.includes('width=')) {
+      svgData = svgData.replace('<svg', '<svg width="200" height="200"');
+    }
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();

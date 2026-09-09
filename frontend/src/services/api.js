@@ -52,6 +52,7 @@ export const login = (data) => api.post('/auth/login', data).then(r => r.data);
 export const logoutApi = () => api.post('/auth/logout').then(r => r.data);
 export const googleAuth = (data) => api.post('/auth/google', data).then(r => r.data);
 export const verifyPinApi = (pin) => api.post('/auth/verify-pin', { pin }).then(r => r.data);
+export const loginWithPinApi = (identifier, pin) => api.post('/auth/login-pin', { identifier, pin }).then(r => r.data);
 
 // Vehicles (requiere JWT)
 export const listVehicles = () => api.get('/vehicles').then(r => r.data);

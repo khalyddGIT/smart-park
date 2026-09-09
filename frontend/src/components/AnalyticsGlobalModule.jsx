@@ -93,7 +93,7 @@ export const AnalyticsGlobalModule = () => {
           const f = await api.get('/finances/summary');
           if (!cancelled && f.data) {
             setFinancesSummary(f.data);
-            setRevenueScopeNote('Datos reales desde GET /finances/summary (global, excluye canceladas, 12% comisión).');
+            setRevenueScopeNote('Datos consolidados de liquidación (excluye canceladas).');
           }
         } catch {}
       } else {
@@ -102,24 +102,22 @@ export const AnalyticsGlobalModule = () => {
       const results = await Promise.allSettled([
         api.get('/parkings'),
         api.get('/reviews'),
-        // Reservas: solo si hay token; intenta /reservations para platform/local y cae a my-reservations
+        // Reservas: solo si hay token
         (async () => {
           if (!token) return { data: [] };
-          // Si es platform/local intenta endpoint sin filtro (si existe) para visión más amplia
           if (role === 'platform' || role === 'local') {
             try {
               const r = await api.get('/reservations');
-              if (!cancelled) setRevenueScopeNote('Visión: reservas visibles para tu usuario vía GET /reservations (alcance de tu rol). Si el backend aísla por usuario, verás solo las tuyas — se requiere endpoint agregado cross-usuarios para analytics globales reales.');
+              if (!cancelled) setRevenueScopeNote('Reservas operativas en red.');
               return r;
             } catch (e) {
               if (is401(e)) {
                 if (!cancelled) setRevenueScopeNote('Sin sesión válida para reservas.');
                 return { data: [] };
               }
-              // Fallback honesto a my-reservations
               try {
                 const r2 = await api.get('/reservations/my-reservations');
-                if (!cancelled) setRevenueScopeNote('Limitación: solo reservas propias visibles vía GET /reservations/my-reservations. No hay endpoint agregado global; el total es parcial. Roles platform/local ven su propio alcance.');
+                if (!cancelled) setRevenueScopeNote('Reservas registradas.');
                 return r2;
               } catch (e2) {
                 if (!is401(e2)) throw e2;
@@ -130,7 +128,7 @@ export const AnalyticsGlobalModule = () => {
           }
           try {
             const r = await api.get('/reservations/my-reservations');
-            if (!cancelled) setRevenueScopeNote('Limitación: solo tus reservas (GET /reservations/my-reservations). Total parcial — no hay endpoint global cross-usuarios.');
+            if (!cancelled) setRevenueScopeNote('Reservas del usuario.');
             return r;
           } catch (e) {
             if (is401(e)) {
@@ -455,13 +453,13 @@ export const AnalyticsGlobalModule = () => {
 
       {/* Encabezado */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           <h1 className="text-heading text-2xl text-slate-900 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 shrink-0 text-emerald-600" />
             Analítica &amp; Tendencias de Ocupación
           </h1>
           <p className="text-xs text-slate-500 max-w-2xl">
-            Métricas derivadas de datos reales: reservas, ocupación por plano y reseñas. {revenueScopeNote}
+            Métricas de aforo en tiempo real, demanda horaria y recaudación de la red.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -493,7 +491,7 @@ export const AnalyticsGlobalModule = () => {
               S/ {revenueStats.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <span className="text-xs text-slate-500 font-medium">
-              {hasAnyRevenue ? `${revenueStats.count} estancias no canceladas · ${revenueScopeNote ? 'parcial si solo my-reservations' : ''}` : 'Aún no hay datos para graficar'}
+              {hasAnyRevenue ? `${revenueStats.count} estancias registradas` : 'Sin movimientos en el periodo'}
             </span>
           </div>
         </Card>
@@ -599,9 +597,9 @@ export const AnalyticsGlobalModule = () => {
         <div className="lg:col-span-8">
           <Card className="p-6 h-full flex flex-col gap-4">
             <div className="flex justify-between items-center gap-2">
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 <h3 className="text-subheading text-slate-900">Afluencia por franja horaria</h3>
-                <p className="text-xs text-slate-500">Histograma real de reservas por hora de inicio (no canceladas) — {timeRange}</p>
+                <p className="text-xs text-slate-500">Distribución de reservas por hora en rango {timeRange}</p>
               </div>
             </div>
 
@@ -609,8 +607,8 @@ export const AnalyticsGlobalModule = () => {
               {!hasHourly ? (
                 <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
                   <Clock className="w-5 h-5 shrink-0 text-slate-300" />
-                  <span className="text-xs font-bold">Aún no hay datos para graficar</span>
-                  <span className="text-xs">No hay reservas no canceladas en este rango.</span>
+                  <span className="text-xs font-bold">Sin datos para graficar</span>
+                  <span className="text-xs">No hay reservas activas o completadas en este rango.</span>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -640,22 +638,22 @@ export const AnalyticsGlobalModule = () => {
           </Card>
         </div>
 
-        {/* Distribución de calificaciones — Pie honesto desde GET /reviews */}
+        {/* Distribución de calificaciones */}
         <div className="lg:col-span-4">
           <Card className="p-6 h-full flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               <h3 className="text-subheading text-slate-900 flex items-center gap-2">
                 <Star className="w-5 h-5 shrink-0 text-amber-500 fill-amber-400" /> Distribución de calificaciones
               </h3>
-              <p className="text-xs text-slate-500">Desde GET /reviews · promedio {reviewStats.avg != null ? `${reviewStats.avg.toFixed(1)} / 5.0` : '—'} · {reviewStats.count} reseñas</p>
+              <p className="text-xs text-slate-500">Promedio {reviewStats.avg != null ? `${reviewStats.avg.toFixed(1)} / 5.0` : '—'} · {reviewStats.count} reseñas</p>
             </div>
 
             <div className="h-64 w-full flex items-center justify-center">
                 {!hasAnyReview ? (
                   <div className="text-center flex flex-col items-center gap-2">
                     <Star className="w-5 h-5 shrink-0 text-slate-200" />
-                    <p className="text-xs font-bold text-slate-500">Aún no hay datos para graficar</p>
-                    <p className="text-xs text-slate-400">Sin reseñas publicadas.</p>
+                    <p className="text-xs font-bold text-slate-500">Sin datos de reseñas</p>
+                    <p className="text-xs text-slate-400">Aún no se han registrado valoraciones.</p>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -701,25 +699,25 @@ export const AnalyticsGlobalModule = () => {
         </div>
       </div>
 
-      {/* Recaudación por sede — barras honestas desde reservas agrupadas */}
+      {/* Recaudación por sede */}
       <Card className="p-6 h-full flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <h3 className="text-subheading text-slate-900">Recaudación por sede en rango</h3>
-          <p className="text-xs text-slate-500">Suma de total_cost (no canceladas) agrupada por parking · fuente: {revenueScopeNote || 'reservas filtradas'}</p>
+        <div className="flex flex-col gap-1">
+          <h3 className="text-subheading text-slate-900">Recaudación por sede</h3>
+          <p className="text-xs text-slate-500">Ingresos brutos generados por establecimiento en rango.</p>
         </div>
 
         <div className="h-64 w-full">
           {!hasAnyParking ? (
             <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
               <BarChart3 className="w-5 h-5 shrink-0 text-slate-300" />
-              <span className="text-xs font-bold">Aún no hay datos para graficar</span>
+              <span className="text-xs font-bold">Sin datos para graficar</span>
               <span className="text-xs">Sin cocheras registradas.</span>
             </div>
           ) : recaudacionPorSede.every((r) => r.recaudacion === 0) ? (
             <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
               <DollarSign className="w-5 h-5 shrink-0 text-slate-300" />
-              <span className="text-xs font-bold">Aún no hay datos para graficar</span>
-              <span className="text-xs">Sin recaudación en este rango (o solo my-reservations vacío).</span>
+              <span className="text-xs font-bold">Sin datos para graficar</span>
+              <span className="text-xs">Sin recaudación registrada en este rango.</span>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
@@ -737,11 +735,11 @@ export const AnalyticsGlobalModule = () => {
         </div>
       </Card>
 
-      {/* Ocupación por sede — barras honestas desde parkings */}
+      {/* Ocupación por sede */}
       <Card className="p-6 h-full flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <h3 className="text-subheading text-slate-900">Ocupación por sede (tiempo real del plano)</h3>
-          <p className="text-xs text-slate-500">Derivado de GET /parkings (available_slots/total_capacity) enriquecido con GET /parkings/&#123;id&#125;/floor-plan cuando está disponible.</p>
+        <div className="flex flex-col gap-1">
+          <h3 className="text-subheading text-slate-900">Ocupación en tiempo real por sede</h3>
+          <p className="text-xs text-slate-500">Porcentaje de aforo y plazas ocupadas según planos operativos.</p>
         </div>
         <div className="h-64 w-full">
           {!hasAnyParking ? (

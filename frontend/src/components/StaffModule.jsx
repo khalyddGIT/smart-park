@@ -410,10 +410,10 @@ export const StaffModule = () => {
             </div>
             <div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white">
-                Gestión de Personal & Credenciales de Trabajadores
+                Personal & Accesos
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Crea operadores de garita, asigna turnos y configura sus credenciales de usuario (correo y contraseña) para que inicien sesión.
+                Operadores de garita, turnos y credenciales de acceso.
               </p>
             </div>
           </div>
@@ -614,7 +614,7 @@ export const StaffModule = () => {
                       </div>
                     ) : (
                       <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">
-                        Este trabajador no tiene credenciales configuradas para iniciar sesión en la garita.
+                        Sin credenciales de acceso configuradas.
                       </p>
                     )}
                   </div>
@@ -667,10 +667,10 @@ export const StaffModule = () => {
           <DialogHeader className="border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2 text-emerald-700">
               <UserCheck className="w-5 h-5" />
-              <DialogTitle className="text-lg font-black text-slate-900">Registrar Nuevo Colaborador</DialogTitle>
+              <DialogTitle className="text-lg font-black text-slate-900">Nuevo Colaborador</DialogTitle>
             </div>
             <DialogDescription className="text-xs text-slate-500">
-              Ingresa los datos personales y define sus credenciales para que ingrese al sistema.
+              Datos personales y credenciales de acceso.
             </DialogDescription>
           </DialogHeader>
 
@@ -777,14 +777,14 @@ export const StaffModule = () => {
               <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                 <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4" />
-                  <span>2. Credenciales de Ingreso al Sistema</span>
+                  <span>Credenciales de Acceso</span>
                 </span>
-                <span className="text-[10px] text-slate-400">Permite login en Garita</span>
+                <span className="text-[10px] text-slate-400">Acceso Garita</span>
               </div>
 
               <div>
                 <label className="text-[11px] font-bold text-slate-300 block mb-1">
-                  Correo Electrónico / Usuario de Acceso *
+                  Correo de acceso *
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -801,7 +801,7 @@ export const StaffModule = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[11px] font-bold text-slate-300">
-                    Contraseña de Acceso * (mínimo 8 caracteres)
+                    Contraseña * (mín. 8 caracteres)
                   </label>
                   <button
                     type="button"
@@ -809,7 +809,7 @@ export const StaffModule = () => {
                     className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-bold cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
-                    <span>Generar Clave Segura</span>
+                    <span>Generar</span>
                   </button>
                 </div>
 
@@ -833,7 +833,7 @@ export const StaffModule = () => {
               </div>
 
               <div className="pt-1">
-                <label className="text-[11px] font-bold text-slate-300 block mb-1">PIN Garita / ANPR (4 dígitos)</label>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">PIN rápido (4 dígitos)</label>
                 <Input 
                   type="password" 
                   maxLength={4} 
@@ -846,7 +846,7 @@ export const StaffModule = () => {
 
               <p className="text-[10px] text-slate-400 leading-relaxed pt-1 flex items-start gap-1.5">
                 <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                <span>El colaborador podrá ingresar con su correo y contraseña o rápidamente con su DNI y PIN Express de 4 dígitos en caseta.</span>
+                <span>Acceso con correo/clave o DNI/PIN.</span>
               </p>
             </div>
 
@@ -855,7 +855,7 @@ export const StaffModule = () => {
               disabled={isSubmitting}
               className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Registrando...' : 'Registrar Colaborador y Habilitar Acceso'}
+              {isSubmitting ? 'Guardando...' : 'Guardar Colaborador'}
             </Button>
           </form>
         </DialogContent>
@@ -1010,7 +1010,7 @@ export const StaffModule = () => {
               type="submit" 
               className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
             >
-              Guardar Todos los Cambios
+              Guardar Cambios
             </Button>
           </form>
         </DialogContent>
@@ -1036,7 +1036,7 @@ export const StaffModule = () => {
           <form onSubmit={handleSaveCreds} className="space-y-4 pt-3">
             <div>
               <label className="text-xs font-bold text-slate-700 block mb-1">
-                Correo Electrónico / Usuario de Acceso *
+                Correo de acceso *
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

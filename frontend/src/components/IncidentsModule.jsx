@@ -328,14 +328,12 @@ export const IncidentsModule = () => {
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              {role === 'user' ? 'Reportar Incidencias & Asistencia' : 'Gestión de Incidencias & Asistencia'}
+              {role === 'user' ? 'Incidencias & Soporte' : 'Incidencias Operativas'}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {role === 'user'
-                ? 'Reporta anomalías en tus estancias con evidencia fotográfica y sigue su resolución.'
-                : isAdmin
-                ? `Bitácora central de atención operativa${user?.name ? ` • Operador: ${user.name}` : ''}.`
-                : 'Bitácora de atención operativa con captura fotográfica y seguimiento.'}
+                ? 'Reporta anomalías en tus estancias con evidencia fotográfica.'
+                : 'Bitácora de atención operativa con evidencia fotográfica.'}
             </p>
           </div>
         </div>
@@ -350,7 +348,7 @@ export const IncidentsModule = () => {
           className="gap-2 font-bold cursor-pointer"
         >
           <Plus className="w-5 h-5 shrink-0" />
-          <span>{role === 'user' ? 'Reportar Problema' : 'Registrar Incidencia'}</span>
+          <span>Nueva Incidencia</span>
         </Button>
       </div>
 
@@ -368,7 +366,6 @@ export const IncidentsModule = () => {
             <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">{totalIncidents}</span>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Histórico</span>
           </div>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Acumulado del sistema</p>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
@@ -383,7 +380,6 @@ export const IncidentsModule = () => {
             <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-rose-600 dark:text-rose-400">{reportedCount}</span>
             <span className="text-xs text-rose-700 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800/80">Por atender</span>
           </div>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">En cola de resolución</p>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
@@ -398,7 +394,6 @@ export const IncidentsModule = () => {
             <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{resolvedCount}</span>
             <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80">Concluidas</span>
           </div>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Casos cerrados con éxito</p>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
@@ -413,7 +408,6 @@ export const IncidentsModule = () => {
             <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-cyan-600 dark:text-cyan-400">{resolutionRate}%</span>
             <span className="text-xs text-cyan-700 dark:text-cyan-400 font-bold bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-lg border border-cyan-200 dark:border-cyan-800/80">{isAdmin ? 'Red' : 'Tus casos'}</span>
           </div>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Efectividad de soporte</p>
         </div>
       </div>
 
@@ -699,8 +693,8 @@ export const IncidentsModule = () => {
                 >
                   <input {...getInputProps()} />
                   <UploadCloud className="w-5 h-5 shrink-0 text-slate-400 dark:text-slate-500" />
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Arrastra una foto aquí o haz clic para subir</p>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500">JPG, PNG o WebP hasta 6MB (se comprime automáticamente)</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Arrastra o selecciona una foto</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">JPG, PNG o WebP hasta 6MB</p>
                 </div>
               )}
 
@@ -754,7 +748,7 @@ export const IncidentsModule = () => {
                           className="gap-2 rounded-full"
                         >
                           <Camera className="w-5 h-5 shrink-0" />
-                          <span>Capturar Foto Ahora</span>
+                          <span>Capturar Foto</span>
                         </Button>
                         <Button
                           variant="ghost"
@@ -795,9 +789,9 @@ export const IncidentsModule = () => {
 
             <Button variant="primary" size="md" type="submit" disabled={submitting} className="w-full gap-2">
               {submitting ? (
-                <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 shrink-0 animate-spin" /> Enviando Reporte...</span>
+                <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 shrink-0 animate-spin" /> Guardando...</span>
               ) : (
-                'Enviar Reporte de Incidencia'
+                'Reportar Incidencia'
               )}
             </Button>
           </form>
@@ -811,10 +805,10 @@ export const IncidentsModule = () => {
             <DialogHeader>
               <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
                 <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                Resolver Incidencia INC-{String(resolveTarget?.id || '').padStart(3, '0')}
+                Resolver Caso #{String(resolveTarget?.id || '').padStart(3, '0')}
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                Caso reportado por <strong className="text-slate-800 dark:text-slate-200">{resolveTarget?.user_name}</strong> en {resolveTarget ? parkingNameOf(resolveTarget) : ''}.
+                Reportado por <strong className="text-slate-800 dark:text-slate-200">{resolveTarget?.user_name}</strong> en {resolveTarget ? parkingNameOf(resolveTarget) : ''}.
               </DialogDescription>
             </DialogHeader>
 
@@ -823,7 +817,7 @@ export const IncidentsModule = () => {
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Nota de Resolución *</label>
                 <textarea
                   rows={4}
-                  placeholder="Describe cómo se atendió o resolvió el caso..."
+                  placeholder="Detalles de la solución..."
                   value={resolutionNote}
                   onChange={(e) => setResolutionNote(e.target.value)}
                   className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
@@ -833,9 +827,9 @@ export const IncidentsModule = () => {
 
               <Button variant="primary" size="md" type="submit" disabled={submitting} className="w-full gap-2">
                 {submitting ? (
-                  <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 shrink-0 animate-spin" /> Procesando...</span>
+                  <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 shrink-0 animate-spin" /> Guardando...</span>
                 ) : (
-                  'Confirmar Resolución'
+                  'Resolver Incidencia'
                 )}
               </Button>
             </form>

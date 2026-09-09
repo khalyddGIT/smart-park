@@ -417,11 +417,11 @@ export const PlatformSettingsModule = () => {
               <Sliders className="w-4 h-4" />
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Ajustes Maestros & Centro de Control
+              Configuración de Plataforma
             </h1>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Gobernanza operativa del sistema, personalización de temas visuales, pasarelas y avisos a la red.
+            Parámetros globales, pasarelas de pago y comunicados a la red.
           </p>
         </div>
 
@@ -466,7 +466,7 @@ export const PlatformSettingsModule = () => {
           }`}
         >
           <Sliders className="w-4 h-4 text-emerald-600" />
-          <span>1. Ajustes del Sistema</span>
+          <span>Sistema</span>
         </button>
 
         <button
@@ -476,7 +476,7 @@ export const PlatformSettingsModule = () => {
           }`}
         >
           <Palette className="w-4 h-4 text-emerald-600" />
-          <span>2. Temas & Apariencia</span>
+          <span>Apariencia</span>
         </button>
 
         <button
@@ -486,7 +486,7 @@ export const PlatformSettingsModule = () => {
           }`}
         >
           <Percent className="w-4 h-4 text-emerald-600" />
-          <span>3. Tarifas & Comisiones</span>
+          <span>Tarifas & Comisiones</span>
         </button>
 
         <button
@@ -496,7 +496,7 @@ export const PlatformSettingsModule = () => {
           }`}
         >
           <CreditCard className="w-4 h-4 text-emerald-600" />
-          <span>4. Pasarelas de Pago</span>
+          <span>Pasarelas</span>
         </button>
 
         <button
@@ -506,7 +506,7 @@ export const PlatformSettingsModule = () => {
           }`}
         >
           <Bell className="w-4 h-4 text-emerald-600" />
-          <span>5. Comunicados Masivos ({broadcasts.length})</span>
+          <span>Comunicados ({broadcasts.length})</span>
         </button>
 
         <button
@@ -516,7 +516,7 @@ export const PlatformSettingsModule = () => {
           }`}
         >
           <Map className="w-4 h-4 text-emerald-600" />
-          <span>6. Mapa de Sedes</span>
+          <span>Mapa</span>
         </button>
       </div>
 
@@ -532,8 +532,8 @@ export const PlatformSettingsModule = () => {
                   <Clock className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black text-slate-900">Gobernanza de Reservas & Tolerancia</h2>
-                  <p className="text-[11px] text-slate-500">Reglas para tiempo de llegada, no-show y notificaciones.</p>
+                  <h2 className="text-sm font-black text-slate-900">Tolerancia & Reservas</h2>
+                  <p className="text-[11px] text-slate-500">Reglas de llegada y cancelación por no-show.</p>
                 </div>
               </div>
 
@@ -542,10 +542,10 @@ export const PlatformSettingsModule = () => {
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
                   <div className="space-y-0.5 max-w-[80%]">
                     <span className="text-xs font-bold text-slate-800 block">
-                      Auto-cancelación de Reservas por No-Show
+                      Auto-cancelación por No-Show
                     </span>
                     <span className="text-[11px] text-slate-500 block leading-tight">
-                      Si el conductor no ingresa antes de su hora estimada + tolerancia, la reserva se cancela y el cajón se libera.
+                      Libera el cajón automáticamente si se supera la tolerancia sin registrar ingreso.
                     </span>
                   </div>
                   <button
@@ -564,10 +564,10 @@ export const PlatformSettingsModule = () => {
                   <div className="space-y-0.5 max-w-[80%]">
                     <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <BellRing className="w-3.5 h-3.5 text-amber-500" />
-                      Alertas Preventivas de Cancelación (10 y 5 min)
+                      Alertas preventivas (10 y 5 min)
                     </span>
                     <span className="text-[11px] text-slate-500 block leading-tight">
-                      Envía notificación y banner de advertencia urgente al conductor antes de cancelar su plaza.
+                      Notificación urgente al conductor antes de liberar la plaza.
                     </span>
                   </div>
                   <button
@@ -585,10 +585,10 @@ export const PlatformSettingsModule = () => {
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
                   <div className="space-y-0.5 max-w-[80%]">
                     <span className="text-xs font-bold text-slate-800 block">
-                      Permitir Reservas sin Pago Previo
+                      Reservas sin pago previo
                     </span>
                     <span className="text-[11px] text-slate-500 block leading-tight">
-                      Los usuarios reservan solo con su tiempo de llegada y abonan la estadía directamente en garita.
+                      Permite reservar y abonar la estadía directamente en garita al salir.
                     </span>
                   </div>
                   <button
@@ -605,8 +605,8 @@ export const PlatformSettingsModule = () => {
                 {/* Minutos de Tolerancia */}
                 <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-slate-800 block">Tolerancia de Cortesía Global</span>
-                    <span className="text-[11px] text-slate-500">Minutos adicionales tras la hora estimada.</span>
+                    <span className="text-xs font-bold text-slate-800 block">Tolerancia de cortesía</span>
+                    <span className="text-[11px] text-slate-500">Margen posterior a la hora programada.</span>
                   </div>
                   <select
                     value={settings.gracePeriodMinutes}
@@ -629,8 +629,8 @@ export const PlatformSettingsModule = () => {
                   <Camera className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black text-slate-900">Tecnología de Garita & Afiliaciones</h2>
-                  <p className="text-[11px] text-slate-500">Módulos de reconocimiento visual, audio y admisión.</p>
+                  <h2 className="text-sm font-black text-slate-900">Garita & Afiliaciones</h2>
+                  <p className="text-[11px] text-slate-500">Detección vehicular, alertas y admisión pública.</p>
                 </div>
               </div>
 
@@ -639,10 +639,10 @@ export const PlatformSettingsModule = () => {
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
                   <div className="space-y-0.5 max-w-[80%]">
                     <span className="text-xs font-bold text-slate-800 block">
-                      Reconocimiento Automático de Placas (LPR / ANPR)
+                      Detección de placas (LPR)
                     </span>
                     <span className="text-[11px] text-slate-500 block leading-tight">
-                      Habilita la detección asistida por cámara en garitas para validar ingresos de vehículos registrados.
+                      Lectura asistida por cámara para validar ingresos de vehículos registrados.
                     </span>
                   </div>
                   <button
@@ -661,10 +661,10 @@ export const PlatformSettingsModule = () => {
                   <div className="space-y-0.5 max-w-[80%]">
                     <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <Volume2 className="w-3.5 h-3.5 text-indigo-500" />
-                      Alertas Sonoras y Voz en Garita
+                      Alertas sonoras en garita
                     </span>
                     <span className="text-[11px] text-slate-500 block leading-tight">
-                      Reproduce tonos de confirmación y sintetizador de voz al registrar accesos o incidencias.
+                      Efectos sonoros de confirmación al registrar accesos o incidencias.
                     </span>
                   </div>
                   <button
@@ -682,10 +682,10 @@ export const PlatformSettingsModule = () => {
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
                   <div className="space-y-0.5 max-w-[80%]">
                     <span className="text-xs font-bold text-slate-800 block">
-                      Recepción Pública de Solicitudes de Afiliación
+                      Solicitudes públicas de afiliación
                     </span>
                     <span className="text-[11px] text-slate-500 block leading-tight">
-                      Permite a nuevos propietarios de cocheras en Ayacucho registrarse desde la página de inicio.
+                      Permite a nuevas cocheras postular a la red desde la página de inicio.
                     </span>
                   </div>
                   <button
@@ -1273,32 +1273,32 @@ export const PlatformSettingsModule = () => {
           <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-2">
               <Send className="w-5 h-5 text-emerald-600" />
-              <span>Emitir Comunicado Masivo a la Red</span>
+              <span>Nuevo Comunicado</span>
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Envía una notificación push instantánea a todos los conductores y administradores de cochera.
+              Notificación directa a conductores y administradores de la red.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSendBroadcast} className="space-y-4 my-2">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Audiencia Objetivo *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Audiencia *</label>
               <select
                 value={newBroadcast.target}
                 onChange={(e) => setNewBroadcast({ ...newBroadcast, target: e.target.value })}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 cursor-pointer"
               >
-                <option value="ALL">Todos (Conductores + Administradores de Cocheras)</option>
-                <option value="CONDUCTORES">Solo Conductores Registrados</option>
-                <option value="COCHERAS">Solo Administradores de Cocheras Afiliadas</option>
+                <option value="ALL">Todos (Conductores + Cocheras)</option>
+                <option value="CONDUCTORES">Solo Conductores</option>
+                <option value="COCHERAS">Solo Cocheras Afiliadas</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Título del Comunicado *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Título *</label>
               <Input
                 type="text"
-                placeholder="Ej. Descuento de Fin de Semana o Mantenimiento Programado"
+                placeholder="Ej. Mantenimiento programado o aviso importante"
                 value={newBroadcast.title}
                 onChange={(e) => setNewBroadcast({ ...newBroadcast, title: e.target.value })}
                 className="text-xs font-bold h-10"
@@ -1307,10 +1307,10 @@ export const PlatformSettingsModule = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Mensaje del Comunicado *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Mensaje *</label>
               <textarea
                 rows={4}
-                placeholder="Escribe el contenido de la notificación push que verán los usuarios en tiempo real..."
+                placeholder="Contenido de la notificación..."
                 value={newBroadcast.message}
                 onChange={(e) => setNewBroadcast({ ...newBroadcast, message: e.target.value })}
                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs font-medium text-slate-800 focus:outline-none"
@@ -1320,10 +1320,10 @@ export const PlatformSettingsModule = () => {
 
             <Button
               type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs py-4 rounded-xl shadow-md gap-2 cursor-pointer"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs py-3 rounded-xl shadow-md gap-2 cursor-pointer"
             >
               <Send className="w-4 h-4" />
-              <span>Disparar Notificación Masiva en Tiempo Real</span>
+              <span>Enviar Comunicado</span>
             </Button>
           </form>
         </DialogContent>

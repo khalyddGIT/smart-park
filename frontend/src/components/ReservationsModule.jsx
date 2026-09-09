@@ -654,10 +654,10 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
               <div>
                 <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
                   <Scan className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Control de Entrada Express en Garita</span>
+                  <span>Control de Garita</span>
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Valida conductores con reserva previa (por código o placa) o registra entradas presenciales al instante.
+                  Valida reservas o registra ingresos directos.
                 </p>
               </div>
               <span className="text-[11px] font-mono text-slate-400 self-start sm:self-auto">
@@ -670,7 +670,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Escribe código de reserva (ej: RSV-...), token o placa vehicular (ej: ABC-123)..."
+                placeholder="Buscar código, placa o token..."
                 value={entrySearchQuery}
                 onChange={(e) => setEntrySearchQuery(e.target.value.toUpperCase())}
                 onKeyDown={(e) => {
@@ -1909,7 +1909,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                   className="rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 px-5"
                 >
                   <Check className="w-4 h-4 mr-1.5" />
-                  <span>Emitir Ticket & Generar Pase</span>
+                  <span>Emitir Ticket</span>
                 </Button>
               </div>
             </form>
@@ -1936,7 +1936,7 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                 <p className={`text-[11px] font-mono font-bold ${
                   isCancelled ? 'text-rose-600' : 'text-slate-500'
                 }`}>
-                  {isCancelled ? '*** COMPROBANTE DE RESERVA ANULADA ***' : 'TICKET DE ESTACIONAMIENTO'}
+                  {isCancelled ? 'RESERVA ANULADA' : 'TICKET DE ESTACIONAMIENTO'}
                 </p>
                 <p className={`text-xs font-mono font-black mt-1 ${
                   isCancelled ? 'text-rose-700' : 'text-emerald-700'
@@ -2113,10 +2113,10 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <LogIn className="w-4 h-4 text-emerald-600" />
-              <span>Registrar Ingreso en Garita</span>
+              <span>Confirmar Ingreso</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Registra el ingreso real del vehículo y define el tiempo de estadía acordado.
+              Registra el ingreso del vehículo y define las horas de estadía.
             </DialogDescription>
           </DialogHeader>
 
@@ -2135,7 +2135,7 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
 
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                  ¿Cuánto tiempo va a permanecer estacionado?
+                  Horas de estadía:
                 </label>
                 <div className="grid grid-cols-4 gap-2 mb-2">
                   {[1, 2, 3, 4].map(h => (
@@ -2196,7 +2196,7 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
                   className="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl gap-1.5"
                 >
                   <LogIn className="w-3.5 h-3.5" />
-                  <span>Confirmar Ingreso ({checkInHours}h)</span>
+                  <span>Ingreso ({checkInHours}h)</span>
                 </Button>
               </div>
             </div>

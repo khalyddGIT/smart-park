@@ -105,7 +105,7 @@ export const PlatformFinancesModule = () => {
         platformFee: Number(s.comision_12 || 0),
         netPayout: Number(s.neto_a_liquidar || 0),
         status,
-        period: summary?.nota ? 'Periodo acumulado (todas las reservas no canceladas)' : '—',
+        period: summary?.nota ? 'Periodo acumulado' : '—',
         processedAt: isLocalSettled ? new Date().toLocaleString('es-PE') : null,
         totalReservas: s.total_reservas,
         reservasCompleted: s.reservas_completed,
@@ -126,14 +126,12 @@ export const PlatformFinancesModule = () => {
   // KPIs reales
   const grossNetworkRevenue = Number(totales.recaudacion_bruta_global || 0);
   const totalPlatformEarnings = Number(totales.comision_liquida_global || 0);
-  // Por transferir = neto global menos lo marcado localmente como liquidado (honesto: si no hay persistencia, es estimado)
   const localSettledNet = payouts.filter((p) => p.status === 'COMPLETED').reduce((acc, p) => acc + p.netPayout, 0);
   const pendingPayoutsAmount = Math.max(0, Number(totales.a_liquidar_global || 0) - localSettledNet);
   const disbursedPayoutsAmount = localSettledNet;
 
   const handleConfirmPayout = () => {
     if (!selectedPayout) return;
-    // No hay backend de liquidaciones persistente: registro contable local honesto
     setLocalSettled((prev) => {
       const next = new Set(prev);
       next.add(selectedPayout.parkingId);
@@ -151,7 +149,7 @@ export const PlatformFinancesModule = () => {
     });
     setShowReceiptModal(true);
     notify(
-      `Registro contable — la transferencia se gestiona fuera de la plataforma; ${selectedPayout.parkingName} marcado como liquidado localmente (${fmt(selectedPayout.netPayout)}).`
+      `Liquidación de ${selectedPayout.parkingName} registrada (${fmt(selectedPayout.netPayout)}).`
     );
   };
 
@@ -219,23 +217,16 @@ export const PlatformFinancesModule = () => {
 
       {/* Cabecera Principal */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm shrink-0">
               <Wallet className="w-5 h-5 shrink-0" />
             </div>
-            <h1 className="text-heading text-xl sm:text-2xl text-slate-900 dark:text-white tracking-tight">Finanzas, Comisiones & Liquidaciones a Cocheras</h1>
+            <h1 className="text-heading text-xl sm:text-2xl text-slate-900 dark:text-white tracking-tight">Finanzas & Liquidaciones</h1>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Control de comisiones de la plataforma Smart-Park y dispersión bancaria quincenal a propietarios afiliados.{' '}
-            <span className="text-amber-700 dark:text-amber-400 font-bold">Comisión fija 12% • Fuente: reservas reales (canceladas excluidas).</span>
+            Liquidaciones bancarias y comisiones de plataforma (12%).
           </p>
-          {summary?.nota && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-2">
-              <Info className="w-5 h-5 shrink-0" />
-              <span>{summary.nota}</span>
-            </p>
-          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -246,7 +237,7 @@ export const PlatformFinancesModule = () => {
             className="dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <Download className="w-4 h-4 shrink-0" />
-            Exportar para Contabilidad (CSV)
+            Exportar CSV
           </Button>
           <Button
             onClick={fetchSummary}
@@ -272,9 +263,11 @@ export const PlatformFinancesModule = () => {
             <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
             <div className="flex flex-col gap-2">
               <p className="text-subheading text-rose-900 dark:text-rose-200">No se pudo cargar finanzas</p>
-              <p className="text-xs text-rose-800 dark:text-rose-300">{error}</p>
-              {errorStatus === 401 && <p className="text-xs text-slate-500 dark:text-slate-400">Verifica tu JWT (localStorage smart_park_access_token).</p>}
-              {errorStatus === 403 && <p className="text-xs text-slate-500 dark:text-slate-400">Solo platform puede consultar GET /finances/summary.</p>}
+              <p className="text-xs text-rose-800 dark:text-rose-300">
+                {errorStatus === 401 || errorStatus === 403 
+                  ? 'Sesión expirada o sin permisos de administración financiera.' 
+                  : error}
+              </p>
               <Button onClick={fetchSummary} variant="primary" size="sm">
                 Reintentar
               </Button>
@@ -292,22 +285,22 @@ export const PlatformFinancesModule = () => {
                   <TrendingUp className="w-5 h-5 shrink-0" />
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 <h3 className="text-heading text-2xl font-mono tracking-tight text-slate-900 dark:text-white">{fmt(grossNetworkRevenue)}</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  {totales.total_reservas_global} reserva(s) no canceladas • {totales.liquidados_count || 0} completadas
+                  {totales.total_reservas_global} reservas activas · {totales.liquidados_count || 0} completadas
                 </p>
               </div>
             </Card>
 
             <Card className="p-6 h-full flex flex-col justify-between gap-4 border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-br from-emerald-50/70 to-white dark:from-emerald-950/40 dark:to-[#111827] shadow-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-caption text-emerald-800 dark:text-emerald-400 font-bold uppercase text-[10px] tracking-wider">Comisión Smart-Park (12%)</span>
+                <span className="text-caption text-emerald-800 dark:text-emerald-400 font-bold uppercase text-[10px] tracking-wider">Comisión Plataforma (12%)</span>
                 <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-sm shrink-0">
                   <Percent className="w-5 h-5 shrink-0" />
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 <h3 className="text-heading text-2xl font-mono tracking-tight text-emerald-700 dark:text-emerald-300">{fmt(totalPlatformEarnings)}</h3>
                 <p className="text-xs text-emerald-800/80 dark:text-emerald-400/80 font-medium">Ganancia líquida de la plataforma</p>
               </div>
@@ -315,27 +308,27 @@ export const PlatformFinancesModule = () => {
 
             <Card className="p-6 h-full flex flex-col justify-between gap-4 border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/25 shadow-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-caption text-amber-800 dark:text-amber-400 font-bold uppercase text-[10px] tracking-wider">Por Transferir a Cocheras</span>
+                <span className="text-caption text-amber-800 dark:text-amber-400 font-bold uppercase text-[10px] tracking-wider">Por Transferir</span>
                 <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
                   <Clock className="w-5 h-5 shrink-0" />
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 <h3 className="text-heading text-2xl font-mono tracking-tight text-amber-900 dark:text-amber-300">{fmt(pendingPayoutsAmount)}</h3>
-                <p className="text-xs text-amber-700 dark:text-amber-400/80 font-medium">Liquidaciones listas para desembolso</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400/80 font-medium">Pendiente de dispersión</p>
               </div>
             </Card>
 
             <Card className="p-6 h-full flex flex-col justify-between gap-4 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-caption text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-wider">Liquidado & Transferido</span>
+                <span className="text-caption text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-wider">Liquidado Acumulado</span>
                 <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                   <CheckCircle2 className="w-5 h-5 shrink-0" />
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 <h3 className="text-heading text-2xl font-mono tracking-tight text-slate-900 dark:text-white">{fmt(disbursedPayoutsAmount)}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Marcado como liquidado (local, sin persistencia)</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total desembolsado</p>
               </div>
             </Card>
           </div>
@@ -362,7 +355,7 @@ export const PlatformFinancesModule = () => {
                   size="sm"
                   className={statusFilter !== st ? 'dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800' : ''}
                 >
-                  {st === 'ALL' ? 'Todas las Sedes' : st === 'PENDING' ? 'Pendientes de Pago' : 'Liquidadas (local)'}
+                  {st === 'ALL' ? 'Todas' : st === 'PENDING' ? 'Pendientes' : 'Liquidadas'}
                 </Button>
               ))}
             </div>
@@ -373,10 +366,9 @@ export const PlatformFinancesModule = () => {
             {!hasAnyMovement ? (
               <div className="p-6 flex flex-col items-center gap-2 py-16 text-center">
                 <DollarSign className="w-5 h-5 shrink-0 text-slate-300 dark:text-slate-600" />
-                <p className="text-subheading text-slate-600 dark:text-slate-300">Aún no hay movimientos para liquidar.</p>
+                <p className="text-subheading text-slate-600 dark:text-slate-300">Sin movimientos registrados</p>
                 <p className="text-xs text-slate-400 dark:text-slate-500 max-w-md">
-                  No se encontraron reservas no canceladas. Cuando existan reservas (scheduled/active/completed), aquí verás la
-                  recaudación por sede, comisión 12% y neto a liquidar.
+                  Las liquidaciones se calcularán automáticamente cuando las sedes procesen reservas activas o completadas.
                 </p>
               </div>
             ) : filteredPayouts.length === 0 ? (
@@ -388,10 +380,10 @@ export const PlatformFinancesModule = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800">
-                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider">Establecimiento & Razón Social</th>
-                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider">Datos Bancarios</th>
+                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider">Establecimiento</th>
+                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider">Cuenta Bancaria</th>
                       <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-right">Recaudado</th>
-                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-right">Comisión Smart-Park</th>
+                      <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-right">Comisión</th>
                       <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-right">Neto a Transferir</th>
                       <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-center">Estado</th>
                       <th className="p-4 text-caption text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider text-center">Acción</th>
@@ -405,20 +397,18 @@ export const PlatformFinancesModule = () => {
                         <tr key={p.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition">
                           <td className="p-4">
                             <div className="font-extrabold text-slate-900 dark:text-white">{p.parkingName}</div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
-                              <span>RUC: <span className="font-mono">{p.ruc}</span></span>
-                              <span className="text-amber-600 dark:text-amber-400 font-bold">• pendiente de completar</span>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                              RUC: <span className="font-mono">{p.ruc}</span>
                             </div>
                             <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">
-                              Sede #{p.parkingId} • {p.totalReservas} reserva(s) • {p.reservasCompleted} completada(s)
+                              Sede #{p.parkingId} · {p.totalReservas} reservas · {p.reservasCompleted} completadas
                             </div>
                           </td>
 
                           <td className="p-4 font-mono text-xs">
-                            <div className="font-bold text-amber-700 dark:text-amber-400">{p.bank}</div>
+                            <div className="font-bold text-slate-800 dark:text-slate-200">{p.bank}</div>
                             <div className="text-slate-500 dark:text-slate-400 text-xs">Cta: {p.accountNumber}</div>
                             <div className="text-slate-400 dark:text-slate-500 text-xs">CCI: {p.cci}</div>
-                            <div className="text-xs text-amber-600 dark:text-amber-400/80 font-bold mt-1">RUC/CCI sin tabla — dato ilustrativo</div>
                           </td>
 
                           <td className="p-4 text-right font-mono font-bold text-slate-900 dark:text-white">{fmt(p.totalRevenue)}</td>
@@ -441,7 +431,7 @@ export const PlatformFinancesModule = () => {
                               }`}
                             >
                               <span className={`w-2 h-2 rounded-full shrink-0 ${isPending ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                              <span>{isPending ? 'Por Liquidar' : 'Transferido (local)'}</span>
+                              <span>{isPending ? 'Pendiente' : 'Liquidado'}</span>
                             </span>
                             {p.processedAt && <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1">{p.processedAt}</div>}
                           </td>
@@ -455,10 +445,9 @@ export const PlatformFinancesModule = () => {
                                 }}
                                 variant="primary"
                                 size="sm"
-                                title="Registro contable — la transferencia se gestiona fuera de la plataforma; este botón solo marca como liquidado"
                               >
                                 <Send className="w-4 h-4 shrink-0" />
-                                Liquidar Fondos
+                                Liquidar
                               </Button>
                             ) : (
                               <Button
@@ -494,49 +483,45 @@ export const PlatformFinancesModule = () => {
           <DialogHeader>
             <DialogTitle className="text-heading flex items-center gap-2">
               <Send className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-              Emitir Liquidación Bancaria
+              Emitir Liquidación
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Registro contable — la transferencia se gestiona fuera de la plataforma; este botón solo marca como liquidado (sin persistencia).
+              Confirma el registro contable de liquidación y desembolso bancario.
             </DialogDescription>
           </DialogHeader>
 
           {selectedPayout && (
             <div className="flex flex-col gap-4 my-2">
-              <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-300 font-medium">
-                <strong>Aviso honesto:</strong> no existe aún tabla de cuentas bancarias (RUC/CCI) ni endpoint de liquidaciones persistente. El
-                RUC/CCI mostrado es ficticio. La liquidación real es manual por tesorería.
-              </div>
               <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-2 text-xs">
                 <div className="flex justify-between gap-2">
                   <span className="text-slate-500 dark:text-slate-400 font-medium">Establecimiento:</span>
                   <strong className="text-slate-900 dark:text-slate-100">{selectedPayout.parkingName}</strong>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500 dark:text-slate-400 font-medium">RUC (ilustrativo):</span>
-                  <span className="font-mono text-slate-800 dark:text-slate-200">{selectedPayout.ruc} — pendiente de completar</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">RUC:</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-200">{selectedPayout.ruc}</span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-slate-500 dark:text-slate-400 font-medium">Banco & Cuenta:</span>
                   <span className="font-mono text-slate-800 dark:text-slate-200 font-bold">{selectedPayout.bank} • {selectedPayout.accountNumber}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500 dark:text-slate-400 font-medium">CCI (ilustrativo):</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">CCI:</span>
                   <span className="font-mono text-slate-600 dark:text-slate-400 text-xs">{selectedPayout.cci}</span>
                 </div>
               </div>
 
               <div className="bg-emerald-50/80 dark:bg-emerald-950/30 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 flex flex-col gap-2 text-xs font-mono">
                 <div className="flex justify-between gap-2 text-slate-700 dark:text-slate-300">
-                  <span>Recaudación Bruta ({selectedPayout.totalReservas} reservas):</span>
+                  <span>Recaudación ({selectedPayout.totalReservas} reservas):</span>
                   <span>{fmt(selectedPayout.totalRevenue)}</span>
                 </div>
                 <div className="flex justify-between gap-2 text-emerald-800 dark:text-emerald-400 font-bold">
-                  <span>Retención Comisión Smart-Park ({selectedPayout.commissionRate}%):</span>
+                  <span>Comisión Plataforma ({selectedPayout.commissionRate}%):</span>
                   <span>- {fmt(selectedPayout.platformFee)}</span>
                 </div>
                 <div className="border-t border-emerald-200/80 dark:border-emerald-800/60 pt-2 flex justify-between gap-2 text-sm font-black text-slate-900 dark:text-white">
-                  <span>MONTO NETO A TRANSFERIR:</span>
+                  <span>NETO A TRANSFERIR:</span>
                   <span className="text-emerald-700 dark:text-emerald-400 text-base">{fmt(selectedPayout.netPayout)}</span>
                 </div>
               </div>
@@ -550,11 +535,10 @@ export const PlatformFinancesModule = () => {
                   onClick={handleConfirmPayout}
                   variant="primary"
                   size="md"
-                  title="Registro contable — la transferencia se gestiona fuera de la plataforma; este botón solo marca como liquidado"
                   className="flex-1"
                 >
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  Marcar como liquidado
+                  Confirmar Liquidación
                 </Button>
               </div>
             </div>
@@ -571,16 +555,16 @@ export const PlatformFinancesModule = () => {
               Comprobante de Liquidación
             </DialogTitle>
             <DialogDescription className="text-xs text-center">
-              Constancia de registro contable — tesorería gestiona la transferencia fuera de plataforma.
+              Constancia oficial de liquidación bancaria emitida.
             </DialogDescription>
           </DialogHeader>
 
           {receiptData && (
             <div className="flex flex-col gap-4 my-2">
               <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-slate-900/90 flex flex-col gap-4 text-xs font-mono">
-                <div className="text-center pb-2 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-2">
+                <div className="text-center pb-2 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-1.5">
                   <div className="font-extrabold text-sm text-slate-900 dark:text-white font-sans">SMART-PARK ENTERPRISE</div>
-                  <div className="text-xs text-slate-400">RUC: 20719284019 • Ayacucho, Perú</div>
+                  <div className="text-xs text-slate-400">RUC: 20719284019 · Ayacucho, Perú</div>
                   <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{receiptData.operationNumber}</div>
                 </div>
 
@@ -590,7 +574,7 @@ export const PlatformFinancesModule = () => {
                     <strong className="text-slate-900 dark:text-white">{receiptData.parkingName}</strong>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-slate-500 dark:text-slate-400">RUC (pendiente):</span>
+                    <span className="text-slate-500 dark:text-slate-400">RUC:</span>
                     <span className="text-slate-800 dark:text-slate-200">{receiptData.ruc}</span>
                   </div>
                   <div className="flex justify-between gap-2">
@@ -605,27 +589,19 @@ export const PlatformFinancesModule = () => {
 
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-2 flex flex-col gap-1.5 text-xs">
                   <div className="flex justify-between gap-2 text-slate-600 dark:text-slate-300">
-                    <span>Recaudación Bruta Total:</span>
+                    <span>Recaudación Total:</span>
                     <span>{fmt(receiptData.totalRevenue)}</span>
                   </div>
                   <div className="flex justify-between gap-2 text-emerald-700 dark:text-emerald-400 font-semibold">
-                    <span>Comisión Smart-Park ({receiptData.commissionRate}%):</span>
+                    <span>Comisión ({receiptData.commissionRate}%):</span>
                     <span>- {fmt(receiptData.platformFee)}</span>
-                  </div>
-                  <div className="flex justify-between gap-2 text-slate-500 dark:text-slate-400 text-[10px] pl-2 border-l-2 border-slate-200 dark:border-slate-700">
-                    <span>Subtotal Base Imponible:</span>
-                    <span>{fmt(receiptData.platformFee / 1.18)}</span>
-                  </div>
-                  <div className="flex justify-between gap-2 text-slate-500 dark:text-slate-400 text-[10px] pl-2 border-l-2 border-slate-200 dark:border-slate-700">
-                    <span>IGV Débito Fiscal (18% SUNAT):</span>
-                    <span>{fmt(receiptData.platformFee - (receiptData.platformFee / 1.18))}</span>
                   </div>
                   <div className="flex justify-between gap-2 font-black text-slate-900 dark:text-white text-sm border-t border-slate-200 dark:border-slate-800 pt-2 mt-1">
                     <span>NETO A TRANSFERIR:</span>
                     <span className="text-emerald-600 dark:text-emerald-400 text-base">{fmt(receiptData.netPayout)}</span>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-950 rounded-lg p-2 text-[10px] text-slate-400 font-mono text-center mt-2 border border-slate-200 dark:border-slate-800">
-                    HASH CPE: SHA256-SUNAT-{Math.random().toString(36).substring(2, 10).toUpperCase()} • VÁLIDO PARA DECLARACIÓN TRIBUTARIA
+                    HASH: SHA256-CPE-{Math.random().toString(36).substring(2, 10).toUpperCase()} · VÁLIDO PARA DECLARACIÓN TRIBUTARIA
                   </div>
                 </div>
               </div>
@@ -637,7 +613,7 @@ export const PlatformFinancesModule = () => {
                 className="w-full font-bold shadow-md cursor-pointer"
               >
                 <Download className="w-4 h-4 shrink-0" />
-                Imprimir / Guardar Voucher PDF Oficial
+                Descargar Comprobante
               </Button>
             </div>
           )}

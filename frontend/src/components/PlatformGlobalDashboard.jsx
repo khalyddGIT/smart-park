@@ -176,10 +176,10 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
 
         <div className="space-y-1.5 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            Panel Ejecutivo del Propietario
+            Centro de Control Global
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
-            Supervisión integral de recaudación bruta, comisiones, aforo en tiempo real y cocheras afiliadas en Ayacucho.
+            Supervisión de ingresos, aforo y red en tiempo real.
           </p>
         </div>
 
@@ -198,7 +198,7 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
             className="bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border-slate-700/80 font-semibold text-xs rounded-2xl gap-1.5 py-5 px-4 cursor-pointer transition-colors"
           >
             <Building2 className="w-4 h-4 shrink-0 text-emerald-400" />
-            <span>Ver Sedes ({totalBranches})</span>
+            <span>Sedes ({totalBranches})</span>
           </Button>
 
           <Button
@@ -213,26 +213,17 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
       </div>
 
       {pendingRequests > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/30 dark:bg-amber-500/10 dark:border-amber-500/25 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shadow-xs backdrop-blur-xs">
-          <div className="flex items-center gap-3 text-amber-900 dark:text-amber-200 text-xs">
-            <div className="w-9 h-9 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-xs">
-              <Building2 className="w-5 h-5 shrink-0" />
-            </div>
-            <div>
-              <strong className="text-sm font-black block text-amber-950 dark:text-amber-200">
-                ¡Tienes {pendingRequests} solicitud(es) de afiliación pendientes!
-              </strong>
-              <span className="text-amber-800/80 dark:text-amber-300/80">
-                Revisa los documentos y aprueba el alta de nuevos locales en la red de Huamanga.
-              </span>
-            </div>
+        <div className="bg-amber-500/10 border border-amber-500/30 dark:bg-amber-500/10 dark:border-amber-500/25 p-3.5 px-4 rounded-2xl flex items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-2.5 text-xs text-amber-950 dark:text-amber-200">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="font-bold">{pendingRequests} {pendingRequests === 1 ? 'solicitud de afiliación pendiente' : 'solicitudes de afiliación pendientes'}</span>
           </div>
           <Button
             onClick={() => onNavigateTab && onNavigateTab('affiliates')}
             size="sm"
-            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs shrink-0 cursor-pointer"
+            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs h-8 rounded-xl shrink-0 cursor-pointer"
           >
-            <span>Revisar y Aprobar Ahora →</span>
+            Revisar solicitudes →
           </Button>
         </div>
       )}
@@ -264,11 +255,10 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
 
             <div className="my-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block">Recaudación Bruta Total</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block">Recaudación Bruta</span>
                 <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight mt-0.5">
                   S/ {Number(grossRevenueToday).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                 </h3>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-1">Acumulado red global</span>
               </div>
 
               <div className="sm:border-l sm:border-slate-100 dark:sm:border-slate-800/80 sm:pl-4">
@@ -276,7 +266,6 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
                 <h3 className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight mt-0.5">
                   S/ {Number(netCommissionToday).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                 </h3>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-1">Margen de plataforma</span>
               </div>
             </div>
 

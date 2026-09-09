@@ -31,12 +31,12 @@ import { playTone } from '../utils/soundEffects';
 import api from '../services/api';
 
 const QUICK_TAGS = [
-  'Cochera Segura y Techada',
-  'Entrada Rápida con Placa',
-  'Buen Trato en Garita',
-  'Cerca a Plaza Mayor',
-  'Fácil Acceso y Salida',
-  'Buena Iluminación'
+  'Techada',
+  'Entrada rápida',
+  'Buen trato',
+  'Céntrica',
+  'Fácil salida',
+  'Iluminada'
 ];
 
 export const HistoryModule = () => {
@@ -238,10 +238,10 @@ export const HistoryModule = () => {
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Historial de Estancias & Calificaciones
+              Historial de Estancias
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Registro cronológico auditado de todos los parqueos finalizados con boletas electrónicas y reseñas.
+              Tus estancias finalizadas y comprobantes.
             </p>
           </div>
         </div>
@@ -252,7 +252,7 @@ export const HistoryModule = () => {
           className="gap-2 font-bold text-xs rounded-xl shadow-xs border-slate-300 dark:border-slate-700 h-10 px-4 hover:bg-slate-50 dark:hover:bg-slate-800"
         >
           <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>Exportar a Excel / CSV</span>
+          <span>Exportar CSV</span>
         </Button>
       </div>
 
@@ -268,7 +268,6 @@ export const HistoryModule = () => {
           <div className="mt-2 text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono">
             {totalStays}
           </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Servicios culminados</p>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition-all duration-300 relative overflow-hidden group">
@@ -281,7 +280,6 @@ export const HistoryModule = () => {
           <div className="mt-2 text-2xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-400 font-mono">
             S/ {totalSpent.toFixed(2)}
           </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Facturado en boletas</p>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition-all duration-300 relative overflow-hidden group">
@@ -294,7 +292,6 @@ export const HistoryModule = () => {
           <div className="mt-2 text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono">
             S/ {avgCost.toFixed(2)}
           </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Tarifa media por servicio</p>
         </div>
       </div>
 
@@ -467,18 +464,18 @@ export const HistoryModule = () => {
                   })}
                 </div>
                 <span className="text-xs font-bold text-amber-700 dark:text-amber-400 font-mono">
-                  {rateModal.rating === 5 && '⭐⭐⭐⭐⭐ ¡Excelente servicio!'}
-                  {rateModal.rating === 4 && '⭐⭐⭐⭐ Muy bueno'}
-                  {rateModal.rating === 3 && '⭐⭐⭐ Regular'}
-                  {rateModal.rating === 2 && '⭐⭐ Mejorable'}
-                  {rateModal.rating === 1 && '⭐ Mal servicio'}
+                  {rateModal.rating === 5 && 'Excelente'}
+                  {rateModal.rating === 4 && 'Muy bueno'}
+                  {rateModal.rating === 3 && 'Regular'}
+                  {rateModal.rating === 2 && 'Mejorable'}
+                  {rateModal.rating === 1 && 'Malo'}
                 </span>
               </div>
 
               {/* Tags Rápidos */}
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                  ¿Qué destacarías de la cochera?
+                  ¿Qué destacarías?
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {QUICK_TAGS.map((tag) => {
@@ -509,7 +506,7 @@ export const HistoryModule = () => {
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Escribe tu experiencia para ayudar a otros conductores en Ayacucho..."
+                  placeholder="Cuéntanos tu experiencia (opcional)..."
                   value={reviewComment}
                   onChange={e => setReviewComment(e.target.value)}
                   className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500"

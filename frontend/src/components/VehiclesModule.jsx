@@ -117,7 +117,7 @@ export const getSoatStatus = (expiryDate) => {
   if (diffDays < 0) {
     return {
       status: 'expired',
-      label: `🚨 SOAT Vencido (${Math.abs(diffDays)} d)`,
+      label: `Vencido (${Math.abs(diffDays)}d)`,
       detail: `Venció el ${exp.toLocaleDateString('es-PE')}`,
       color: 'rose',
       daysLeft: diffDays
@@ -125,7 +125,7 @@ export const getSoatStatus = (expiryDate) => {
   } else if (diffDays <= 30) {
     return {
       status: 'warning',
-      label: `⚠️ Por vencer (${diffDays} d)`,
+      label: `Vence en ${diffDays}d`,
       detail: `Vence el ${exp.toLocaleDateString('es-PE')}`,
       color: 'amber',
       daysLeft: diffDays
@@ -133,7 +133,7 @@ export const getSoatStatus = (expiryDate) => {
   } else {
     return {
       status: 'valid',
-      label: `✓ SOAT Vigente`,
+      label: `SOAT Vigente`,
       detail: `Hasta el ${exp.toLocaleDateString('es-PE')}`,
       color: 'emerald',
       daysLeft: diffDays
@@ -817,7 +817,7 @@ export const VehiclesModule = () => {
               Mis Vehículos
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              {vehicles.length} {vehicles.length === 1 ? 'vehículo registrado' : 'vehículos registrados'} para acceso automático en garitas.
+              {vehicles.length} {vehicles.length === 1 ? 'vehículo registrado' : 'vehículos registrados'}.
             </p>
           </div>
         </div>
@@ -827,7 +827,7 @@ export const VehiclesModule = () => {
           className="gap-1.5 font-bold text-xs rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-3.5 shadow-2xs cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" />
-          <span>Registrar Nuevo Vehículo</span>
+          <span>Nuevo vehículo</span>
         </Button>
       </div>
 
@@ -1038,9 +1038,9 @@ export const VehiclesModule = () => {
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
         <DialogContent className="max-w-md rounded-3xl p-6 bg-white shadow-2xl border-slate-200 max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-extrabold text-slate-900">Registrar Nuevo Vehículo</DialogTitle>
+            <DialogTitle className="text-xl font-extrabold text-slate-900">Registrar Vehículo</DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Ingresa los datos para habilitar el reconocimiento automático en garitas.
+              Datos para reconocimiento en garita.
             </DialogDescription>
           </DialogHeader>
           {renderVehicleForm(false)}
@@ -1054,7 +1054,7 @@ export const VehiclesModule = () => {
             <DialogHeader>
               <DialogTitle className="text-xl font-extrabold text-slate-900">Editar Vehículo</DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Modifica y actualiza la información completa de tu vehículo.
+                Actualiza los datos del vehículo.
               </DialogDescription>
             </DialogHeader>
             {renderVehicleForm(true)}
@@ -1069,10 +1069,10 @@ export const VehiclesModule = () => {
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-white flex items-center gap-2">
                 <Camera className="w-5 h-5 text-emerald-400" />
-                <span>Capturar Fotografía del Vehículo</span>
+                <span>Foto del Vehículo</span>
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-400">
-                Apunta la cámara a tu vehículo o placa y presiona capturar.
+                Enfoca la placa o vehículo.
               </DialogDescription>
             </DialogHeader>
 
@@ -1082,7 +1082,7 @@ export const VehiclesModule = () => {
                   <div className="text-center p-4 space-y-2">
                     <VideoOff className="w-8 h-8 text-rose-400 mx-auto" />
                     <p className="text-xs text-slate-300 font-bold">No se pudo acceder a la cámara</p>
-                    <p className="text-[11px] text-slate-500">Verifica los permisos de cámara en tu navegador o sube una foto desde tu dispositivo.</p>
+                    <p className="text-[11px] text-slate-500">Revisa los permisos de cámara o sube un archivo.</p>
                   </div>
                 ) : (
                   <>

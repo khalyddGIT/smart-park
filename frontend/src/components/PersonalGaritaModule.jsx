@@ -419,12 +419,12 @@ export const PersonalGaritaModule = () => {
           </div>
           <p className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
             <span className="font-bold text-emerald-700">{freeSlots.length} libres</span>
-            <span>•</span>
-            <span className="font-bold text-slate-700">{vehiclesInside.length} dentro</span>
-            <span>•</span>
-            <span className="font-semibold text-slate-600">Tarifa: S/ {Number(currentEst?.rate || 5).toFixed(2)}/h</span>
-            <span>•</span>
-            <span className="text-slate-400">Tolerancia: 15 min cortesía</span>
+            <span>·</span>
+            <span className="font-bold text-slate-700">{vehiclesInside.length} activos</span>
+            <span>·</span>
+            <span className="font-semibold text-slate-600">S/ {Number(currentEst?.rate || 5).toFixed(2)}/h</span>
+            <span>·</span>
+            <span className="text-slate-400">15m cortesía</span>
           </p>
         </div>
 
@@ -505,14 +505,14 @@ export const PersonalGaritaModule = () => {
           {/* Formulario de Ingreso Rápido */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm flex-1">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h3 className="text-sm font-black text-slate-900">Registrar ingreso presencial</h3>
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">Entrada Express</span>
+              <h3 className="text-sm font-black text-slate-900">Entrada Rápida</h3>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">Express</span>
             </div>
 
             <div>
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700">Placa del vehículo</label>
-                <span className="text-[11px] text-slate-400">Presiona Enter para registrar</span>
+                <span className="text-[11px] text-slate-400 font-mono">[Enter] Guardar</span>
               </div>
               <Input 
                 placeholder="ABC-123" 
@@ -543,12 +543,12 @@ export const PersonalGaritaModule = () => {
                   ? 'bg-slate-50 border-slate-200 text-slate-600' 
                   : 'bg-rose-50 border-rose-200 text-rose-600'
               }`}>
-                {slot ? `Cajón seleccionado: ${slot}` : freeSlots.length > 0 ? `Automático: ${freeSlots[0]?.code} (o toca otro en el plano)` : 'Sin cajones libres'}
+                {slot ? `Cajón: ${slot}` : freeSlots.length > 0 ? `Auto: ${freeSlots[0]?.code} (toca para cambiar)` : 'Sin cajones libres'}
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700">Tiempo de estadía estimado</label>
+              <label className="text-xs font-bold text-slate-700">Tiempo contratado</label>
               <div className="grid grid-cols-4 gap-2 mt-1">
                 {[1, 2, 4, 8].map(h => (
                   <button 
@@ -566,17 +566,17 @@ export const PersonalGaritaModule = () => {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700">Método de pago al ingresar</label>
+              <label className="text-xs font-bold text-slate-700">Método de cobro</label>
               <select 
                 value={payMethod} 
                 onChange={e => setPayMethod(e.target.value)} 
                 className="mt-1 w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
               >
-                <option value="efectivo">Efectivo (cobrado en garita)</option>
+                <option value="efectivo">Efectivo</option>
                 <option value="yape">Yape</option>
                 <option value="plin">Plin</option>
-                <option value="tarjeta">Tarjeta Débito/Crédito</option>
-                <option value="pendiente">Pendiente — Cobrar al salir</option>
+                <option value="tarjeta">Tarjeta POS</option>
+                <option value="pendiente">Cobro al salir</option>
               </select>
             </div>
 
@@ -670,10 +670,10 @@ export const PersonalGaritaModule = () => {
                 <Car className="w-6 h-6" />
               </div>
               <DialogTitle className="text-xl font-black text-center">
-                Salida de Vehículo
+                Salida y Cobro
               </DialogTitle>
               <DialogDescription className="text-center text-xs font-mono text-slate-500">
-                Código: {checkoutModal.vehicle.code}
+                Ticket: {checkoutModal.vehicle.code}
               </DialogDescription>
             </DialogHeader>
 
@@ -697,32 +697,32 @@ export const PersonalGaritaModule = () => {
               {/* Detalle de Tiempos y Tolerancia */}
               <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-medium space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Hora Ingreso:</span>
+                  <span className="text-slate-500">Ingreso:</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200">
                     {checkoutModal.entryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Hora Salida:</span>
+                  <span className="text-slate-500">Salida:</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200">
                     {checkoutModal.exitDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-slate-200 dark:border-slate-700 pt-2">
-                  <span className="text-slate-500">Tiempo Real:</span>
+                  <span className="text-slate-500">Permanencia:</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200">
                     {checkoutModal.elapsedHours}h {checkoutModal.elapsedMinutes}m
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Categoría Vehículo:</span>
+                  <span className="text-slate-500">Categoría:</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
                     <Car className="w-3.5 h-3.5 text-emerald-600" />
                     <span>{checkoutModal.categoryLabel}</span>
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Tarifa Aplicada:</span>
+                  <span className="text-slate-500">Tarifa:</span>
                   <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
                     S/ {checkoutModal.rate.toFixed(2)}/h
                     {checkoutModal.nightShiftActive && (
@@ -733,8 +733,8 @@ export const PersonalGaritaModule = () => {
                   </span>
                 </div>
                 <div className="flex justify-between text-emerald-700 dark:text-emerald-400 text-[11px] font-bold">
-                  <span>Tolerancia aplicable:</span>
-                  <span>15 min cortesía incluidos</span>
+                  <span>Tolerancia:</span>
+                  <span>15 min cortesía</span>
                 </div>
               </div>
 
@@ -742,7 +742,7 @@ export const PersonalGaritaModule = () => {
               <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
                 <div>
                   <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 block">
-                    {checkoutModal.alreadyPaid ? 'Monto Pre-pagado' : 'Total a Cobrar'}
+                    {checkoutModal.alreadyPaid ? 'Pre-pagado' : 'Total a pagar'}
                   </span>
                   <span className="text-2xl font-black font-mono text-emerald-900 dark:text-emerald-200">
                     S/ {checkoutModal.totalCost.toFixed(2)}
@@ -759,7 +759,7 @@ export const PersonalGaritaModule = () => {
               {!checkoutModal.alreadyPaid && (
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                    Forma de Cobro en Salida
+                    Método de cobro
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {['efectivo', 'yape', 'tarjeta'].map(m => (
@@ -773,7 +773,7 @@ export const PersonalGaritaModule = () => {
                             : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
                         }`}
                       >
-                        {m === 'tarjeta' ? 'Tarjeta POS' : m}
+                        {m === 'tarjeta' ? 'POS' : m}
                       </button>
                     ))}
                   </div>
@@ -782,7 +782,7 @@ export const PersonalGaritaModule = () => {
                   {checkoutModal.selectedPaymentMethod === 'efectivo' && (
                     <div className="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
                       <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="text-slate-600 dark:text-slate-400">Billetes rápidos:</span>
+                        <span className="text-slate-600 dark:text-slate-400">Pago rápido:</span>
                         <div className="flex gap-1.5">
                           {[10, 20, 50, 100].map(val => (
                             <button
@@ -804,7 +804,7 @@ export const PersonalGaritaModule = () => {
                       <div className="flex items-center justify-between gap-3 pt-1">
                         <div className="flex-1">
                           <Input
-                            placeholder="Efectivo recibido"
+                            placeholder="Recibido"
                             type="number"
                             value={checkoutModal.cashGiven}
                             onChange={e => {
@@ -817,7 +817,7 @@ export const PersonalGaritaModule = () => {
                           />
                         </div>
                         <div className="text-right">
-                          <span className="text-[10px] text-slate-400 font-bold block">Vuelto a devolver:</span>
+                          <span className="text-[10px] text-slate-400 font-bold block">Vuelto:</span>
                           <span className="text-sm font-mono font-black text-emerald-600 dark:text-emerald-400">
                             S/ {checkoutModal.change.toFixed(2)}
                           </span>
@@ -833,9 +833,9 @@ export const PersonalGaritaModule = () => {
                         <QrCode className="w-8 h-8 text-purple-700" />
                       </div>
                       <div className="text-xs">
-                        <p className="font-bold text-purple-900 dark:text-purple-200">Cobro rápido con Yape</p>
+                        <p className="font-bold text-purple-900 dark:text-purple-200">Cobro Yape</p>
                         <p className="text-purple-700 dark:text-purple-300 font-mono font-bold">
-                          Monto exacto: S/ {checkoutModal.totalCost.toFixed(2)}
+                          S/ {checkoutModal.totalCost.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -961,10 +961,10 @@ export const PersonalGaritaModule = () => {
                 <Receipt className="w-6 h-6 text-emerald-600" />
               </div>
               <DialogTitle className="text-xl font-black text-center">
-                Arqueo & Cierre de Caja
+                Cierre de Turno
               </DialogTitle>
               <DialogDescription className="text-center text-xs font-mono text-slate-500">
-                {currentEst?.name} • Operador: {user?.full_name || 'Personal Garita'}
+                {currentEst?.name} • {user?.full_name || 'Personal Garita'}
               </DialogDescription>
             </DialogHeader>
 
@@ -972,13 +972,13 @@ export const PersonalGaritaModule = () => {
               {/* Tarjetas de Resumen de Ingresos */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Cobros en Efectivo</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Efectivo</span>
                   <span className="text-lg font-mono font-black text-slate-900 dark:text-white">
                     S/ {shiftStats.cashTotal.toFixed(2)}
                   </span>
                 </div>
                 <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Yape / Plin / Tarjetas</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Digital (Yape/POS)</span>
                   <span className="text-lg font-mono font-black text-purple-600 dark:text-purple-400">
                     S/ {shiftStats.digitalTotal.toFixed(2)}
                   </span>
@@ -988,11 +988,11 @@ export const PersonalGaritaModule = () => {
               {/* Detalle de Cuadre */}
               <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5 font-mono">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Vehículos Atendidos:</span>
-                  <strong className="text-slate-900 dark:text-white">{shiftStats.completedVehicles} completados ({shiftStats.insideVehicles} dentro)</strong>
+                  <span className="text-slate-500">Vehículos:</span>
+                  <strong className="text-slate-900 dark:text-white">{shiftStats.completedVehicles} salidas ({shiftStats.insideVehicles} en playa)</strong>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Fondo Inicial de Caja:</span>
+                  <span className="text-slate-500">Fondo inicial:</span>
                   <div className="flex items-center gap-1 w-28">
                     <span className="text-slate-400">S/</span>
                     <Input
@@ -1004,7 +1004,7 @@ export const PersonalGaritaModule = () => {
                   </div>
                 </div>
                 <div className="flex justify-between items-center border-t border-slate-200 dark:border-slate-700 pt-2 font-bold text-slate-900 dark:text-white">
-                  <span>Efectivo Esperado en Gaveta:</span>
+                  <span>Esperado en caja:</span>
                   <span className="text-emerald-700 dark:text-emerald-400 text-sm">
                     S/ {(shiftInitialCash + shiftStats.cashTotal).toFixed(2)}
                   </span>
@@ -1014,7 +1014,7 @@ export const PersonalGaritaModule = () => {
               {/* Efectivo Contado por el Operador */}
               <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                 <label className="font-bold text-slate-800 dark:text-slate-200 block">
-                  Efectivo Físico Contado en Gaveta
+                  Efectivo en caja
                 </label>
                 <div className="flex items-center gap-3">
                   <Input
@@ -1033,10 +1033,10 @@ export const PersonalGaritaModule = () => {
                         : 'bg-rose-100 text-rose-800 border border-rose-300'
                     }`}>
                       {Number(shiftCountedCash) === (shiftInitialCash + shiftStats.cashTotal)
-                        ? '✓ Cuadre Exacto'
+                        ? '✓ Exacto'
                         : Number(shiftCountedCash) > (shiftInitialCash + shiftStats.cashTotal)
-                        ? `+ Sobrante S/ ${(Number(shiftCountedCash) - (shiftInitialCash + shiftStats.cashTotal)).toFixed(2)}`
-                        : `- Faltante S/ ${((shiftInitialCash + shiftStats.cashTotal) - Number(shiftCountedCash)).toFixed(2)}`}
+                        ? `+ S/ ${(Number(shiftCountedCash) - (shiftInitialCash + shiftStats.cashTotal)).toFixed(2)}`
+                        : `- S/ ${((shiftInitialCash + shiftStats.cashTotal) - Number(shiftCountedCash)).toFixed(2)}`}
                     </div>
                   )}
                 </div>
@@ -1057,7 +1057,7 @@ export const PersonalGaritaModule = () => {
                 className="flex-1 rounded-xl text-xs font-bold bg-slate-900 text-white gap-1.5"
               >
                 <Printer className="w-4 h-4 text-emerald-400" />
-                <span>Imprimir Acta de Turno</span>
+                <span>Imprimir Arqueo</span>
               </Button>
             </div>
           </DialogContent>
@@ -1075,30 +1075,30 @@ export const PersonalGaritaModule = () => {
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <DialogTitle className="text-lg font-black text-center">
-                Reportar Incidencia en Garita
+                Incidencia Operativa
               </DialogTitle>
               <DialogDescription className="text-center text-xs text-slate-500">
-                {currentEst?.name} • Operador: {user?.full_name || 'Personal Garita'}
+                {currentEst?.name} • {user?.full_name || 'Personal Garita'}
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleReportIncident} className="space-y-3.5 my-2 text-xs">
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Categoría del Incidente
+                  Tipo de incidencia
                 </label>
                 <select
                   value={incidentCategory}
                   onChange={(e) => setIncidentCategory(e.target.value)}
                   className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-amber-500"
                 >
-                  <option value="cajon_bloqueado">Cajón Bloqueado / Mal Estacionado</option>
-                  <option value="obstruccion_carril">Obstrucción de Carril de Acceso</option>
-                  <option value="fuga_fluidos">Fuga de Aceite / Fluidos de Vehículo</option>
-                  <option value="dano_infraestructura">Daño en Cajón, Pared o Barrera</option>
-                  <option value="exceso_permanencia">Exceso de Permanencia no Autorizado</option>
-                  <option value="cobro_indebido">Inconveniente de Cobro o Ticket</option>
-                  <option value="otro">Otro Asunto Operativo</option>
+                  <option value="cajon_bloqueado">Cajón bloqueado</option>
+                  <option value="obstruccion_carril">Carril obstruido</option>
+                  <option value="fuga_fluidos">Fuga de fluidos</option>
+                  <option value="dano_infraestructura">Daño estructural</option>
+                  <option value="exceso_permanencia">Tiempo excedido</option>
+                  <option value="cobro_indebido">Problema de cobro</option>
+                  <option value="otro">Otro</option>
                 </select>
               </div>
 
@@ -1129,12 +1129,12 @@ export const PersonalGaritaModule = () => {
 
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Descripción del Incidente *
+                  Descripción *
                 </label>
                 <textarea
                   rows={3}
                   required
-                  placeholder="Detalla lo sucedido en garita para que el administrador tome acción..."
+                  placeholder="Detalles de la incidencia..."
                   value={incidentDescription}
                   onChange={(e) => setIncidentDescription(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs resize-none focus:ring-2 focus:ring-amber-500"
@@ -1156,7 +1156,7 @@ export const PersonalGaritaModule = () => {
                   className="flex-1 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-600 text-slate-950 gap-1.5 shadow-md cursor-pointer"
                 >
                   <AlertTriangle className="w-4 h-4 text-slate-950" />
-                  <span>{incidentSubmitting ? 'Registrando...' : 'Emitir Reporte'}</span>
+                  <span>{incidentSubmitting ? 'Guardando...' : 'Reportar'}</span>
                 </Button>
               </div>
             </form>

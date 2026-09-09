@@ -89,7 +89,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
         try {
           if ('vibrate' in navigator) navigator.vibrate([100, 50, 150]);
         } catch {}
-        setLiveBanner('¡Ingreso validado en Garita! Tu estadía comenzó.');
+        setLiveBanner('Ingreso registrado • En estadía');
         setTimeout(() => setLiveBanner(null), 6000);
         onReservationUpdated?.({
           ...reservation,
@@ -102,7 +102,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
         try {
           if ('vibrate' in navigator) navigator.vibrate(200);
         } catch {}
-        setLiveBanner('¡Salida registrada por el operador! Gracias por tu visita.');
+        setLiveBanner('Salida confirmada • ¡Buen viaje!');
         setTimeout(() => setLiveBanner(null), 6000);
         onReservationUpdated?.({
           ...reservation,
@@ -112,7 +112,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
         });
       } else if (detail.reservation_status === 'cancelled') {
         setLocalStatus('cancelled');
-        setLiveBanner('Esta reserva ha sido cancelada.');
+        setLiveBanner('Reserva anulada');
         setTimeout(() => setLiveBanner(null), 5000);
         onReservationUpdated?.({
           ...reservation,
@@ -382,7 +382,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       onClose();
       return;
     }
-    if (!window.confirm('¿Deseas cancelar esta reserva? La plaza se liberará inmediatamente para otros conductores.')) return;
+    if (!window.confirm('¿Cancelar reserva? Se liberará la plaza para otros conductores.')) return;
     setIsUpdating(true);
     try {
       const res = await api.put(`/reservations/${passData.dbId}/cancel`);
@@ -510,7 +510,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                   SP
                 </div>
                 <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px] tracking-tight">
-                  PASE DIGITAL DE ACCESO
+                  Pase de Acceso
                 </span>
               </div>
               <span className="font-mono font-bold text-slate-500 dark:text-slate-400 text-xs">
@@ -539,43 +539,36 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                     </div>
                   </div>
                 </div>
-              ) : isCompleted ? (
-                <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 inline-block shadow-xs opacity-60">
-                  <QRCodeSVG
-                    value={passData.qrPayload}
-                    size={120}
-                    level="Q"
-                    fgColor="#475569"
-                    bgColor="#ffffff"
-                  />
-                </div>
               ) : (
-                <div ref={qrRef} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 inline-block shadow-xs transition hover:shadow-sm">
+                <div 
+                  ref={qrRef}
+                  className="p-3 bg-white rounded-2xl border border-slate-200 dark:border-slate-700 inline-block shadow-md hover:scale-[1.02] transition-transform duration-300"
+                >
                   <QRCodeSVG
                     value={passData.qrPayload}
-                    size={130}
-                    level="Q"
+                    size={135}
+                    level="H"
                     includeMargin={false}
-                    fgColor="#0f172a"
-                    bgColor="#ffffff"
+                    imageSettings={{
+                      src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230f172a'><circle cx='12' cy='12' r='12'/></svg>",
+                      height: 18,
+                      width: 18,
+                      excavate: true,
+                    }}
                   />
                 </div>
               )}
 
-              {/* Token con Botón de Copiado Directo */}
-              <div className="mt-2.5 flex items-center justify-center gap-1.5">
+              {/* Botón Token Copiable */}
+              <div className="mt-2 flex items-center justify-center">
                 <button
                   type="button"
                   onClick={handleCopyCode}
-                  disabled={isCancelled}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-mono font-bold shadow-2xs transition cursor-pointer group"
-                  title="Clic para copiar token"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold transition cursor-pointer group"
                 >
-                  <span>Token: {passData.token}</span>
+                  <span>{passData.token}</span>
                   {copied ? (
-                    <span className="inline-flex items-center text-emerald-600 text-[10px] gap-0.5">
-                      <Check className="w-3 h-3" /> Copiado
-                    </span>
+                    <Check className="w-3 h-3 text-emerald-600" />
                   ) : (
                     <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
                   )}
@@ -583,10 +576,10 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               </div>
               <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                 {isCancelled 
-                  ? 'Pase inhabilitado · Reserva anulada' 
+                  ? 'Reserva anulada' 
                   : isCompleted 
-                  ? 'Estancia completada · Vehículo retirado' 
-                  : 'Escanea en el tótem o presenta al operador de garita'}
+                  ? 'Estancia finalizada' 
+                  : 'Muestra este código en garita'}
               </p>
             </div>
 
@@ -633,10 +626,10 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                   <div className="flex justify-between items-center text-[10px] opacity-90">
                     <span>
                       {isToleranceCritical 
-                        ? '🚨 ¡Crítico! En minutos el cajón será liberado automáticamente'
+                        ? 'Tiempo límite por vencer'
                         : isToleranceWarning 
-                        ? '⚠️ Acércate a la cochera dentro de la tolerancia'
-                        : '✓ En ruta · Tiempo a favor para ingresar'}
+                        ? 'Acércate a la cochera'
+                        : 'En tiempo de llegada'}
                     </span>
                     <span className="font-mono font-bold">{toleranceProgressPct}%</span>
                   </div>
@@ -673,7 +666,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                   {isCancelled ? 'Cancelada' : isCompleted ? 'Finalizada' : timeLeft || '--:--:--'}
                 </p>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 block truncate">
-                  {isScheduled ? `Tol: ${passData.toleranceMinutes} min (Hasta ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'})` : `${passData.hours}h contratadas`}
+                  {isScheduled ? `Llegada hasta ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}` : `Estadía: ${passData.hours}h`}
                 </span>
               </div>
 
@@ -698,7 +691,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-11 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm transition active:scale-[0.99]"
             >
               {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-              <span>Marcar Ingreso / Abrir Barrera</span>
+              <span>Marcar Ingreso</span>
             </Button>
           )}
 
@@ -711,7 +704,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               className="w-full border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold h-11 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
-              <span>Registrar Salida / Check-out</span>
+              <span>Registrar Salida</span>
             </Button>
           )}
 
@@ -779,7 +772,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 disabled={isUpdating}
                 className="text-[11px] text-slate-400 hover:text-rose-600 transition cursor-pointer font-medium"
               >
-                Cancelar reserva sin penalidad
+                Cancelar reserva
               </button>
             </div>
           )}

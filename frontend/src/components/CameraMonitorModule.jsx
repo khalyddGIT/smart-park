@@ -494,10 +494,10 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm font-black tracking-tight">Monitoreo de Cámaras — Visión IA</h2>
-                <span className="bg-sky-500/20 border border-sky-500/30 text-sky-300 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1"><Layers className="w-3 h-3" /> MÓDULO INDEPENDIENTE</span>
+                <h2 className="text-sm font-black tracking-tight">Monitoreo de Cámaras</h2>
+                <span className="bg-sky-500/20 border border-sky-500/30 text-sky-300 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1"><Layers className="w-3 h-3" /> Visión IA</span>
               </div>
-              <p className="text-xs text-slate-400 font-medium">No modifica el plano ni el estado del estacionamiento. Zonas propias de cámara (OpenCV car-parking-finder).</p>
+              <p className="text-xs text-slate-400 font-medium">Detección óptica de ocupación en tiempo real por cámara.</p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap shrink-0">
@@ -548,9 +548,9 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
             <span className="text-[10px] font-black tracking-widest text-slate-500">UMBRAL</span>
-            <input type="range" min={300} max={1800} step={50} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className="w-24 accent-emerald-500" title="900 = original car-parking-finder" />
+            <input type="range" min={300} max={1800} step={50} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className="w-24 accent-emerald-500" title="Sensibilidad de detección" />
             <span className="text-xs font-mono font-bold min-w-[48px]">{threshold}</span>
-            <span className="text-[10px] text-slate-400 hidden sm:inline">900 original</span>
+            <span className="text-[10px] text-slate-400 hidden sm:inline">Defecto: 900</span>
             <label className="flex items-center gap-1 text-xs font-bold ml-2 border-l border-slate-300 pl-2"><input type="checkbox" checked={debugMode} onChange={(e) => setDebugMode(e.target.checked)} className="w-3.5 h-3.5 accent-violet-500" /> Debug</label>
           </div>
           {sourceMode === 'webcam' && availableDevices.length > 1 && (
@@ -625,13 +625,13 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
         {!readOnly && mode === 'edit' && (
           <div className="px-3 py-3 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center gap-2">
             <Button type="button" onClick={handleSaveZones} className="h-9 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs gap-1.5"><Save className="w-3.5 h-3.5" /> Guardar zonas</Button>
-            <Button type="button" variant="outline" onClick={() => handleResize(10, 5)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-cyan-300 text-xs font-bold">+ TAM</Button>
-            <Button type="button" variant="outline" onClick={() => handleResize(-10, -5)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-cyan-300 text-xs font-bold">- TAM</Button>
-            <Button type="button" variant="outline" onClick={() => handleRotate(45)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-amber-300 text-xs font-bold gap-1"><RotateCw className="w-3.5 h-3.5" /> Rotar 45°</Button>
+            <Button type="button" variant="outline" onClick={() => handleResize(10, 5)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-cyan-300 text-xs font-bold">+ Tamaño</Button>
+            <Button type="button" variant="outline" onClick={() => handleResize(-10, -5)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-cyan-300 text-xs font-bold">- Tamaño</Button>
+            <Button type="button" variant="outline" onClick={() => handleRotate(45)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-amber-300 text-xs font-bold gap-1"><RotateCw className="w-3.5 h-3.5" /> Girar 45°</Button>
             <Button type="button" variant="outline" onClick={handleUndo} disabled={!history.length} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-white text-xs font-bold disabled:opacity-40">Deshacer</Button>
             <Button type="button" variant="outline" onClick={() => setConfirmClearOpen(true)} className="h-9 rounded-xl bg-slate-800 border-slate-700 text-rose-400 text-xs font-bold gap-1"><Trash2 className="w-3.5 h-3.5" /> Limpiar</Button>
             <Button type="button" variant="ghost" onClick={() => setMode('monitor')} className="ml-auto h-9 rounded-xl text-slate-400 hover:text-white text-xs font-bold">Cancelar</Button>
-            <span className="w-full text-[11px] text-slate-400">Click para crear zona · Click en zona para seleccionar → +TAM/-TAM/Rotar afecta selección · Click derecho borra · Zonas independientes del estacionamiento.</span>
+            <span className="w-full text-[11px] text-slate-400">Click para crear o seleccionar · Click derecho para borrar.</span>
           </div>
         )}
 

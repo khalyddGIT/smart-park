@@ -696,10 +696,10 @@ export const CulqiPaymentModal = ({
               </div>
               <div className="space-y-1">
                 <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-                  ¡Pago Confirmado y Acreditado!
+                  ¡Pago confirmado!
                 </h3>
                 <p className="text-xs text-slate-500 max-w-[320px] mx-auto leading-relaxed">
-                  Tu plaza en <strong className="text-slate-700">{parkingName}</strong> ha sido asegurada y bloqueada en tiempo real.
+                  Tu plaza en <strong className="text-slate-700">{parkingName}</strong> ha sido reservada con éxito.
                 </p>
               </div>
             </div>
@@ -829,16 +829,9 @@ export const CulqiPaymentModal = ({
             </div>
 
             {/* Aviso Informativo del Pase Digital */}
-            <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-100 flex items-start gap-2.5 text-xs text-blue-900">
-              <QrCode className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-              <div className="leading-snug">
-                <span className="font-bold block text-[11px] text-blue-950">
-                  Tu Pase de Acceso QR está listo
-                </span>
-                <span className="text-[11px] text-blue-800">
-                  Presiona el botón a continuación para abrir tu credencial QR y la guía de llegada en mapa satelital.
-                </span>
-              </div>
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center gap-2 text-xs text-slate-600">
+              <QrCode className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="text-[11px] font-medium">Presenta tu pase QR al ingresar a la garita.</span>
             </div>
 
             {/* Botones de Acción Principales */}
@@ -857,7 +850,7 @@ export const CulqiPaymentModal = ({
                 onClick={handleProceedToPass}
                 className="flex-1 py-3 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl cursor-pointer shadow-sm gap-2 transition active:scale-[0.99] group flex items-center justify-center"
               >
-                <span>Ver Mi Pase QR de Acceso</span>
+                <span>Ver Pase de Acceso</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </Button>
             </div>
@@ -923,11 +916,8 @@ export const CulqiPaymentModal = ({
             {activeMethod === 'card' && (
               <div className="space-y-4 pt-1">
                 {/* Banner de Ayuda Rápida Sandbox para Tarjeta */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100/90 border border-slate-200 text-slate-900 text-xs">
-                  <div className="space-y-0.5">
-                    <span className="font-semibold block text-[11px]">Prueba en Sandbox (Visa Culqi)</span>
-                    <span className="font-mono text-[10px] text-slate-600">4111 1111 1111 1111 • 12/28 • 123</span>
-                  </div>
+                <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200 text-slate-800 text-[11px]">
+                  <span className="font-mono text-[11px] text-slate-600">Demo: 4111... • 12/28 • 123</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -937,9 +927,9 @@ export const CulqiPaymentModal = ({
                       setCardHolder('CARLOS MENDOZA');
                       setErrorMsg('');
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-800 text-[11px] font-semibold hover:bg-slate-200/50 cursor-pointer shadow-2xs transition"
+                    className="px-2 py-0.5 rounded-md bg-white border border-slate-300 text-slate-700 text-[10px] font-bold hover:bg-slate-50 cursor-pointer"
                   >
-                    Cargar
+                    Llenar datos
                   </button>
                 </div>
 
@@ -1171,7 +1161,7 @@ export const CulqiPaymentModal = ({
             {/* Micro-footer de seguridad */}
             <div className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1.5 pt-3 border-t border-slate-100">
               <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-              <span>Conexión cifrada de extremo a extremo SSL 256-bit</span>
+              <span>Pago seguro SSL 256-bit</span>
             </div>
 
           </div>

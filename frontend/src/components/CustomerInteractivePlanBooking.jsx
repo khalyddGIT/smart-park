@@ -712,9 +712,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     <div className="space-y-4">
       
       {planStatus === 'unregistered' && (
-        <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs flex items-center gap-2">
+        <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>Sede en modo demostración. No admite reservas reales en el servidor.</span>
+          <span className="font-semibold">Modo demo • Sin reservas reales</span>
         </div>
       )}
       {planStatus === 'loading' && (
@@ -1129,14 +1129,14 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
               {compatibleFreeSlots.length === 0 && (
                 <p className="mt-1.5 text-[11px] text-amber-400 font-medium">
-                  ⚠️ No hay cajones disponibles de {SLOT_TYPE_LABEL[slotFamily(vehicleCategory)] || 'este tipo'} en esta sede.
+                  Sin plazas para {SLOT_TYPE_LABEL[slotFamily(vehicleCategory)] || 'este tipo'} en este local.
                 </p>
               )}
 
               {isNightShiftActive && (
                 <div className="mt-2 bg-indigo-950/80 border border-indigo-700/60 rounded-xl p-2 flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 text-amber-300 font-bold text-[11px]">
-                    <Moon className="w-3.5 h-3.5" /> Turno Noche ({parking?.night_shift_start || '20:00'} - {parking?.night_shift_end || '06:00'})
+                    <Moon className="w-3.5 h-3.5" /> Noche ({parking?.night_shift_start || '20:00'}–{parking?.night_shift_end || '06:00'})
                   </span>
                   <span className="text-amber-200 font-mono text-[10px] font-bold bg-amber-400/20 px-1.5 py-0.5 rounded">
                     {isMinuteBilling ? `+S/ ${nightMinuteSurcharge.toFixed(3)}/min` : `+S/ ${nightSurcharge.toFixed(2)}/h`}
@@ -1261,7 +1261,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   .sort((a, b) => a - b)
                   .map((val) => (
                     <option key={val} value={val}>
-                      Llegada en ~{val} minutos {val === Number(parking?.tolerance ?? parking?.tolerance_minutes) ? '(Tolerancia oficial del local)' : ''}
+                      ~{val} min {val === Number(parking?.tolerance ?? parking?.tolerance_minutes) ? '• Tolerancia' : ''}
                     </option>
                   ))}
               </select>
@@ -1279,7 +1279,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
               {isNightShiftActive && (
                 <div className="flex items-center justify-between text-amber-300 text-[11px]">
-                  <span>Recargo Turno Noche:</span>
+                  <span>Recargo noche:</span>
                   <span className="font-mono font-semibold">
                     +{isMinuteBilling ? `S/ ${nightMinuteSurcharge.toFixed(3)}/min` : `S/ ${nightSurcharge.toFixed(2)}/h`}
                   </span>
@@ -1291,29 +1291,27 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
               <div className="h-px bg-slate-800/80 my-1" />
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400">Cobro de estadía:</span>
-                <span className="text-slate-200 font-medium">Registrado por trabajador en garita al salir</span>
+                <span className="text-slate-400">Cobro:</span>
+                <span className="text-slate-200 font-medium">En garita al salir</span>
               </div>
               {reservationFee > 0 ? (
                 <div className="flex items-center justify-between text-amber-300 pt-1 border-t border-slate-800/80 font-mono">
-                  <span>Tasa de reserva (prepago):</span>
+                  <span>Tasa de reserva:</span>
                   <span className="font-bold">S/ {reservationFee.toFixed(2)}</span>
                 </div>
               ) : (
                 <div className="flex items-center justify-between text-slate-400 text-[11px]">
                   <span>Reserva:</span>
-                  <span className="text-emerald-400 font-medium">Sin costo previo (Pagas en garita al salir)</span>
+                  <span className="text-emerald-400 font-medium">Gratis (Pagas al salir)</span>
                 </div>
               )}
             </div>
 
             {/* Aviso si ya cuenta con reserva activa */}
             {activeUserReservation && (
-              <div className="p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-300 space-y-0.5">
-                <span className="font-semibold text-white block">Reserva en curso</span>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Cuentas con la reserva <span className="font-mono font-bold text-white">{activeUserReservation.code || activeUserReservation.id}</span> ({activeUserReservation.plate || activeUserReservation.license_plate}).
-                </p>
+              <div className="p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-300 flex items-center justify-between">
+                <span className="font-semibold text-white">Reserva en curso:</span>
+                <span className="font-mono font-bold text-amber-300">{activeUserReservation.code || activeUserReservation.id} ({activeUserReservation.plate || activeUserReservation.license_plate})</span>
               </div>
             )}
 

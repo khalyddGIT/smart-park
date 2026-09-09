@@ -230,7 +230,7 @@ export const AuditLogsModule = () => {
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {subtitle}
             <span className="ml-2 font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-              • {rawData.length} eventos en memoria
+              • {rawData.length} eventos registrados
             </span>
           </p>
         </div>
@@ -265,13 +265,13 @@ export const AuditLogsModule = () => {
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Total de Eventos Registrados
+              Eventos Registrados
             </div>
             <div className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
               {totalEvents}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              Línea de tiempo cronológica unificada
+              Historial consolidado
             </div>
           </div>
         </Card>
@@ -282,13 +282,13 @@ export const AuditLogsModule = () => {
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Alertas de Seguridad & Críticas
+              Alertas de Seguridad
             </div>
             <div className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-0.5">
               {criticalAlerts}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              Ajustes maestros, bloqueos y advertencias
+              Incidentes y advertencias
             </div>
           </div>
         </Card>
@@ -299,13 +299,13 @@ export const AuditLogsModule = () => {
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Transacciones y Operaciones
+              Operaciones Registradas
             </div>
             <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
               {operationalEvents}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              Reservas, ANPR, liquidaciones e info
+              Accesos, cobros y cambios de estado
             </div>
           </div>
         </Card>
@@ -520,7 +520,7 @@ export const AuditLogsModule = () => {
                   {selectedLog.action}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                  Registro inmutable auditado con verificación criptográfica y trazabilidad de IP.
+                  Trazabilidad de operador, dirección IP y metadatos del evento.
                 </DialogDescription>
               </DialogHeader>
 

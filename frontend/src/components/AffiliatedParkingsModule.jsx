@@ -655,22 +655,12 @@ export const AffiliatedParkingsModule = () => {
           ========================================================================= */}
       {activeSubTab === 'requests' && (
         <div className="space-y-4 animate-fade-in">
-          
-          <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl flex items-start gap-3">
-            <Inbox className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-900 space-y-1">
-              <p className="font-bold">Bandeja de Solicitudes de Nuevas Cocheras</p>
-              <p className="text-amber-800 leading-relaxed">
-                Cuando un propietario solicita afiliar su establecimiento, sus datos aparecen aquí. Al presionar <strong>"Aprobar y Asignar Credenciales"</strong>, podrás configurar o generar su contraseña segura, crear la cuenta oficial con rol <strong>local</strong> y enviarle sus credenciales por WhatsApp en 1 clic.
-              </p>
-            </div>
-          </div>
 
           {affiliationRequests.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 space-y-2">
               <Inbox className="w-8 h-8 text-slate-400 mx-auto" />
               <h3 className="text-sm font-bold text-slate-700">No hay solicitudes pendientes</h3>
-              <p className="text-xs text-slate-400">Las nuevas solicitudes que envíen los propietarios aparecerán aquí.</p>
+              <p className="text-xs text-slate-400">Las nuevas solicitudes aparecerán aquí para su revisión y alta.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -694,7 +684,7 @@ export const AffiliatedParkingsModule = () => {
                           {isPending && <Clock className="w-4 h-4 shrink-0" />}
                           {isApproved && <CheckCircle2 className="w-4 h-4 shrink-0" />}
                           {!isPending && !isApproved && <XCircle className="w-4 h-4 shrink-0" />}
-                          <span>{req.status === 'PENDING' ? 'Pendiente de Aprobación' : req.status === 'APPROVED' ? 'Aprobada & Activa' : 'Rechazada'}</span>
+                          <span>{req.status === 'PENDING' ? 'Pendiente' : req.status === 'APPROVED' ? 'Aprobada' : 'Rechazada'}</span>
                         </span>
 
                         <span className="text-[11px] text-slate-400 font-mono">
@@ -713,19 +703,19 @@ export const AffiliatedParkingsModule = () => {
                       {/* Grid de Datos */}
                       <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-2xl border border-slate-100 font-mono">
                         <div>
-                          <span className="text-slate-400 block text-[10px]">CORREO ACCESO:</span>
+                          <span className="text-slate-400 block text-[10px]">Correo:</span>
                           <span className="font-bold text-slate-800 truncate block">{req.email}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block text-[10px]">TELÉFONO:</span>
-                          <span className="font-bold text-slate-800">{req.phone || 'No especificado'}</span>
+                          <span className="text-slate-400 block text-[10px]">Teléfono:</span>
+                          <span className="font-bold text-slate-800">{req.phone || '—'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block text-[10px]">DIRECCIÓN:</span>
+                          <span className="text-slate-400 block text-[10px]">Ubicación:</span>
                           <span className="text-slate-700 truncate block">{req.address}, {req.city}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block text-[10px]">CAPACIDAD / TARIFA:</span>
+                          <span className="text-slate-400 block text-[10px]">Capacidad & Tarifa:</span>
                           <span className="font-bold text-emerald-700">{req.capacity} plazas • S/ {Number(req.rate).toFixed(2)}/h</span>
                         </div>
                       </div>
@@ -755,7 +745,7 @@ export const AffiliatedParkingsModule = () => {
                           className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl h-9 shadow-xs flex items-center justify-center gap-1.5"
                         >
                           <KeyRound className="w-3.5 h-3.5" />
-                          <span>Aprobar y Asignar Credenciales</span>
+                          <span>Aprobar Sede</span>
                         </Button>
                       </div>
                     )}
@@ -764,9 +754,9 @@ export const AffiliatedParkingsModule = () => {
                       <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-emerald-700">
                         <span className="flex items-center gap-1 font-semibold">
                           <CheckCircle2 className="w-4 h-4" />
-                          <span>Cuenta habilitada ({req.email})</span>
+                          <span>Habilitada ({req.email})</span>
                         </span>
-                        <span className="text-[10px] text-slate-400 font-mono">Sede Operativa</span>
+                        <span className="text-[10px] text-slate-400 font-mono">Operativa</span>
                       </div>
                     )}
 
@@ -787,10 +777,10 @@ export const AffiliatedParkingsModule = () => {
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
               <Shield className="w-5 h-5 text-emerald-600" />
-              <span>Aprobar Sede y Asignar Credenciales</span>
+              <span>Aprobar Sede</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Crea la cuenta de usuario para el administrador de <strong>"{approvingRequest?.parkingName}"</strong> con rol de local.
+              Crea la cuenta de usuario para el administrador de <strong>"{approvingRequest?.parkingName}"</strong>.
             </DialogDescription>
           </DialogHeader>
 

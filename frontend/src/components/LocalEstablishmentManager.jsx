@@ -909,12 +909,12 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 <span className="p-2 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20 shrink-0">
                   <Building2 className="w-5 h-5 shrink-0" />
                 </span>
-                <span className="truncate">Gestión de Sedes & Establecimientos</span>
+                <span className="truncate">Gestión de Sedes</span>
               </h1>
               <p className="text-xs text-slate-500 mt-1.5 max-w-2xl">
                 {role === 'local'
-                  ? 'Gestiona tu local comercial, sus sucursales, planos CAD y tarifas en tiempo real.'
-                  : 'Supervisión global de empresas, establecimientos y sucursales conectadas.'}
+                  ? 'Sedes, planos y tarifas en tiempo real.'
+                  : 'Supervisión de empresas y sedes conectadas.'}
               </p>
             </div>
             <Button
@@ -922,7 +922,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               className="w-full lg:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs gap-2 shadow-lg shadow-emerald-600/20 rounded-xl h-10 px-5 shrink-0 whitespace-nowrap cursor-pointer"
             >
               <Plus className="w-4 h-4 shrink-0" />
-              <span>Registrar Nueva Sede / Nivel</span>
+              <span>Nueva Sede</span>
             </Button>
           </div>
 
@@ -932,7 +932,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none z-10 shrink-0" strokeWidth={2.2} />
               <Input
                 type="text"
-                placeholder="Buscar por nombre de sucursal, dirección o ciudad..."
+                placeholder="Buscar sede, dirección o ciudad..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10 h-10 border-slate-200 bg-white rounded-xl text-xs focus-visible:ring-emerald-500 w-full"
@@ -1040,10 +1040,10 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   <Button
                     onClick={() => handleOpenAdd(group)}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs gap-1.5 shadow-md shadow-emerald-600/20 rounded-xl h-10 px-4 shrink-0 cursor-pointer"
-                    title={`Registrar una nueva sucursal dentro de ${group.name}`}
+                    title={`Nueva sucursal para ${group.name}`}
                   >
                     <Plus className="w-4 h-4 shrink-0" />
-                    <span>+ Agregar Sucursal a este Local</span>
+                    <span>+ Nueva Sucursal</span>
                   </Button>
                 </div>
               </div>
@@ -1053,10 +1053,10 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-emerald-600" />
-                    <span>Sucursales y Sedes de {group.name} ({group.branches.length})</span>
+                    <span>Sucursales ({group.branches.length})</span>
                   </h3>
                   <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                    Cada sucursal opera con su plano CAD, garita y configuración propia
+                    Plano CAD y garita independiente
                   </span>
                 </div>
 
@@ -1254,7 +1254,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-3">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
               <Camera className="w-4 h-4 text-emerald-600" />
-              Detección por Cámara (YOLO)
+              Detección por Cámara
             </div>
             <input type="file" accept="image/*" id="camera-upload" className="hidden" onChange={handleCameraDetect} />
             <Button
@@ -1264,9 +1264,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               className="h-9 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1.5"
             >
               <Upload className="w-4 h-4" />
-              {cameraDetecting ? 'Detectando...' : 'Subir foto del playón y detectar ocupación'}
+              {cameraDetecting ? 'Detectando...' : 'Subir foto del playón'}
             </Button>
-            <span className="text-[11px] text-slate-500">IA detecta autos por cajón y actualiza el plano (requiere tesseract en servidor para placas, no para ocupación)</span>
+            <span className="text-[11px] text-slate-500">Detección IA de vehículos para actualizar ocupación en el plano</span>
           </div>
 
           <InteractiveFloorPlanDrawingStudio
@@ -1338,7 +1338,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               }`}
             >
               <Building2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>1. Datos Generales & Tarifas</span>
+              <span>General & Tarifas</span>
             </button>
 
             <button
@@ -1351,7 +1351,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               }`}
             >
               <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>2. Ubicación & Mapa Interactivo</span>
+              <span>Ubicación</span>
             </button>
 
             <button
@@ -1364,7 +1364,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               }`}
             >
               <ImageIcon className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>3. Fotografía de la Sede</span>
+              <span>Fotografía</span>
             </button>
 
             <button
@@ -1377,7 +1377,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               }`}
             >
               <Share2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>4. Contacto & Redes</span>
+              <span>Contacto</span>
             </button>
           </div>
 
@@ -1914,8 +1914,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             </div>
                             <p className="text-[11px] text-slate-500 leading-snug">
                               {formData.allow_open_stay !== false 
-                                ? 'Habilitado: Los clientes verán la opción "Hora (libre)" al reservar plaza. Podrán ingresar y permanecer el tiempo que necesiten sin fijar un límite rígido; el cobro final se liquidará en garita por el tiempo real utilizado.'
-                                : 'Desactivado: Los clientes deberán seleccionar obligatoriamente una cantidad fija de horas para confirmar su reserva.'}
+                                ? 'Permite a los usuarios reservar con liquidación por tiempo real al salir.'
+                                : 'Exige al usuario seleccionar una cantidad fija de horas.'}
                             </p>
                           </div>
 

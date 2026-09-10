@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { 
   Building2, 
+  Store,
   Plus, 
   Edit3, 
   Trash2, 
@@ -35,7 +36,7 @@ import {
   RefreshCw,
   Loader2
 } from 'lucide-react';
-import { useEstablishments } from '../context/EstablishmentContext';
+import { useEstablishments, getEstablishmentHierarchy } from '../context/EstablishmentContext';
 
 export const AffiliatedParkingsModule = () => {
   const { 
@@ -60,6 +61,7 @@ export const AffiliatedParkingsModule = () => {
   const [selectedParking, setSelectedParking] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
+    company_name: '',
     address: '',
     city: 'Ayacucho - Huamanga',
     level: 'Nivel 1 - Superficie',
@@ -159,18 +161,20 @@ export const AffiliatedParkingsModule = () => {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleOpenAdd = () => {
+  const handleOpenAdd = (parentGroup = null) => {
     const autoPass = generateSecurePassword('SP');
+    const companyName = parentGroup?.companyName || '';
     setFormData({ 
-      name: '', 
+      name: companyName ? `${companyName} - Sucursal ` : '', 
+      company_name: companyName,
       address: '', 
-      city: 'Ayacucho - Huamanga', 
+      city: parentGroup?.city || 'Ayacucho - Huamanga', 
       level: 'Nivel 1 - Superficie',
       rate: 5.00, 
       commission: '12%', 
-      owner: 'Inversiones Ayacucho S.A.C.',
-      phone: '',
-      createAdminAccount: true,
+      owner: parentGroup?.owner || 'Inversiones Ayacucho S.A.C.',
+      phone: parentGroup?.phone || '',
+      createAdminAccount: !companyName,
       adminEmail: '',
       adminPassword: autoPass,
       showAdminPassword: false
@@ -179,9 +183,11 @@ export const AffiliatedParkingsModule = () => {
   };
 
   const handleOpenEdit = (p) => {
+    const hierarchy = getEstablishmentHierarchy(p);
     setSelectedParking(p);
     setFormData({
       name: p.name,
+      company_name: p.company_name || p.companyName || hierarchy.companyName || '',
       address: p.address || '',
       city: p.city || 'Ayacucho - Huamanga',
       level: p.level || 'Nivel 1 - Superficie',
@@ -218,9 +224,14 @@ export const AffiliatedParkingsModule = () => {
       { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 165, y: 470, w: 50, h: 140, rot: 0, status: 'free' }
     ];
 
+    const hierarchy = getEstablishmentHierarchy({ name: formData.name, company_name: formData.company_name });
+    const effectiveCompany = (formData.company_name || hierarchy.companyName || formData.name).trim();
+
     const newObj = {
       id: `EST-${Math.floor(10 + Math.random() * 90)}`,
       name: formData.name,
+      company_name: effectiveCompany,
+      companyName: effectiveCompany,
       address: formData.address || 'Jr. 28 de Julio 100',
       city: formData.city || 'Ayacucho - Huamanga',
       level: formData.level || 'Nivel 1 - Superficie',
@@ -264,8 +275,13 @@ export const AffiliatedParkingsModule = () => {
     e.preventDefault();
     if (!selectedParking) return;
 
+    const hierarchy = getEstablishmentHierarchy({ name: formData.name, company_name: formData.company_name });
+    const effectiveCompany = (formData.company_name || hierarchy.companyName || formData.name).trim();
+
     const updated = {
       name: formData.name,
+      company_name: effectiveCompany,
+      companyName: effectiveCompany,
       address: formData.address,
       city: formData.city,
       level: formData.level,
@@ -457,10 +473,13 @@ export const AffiliatedParkingsModule = () => {
   };
 
   const filteredEstablishments = establishments.filter(p => {
+    const q = search.toLowerCase().trim();
     const matchesSearch = 
-      p.name.toLowerCase().includes(search.toLowerCase()) || 
-      (p.city && p.city.toLowerCase().includes(search.toLowerCase())) ||
-      (p.address && p.address.toLowerCase().includes(search.toLowerCase()));
+      p.name.toLowerCase().includes(q) || 
+      (p.city && p.city.toLowerCase().includes(q)) ||
+      (p.address && p.address.toLowerCase().includes(q)) ||
+      (p.company_name && p.company_name.toLowerCase().includes(q)) ||
+      (p.owner && p.owner.toLowerCase().includes(q));
     
     const s = (p.status || '').toLowerCase();
     const sf = statusFilter.toLowerCase();
@@ -470,6 +489,53 @@ export const AffiliatedParkingsModule = () => {
       s === sf;
     return matchesSearch && matchesStatus;
   });
+
+  // Agrupación jerárquica: Empresa / Matriz -> Sedes y Sucursales
+  const companyGroups = React.useMemo(() => {
+    const groups = new Map();
+
+    filteredEstablishments.forEach((p) => {
+      const hierarchy = getEstablishmentHierarchy(p);
+      const companyName = (p.company_name || p.companyName || hierarchy.companyName || p.name).trim();
+      const branchDisplayName = hierarchy.branchName || p.name;
+      const groupKey = companyName.toLowerCase().trim();
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          key: groupKey,
+          companyName: companyName,
+          owner: p.owner || 'Comercial',
+          ruc: p.ruc || '',
+          phone: p.phone || '',
+          email: p.email || p.admin_email || '',
+          city: p.city || 'Ayacucho - Huamanga',
+          branches: [],
+          totalSlots: 0,
+          activeBranchesCount: 0
+        });
+      }
+
+      const g = groups.get(groupKey);
+      const elements = p.elements || [];
+      const calculatedSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
+
+      g.branches.push({
+        ...p,
+        branchDisplayName,
+        calculatedSlots
+      });
+      g.totalSlots += calculatedSlots;
+      if (p.status === 'Operativo' || p.status === 'active') {
+        g.activeBranchesCount += 1;
+      }
+
+      if (!g.phone && p.phone) g.phone = p.phone;
+      if (!g.ruc && p.ruc) g.ruc = p.ruc;
+      if (!g.email && (p.email || p.admin_email)) g.email = p.email || p.admin_email;
+    });
+
+    return Array.from(groups.values());
+  }, [filteredEstablishments]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -488,7 +554,7 @@ export const AffiliatedParkingsModule = () => {
             <span>Red de Estacionamientos & Afiliaciones</span>
           </h1>
           <p className="text-xs text-slate-500">
-            Administra las sedes activas, asigna credenciales a los administradores de local y gestiona las solicitudes entrantes.
+            Administra las empresas y sus sedes activas, asigna credenciales a los administradores y gestiona solicitudes.
           </p>
         </div>
 
@@ -503,7 +569,7 @@ export const AffiliatedParkingsModule = () => {
             }`}
           >
             <Building2 className="w-4 h-4 shrink-0" />
-            <span>Sedes Activas ({establishments.length})</span>
+            <span>Empresas & Sedes ({companyGroups.length} emp. / {establishments.length} sedes)</span>
           </button>
           <button
             onClick={() => setActiveSubTab('requests')}
@@ -525,7 +591,7 @@ export const AffiliatedParkingsModule = () => {
       </div>
 
       {/* =========================================================================
-          VISTA 1: SEDES ACTIVAS
+          VISTA 1: EMPRESAS Y SUS RESPECTIVAS SEDES / SUCURSALES
           ========================================================================= */}
       {activeSubTab === 'establishments' && (
         <div className="space-y-6 animate-fade-in">
@@ -546,7 +612,7 @@ export const AffiliatedParkingsModule = () => {
                 <Search className="w-4 h-4 shrink-0 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <Input
                   type="text"
-                  placeholder="Buscar sede o dirección..."
+                  placeholder="Buscar empresa, sede o dirección..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9 text-xs h-9 rounded-xl border-slate-200 bg-slate-50"
@@ -554,99 +620,223 @@ export const AffiliatedParkingsModule = () => {
               </div>
             </div>
 
-            <Button onClick={handleOpenAdd} className="w-full sm:w-auto gap-2 font-bold shadow-xs bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs h-9">
+            <Button onClick={() => handleOpenAdd(null)} className="w-full sm:w-auto gap-2 font-bold shadow-xs bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs h-9">
               <Plus className="w-4 h-4" />
-              <span>Nueva Sede Manual</span>
+              <span>Nueva Empresa / Sede Manual</span>
             </Button>
           </div>
 
-          {/* Grid de Sedes */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {filteredEstablishments.map((p) => {
-              const elements = p.elements || [];
-              const totalSlots = elements.filter(e => e.type === 'slot').length || p.totalSlots || 0;
-
-              return (
-                <Card key={p.id} className="p-5 border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition group rounded-3xl bg-white">
-                  <div>
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black">
-                        <Building2 className="w-5 h-5" />
+          {/* Listado Agrupado: Empresa Matriz -> Sedes contenidas */}
+          {companyGroups.length === 0 ? (
+            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 space-y-2">
+              <Building2 className="w-8 h-8 text-slate-400 mx-auto" />
+              <h3 className="text-sm font-bold text-slate-700">No se encontraron empresas ni sedes</h3>
+              <p className="text-xs text-slate-400">
+                {search ? `No hay coincidencias para "${search}".` : 'Registra la primera empresa o sede para comenzar.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {companyGroups.map((group) => (
+                <div 
+                  key={group.key} 
+                  className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden space-y-5 p-5 sm:p-6 transition hover:border-slate-300"
+                >
+                  {/* CABECERA DE LA EMPRESA */}
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+                    <div className="flex items-start gap-3.5 min-w-0">
+                      <div className="p-3 rounded-2xl bg-slate-900 text-emerald-400 shrink-0 shadow-sm">
+                        <Store className="w-6 h-6" />
                       </div>
-                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                        p.status === 'Operativo' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      }`}>
-                        ● {p.status}
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Empresa Comercial
+                          </span>
+                          {group.ruc && (
+                            <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                              RUC: {group.ruc}
+                            </span>
+                          )}
+                          <span className="text-[11px] font-medium text-slate-500">
+                            {group.activeBranchesCount} de {group.branches.length} sedes operativas
+                          </span>
+                        </div>
+                        <h2 className="text-lg sm:text-xl font-black text-slate-900 truncate">
+                          {group.companyName}
+                        </h2>
+                        <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+                          {group.city && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>{group.city}</span>
+                            </span>
+                          )}
+                          {group.owner && (
+                            <span className="flex items-center gap-1">
+                              <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">Titular: {group.owner}</span>
+                            </span>
+                          )}
+                          {group.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>{group.phone}</span>
+                            </span>
+                          )}
+                          {group.email && (
+                            <span className="flex items-center gap-1">
+                              <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">{group.email}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Métricas Consolidadas de la Empresa + Botón + Nueva Sede en esta Empresa */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs">
+                        <div className="space-y-0.5">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sedes</div>
+                          <div className="font-black text-slate-900 font-mono text-sm leading-none">{group.branches.length}</div>
+                        </div>
+                        <div className="h-6 w-px bg-slate-200"></div>
+                        <div className="space-y-0.5">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capacidad Global</div>
+                          <div className="font-bold text-emerald-700 font-mono text-xs leading-none">
+                            {group.totalSlots} Plazas
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={() => handleOpenAdd(group)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm rounded-xl h-10 px-4 shrink-0 cursor-pointer"
+                        title={`Nueva sede para ${group.companyName}`}
+                      >
+                        <Plus className="w-4 h-4 shrink-0" />
+                        <span>+ Nueva Sede en esta Empresa</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* SUB-GRID DE SEDES Y SUCURSALES DE ESTA EMPRESA */}
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                        <Layers className="w-4 h-4 text-emerald-600" />
+                        <span>Sedes Registradas ({group.branches.length})</span>
+                      </h3>
+                      <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                        Gestión individual de accesos, tarifas y operatividad
                       </span>
                     </div>
 
-                    <h3 className="font-extrabold text-slate-900 text-base mb-1">{p.name}</h3>
-                    <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
-                      <MapPin className="w-4 h-4 shrink-0 text-slate-400" />
-                      <span className="truncate">{p.city || 'Ayacucho'} • {p.address}</span>
-                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {group.branches.map((p) => {
+                        return (
+                          <Card 
+                            key={p.id} 
+                            className="p-4 border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition group rounded-2xl bg-white"
+                          >
+                            <div>
+                              <div className="flex justify-between items-start mb-2.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black shrink-0">
+                                    <Building2 className="w-4 h-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h4 className="font-extrabold text-slate-900 text-sm truncate leading-tight">
+                                      {p.branchDisplayName || p.name}
+                                    </h4>
+                                    {p.branchDisplayName && p.branchDisplayName !== p.name && (
+                                      <p className="text-[10px] text-slate-400 truncate">{p.name}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${
+                                  p.status === 'Operativo' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                }`}>
+                                  ● {p.status}
+                                </span>
+                              </div>
 
-                    <div className="space-y-1.5 text-xs font-mono bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-4">
-                      <p className="flex justify-between text-slate-600">
-                        <span>Capacidad Total:</span>
-                        <span className="font-bold text-slate-900">{totalSlots} Plazas</span>
-                      </p>
-                      <p className="flex justify-between text-slate-600">
-                        <span>Tarifa / Hora:</span>
-                        <span className="font-bold text-emerald-700">S/ {Number(p.rate).toFixed(2)}</span>
-                      </p>
-                      <p className="flex justify-between text-slate-600">
-                        <span>Titular / Operador:</span>
-                        <span className="text-slate-800 font-semibold truncate max-w-[140px]">{p.owner || 'Comercial'}</span>
-                      </p>
+                              <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                                <span className="truncate">{p.address} {p.level ? `• ${p.level}` : ''}</span>
+                              </p>
+
+                              <div className="space-y-1.5 text-xs font-mono bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-3">
+                                <p className="flex justify-between text-slate-600 text-[11px]">
+                                  <span>Capacidad:</span>
+                                  <span className="font-bold text-slate-900">{p.calculatedSlots} Plazas</span>
+                                </p>
+                                <p className="flex justify-between text-slate-600 text-[11px]">
+                                  <span>Tarifa / Hora:</span>
+                                  <span className="font-bold text-emerald-700">S/ {Number(p.rate).toFixed(2)}</span>
+                                </p>
+                                <p className="flex justify-between text-slate-600 text-[11px]">
+                                  <span>Comisión:</span>
+                                  <span className="text-slate-800 font-semibold">{p.commission || '12%'}</span>
+                                </p>
+                                <p className="flex justify-between text-slate-600 text-[11px]">
+                                  <span>Titular Local:</span>
+                                  <span className="text-slate-800 font-semibold truncate max-w-[130px]">{p.owner || group.owner}</span>
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 pt-2.5 border-t border-slate-100">
+                              {/* Botón de Credenciales Superadmin */}
+                              <Button 
+                                onClick={() => handleOpenCredentialsModal(p)}
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full text-xs font-bold rounded-xl h-8 border-amber-300 text-amber-900 bg-amber-50/60 hover:bg-amber-100/80 flex items-center justify-center gap-1.5 transition"
+                              >
+                                <KeyRound className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                <span>Credenciales de Acceso</span>
+                              </Button>
+
+                              <div className="flex items-center gap-2">
+                                <Button 
+                                  onClick={() => toggleStatus(p.id)} 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="flex-1 text-xs font-bold rounded-xl h-8"
+                                >
+                                  {p.status === 'Operativo' ? 'Pausar' : 'Reanudar'}
+                                </Button>
+                                <Button 
+                                  onClick={() => handleOpenEdit(p)} 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="p-2 text-slate-600 hover:text-slate-900 rounded-xl"
+                                  title="Editar información de sede"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  onClick={() => handleDelete(p.id, p.name)} 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl"
+                                  title="Eliminar sede"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
                     </div>
                   </div>
-
-                  <div className="space-y-2 pt-3 border-t border-slate-100">
-                    {/* Botón de Credenciales Superadmin */}
-                    <Button 
-                      onClick={() => handleOpenCredentialsModal(p)}
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full text-xs font-bold rounded-xl h-8.5 border-amber-300 text-amber-900 bg-amber-50/60 hover:bg-amber-100/80 flex items-center justify-center gap-1.5 transition"
-                    >
-                      <KeyRound className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Credenciales de Acceso</span>
-                    </Button>
-
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        onClick={() => toggleStatus(p.id)} 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1 text-xs font-bold rounded-xl h-8"
-                      >
-                        {p.status === 'Operativo' ? 'Pausar' : 'Reanudar'}
-                      </Button>
-                      <Button 
-                        onClick={() => handleOpenEdit(p)} 
-                        variant="ghost" 
-                        size="sm" 
-                        className="p-2 text-slate-600 hover:text-slate-900 rounded-xl"
-                        title="Editar información de sede"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        onClick={() => handleDelete(p.id, p.name)} 
-                        variant="ghost" 
-                        size="sm" 
-                        className="p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl"
-                        title="Eliminar sede"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1170,7 +1360,18 @@ export const AffiliatedParkingsModule = () => {
 
           <form onSubmit={handleCreate} className="space-y-4 mt-2">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Comercial del Local *</label>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Empresa / Razón Social (Matriz)</label>
+              <Input
+                placeholder="Ej. Inversiones Plaza S.A.C."
+                value={formData.company_name}
+                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                className="text-xs"
+              />
+              <span className="text-[10px] text-slate-400">Si pertenece a una empresa registrada, se agrupará bajo ella automáticamente.</span>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la Sede / Sucursal *</label>
               <Input
                 required
                 placeholder="Ej. Smart Park Jr. Cusco"
@@ -1321,7 +1522,16 @@ export const AffiliatedParkingsModule = () => {
 
           <form onSubmit={handleEdit} className="space-y-4 mt-2">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Comercial</label>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Empresa / Razón Social (Matriz)</label>
+              <Input
+                placeholder="Ej. Inversiones Plaza S.A.C."
+                value={formData.company_name}
+                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                className="text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la Sede / Sucursal</label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}

@@ -143,8 +143,28 @@ class PinVerify(BaseModel):
     pin: str
 
 class PinLoginRequest(BaseModel):
-    identifier: str  # Email o DNI / teléfono del operador
+    identifier: str  # Email, DNI, teléfono o nombre completo del operador
     pin: str
+
+    @field_validator('identifier')
+    @classmethod
+    def validate_identifier(cls, v):
+        clean = str(v).strip() if v else ''
+        if not clean:
+            raise ValueError('Identificador (DNI, Correo o Nombre) requerido')
+        return clean
+
+    @field_validator('pin')
+    @classmethod
+    def validate_pin(cls, v):
+        clean = str(v).strip() if v else ''
+        if not clean:
+            raise ValueError('PIN de seguridad requerido')
+        if not clean.isdigit():
+            raise ValueError('El PIN de seguridad solo debe contener números')
+        if len(clean) < 4 or len(clean) > 6:
+            raise ValueError('El PIN de seguridad debe tener entre 4 y 6 dígitos')
+        return clean
 
 # ==========================================
 # 2. SCHEMAS DE VEHÍCULOS

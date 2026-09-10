@@ -121,7 +121,7 @@ async def test_reservation_pricing_by_vehicle_and_night_shift():
         # Tarifa moto: S/ 2.50 * 2h = S/ 5.00
         start_day = datetime.utcnow().replace(hour=10, minute=0, second=0, microsecond=0)
         end_day = start_day + timedelta(hours=2)
-        plate_moto = f"M{uuid.uuid4().hex[:3].upper()}-101"
+        plate_moto = f"M{uuid.uuid4().hex[:3].upper()}-{uuid.uuid4().hex[3:7].upper()}"
 
         res1 = await ac.post("/api/v1/reservations", headers=driver_headers, json={
             "parking_id": parking_id,
@@ -143,7 +143,7 @@ async def test_reservation_pricing_by_vehicle_and_night_shift():
         driver2_headers = {"Authorization": f"Bearer {driver2_token}"}
         start_night = datetime.utcnow().replace(hour=22, minute=0, second=0, microsecond=0)
         end_night = start_night + timedelta(hours=2)
-        plate_suv = f"S{uuid.uuid4().hex[:3].upper()}-202"
+        plate_suv = f"S{uuid.uuid4().hex[:3].upper()}-{uuid.uuid4().hex[3:7].upper()}"
 
         res2 = await ac.post("/api/v1/reservations", headers=driver2_headers, json={
             "parking_id": parking_id,
@@ -186,7 +186,7 @@ async def test_reservation_rejects_vehicle_type_slot_mismatch():
 
         start = datetime.utcnow() + timedelta(minutes=10)
         end = start + timedelta(hours=1)
-        plate = f"C{uuid.uuid4().hex[:3].upper()}-404"
+        plate = f"C{uuid.uuid4().hex[:3].upper()}-{uuid.uuid4().hex[3:7].upper()}"
 
         mismatch = await ac.post("/api/v1/reservations", headers=driver_headers, json={
             "parking_id": parking_id,
@@ -228,7 +228,7 @@ async def test_require_reservation_prepay_policy():
 
         start = datetime.utcnow() + timedelta(minutes=10)
         end = start + timedelta(hours=2)
-        plate_try1 = f"P{uuid.uuid4().hex[:3].upper()}-701"
+        plate_try1 = f"P{uuid.uuid4().hex[:3].upper()}-{uuid.uuid4().hex[3:7].upper()}"
 
         # Intento de reserva sin pago (pay_now=False) -> Debe ser rechazada
         reject_resp = await ac.post("/api/v1/reservations", headers=driver_headers, json={
@@ -294,7 +294,7 @@ async def test_reservation_pricing_by_minute_billing_unit():
         # 2. Intento menor al tiempo mínimo (10 minutos < 15 minutos) -> 422
         start_time = datetime.utcnow() + timedelta(minutes=10)
         end_too_short = start_time + timedelta(minutes=10)
-        plate1 = f"M{uuid.uuid4().hex[:2].upper()}-001"
+        plate1 = f"M{uuid.uuid4().hex[:3].upper()}-{uuid.uuid4().hex[3:7].upper()}"
         res_fail = await ac.post("/api/v1/reservations", headers=driver_headers, json={
             "parking_id": parking_id,
             "slot_id": slot_id,
@@ -312,7 +312,7 @@ async def test_reservation_pricing_by_minute_billing_unit():
 
         # 3. Reserva válida por 30 minutos (30 min * 0.10 = S/ 3.00)
         end_valid = start_time + timedelta(minutes=30)
-        plate2 = f"M{uuid.uuid4().hex[:2].upper()}-002"
+        plate2 = f"M{uuid.uuid4().hex[:3].upper()}-{uuid.uuid4().hex[3:7].upper()}"
         res_ok = await ac.post("/api/v1/reservations", headers=driver_headers, json={
             "parking_id": parking_id,
             "slot_id": slot_id,
@@ -449,7 +449,7 @@ async def test_local_admin_can_toggle_allow_open_stay_and_reserve():
         res_resp = await ac.post("/api/v1/reservations", headers=driver_headers, json={
             "parking_id": pid,
             "slot_id": sid,
-            "license_plate": f"HLB-{uuid.uuid4().hex[:3].upper()}",
+            "license_plate": f"H{uuid.uuid4().hex[:3].upper()}-{uuid.uuid4().hex[3:7].upper()}",
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
             "is_open_stay": True

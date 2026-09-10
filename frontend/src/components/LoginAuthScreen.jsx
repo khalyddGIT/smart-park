@@ -37,8 +37,24 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
     }
   }, [user, isModal, onClose]);
 
-  // 'login' | 'pin_express' | 'register' | 'affiliation' | 'forgot_password'
-  const [authMode, setAuthMode] = useState(defaultAuthMode);
+  // 'login' | 'register' | 'garita' | 'forgot_password'
+  const initialMode = (defaultAuthMode === 'pin_express' || defaultAuthMode === 'affiliation') ? 'garita' : (defaultAuthMode || 'login');
+  const initialGaritaTab = defaultAuthMode === 'affiliation' ? 'affiliation' : 'pin';
+
+  const [authMode, setAuthMode] = useState(initialMode);
+  const [garitaSubTab, setGaritaSubTab] = useState(initialGaritaTab);
+
+  useEffect(() => {
+    if (defaultAuthMode === 'pin_express') {
+      setAuthMode('garita');
+      setGaritaSubTab('pin');
+    } else if (defaultAuthMode === 'affiliation') {
+      setAuthMode('garita');
+      setGaritaSubTab('affiliation');
+    } else if (defaultAuthMode) {
+      setAuthMode(defaultAuthMode);
+    }
+  }, [defaultAuthMode]);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
 
@@ -257,13 +273,13 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       <main className="w-full max-w-[440px] my-auto relative z-10 py-3">
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl shadow-slate-200/60 dark:shadow-black/50 space-y-5">
           
-          {/* Tabs principales: Iniciar Sesión | ⚡ PIN Garita | Crear Cuenta */}
-          {(authMode === 'login' || authMode === 'pin_express' || authMode === 'register') && (
-            <div className="grid grid-cols-3 p-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 text-xs font-bold shadow-inner gap-1">
+          {/* Tabs principales Conductor: Iniciar Sesión | Crear Cuenta */}
+          {(authMode === 'login' || authMode === 'register') && (
+            <div className="grid grid-cols-2 p-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 text-xs font-bold shadow-inner gap-1">
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
-                className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1 truncate ${
+                className={`py-2.5 px-2 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1.5 truncate ${
                   authMode === 'login'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-extrabold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
@@ -274,28 +290,63 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
               </button>
               <button
                 type="button"
-                onClick={() => { setAuthMode('pin_express'); setErrorMsg(''); }}
-                className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1 truncate ${
-                  authMode === 'pin_express'
-                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm font-extrabold'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
-                }`}
-                title="Acceso Rápido para Garita y Operadores con PIN de 4-6 dígitos"
-              >
-                <KeyRound className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">PIN Garita</span>
-              </button>
-              <button
-                type="button"
                 onClick={() => { setAuthMode('register'); setErrorMsg(''); }}
-                className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1 truncate ${
+                className={`py-2.5 px-2 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1.5 truncate ${
                   authMode === 'register'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-extrabold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
                 }`}
               >
+                <Car className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">Crear Cuenta</span>
               </button>
+            </div>
+          )}
+
+          {/* Portal Garita: Sub-tabs de PIN Garita | Afiliar Garita */}
+          {authMode === 'garita' && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" />
+                  Módulo de Garitas & Cocheras
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
+                  className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition cursor-pointer"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                  <span>Volver a Conductor</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 p-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 text-xs font-bold shadow-inner gap-1">
+                <button
+                  type="button"
+                  onClick={() => { setGaritaSubTab('pin'); setErrorMsg(''); }}
+                  className={`py-2.5 px-2 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1.5 truncate ${
+                    garitaSubTab === 'pin'
+                      ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm font-extrabold'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
+                  }`}
+                >
+                  <KeyRound className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">PIN Garita</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setGaritaSubTab('affiliation'); setErrorMsg(''); }}
+                  className={`py-2.5 px-2 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1.5 truncate ${
+                    garitaSubTab === 'affiliation'
+                      ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm font-extrabold'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Afiliar Cochera</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -400,9 +451,9 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
           )}
 
           {/* =========================================================================
-              MODO PIN EXPRESS (GARITA / OPERADORES / PERSONAL)
+              MODO GARITA SUB-TAB 1: PIN EXPRESS (OPERADORES / PERSONAL DE TURNO)
               ========================================================================= */}
-          {authMode === 'pin_express' && (
+          {authMode === 'garita' && garitaSubTab === 'pin' && (
             <div className="space-y-4 animate-fade-in">
               <div className="text-center pb-1">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mx-auto mb-1.5">
@@ -414,7 +465,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
               <form onSubmit={handlePinSubmit} className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">DNI o Correo Registrado *</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">DNI, Correo o Nombre Registrado *</label>
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
@@ -467,6 +518,17 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
               <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex items-start space-x-2">
                 <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <span>¿Olvidaste tu PIN? Solicita su restablecimiento al Administrador de tu sede en el panel de Personal.</span>
+              </div>
+
+              <div className="pt-2 text-center border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => { setGaritaSubTab('affiliation'); setErrorMsg(''); }}
+                  className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                >
+                  ¿Deseas afiliar una nueva cochera?{' '}
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold underline">Solicitar Afiliación</span>
+                </button>
               </div>
             </div>
           )}
@@ -648,15 +710,15 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
           )}
 
           {/* =========================================================================
-              MODO 3: SOLICITUD DE AFILIACIÓN DE ESTACIONAMIENTO / COCHERA
+              MODO GARITA SUB-TAB 2: SOLICITUD DE AFILIACIÓN DE COCHERA
               ========================================================================= */}
-          {authMode === 'affiliation' && (
+          {authMode === 'garita' && garitaSubTab === 'affiliation' && (
             <div className="space-y-4">
               <div className="text-center pb-1">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mx-auto mb-1.5">
                   <Building2 className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-black text-slate-900 dark:text-white">Solicitud de Afiliación de Cochera</h3>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">Afiliar Garita / Cochera</h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">Envía tus datos para habilitar tu cuenta de Admin Local</p>
               </div>
 
@@ -766,6 +828,17 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     <Send className="w-4 h-4 ml-1 text-white mr-1.5" />
                     <span>Enviar Solicitud de Afiliación</span>
                   </Button>
+
+                  <div className="pt-2 text-center border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => { setGaritaSubTab('pin'); setErrorMsg(''); }}
+                      className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                    >
+                      ¿Ya operas en garita o eres personal de turno?{' '}
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold underline">Acceder con PIN</span>
+                    </button>
+                  </div>
                 </form>
               )}
             </div>
@@ -822,25 +895,25 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
             </div>
           )}
 
-          {/* Botón inferior dinámico para alternar entre Afiliación e Iniciar Sesión */}
+          {/* Botón inferior dinámico para alternar entre Garita y Conductor */}
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center">
-            {authMode === 'affiliation' ? (
+            {authMode === 'garita' ? (
               <button
                 type="button"
-                onClick={() => setAuthMode('login')}
-                className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center mx-auto space-x-1.5 transition cursor-pointer"
+                onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
+                className="w-full py-2 text-center text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
-                <span>¿Ya tienes tu cuenta de cochera habilitada?</span>
-                <span className="text-emerald-600 dark:text-emerald-400 underline font-extrabold">Iniciar Sesión</span>
+                <ArrowLeft className="w-4 h-4 shrink-0" />
+                <span>Volver al Acceso Principal de Conductores</span>
               </button>
             ) : (
               <button
                 type="button"
-                onClick={() => setAuthMode('affiliation')}
-                className="w-full py-2.5 px-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition flex items-center justify-center space-x-2 group cursor-pointer"
+                onClick={() => { setAuthMode('garita'); setGaritaSubTab('pin'); setErrorMsg(''); }}
+                className="w-full py-2.5 px-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition flex items-center justify-center space-x-2 group cursor-pointer shadow-xs"
               >
-                <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
-                <span>¿Administras una cochera? Solicitar Afiliación</span>
+                <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                <span>¿Operador o Administrador? <strong>Acceso Garita & Afiliaciones</strong></span>
               </button>
             )}
           </div>

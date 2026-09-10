@@ -2,10 +2,11 @@
 from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+import re
 import secrets
 from app.core.security import get_current_user, require_role, get_password_hash, hash_pin
 from app.db.session import get_db
@@ -55,6 +56,14 @@ class AffiliationCreate(BaseModel):
     capacity: Optional[int] = None
     rate: Optional[float] = None
     notes: Optional[str] = None
+
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        clean = str(v).strip().lower() if v else ''
+        if not clean or not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', clean):
+            raise ValueError('Correo electrónico inválido (ej: contacto@ejemplo.com)')
+        return clean
 
     class Config:
         populate_by_name = True

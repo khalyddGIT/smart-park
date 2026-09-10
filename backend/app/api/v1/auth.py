@@ -229,21 +229,35 @@ async def login_pin(
 
     from app.core.audit_service import record_audit_event
 
-    # 1. Buscar usuario por email o teléfono/DNI
+    # 1. Buscar usuario por email, nombre completo o teléfono/DNI
+    clean_digits = "".join([c for c in clean_ident if c.isdigit()])
     res_user = await db.execute(
         select(User).where(
             (func.lower(User.email) == clean_ident.lower()) |
+            (func.lower(User.full_name) == clean_ident.lower()) |
             (User.phone == clean_ident)
         )
     )
     user = res_user.scalars().first()
 
-    # 2. Si no se encontró directo en User, buscar en Staff por DNI o email
+    # Si no se encontró por coincidencia exacta de teléfono y hay 9 dígitos (celular Perú)
+    if not user and clean_digits and len(clean_digits) >= 9:
+        res_phone_user = await db.execute(
+            select(User).where(
+                (User.phone != None) & 
+                (func.replace(func.replace(func.replace(User.phone, ' ', ''), '+51', ''), '-', '') == clean_digits)
+            )
+        )
+        user = res_phone_user.scalars().first()
+
+    # 2. Si no se encontró directo en User, buscar en Staff por DNI, email o nombre
+    staff_member = None
     if not user:
         staff_res = await db.execute(
             select(Staff).where(
                 (Staff.dni == clean_ident) |
-                (func.lower(Staff.email) == clean_ident.lower())
+                (func.lower(Staff.email) == clean_ident.lower()) |
+                (func.lower(Staff.full_name) == clean_ident.lower())
             )
         )
         staff_member = staff_res.scalars().first()
@@ -267,8 +281,11 @@ async def login_pin(
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Usuario inactivo o suspendido")
 
-    # 3. Validar PIN de seguridad (soporta hash y migración perezosa)
+    # 3. Validar PIN de seguridad (soporta hash y migración perezosa, y fallback a staff_member)
     stored_pin = user.security_pin
+    if not stored_pin and staff_member and staff_member.security_pin:
+        stored_pin = staff_member.security_pin
+
     pin_valid = verify_pin_hash(clean_pin, stored_pin) if stored_pin else False
 
     if not pin_valid:

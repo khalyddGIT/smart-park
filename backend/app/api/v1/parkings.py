@@ -669,11 +669,27 @@ async def update_parking(parking_id: int, parking_in: ParkingUpdate, db: AsyncSe
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
 
     if current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
-        is_owner = bool(parking.email and parking.email.strip().lower() == current_user.email.strip().lower())
+        curr_email = (current_user.email or "").strip().lower()
+        is_owner = bool(parking.email and parking.email.strip().lower() == curr_email)
         if not is_owner:
-            staff_res = await db.execute(select(Staff).where(Staff.email == current_user.email, Staff.parking_id == parking.id))
+            staff_res = await db.execute(select(Staff).where(func.lower(Staff.email) == curr_email, Staff.parking_id == parking.id))
             if not staff_res.scalars().first():
                 raise HTTPException(status_code=403, detail="No tienes permiso para modificar este estacionamiento")
+        
+        # Garantizar que el administrador local conserve acceso aunque cambie el correo comercial de la sede
+        staff_check = await db.execute(select(Staff).where(func.lower(Staff.email) == curr_email, Staff.parking_id == parking.id))
+        if not staff_check.scalars().first():
+            from app.core.security import hash_pin
+            db.add(Staff(
+                parking_id=parking.id,
+                full_name=current_user.full_name or "Administrador de Sede",
+                dni=f"DNI{current_user.id:08d}",
+                position="Administrador de Sede",
+                shift="Completo",
+                status="active",
+                email=curr_email,
+                security_pin=hash_pin("1234")
+            ))
     
     update_data = parking_in.model_dump(exclude_unset=True)
     for key, value in update_data.items():

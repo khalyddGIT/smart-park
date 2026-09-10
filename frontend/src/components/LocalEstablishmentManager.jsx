@@ -37,7 +37,11 @@ import {
   Bike,
   Truck,
   Store,
-  Layers
+  Layers,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle
 } from 'lucide-react';
 import { InteractiveFloorPlanDrawingStudio } from './InteractiveFloorPlanDrawingStudio';
 import { useEstablishments, isMyEstablishment, getEstablishmentHierarchy } from '../context/EstablishmentContext';
@@ -299,12 +303,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
   const [search, setSearch] = useState('');
   const [activeViewMode, setActiveViewMode] = useState('list'); // 'list' | 'viewer_2d' | 'editor_cad' | 'edit_form'
   const [isEditingNew, setIsEditingNew] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedEstablishment, setSelectedEstablishment] = useState(null);
   const [currentPlanElements, setCurrentPlanElements] = useState([]);
   const [cameraDetecting, setCameraDetecting] = useState(false);
   
-  // Tab activa dentro de la vista de edición completa (Solo las 4 pedidas)
-  const [activeTabSection, setActiveTabSection] = useState('general'); // 'general' | 'image' | 'location' | 'social'
+  // Tab activa dentro de la vista de edición completa (5 secciones organizadas)
+  const [activeTabSection, setActiveTabSection] = useState('identity'); // 'identity' | 'pricing' | 'policies' | 'location' | 'media_contact'
   
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -543,7 +548,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
         website: ''
       }
     });
-    setActiveTabSection('general');
+    setActiveTabSection('identity');
     setActiveViewMode('edit_form');
   };
 
@@ -593,18 +598,19 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       mapsUrl: est.mapsUrl || `https://maps.google.com/?q=${est.latitude || -13.1604},${est.longitude || -74.2259}`,
       socials: est.socials || { facebook: '', instagram: '', tiktok: '', website: '' }
     });
-    setActiveTabSection('general');
+    setActiveTabSection('identity');
     setActiveViewMode('edit_form');
   };
 
   // Guardar formulario
   const handleSaveForm = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!formData.name.trim()) {
       alert('Por favor ingresa el nombre de la sede.');
       return;
     }
 
+    setIsSaving(true);
     try {
       if (isEditingNew) {
         const defaultNewElements = [
@@ -671,7 +677,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
         };
 
         await addEstablishment(newEst);
-        showToast(`✓ Sede "${newEst.name}" registrada exitosamente.`);
+        showToast(`✓ Sede "${newEst.name}" registrada y sincronizada exitosamente.`);
       } else {
         if (!selectedEstablishment) return;
 
@@ -719,13 +725,16 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
         };
 
         await updateEstablishment(selectedEstablishment.id, updated);
-        showToast(`✓ Datos y coordenadas de "${formData.name}" guardados y persistidos.`);
+        setSelectedEstablishment(prev => ({ ...prev, ...updated }));
+        showToast(`✓ Datos de "${formData.name}" guardados y sincronizados correctamente.`);
       }
 
       setActiveViewMode('list');
     } catch (err) {
       console.error('Error al guardar sede:', err);
-      showToast('Ocurrió un error al guardar la sede en el servidor.');
+      showToast(err?.message || 'Ocurrió un error al guardar la sede en el servidor.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1284,127 +1293,160 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       {activeViewMode === 'edit_form' && (
         <div className="space-y-5 animate-in fade-in">
           
-          {/* Header Superior Limpio */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-            <div className="flex items-center gap-3">
+          {/* Header Superior Sticky con Identificador y Estado */}
+          <div className="sticky top-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200/90 shadow-sm">
+            <div className="flex items-center gap-3 min-w-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveViewMode('list')}
-                className="font-bold text-xs gap-1.5 rounded-xl h-8.5 text-slate-700 bg-slate-50 hover:bg-slate-100 border-slate-200 cursor-pointer"
+                disabled={isSaving}
+                className="font-bold text-xs gap-1.5 rounded-xl h-9 text-slate-700 bg-slate-50 hover:bg-slate-100 border-slate-200 shrink-0 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4 shrink-0" />
                 <span>Volver</span>
               </Button>
-              <div>
-                <h1 className="text-base font-bold text-slate-900 leading-tight">
-                  {isEditingNew ? 'Registrar Nueva Sede' : `Editar Sede: ${formData.name || 'Establecimiento'}`}
-                </h1>
-                <p className="text-xs text-slate-500 font-medium">
-                  Actualiza información general, fotografía, mapa y datos de contacto.
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-base font-bold text-slate-900 truncate">
+                    {isEditingNew ? 'Registrar Nueva Sede' : (formData.name || 'Editar Establecimiento')}
+                  </h1>
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                    formData.status === 'Operativo'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : formData.status === 'Mantenimiento'
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      formData.status === 'Operativo' ? 'bg-emerald-500' : formData.status === 'Mantenimiento' ? 'bg-amber-500' : 'bg-rose-500'
+                    }`} />
+                    {formData.status}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium truncate">
+                  Configura tarifas, políticas, geolocalización satelital y medios de contacto.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setActiveViewMode('list')}
-                className="text-xs font-semibold rounded-xl h-8.5 px-3 cursor-pointer"
+                disabled={isSaving}
+                className="text-xs font-semibold rounded-xl h-9 px-3.5 border-slate-200 text-slate-700 cursor-pointer"
               >
                 Cancelar
               </Button>
               <Button
                 type="button"
                 onClick={handleSaveForm}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl h-8.5 px-4 gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
+                disabled={isSaving}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl h-9 px-4 gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-60"
               >
-                <Save className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEditingNew ? 'Registrar Sede' : 'Guardar Cambios'}</span>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+                    <span>Guardando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5 shrink-0" />
+                    <span>{isEditingNew ? 'Registrar Sede' : 'Guardar Cambios'}</span>
+                  </>
+                )}
               </Button>
             </div>
           </div>
 
-          {/* Navegación por Pestañas */}
-          <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/80 overflow-x-auto scrollbar-none">
+          {/* Navegación por 5 Pestañas Especializadas */}
+          <div className="flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/80 overflow-x-auto scrollbar-none">
             <button
               type="button"
-              onClick={() => setActiveTabSection('general')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                activeTabSection === 'general'
-                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+              onClick={() => setActiveTabSection('identity')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTabSection === 'identity'
+                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
-              <Building2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>General & Tarifas</span>
+              <Building2 className="w-4 h-4 shrink-0 text-emerald-600" />
+              <span>General & Identidad</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTabSection('pricing')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTabSection === 'pricing'
+                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <DollarSign className="w-4 h-4 shrink-0 text-emerald-600" />
+              <span>Tarifas & Turno Noche</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTabSection('policies')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTabSection === 'policies'
+                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" />
+              <span>Políticas & Tolerancia</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTabSection('location')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'location'
-                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
-              <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>Ubicación</span>
+              <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
+              <span>Ubicación & GPS</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setActiveTabSection('image')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                activeTabSection === 'image'
-                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+              onClick={() => setActiveTabSection('media_contact')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTabSection === 'media_contact'
+                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
-              <ImageIcon className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>Fotografía</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTabSection('social')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                activeTabSection === 'social'
-                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Share2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>Contacto</span>
+              <Camera className="w-4 h-4 shrink-0 text-emerald-600" />
+              <span>Fotografía & Contacto</span>
             </button>
           </div>
 
           {/* Formulario + Preview en Vivo */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             
-            {/* Columna Izquierda: Formulario */}
+            {/* Columna Izquierda: Formulario Organizado */}
             <div className="lg:col-span-2 space-y-5">
               
-              {/* SECCIÓN 1: DATOS DEL LOCAL & TARIFAS */}
-              {activeTabSection === 'general' && (
-                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                  <div className="border-b border-slate-100 pb-2.5 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">Datos Generales & Tarifas</h3>
-                      <p className="text-xs text-slate-500 font-medium">Información comercial, estructura de costos y estado del local.</p>
-                    </div>
+              {/* TAB 1: IDENTIDAD & GENERAL */}
+              {activeTabSection === 'identity' && (
+                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900">Identidad & Operación Comercial</h3>
+                    <p className="text-xs text-slate-500 font-medium">Define el nombre de la sede, nivel arquitectónico, estado operativo y datos fiscales.</p>
                   </div>
 
                   <div className="space-y-4">
-                    {/* Bloque 1: Identidad Comercial */}
-                    <div className="space-y-3">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
-                        Identidad de la Sede
-                      </span>
-
-                      <div>
+                    {/* Nombre y Nivel */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="sm:col-span-2">
                         <label className="text-xs font-semibold text-slate-700 block mb-1">Nombre Comercial de la Sede *</label>
                         <Input
                           required
@@ -1414,648 +1456,81 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           className="text-xs h-9.5 bg-white border-slate-200"
                         />
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">Nivel / Estructura</label>
-                          <select
-                            value={formData.level}
-                            onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                            className="w-full bg-white border border-slate-200 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
-                          >
-                            <option>Nivel 1 - Superficie</option>
-                            <option>Sótano -1</option>
-                            <option>Sótano -2</option>
-                            <option>Nivel 2 - Elevado</option>
-                            <option>Playa Abierta</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">Tarifa por Hora (S/) *</label>
-                          <Input
-                            type="number"
-                            step="0.50"
-                            min="1.00"
-                            value={formData.rate}
-                            onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-                            className="text-xs font-mono font-bold h-9.5 bg-white border-slate-200"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">Estado de Operación</label>
-                          <select
-                            value={formData.status}
-                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                            className="w-full bg-white border border-slate-200 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
-                          >
-                            <option value="Operativo">● Operativo (Abierto)</option>
-                            <option value="Mantenimiento">● En Mantenimiento</option>
-                            <option value="Cerrado">● Cerrado Temporalmente</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Presets Rápidos de Tarifas */}
-                      <div className="flex items-center gap-1.5 pt-0.5">
-                        <span className="text-[11px] text-slate-400 font-medium">Sugerencias:</span>
-                        {[3.00, 5.00, 8.00, 10.00].map(val => (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, rate: val })}
-                            className={`px-2 py-0.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer border ${
-                              Number(formData.rate) === val 
-                                ? 'bg-slate-900 text-white border-slate-900' 
-                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                            }`}
-                          >
-                            S/ {val.toFixed(2)}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Política de Tolerancia */}
-                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-amber-500" /> Tolerancia de Reserva (min)
-                          </label>
-                          <span className="text-[10px] font-bold text-amber-700 bg-white border border-amber-200 px-2 py-0.5 rounded-full">
-                            Auto-cancela si no hay check-in
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-3 items-end">
-                          <div>
-                            <Input
-                              type="number"
-                              min="5"
-                              max="60"
-                              step="5"
-                              value={formData.tolerance}
-                              onChange={(e) => {
-                                let v = Math.max(5, Math.min(60, Number(e.target.value) || 15));
-                                setFormData({ ...formData, tolerance: v });
-                              }}
-                              className="text-xs font-mono font-bold h-9.5 bg-white border-amber-200"
-                            />
-                            <p className="text-[10px] text-amber-700 font-medium mt-1">5–60 min. Se cancela y libera cajón si vence.</p>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[11px] text-amber-700 font-medium">Rápido:</span>
-                            {[10, 15, 20, 30].map(v => (
-                              <button
-                                key={v}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, tolerance: v })}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${Number(formData.tolerance) === v ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-amber-800 border-amber-200 hover:bg-amber-100'}`}
-                              >
-                                {v} min
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-[11px] text-slate-600 leading-snug">
-                          Si la reserva sigue en <b>programada</b> después de <b>{formData.tolerance} min</b> del inicio, el sistema la cancela automáticamente, libera el cajón y notifica al conductor via campana y push.
-                        </p>
-                      </div>
-
-                      {/* Bloque: Tarifas Diferenciadas por Categoría de Vehículo */}
-                      <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 space-y-3.5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-200/80 pb-3">
-                          <div>
-                            <h3 className="text-sm font-bold text-slate-900">Tarifas por Categoría</h3>
-                            <p className="text-xs text-slate-500">
-                              Cobro base por hora o fraccionado por minuto según la sede.
-                            </p>
-                          </div>
-
-                          {/* Selector de Modalidad: Por Hora o Por Minuto */}
-                          <div className="inline-flex bg-slate-200/80 p-1 rounded-xl border border-slate-300/60 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => setFormData({ ...formData, billing_unit: 'hour' })}
-                              className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                                formData.billing_unit !== 'minute' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                              }`}
-                            >
-                              Por hora
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setFormData({ ...formData, billing_unit: 'minute' })}
-                              className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                                formData.billing_unit === 'minute' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                              }`}
-                            >
-                              Por minuto
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-                          {/* Auto / Sedán */}
-                          <div className={`bg-white p-3 rounded-xl border transition shadow-2xs space-y-2 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/30' : 'border-slate-200'}`}>
-                            <div className="flex items-center justify-between text-slate-700">
-                              <span className="text-xs font-bold flex items-center gap-1">
-                                <Car className="w-3.5 h-3.5 text-slate-600" /> Auto / Sedán
-                              </span>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <div>
-                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por minuto</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs font-mono font-bold text-slate-400">S/</span>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0.01"
-                                    value={formData.rate_minute_auto}
-                                    onChange={(e) => setFormData({ ...formData, rate_minute_auto: parseFloat(e.target.value) || 0 })}
-                                    className="h-7 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
-                                  />
-                                  <span className="text-[10px] text-slate-400">/min</span>
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por hora</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs font-mono font-bold text-slate-400">S/</span>
-                                  <Input
-                                    type="number"
-                                    step="0.50"
-                                    min="1.00"
-                                    value={formData.rate_auto}
-                                    onChange={(e) => {
-                                      const h = parseFloat(e.target.value) || 0;
-                                      setFormData({
-                                        ...formData,
-                                        rate_auto: h,
-                                        rate_minute_auto: Number((h / 60).toFixed(2))
-                                      });
-                                    }}
-                                    className="h-7 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
-                                  />
-                                  <span className="text-[10px] text-slate-400">/h</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Camioneta / SUV */}
-                          <div className={`bg-white p-3 rounded-xl border transition shadow-2xs space-y-2 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/30' : 'border-slate-200'}`}>
-                            <div className="flex items-center justify-between text-slate-700">
-                              <span className="text-xs font-bold flex items-center gap-1">
-                                <Truck className="w-3.5 h-3.5 text-slate-600" /> Camioneta / SUV
-                              </span>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <div>
-                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por minuto</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs font-mono font-bold text-slate-400">S/</span>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0.01"
-                                    value={formData.rate_minute_suv}
-                                    onChange={(e) => setFormData({ ...formData, rate_minute_suv: parseFloat(e.target.value) || 0 })}
-                                    className="h-7 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
-                                  />
-                                  <span className="text-[10px] text-slate-400">/min</span>
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por hora</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs font-mono font-bold text-slate-400">S/</span>
-                                  <Input
-                                    type="number"
-                                    step="0.50"
-                                    min="1.00"
-                                    value={formData.rate_suv}
-                                    onChange={(e) => {
-                                      const h = parseFloat(e.target.value) || 0;
-                                      setFormData({
-                                        ...formData,
-                                        rate_suv: h,
-                                        rate_minute_suv: Number((h / 60).toFixed(2))
-                                      });
-                                    }}
-                                    className="h-7 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
-                                  />
-                                  <span className="text-[10px] text-slate-400">/h</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Mototaxi / Trimóvil */}
-                          <div className={`bg-white p-3 rounded-xl border transition shadow-2xs space-y-2 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/30' : 'border-slate-200'}`}>
-                            <div className="flex items-center justify-between text-slate-700">
-                              <span className="text-xs font-bold flex items-center gap-1">
-                                <Car className="w-3.5 h-3.5 text-slate-600" /> Mototaxi / Torito
-                              </span>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <div>
-                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por minuto</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs font-mono font-bold text-slate-400">S/</span>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0.01"
-                                    value={formData.rate_minute_mototaxi}
-                                    onChange={(e) => setFormData({ ...formData, rate_minute_mototaxi: parseFloat(e.target.value) || 0 })}
-                                    className="h-7 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
-                                  />
-                                  <span className="text-[10px] text-slate-400">/min</span>
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por hora</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs font-mono font-bold text-slate-400">S/</span>
-                                  <Input
-                                    type="number"
-                                    step="0.50"
-                                    min="0.50"
-                                    value={formData.rate_mototaxi}
-                                    onChange={(e) => {
-                                      const h = parseFloat(e.target.value) || 0;
-                                      setFormData({
-                                        ...formData,
-                                        rate_mototaxi: h,
-                                        rate_minute_mototaxi: Number((h / 60).toFixed(2))
-                                      });
-                                    }}
-                                    className="h-7 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
-                                  />
-                                  <span className="text-[10px] text-slate-400">/h</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Moto Lineal */}
-                          <div className={`bg-white p-3 rounded-xl border transition shadow-2xs space-y-2 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/30' : 'border-slate-200'}`}>
-                            <div className="flex items-center justify-between text-slate-700">
-                              <span className="text-xs font-bold flex items-center gap-1">
-                                <Bike className="w-3.5 h-3.5 text-slate-600" /> Moto Lineal
-                              </span>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <div>
-                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por minuto</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs font-mono font-bold text-slate-400">S/</span>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0.01"
-                                    value={formData.rate_minute_moto}
-                                    onChange={(e) => setFormData({ ...formData, rate_minute_moto: parseFloat(e.target.value) || 0 })}
-                                    className="h-7 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
-                                  />
-                                  <span className="text-[10px] text-slate-400">/min</span>
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="text-[10px] text-slate-500 font-semibold mb-0.5">
-                                  <span>Por hora</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs font-mono font-bold text-slate-400">S/</span>
-                                  <Input
-                                    type="number"
-                                    step="0.50"
-                                    min="0.50"
-                                    value={formData.rate_moto}
-                                    onChange={(e) => {
-                                      const h = parseFloat(e.target.value) || 0;
-                                      setFormData({
-                                        ...formData,
-                                        rate_moto: h,
-                                        rate_minute_moto: Number((h / 60).toFixed(2))
-                                      });
-                                    }}
-                                    className="h-7 text-xs font-mono font-bold bg-slate-50 border-slate-200 px-2"
-                                  />
-                                  <span className="text-[10px] text-slate-400">/h</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Bloque: Configuración de Turno Noche */}
-                      <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 space-y-3.5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
-                          <div>
-                            <h3 className="text-sm font-bold text-slate-900">Turno Noche</h3>
-                            <p className="text-xs text-slate-500">
-                              Horario nocturno con tarifa diferenciada.
-                            </p>
-                          </div>
-
-                          <label className="relative inline-flex items-center cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              checked={!!formData.night_shift_enabled}
-                              onChange={(e) => setFormData({ ...formData, night_shift_enabled: e.target.checked })}
-                              className="sr-only peer"
-                            />
-                            <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-                            <span className="ml-2 text-xs font-semibold text-slate-700">
-                              {formData.night_shift_enabled ? 'Habilitado' : 'Desactivado'}
-                            </span>
-                          </label>
-                        </div>
-
-                        {formData.night_shift_enabled ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                            <div>
-                              <label className="text-xs font-semibold text-slate-700 block mb-1">
-                                Inicio
-                              </label>
-                              <Input
-                                type="time"
-                                value={formData.night_shift_start || '20:00'}
-                                onChange={(e) => setFormData({ ...formData, night_shift_start: e.target.value })}
-                                className="h-9 text-xs font-mono font-bold bg-white border-slate-200 text-slate-900"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="text-xs font-semibold text-slate-700 block mb-1">
-                                Fin
-                              </label>
-                              <Input
-                                type="time"
-                                value={formData.night_shift_end || '06:00'}
-                                onChange={(e) => setFormData({ ...formData, night_shift_end: e.target.value })}
-                                className="h-9 text-xs font-mono font-bold bg-white border-slate-200 text-slate-900"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="text-xs font-semibold text-slate-700 block mb-1">
-                                Recargo por hora (S/)
-                              </label>
-                              <Input
-                                type="number"
-                                step="0.50"
-                                min="0.00"
-                                value={formData.night_shift_surcharge}
-                                onChange={(e) => setFormData({ ...formData, night_shift_surcharge: parseFloat(e.target.value) || 0 })}
-                                className="h-9 text-xs font-mono font-bold bg-white border-slate-200 text-slate-900"
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-slate-500">
-                            Tarifa diurna aplicada las 24 horas.
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Bloque: Condiciones de Reserva & Tiempo Estimado */}
-                      <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 space-y-3.5">
-                        <div className="border-b border-slate-200/80 pb-3">
-                          <h3 className="text-sm font-bold text-slate-900">Políticas de Reserva</h3>
-                          <p className="text-xs text-slate-500">
-                            Condiciones de cobro y límites de tiempo de estadía.
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                          {/* Switch Cobro Reserva / Prepago */}
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                            <label className="text-xs font-bold text-slate-800 block">
-                              Modalidad de cobro
-                            </label>
-                            <select
-                              value={formData.require_reservation_prepay ? 'prepay' : 'free'}
-                              onChange={(e) => setFormData({ ...formData, require_reservation_prepay: e.target.value === 'prepay' })}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 h-9 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
-                            >
-                              <option value="free">Reserva libre (pago en garita)</option>
-                              <option value="prepay">Prepago obligatorio (abono digital)</option>
-                            </select>
-                            <p className="text-[11px] text-slate-500">
-                              {formData.require_reservation_prepay 
-                                ? 'El usuario abona antes de confirmar el cajón.' 
-                                : 'El usuario reserva gratis y abona en garita.'}
-                            </p>
-                          </div>
-
-                          {/* Tasa o Fianza de Reserva */}
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                            <label className="text-xs font-bold text-slate-800 block">
-                              Tasa fija de reserva (S/)
-                            </label>
-                            <Input
-                              type="number"
-                              step="0.50"
-                              min="0.00"
-                              value={formData.reservation_fee}
-                              onChange={(e) => setFormData({ ...formData, reservation_fee: parseFloat(e.target.value) || 0 })}
-                              className="h-9 text-xs font-mono font-bold bg-slate-50 border-slate-200"
-                            />
-                            <p className="text-[11px] text-slate-500">
-                              Monto fijo adicional por gestión de reserva (S/ 0.00 si no aplica).
-                            </p>
-                          </div>
-
-                          {/* Opción Hora (Libre) */}
-                          <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                            <div className="flex items-center justify-between">
-                              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>Opción "Hora (Libre)" en Reservas</span>
-                              </label>
-                              <label className="relative inline-flex items-center cursor-pointer select-none">
-                                <input
-                                  type="checkbox"
-                                  checked={formData.allow_open_stay !== false}
-                                  onChange={(e) => setFormData({ ...formData, allow_open_stay: e.target.checked })}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-                                <span className="ml-2 text-xs font-semibold text-slate-700">
-                                  {formData.allow_open_stay !== false ? 'Habilitado' : 'Desactivado'}
-                                </span>
-                              </label>
-                            </div>
-                            <p className="text-[11px] text-slate-500 leading-snug">
-                              {formData.allow_open_stay !== false 
-                                ? 'Permite a los usuarios reservar con liquidación por tiempo real al salir.'
-                                : 'Exige al usuario seleccionar una cantidad fija de horas.'}
-                            </p>
-                          </div>
-
-                          {/* Rango de Tiempo Estimado (Mín y Máx) */}
-                          <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                            <label className="text-xs font-bold text-slate-800 block">
-                              Duración de estadía permitida
-                            </label>
-
-                            {formData.billing_unit === 'minute' ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Mínimo</span>
-                                  <div className="flex items-center gap-1.5">
-                                    <Input
-                                      type="number"
-                                      min="5"
-                                      max="360"
-                                      step="5"
-                                      value={formData.min_stay_minutes}
-                                      onChange={(e) => setFormData({ ...formData, min_stay_minutes: parseInt(e.target.value) || 15 })}
-                                      className="h-8.5 text-xs font-mono font-bold bg-slate-50 border-slate-200"
-                                    />
-                                    <span className="text-xs text-slate-500">minutos</span>
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Máximo</span>
-                                  <div className="flex items-center gap-1.5">
-                                    <Input
-                                      type="number"
-                                      min="15"
-                                      max="4320"
-                                      step="15"
-                                      value={formData.max_stay_minutes}
-                                      onChange={(e) => setFormData({ ...formData, max_stay_minutes: parseInt(e.target.value) || 1440 })}
-                                      className="h-8.5 text-xs font-mono font-bold bg-slate-50 border-slate-200"
-                                    />
-                                    <span className="text-xs text-slate-500">minutos</span>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Mínimo</span>
-                                  <div className="flex items-center gap-1.5">
-                                    <Input
-                                      type="number"
-                                      min="1"
-                                      max="12"
-                                      value={formData.min_stay_hours}
-                                      onChange={(e) => setFormData({ ...formData, min_stay_hours: parseInt(e.target.value) || 1 })}
-                                      className="h-8.5 text-xs font-mono font-bold bg-slate-50 border-slate-200"
-                                    />
-                                    <span className="text-xs text-slate-500">horas</span>
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <span className="text-[11px] text-slate-600 block mb-1 font-medium">Máximo</span>
-                                  <div className="flex items-center gap-1.5">
-                                    <Input
-                                      type="number"
-                                      min="1"
-                                      max="72"
-                                      value={formData.max_stay_hours}
-                                      onChange={(e) => setFormData({ ...formData, max_stay_hours: parseInt(e.target.value) || 24 })}
-                                      className="h-8.5 text-xs font-mono font-bold bg-slate-50 border-slate-200"
-                                    />
-                                    <span className="text-xs text-slate-500">horas</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bloque 2: Ubicación Física & Horario */}
-                    <div className="border-t border-slate-100 pt-3.5 space-y-3">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
-                        Dirección & Horario
-                      </span>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">Dirección Exacta *</label>
-                          <Input
-                            required
-                            placeholder="Ej. Jr. Bellido 240, Huamanga"
-                            value={formData.address}
-                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                            className="text-xs h-9.5 bg-white border-slate-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">Referencia Urbana</label>
-                          <Input
-                            placeholder="Ej. Frente a la Iglesia San Blas"
-                            value={formData.reference}
-                            onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                            className="text-xs h-9.5 bg-white border-slate-200"
-                          />
-                        </div>
-                      </div>
-
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-slate-700">Horario de Atención</label>
-                          <div className="flex items-center gap-1">
-                            {['24/7 (24 Horas)', '06:00 AM - 10:00 PM', 'Lun a Sáb: 07:00 - 21:00'].map(h => (
-                              <button
-                                key={h}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, schedule: h })}
-                                className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium transition cursor-pointer"
-                              >
-                                {h.split(' ')[0]}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <Input
-                          placeholder="Ej. Lunes a Domingo: 24 Horas (Abierto 24/7)"
-                          value={formData.schedule}
-                          onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
-                          className="text-xs h-9.5 bg-white border-slate-200"
-                        />
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Nivel / Estructura</label>
+                        <select
+                          value={formData.level}
+                          onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
+                        >
+                          <option>Nivel 1 - Superficie</option>
+                          <option>Sótano -1</option>
+                          <option>Sótano -2</option>
+                          <option>Nivel 2 - Elevado</option>
+                          <option>Playa Abierta</option>
+                        </select>
                       </div>
                     </div>
 
-                    {/* Bloque 3: Datos de Titular & Accesos */}
-                    <div className="border-t border-slate-100 pt-3.5 space-y-3">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
-                        Titular & Indicaciones
-                      </span>
+                    {/* Estado de Operación: Tarjetas Visuales Semánticas */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-slate-700 block">Estado Operativo de la Sede</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, status: 'Operativo' })}
+                          className={`p-3 rounded-xl border text-left transition flex items-center gap-3 cursor-pointer ${
+                            formData.status === 'Operativo'
+                              ? 'border-emerald-500 bg-emerald-50/70 ring-1 ring-emerald-500 shadow-2xs'
+                              : 'border-slate-200 bg-white hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className={`w-3 h-3 rounded-full shrink-0 ${formData.status === 'Operativo' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900">Operativo</p>
+                            <p className="text-[10px] text-slate-500">Abierto al público y reservas activas</p>
+                          </div>
+                        </button>
 
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, status: 'Mantenimiento' })}
+                          className={`p-3 rounded-xl border text-left transition flex items-center gap-3 cursor-pointer ${
+                            formData.status === 'Mantenimiento'
+                              ? 'border-amber-500 bg-amber-50/70 ring-1 ring-amber-500 shadow-2xs'
+                              : 'border-slate-200 bg-white hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className={`w-3 h-3 rounded-full shrink-0 ${formData.status === 'Mantenimiento' ? 'bg-amber-500' : 'bg-slate-300'}`} />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900">Mantenimiento</p>
+                            <p className="text-[10px] text-slate-500">Cajones en calibración o reparación</p>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, status: 'Cerrado' })}
+                          className={`p-3 rounded-xl border text-left transition flex items-center gap-3 cursor-pointer ${
+                            formData.status === 'Cerrado'
+                              ? 'border-rose-500 bg-rose-50/70 ring-1 ring-rose-500 shadow-2xs'
+                              : 'border-slate-200 bg-white hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className={`w-3 h-3 rounded-full shrink-0 ${formData.status === 'Cerrado' ? 'bg-rose-500' : 'bg-slate-300'}`} />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900">Cerrado</p>
+                            <p className="text-[10px] text-slate-500">Fuera de servicio temporal</p>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Titular y RUC */}
+                    <div className="border-t border-slate-100 pt-4 space-y-3">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
+                        Datos Fiscales y Titularidad
+                      </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="text-xs font-semibold text-slate-700 block mb-1">Titular / Razón Social</label>
@@ -2076,41 +1551,585 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           />
                         </div>
                       </div>
+                    </div>
 
-                      <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">Indicaciones de Acceso para Conductores</label>
-                        <textarea
-                          rows={2}
-                          placeholder="Describe accesos viales, garitas, altura máxima o referencias para los clientes..."
-                          value={formData.description}
-                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                          className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
-                        />
+                    {/* Horario de Atención con Chips Rápidos */}
+                    <div className="border-t border-slate-100 pt-4 space-y-2">
+                      <div className="flex items-center justify-between flex-wrap gap-1">
+                        <label className="text-xs font-semibold text-slate-700">Horario de Atención</label>
+                        <div className="flex items-center gap-1">
+                          {['24/7 (24 Horas)', '06:00 AM - 10:00 PM', 'Lun a Sáb: 07:00 - 21:00'].map((h) => (
+                            <button
+                              key={h}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, schedule: h })}
+                              className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium transition cursor-pointer"
+                            >
+                              {h.split(' ')[0]}
+                            </button>
+                          ))}
+                        </div>
                       </div>
+                      <Input
+                        placeholder="Ej. Lunes a Domingo: 24 Horas (Abierto 24/7)"
+                        value={formData.schedule}
+                        onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
+                        className="text-xs h-9.5 bg-white border-slate-200"
+                      />
+                    </div>
+
+                    {/* Indicaciones de Acceso */}
+                    <div className="border-t border-slate-100 pt-4">
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Indicaciones de Acceso para Conductores</label>
+                      <textarea
+                        rows={3}
+                        placeholder="Describe accesos viales, garita ANPR, altura máxima permitida o puntos de entrada vehicular..."
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 shadow-inner"
+                      />
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* SECCIÓN 2: MAPA & UBICACIÓN INTELIGENTE */}
-              {activeTabSection === 'location' && (
-                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                  <div className="border-b border-slate-100 pb-2.5">
-                    <h3 className="text-sm font-bold text-slate-900">Ubicación & Coordenadas en el Mapa</h3>
-                    <p className="text-xs text-slate-500 font-medium">
-                      Ubica con precisión la cochera usando el buscador de calles, el mapa interactivo o pegando un enlace de Google Maps.
+              {/* TAB 2: TARIFAS & TURNO NOCHE */}
+              {activeTabSection === 'pricing' && (
+                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
+                  <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Tarifas por Categoría & Turno Noche</h3>
+                      <p className="text-xs text-slate-500 font-medium">Estructura de precios por hora y fracción por minuto con recargos nocturnos.</p>
+                    </div>
+
+                    {/* Selector de Modalidad */}
+                    <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, billing_unit: 'hour' })}
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                          formData.billing_unit !== 'minute' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Por hora
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, billing_unit: 'minute' })}
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                          formData.billing_unit === 'minute' ? 'bg-white text-emerald-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Por minuto
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tarifa Base General y Presets */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <label className="text-xs font-bold text-slate-800">
+                        Tarifa Base Referencial por Hora (S/) *
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-slate-400 font-medium">Presets:</span>
+                        {[3.00, 5.00, 8.00, 10.00].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                rate: val,
+                                rate_auto: val,
+                                rate_minute_auto: Number((val / 60).toFixed(2))
+                              }));
+                            }}
+                            className={`px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer border ${
+                              Number(formData.rate) === val 
+                                ? 'bg-slate-900 text-white border-slate-900' 
+                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            S/ {val.toFixed(2)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="max-w-xs">
+                      <Input
+                        type="number"
+                        step="0.50"
+                        min="1.00"
+                        value={formData.rate}
+                        onChange={(e) => {
+                          const r = parseFloat(e.target.value) || 0;
+                          setFormData(prev => ({
+                            ...prev,
+                            rate: r,
+                            rate_auto: r,
+                            rate_minute_auto: Number((r / 60).toFixed(2))
+                          }));
+                        }}
+                        className="text-xs font-mono font-bold h-9 bg-white border-slate-200"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 4 Tarjetas de Vehículos */}
+                  <div className="space-y-3">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
+                      Tarifas por Categoría de Vehículo
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      
+                      {/* Auto / Sedán */}
+                      <div className={`p-3.5 rounded-xl border bg-white shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/20' : 'border-slate-200'}`}>
+                        <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs">
+                          <Car className="w-4 h-4 text-emerald-600" />
+                          <span>Auto / Sedán</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por hora (S/)</span>
+                            <Input
+                              type="number"
+                              step="0.50"
+                              min="0.50"
+                              value={formData.rate_auto}
+                              onChange={(e) => {
+                                const h = parseFloat(e.target.value) || 0;
+                                setFormData({
+                                  ...formData,
+                                  rate_auto: h,
+                                  rate_minute_auto: Number((h / 60).toFixed(2))
+                                });
+                              }}
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por minuto (S/)</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              value={formData.rate_minute_auto}
+                              onChange={(e) => setFormData({ ...formData, rate_minute_auto: parseFloat(e.target.value) || 0 })}
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Camioneta / SUV */}
+                      <div className={`p-3.5 rounded-xl border bg-white shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/20' : 'border-slate-200'}`}>
+                        <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs">
+                          <Truck className="w-4 h-4 text-emerald-600" />
+                          <span>Camioneta / SUV</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por hora (S/)</span>
+                            <Input
+                              type="number"
+                              step="0.50"
+                              min="0.50"
+                              value={formData.rate_suv}
+                              onChange={(e) => {
+                                const h = parseFloat(e.target.value) || 0;
+                                setFormData({
+                                  ...formData,
+                                  rate_suv: h,
+                                  rate_minute_suv: Number((h / 60).toFixed(2))
+                                });
+                              }}
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por minuto (S/)</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              value={formData.rate_minute_suv}
+                              onChange={(e) => setFormData({ ...formData, rate_minute_suv: parseFloat(e.target.value) || 0 })}
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mototaxi / Torito */}
+                      <div className={`p-3.5 rounded-xl border bg-white shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/20' : 'border-slate-200'}`}>
+                        <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs">
+                          <Car className="w-4 h-4 text-emerald-600" />
+                          <span>Mototaxi / Torito</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por hora (S/)</span>
+                            <Input
+                              type="number"
+                              step="0.50"
+                              min="0.50"
+                              value={formData.rate_mototaxi}
+                              onChange={(e) => {
+                                const h = parseFloat(e.target.value) || 0;
+                                setFormData({
+                                  ...formData,
+                                  rate_mototaxi: h,
+                                  rate_minute_mototaxi: Number((h / 60).toFixed(2))
+                                });
+                              }}
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por minuto (S/)</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              value={formData.rate_minute_mototaxi}
+                              onChange={(e) => setFormData({ ...formData, rate_minute_mototaxi: parseFloat(e.target.value) || 0 })}
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Moto Lineal */}
+                      <div className={`p-3.5 rounded-xl border bg-white shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/20' : 'border-slate-200'}`}>
+                        <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs">
+                          <Bike className="w-4 h-4 text-emerald-600" />
+                          <span>Moto Lineal</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por hora (S/)</span>
+                            <Input
+                              type="number"
+                              step="0.50"
+                              min="0.50"
+                              value={formData.rate_moto}
+                              onChange={(e) => {
+                                const h = parseFloat(e.target.value) || 0;
+                                setFormData({
+                                  ...formData,
+                                  rate_moto: h,
+                                  rate_minute_moto: Number((h / 60).toFixed(2))
+                                });
+                              }}
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por minuto (S/)</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              value={formData.rate_minute_moto}
+                              onChange={(e) => setFormData({ ...formData, rate_minute_moto: parseFloat(e.target.value) || 0 })}
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* Configuración de Turno Noche */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Moon className="w-4 h-4 text-indigo-600" />
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900">Turno Noche Diferenciado</h4>
+                          <p className="text-[11px] text-slate-500">Aplica un recargo por hora en horarios nocturnos de alta seguridad.</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={!!formData.night_shift_enabled}
+                          onChange={(e) => setFormData({ ...formData, night_shift_enabled: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        <span className="ml-2 text-xs font-bold text-slate-700">
+                          {formData.night_shift_enabled ? 'Habilitado' : 'Desactivado'}
+                        </span>
+                      </label>
+                    </div>
+
+                    {formData.night_shift_enabled ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/80">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-700 block mb-1">Hora Inicio Nocturno</label>
+                          <Input
+                            type="time"
+                            value={formData.night_shift_start || '20:00'}
+                            onChange={(e) => setFormData({ ...formData, night_shift_start: e.target.value })}
+                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-700 block mb-1">Hora Fin Nocturno</label>
+                          <Input
+                            type="time"
+                            value={formData.night_shift_end || '06:00'}
+                            onChange={(e) => setFormData({ ...formData, night_shift_end: e.target.value })}
+                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-700 block mb-1">Recargo Nocturno (S/ por hora)</label>
+                          <Input
+                            type="number"
+                            step="0.50"
+                            min="0.00"
+                            value={formData.night_shift_surcharge}
+                            onChange={(e) => setFormData({ ...formData, night_shift_surcharge: parseFloat(e.target.value) || 0 })}
+                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-500">Tarifa diurna regular aplicada uniformemente las 24 horas del día.</p>
+                    )}
+                  </div>
+
+                </div>
+              )}
+
+              {/* TAB 3: POLÍTICAS & TOLERANCIA */}
+              {activeTabSection === 'policies' && (
+                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900">Políticas de Reserva & Reglas de Estancia</h3>
+                    <p className="text-xs text-slate-500 font-medium">Controla los tiempos de tolerancia anti-sabotaje, modalidad de cobro y límites de estadía.</p>
+                  </div>
+
+                  {/* Tolerancia Anti-Sabotaje */}
+                  <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-amber-600" />
+                        <span className="text-xs font-bold text-amber-900">Tolerancia de Reserva (Minutos)</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-800 bg-white border border-amber-200 px-2 py-0.5 rounded-full">
+                        Cancelación automática si no hay ingreso
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-3 items-center">
+                      <Input
+                        type="number"
+                        min="5"
+                        max="60"
+                        step="5"
+                        value={formData.tolerance}
+                        onChange={(e) => {
+                          const v = Math.max(5, Math.min(60, Number(e.target.value) || 15));
+                          setFormData({ ...formData, tolerance: v });
+                        }}
+                        className="text-xs font-mono font-bold h-9 bg-white border-amber-300"
+                      />
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-amber-800 font-medium">Presets:</span>
+                        {[10, 15, 20, 30].map((v) => (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, tolerance: v })}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                              Number(formData.tolerance) === v 
+                                ? 'bg-amber-600 text-white border-amber-600 shadow-2xs' 
+                                : 'bg-white text-amber-900 border-amber-200 hover:bg-amber-100'
+                            }`}
+                          >
+                            {v} min
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-amber-800/90 leading-snug">
+                      Si el conductor no se presenta dentro de los <b>{formData.tolerance} minutos</b> posteriores al inicio programado, el sistema cancela la reserva, libera el cajón y notifica al usuario.
                     </p>
                   </div>
 
-                  {/* Herramienta 1: Pegar enlace de Google Maps o Detectar GPS */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                  {/* Modalidad de Cobro de Reserva */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-700 block">Modalidad de Cobro en Reserva</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, require_reservation_prepay: false })}
+                        className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
+                          !formData.require_reservation_prepay
+                            ? 'border-emerald-500 bg-emerald-50/60 ring-1 ring-emerald-500'
+                            : 'border-slate-200 bg-white hover:bg-slate-50'
+                        }`}
+                      >
+                        <p className="text-xs font-bold text-slate-900">Reserva Libre (Pago en Garita)</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">El conductor aparta el cajón gratis y abona al salir según su estadía.</p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, require_reservation_prepay: true })}
+                        className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
+                          formData.require_reservation_prepay
+                            ? 'border-emerald-500 bg-emerald-50/60 ring-1 ring-emerald-500'
+                            : 'border-slate-200 bg-white hover:bg-slate-50'
+                        }`}
+                      >
+                        <p className="text-xs font-bold text-slate-900">Prepago Obligatorio</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">El conductor debe abonar con tarjeta o billetera digital antes de confirmar.</p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tasa fija o fianza de reserva */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800">Tasa fija / Fianza de Reserva (S/)</label>
+                      <span className="text-[10px] text-slate-500 font-medium">S/ 0.00 para desactivar</span>
+                    </div>
+                    <div className="max-w-xs">
+                      <Input
+                        type="number"
+                        step="0.50"
+                        min="0.00"
+                        value={formData.reservation_fee}
+                        onChange={(e) => setFormData({ ...formData, reservation_fee: parseFloat(e.target.value) || 0 })}
+                        className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Opción Hora Libre */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">Opción "Hora Libre" (Estadía Abierta)</h4>
+                      <p className="text-[11px] text-slate-500">Permite a los usuarios ingresar sin pactar una hora exacta de salida, liquidando en garita.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer select-none shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={formData.allow_open_stay !== false}
+                        onChange={(e) => setFormData({ ...formData, allow_open_stay: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
+
+                  {/* Límites de Tiempo Mínimo y Máximo */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                    <h4 className="text-xs font-bold text-slate-900">Rango de Tiempo de Estadía Permitido</h4>
+                    {formData.billing_unit === 'minute' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <span className="text-[11px] text-slate-600 block mb-1">Mínimo (minutos)</span>
+                          <Input
+                            type="number"
+                            min="5"
+                            max="360"
+                            step="5"
+                            value={formData.min_stay_minutes}
+                            onChange={(e) => setFormData({ ...formData, min_stay_minutes: parseInt(e.target.value) || 15 })}
+                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-slate-600 block mb-1">Máximo (minutos)</span>
+                          <Input
+                            type="number"
+                            min="15"
+                            max="4320"
+                            step="15"
+                            value={formData.max_stay_minutes}
+                            onChange={(e) => setFormData({ ...formData, max_stay_minutes: parseInt(e.target.value) || 1440 })}
+                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <span className="text-[11px] text-slate-600 block mb-1">Mínimo (horas)</span>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="12"
+                            value={formData.min_stay_hours}
+                            onChange={(e) => setFormData({ ...formData, min_stay_hours: parseInt(e.target.value) || 1 })}
+                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-slate-600 block mb-1">Máximo (horas)</span>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="72"
+                            value={formData.max_stay_hours}
+                            onChange={(e) => setFormData({ ...formData, max_stay_hours: parseInt(e.target.value) || 24 })}
+                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              )}
+
+              {/* TAB 4: UBICACIÓN & GPS */}
+              {activeTabSection === 'location' && (
+                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900">Ubicación Satelital & Coordenadas GPS</h3>
+                    <p className="text-xs text-slate-500 font-medium">Ubica la sede con precisión para que los conductores la encuentren en Waze y Google Maps.</p>
+                  </div>
+
+                  {/* Dirección Exacta y Referencia */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Dirección Exacta *</label>
+                      <Input
+                        required
+                        placeholder="Ej. Jr. Bellido 240, Huamanga"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        className="text-xs h-9.5 bg-white border-slate-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Referencia Urbana</label>
+                      <Input
+                        placeholder="Ej. Frente a la Iglesia San Blas"
+                        value={formData.reference}
+                        onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                        className="text-xs h-9.5 bg-white border-slate-200"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Extractor de Coordenadas Google Maps y GPS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div className="sm:col-span-2 space-y-1">
                       <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                         <Globe className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Pegar enlace de Google Maps (Extrae coordenadas):</span>
+                        <span>Pegar enlace de Google Maps (Extrae latitud/longitud):</span>
                       </label>
                       <Input
-                        placeholder="https://maps.app.goo.gl/... o https://maps.google.com/?q=-13.1604,-74.2259"
+                        placeholder="https://maps.google.com/?q=-13.1604,-74.2259"
                         value={formData.mapsUrl}
                         onChange={(e) => handleParseMapsUrl(e.target.value)}
                         className="text-xs bg-white h-9 border-slate-200"
@@ -2130,9 +2149,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     </div>
                   </div>
 
-                  {/* Herramienta 2: Puntos Rápidos de Referencia en Huamanga */}
+                  {/* Zonas Rápidas de Ayacucho */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-600 block mb-1.5">Zonas rápidas de Ayacucho:</label>
+                    <label className="text-xs font-semibold text-slate-600 block mb-1.5">Puntos de referencia frecuentes en Ayacucho:</label>
                     <div className="flex flex-wrap gap-1.5">
                       {AYACUCHO_PRESET_LOCATIONS.map((loc, idx) => (
                         <button
@@ -2157,7 +2176,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     </div>
                   </div>
 
-                  {/* Herramienta 3: Mini-mapa Interactivo */}
+                  {/* Mini-mapa interactivo */}
                   <LocationPickerMap
                     latitude={formData.latitude}
                     longitude={formData.longitude}
@@ -2174,7 +2193,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     }}
                   />
 
-                  {/* Campos Numéricos de Coordenadas */}
+                  {/* Coordenadas Numéricas */}
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div>
                       <label className="text-xs font-semibold text-slate-700 block mb-1">Latitud GPS</label>
@@ -2202,15 +2221,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 </div>
               )}
 
-              {/* SECCIÓN 3: FOTOGRAFÍA DE LA SEDE */}
-              {activeTabSection === 'image' && (
-                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                  <div className="border-b border-slate-100 pb-2.5">
-                    <h3 className="text-sm font-bold text-slate-900">Fotografía del Establecimiento</h3>
-                    <p className="text-xs text-slate-500 font-medium">Foto visible para los conductores en el mapa interactivo y en la búsqueda.</p>
+              {/* TAB 5: FOTOGRAFÍA & CONTACTO */}
+              {activeTabSection === 'media_contact' && (
+                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900">Fotografía Oficial & Canales de Contacto</h3>
+                    <p className="text-xs text-slate-500 font-medium">Imagen visible en la app del conductor y medios de comunicación directa.</p>
                   </div>
 
-                  {/* Previsualización Limpia */}
+                  {/* Previsualización de Foto */}
                   <div className="relative w-full h-52 sm:h-64 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-inner">
                     <img 
                       src={formData.image || FALLBACK_PARKING_IMAGE} 
@@ -2225,15 +2244,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     />
                   </div>
 
-                  {/* Carga de archivo desde dispositivo */}
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-dashed border-slate-300 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  {/* Subir archivo local */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-300 flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                         <Upload className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-slate-900">Subir foto desde tu equipo</p>
-                        <p className="text-[11px] text-slate-500">Formatos JPG, PNG o WebP (Recomendado 1200x800, máx. 6MB)</p>
+                        <p className="text-xs font-bold text-slate-900">Subir foto desde tu dispositivo</p>
+                        <p className="text-[11px] text-slate-500">Compresión automática ligera (JPG/PNG/WebP hasta 10MB)</p>
                       </div>
                     </div>
                     <div>
@@ -2257,7 +2276,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                   {/* URL Externa */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">O ingresa un enlace / URL de imagen:</label>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">O escribe la URL de la imagen:</label>
                     <Input
                       placeholder="https://ejemplo.com/foto-cochera.jpg"
                       value={formData.image}
@@ -2266,9 +2285,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     />
                   </div>
 
-                  {/* Galería sugerida */}
+                  {/* Galería Sugerida */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-600 block mb-2">Galería de fotos sugeridas para cocheras:</label>
+                    <label className="text-xs font-semibold text-slate-600 block mb-2">Galería de fotos recomendadas para cocheras:</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                       {PRESET_IMAGES.map((img, idx) => (
                         <button
@@ -2307,26 +2326,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       ))}
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* SECCIÓN 4: REDES SOCIALES & CONTACTO */}
-              {activeTabSection === 'social' && (
-                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                  <div className="border-b border-slate-100 pb-2.5">
-                    <h3 className="text-sm font-bold text-slate-900">Contacto & Canales Oficiales</h3>
-                    <p className="text-xs text-slate-500 font-medium">Canales directos para que los clientes se comuniquen con la administración.</p>
-                  </div>
-
-                  {/* Canales Directos */}
-                  <div className="space-y-3">
+                  {/* Medios de Contacto */}
+                  <div className="border-t border-slate-100 pt-4 space-y-3">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
-                      Comunicación Directa
+                      Canales de Comunicación
                     </span>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">WhatsApp de Atención al Cliente</label>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">WhatsApp de Atención</label>
                         <div className="relative flex items-center">
                           <MessageSquare className="w-3.5 h-3.5 text-emerald-600 absolute left-3 pointer-events-none" />
                           <Input
@@ -2340,7 +2348,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               href={`https://wa.me/${formData.whatsapp.replace(/\D/g, '')}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="absolute right-2 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200"
+                              className="absolute right-2 text-[10px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 cursor-pointer"
                             >
                               Probar
                             </a>
@@ -2351,7 +2359,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       <div>
                         <label className="text-xs font-semibold text-slate-700 block mb-1">Teléfono Garita / Central</label>
                         <div className="relative">
-                          <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                          <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                           <Input
                             placeholder="+51 966 123 456"
                             value={formData.phone}
@@ -2365,7 +2373,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     <div>
                       <label className="text-xs font-semibold text-slate-700 block mb-1">Correo Electrónico de Consultas</label>
                       <div className="relative">
-                        <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                        <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                         <Input
                           type="email"
                           placeholder="contacto@cocherahuamanga.pe"
@@ -2378,11 +2386,10 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   </div>
 
                   {/* Redes Sociales */}
-                  <div className="border-t border-slate-100 pt-3.5 space-y-3">
+                  <div className="border-t border-slate-100 pt-4 space-y-3">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
-                      Redes Sociales & Enlaces
+                      Redes Sociales & Sitio Web
                     </span>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <div className="flex items-center justify-between mb-1">
@@ -2469,35 +2476,47 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
                     </div>
                   </div>
+
                 </div>
               )}
 
-              {/* Botones de Acción al Pie del Formulario */}
-              <div className="flex justify-between items-center bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+              {/* Barra Inferior de Acción */}
+              <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => setActiveViewMode('list')} 
-                  className="text-xs rounded-xl h-8.5 font-semibold text-slate-700 cursor-pointer"
+                  onClick={() => setActiveViewMode('list')}
+                  disabled={isSaving}
+                  className="text-xs rounded-xl h-9 font-semibold text-slate-700 cursor-pointer"
                 >
                   Cancelar
                 </Button>
                 <Button 
                   type="button" 
-                  onClick={handleSaveForm} 
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl px-5 h-8.5 shadow-md shadow-emerald-600/20 gap-1.5 cursor-pointer"
+                  onClick={handleSaveForm}
+                  disabled={isSaving}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl px-5 h-9 shadow-md shadow-emerald-600/20 gap-1.5 cursor-pointer disabled:opacity-60"
                 >
-                  <Save className="w-3.5 h-3.5 shrink-0" />
-                  <span>{isEditingNew ? 'Registrar Sede' : 'Guardar Sede'}</span>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5 shrink-0" />
+                      <span>{isEditingNew ? 'Registrar Sede' : 'Guardar Sede'}</span>
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
 
-            {/* Columna Derecha: Previsualización en Vivo de la Tarjeta */}
-            <div className="space-y-3.5">
-              <div className="bg-slate-900 text-white px-3.5 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-between">
+            {/* Columna Derecha: Vista Previa en Vivo Sincronizada */}
+            <div className="space-y-4">
+              <div className="bg-slate-900 text-white px-4 py-2.5 rounded-2xl text-xs font-mono font-bold flex items-center justify-between shadow-sm">
                 <span>VISTA PREVIA EN VIVO</span>
-                <span className="text-emerald-400 text-[11px] font-sans font-semibold flex items-center gap-1">
+                <span className="text-emerald-400 text-[11px] font-sans font-semibold flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                   Sincronizado
                 </span>
@@ -2518,27 +2537,40 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         e.currentTarget.src = FALLBACK_PARKING_IMAGE;
                       }}
                     />
+                    <div className="absolute top-2.5 right-2.5">
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md shadow-xs border ${
+                        formData.status === 'Operativo'
+                          ? 'bg-emerald-500/90 text-white border-emerald-400'
+                          : formData.status === 'Mantenimiento'
+                          ? 'bg-amber-500/90 text-white border-amber-400'
+                          : 'bg-rose-500/90 text-white border-rose-400'
+                      }`}>
+                        {formData.status}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="p-4 space-y-3">
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-slate-900 text-sm leading-tight">
+                        <h3 className="font-bold text-slate-900 text-sm leading-tight line-clamp-1">
                           {formData.name || 'Nombre de la Sede'}
                         </h3>
-                        <span className="font-mono font-bold text-emerald-700 text-xs shrink-0">
+                        <span className="font-mono font-bold text-emerald-700 text-xs shrink-0 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                           S/ {Number(formData.rate || 5).toFixed(2)}/h
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                      <p className="text-xs text-slate-500 flex items-center gap-1 mt-1 line-clamp-1">
                         <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600" /> 
-                        <span className="truncate">{formData.address || 'Dirección en Huamanga'} {formData.reference ? `(${formData.reference})` : ''}</span>
+                        <span>{formData.address || 'Dirección en Huamanga'} {formData.reference ? `(${formData.reference})` : ''}</span>
                       </p>
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                       <span className="font-medium">{formData.level}</span>
-                      <span className="text-emerald-700 font-semibold">{formData.status}</span>
+                      <span className="font-mono text-[11px] text-slate-500">
+                        {formData.billing_unit === 'minute' ? 'Cobro fraccionado min' : 'Cobro por hora'}
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between gap-2 text-xs p-2.5 rounded-xl border border-slate-100 bg-slate-50 font-mono">
@@ -2547,7 +2579,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         <span className="truncate">{Number(formData.latitude).toFixed(4)}, {Number(formData.longitude).toFixed(4)}</span>
                       </span>
                       <span className="text-emerald-700 font-semibold text-[11px] bg-white px-2 py-0.5 rounded-lg border border-slate-200">
-                        Maps
+                        GPS OK
                       </span>
                     </div>
                   </div>
@@ -2555,20 +2587,31 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                 <div className="p-4 pt-0 border-t border-slate-100 pt-3">
                   <div className="w-full py-2 text-center font-bold text-xs bg-slate-900 text-white rounded-xl shadow-xs flex items-center justify-center gap-1.5">
-                    <span>Plano</span>
+                    <span>Plano & Garita</span>
                     <ChevronRight className="w-3.5 h-3.5 text-emerald-400" />
                   </div>
                 </div>
               </div>
 
-              {/* Información sobre el Marcador */}
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1.5 text-xs text-slate-600">
-                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Marcador GPS para Conductores
+              {/* Tarjeta Informativa de Parámetros Activos */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-xs text-slate-600">
+                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Resumen de Reglas de Sede
                 </span>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Esta ubicación aparecerá exactamente en las coordenadas <strong className="font-mono text-slate-800">{Number(formData.latitude).toFixed(5)}, {Number(formData.longitude).toFixed(5)}</strong> en el mapa satelital de Ayacucho.
-                </p>
+                <ul className="space-y-1 text-[11px] text-slate-500">
+                  <li className="flex items-center justify-between">
+                    <span>Tolerancia de reserva:</span>
+                    <strong className="font-mono text-slate-800">{formData.tolerance} min</strong>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span>Modalidad de reserva:</span>
+                    <strong className="text-slate-800">{formData.require_reservation_prepay ? 'Prepago digital' : 'Libre en garita'}</strong>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span>Turno noche:</span>
+                    <strong className="text-slate-800">{formData.night_shift_enabled ? `S/ +${Number(formData.night_shift_surcharge).toFixed(2)}/h` : 'Desactivado'}</strong>
+                  </li>
+                </ul>
               </div>
             </div>
 

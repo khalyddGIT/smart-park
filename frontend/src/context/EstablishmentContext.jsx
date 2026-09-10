@@ -547,6 +547,9 @@ export const sanitizeEstablishment = (est, idx = 0) => {
     reservation_fee: Number(est.reservation_fee || 0.0),
     min_stay_hours: Number(est.min_stay_hours || 1),
     max_stay_hours: Number(est.max_stay_hours || 24),
+    status: (est.status === 'active' || est.status === 'Operativo') ? 'Operativo' : (est.status === 'closed' || est.status === 'Cerrado' ? 'Cerrado' : 'Mantenimiento'),
+    image: est.image || est.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800',
+    image_url: est.image_url || est.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800',
     allow_open_stay: est.allow_open_stay !== undefined ? !!est.allow_open_stay : true
   };
 };
@@ -1499,9 +1502,16 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Actualizar datos de un establecimiento - persistente
   const updateEstablishment = async (id, updatedFields) => {
+    let updatedLocal = null;
     // 1. Actualización inmediata local
     setEstablishments(prev => {
-      const next = prev.map(est => String(est.id) === String(id) ? sanitizeEstablishment({ ...est, ...updatedFields }) : est);
+      const next = prev.map(est => {
+        if (String(est.id) === String(id)) {
+          updatedLocal = sanitizeEstablishment({ ...est, ...updatedFields });
+          return updatedLocal;
+        }
+        return est;
+      });
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
@@ -1538,7 +1548,7 @@ export const EstablishmentProvider = ({ children }) => {
         if (updatedFields.tolerance !== undefined) payload.tolerance_minutes = Math.max(5, Math.min(60, Number(updatedFields.tolerance) || 15));
         if (updatedFields.status !== undefined) {
           const s = String(updatedFields.status).toLowerCase();
-          payload.status = (s === 'operativo' || s === 'active') ? 'active' : 'maintenance';
+          payload.status = (s === 'operativo' || s === 'active') ? 'active' : (s === 'cerrado' || s === 'closed' ? 'closed' : 'maintenance');
         }
         if (updatedFields.image !== undefined) payload.image_url = updatedFields.image;
         if (updatedFields.latitude !== undefined) payload.latitude = Number(updatedFields.latitude);
@@ -1565,12 +1575,18 @@ export const EstablishmentProvider = ({ children }) => {
         if (updatedFields.allow_open_stay !== undefined) payload.allow_open_stay = !!updatedFields.allow_open_stay;
         
         if (Object.keys(payload).length) {
-          await api.put(`/parkings/${numId}`, payload);
+          const res = await api.put(`/parkings/${numId}`, payload);
           // Re-sincronizar de inmediato para reflejar datos frescos en todas las pestañas y roles
           await fetchParkings();
+          return res.data;
         }
-      } catch (e) { console.warn('updateEstablishment backend fail', e.response?.data); }
+      } catch (e) {
+        console.warn('updateEstablishment backend fail', e.response?.data);
+        const detail = e.response?.data?.detail || e.message;
+        throw new Error(detail);
+      }
     }
+    return updatedLocal;
   };
 
   // Actualizar plano topográfico - persistente via sync

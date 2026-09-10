@@ -110,11 +110,11 @@ export const AuthProvider = ({ children }) => {
     } catch (e) { console.error('Error al procesar Google Auth:', e); throw e; }
   };
 
-  // Login tradicional con Correo - autentica contra backend con sincronización local tolerante a fallos
-  const loginWithEmail = async (email, password, explicitRole = null) => {
-    const cleanEmail = (email || '').trim().toLowerCase();
-    if (!cleanEmail) {
-      throw new Error('Por favor ingresa tu correo electrónico');
+  // Login con Correo o Nombre de Usuario - autentica contra backend con sincronización local tolerante a fallos
+  const loginWithEmail = async (identifier, password, explicitRole = null) => {
+    const cleanIdent = (identifier || '').trim().toLowerCase();
+    if (!cleanIdent) {
+      throw new Error('Por favor ingresa tu correo o nombre de usuario');
     }
     if (!password) {
       throw new Error('Por favor ingresa tu contraseña');
@@ -124,7 +124,7 @@ export const AuthProvider = ({ children }) => {
     let serverError = null;
 
     try {
-      serverData = await apiLogin({ email: cleanEmail, password, full_name: cleanEmail.split('@')[0], phone: '' });
+      serverData = await apiLogin({ email: cleanIdent, password, full_name: cleanIdent.split('@')[0], phone: '' });
     } catch (err) {
       serverError = err;
     }
@@ -151,27 +151,25 @@ export const AuthProvider = ({ children }) => {
     }
 
     // Fallback de resiliencia local / offline:
-    // Si el backend no respondió, está caído o no tenía el usuario actualizado por desincronización,
-    // verificar los registros locales persistentes (credenciales asignadas por SuperAdmin, afiliados aprobados, etc.)
     try {
       // 1. Buscar en credenciales locales persistentes
       const localCredsRaw = localStorage.getItem('smart_park_local_user_credentials_v1');
       const localCreds = localCredsRaw ? JSON.parse(localCredsRaw) : {};
-      const matchedLocal = localCreds[cleanEmail];
+      const matchedLocal = localCreds[cleanIdent] || Object.values(localCreds).find(c => (c.name || '').trim().toLowerCase() === cleanIdent);
 
       // 2. Buscar en administradores aprobados
       const approvedRaw = localStorage.getItem('smart_park_approved_admins_v1');
       const approvedList = approvedRaw ? JSON.parse(approvedRaw) : [];
-      const matchedApproved = Array.isArray(approvedList) ? approvedList.find(a => (a.email || '').trim().toLowerCase() === cleanEmail) : null;
+      const matchedApproved = Array.isArray(approvedList) ? approvedList.find(a => (a.email || '').trim().toLowerCase() === cleanIdent || (a.name || '').trim().toLowerCase() === cleanIdent) : null;
 
       // 3. Buscar en establecimientos registrados
       const estsRaw = localStorage.getItem('smart_park_unified_establishments_v2');
       const estsList = estsRaw ? JSON.parse(estsRaw) : [];
-      const matchedEst = Array.isArray(estsList) ? estsList.find(e => (e.email || '').trim().toLowerCase() === cleanEmail) : null;
+      const matchedEst = Array.isArray(estsList) ? estsList.find(e => (e.email || '').trim().toLowerCase() === cleanIdent || (e.owner || '').trim().toLowerCase() === cleanIdent) : null;
 
       // 4. Cuentas demo predeterminadas
-      const isDemoAdminLocal = cleanEmail === 'adminlocal@smartpark.com';
-      const isDemoSuperAdmin = cleanEmail === 'superadmin@smartpark.com';
+      const isDemoAdminLocal = cleanIdent === 'adminlocal@smartpark.com' || cleanIdent === 'admin local' || cleanIdent === 'adminlocal';
+      const isDemoSuperAdmin = cleanIdent === 'superadmin@smartpark.com' || cleanIdent === 'super admin' || cleanIdent === 'superadmin';
 
       const candidate = matchedLocal || matchedApproved || (matchedEst ? {
         email: cleanEmail,

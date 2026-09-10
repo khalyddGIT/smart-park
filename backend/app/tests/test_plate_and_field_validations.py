@@ -354,17 +354,27 @@ async def test_verify_reservation_not_found():
 # ==============================================================================
 
 def test_user_login_schema():
-    """UserLogin solo debe requerir email y password, sin exigir full_name."""
+    """UserLogin debe aceptar email o nombre de usuario/completo con password, y rechazar identificador o password vacíos."""
     from app.schemas.schemas import UserLogin
     
-    # Válido: solo email y password
-    login_req = UserLogin(email="conductor@smartpark.com", password="password123")
-    assert login_req.email == "conductor@smartpark.com"
-    assert login_req.password == "password123"
+    # Válido: email y password
+    login_email = UserLogin(email="conductor@smartpark.com", password="password123")
+    assert login_email.email == "conductor@smartpark.com"
+    assert login_email.password == "password123"
 
-    # Email inválido -> Rechazado
+    # Válido: nombre de usuario o nombre completo
+    login_name = UserLogin(email="Juan Perez", password="password123")
+    assert login_name.email == "Juan Perez"
+
+    login_username = UserLogin(username="carlosq", password="password123")
+    assert login_username.username == "carlosq"
+
+    # Identificador vacío -> Rechazado
     with pytest.raises(ValidationError):
-        UserLogin(email="correo-invalido", password="password123")
+        UserLogin(email="", password="password123")
+
+    with pytest.raises(ValidationError):
+        UserLogin(password="password123")
 
     # Password vacío -> Rechazado
     with pytest.raises(ValidationError):

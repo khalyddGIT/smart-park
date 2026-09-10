@@ -10,7 +10,7 @@ from google.auth.transport import requests as google_requests
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt, JWTError
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
@@ -111,6 +111,8 @@ async def register_user(user_in: UserCreate, request: Request, response: Respons
 
 @router.post("/login", response_model=Token)
 async def login_user(user_in: UserLogin, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    identifier = (user_in.email or user_in.username or "").strip()
+
     # Rate limit anti fuerza bruta por IP (fail-open sin Redis)
     allowed, attempts = await rate_limit_hit(f"ratelimit:login:{_client_ip(request)}", LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW)
     if not allowed:
@@ -121,20 +123,45 @@ async def login_user(user_in: UserLogin, request: Request, response: Response, d
             target=f"IP bloqueada temporalmente: {_client_ip(request)}",
             severity="Crítico",
             request=request,
-            details={"email_intentado": user_in.email, "intentos": attempts},
+            details={"identificador_intentado": identifier, "intentos": attempts},
         )
         raise HTTPException(status_code=429, detail="Demasiados intentos de inicio de sesión. Espera un minuto e inténtalo de nuevo.")
 
-    clean_email = user_in.email.strip().lower()
-    result = await db.execute(select(User).where(func.lower(User.email) == clean_email))
+    clean_ident = identifier.lower()
+
+    # 1. Búsqueda exacta por email (único)
+    result = await db.execute(select(User).where(func.lower(User.email) == clean_ident))
     user = result.scalars().first()
+
+    # 2. Si no coincide por email, buscar por nombre completo
+    if not user:
+        result = await db.execute(select(User).where(func.lower(User.full_name) == clean_ident))
+        candidates = result.scalars().all()
+        for cand in candidates:
+            if verify_password(user_in.password, cand.hashed_password):
+                user = cand
+                break
+        if not user and candidates:
+            user = candidates[0]
+
+    # 3. Si no coincide y no tiene '@', buscar por prefijo de correo (ej: 'pedro' para 'pedro@...')
+    if not user and '@' not in clean_ident:
+        result = await db.execute(select(User).where(func.lower(User.email).startswith(f"{clean_ident}@")))
+        candidates = result.scalars().all()
+        for cand in candidates:
+            if verify_password(user_in.password, cand.hashed_password):
+                user = cand
+                break
+        if not user and candidates:
+            user = candidates[0]
+
     from app.core.audit_service import record_audit_event
 
     if not user or not verify_password(user_in.password, user.hashed_password):
         await record_audit_event(
             db=db,
             action="Intento Fallido de Inicio de Sesión",
-            target=f"Email: {user_in.email}",
+            target=f"Identificador: {identifier}",
             severity="Advertencia",
             request=request,
             details={"motivo": "Contraseña incorrecta o usuario inexistente"},

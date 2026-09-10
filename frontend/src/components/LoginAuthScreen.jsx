@@ -45,8 +45,9 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
-  // Estados Formulario Login
+  // Estados Formulario Login (Correo o Nombre de Usuario)
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
@@ -78,7 +79,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     if (!loginEmail.trim()) {
-      setErrorMsg('Por favor ingresa tu correo electrónico');
+      setErrorMsg('Por favor ingresa tu correo o nombre de usuario');
       return;
     }
     setErrorMsg('');
@@ -191,43 +192,44 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       <main className="w-full max-w-[440px] my-auto relative z-10 py-3">
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl shadow-slate-200/60 dark:shadow-black/50 space-y-5">
           
-          {/* Tabs principales: Correo | ⚡ PIN Garita | Crear Cuenta */}
+          {/* Tabs principales: Iniciar Sesión | ⚡ PIN Garita | Crear Cuenta */}
           {(authMode === 'login' || authMode === 'pin_express' || authMode === 'register') && (
             <div className="grid grid-cols-3 p-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 text-xs font-bold shadow-inner gap-1">
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
-                className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center truncate ${
+                className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1 truncate ${
                   authMode === 'login'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md font-extrabold scale-[1.02]'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-extrabold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
                 }`}
               >
-                Correo
+                <User className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Iniciar Sesión</span>
               </button>
               <button
                 type="button"
                 onClick={() => { setAuthMode('pin_express'); setErrorMsg(''); }}
                 className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1 truncate ${
                   authMode === 'pin_express'
-                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-md font-extrabold scale-[1.02]'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm font-extrabold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
                 }`}
                 title="Acceso Rápido para Garita y Operadores con PIN de 4-6 dígitos"
               >
                 <KeyRound className="w-3.5 h-3.5 shrink-0" />
-                <span>PIN Garita</span>
+                <span className="truncate">PIN Garita</span>
               </button>
               <button
                 type="button"
                 onClick={() => { setAuthMode('register'); setErrorMsg(''); }}
-                className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center truncate ${
+                className={`py-2.5 px-1 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-1 truncate ${
                   authMode === 'register'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md font-extrabold scale-[1.02]'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-extrabold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold'
                 }`}
               >
-                Crear Cuenta
+                <span className="truncate">Crear Cuenta</span>
               </button>
             </div>
           )}
@@ -269,20 +271,20 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
               {/* Divisor */}
               <div className="flex items-center space-x-3 my-2">
                 <div className="h-px bg-slate-200 dark:bg-slate-700/80 flex-1" />
-                <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium">o con tu correo y contraseña</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium">o con tu correo o usuario</span>
                 <div className="h-px bg-slate-200 dark:bg-slate-700/80 flex-1" />
               </div>
 
               {/* Formulario Login */}
               <form onSubmit={handleLoginSubmit} className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Correo Electrónico</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Correo o Nombre de Usuario</label>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
-                      type="email"
+                      type="text"
                       required
-                      placeholder="nombre@ejemplo.com"
+                      placeholder="usuario@ejemplo.com o tu nombre"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10.5 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
@@ -313,7 +315,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
                     </button>
@@ -410,7 +412,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
           {authMode === 'register' && (
             <div className="space-y-4">
               <div className="text-center pb-1">
-                <h3 className="text-sm font-black text-slate-900 dark:text-white">Registro de Conductor</h3>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">Crea tu Cuenta de Conductor</h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">Reserva plazas garantizadas en tiempo real</p>
               </div>
 
@@ -430,7 +432,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
               {/* Divisor */}
               <div className="flex items-center space-x-3 my-1">
                 <div className="h-px bg-slate-200 dark:bg-slate-700/80 flex-1" />
-                <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium">o con tu correo</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium">o con tus datos</span>
                 <div className="h-px bg-slate-200 dark:bg-slate-700/80 flex-1" />
               </div>
 
@@ -442,10 +444,10 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     <Input
                       type="text"
                       required
-                      placeholder="Nombres y Apellidos"
+                      placeholder="Ej. Carlos Mendoza"
                       value={driverName}
                       onChange={(e) => setDriverName(e.target.value)}
-                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
+                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
                     />
                   </div>
                 </div>
@@ -457,37 +459,66 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     <Input
                       type="email"
                       required
-                      placeholder="usuario@correo.com"
+                      placeholder="carlos@ejemplo.com"
                       value={driverEmail}
                       onChange={(e) => setDriverEmail(e.target.value)}
-                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
+                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
                     />
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Celular</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input
+                        type="tel"
+                        placeholder="+51 987 654 321"
+                        value={driverPhone}
+                        onChange={(e) => setDriverPhone(e.target.value)}
+                        className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Placa (opcional)</label>
+                    <div className="relative">
+                      <Car className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input
+                        type="text"
+                        maxLength={7}
+                        placeholder="ABC-123"
+                        value={driverPlate}
+                        onChange={(e) => setDriverPlate(e.target.value.toUpperCase())}
+                        className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10 uppercase font-mono tracking-wider focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Celular</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Contraseña *</label>
                   <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
-                      type="tel"
-                      placeholder="+51 987 654 321"
-                      value={driverPhone}
-                      onChange={(e) => setDriverPhone(e.target.value)}
-                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
+                      type={showRegisterPassword ? "text" : "password"}
+                      required
+                      placeholder="Mínimo 8 caracteres"
+                      value={driverPassword}
+                      onChange={(e) => setDriverPassword(e.target.value)}
+                      className="pl-10 pr-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 cursor-pointer"
+                    >
+                      {showRegisterPassword ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
+                    </button>
                   </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Contraseña</label>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    value={driverPassword}
-                    onChange={(e) => setDriverPassword(e.target.value)}
-                    className="bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
-                  />
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">Mínimo 8 caracteres alfanuméricos.</p>
                 </div>
 
                 <label className="flex items-start gap-2 p-2.5 rounded-xl border bg-white dark:bg-slate-800/60 cursor-pointer select-none border-slate-200 dark:border-slate-700">
@@ -518,6 +549,16 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                   <span>Registrarme como Conductor</span>
                   <ArrowRight className="w-4 h-4 ml-1.5 text-white" />
                 </Button>
+
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
+                    className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition cursor-pointer"
+                  >
+                    ¿Ya tienes una cuenta? <span className="text-emerald-600 dark:text-emerald-400 font-bold underline">Iniciar Sesión</span>
+                  </button>
+                </div>
               </form>
             </div>
           )}

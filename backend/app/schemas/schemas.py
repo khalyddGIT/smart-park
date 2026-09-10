@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer
+from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer, model_validator
 from typing import Optional, List, Any
 from datetime import datetime, timezone
 import re
@@ -52,8 +52,16 @@ class UserCreate(UserBase):
         if not re.match(r'^[0-9]{7,15}$', raw):
             raise ValueError('Teléfono Perú: 9 dígitos empezando en 9, ej 966123456 o +51 966123456')
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: Optional[str] = Field(default=None, max_length=150, description="Correo electrónico o nombre de usuario")
+    username: Optional[str] = Field(default=None, max_length=150, description="Nombre de usuario o nombre completo alternativo")
     password: str = Field(min_length=1)
+
+    @model_validator(mode='after')
+    def validate_identifier(self):
+        ident = (self.email or self.username or "").strip()
+        if not ident:
+            raise ValueError("Debes ingresar tu correo electrónico o nombre de usuario")
+        return self
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None

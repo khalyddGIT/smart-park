@@ -1,23 +1,26 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import Review, Parking, User
-from app.schemas.schemas import ReviewCreate, ReviewReply, ReviewResponse
-from app.core.security import get_current_user, require_role
+from app.models.models import Review, Parking, User, Staff
+from app.schemas.schemas import ReviewCreate, ReviewReply, ReviewResponse, ReviewVisibilityUpdate
+from app.core.security import get_current_user, get_optional_user, require_role
 from app.core.realtime import realtime
 
 router = APIRouter(prefix="/reviews", tags=["Reseñas & Calificaciones"])
 
-# Responder reseñas es función del Admin Local o Super Admin
+# Responder o moderar reseñas es función del Admin Local o Super Admin
 admin_required = require_role("local", "platform")
 
 @router.get("", response_model=List[ReviewResponse])
 async def list_reviews(
     parking_id: Optional[int] = None,
     min_rating: Optional[int] = None,
-    db: AsyncSession = Depends(get_db)
+    is_hidden: Optional[bool] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
     stmt = select(Review).order_by(Review.id.desc())
     if parking_id:
@@ -25,6 +28,14 @@ async def list_reviews(
     if min_rating:
         stmt = stmt.where(Review.rating >= min_rating)
     
+    # Privacidad: Usuarios regulares o no autenticados NUNCA ven reseñas ocultadas/desactivadas
+    if not current_user or current_user.role == "user":
+        stmt = stmt.where(Review.is_hidden.is_(False))
+    else:
+        # Administradores: pueden filtrar por visibilidad o ver todas por defecto
+        if is_hidden is not None:
+            stmt = stmt.where(Review.is_hidden == is_hidden)
+
     result = await db.execute(stmt)
     reviews = result.scalars().all()
     return [ReviewResponse.model_validate(r) for r in reviews]
@@ -48,7 +59,8 @@ async def create_review(
         user_id=current_user.id,
         user_name=current_user.full_name,
         rating=review_in.rating,
-        comment=review_in.comment
+        comment=review_in.comment,
+        is_hidden=False
     )
     db.add(db_review)
     await db.commit()
@@ -74,10 +86,55 @@ async def reply_review(
     if current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
         p_res = await db.execute(select(Parking).where(Parking.id == review.parking_id))
         parking = p_res.scalars().first()
-        if not parking or not parking.email or parking.email.strip().lower() != current_user.email.strip().lower():
+        staff_res = await db.execute(
+            select(Staff).where(
+                Staff.parking_id == review.parking_id,
+                func.lower(Staff.email) == current_user.email.strip().lower(),
+                Staff.status == "active"
+            )
+        )
+        has_staff = staff_res.scalars().first() is not None
+        parking_matches = parking and parking.email and parking.email.strip().lower() == current_user.email.strip().lower()
+        if not parking_matches and not has_staff:
             raise HTTPException(status_code=403, detail="No tienes permiso para responder reseñas de esta cochera")
 
     review.response = reply_in.response
+    await db.commit()
+    try:
+        await realtime.broadcast("reviews:updated")
+    except Exception:
+        pass
+    await db.refresh(review)
+    return ReviewResponse.model_validate(review)
+
+@router.put("/{review_id}/visibility", response_model=ReviewResponse)
+async def toggle_review_visibility(
+    review_id: int,
+    visibility_in: ReviewVisibilityUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(admin_required)
+):
+    result = await db.execute(select(Review).where(Review.id == review_id))
+    review = result.scalars().first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Reseña no encontrada")
+
+    if current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
+        p_res = await db.execute(select(Parking).where(Parking.id == review.parking_id))
+        parking = p_res.scalars().first()
+        staff_res = await db.execute(
+            select(Staff).where(
+                Staff.parking_id == review.parking_id,
+                func.lower(Staff.email) == current_user.email.strip().lower(),
+                Staff.status == "active"
+            )
+        )
+        has_staff = staff_res.scalars().first() is not None
+        parking_matches = parking and parking.email and parking.email.strip().lower() == current_user.email.strip().lower()
+        if not parking_matches and not has_staff:
+            raise HTTPException(status_code=403, detail="No tienes permiso para modificar la visibilidad de esta reseña")
+
+    review.is_hidden = visibility_in.is_hidden
     await db.commit()
     try:
         await realtime.broadcast("reviews:updated")

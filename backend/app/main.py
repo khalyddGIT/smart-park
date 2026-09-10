@@ -105,6 +105,8 @@ async def startup_db():
                 ("reservas", "is_open_stay", "BOOLEAN DEFAULT FALSE"),
                 ("reservas", "payment_method", "VARCHAR(50) DEFAULT 'efectivo'"),
                 ("reservas", "amount_paid", "FLOAT DEFAULT 0.0"),
+                ("resenas", "is_hidden", "BOOLEAN DEFAULT FALSE"),
+                ("incidencias", "is_hidden", "BOOLEAN DEFAULT FALSE"),
             ]
             if str(engine.url).startswith("sqlite") and settings.TESTING:
                 for tbl, col, decl in lite_adds:

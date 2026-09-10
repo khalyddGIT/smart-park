@@ -11,6 +11,7 @@ import {
   Camera,
   Search,
   Eye,
+  EyeOff,
   Plus,
   ShieldCheck,
   RefreshCw,
@@ -88,6 +89,7 @@ export const IncidentsModule = () => {
   const [resolveTarget, setResolveTarget] = useState(null);
   const [resolutionNote, setResolutionNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [togglingVisibilityId, setTogglingVisibilityId] = useState(null);
 
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterParking, setFilterParking] = useState('all');
@@ -290,8 +292,40 @@ export const IncidentsModule = () => {
     }
   };
 
+  // PUT /incidents/{id}/visibility (solo local/platform)
+  const handleToggleVisibility = async (inc) => {
+    const willHide = !inc.is_hidden;
+    setTogglingVisibilityId(inc.id);
+    try {
+      await api.put(`/incidents/${inc.id}/visibility`, { is_hidden: willHide });
+      setIncidents(prev => prev.map(i => i.id === inc.id ? { ...i, is_hidden: willHide } : i));
+      showToast(
+        willHide
+          ? 'Incidencia archivada y oculta de la vista activa.'
+          : 'Incidencia restaurada a vista activa.'
+      );
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 403) showToast('No tienes permisos para modificar la visibilidad.');
+      else showToast('Error al modificar visibilidad de la incidencia.');
+    } finally {
+      setTogglingVisibilityId(null);
+    }
+  };
+
   const filteredIncidents = incidents.filter((inc) => {
-    const matchStatus = filterStatus === 'all' || inc.status === filterStatus;
+    // Si el filtro es 'hidden', mostrar solo incidencias ocultas
+    if (filterStatus === 'hidden') {
+      if (!inc.is_hidden) return false;
+    } else if (filterStatus === 'reported') {
+      if (inc.is_hidden || inc.status !== 'reported') return false;
+    } else if (filterStatus === 'resolved') {
+      if (inc.is_hidden || inc.status !== 'resolved') return false;
+    } else {
+      // 'all': si es administrador, no mezclar las ocultas en la pestaña principal activa
+      if (isAdmin && inc.is_hidden) return false;
+    }
+
     const matchParking = filterParking === 'all' || String(inc.parking_id) === filterParking;
     const q = searchText.toLowerCase();
     const matchSearch = !q ||
@@ -300,14 +334,16 @@ export const IncidentsModule = () => {
       (CATEGORY_LABELS[inc.category] || '').toLowerCase().includes(q) ||
       parkingNameOf(inc).toLowerCase().includes(q) ||
       (inc.description || '').toLowerCase().includes(q);
-    return matchStatus && matchParking && matchSearch;
+    return matchParking && matchSearch;
   });
 
   // Métricas honestas derivadas del servidor
   const totalIncidents = incidents.length;
-  const reportedCount = incidents.filter(i => i.status === 'reported').length;
-  const resolvedCount = incidents.filter(i => i.status === 'resolved').length;
-  const resolutionRate = totalIncidents > 0 ? Math.round((resolvedCount / totalIncidents) * 100) : 0;
+  const activeIncidents = incidents.filter(i => !i.is_hidden);
+  const reportedCount = activeIncidents.filter(i => i.status === 'reported').length;
+  const resolvedCount = activeIncidents.filter(i => i.status === 'resolved').length;
+  const hiddenCount = incidents.filter(i => !!i.is_hidden).length;
+  const resolutionRate = activeIncidents.length > 0 ? Math.round((resolvedCount / activeIncidents.length) * 100) : 0;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in">
@@ -397,16 +433,26 @@ export const IncidentsModule = () => {
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-24 h-24 bg-cyan-500/10 dark:bg-cyan-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+          <div className={`absolute -top-10 -right-10 w-24 h-24 ${isAdmin ? 'bg-amber-500/10 dark:bg-amber-500/15' : 'bg-cyan-500/10 dark:bg-cyan-500/15'} rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500`} />
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tasa de Resolución</span>
-            <div className="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200/80 dark:border-cyan-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
-              <ShieldCheck className="w-4 h-4 stroke-[2.2]" />
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {isAdmin ? 'Ocultas / Archivadas' : 'Tasa de Resolución'}
+            </span>
+            <div className={`w-10 h-10 rounded-xl ${isAdmin ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/80' : 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200/80 dark:border-cyan-800/80'} flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0`}>
+              {isAdmin ? <EyeOff className="w-4 h-4 stroke-[2.2]" /> : <ShieldCheck className="w-4 h-4 stroke-[2.2]" />}
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-cyan-600 dark:text-cyan-400">{resolutionRate}%</span>
-            <span className="text-xs text-cyan-700 dark:text-cyan-400 font-bold bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-lg border border-cyan-200 dark:border-cyan-800/80">{isAdmin ? 'Red' : 'Tus casos'}</span>
+            <span className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${isAdmin ? 'text-amber-600 dark:text-amber-400' : 'text-cyan-600 dark:text-cyan-400'}`}>
+              {isAdmin ? hiddenCount : `${resolutionRate}%`}
+            </span>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-lg border ${
+              isAdmin
+                ? 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800/80'
+                : 'text-cyan-700 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 border-cyan-200 dark:border-cyan-800/80'
+            }`}>
+              {isAdmin ? `${activeIncidents.length} activas` : (role === 'user' ? 'Tus casos' : 'Red')}
+            </span>
           </div>
         </div>
       </div>
@@ -442,9 +488,10 @@ export const IncidentsModule = () => {
 
         <div className="flex items-center gap-2 overflow-x-auto">
           {[
-            { id: 'all', label: 'Todos', count: totalIncidents },
+            { id: 'all', label: isAdmin ? 'Activas' : 'Todos', count: isAdmin ? activeIncidents.length : totalIncidents },
             { id: 'reported', label: 'Reportadas', count: reportedCount, color: 'text-rose-700 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20' },
-            { id: 'resolved', label: 'Resueltas', count: resolvedCount, color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20' }
+            { id: 'resolved', label: 'Resueltas', count: resolvedCount, color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20' },
+            ...(isAdmin ? [{ id: 'hidden', label: 'Ocultas / Archivadas', count: hiddenCount, color: 'text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20' }] : [])
           ].map(st => (
             <button
               key={st.id}
@@ -502,13 +549,21 @@ export const IncidentsModule = () => {
                 <div className="flex flex-col gap-4 flex-1">
                   <div className="flex justify-between items-start gap-2">
                     <span className="font-mono text-xs font-black text-slate-400 dark:text-slate-500">INC-{String(inc.id).padStart(3, '0')}</span>
-                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border flex items-center gap-2 ${
-                      inc.status === 'resolved'
-                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/80'
-                        : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/80'
-                    }`}>
-                      ● {inc.status === 'resolved' ? 'Resuelta' : 'Pendiente'}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      {inc.is_hidden && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg border bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/80 flex items-center gap-1">
+                          <EyeOff className="w-3 h-3" />
+                          <span>Oculta</span>
+                        </span>
+                      )}
+                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border flex items-center gap-2 ${
+                        inc.status === 'resolved'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/80'
+                          : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/80'
+                      }`}>
+                        ● {inc.status === 'resolved' ? 'Resuelta' : 'Pendiente'}
+                      </span>
+                    </div>
                   </div>
 
                   <h3 className="font-extrabold text-slate-900 dark:text-white text-base">{CATEGORY_LABELS[inc.category] || inc.category}</h3>
@@ -566,26 +621,56 @@ export const IncidentsModule = () => {
                 {/* Footer de Tarjeta */}
                 <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 mt-auto">
                   {isAdmin ? (
-                    inc.status !== 'resolved' ? (
+                    <div className="flex items-center gap-2 w-full">
+                      {inc.status !== 'resolved' ? (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleOpenResolve(inc)}
+                          className="flex-1 gap-2 cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>Resolver</span>
+                        </Button>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold flex items-center gap-1.5 flex-1">
+                          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          <span className="truncate">Finalizado · {formatDateTime(inc.resolved_at)}</span>
+                        </span>
+                      )}
+
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
-                        onClick={() => handleOpenResolve(inc)}
-                        className="w-full gap-2"
+                        onClick={() => handleToggleVisibility(inc)}
+                        disabled={togglingVisibilityId === inc.id}
+                        title={inc.is_hidden ? 'Restaurar a vista activa' : 'Ocultar / Desactivar incidencia'}
+                        className={`text-xs font-bold gap-1.5 rounded-xl cursor-pointer ${
+                          inc.is_hidden
+                            ? 'text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/50'
+                            : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
                       >
-                        <CheckCircle2 className="w-5 h-5 shrink-0" />
-                        <span>Resolver</span>
+                        {togglingVisibilityId === inc.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : inc.is_hidden ? (
+                          <>
+                            <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Mostrar</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            <span>Ocultar</span>
+                          </>
+                        )}
                       </Button>
-                    ) : (
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold flex items-center gap-2 mx-auto">
-                        <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" /> Caso Finalizado · {formatDateTime(inc.resolved_at)}
-                      </span>
-                    )
+                    </div>
                   ) : (
                     <span className={`text-[11px] font-bold flex items-center gap-2 mx-auto ${
                       inc.status === 'resolved' ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'
                     }`}>
-                      <Clock className="w-5 h-5 shrink-0" />
+                      <Clock className="w-4 h-4 shrink-0" />
                       {inc.status === 'resolved' ? 'Resuelto por Administración' : 'En Atención por Garita'}
                     </span>
                   )}

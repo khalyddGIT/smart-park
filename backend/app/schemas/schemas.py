@@ -606,6 +606,9 @@ class ReviewCreate(BaseModel):
 class ReviewReply(BaseModel):
     response: str = Field(min_length=2, max_length=1000)
 
+class ReviewVisibilityUpdate(BaseModel):
+    is_hidden: bool
+
 class ReviewResponse(BaseModel):
     id: int
     parking_id: int
@@ -614,6 +617,7 @@ class ReviewResponse(BaseModel):
     rating: int
     comment: str
     response: Optional[str] = None
+    is_hidden: Optional[bool] = False
     created_at: datetime
     class Config:
         from_attributes = True
@@ -630,6 +634,9 @@ class IncidentCreate(BaseModel):
 class IncidentResolve(BaseModel):
     resolution_note: str = Field(min_length=3, max_length=1000)
 
+class IncidentVisibilityUpdate(BaseModel):
+    is_hidden: bool
+
 class IncidentResponse(BaseModel):
     id: int
     parking_id: int
@@ -639,6 +646,7 @@ class IncidentResponse(BaseModel):
     description: str
     photo_url: Optional[str] = None
     status: str
+    is_hidden: Optional[bool] = False
     resolution_note: Optional[str] = None
     created_at: datetime
     resolved_at: Optional[datetime] = None

@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
@@ -91,3 +91,97 @@ async def test_incidents_lifecycle_and_rbac():
             "resolution_note": "Resolucion duplicada"
         })
         assert dup_resolve.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_incident_and_review_visibility_toggle():
+    user_token, _, user_id = await _register_and_get_token(role="user")
+    admin_token, _, admin_id = await _register_and_get_token(role="local")
+    platform_token, _, platform_id = await _register_and_get_token(role="platform")
+
+    transport = ASGITransport(app=app)
+    user_headers = {"Authorization": f"Bearer {user_token}"}
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    platform_headers = {"Authorization": f"Bearer {platform_token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Create parking
+        p_resp = await ac.post("/api/v1/parkings", headers=admin_headers, json={
+            "name": "Cochera Moderacion",
+            "address": "Av. Independencia 456",
+            "city": "Ayacucho",
+            "hourly_rate": 4.0,
+            "total_capacity": 10,
+            "tolerance_minutes": 15
+        })
+        assert p_resp.status_code == 201
+        parking_id = p_resp.json()["id"]
+
+        # --- INCIDENT VISIBILITY ---
+        inc_resp = await ac.post("/api/v1/incidents", headers=user_headers, json={
+            "parking_id": parking_id,
+            "category": "otro",
+            "description": "Incidencia confidencial de prueba"
+        })
+        assert inc_resp.status_code == 201
+        inc_id = inc_resp.json()["id"]
+        assert inc_resp.json()["is_hidden"] is False
+
+        # User tries to hide incident -> 403
+        bad_hide = await ac.put(f"/api/v1/incidents/{inc_id}/visibility", headers=user_headers, json={"is_hidden": True})
+        assert bad_hide.status_code == 403
+
+        # Admin hides incident
+        hide_resp = await ac.put(f"/api/v1/incidents/{inc_id}/visibility", headers=admin_headers, json={"is_hidden": True})
+        assert hide_resp.status_code == 200
+        assert hide_resp.json()["is_hidden"] is True
+
+        # Driver cannot see hidden incident
+        user_list = await ac.get("/api/v1/incidents", headers=user_headers)
+        assert inc_id not in [i["id"] for i in user_list.json()]
+
+        # Admin CAN see hidden incident with is_hidden filter or without
+        admin_list = await ac.get(f"/api/v1/incidents?parking_id={parking_id}&is_hidden=true", headers=admin_headers)
+        assert inc_id in [i["id"] for i in admin_list.json()]
+
+        # --- REVIEW VISIBILITY ---
+        rev_resp = await ac.post("/api/v1/reviews", headers=user_headers, json={
+            "parking_id": parking_id,
+            "rating": 1,
+            "comment": "Comentario ofensivo o inapropiado que el admin desea ocultar"
+        })
+        assert rev_resp.status_code == 201
+        rev_id = rev_resp.json()["id"]
+        assert rev_resp.json()["is_hidden"] is False
+
+        # Driver sees it publicly initially
+        pub_list = await ac.get("/api/v1/reviews", headers=user_headers)
+        assert rev_id in [r["id"] for r in pub_list.json()]
+
+        # User cannot hide review -> 403
+        bad_rev_hide = await ac.put(f"/api/v1/reviews/{rev_id}/visibility", headers=user_headers, json={"is_hidden": True})
+        assert bad_rev_hide.status_code == 403
+
+        # Local admin hides it -> 200
+        hide_rev = await ac.put(f"/api/v1/reviews/{rev_id}/visibility", headers=admin_headers, json={"is_hidden": True})
+        assert hide_rev.status_code == 200
+        assert hide_rev.json()["is_hidden"] is True
+
+        # Driver or anonymous CANNOT see it now
+        anon_list = await ac.get("/api/v1/reviews")
+        assert rev_id not in [r["id"] for r in anon_list.json()]
+
+        driver_list = await ac.get("/api/v1/reviews", headers=user_headers)
+        assert rev_id not in [r["id"] for r in driver_list.json()]
+
+        # Admin CAN see it
+        admin_revs = await ac.get("/api/v1/reviews", headers=admin_headers)
+        hidden_rev_in_admin = next((r for r in admin_revs.json() if r["id"] == rev_id), None)
+        assert hidden_rev_in_admin is not None
+        assert hidden_rev_in_admin["is_hidden"] is True
+
+        # Platform superadmin unhides it
+        unhide_rev = await ac.put(f"/api/v1/reviews/{rev_id}/visibility", headers=platform_headers, json={"is_hidden": False})
+        assert unhide_rev.status_code == 200
+        assert unhide_rev.json()["is_hidden"] is False
+

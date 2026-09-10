@@ -108,6 +108,16 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Cuenta desactivada")
     return user
 
+async def get_optional_user(
+    request: Request = None,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        return await get_current_user(request=request, credentials=credentials, db=db)
+    except HTTPException:
+        return None
+
 def require_role(*allowed_roles: str):
     """
     Fábrica de dependencia: exige usuario autenticado con uno de los roles indicados.

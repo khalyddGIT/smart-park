@@ -75,12 +75,17 @@ def _ensure_schema():
                 ("reservas", "is_open_stay", "BOOLEAN DEFAULT FALSE"),
                 ("reservas", "payment_method", "VARCHAR(50) DEFAULT 'efectivo'"),
                 ("reservas", "amount_paid", "FLOAT DEFAULT 0.0"),
+                ("resenas", "is_hidden", "BOOLEAN DEFAULT FALSE"),
+                ("incidencias", "is_hidden", "BOOLEAN DEFAULT FALSE"),
             ]
             if str(engine.url).startswith("sqlite"):
                 for tbl, col, decl in lite_adds:
-                    rows = (await conn.execute(text(f"PRAGMA table_info({tbl})"))).all()
-                    if col not in {r[1] for r in rows}:
-                        await conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN {col} {decl}"))
+                    try:
+                        rows = (await conn.execute(text(f"PRAGMA table_info({tbl})"))).all()
+                        if col not in {r[1] for r in rows}:
+                            await conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN {col} {decl}"))
+                    except Exception:
+                        pass
             else:
                 for tbl, col, decl in lite_adds:
                     try:

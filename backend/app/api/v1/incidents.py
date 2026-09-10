@@ -5,13 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import Incident, Parking, User
-from app.schemas.schemas import IncidentCreate, IncidentResolve, IncidentResponse
+from app.schemas.schemas import IncidentCreate, IncidentResolve, IncidentResponse, IncidentVisibilityUpdate
 from app.core.security import get_current_user, require_role
 from app.core.realtime import realtime
 
 router = APIRouter(prefix="/incidents", tags=["Incidencias & Asistencia"])
 
-# Resolver incidencias es función del Admin Local o Super Admin
+# Resolver o gestionar incidencias es función del Admin Local o Super Admin
 admin_required = require_role("local", "platform")
 
 @router.post("", response_model=IncidentResponse, status_code=201)
@@ -31,7 +31,8 @@ async def create_incident(
         category=incident_in.category,
         description=incident_in.description,
         photo_url=incident_in.photo_url,
-        status="reported"
+        status="reported",
+        is_hidden=False
     )
     db.add(db_incident)
     await db.commit()
@@ -46,6 +47,7 @@ async def create_incident(
 async def list_incidents(
     parking_id: Optional[int] = None,
     status: Optional[str] = None,
+    is_hidden: Optional[bool] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -55,9 +57,13 @@ async def list_incidents(
     if status:
         stmt = stmt.where(Incident.status == status)
 
-    # RBAC: los conductores solo ven sus propias incidencias; local/platform ven todas
+    # RBAC: los conductores solo ven sus propias incidencias activas (no ocultas)
     if current_user.role == "user":
-        stmt = stmt.where(Incident.user_id == current_user.id)
+        stmt = stmt.where(Incident.user_id == current_user.id, Incident.is_hidden.is_(False))
+    else:
+        # Administrador local o Superadmin: pueden filtrar por estado oculto o ver todas
+        if is_hidden is not None:
+            stmt = stmt.where(Incident.is_hidden == is_hidden)
 
     result = await db.execute(stmt)
     incidents = result.scalars().all()
@@ -97,6 +103,27 @@ async def resolve_incident(
     incident.status = "resolved"
     incident.resolution_note = resolve_in.resolution_note
     incident.resolved_at = datetime.utcnow()
+    await db.commit()
+    try:
+        await realtime.broadcast("incidents:updated")
+    except Exception:
+        pass
+    await db.refresh(incident)
+    return IncidentResponse.model_validate(incident)
+
+@router.put("/{incident_id}/visibility", response_model=IncidentResponse)
+async def toggle_incident_visibility(
+    incident_id: int,
+    visibility_in: IncidentVisibilityUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(admin_required)
+):
+    result = await db.execute(select(Incident).where(Incident.id == incident_id))
+    incident = result.scalars().first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incidencia no encontrada")
+
+    incident.is_hidden = visibility_in.is_hidden
     await db.commit()
     try:
         await realtime.broadcast("incidents:updated")

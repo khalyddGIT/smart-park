@@ -230,6 +230,7 @@ class Review(Base):
     rating = Column(Integer, nullable=False, default=5) # 1 a 5 estrellas
     comment = Column(Text, nullable=False)
     response = Column(Text, nullable=True) # Respuesta del administrador local
+    is_hidden = Column(Boolean, default=False, nullable=True) # Ocultar/desactivar al público
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Incident(Base):
@@ -243,6 +244,7 @@ class Incident(Base):
     description = Column(Text, nullable=False)
     photo_url = Column(Text, nullable=True)
     status = Column(String(20), default="reported")
+    is_hidden = Column(Boolean, default=False, nullable=True) # Ocultar/desactivar del panel operativo
     resolution_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     resolved_at = Column(DateTime, nullable=True)

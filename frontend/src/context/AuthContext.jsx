@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { setAccessToken, getAccessToken, register as apiRegister, login as apiLogin, googleAuth as apiGoogleAuth, loginWithPinApi } from '../services/api';
+import { setAccessToken, getAccessToken, register as apiRegister, login as apiLogin, googleAuth as apiGoogleAuth, loginWithPinApi, createVehicle } from '../services/api';
 import api from '../services/api';
 
 const AuthContext = createContext();
@@ -238,11 +238,36 @@ export const AuthProvider = ({ children }) => {
   // Registro de Conductor - persistente en Base de Datos
   const registerUser = async (userData) => {
     try {
-      const data = await apiRegister({ full_name: userData.name, email: userData.email, phone: userData.phone || '', password: userData.password || 'password123', role: 'user' });
+      const data = await apiRegister({ 
+        full_name: userData.name, 
+        email: userData.email, 
+        phone: userData.phone || null, 
+        password: userData.password || 'password123', 
+        role: 'user' 
+      });
       if (data?.access_token && data?.user) {
         setAccessToken(data.access_token);
-        const u = { id: data.user.id, name: data.user.full_name, email: data.user.email, phone: data.user.phone, avatar: data.user.avatar_url || null, role: data.user.role || 'user', isGoogleAuth: false };
-        setUser(u); setRole('user'); return u;
+        const u = { 
+          id: data.user.id, 
+          name: data.user.full_name, 
+          email: data.user.email, 
+          phone: data.user.phone, 
+          plate: userData.plate || null,
+          avatar: data.user.avatar_url || null, 
+          role: data.user.role || 'user', 
+          isGoogleAuth: false 
+        };
+        setUser(u); setRole('user');
+
+        // Si el conductor registró una placa, registrarla automáticamente en su garaje
+        if (userData.plate) {
+          try {
+            await createVehicle({ license_plate: userData.plate, vehicle_type: 'auto' });
+          } catch (vErr) {
+            console.warn('Vehículo ya existía o error al asociarlo en registro:', vErr?.message);
+          }
+        }
+        return u;
       }
     } catch (err) {
       const s = err?.response?.status;

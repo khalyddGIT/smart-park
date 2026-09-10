@@ -113,25 +113,90 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
   // Submit Registro Conductor
   const handleDriverRegister = (e) => {
     e.preventDefault();
-    if (!driverName.trim() || !driverEmail.trim()) {
-      setErrorMsg('Por favor completa tu nombre y correo');
+    const cleanName = driverName.trim();
+    const cleanEmail = driverEmail.trim().toLowerCase();
+    const cleanPhone = driverPhone.trim();
+    const rawPlate = driverPlate.trim().toUpperCase();
+
+    if (!cleanName || cleanName.length < 2) {
+      setErrorMsg('Por favor ingresa tu nombre completo (mínimo 2 caracteres)');
+      return;
+    }
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setErrorMsg('Por favor ingresa un correo electrónico válido (ej. usuario@ejemplo.com)');
       return;
     }
     if (!driverPassword || driverPassword.length < 8) {
       setErrorMsg('La contraseña debe tener al menos 8 caracteres');
       return;
     }
+
+    // Validación estricta de Celular Perú (exactamente 9 dígitos, empieza en 9)
+    let validatedPhone = null;
+    if (cleanPhone) {
+      let digits = cleanPhone.replace(/[\s\-]/g, '');
+      if (digits.startsWith('+51')) digits = digits.slice(3);
+      else if (digits.startsWith('51') && digits.length === 11 && digits.startsWith('519')) digits = digits.slice(2);
+
+      if (!/^\d+$/.test(digits)) {
+        setErrorMsg('El número de teléfono solo debe contener números');
+        return;
+      }
+      if (digits.length > 9) {
+        setErrorMsg(`El teléfono no debe tener más de 9 dígitos (ingresaste ${digits.length} dígitos)`);
+        return;
+      }
+      if (digits.length < 9) {
+        setErrorMsg(`El teléfono debe tener exactamente 9 dígitos (ingresaste ${digits.length} dígitos)`);
+        return;
+      }
+      if (!digits.startsWith('9')) {
+        setErrorMsg('El número de celular debe empezar con 9 (ej. 987654321 o +51 987 654 321)');
+        return;
+      }
+      validatedPhone = digits;
+    }
+
+    // Validación estricta de Placa de Vehículo (debe tener guión y formato 2-4 alfanuméricos)
+    let validatedPlate = null;
+    if (rawPlate) {
+      const cleanPlate = rawPlate.replace(/\s/g, '');
+      if (!cleanPlate.includes('-')) {
+        setErrorMsg('La placa debe incluir obligatoriamente un guión (ej: ABC-123 o 1234-5A)');
+        return;
+      }
+      const parts = cleanPlate.split('-');
+      if (parts.length !== 2) {
+        setErrorMsg('La placa solo debe contener un único guión separador (ej: ABC-123)');
+        return;
+      }
+      if (parts[0].length > 4 || parts[1].length > 4) {
+        setErrorMsg('La placa contiene demasiados caracteres (máximo 4 antes y después del guión)');
+        return;
+      }
+      if (parts[0].length < 2 || parts[1].length < 2) {
+        setErrorMsg('La placa contiene muy pocos caracteres (mínimo 2 antes y después del guión)');
+        return;
+      }
+      if (!/^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/.test(cleanPlate)) {
+        setErrorMsg('Formato de placa inválido. Solo se permiten letras y números con guión (ej: ABC-123)');
+        return;
+      }
+      validatedPlate = cleanPlate;
+    }
+
     if (!hasAcceptedTerms) {
       setErrorMsg('Debes aceptar los Términos y Condiciones para crear tu cuenta');
       setShowTermsModal(true);
       return;
     }
+
     setErrorMsg('');
     registerUser({
-      name: driverName.trim(),
-      email: driverEmail.trim(),
-      phone: driverPhone.trim() || '+51 966 000 000',
-      plate: (driverPlate.trim() || 'ABC-123').toUpperCase(),
+      name: cleanName,
+      email: cleanEmail,
+      phone: validatedPhone || '+51 966 000 000',
+      plate: validatedPlate || 'ABC-123',
       password: driverPassword
     }).catch(err => {
       setErrorMsg(err?.message || 'No se pudo completar el registro');
@@ -474,12 +539,21 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input
                         type="tel"
-                        placeholder="+51 987 654 321"
+                        maxLength={15}
+                        placeholder="987 654 321"
                         value={driverPhone}
-                        onChange={(e) => setDriverPhone(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9+\s-]/g, '');
+                          const rawDigits = val.replace(/\D/g, '');
+                          const effectiveDigits = rawDigits.startsWith('519') && rawDigits.length > 9 ? rawDigits.slice(2) : rawDigits;
+                          if (effectiveDigits.length <= 9) {
+                            setDriverPhone(val);
+                          }
+                        }}
                         className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
                       />
                     </div>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">9 dígitos iniciando en 9</p>
                   </div>
 
                   <div className="space-y-1">
@@ -488,13 +562,23 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       <Car className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input
                         type="text"
-                        maxLength={7}
+                        maxLength={9}
                         placeholder="ABC-123"
                         value={driverPlate}
-                        onChange={(e) => setDriverPlate(e.target.value.toUpperCase())}
+                        onChange={(e) => {
+                          let val = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+                          // Auto insertar guión si el usuario escribe 3 caracteres y no puso guión
+                          if (!val.includes('-') && val.length > 3 && /^[A-Z0-9]+$/.test(val)) {
+                            val = `${val.slice(0, 3)}-${val.slice(3, 7)}`;
+                          }
+                          if (val.length <= 9) {
+                            setDriverPlate(val);
+                          }
+                        }}
                         className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10 uppercase font-mono tracking-wider focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
                       />
                     </div>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">Formato con guión: ABC-123</p>
                   </div>
                 </div>
 

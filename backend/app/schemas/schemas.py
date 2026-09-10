@@ -12,8 +12,29 @@ def _clean_phone(v: str) -> str:
     if v is None: return v
     v = v.strip().replace(' ', '').replace('-', '')
     if v.startswith('+51'): v = v[3:]
-    if v.startswith('51'): v = v[2:] if len(v)==11 and v.startswith('51') else v
+    if v.startswith('51') and len(v) == 11 and v.startswith('519'): v = v[2:]
     return v
+
+def validate_phone_format(v: Any) -> Optional[str]:
+    if v is None or v == '':
+        return None
+    if not isinstance(v, str):
+        v = str(v)
+    v_clean = v.strip().replace(' ', '').replace('-', '')
+    if v_clean.startswith('+51'):
+        v_clean = v_clean[3:]
+    elif v_clean.startswith('51') and len(v_clean) == 11 and v_clean.startswith('519'):
+        v_clean = v_clean[2:]
+    
+    if not v_clean.isdigit():
+        raise ValueError("El teléfono solo debe contener números.")
+    if len(v_clean) > 9:
+        raise ValueError(f"El teléfono no debe tener más de 9 dígitos (ingresaste {len(v_clean)} dígitos).")
+    if len(v_clean) < 9:
+        raise ValueError(f"El teléfono debe tener exactamente 9 dígitos (ingresaste {len(v_clean)} dígitos).")
+    if not v_clean.startswith('9'):
+        raise ValueError("El teléfono celular debe empezar con el dígito 9 (ej: 987654321 o +51 987654321).")
+    return v_clean
 
 def validate_license_plate_format(v: Any) -> str:
     if not v or not isinstance(v, str):
@@ -21,6 +42,13 @@ def validate_license_plate_format(v: Any) -> str:
     v_clean = v.strip().upper().replace(' ', '')
     if '-' not in v_clean:
         raise ValueError("La placa debe incluir obligatoriamente un guión (-), ej: ABC-123 o 1234-5A.")
+    parts = v_clean.split('-')
+    if len(parts) != 2:
+        raise ValueError("La placa solo debe contener un único guión (-) separador (ej: ABC-123).")
+    if len(parts[0]) > 4 or len(parts[1]) > 4:
+        raise ValueError("La placa contiene demasiados caracteres (máximo 4 antes y 4 después del guión).")
+    if len(parts[0]) < 2 or len(parts[1]) < 2:
+        raise ValueError("La placa contiene muy pocos caracteres (mínimo 2 antes y 2 después del guión).")
     if not PLATE_RE.match(v_clean):
         raise ValueError("Formato de placa inválido. Debe contener entre 2 y 4 caracteres alfanuméricos, un guión (-) y entre 2 y 4 caracteres alfanuméricos (ej: ABC-123 o 1234-5A).")
     return v_clean
@@ -35,10 +63,17 @@ class UserBase(BaseModel):
     avatar_url: Optional[str] = None
     role: Optional[str] = "user"
 
+    @field_validator('full_name')
+    @classmethod
+    def validate_full_name(cls, v):
+        if not v or len(v.strip()) < 2:
+            raise ValueError('El nombre debe tener al menos 2 caracteres.')
+        return v.strip()
+
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
-        if v is None or v == '': return v
+        if v is None or v == '': return None
         return _clean_phone(v)
 
 class UserCreate(UserBase):
@@ -47,10 +82,8 @@ class UserCreate(UserBase):
     @field_validator('phone')
     @classmethod
     def validate_phone_create(cls, v):
-        if v is None or v == '': return v
-        raw = _clean_phone(v)
-        if not re.match(r'^[0-9]{7,15}$', raw):
-            raise ValueError('Teléfono Perú: 9 dígitos empezando en 9, ej 966123456 o +51 966123456')
+        return validate_phone_format(v)
+
 class UserLogin(BaseModel):
     email: Optional[str] = Field(default=None, max_length=150, description="Correo electrónico o nombre de usuario")
     username: Optional[str] = Field(default=None, max_length=150, description="Nombre de usuario o nombre completo alternativo")
@@ -71,6 +104,18 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     is_active: Optional[bool] = None
 
+    @field_validator('full_name')
+    @classmethod
+    def validate_full_name_update(cls, v):
+        if v is not None and len(v.strip()) < 2:
+            raise ValueError('El nombre debe tener al menos 2 caracteres.')
+        return v.strip() if v else v
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone_update(cls, v):
+        return validate_phone_format(v)
+
 class UserRoleUpdate(BaseModel):
     role: str
 
@@ -83,6 +128,11 @@ class UserResponse(UserBase):
     created_at: datetime
     class Config:
         from_attributes = True
+
+    @field_validator('phone', mode='before')
+    @classmethod
+    def validate_phone_read(cls, v):
+        return str(v) if v is not None else None
 
 class Token(BaseModel):
     access_token: str

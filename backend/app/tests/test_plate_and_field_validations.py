@@ -379,3 +379,125 @@ def test_user_login_schema():
     # Password vacío -> Rechazado
     with pytest.raises(ValidationError):
         UserLogin(email="conductor@smartpark.com", password="")
+
+
+# ==============================================================================
+# 9. PRUEBAS DE CREACIÓN Y ACTUALIZACIÓN DE USUARIOS (UserCreate, UserUpdate)
+# ==============================================================================
+
+def test_user_create_phone_valid():
+    """UserCreate debe aceptar teléfonos peruanos válidos de 9 dígitos y normalizarlos."""
+    from app.schemas.schemas import UserCreate
+
+    # 9 dígitos directos
+    u1 = UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="987654321", password="password123")
+    assert u1.phone == "987654321"
+
+    # Con prefijo +51 y espacios
+    u2 = UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="+51 987 654 321", password="password123")
+    assert u2.phone == "987654321"
+
+    # Con prefijo 51 sin más
+    u3 = UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="51987654321", password="password123")
+    assert u3.phone == "987654321"
+
+    # Teléfono opcional (None o vacío)
+    u4 = UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone=None, password="password123")
+    assert u4.phone is None
+
+    u5 = UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="", password="password123")
+    assert u5.phone is None
+
+
+def test_user_create_phone_rejects_extra_digits():
+    """UserCreate DEBE rechazar teléfonos con números de más (10 o más dígitos)."""
+    from app.schemas.schemas import UserCreate
+
+    # 10 dígitos (un número de más)
+    with pytest.raises(ValidationError) as exc_info:
+        UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="9876543210", password="password123")
+    assert "más de 9 dígitos" in str(exc_info.value) or "demasiados dígitos" in str(exc_info.value)
+
+    # 11 dígitos
+    with pytest.raises(ValidationError):
+        UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="98765432100", password="password123")
+
+    # 15 dígitos
+    with pytest.raises(ValidationError):
+        UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="987654321012345", password="password123")
+
+    # +51 con 10 dígitos después del código
+    with pytest.raises(ValidationError):
+        UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="+51 9876543210", password="password123")
+
+
+def test_user_create_phone_rejects_too_few_digits():
+    """UserCreate DEBE rechazar teléfonos con menos de 9 dígitos."""
+    from app.schemas.schemas import UserCreate
+
+    # 8 dígitos (le falta un número)
+    with pytest.raises(ValidationError) as exc_info:
+        UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="98765432", password="password123")
+    assert "exactamente 9 dígitos" in str(exc_info.value)
+
+    # 5 dígitos
+    with pytest.raises(ValidationError):
+        UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="98765", password="password123")
+
+
+def test_user_create_phone_rejects_not_starting_with_9():
+    """UserCreate DEBE rechazar números celulares que no inicien con 9 en Perú."""
+    from app.schemas.schemas import UserCreate
+
+    with pytest.raises(ValidationError) as exc_info:
+        UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="887654321", password="password123")
+    assert "empezar con el dígito 9" in str(exc_info.value)
+
+    with pytest.raises(ValidationError):
+        UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="123456789", password="password123")
+
+
+def test_user_create_phone_rejects_letters_and_symbols():
+    """UserCreate DEBE rechazar teléfonos con caracteres alfabéticos o símbolos."""
+    from app.schemas.schemas import UserCreate
+
+    with pytest.raises(ValidationError):
+        UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="98765abcd", password="password123")
+
+    with pytest.raises(ValidationError):
+        UserCreate(full_name="Carlos Mendoza", email="carlos@example.com", phone="98765-432!", password="password123")
+
+
+def test_user_update_phone_validation():
+    """UserUpdate también debe validar estrictamente el teléfono."""
+    from app.schemas.schemas import UserUpdate
+
+    # Válido
+    up = UserUpdate(phone="+51 911 222 333")
+    assert up.phone == "911222333"
+
+    # Inválido: más de 9 dígitos
+    with pytest.raises(ValidationError):
+        UserUpdate(phone="91122233344")
+
+    # Inválido: menos de 9 dígitos
+    with pytest.raises(ValidationError):
+        UserUpdate(phone="911222")
+
+
+def test_validate_license_plate_extra_characters():
+    """validate_license_plate_format DEBE rechazar placas con caracteres de más antes o después del guión."""
+    # Más de 4 caracteres antes del guión
+    with pytest.raises(ValueError) as exc_info1:
+        validate_license_plate_format("ABCDE-123")
+    assert "demasiados caracteres" in str(exc_info1.value) or "inválido" in str(exc_info1.value).lower()
+
+    # Más de 4 caracteres después del guión
+    with pytest.raises(ValueError) as exc_info2:
+        validate_license_plate_format("ABC-12345")
+    assert "demasiados caracteres" in str(exc_info2.value) or "inválido" in str(exc_info2.value).lower()
+
+    # Múltiples guiones
+    with pytest.raises(ValueError) as exc_info3:
+        validate_license_plate_format("AB-12-34")
+    assert "único guión" in str(exc_info3.value) or "inválido" in str(exc_info3.value).lower()

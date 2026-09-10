@@ -46,11 +46,13 @@ export const AuthProvider = ({ children }) => {
         }
         const corrected = {
           id: serverUser.id,
-          name: serverUser.full_name || user?.name || serverUser.email.split('@')[0],
+          name: serverUser.full_name || serverUser.email.split('@')[0],
           email: serverUser.email,
-          phone: serverUser.phone || user?.phone || '',
-          avatar: serverUser.avatar_url || user?.avatar || null,
+          phone: serverUser.phone || '',
+          avatar: serverUser.avatar_url || null,
           role: serverRole,
+          dni: serverUser.dni || '',
+          address: serverUser.address || '',
           isGoogleAuth: user?.isGoogleAuth || false
         };
         setUser(corrected);
@@ -247,22 +249,25 @@ export const AuthProvider = ({ children }) => {
       });
       if (data?.access_token && data?.user) {
         setAccessToken(data.access_token);
+        const cleanPlate = (userData.plate || '').trim();
         const u = { 
           id: data.user.id, 
           name: data.user.full_name, 
           email: data.user.email, 
-          phone: data.user.phone, 
-          plate: userData.plate || null,
+          phone: data.user.phone || userData.phone || '', 
+          plate: cleanPlate,
+          dni: '',
+          address: '',
           avatar: data.user.avatar_url || null, 
           role: data.user.role || 'user', 
           isGoogleAuth: false 
         };
         setUser(u); setRole('user');
 
-        // Si el conductor registró una placa, registrarla automáticamente en su garaje
-        if (userData.plate) {
+        // Si el conductor registró una placa real válida, registrarla automáticamente en su garaje
+        if (cleanPlate) {
           try {
-            await createVehicle({ license_plate: userData.plate, vehicle_type: 'auto' });
+            await createVehicle({ license_plate: cleanPlate, vehicle_type: 'auto' });
           } catch (vErr) {
             console.warn('Vehículo ya existía o error al asociarlo en registro:', vErr?.message);
           }

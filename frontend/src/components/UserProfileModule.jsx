@@ -27,19 +27,20 @@ export const UserProfileModule = ({ onBack }) => {
 
   const [avatarInput, setAvatarInput] = useState(user?.avatar || '');
   const [uploading, setUploading] = useState(false);
-  const [vehiclesCount, setVehiclesCount] = useState(1);
+  const [vehiclesCount, setVehiclesCount] = useState(0);
+  const [primaryPaymentMethod, setPrimaryPaymentMethod] = useState('Sin registrar');
 
-  // Estado del formulario de perfil limpio
+  // Estado del formulario de perfil limpio: inicia con datos reales del usuario autenticado (sin mocks)
   const [formData, setFormData] = useState({
-    name: user?.name || 'Yoniver Ch',
-    email: user?.email || 'khalyddwtf@gmail.com',
-    phone: user?.phone || '+51 966 123 456',
-    dni: user?.dni || '72458912',
-    address: user?.address || 'Jr. 28 de Julio 340, Huamanga',
-    plate: user?.plate || 'ABC-123',
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    dni: user?.dni || '',
+    address: user?.address || '',
+    plate: user?.plate || '',
     notifyEmail: true,
     notifyWhatsapp: true,
-    autoGateOpen: true
+    autoGateOpen: false
   });
 
   const [notification, setNotification] = useState(null);
@@ -47,18 +48,60 @@ export const UserProfileModule = ({ onBack }) => {
   const [isEditingPin, setIsEditingPin] = useState(false);
   const [newPin, setNewPin] = useState('');
 
+  // Sincronizar datos del usuario actual cuando se cargue la sesión
   useEffect(() => {
-    // Sincronizar vehículos reales registrados si existen
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        dni: user.dni || '',
+        address: user.address || '',
+        plate: user.plate || prev.plate || ''
+      }));
+      setAvatarInput(user.avatar || '');
+    }
+  }, [user]);
+
+  // Sincronizar vehículos reales registrados desde el backend
+  useEffect(() => {
     listVehicles()
       .then((res) => {
-        if (Array.isArray(res?.data) && res.data.length > 0) {
-          setVehiclesCount(res.data.length);
-          if (res.data[0]?.plate && !user?.plate) {
-            setFormData(prev => ({ ...prev, plate: res.data[0].plate }));
+        const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+        setVehiclesCount(list.length);
+        if (list.length > 0) {
+          const firstPlate = list[0].license_plate || list[0].plate;
+          if (firstPlate) {
+            setFormData(prev => ({ ...prev, plate: firstPlate }));
+          }
+        } else {
+          if (!user?.plate) {
+            setFormData(prev => ({ ...prev, plate: '' }));
           }
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setVehiclesCount(0);
+      });
+  }, [user]);
+
+  // Sincronizar tarjeta / método de pago real guardado del usuario
+  useEffect(() => {
+    try {
+      const userKey = user?.id || user?.email || 'guest';
+      const raw = localStorage.getItem(`smart_park_cards_v2_${userKey}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const card = parsed[0];
+          const last4 = (card.number || card.last4 || '').replace(/\s/g, '').slice(-4);
+          setPrimaryPaymentMethod(`${card.brand || 'Tarjeta'} •••• ${last4 || '••••'}`);
+          return;
+        }
+      }
+    } catch {}
+    setPrimaryPaymentMethod('Sin registrar');
   }, [user]);
 
   const showToast = (msg) => {
@@ -133,6 +176,7 @@ export const UserProfileModule = ({ onBack }) => {
     }
   };
 
+  // Estancias reales completadas del usuario autenticado (sin +5 ficticio)
   const completedStays = reservations ? reservations.filter(r => r.status === 'COMPLETED').length : 0;
 
   return (
@@ -155,7 +199,7 @@ export const UserProfileModule = ({ onBack }) => {
             {(avatarInput || user?.avatar) ? (
               <img 
                 src={avatarInput || user?.avatar} 
-                alt={formData.name}
+                alt={formData.name || 'Usuario'}
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
                 className="w-16 h-16 rounded-2xl object-cover border border-slate-200 bg-slate-50" 
@@ -181,15 +225,19 @@ export const UserProfileModule = ({ onBack }) => {
             </label>
           </div>
 
-          {/* Información Principal Limpia: sin badges invasivos */}
+          {/* Información Principal Limpia: sin datos ficticios ni badges */}
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              {formData.name}
+              {formData.name || 'Conductor Registrado'}
             </h1>
             <p className="text-xs text-slate-500 font-medium mt-1 flex flex-wrap items-center gap-x-2">
-              <span>{formData.email}</span>
-              <span className="text-slate-300">•</span>
-              <span className="font-mono text-slate-600">{formData.phone}</span>
+              <span>{formData.email || 'Sin correo'}</span>
+              {formData.phone && (
+                <>
+                  <span className="text-slate-300">•</span>
+                  <span className="font-mono text-slate-600">{formData.phone}</span>
+                </>
+              )}
             </p>
           </div>
 
@@ -219,14 +267,14 @@ export const UserProfileModule = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Métricas / Resumen Limpio (Sin badges ruidosos) */}
+      {/* Métricas / Resumen Real (Sin datos inflados ni tarjetas ficticias) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <div className="p-4 rounded-2xl border border-slate-200/80 bg-white shadow-xs">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
             Estancias completadas
           </span>
           <span className="text-2xl font-bold font-mono text-slate-900">
-            {completedStays + 5}
+            {completedStays}
           </span>
         </div>
 
@@ -243,8 +291,8 @@ export const UserProfileModule = ({ onBack }) => {
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
             Método principal
           </span>
-          <span className="text-lg font-bold font-mono text-slate-900">
-            Visa •••• 4242
+          <span className={`text-base sm:text-lg font-bold font-mono ${primaryPaymentMethod === 'Sin registrar' ? 'text-slate-400' : 'text-slate-900'}`}>
+            {primaryPaymentMethod}
           </span>
         </div>
       </div>
@@ -316,6 +364,7 @@ export const UserProfileModule = ({ onBack }) => {
                       <input
                         type="text"
                         required
+                        placeholder="Tu nombre completo"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="w-full bg-transparent text-xs font-medium text-slate-900 outline-none"
@@ -323,25 +372,28 @@ export const UserProfileModule = ({ onBack }) => {
                     </div>
                   </div>
 
-                  {/* DNI / CE (Lectura, limpio sin badge) */}
+                  {/* DNI / CE (Permite ingresar y actualizar) */}
                   <div>
                     <label className="text-xs font-semibold text-slate-700 block mb-1.5">
                       DNI / CE
                     </label>
-                    <div className="flex items-center justify-between h-10 px-3 bg-slate-50 border border-slate-200/80 rounded-xl">
-                      <div className="flex items-center gap-2.5 w-full">
-                        <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span className="text-xs font-mono font-medium text-slate-700">
-                          {formData.dni}
-                        </span>
-                      </div>
-                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" title="Dato verificado" />
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 border border-slate-200 rounded-xl focus-within:border-slate-800 focus-within:bg-white transition">
+                      <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
+                      <input
+                        type="text"
+                        maxLength={8}
+                        pattern="[0-9]*"
+                        placeholder="Ingresa tu DNI (8 dígitos)"
+                        value={formData.dni}
+                        onChange={(e) => setFormData({ ...formData, dni: e.target.value.replace(/\D/g, '').slice(0, 8) })}
+                        className="w-full bg-transparent text-xs font-mono font-medium text-slate-900 outline-none"
+                      />
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Correo Electrónico (Lectura, limpio sin badge) */}
+                  {/* Correo Electrónico (Lectura protegida) */}
                   <div>
                     <label className="text-xs font-semibold text-slate-700 block mb-1.5">
                       Correo Electrónico
@@ -350,10 +402,10 @@ export const UserProfileModule = ({ onBack }) => {
                       <div className="flex items-center gap-2.5 w-full overflow-hidden">
                         <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                         <span className="text-xs font-mono font-medium text-slate-700 truncate">
-                          {formData.email}
+                          {formData.email || 'Sin correo registrado'}
                         </span>
                       </div>
-                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" title="Correo verificado" />
+                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" title="Correo verificado en cuenta" />
                     </div>
                   </div>
 
@@ -366,7 +418,7 @@ export const UserProfileModule = ({ onBack }) => {
                       <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                       <input
                         type="tel"
-                        required
+                        placeholder="Ej. +51 987 654 321"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         className="w-full bg-transparent text-xs font-mono font-medium text-slate-900 outline-none"
@@ -393,7 +445,7 @@ export const UserProfileModule = ({ onBack }) => {
                     </div>
                   </div>
 
-                  {/* Placa Principal (Lectura, limpia sin badge) */}
+                  {/* Placa Principal */}
                   <div>
                     <label className="text-xs font-semibold text-slate-700 block mb-1.5">
                       Placa Principal
@@ -401,11 +453,11 @@ export const UserProfileModule = ({ onBack }) => {
                     <div className="flex items-center justify-between h-10 px-3 bg-slate-50 border border-slate-200/80 rounded-xl">
                       <div className="flex items-center gap-2.5 w-full">
                         <Car className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span className="text-xs font-mono font-bold text-slate-800 uppercase">
-                          {formData.plate}
+                        <span className={`text-xs font-mono font-bold ${formData.plate ? 'text-slate-800 uppercase' : 'text-slate-400'}`}>
+                          {formData.plate || 'Sin placa registrada'}
                         </span>
                       </div>
-                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" title="Modificar en Mis Vehículos" />
+                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" title="Gestionar en Mis Vehículos" />
                     </div>
                   </div>
                 </div>
@@ -577,7 +629,7 @@ export const UserProfileModule = ({ onBack }) => {
 
         </div>
 
-        {/* Columna Derecha: Credencial Digital Limpia */}
+        {/* Columna Derecha: Credencial Digital Real */}
         <div className="space-y-4">
           <div className="bg-slate-950 text-white p-5 rounded-2xl border border-slate-800 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -585,7 +637,7 @@ export const UserProfileModule = ({ onBack }) => {
                 Credencial Digital
               </span>
               <span className="text-[10px] font-mono text-slate-500">
-                SPK-2026-USR
+                {user?.id ? `SPK-${String(user.id).padStart(4, '0')}` : 'SPK-NUEVO'}
               </span>
             </div>
 
@@ -593,7 +645,7 @@ export const UserProfileModule = ({ onBack }) => {
               {(avatarInput || user?.avatar) ? (
                 <img 
                   src={avatarInput || user?.avatar} 
-                  alt={formData.name}
+                  alt={formData.name || 'Conductor'}
                   className="w-11 h-11 rounded-xl object-cover border border-slate-800" 
                 />
               ) : (
@@ -602,9 +654,13 @@ export const UserProfileModule = ({ onBack }) => {
                 </div>
               )}
               
-              <div>
-                <h3 className="font-bold text-sm text-white">{formData.name}</h3>
-                <p className="text-xs font-mono text-slate-400">{formData.dni}</p>
+              <div className="overflow-hidden">
+                <h3 className="font-bold text-sm text-white truncate">
+                  {formData.name || 'Conductor Registrado'}
+                </h3>
+                <p className="text-xs font-mono text-slate-400">
+                  {formData.dni ? formData.dni : 'Sin DNI'}
+                </p>
                 <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-emerald-400 font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                   <span>Activo</span>
@@ -615,7 +671,7 @@ export const UserProfileModule = ({ onBack }) => {
             <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800/80 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between">
                 <span className="text-slate-400">Placa autorizada</span>
-                <span className="text-slate-200 font-bold">{formData.plate}</span>
+                <span className="text-slate-200 font-bold uppercase">{formData.plate || 'Ninguna'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Categoría</span>

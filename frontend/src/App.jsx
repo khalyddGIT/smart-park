@@ -235,7 +235,7 @@ const AppMain = () => {
         slotCode: bookingData.slotCode,
         plate: bookingData.plate,
         customerName: user?.name || user?.full_name || user?.email?.split('@')[0] || 'Conductor Registrado',
-        customerPhone: user?.phone || '+51 966 000 000',
+        customerPhone: user?.phone || '',
         totalCost: bookingData.totalCost,
         hours: bookingData.hours,
         rate: selectedParking.rate,
@@ -1194,7 +1194,7 @@ const AppMain = () => {
         concept={paymentTarget?.concept || 'Reserva Smart Park'}
         parkingName={paymentTarget?.parkingName || 'Smart Park'}
         slotCode={paymentTarget?.slotCode || 'A-01'}
-        customerEmail={paymentTarget?.customerEmail || user?.email || 'conductor@smartpark.com'}
+        customerEmail={paymentTarget?.customerEmail || user?.email || ''}
         reservationId={paymentTarget?.reservationId}
         onPaymentSuccess={(receipt) => {
           if (paymentTarget) {

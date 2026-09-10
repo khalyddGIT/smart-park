@@ -211,8 +211,8 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
     registerUser({
       name: cleanName,
       email: cleanEmail,
-      phone: validatedPhone || '+51 966 000 000',
-      plate: validatedPlate || 'ABC-123',
+      phone: validatedPhone ? (validatedPhone.startsWith('+') ? validatedPhone : `+51 ${validatedPhone}`) : '',
+      plate: validatedPlate || '',
       password: driverPassword
     }).catch(err => {
       setErrorMsg(err?.message || 'No se pudo completar el registro');

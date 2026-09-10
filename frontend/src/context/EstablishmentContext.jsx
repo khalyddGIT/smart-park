@@ -8,6 +8,40 @@ const RESERVATIONS_STORAGE_KEY_BASE = 'smart_park_unified_reservations_v2';
 const REQUESTS_STORAGE_KEY = 'smart_park_affiliation_requests_v1';
 const APPROVED_ADMINS_STORAGE_KEY = 'smart_park_approved_admins_v1';
 export const LOCAL_USER_CREDENTIALS_KEY = 'smart_park_local_user_credentials_v1';
+export const DELETED_ESTABLISHMENTS_KEY = 'smart_park_deleted_est_ids_v2';
+
+export const getDeletedEstablishmentIds = () => {
+  try {
+    const raw = localStorage.getItem(DELETED_ESTABLISHMENTS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr.map(String));
+    }
+  } catch {}
+  return new Set();
+};
+
+export const recordDeletedEstablishmentId = (...ids) => {
+  try {
+    const current = getDeletedEstablishmentIds();
+    ids.forEach(id => {
+      if (id !== undefined && id !== null && String(id).trim() && String(id) !== 'NaN') {
+        current.add(String(id).trim());
+      }
+    });
+    localStorage.setItem(DELETED_ESTABLISHMENTS_KEY, JSON.stringify(Array.from(current)));
+  } catch {}
+};
+
+export const unrecordDeletedEstablishmentId = (id) => {
+  try {
+    const current = getDeletedEstablishmentIds();
+    if (id) {
+      current.delete(String(id).trim());
+      localStorage.setItem(DELETED_ESTABLISHMENTS_KEY, JSON.stringify(Array.from(current)));
+    }
+  } catch {}
+};
 
 // Helper para persistir credenciales de usuarios/admins locales tanto en modo online como offline
 export const saveLocalUserCredential = (cred) => {
@@ -523,18 +557,23 @@ export const EstablishmentProvider = ({ children }) => {
   const { user, role } = useAuth();
 
   const [establishments, setEstablishments] = useState(() => {
+    const deletedIds = getDeletedEstablishmentIds();
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((e, idx) => sanitizeEstablishment(e, idx));
+          return parsed
+            .filter(e => !deletedIds.has(String(e.id)))
+            .map((e, idx) => sanitizeEstablishment(e, idx));
         }
       }
     } catch (e) {
       console.error('Error reading establishments from storage:', e);
     }
-    return INITIAL_ESTABLISHMENTS.map((e, idx) => sanitizeEstablishment(e, idx));
+    return INITIAL_ESTABLISHMENTS
+      .filter(e => !deletedIds.has(String(e.id)))
+      .map((e, idx) => sanitizeEstablishment(e, idx));
   });
 
   // Establecimientos filtrados que le pertenecen exclusivamente al usuario autenticado (Admin Local)
@@ -707,71 +746,76 @@ export const EstablishmentProvider = ({ children }) => {
   const fetchParkings = async () => {
     try {
       const res = await api.get('/parkings');
-      if (Array.isArray(res.data) && res.data.length > 0) {
-        const mappedParkings = res.data.map((p, idx) => sanitizeEstablishment({
-          id: String(p.id), 
-          name: p.name, 
-          address: p.address, 
-          city: p.city || 'Ayacucho - Huamanga', 
-          latitude: Number(p.latitude), 
-          longitude: Number(p.longitude), 
-          rate: Number(p.hourly_rate) || 5.00, 
-          tolerance: Number(p.tolerance_minutes) || 15,
-          status: p.status === 'active' ? 'Operativo' : p.status, 
-          image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', 
-          totalSlots: p.total_capacity, 
-          available_slots: p.available_slots, 
-          owner: p.owner || '',
-          ruc: p.ruc || '',
-          description: p.description || '', 
-          phone: p.phone || '', 
-          whatsapp: p.whatsapp || '',
-          email: p.email || '', 
-          schedule: p.schedule || 'Lunes a Domingo: 24 Horas',
-          reference: p.reference || '', 
-          level: p.level || 'Nivel 1 - Superficie', 
-          mapsUrl: p.maps_url || (p.latitude && p.longitude ? `https://maps.google.com/?q=${p.latitude},${p.longitude}` : ''),
-          socials: typeof p.socials === 'string' ? (() => { try { return JSON.parse(p.socials); } catch { return {}; } })() : (p.socials || {}),
-          camera_url: p.camera_url || '', 
-          camera_enabled: !!p.camera_enabled, 
-          camera_calibration: p.camera_calibration || null, 
-          rate_auto: p.rate_auto != null ? Number(p.rate_auto) : undefined,
-          rate_suv: p.rate_suv != null ? Number(p.rate_suv) : undefined,
-          rate_mototaxi: p.rate_mototaxi != null ? Number(p.rate_mototaxi) : undefined,
-          rate_moto: p.rate_moto != null ? Number(p.rate_moto) : undefined,
-          billing_unit: p.billing_unit || 'hour',
-          rate_minute_auto: p.rate_minute_auto != null ? Number(p.rate_minute_auto) : undefined,
-          rate_minute_suv: p.rate_minute_suv != null ? Number(p.rate_minute_suv) : undefined,
-          rate_minute_mototaxi: p.rate_minute_mototaxi != null ? Number(p.rate_minute_mototaxi) : undefined,
-          rate_minute_moto: p.rate_minute_moto != null ? Number(p.rate_minute_moto) : undefined,
-          min_stay_minutes: p.min_stay_minutes != null ? Number(p.min_stay_minutes) : undefined,
-          max_stay_minutes: p.max_stay_minutes != null ? Number(p.max_stay_minutes) : undefined,
-          night_shift_enabled: p.night_shift_enabled,
-          night_shift_start: p.night_shift_start,
-          night_shift_end: p.night_shift_end,
-          night_shift_surcharge: p.night_shift_surcharge != null ? Number(p.night_shift_surcharge) : undefined,
-          require_reservation_prepay: p.require_reservation_prepay,
-          reservation_fee: p.reservation_fee != null ? Number(p.reservation_fee) : undefined,
-          min_stay_hours: p.min_stay_hours != null ? Number(p.min_stay_hours) : undefined,
-          max_stay_hours: p.max_stay_hours != null ? Number(p.max_stay_hours) : undefined,
-          allow_open_stay: p.allow_open_stay !== undefined ? !!p.allow_open_stay : true,
-          elements: null, 
-          _needsFloorPlan: true
-        }, idx));
-        const pendingHydration = [];
+      const deletedIds = getDeletedEstablishmentIds();
+      if (Array.isArray(res.data)) {
+        const mappedParkings = res.data
+          .filter(p => !deletedIds.has(String(p.id)))
+          .map((p, idx) => sanitizeEstablishment({
+            id: String(p.id), 
+            name: p.name, 
+            address: p.address, 
+            city: p.city || 'Ayacucho - Huamanga', 
+            latitude: Number(p.latitude), 
+            longitude: Number(p.longitude), 
+            rate: Number(p.hourly_rate) || 5.00, 
+            tolerance: Number(p.tolerance_minutes) || 15,
+            status: (p.status === 'active' || p.status === 'Operativo') ? 'Operativo' : 'Mantenimiento', 
+            image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', 
+            totalSlots: p.total_capacity, 
+            available_slots: p.available_slots, 
+            owner: p.owner || '',
+            ruc: p.ruc || '',
+            description: p.description || '', 
+            phone: p.phone || '', 
+            whatsapp: p.whatsapp || '',
+            email: p.email || '', 
+            schedule: p.schedule || 'Lunes a Domingo: 24 Horas',
+            reference: p.reference || '', 
+            level: p.level || 'Nivel 1 - Superficie', 
+            mapsUrl: p.maps_url || (p.latitude && p.longitude ? `https://maps.google.com/?q=${p.latitude},${p.longitude}` : ''),
+            socials: typeof p.socials === 'string' ? (() => { try { return JSON.parse(p.socials); } catch { return {}; } })() : (p.socials || {}),
+            camera_url: p.camera_url || '', 
+            camera_enabled: !!p.camera_enabled, 
+            camera_calibration: p.camera_calibration || null, 
+            rate_auto: p.rate_auto != null ? Number(p.rate_auto) : undefined,
+            rate_suv: p.rate_suv != null ? Number(p.rate_suv) : undefined,
+            rate_mototaxi: p.rate_mototaxi != null ? Number(p.rate_mototaxi) : undefined,
+            rate_moto: p.rate_moto != null ? Number(p.rate_moto) : undefined,
+            billing_unit: p.billing_unit || 'hour',
+            rate_minute_auto: p.rate_minute_auto != null ? Number(p.rate_minute_auto) : undefined,
+            rate_minute_suv: p.rate_minute_suv != null ? Number(p.rate_minute_suv) : undefined,
+            rate_minute_mototaxi: p.rate_minute_mototaxi != null ? Number(p.rate_minute_mototaxi) : undefined,
+            rate_minute_moto: p.rate_minute_moto != null ? Number(p.rate_minute_moto) : undefined,
+            min_stay_minutes: p.min_stay_minutes != null ? Number(p.min_stay_minutes) : undefined,
+            max_stay_minutes: p.max_stay_minutes != null ? Number(p.max_stay_minutes) : undefined,
+            night_shift_enabled: p.night_shift_enabled,
+            night_shift_start: p.night_shift_start,
+            night_shift_end: p.night_shift_end,
+            night_shift_surcharge: p.night_shift_surcharge != null ? Number(p.night_shift_surcharge) : undefined,
+            require_reservation_prepay: p.require_reservation_prepay,
+            reservation_fee: p.reservation_fee != null ? Number(p.reservation_fee) : undefined,
+            min_stay_hours: p.min_stay_hours != null ? Number(p.min_stay_hours) : undefined,
+            max_stay_hours: p.max_stay_hours != null ? Number(p.max_stay_hours) : undefined,
+            allow_open_stay: p.allow_open_stay !== undefined ? !!p.allow_open_stay : true,
+            elements: null, 
+            _needsFloorPlan: true
+          }, idx));
+
         setEstablishments(prev => {
-          const localOnly = prev.filter(e => String(e.id).startsWith('EST-'));
-          const serverIds = new Set(mappedParkings.map(m => m.id));
-          const preservedLocal = localOnly.filter(l => !serverIds.has(String(l.id)));
+          const localOnly = prev.filter(e => String(e.id).startsWith('EST-') && !deletedIds.has(String(e.id)));
+          const serverIds = new Set(mappedParkings.map(m => String(m.id)));
+          const preservedLocal = localOnly.filter(l => !serverIds.has(String(l.id)) && !deletedIds.has(String(l.id)));
           const prevMap = new Map(prev.map(e => [String(e.id), e]));
           const merged = mappedParkings.map(m => {
-            const before = prevMap.get(m.id);
+            const before = prevMap.get(String(m.id));
             return before?.elements ? { ...m, elements: before.elements } : m;
           });
-          return [...merged, ...preservedLocal].map((e, idx) => sanitizeEstablishment(e, idx));
+          const next = [...merged, ...preservedLocal]
+            .filter(e => !deletedIds.has(String(e.id)))
+            .map((e, idx) => sanitizeEstablishment(e, idx));
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+          return next;
         });
-
-        // Los planos ya abiertos se preservan sin disparar ráfagas de peticiones en cada ciclo
       }
     } catch {}
   };
@@ -1431,6 +1475,7 @@ export const EstablishmentProvider = ({ children }) => {
             image: res.data.image_url, 
             status: res.data.status === 'active' ? 'Operativo' : res.data.status 
           });
+          unrecordDeletedEstablishmentId(String(res.data.id));
           setEstablishments(prev => [created, ...prev]);
           await fetchParkings();
           return created;
@@ -1447,6 +1492,7 @@ export const EstablishmentProvider = ({ children }) => {
       admin_email: effectiveAdminEmail,
       adminEmail: effectiveAdminEmail
     });
+    unrecordDeletedEstablishmentId(String(fallbackCreated.id));
     setEstablishments(prev => [fallbackCreated, ...prev]);
     return fallbackCreated;
   };
@@ -1490,7 +1536,10 @@ export const EstablishmentProvider = ({ children }) => {
         }
         if (updatedFields.rate !== undefined) payload.hourly_rate = Number(updatedFields.rate);
         if (updatedFields.tolerance !== undefined) payload.tolerance_minutes = Math.max(5, Math.min(60, Number(updatedFields.tolerance) || 15));
-        if (updatedFields.status !== undefined) payload.status = updatedFields.status === 'Operativo' ? 'active' : updatedFields.status;
+        if (updatedFields.status !== undefined) {
+          const s = String(updatedFields.status).toLowerCase();
+          payload.status = (s === 'operativo' || s === 'active') ? 'active' : 'maintenance';
+        }
         if (updatedFields.image !== undefined) payload.image_url = updatedFields.image;
         if (updatedFields.latitude !== undefined) payload.latitude = Number(updatedFields.latitude);
         if (updatedFields.longitude !== undefined) payload.longitude = Number(updatedFields.longitude);
@@ -1606,12 +1655,35 @@ export const EstablishmentProvider = ({ children }) => {
     }
   };
 
-  // Eliminar establecimiento - persistente
+  // Eliminar establecimiento - persistente tanto en BD como en almacenamiento local
   const deleteEstablishment = async (id) => {
-    setEstablishments(prev => prev.filter(est => String(est.id) !== String(id)));
-    const numId = Number(id);
+    let numId = Number(id);
+    if (isNaN(numId)) {
+      const match = String(id).match(/\d+/);
+      if (match) numId = Number(match[0]);
+    }
+
+    // 1. Marcar como ID eliminado persistentemente para evitar resurrección por polling o recarga
+    recordDeletedEstablishmentId(String(id), !isNaN(numId) ? String(numId) : null);
+
+    // 2. Actualizar estado y sincronizar localStorage de inmediato
+    setEstablishments(prev => {
+      const next = prev.filter(est => {
+        const matchExact = String(est.id) === String(id);
+        const matchNum = !isNaN(numId) && String(est.id) === String(numId);
+        return !matchExact && !matchNum;
+      });
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+
+    // 3. Notificar al backend para cascada en PostgreSQL
     if (!isNaN(numId)) {
-      try { await api.delete(`/parkings/${numId}`); } catch (e) { console.warn('delete backend fail', e.response?.data); }
+      try {
+        await api.delete(`/parkings/${numId}`);
+      } catch (e) {
+        console.warn('delete backend fail', e.response?.data);
+      }
     }
   };
 

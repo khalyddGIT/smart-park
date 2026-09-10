@@ -699,10 +699,26 @@ async def delete_parking(parking_id: int, db: AsyncSession = Depends(get_db), cu
             if not staff_res.scalars().first():
                 raise HTTPException(status_code=403, detail="No tienes permiso para eliminar este estacionamiento")
     
-    await db.delete(parking)
+    from sqlalchemy import text
+    # 1. Eliminar pagos de reservas de esta sede
+    await db.execute(text("DELETE FROM pagos WHERE reservation_id IN (SELECT id FROM reservas WHERE parking_id = :pid)"), {"pid": parking_id})
+    # 2. Eliminar reservas asociadas
+    await db.execute(text("DELETE FROM reservas WHERE parking_id = :pid"), {"pid": parking_id})
+    # 3. Eliminar personal de garita asignado
+    await db.execute(text("DELETE FROM personal WHERE parking_id = :pid"), {"pid": parking_id})
+    # 4. Eliminar incidencias y reseñas
+    await db.execute(text("DELETE FROM incidencias WHERE parking_id = :pid"), {"pid": parking_id})
+    await db.execute(text("DELETE FROM resenas WHERE parking_id = :pid"), {"pid": parking_id})
+    # 5. Eliminar cámaras, elementos de plano y plazas
+    await db.execute(text("DELETE FROM cameras_dispositivos WHERE parking_id = :pid"), {"pid": parking_id})
+    await db.execute(text("DELETE FROM elementos_plano WHERE parking_id = :pid"), {"pid": parking_id})
+    await db.execute(text("DELETE FROM plazas WHERE parking_id = :pid"), {"pid": parking_id})
+    # 6. Eliminar el estacionamiento
+    await db.execute(text("DELETE FROM estacionamientos WHERE id = :pid"), {"pid": parking_id})
+
     await db.commit()
     await invalidate_parkings_cache()
-    await realtime.broadcast("parkings:updated", {"parking_id": parking_id})
+    await realtime.broadcast("parkings:updated", {"parking_id": parking_id, "action": "deleted"})
     return {"status": "success", "message": f"Estacionamiento {parking_id} eliminado exitosamente"}
 
 # =======================================================

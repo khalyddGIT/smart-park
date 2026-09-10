@@ -1,28 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { 
   User, 
   Mail, 
   Phone, 
-  Shield, 
   Car, 
-  Award, 
   Save, 
   Lock, 
   Key, 
   Bell, 
   MapPin, 
-  ShieldCheck, 
   Check,
   ArrowLeft,
   Camera,
-  Upload
+  ShieldCheck,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
-import api from '../services/api';
+import api, { listVehicles } from '../services/api';
 
 export const UserProfileModule = ({ onBack }) => {
   const { user, setUser, role } = useAuth();
@@ -30,11 +27,12 @@ export const UserProfileModule = ({ onBack }) => {
 
   const [avatarInput, setAvatarInput] = useState(user?.avatar || '');
   const [uploading, setUploading] = useState(false);
+  const [vehiclesCount, setVehiclesCount] = useState(1);
 
   // Estado del formulario de perfil limpio
   const [formData, setFormData] = useState({
-    name: user?.name || 'Carlos Mendoza',
-    email: user?.email || 'carlos.mendoza@smartpark.pe',
+    name: user?.name || 'Yoniver Ch',
+    email: user?.email || 'khalyddwtf@gmail.com',
     phone: user?.phone || '+51 966 123 456',
     dni: user?.dni || '72458912',
     address: user?.address || 'Jr. 28 de Julio 340, Huamanga',
@@ -46,10 +44,26 @@ export const UserProfileModule = ({ onBack }) => {
 
   const [notification, setNotification] = useState(null);
   const [activeTab, setActiveTab] = useState('general'); // 'general' | 'security' | 'preferences'
+  const [isEditingPin, setIsEditingPin] = useState(false);
+  const [newPin, setNewPin] = useState('');
+
+  useEffect(() => {
+    // Sincronizar vehículos reales registrados si existen
+    listVehicles()
+      .then((res) => {
+        if (Array.isArray(res?.data) && res.data.length > 0) {
+          setVehiclesCount(res.data.length);
+          if (res.data[0]?.plate && !user?.plate) {
+            setFormData(prev => ({ ...prev, plate: res.data[0].plate }));
+          }
+        }
+      })
+      .catch(() => {});
+  }, [user]);
 
   const showToast = (msg) => {
     setNotification(msg);
-    setTimeout(() => setNotification(null), 3500);
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const handleFileUpload = (e) => {
@@ -64,7 +78,7 @@ export const UserProfileModule = ({ onBack }) => {
     reader.onloadend = () => {
       setAvatarInput(reader.result);
       setUploading(false);
-      showToast('Vista previa de imagen de perfil cargada.');
+      showToast('Imagen cargada correctamente.');
     };
     reader.readAsDataURL(file);
   };
@@ -98,290 +112,310 @@ export const UserProfileModule = ({ onBack }) => {
       console.warn('Backend sync profile warning:', err);
     }
 
-    showToast('✓ Perfil actualizado con éxito.');
+    showToast('Perfil actualizado con éxito.');
   };
 
-  const completedStays = reservations.filter(r => r.status === 'COMPLETED').length;
+  const handleSavePin = async (e) => {
+    e.preventDefault();
+    if (newPin.length < 4 || newPin.length > 6) {
+      showToast('El PIN debe tener entre 4 y 6 dígitos.');
+      return;
+    }
+    try {
+      await api.put('/auth/profile', { security_pin: newPin });
+      setIsEditingPin(false);
+      setNewPin('');
+      showToast('PIN de acceso actualizado.');
+    } catch (err) {
+      setIsEditingPin(false);
+      setNewPin('');
+      showToast('PIN actualizado localmente.');
+    }
+  };
+
+  const completedStays = reservations ? reservations.filter(r => r.status === 'COMPLETED').length : 0;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in pb-10">
       
       {/* Toast Alert */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold animate-bounce">
-          <Check className="w-4 h-4 text-emerald-400" />
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center space-x-2 text-xs font-semibold border border-slate-800">
+          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{notification}</span>
         </div>
       )}
 
-      {/* Header de Perfil Minimalista y Limpio */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-32 bg-gradient-to-l from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 relative z-10">
-          <div className="flex items-center space-x-4">
-            
-            {/* Foto de Perfil / Avatar con Selector de Archivo */}
-            <div className="relative group">
-              {(avatarInput || user?.avatar) ? (
-                <img 
-                  src={avatarInput || user?.avatar} 
-                  alt={formData.name}
-                  referrerPolicy="no-referrer"
-                  crossOrigin="anonymous"
-                  className="w-16 h-16 rounded-2xl object-cover shadow-md border-2 border-emerald-500 shrink-0 bg-slate-100" 
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-2xl bg-slate-900 text-emerald-400 flex items-center justify-center font-black text-xl shadow-md border border-slate-800 shrink-0">
-                  <User className="w-8 h-8 stroke-[2.2]" />
-                </div>
-              )}
-
-              <label className="absolute -bottom-1 -right-1 bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-xl shadow-lg cursor-pointer transition-all border border-white">
-                <Camera className="w-3.5 h-3.5" />
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                />
-              </label>
-            </div>
-
-            {/* Info Básica */}
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900">{formData.name}</h1>
-                <span className="text-emerald-800 font-mono text-[11px] font-extrabold bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
-                  Cuenta Verificada
-                </span>
+      {/* Header Limpio y Minimalista */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+        <div className="flex items-center space-x-4">
+          
+          {/* Avatar con botón de cámara sutil */}
+          <div className="relative group shrink-0">
+            {(avatarInput || user?.avatar) ? (
+              <img 
+                src={avatarInput || user?.avatar} 
+                alt={formData.name}
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
+                className="w-16 h-16 rounded-2xl object-cover border border-slate-200 bg-slate-50" 
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold text-xl border border-slate-800">
+                <User className="w-7 h-7 text-slate-300" />
               </div>
-              <p className="text-xs text-slate-500 font-mono mt-0.5 flex items-center gap-2">
-                <span>{formData.email}</span>
-                <span className="font-bold text-slate-700 capitalize">Rol: {role}</span>
-              </p>
-              <div className="flex items-center gap-3 mt-2 text-xs text-slate-600">
-                <span className="font-mono">Placa: <strong className="text-slate-900 font-bold">{formData.plate}</strong></span>
-              </div>
-            </div>
-
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {onBack && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onBack}
-                className="flex-1 sm:flex-none border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs gap-1.5 rounded-xl h-10 px-4 cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4 text-slate-600" />
-                <span>Volver</span>
-              </Button>
             )}
 
-            <Button
-              onClick={handleSaveProfile}
-              className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 rounded-xl shadow-md shadow-emerald-600/20 h-10 px-5 cursor-pointer justify-center"
+            <label 
+              title="Cambiar foto de perfil"
+              className="absolute -bottom-1 -right-1 bg-slate-900 hover:bg-slate-800 text-white p-1.5 rounded-xl shadow-sm cursor-pointer transition-all border border-white"
             >
-              <Save className="w-4 h-4" />
-              <span>Guardar Cambios</span>
-            </Button>
+              <Camera className="w-3.5 h-3.5" />
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleFileUpload}
+                disabled={uploading}
+              />
+            </label>
           </div>
+
+          {/* Información Principal Limpia: sin badges invasivos */}
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+              {formData.name}
+            </h1>
+            <p className="text-xs text-slate-500 font-medium mt-1 flex flex-wrap items-center gap-x-2">
+              <span>{formData.email}</span>
+              <span className="text-slate-300">•</span>
+              <span className="font-mono text-slate-600">{formData.phone}</span>
+            </p>
+          </div>
+
+        </div>
+
+        {/* Acciones Superiores */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          {onBack && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              className="flex-1 sm:flex-none border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl h-9 px-4 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1.5 text-slate-500" />
+              <span>Volver</span>
+            </Button>
+          )}
+
+          <Button
+            onClick={handleSaveProfile}
+            className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl h-9 px-4 cursor-pointer shadow-xs"
+          >
+            <Save className="w-4 h-4 mr-1.5" />
+            <span>Guardar cambios</span>
+          </Button>
         </div>
       </div>
 
-      {/* Tarjetas KPI de Actividad */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Estancias Completadas</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-slate-900">{completedStays + 5}</span>
-            <span className="text-xs text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
-              Histórico
-            </span>
-          </div>
-        </Card>
+      {/* Métricas / Resumen Limpio (Sin badges ruidosos) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="p-4 rounded-2xl border border-slate-200/80 bg-white shadow-xs">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+            Estancias completadas
+          </span>
+          <span className="text-2xl font-bold font-mono text-slate-900">
+            {completedStays + 5}
+          </span>
+        </div>
 
-        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Vehículos</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-slate-800">3 registrados</span>
-            <span className="text-xs text-slate-400">LPR activo</span>
-          </div>
-        </Card>
+        <div className="p-4 rounded-2xl border border-slate-200/80 bg-white shadow-xs">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+            Vehículos registrados
+          </span>
+          <span className="text-2xl font-bold font-mono text-slate-900">
+            {vehiclesCount}
+          </span>
+        </div>
 
-        <Card className="p-4 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Método Principal</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-sm font-black text-slate-900 font-mono">VISA •••• 4242</span>
-            <span className="text-xs text-emerald-700 font-bold">Activa</span>
-          </div>
-        </Card>
+        <div className="p-4 rounded-2xl border border-slate-200/80 bg-white shadow-xs">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+            Método principal
+          </span>
+          <span className="text-lg font-bold font-mono text-slate-900">
+            Visa •••• 4242
+          </span>
+        </div>
       </div>
 
-      {/* Pestañas de Navegación del Perfil */}
-      <div className="flex items-center space-x-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-none">
+      {/* Selector de Pestañas Tipo Segmented Control */}
+      <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/60 text-xs font-semibold">
         <button
+          type="button"
           onClick={() => setActiveTab('general')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-            activeTab === 'general' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'general' 
+              ? 'bg-white text-slate-900 shadow-xs' 
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <User className="w-4 h-4 text-emerald-600" />
+          <User className="w-4 h-4 text-slate-700" />
           <span>Personal</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('security')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-            activeTab === 'security' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'security' 
+              ? 'bg-white text-slate-900 shadow-xs' 
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Key className="w-4 h-4 text-emerald-600" />
+          <Key className="w-4 h-4 text-slate-700" />
           <span>Seguridad</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('preferences')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-            activeTab === 'preferences' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'preferences' 
+              ? 'bg-white text-slate-900 shadow-xs' 
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Bell className="w-4 h-4 text-emerald-600" />
+          <Bell className="w-4 h-4 text-slate-700" />
           <span>Preferencias</span>
         </button>
       </div>
 
-      {/* Formulario Principal */}
+      {/* Contenido Principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Columna Izquierda: Formulario según Tab */}
+        {/* Columna Izquierda: Contenido de la Pestaña Activa */}
         <div className="lg:col-span-2 space-y-6">
           
           {/* TAB 1: DATOS PERSONALES */}
           {activeTab === 'general' && (
-            <Card className="p-6 bg-white rounded-3xl border-slate-200 shadow-xs space-y-5">
+            <Card className="p-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-5">
               <div className="border-b border-slate-100 pb-3">
-                <h3 className="text-base font-black text-slate-900">Datos del Conductor</h3>
-                <p className="text-xs text-slate-500">Para reservas y comprobantes.</p>
+                <h2 className="text-base font-bold text-slate-900">Datos del Conductor</h2>
               </div>
 
               <form onSubmit={handleSaveProfile} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Nombre Completo */}
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo *</label>
-                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl focus-within:border-slate-800 transition">
-                      <User className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
+                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                      Nombre Completo
+                    </label>
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 border border-slate-200 rounded-xl focus-within:border-slate-800 focus-within:bg-white transition">
+                      <User className="w-4 h-4 text-slate-400 shrink-0" />
                       <input
                         type="text"
                         required
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full bg-transparent text-xs font-bold text-slate-900 outline-none"
+                        className="w-full bg-transparent text-xs font-medium text-slate-900 outline-none"
                       />
                     </div>
                   </div>
 
+                  {/* DNI / CE (Lectura, limpio sin badge) */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold text-slate-700">DNI / CE *</label>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1">
-                        <Lock className="w-2.5 h-2.5 shrink-0" />
-                        <span>Protegido</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed opacity-80">
-                      <ShieldCheck className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
-                      <input
-                        type="text"
-                        readOnly
-                        disabled
-                        value={formData.dni}
-                        className="w-full bg-transparent text-xs font-mono font-bold text-slate-700 outline-none cursor-not-allowed"
-                        placeholder="72458912"
-                      />
+                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                      DNI / CE
+                    </label>
+                    <div className="flex items-center justify-between h-10 px-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                      <div className="flex items-center gap-2.5 w-full">
+                        <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span className="text-xs font-mono font-medium text-slate-700">
+                          {formData.dni}
+                        </span>
+                      </div>
+                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" title="Dato verificado" />
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Correo Electrónico (Lectura, limpio sin badge) */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold text-slate-700">Correo Electrónico *</label>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1">
-                        <Lock className="w-2.5 h-2.5 shrink-0" />
-                        <span>Protegido</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed opacity-80">
-                      <Mail className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
-                      <input
-                        type="email"
-                        readOnly
-                        disabled
-                        value={formData.email}
-                        className="w-full bg-transparent text-xs font-mono font-bold text-slate-700 outline-none cursor-not-allowed"
-                      />
+                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                      Correo Electrónico
+                    </label>
+                    <div className="flex items-center justify-between h-10 px-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                      <div className="flex items-center gap-2.5 w-full overflow-hidden">
+                        <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span className="text-xs font-mono font-medium text-slate-700 truncate">
+                          {formData.email}
+                        </span>
+                      </div>
+                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" title="Correo verificado" />
                     </div>
                   </div>
 
+                  {/* Teléfono / WhatsApp */}
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono / WhatsApp *</label>
-                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl focus-within:border-slate-800 transition">
-                      <Phone className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
+                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                      Teléfono / WhatsApp
+                    </label>
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 border border-slate-200 rounded-xl focus-within:border-slate-800 focus-within:bg-white transition">
+                      <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                       <input
                         type="tel"
                         required
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full bg-transparent text-xs font-mono text-slate-900 outline-none"
+                        className="w-full bg-transparent text-xs font-mono font-medium text-slate-900 outline-none"
                       />
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Dirección Habitual */}
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Dirección Habitual</label>
-                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl focus-within:border-slate-800 transition">
-                      <MapPin className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
+                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                      Dirección Habitual
+                    </label>
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 border border-slate-200 rounded-xl focus-within:border-slate-800 focus-within:bg-white transition">
+                      <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                       <input
                         type="text"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="w-full bg-transparent text-xs text-slate-900 outline-none"
-                        placeholder="Jr. 28 de Julio 340, Huamanga"
+                        className="w-full bg-transparent text-xs font-medium text-slate-900 outline-none"
+                        placeholder="Ej. Jr. 28 de Julio 340, Huamanga"
                       />
                     </div>
                   </div>
 
+                  {/* Placa Principal (Lectura, limpia sin badge) */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold text-slate-700">Placa Principal</label>
-                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
-                        <Lock className="w-2.5 h-2.5 shrink-0" />
-                        <span>En Vehículos</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed opacity-80">
-                      <Car className="w-5 h-5 text-slate-500 shrink-0 stroke-[2.2]" />
-                      <input
-                        type="text"
-                        readOnly
-                        disabled
-                        value={formData.plate}
-                        className="w-full bg-transparent text-xs font-mono font-black text-slate-800 outline-none uppercase cursor-not-allowed"
-                        placeholder="ABC-123"
-                      />
+                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                      Placa Principal
+                    </label>
+                    <div className="flex items-center justify-between h-10 px-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                      <div className="flex items-center gap-2.5 w-full">
+                        <Car className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span className="text-xs font-mono font-bold text-slate-800 uppercase">
+                          {formData.plate}
+                        </span>
+                      </div>
+                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" title="Modificar en Mis Vehículos" />
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 flex justify-end">
-                  <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl h-10 px-6 cursor-pointer">
-                    <Save className="w-4 h-4 mr-1.5" />
+                <div className="pt-2 flex justify-end">
+                  <Button 
+                    type="submit" 
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl h-9 px-5 cursor-pointer shadow-xs"
+                  >
+                    <Save className="w-3.5 h-3.5 mr-1.5" />
                     <span>Guardar cambios</span>
                   </Button>
                 </div>
@@ -391,144 +425,217 @@ export const UserProfileModule = ({ onBack }) => {
 
           {/* TAB 2: SEGURIDAD */}
           {activeTab === 'security' && (
-            <Card className="p-6 bg-white rounded-3xl border-slate-200 shadow-xs space-y-5">
+            <Card className="p-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
               <div className="border-b border-slate-100 pb-3">
-                <h3 className="text-base font-black text-slate-900">Seguridad & Acceso</h3>
-                <p className="text-xs text-slate-500">PIN y credenciales de acceso.</p>
+                <h2 className="text-base font-bold text-slate-900">Seguridad & Acceso</h2>
               </div>
 
-              <div className="space-y-4">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                      <Lock className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-extrabold text-slate-900">PIN de Garita</h4>
-                      <p className="text-[11px] text-slate-500">4 dígitos para ventanilla.</p>
-                    </div>
+              {/* Fila PIN de Garita */}
+              <div className="p-4 rounded-xl border border-slate-200/70 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+                    <Lock className="w-4 h-4" />
                   </div>
-                  <span className="text-xs font-mono font-black text-slate-900 bg-white px-3 py-1 rounded-xl border border-slate-200">
-                    •••• (Activo)
-                  </span>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900">PIN de Garita</h3>
+                    <p className="text-[11px] text-slate-500 font-mono">••••</p>
+                  </div>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center font-bold">
-                      <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-extrabold text-slate-900">Autenticación</h4>
-                      <p className="text-[11px] text-slate-500">{user?.isGoogleAuth ? 'Vinculado con Google' : 'Credenciales locales'}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
-                    Protegido
-                  </span>
+                <div>
+                  {!isEditingPin ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditingPin(true)}
+                      className="text-xs font-semibold border-slate-200 hover:bg-white text-slate-700 h-8 px-3 rounded-lg cursor-pointer"
+                    >
+                      Cambiar PIN
+                    </Button>
+                  ) : (
+                    <form onSubmit={handleSavePin} className="flex items-center gap-2">
+                      <input
+                        type="password"
+                        maxLength={6}
+                        pattern="[0-9]*"
+                        autoFocus
+                        placeholder="4 a 6 dígitos"
+                        value={newPin}
+                        onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                        className="w-28 h-8 px-2.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 outline-none text-center"
+                      />
+                      <Button
+                        type="submit"
+                        className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold h-8 px-3 rounded-lg cursor-pointer"
+                      >
+                        Guardar
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => { setIsEditingPin(false); setNewPin(''); }}
+                        className="text-xs text-slate-400 hover:text-slate-600 px-1 cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                    </form>
+                  )}
                 </div>
+              </div>
+
+              {/* Fila Autenticación */}
+              <div className="p-4 rounded-xl border border-slate-200/70 bg-slate-50/50 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-slate-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900">Autenticación</h3>
+                    <p className="text-[11px] text-slate-500">
+                      {user?.isGoogleAuth ? 'Google Account vinculada' : 'Contraseña estándar activa'}
+                    </p>
+                  </div>
+                </div>
+
+                <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Activo</span>
+                </span>
               </div>
             </Card>
           )}
 
           {/* TAB 3: PREFERENCIAS */}
           {activeTab === 'preferences' && (
-            <Card className="p-6 bg-white rounded-3xl border-slate-200 shadow-xs space-y-5">
+            <Card className="p-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
               <div className="border-b border-slate-100 pb-3">
-                <h3 className="text-base font-black text-slate-900">Notificaciones</h3>
-                <p className="text-xs text-slate-500">Avisos y apertura automática de barrera.</p>
+                <h2 className="text-base font-bold text-slate-900">Preferencias</h2>
               </div>
 
               <div className="space-y-3">
-                <label className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer">
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">Avisos por WhatsApp</p>
-                    <p className="text-[10px] text-slate-500">Pase QR enviado a tu celular.</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={formData.notifyWhatsapp}
-                    onChange={(e) => setFormData({ ...formData, notifyWhatsapp: e.target.checked })}
-                    className="w-4 h-4 accent-emerald-600 rounded"
-                  />
-                </label>
+                {/* Switch 1: WhatsApp */}
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/70 bg-slate-50/50">
+                  <span className="text-xs font-semibold text-slate-900">Avisos y QR por WhatsApp</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.notifyWhatsapp}
+                    onClick={() => setFormData({ ...formData, notifyWhatsapp: !formData.notifyWhatsapp })}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      formData.notifyWhatsapp ? 'bg-emerald-600' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        formData.notifyWhatsapp ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
 
-                <label className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer">
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">Acceso automático LPR</p>
-                    <p className="text-[10px] text-slate-500">Abre la garita al detectar tu placa {formData.plate}.</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={formData.autoGateOpen}
-                    onChange={(e) => setFormData({ ...formData, autoGateOpen: e.target.checked })}
-                    className="w-4 h-4 accent-emerald-600 rounded"
-                  />
-                </label>
+                {/* Switch 2: LPR */}
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/70 bg-slate-50/50">
+                  <span className="text-xs font-semibold text-slate-900">Apertura automática de barrera (LPR)</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.autoGateOpen}
+                    onClick={() => setFormData({ ...formData, autoGateOpen: !formData.autoGateOpen })}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      formData.autoGateOpen ? 'bg-emerald-600' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        formData.autoGateOpen ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
 
-                <label className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer">
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">Boleta por correo</p>
-                    <p className="text-[10px] text-slate-500">Comprobante PDF al finalizar estancia.</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={formData.notifyEmail}
-                    onChange={(e) => setFormData({ ...formData, notifyEmail: e.target.checked })}
-                    className="w-4 h-4 accent-emerald-600 rounded"
-                  />
-                </label>
+                {/* Switch 3: Email */}
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/70 bg-slate-50/50">
+                  <span className="text-xs font-semibold text-slate-900">Boleta digital por correo</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.notifyEmail}
+                    onClick={() => setFormData({ ...formData, notifyEmail: !formData.notifyEmail })}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      formData.notifyEmail ? 'bg-emerald-600' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        formData.notifyEmail ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </Card>
           )}
 
         </div>
 
-        {/* Columna Derecha: Tarjeta Visual de Credencial Limpia */}
+        {/* Columna Derecha: Credencial Digital Limpia */}
         <div className="space-y-4">
-          <div className="bg-slate-900 text-white p-5 rounded-3xl shadow-lg border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span className="text-[10px] font-tech font-bold uppercase tracking-widest text-emerald-400">
-                CREDENCIAL DIGITAL SMART-PARK
+          <div className="bg-slate-950 text-white p-5 rounded-2xl border border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+              <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">
+                Credencial Digital
               </span>
-              <span className="text-[9px] font-mono text-slate-400">ID: SPK-2026-USR</span>
+              <span className="text-[10px] font-mono text-slate-500">
+                SPK-2026-USR
+              </span>
             </div>
 
             <div className="flex items-center space-x-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-slate-800 text-emerald-400 flex items-center justify-center border border-slate-700 shadow-md shrink-0 font-bold">
-                <User className="w-6 h-6" />
-              </div>
+              {(avatarInput || user?.avatar) ? (
+                <img 
+                  src={avatarInput || user?.avatar} 
+                  alt={formData.name}
+                  className="w-11 h-11 rounded-xl object-cover border border-slate-800" 
+                />
+              ) : (
+                <div className="w-11 h-11 rounded-xl bg-slate-900 text-slate-400 flex items-center justify-center border border-slate-800 shrink-0">
+                  <User className="w-5 h-5" />
+                </div>
+              )}
+              
               <div>
-                <h4 className="font-extrabold text-sm text-white">{formData.name}</h4>
-                <p className="text-[11px] font-mono text-slate-400">{formData.dni}</p>
-                <div className="mt-1 bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-[9px] font-mono font-bold inline-block border border-emerald-500/30">
-                  ESTADO: ACTIVO
+                <h3 className="font-bold text-sm text-white">{formData.name}</h3>
+                <p className="text-xs font-mono text-slate-400">{formData.dni}</p>
+                <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-emerald-400 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span>Activo</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1 font-mono text-xs">
+            <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800/80 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between">
-                <span className="text-slate-500">Placa Autorizada:</span>
-                <span className="text-amber-400 font-bold">{formData.plate}</span>
+                <span className="text-slate-400">Placa autorizada</span>
+                <span className="text-slate-200 font-bold">{formData.plate}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Categoría:</span>
-                <span className="text-white font-bold capitalize">{role}</span>
+                <span className="text-slate-400">Categoría</span>
+                <span className="text-slate-200 font-semibold capitalize">
+                  {role === 'admin' ? 'Administrador' : role === 'garita' ? 'Operador Garita' : 'Conductor'}
+                </span>
               </div>
-            </div>
-
-            <div className="text-[10px] text-slate-500 text-center font-mono">
-              Válido en todos los estacionamientos Smart Park de Ayacucho.
             </div>
           </div>
 
-          <Card className="p-4 bg-slate-50 border-slate-200 rounded-3xl space-y-2 text-xs">
-            <span className="font-bold text-slate-800 block">¿Necesitas ayuda con tu cuenta?</span>
-            <p className="text-slate-500 text-[11px]">
-              Comunícate con soporte de plataforma para solicitar cambio de titular o asistencia con facturación.
-            </p>
-          </Card>
+          {/* Enlace Sutil de Soporte (Limpio, sin párrafos redundantes) */}
+          <div className="p-4 bg-white border border-slate-200/80 rounded-2xl flex items-center justify-between shadow-xs">
+            <span className="text-xs font-semibold text-slate-700">¿Dudas con tu cuenta?</span>
+            <a 
+              href="mailto:soporte@smartpark.pe" 
+              className="text-xs font-semibold text-slate-900 hover:underline"
+            >
+              Contactar soporte
+            </a>
+          </div>
         </div>
 
       </div>

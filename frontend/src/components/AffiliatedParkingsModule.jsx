@@ -34,7 +34,10 @@ import {
   MessageSquare,
   Sparkles,
   RefreshCw,
-  Loader2
+  Loader2,
+  Settings,
+  PauseCircle,
+  PlayCircle
 } from 'lucide-react';
 import { useEstablishments, getEstablishmentHierarchy } from '../context/EstablishmentContext';
 
@@ -105,6 +108,20 @@ export const AffiliatedParkingsModule = () => {
   // Estados para Diálogo de Credenciales Generadas (Éxito + Compartir por WhatsApp)
   const [credentialsResult, setCredentialsResult] = useState(null);
   const [copied, setCopied] = useState(false);
+
+  // Estados para Ajustes de Empresa Comercial (Matriz)
+  const [showEditCompanyModal, setShowEditCompanyModal] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [companyFormData, setCompanyFormData] = useState({
+    originalName: '',
+    company_name: '',
+    owner: '',
+    ruc: '',
+    phone: '',
+    email: '',
+    city: ''
+  });
+  const [savingCompany, setSavingCompany] = useState(false);
 
   const notify = (msg) => {
     setToast(msg);
@@ -310,6 +327,100 @@ export const AffiliatedParkingsModule = () => {
     if (!window.confirm(`¿Seguro que deseas dar de baja el establecimiento "${name}"?`)) return;
     deleteEstablishment(id);
     notify(`Establecimiento "${name}" eliminado de la red.`);
+  };
+
+  // --- ACCIONES A NIVEL DE EMPRESA / MATRIZ ---
+  const handleOpenEditCompany = (group) => {
+    setSelectedCompany(group);
+    setCompanyFormData({
+      originalName: group.companyName,
+      company_name: group.companyName,
+      owner: group.owner || '',
+      ruc: group.ruc || '',
+      phone: group.phone || '',
+      email: group.email || '',
+      city: group.city || 'Ayacucho - Huamanga'
+    });
+    setShowEditCompanyModal(true);
+  };
+
+  const handleSaveCompany = async (e) => {
+    e.preventDefault();
+    if (!selectedCompany) return;
+    const newCompanyName = (companyFormData.company_name || '').trim();
+    if (!newCompanyName) {
+      alert('El nombre de la empresa es obligatorio.');
+      return;
+    }
+
+    setSavingCompany(true);
+    try {
+      const branches = selectedCompany.branches || [];
+      for (const branch of branches) {
+        let newBranchName = branch.name;
+        if (branch.branchDisplayName && branch.branchDisplayName !== branch.name) {
+          newBranchName = `${newCompanyName} - ${branch.branchDisplayName}`;
+        } else if (branches.length === 1 && (branch.name === selectedCompany.companyName || !branch.isBranch)) {
+          newBranchName = newCompanyName;
+        }
+
+        await updateEstablishment(branch.id, {
+          name: newBranchName,
+          company_name: newCompanyName,
+          companyName: newCompanyName,
+          owner: companyFormData.owner,
+          ruc: companyFormData.ruc,
+          phone: companyFormData.phone,
+          email: companyFormData.email,
+          city: companyFormData.city
+        });
+      }
+
+      setShowEditCompanyModal(false);
+      notify(`Empresa "${newCompanyName}" actualizada con éxito.`);
+    } catch (err) {
+      console.error('Error al guardar ajustes de empresa', err);
+      notify('Error al actualizar la empresa.');
+    } finally {
+      setSavingCompany(false);
+    }
+  };
+
+  const handleToggleCompanyStatus = async (group) => {
+    const isCurrentlyActive = group.activeBranchesCount > 0;
+    const nextStatus = isCurrentlyActive ? 'Mantenimiento' : 'Operativo';
+    const actionLabel = isCurrentlyActive ? 'deshabilitar' : 'habilitar';
+
+    if (!window.confirm(`¿Deseas ${actionLabel} la empresa "${group.companyName}" y actualizar sus ${group.branches.length} sedes al estado "${nextStatus}"?`)) {
+      return;
+    }
+
+    try {
+      for (const branch of group.branches) {
+        await updateEstablishment(branch.id, { status: nextStatus });
+      }
+      notify(`Empresa "${group.companyName}" ${isCurrentlyActive ? 'deshabilitada' : 'habilitada'} con éxito.`);
+    } catch (err) {
+      console.error('Error al cambiar estado de la empresa', err);
+      notify('Error al cambiar estado de la empresa.');
+    }
+  };
+
+  const handleDeleteCompany = async (group) => {
+    const count = group.branches.length;
+    if (!window.confirm(`⚠️ ACCIÓN DE SUPERADMIN:\n\n¿Estás seguro de que deseas ELIMINAR permanentemente la empresa "${group.companyName}" y sus ${count} sedes asociadas?\n\nEsta acción es irreversible y eliminará todos sus accesos y configuraciones.`)) {
+      return;
+    }
+
+    try {
+      for (const branch of group.branches) {
+        await deleteEstablishment(branch.id);
+      }
+      notify(`Empresa "${group.companyName}" y sus ${count} sedes han sido eliminadas.`);
+    } catch (err) {
+      console.error('Error al eliminar empresa', err);
+      notify('Error al eliminar la empresa.');
+    }
   };
 
   // Abrir Modal para Aprobar Solicitud con formulario de credenciales
@@ -650,9 +761,18 @@ export const AffiliatedParkingsModule = () => {
                       </div>
                       <div className="min-w-0 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
                             Empresa Comercial
                           </span>
+                          {group.activeBranchesCount > 0 ? (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                              ● Activa
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                              ● Deshabilitada
+                            </span>
+                          )}
                           {group.ruc && (
                             <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
                               RUC: {group.ruc}
@@ -694,8 +814,8 @@ export const AffiliatedParkingsModule = () => {
                       </div>
                     </div>
 
-                    {/* Métricas Consolidadas de la Empresa + Botón + Nueva Sede en esta Empresa */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                    {/* Métricas y Barra de Acciones de Empresa */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 flex-wrap">
                       <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs">
                         <div className="space-y-0.5">
                           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sedes</div>
@@ -710,13 +830,67 @@ export const AffiliatedParkingsModule = () => {
                         </div>
                       </div>
 
+                      {/* Botón Deshabilitar / Habilitar Empresa */}
+                      {group.activeBranchesCount > 0 ? (
+                        <Button
+                          type="button"
+                          onClick={() => handleToggleCompanyStatus(group)}
+                          variant="outline"
+                          size="sm"
+                          className="border-amber-300 text-amber-900 bg-amber-50/70 hover:bg-amber-100 text-xs font-bold rounded-xl h-10 px-3 gap-1.5 cursor-pointer transition shadow-2xs"
+                          title={`Deshabilitar empresa y pausar sus ${group.branches.length} sedes`}
+                        >
+                          <PauseCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Deshabilitar</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={() => handleToggleCompanyStatus(group)}
+                          variant="outline"
+                          size="sm"
+                          className="border-emerald-300 text-emerald-900 bg-emerald-50/70 hover:bg-emerald-100 text-xs font-bold rounded-xl h-10 px-3 gap-1.5 cursor-pointer transition shadow-2xs"
+                          title={`Habilitar empresa y activar sus ${group.branches.length} sedes`}
+                        >
+                          <PlayCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Habilitar</span>
+                        </Button>
+                      )}
+
+                      {/* Botón Ajustes de Empresa */}
                       <Button
+                        type="button"
+                        onClick={() => handleOpenEditCompany(group)}
+                        variant="outline"
+                        size="sm"
+                        className="border-slate-200 text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 text-xs font-bold rounded-xl h-10 px-3 gap-1.5 cursor-pointer transition"
+                        title="Ajustes de empresa matriz"
+                      >
+                        <Settings className="w-4 h-4 text-slate-500 shrink-0" />
+                        <span>Ajustes</span>
+                      </Button>
+
+                      {/* Botón Eliminar Empresa */}
+                      <Button
+                        type="button"
+                        onClick={() => handleDeleteCompany(group)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl h-10 px-2.5 cursor-pointer transition"
+                        title="Eliminar empresa y todas sus sedes"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+
+                      {/* Botón + Nueva Sede */}
+                      <Button
+                        type="button"
                         onClick={() => handleOpenAdd(group)}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm rounded-xl h-10 px-4 shrink-0 cursor-pointer"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm rounded-xl h-10 px-3.5 shrink-0 cursor-pointer"
                         title={`Nueva sede para ${group.companyName}`}
                       >
                         <Plus className="w-4 h-4 shrink-0" />
-                        <span>+ Nueva Sede en esta Empresa</span>
+                        <span>+ Sede</span>
                       </Button>
                     </div>
                   </div>
@@ -1591,6 +1765,116 @@ export const AffiliatedParkingsModule = () => {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* =========================================================================
+          MODAL 6: AJUSTES DE EMPRESA COMERCIAL (MATRIZ)
+          ========================================================================= */}
+      <Dialog open={showEditCompanyModal} onOpenChange={setShowEditCompanyModal}>
+        <DialogContent className="max-w-md bg-white rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <Settings className="w-5 h-5 text-emerald-600" />
+              <span>Ajustes de Empresa Comercial</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Modifica los datos comerciales de la empresa matriz y sus sedes afiliadas.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedCompany && (
+            <form onSubmit={handleSaveCompany} className="space-y-4 mt-2">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Comercial de la Empresa *</label>
+                <Input
+                  required
+                  value={companyFormData.company_name}
+                  onChange={(e) => setCompanyFormData({ ...companyFormData, company_name: e.target.value })}
+                  placeholder="Ej. Inversiones Plaza S.A.C."
+                  className="text-xs font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Titular / Representante</label>
+                  <Input
+                    value={companyFormData.owner}
+                    onChange={(e) => setCompanyFormData({ ...companyFormData, owner: e.target.value })}
+                    placeholder="Ej. Carlos Mendoza"
+                    className="text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">RUC (Opcional)</label>
+                  <Input
+                    value={companyFormData.ruc}
+                    onChange={(e) => setCompanyFormData({ ...companyFormData, ruc: e.target.value })}
+                    placeholder="20601234567"
+                    className="text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
+                  <Input
+                    value={companyFormData.phone}
+                    onChange={(e) => setCompanyFormData({ ...companyFormData, phone: e.target.value })}
+                    placeholder="966 123 456"
+                    className="text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Correo de Contacto</label>
+                  <Input
+                    type="email"
+                    value={companyFormData.email}
+                    onChange={(e) => setCompanyFormData({ ...companyFormData, email: e.target.value })}
+                    placeholder="contacto@empresa.com"
+                    className="text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Ciudad / Ubicación Central</label>
+                <Input
+                  value={companyFormData.city}
+                  onChange={(e) => setCompanyFormData({ ...companyFormData, city: e.target.value })}
+                  placeholder="Ayacucho - Huamanga"
+                  className="text-xs"
+                />
+              </div>
+
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] text-slate-600 space-y-1">
+                <p className="font-bold text-slate-800">Alcance de los cambios:</p>
+                <p>Se sincronizarán los datos comerciales en las <strong>{selectedCompany.branches?.length || 0} sedes</strong> registradas bajo esta empresa.</p>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setShowEditCompanyModal(false)} className="flex-1 text-xs">
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={savingCompany}
+                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5"
+                >
+                  {savingCompany ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <span>Guardar Ajustes</span>
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>

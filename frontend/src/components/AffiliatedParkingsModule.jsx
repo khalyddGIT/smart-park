@@ -786,269 +786,480 @@ export const AffiliatedParkingsModule = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              {companyGroups.map((group) => (
-                <div 
-                  key={group.key} 
-                  className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden space-y-5 p-5 sm:p-6 transition hover:border-slate-300"
-                >
-                  {/* CABECERA DE LA EMPRESA */}
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100">
-                    <div className="flex items-start gap-3.5 min-w-0">
-                      <div className="p-3 rounded-2xl bg-slate-900 text-emerald-400 shrink-0 shadow-sm">
-                        <Store className="w-6 h-6" />
+              {companyGroups.map((group) => {
+                const isSingleBranch = group.branches.length === 1;
+                const primaryBranch = group.branches[0];
+
+                if (isSingleBranch && primaryBranch) {
+                  const isActive = primaryBranch.status === 'Operativo' || primaryBranch.status === 'active';
+                  const rateAuto = primaryBranch.rate_auto != null ? Number(primaryBranch.rate_auto) : (Number(primaryBranch.rate) || 5.0);
+                  const tolerance = primaryBranch.tolerance_minutes || primaryBranch.tolerance || 15;
+
+                  return (
+                    <div 
+                      key={group.key} 
+                      className="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition-all duration-200 p-5 sm:p-6 space-y-5"
+                    >
+                      {/* Cabecera Principal de Sede Única / Establecimiento */}
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div className="flex items-start gap-3.5 min-w-0">
+                          <div className="p-3 rounded-2xl bg-slate-900 text-emerald-400 shrink-0 shadow-sm mt-0.5">
+                            <Store className="w-6 h-6" />
+                          </div>
+                          <div className="min-w-0 space-y-1.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                                {group.companyName}
+                              </h2>
+                              {isActive ? (
+                                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  <span>Operativo</span>
+                                </span>
+                              ) : (
+                                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                  <span>Mantenimiento</span>
+                                </span>
+                              )}
+                              <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                Local Afiliado
+                              </span>
+                              {group.ruc && (
+                                <span className="text-[11px] font-mono text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200">
+                                  RUC: {group.ruc}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Metadatos en Fila Horizontal Elegante */}
+                            <div className="flex items-center gap-y-1 gap-x-4 text-xs text-slate-500 flex-wrap">
+                              {(primaryBranch.address || group.city) && (
+                                <span className="flex items-center gap-1 text-slate-600">
+                                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span className="truncate">{primaryBranch.address || group.city} {primaryBranch.level ? `• ${primaryBranch.level}` : ''}</span>
+                                </span>
+                              )}
+                              {(group.owner || primaryBranch.owner) && (
+                                <span className="flex items-center gap-1 text-slate-600">
+                                  <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span className="truncate">Titular: <strong className="text-slate-700 font-semibold">{primaryBranch.owner || group.owner}</strong></span>
+                                </span>
+                              )}
+                              {(group.phone || primaryBranch.phone) && (
+                                <span className="flex items-center gap-1 text-slate-600">
+                                  <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span>{primaryBranch.phone || group.phone}</span>
+                                </span>
+                              )}
+                              {(group.email || primaryBranch.email) && (
+                                <span className="flex items-center gap-1 text-slate-600">
+                                  <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span className="truncate">{primaryBranch.email || group.email}</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Barra de Acciones del Local */}
+                        <div className="flex items-center gap-2 flex-wrap shrink-0">
+                          {/* Credenciales de Acceso */}
+                          <Button
+                            type="button"
+                            onClick={() => handleOpenCredentialsModal(group)}
+                            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-xl h-9 px-3.5 gap-1.5 shadow-2xs cursor-pointer transition border border-amber-600/30"
+                            title={`Credenciales de acceso para ${group.companyName}`}
+                          >
+                            <KeyRound className="w-4 h-4 shrink-0 text-slate-950" />
+                            <span>Credenciales</span>
+                          </Button>
+
+                          {/* Editar Sede */}
+                          <Button
+                            type="button"
+                            onClick={() => handleOpenEdit(primaryBranch)}
+                            variant="outline"
+                            size="sm"
+                            className="border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
+                            title="Editar información y tarifas de la sede"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span>Editar Sede</span>
+                          </Button>
+
+                          {/* Pausar / Reanudar */}
+                          <Button
+                            type="button"
+                            onClick={() => toggleStatus(primaryBranch.id)}
+                            variant="outline"
+                            size="sm"
+                            className={`text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition ${
+                              isActive
+                                ? 'border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100'
+                                : 'border-emerald-200 text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100'
+                            }`}
+                            title={isActive ? 'Pausar operaciones de la cochera' : 'Reanudar operaciones de la cochera'}
+                          >
+                            {isActive ? (
+                              <>
+                                <PauseCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                <span>Pausar</span>
+                              </>
+                            ) : (
+                              <>
+                                <PlayCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span>Reanudar</span>
+                              </>
+                            )}
+                          </Button>
+
+                          {/* + Nueva Sucursal */}
+                          <Button
+                            type="button"
+                            onClick={() => handleOpenAdd(group)}
+                            variant="outline"
+                            size="sm"
+                            className="border-slate-200 text-slate-700 hover:text-emerald-700 hover:border-emerald-200 hover:bg-emerald-50/50 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
+                            title={`Agregar una nueva sucursal a ${group.companyName}`}
+                          >
+                            <Plus className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span>+ Sucursal</span>
+                          </Button>
+
+                          {/* Eliminar Sede */}
+                          <Button
+                            type="button"
+                            onClick={() => handleDelete(primaryBranch.id, primaryBranch.name)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl h-9 px-2.5 cursor-pointer transition"
+                            title="Eliminar sede"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
-                            Empresa Comercial
+
+                      {/* Chips de Métricas Tácticas de la Sede */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <Car className="w-3 h-3 text-slate-400" />
+                            <span>Capacidad</span>
                           </span>
-                          {group.activeBranchesCount > 0 ? (
-                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                              ● Activa
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
-                              ● Deshabilitada
-                            </span>
-                          )}
-                          {group.ruc && (
-                            <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
-                              RUC: {group.ruc}
-                            </span>
-                          )}
-                          <span className="text-[11px] font-medium text-slate-500">
-                            {group.activeBranchesCount} de {group.branches.length} sedes operativas
+                          <span className="font-mono font-black text-slate-900 text-base mt-1">
+                            {primaryBranch.calculatedSlots} <span className="text-xs font-sans font-medium text-slate-500">plazas</span>
                           </span>
                         </div>
-                        <h2 className="text-lg sm:text-xl font-black text-slate-900 truncate">
-                          {group.companyName}
-                        </h2>
-                        <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
-                          {group.city && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span>{group.city}</span>
-                            </span>
-                          )}
-                          {group.owner && (
-                            <span className="flex items-center gap-1">
-                              <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span className="truncate">Titular: {group.owner}</span>
-                            </span>
-                          )}
-                          {group.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span>{group.phone}</span>
-                            </span>
-                          )}
-                          {group.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span className="truncate">{group.email}</span>
-                            </span>
-                          )}
+
+                        <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <DollarSign className="w-3 h-3 text-emerald-600" />
+                            <span>Tarifa Base</span>
+                          </span>
+                          <span className="font-mono font-black text-emerald-700 text-base mt-1">
+                            S/ {rateAuto.toFixed(2)} <span className="text-xs font-sans font-medium text-slate-500">/ hora</span>
+                          </span>
+                        </div>
+
+                        <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <Percent className="w-3 h-3 text-slate-400" />
+                            <span>Comisión</span>
+                          </span>
+                          <span className="font-mono font-bold text-slate-800 text-base mt-1">
+                            {primaryBranch.commission || '12%'}
+                          </span>
+                        </div>
+
+                        <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            <span>Tolerancia</span>
+                          </span>
+                          <span className="font-mono font-bold text-slate-800 text-base mt-1">
+                            {tolerance} <span className="text-xs font-sans font-medium text-slate-500">minutos</span>
+                          </span>
                         </div>
                       </div>
                     </div>
+                  );
+                }
 
-                    {/* Métricas y Barra de Acciones de Empresa */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 flex-wrap">
-                      <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs">
-                        <div className="space-y-0.5">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sedes</div>
-                          <div className="font-black text-slate-900 font-mono text-sm leading-none">{group.branches.length}</div>
+                // CASO MULTI-SEDE: EMPRESA COMERCIAL CON RED DE SUCURSALES (>= 2)
+                const isGroupActive = group.activeBranchesCount > 0;
+                return (
+                  <div 
+                    key={group.key} 
+                    className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden space-y-5 p-5 sm:p-6 transition hover:border-slate-300"
+                  >
+                    {/* CABECERA DE LA EMPRESA MATRIZ */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                      <div className="flex items-start gap-3.5 min-w-0">
+                        <div className="p-3 rounded-2xl bg-slate-900 text-emerald-400 shrink-0 shadow-sm mt-0.5">
+                          <Building2 className="w-6 h-6" />
                         </div>
-                        <div className="h-6 w-px bg-slate-200"></div>
-                        <div className="space-y-0.5">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capacidad Global</div>
-                          <div className="font-bold text-emerald-700 font-mono text-xs leading-none">
-                            {group.totalSlots} Plazas
+                        <div className="min-w-0 space-y-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                              {group.companyName}
+                            </h2>
+                            {isGroupActive ? (
+                              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <span>Activa</span>
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                <span>Deshabilitada</span>
+                              </span>
+                            )}
+                            <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              Red Comercial ({group.branches.length} sedes)
+                            </span>
+                            {group.ruc && (
+                              <span className="text-[11px] font-mono text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200">
+                                RUC: {group.ruc}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-y-1 gap-x-4 text-xs text-slate-500 flex-wrap">
+                            {group.city && (
+                              <span className="flex items-center gap-1 text-slate-600">
+                                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{group.city}</span>
+                              </span>
+                            )}
+                            {group.owner && (
+                              <span className="flex items-center gap-1 text-slate-600">
+                                <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>Titular: <strong className="text-slate-700 font-semibold">{group.owner}</strong></span>
+                              </span>
+                            )}
+                            {group.phone && (
+                              <span className="flex items-center gap-1 text-slate-600">
+                                <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{group.phone}</span>
+                              </span>
+                            )}
+                            {group.email && (
+                              <span className="flex items-center gap-1 text-slate-600">
+                                <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{group.email}</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Botón Deshabilitar / Habilitar Empresa */}
-                      {group.activeBranchesCount > 0 ? (
+                      {/* Métricas y Acciones Globales de la Red */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 flex-wrap">
+                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-2xl text-xs">
+                          <div className="space-y-0.5">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sedes</div>
+                            <div className="font-black text-slate-900 font-mono text-sm leading-none">{group.branches.length}</div>
+                          </div>
+                          <div className="h-6 w-px bg-slate-200"></div>
+                          <div className="space-y-0.5">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capacidad Total</div>
+                            <div className="font-bold text-emerald-700 font-mono text-xs leading-none">
+                              {group.totalSlots} Plazas
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Credenciales de la Empresa */}
+                        <Button
+                          type="button"
+                          onClick={() => handleOpenCredentialsModal(group)}
+                          className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-xl h-9 px-3.5 gap-1.5 shadow-2xs cursor-pointer transition border border-amber-600/30"
+                          title={`Credenciales de acceso para ${group.companyName}`}
+                        >
+                          <KeyRound className="w-4 h-4 shrink-0 text-slate-950" />
+                          <span>Credenciales</span>
+                        </Button>
+
+                        {/* Ajustes de Empresa Matriz */}
+                        <Button
+                          type="button"
+                          onClick={() => handleOpenEditCompany(group)}
+                          variant="outline"
+                          size="sm"
+                          className="border-slate-200 text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
+                          title="Ajustes de la empresa matriz"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span>Ajustes</span>
+                        </Button>
+
+                        {/* Pausar / Habilitar Cadena */}
                         <Button
                           type="button"
                           onClick={() => handleToggleCompanyStatus(group)}
                           variant="outline"
                           size="sm"
-                          className="border-amber-300 text-amber-900 bg-amber-50/70 hover:bg-amber-100 text-xs font-bold rounded-xl h-10 px-3 gap-1.5 cursor-pointer transition shadow-2xs"
-                          title={`Deshabilitar empresa y pausar sus ${group.branches.length} sedes`}
+                          className={`text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition ${
+                            isGroupActive
+                              ? 'border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100'
+                              : 'border-emerald-200 text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100'
+                          }`}
+                          title={isGroupActive ? 'Deshabilitar toda la cadena' : 'Habilitar toda la cadena'}
                         >
-                          <PauseCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span>Deshabilitar</span>
+                          {isGroupActive ? (
+                            <>
+                              <PauseCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span>Pausar</span>
+                            </>
+                          ) : (
+                            <>
+                              <PlayCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>Habilitar</span>
+                            </>
+                          )}
                         </Button>
-                      ) : (
+
+                        {/* + Nueva Sede */}
                         <Button
                           type="button"
-                          onClick={() => handleToggleCompanyStatus(group)}
-                          variant="outline"
-                          size="sm"
-                          className="border-emerald-300 text-emerald-900 bg-emerald-50/70 hover:bg-emerald-100 text-xs font-bold rounded-xl h-10 px-3 gap-1.5 cursor-pointer transition shadow-2xs"
-                          title={`Habilitar empresa y activar sus ${group.branches.length} sedes`}
+                          onClick={() => handleOpenAdd(group)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-2xs rounded-xl h-9 px-3.5 shrink-0 cursor-pointer"
+                          title={`Agregar una nueva sede a ${group.companyName}`}
                         >
-                          <PlayCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>Habilitar</span>
+                          <Plus className="w-3.5 h-3.5 shrink-0" />
+                          <span>Nueva Sede</span>
                         </Button>
-                      )}
 
-                      {/* Botón Credenciales del Local (Empresa Afiliada) */}
-                      <Button
-                        type="button"
-                        onClick={() => handleOpenCredentialsModal(group)}
-                        variant="outline"
-                        size="sm"
-                        className="border-amber-300 text-amber-950 bg-amber-50/90 hover:bg-amber-100 text-xs font-bold rounded-xl h-10 px-3.5 gap-2 cursor-pointer transition shadow-2xs flex items-center"
-                        title={`Credenciales de acceso del Administrador para ${group.companyName}`}
-                      >
-                        <KeyRound className="w-4 h-4 text-amber-600 shrink-0" />
-                        <span>Credenciales de Acceso</span>
-                      </Button>
-
-                      {/* Botón Ajustes de Empresa */}
-                      <Button
-                        type="button"
-                        onClick={() => handleOpenEditCompany(group)}
-                        variant="outline"
-                        size="sm"
-                        className="border-slate-200 text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 text-xs font-bold rounded-xl h-10 px-3 gap-1.5 cursor-pointer transition"
-                        title="Ajustes de empresa matriz"
-                      >
-                        <Settings className="w-4 h-4 text-slate-500 shrink-0" />
-                        <span>Ajustes</span>
-                      </Button>
-
-                      {/* Botón Eliminar Empresa */}
-                      <Button
-                        type="button"
-                        onClick={() => handleDeleteCompany(group)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl h-10 px-2.5 cursor-pointer transition"
-                        title="Eliminar empresa y todas sus sedes"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-
-                      {/* Botón Nueva Sede */}
-                      <Button
-                        type="button"
-                        onClick={() => handleOpenAdd(group)}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm rounded-xl h-10 px-3.5 shrink-0 cursor-pointer"
-                        title={`Nueva sede para ${group.companyName}`}
-                      >
-                        <Plus className="w-4 h-4 shrink-0" />
-                        <span>Nueva Sede</span>
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* SUB-GRID DE SEDES Y SUCURSALES DE ESTA EMPRESA */}
-                  <div className="space-y-3 pt-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                        <Layers className="w-4 h-4 text-emerald-600" />
-                        <span>Sedes Registradas ({group.branches.length})</span>
-                      </h3>
-                      <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                        Gestión individual de accesos, tarifas y operatividad
-                      </span>
+                        {/* Eliminar Empresa */}
+                        <Button
+                          type="button"
+                          onClick={() => handleDeleteCompany(group)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl h-9 px-2.5 cursor-pointer transition"
+                          title="Eliminar empresa y todas sus sedes"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {group.branches.map((p) => {
-                        return (
-                          <Card 
-                            key={p.id} 
-                            className="p-4 border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition group rounded-2xl bg-white"
-                          >
-                            <div>
-                              <div className="flex justify-between items-start mb-2.5">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black shrink-0">
-                                    <Building2 className="w-4 h-4" />
+                    {/* LISTA / GRID DE SUCURSALES */}
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                          <Layers className="w-4 h-4 text-emerald-600" />
+                          <span>Sucursales y Sedes de la Red ({group.branches.length})</span>
+                        </h3>
+                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                          Gestión individual de accesos, tarifas y operatividad por sede
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {group.branches.map((p) => {
+                          const isBranchActive = p.status === 'Operativo' || p.status === 'active';
+                          const branchRate = p.rate_auto != null ? Number(p.rate_auto) : (Number(p.rate) || 5.0);
+
+                          return (
+                            <Card 
+                              key={p.id} 
+                              className="p-4 border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition-all rounded-2xl bg-white space-y-3.5"
+                            >
+                              <div>
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black shrink-0">
+                                      <Building2 className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <h4 className="font-extrabold text-slate-900 text-sm truncate leading-tight">
+                                        {p.branchDisplayName || p.name}
+                                      </h4>
+                                      {p.branchDisplayName && p.branchDisplayName !== p.name && (
+                                        <p className="text-[10px] text-slate-400 truncate">{p.name}</p>
+                                      )}
+                                    </div>
                                   </div>
-                                  <div className="min-w-0">
-                                    <h4 className="font-extrabold text-slate-900 text-sm truncate leading-tight">
-                                      {p.branchDisplayName || p.name}
-                                    </h4>
-                                    {p.branchDisplayName && p.branchDisplayName !== p.name && (
-                                      <p className="text-[10px] text-slate-400 truncate">{p.name}</p>
-                                    )}
+                                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${
+                                    isBranchActive 
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                      : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  }`}>
+                                    ● {isBranchActive ? 'Operativo' : 'Mantenimiento'}
+                                  </span>
+                                </div>
+
+                                <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
+                                  <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                                  <span className="truncate">{p.address} {p.level ? `• ${p.level}` : ''}</span>
+                                </p>
+
+                                {/* Mini Grid de Métricas de la Sucursal */}
+                                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
+                                  <div>
+                                    <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Capacidad</span>
+                                    <span className="font-mono font-bold text-slate-900">{p.calculatedSlots} Plazas</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Tarifa Base</span>
+                                    <span className="font-mono font-bold text-emerald-700">S/ {branchRate.toFixed(2)}/h</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Comisión</span>
+                                    <span className="font-mono font-bold text-slate-700">{p.commission || '12%'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Nivel</span>
+                                    <span className="font-bold text-slate-700 truncate block">{p.level || 'Superficie'}</span>
                                   </div>
                                 </div>
-                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${
-                                  p.status === 'Operativo' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                }`}>
-                                  ● {p.status}
-                                </span>
                               </div>
 
-                              <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
-                                <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                <span className="truncate">{p.address} {p.level ? `• ${p.level}` : ''}</span>
-                              </p>
-
-                              <div className="space-y-1.5 text-xs font-mono bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-3">
-                                <p className="flex justify-between text-slate-600 text-[11px]">
-                                  <span>Capacidad:</span>
-                                  <span className="font-bold text-slate-900">{p.calculatedSlots} Plazas</span>
-                                </p>
-                                <p className="flex justify-between text-slate-600 text-[11px]">
-                                  <span>Tarifa / Hora:</span>
-                                  <span className="font-bold text-emerald-700">S/ {Number(p.rate).toFixed(2)}</span>
-                                </p>
-                                <p className="flex justify-between text-slate-600 text-[11px]">
-                                  <span>Comisión:</span>
-                                  <span className="text-slate-800 font-semibold">{p.commission || '12%'}</span>
-                                </p>
-                                <p className="flex justify-between text-slate-600 text-[11px]">
-                                  <span>Titular Local:</span>
-                                  <span className="text-slate-800 font-semibold truncate max-w-[130px]">{p.owner || group.owner}</span>
-                                </p>
+                              <div className="pt-2 border-t border-slate-100">
+                                <div className="flex items-center gap-2">
+                                  <Button 
+                                    onClick={() => toggleStatus(p.id)} 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className={`flex-1 text-xs font-bold rounded-xl h-8 ${
+                                      isBranchActive
+                                        ? 'border-amber-200 text-amber-800 bg-amber-50/60 hover:bg-amber-100'
+                                        : 'border-emerald-200 text-emerald-800 bg-emerald-50/60 hover:bg-emerald-100'
+                                    }`}
+                                  >
+                                    {isBranchActive ? 'Pausar' : 'Reanudar'}
+                                  </Button>
+                                  <Button 
+                                    onClick={() => handleOpenEdit(p)} 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="p-2 text-slate-600 hover:text-slate-900 rounded-xl"
+                                    title="Editar información de sede"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                  </Button>
+                                  <Button 
+                                    onClick={() => handleDelete(p.id, p.name)} 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl"
+                                    title="Eliminar sede"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-
-                            <div className="pt-2.5 border-t border-slate-100">
-                              <div className="flex items-center gap-2">
-                                <Button 
-                                  onClick={() => toggleStatus(p.id)} 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="flex-1 text-xs font-bold rounded-xl h-8"
-                                >
-                                  {p.status === 'Operativo' ? 'Pausar' : 'Reanudar'}
-                                </Button>
-                                <Button 
-                                  onClick={() => handleOpenEdit(p)} 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="p-2 text-slate-600 hover:text-slate-900 rounded-xl"
-                                  title="Editar información de sede"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                  onClick={() => handleDelete(p.id, p.name)} 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl"
-                                  title="Eliminar sede"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </Card>
-                        );
-                      })}
+                            </Card>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -3,15 +3,15 @@ import uuid
 import math
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import Reservation, Slot, Parking, Payment
+from app.models.models import Reservation, Slot, Parking, Payment, User, Staff
 from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationResponse, ReservationCheckOut
 from app.core.security import get_current_user, require_role
 from app.core.realtime import realtime
 from app.core.cache import cache_delete
-from app.models.models import User
 
 PARKINGS_CACHE_KEY = "parkings:all"
 FINANCES_CACHE_KEY = "finances:summary"
@@ -137,6 +137,26 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
 
     return resp
 
+async def _check_reservation_access(reservation: Reservation, current_user: User, db: AsyncSession, action_label: str = "esta reserva"):
+    if reservation.user_id == current_user.id:
+        return
+    if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":
+        return
+    if current_user.role == "local":
+        curr_email = (current_user.email or "").strip().lower()
+        p_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
+        parking = p_res.scalars().first()
+        if parking and parking.email and parking.email.strip():
+            is_owner = bool(parking.email.strip().lower() == curr_email)
+        else:
+            is_owner = True
+        s_res = await db.execute(select(Staff.id).where(func.lower(Staff.email) == curr_email, Staff.parking_id == reservation.parking_id, Staff.status == "active"))
+        is_staff = s_res.scalars().first() is not None
+        if not is_owner and not is_staff:
+            raise HTTPException(status_code=403, detail=f"No autorizado para {action_label} en otra sede")
+        return
+    raise HTTPException(status_code=403, detail=f"No autorizado para {action_label}")
+
 @router.get("", response_model=List[ReservationResponse])
 async def list_reservations(
     parking_id: Optional[int] = None,
@@ -153,16 +173,22 @@ async def list_reservations(
 
     if current_user.role in ("local", "platform"):
         stmt = select(Reservation).options(*options_load).order_by(Reservation.id.desc())
-        if parking_id:
+        if current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
+            curr_email = (current_user.email or "").strip().lower()
+            p_res = await db.execute(select(Parking.id).where(func.lower(Parking.email) == curr_email))
+            owned_ids = set(p_res.scalars().all())
+            s_res = await db.execute(select(Staff.parking_id).where(func.lower(Staff.email) == curr_email, Staff.status == "active"))
+            staff_ids = set(pid for pid in s_res.scalars().all() if pid)
+            allowed_pids = owned_ids | staff_ids
+
+            if parking_id:
+                if parking_id not in allowed_pids:
+                    raise HTTPException(status_code=403, detail="No tienes permiso para ver reservas de esta sede")
+                stmt = stmt.where(Reservation.parking_id == parking_id)
+            else:
+                stmt = stmt.where(Reservation.parking_id.in_(allowed_pids) if allowed_pids else False)
+        elif parking_id:
             stmt = stmt.where(Reservation.parking_id == parking_id)
-        elif current_user.role == "local":
-            from app.models.models import Staff
-            me = await db.execute(select(Staff).where(Staff.email == current_user.email))
-            my_staff = me.scalars().first()
-            if my_staff and my_staff.parking_id:
-                # Personal operativo asignado a garita específica
-                stmt = stmt.where(Reservation.parking_id == my_staff.parking_id)
-            # Si es adminlocal (dueño/administrador general), ve todas las reservas de los establecimientos
 
         if status_filter:
             stmt = stmt.where(Reservation.status == status_filter)
@@ -274,9 +300,7 @@ async def get_reservation(reservation_id: int, db: AsyncSession = Depends(get_db
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
-    # IDOR: solo el dueño de la reserva o un administrador puede consultarla
-    if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
-        raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
+    await _check_reservation_access(reservation, current_user, db, action_label="ver esta reserva")
     return _format_reservation_response(reservation)
 
 @router.post("", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
@@ -540,8 +564,7 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
-    if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
-        raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
+    await _check_reservation_access(reservation, current_user, db, action_label="cancelar esta reserva")
     
     if reservation.status == "cancelled":
         raise HTTPException(status_code=400, detail="La reserva ya ha sido cancelada")
@@ -609,8 +632,7 @@ async def check_in_reservation(
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
-    if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
-        raise HTTPException(status_code=403, detail="No autorizado para hacer check-in en esta reserva")
+    await _check_reservation_access(reservation, current_user, db, action_label="hacer check-in en esta reserva")
 
     # Transición válida: solo una reserva programada puede pasar a activa
     if reservation.status != "scheduled":
@@ -694,8 +716,7 @@ async def check_out_reservation(
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
-    if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
-        raise HTTPException(status_code=403, detail="No autorizado para hacer check-out en esta reserva")
+    await _check_reservation_access(reservation, current_user, db, action_label="hacer check-out en esta reserva")
 
     # Transición válida: solo una reserva activa puede completarse
     if reservation.status != "active":

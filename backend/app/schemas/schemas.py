@@ -509,7 +509,7 @@ class StaffResponse(BaseModel):
 # ==========================================
 class ReservationCreate(BaseModel):
     parking_id: int = Field(gt=0, description="ID del estacionamiento debe ser mayor a 0")
-    slot_id: Optional[int] = Field(default=None, description="ID del cajón; si es None se auto-asigna el mejor disponible")
+    slot_id: Optional[int] = Field(default=None, gt=0, description="ID del cajón; si es None se auto-asigna el mejor disponible")
     license_plate: str
     start_time: datetime
     end_time: datetime

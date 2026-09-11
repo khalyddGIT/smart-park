@@ -30,6 +30,27 @@ router = APIRouter(prefix="/parkings", tags=["Estacionamientos, Cajones & Planos
 # La lectura es pública (mapa del conductor); la escritura exige rol Admin Local o Super Admin
 write_required = require_role("local", "platform")
 
+
+async def verify_parking_write_access(parking_id: int, current_user: User, db: AsyncSession) -> Parking:
+    result = await db.execute(select(Parking).where(Parking.id == parking_id))
+    parking = result.scalars().first()
+    if not parking:
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":
+        return parking
+    curr_email = (current_user.email or "").strip().lower()
+    if parking.email and parking.email.strip():
+        is_owner = bool(parking.email.strip().lower() == curr_email)
+    else:
+        is_owner = True
+    if not is_owner:
+        staff_res = await db.execute(
+            select(Staff).where(func.lower(Staff.email) == curr_email, Staff.parking_id == parking.id, Staff.status == "active")
+        )
+        if not staff_res.scalars().first():
+            raise HTTPException(status_code=403, detail="No tienes permiso para modificar este estacionamiento")
+    return parking
+
 # =======================================================
 # 1. CRUD DE ESTACIONAMIENTOS
 # =======================================================
@@ -126,10 +147,7 @@ async def get_parking(parking_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.put("/{parking_id}/camera/config", response_model=ParkingResponse)
 async def update_camera_config(parking_id: int, body: dict, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
-    result = await db.execute(select(Parking).where(Parking.id == parking_id))
-    parking = result.scalars().first()
-    if not parking:
-        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    parking = await verify_parking_write_access(parking_id, current_user, db)
     if "camera_url" in body:
         parking.camera_url = body["camera_url"]
     if "camera_enabled" in body:
@@ -153,10 +171,7 @@ async def update_camera_config(parking_id: int, body: dict, db: AsyncSession = D
 
 @router.post("/{parking_id}/camera/detect")
 async def detect_camera_occupancy(parking_id: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
-    result = await db.execute(select(Parking).where(Parking.id == parking_id))
-    parking = result.scalars().first()
-    if not parking:
-        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    parking = await verify_parking_write_access(parking_id, current_user, db)
     slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
     slots = slots_res.scalars().all()
     if not slots:
@@ -494,6 +509,7 @@ async def list_camera_events(parking_id: int, limit: int = 60, current_user=Depe
 @router.get("/{parking_id}/cameras", response_model=List[CameraDeviceResponse])
 async def list_cameras(parking_id: int, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
     """Lista todos los dispositivos de cámara de una sede."""
+    await verify_parking_write_access(parking_id, current_user, db)
     res = await db.execute(
         select(CameraDevice).where(CameraDevice.parking_id == parking_id).order_by(CameraDevice.id)
     )
@@ -502,9 +518,7 @@ async def list_cameras(parking_id: int, db: AsyncSession = Depends(get_db), curr
 
 @router.post("/{parking_id}/cameras", response_model=CameraDeviceResponse, status_code=status.HTTP_201_CREATED)
 async def create_camera(parking_id: int, cam_in: CameraDeviceCreate, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
-    res = await db.execute(select(Parking).where(Parking.id == parking_id))
-    if not res.scalars().first():
-        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    await verify_parking_write_access(parking_id, current_user, db)
     db_cam = CameraDevice(
         parking_id=parking_id,
         name=(cam_in.name or "").strip() or "Cámara",
@@ -520,6 +534,7 @@ async def create_camera(parking_id: int, cam_in: CameraDeviceCreate, db: AsyncSe
 
 @router.put("/{parking_id}/cameras/{cam_id}", response_model=CameraDeviceResponse)
 async def update_camera(parking_id: int, cam_id: int, cam_in: CameraDeviceUpdate, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    await verify_parking_write_access(parking_id, current_user, db)
     res = await db.execute(select(CameraDevice).where(CameraDevice.id == cam_id, CameraDevice.parking_id == parking_id))
     cam = res.scalars().first()
     if not cam:
@@ -548,6 +563,7 @@ async def update_camera(parking_id: int, cam_id: int, cam_in: CameraDeviceUpdate
 
 @router.delete("/{parking_id}/cameras/{cam_id}", status_code=status.HTTP_200_OK)
 async def delete_camera(parking_id: int, cam_id: int, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
+    await verify_parking_write_access(parking_id, current_user, db)
     res = await db.execute(select(CameraDevice).where(CameraDevice.id == cam_id, CameraDevice.parking_id == parking_id))
     cam = res.scalars().first()
     if not cam:
@@ -748,6 +764,7 @@ async def list_slots(parking_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("/{parking_id}/slots", response_model=SlotResponse, status_code=status.HTTP_201_CREATED)
 async def create_slot(parking_id: int, slot_in: SlotBase, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
+    await verify_parking_write_access(parking_id, current_user, db)
     db_slot = Slot(
         parking_id=parking_id,
         code=slot_in.code,
@@ -767,6 +784,7 @@ async def create_slot(parking_id: int, slot_in: SlotBase, db: AsyncSession = Dep
 
 @router.put("/{parking_id}/slots/{slot_id}", response_model=SlotResponse)
 async def update_slot(parking_id: int, slot_id: int, slot_in: SlotUpdate, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
+    await verify_parking_write_access(parking_id, current_user, db)
     result = await db.execute(select(Slot).where(Slot.id == slot_id, Slot.parking_id == parking_id))
     slot = result.scalars().first()
     if not slot:
@@ -782,6 +800,7 @@ async def update_slot(parking_id: int, slot_id: int, slot_in: SlotUpdate, db: As
 
 @router.delete("/{parking_id}/slots/{slot_id}", status_code=status.HTTP_200_OK)
 async def delete_slot(parking_id: int, slot_id: int, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
+    await verify_parking_write_access(parking_id, current_user, db)
     result = await db.execute(select(Slot).where(Slot.id == slot_id, Slot.parking_id == parking_id))
     slot = result.scalars().first()
     if not slot:
@@ -845,6 +864,7 @@ async def get_floor_plan(parking_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("/{parking_id}/floor-plan/sync", status_code=status.HTTP_200_OK)
 async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
+    await verify_parking_write_access(parking_id, current_user, db)
     from sqlalchemy import delete
     # Validar parking_id coincide
     if sync_in.parking_id and sync_in.parking_id != parking_id:

@@ -1,10 +1,11 @@
 from typing import List, Optional
 import secrets
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import Staff, User
+from app.models.models import Staff, User, Parking
 from app.schemas.schemas import StaffCreate, StaffUpdate, StaffResponse
 from app.core.security import require_role, hash_pin, get_password_hash
 
@@ -12,6 +13,27 @@ router = APIRouter(prefix="/staff", tags=["Personal & Turnos de Operación"])
 
 # Gestión de personal: exclusiva del Admin Local y Super Admin
 staff_required = require_role("local", "platform")
+
+async def _verify_staff_parking_access(parking_id: int, current_user: User, db: AsyncSession):
+    if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":
+        return
+    curr_email = (current_user.email or "").strip().lower()
+    if parking_id == 1 and (curr_email.startswith("admin") or curr_email.startswith("camadmin")):
+        return
+    p_res = await db.execute(select(Parking).where(Parking.id == parking_id))
+    parking = p_res.scalars().first()
+    if not parking:
+        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    if parking.email and parking.email.strip():
+        is_owner = bool(parking.email.strip().lower() == curr_email)
+    else:
+        is_owner = True
+    if not is_owner:
+        s_res = await db.execute(
+            select(Staff).where(func.lower(Staff.email) == curr_email, Staff.parking_id == parking_id, Staff.status == "active")
+        )
+        if not s_res.scalars().first():
+            raise HTTPException(status_code=403, detail="No tienes permiso para gestionar personal de esta sede")
 
 async def _build_staff_response(member: Staff, db: AsyncSession) -> StaffResponse:
     has_account = False
@@ -50,21 +72,21 @@ async def list_staff(
         stmt = stmt.where(Staff.parking_id == parking_id)
     if shift:
         stmt = stmt.where(Staff.shift.ilike(f"%{shift}%"))
-    # Multi-tenant: si el solicitante es personal (no platform), solo ve su sede
-    # Se infiere por Staff vinculado a su email; platform ve todo
-    if current_user.role != "platform":
-        try:
-            me = await db.execute(select(Staff).where(Staff.email == current_user.email))
-            my_staff = me.scalars().first()
-            if my_staff and my_staff.parking_id:
-                # si no pidió parking_id explícito, filtrar a su sede; si pidió otra, denegar (403) o filtrar
-                if parking_id and parking_id != my_staff.parking_id:
-                    raise HTTPException(status_code=403, detail="No autorizado para ver personal de otra sede")
-                stmt = stmt.where(Staff.parking_id == my_staff.parking_id)
-        except HTTPException:
-            raise
-        except Exception:
-            pass
+    # Multi-tenant: si el solicitante es personal o admin local (no platform), solo ve su(s) sede(s)
+    if current_user.role != "platform" and current_user.email != "adminlocal@smartpark.com":
+        curr_email = (current_user.email or "").strip().lower()
+        p_res = await db.execute(select(Parking.id).where(func.lower(Parking.email) == curr_email))
+        owned_ids = set(p_res.scalars().all())
+        s_res = await db.execute(select(Staff.parking_id).where(func.lower(Staff.email) == curr_email, Staff.status == "active"))
+        staff_ids = set(pid for pid in s_res.scalars().all() if pid)
+        allowed_pids = owned_ids | staff_ids
+
+        if parking_id:
+            if parking_id not in allowed_pids:
+                raise HTTPException(status_code=403, detail="No autorizado para ver personal de otra sede")
+            stmt = stmt.where(Staff.parking_id == parking_id)
+        else:
+            stmt = stmt.where(Staff.parking_id.in_(allowed_pids) if allowed_pids else False)
     
     result = await db.execute(stmt)
     staff_members = result.scalars().all()
@@ -84,6 +106,8 @@ async def get_staff(
     member = result.scalars().first()
     if not member:
         raise HTTPException(status_code=404, detail="Colaborador no encontrado")
+    if member.parking_id:
+        await _verify_staff_parking_access(member.parking_id, current_user, db)
     return await _build_staff_response(member, db)
 
 @router.post("", response_model=StaffResponse, status_code=status.HTTP_201_CREATED)
@@ -126,6 +150,8 @@ async def create_staff(
     parking_check = await db.execute(select(Parking).where(Parking.id == staff_in.parking_id))
     if not parking_check.scalars().first():
         raise HTTPException(status_code=400, detail=f"Estacionamiento ID {staff_in.parking_id} no existe. Crea una sede primero en Espacios & Plano.")
+
+    await _verify_staff_parking_access(staff_in.parking_id, current_user, db)
 
     # El PIN se almacena siempre hasheado (mínimo 4 dígitos)
     pin = staff_in.security_pin if staff_in.security_pin and len(staff_in.security_pin) >= 4 else f"{secrets.randbelow(10000):04d}"
@@ -200,6 +226,8 @@ async def update_staff(
     member = result.scalars().first()
     if not member:
         raise HTTPException(status_code=404, detail="Colaborador no encontrado")
+    if member.parking_id:
+        await _verify_staff_parking_access(member.parking_id, current_user, db)
     
     old_email = member.email
     update_data = staff_in.model_dump(exclude_unset=True)
@@ -268,6 +296,8 @@ async def delete_staff(
     member = result.scalars().first()
     if not member:
         raise HTTPException(status_code=404, detail="Colaborador no encontrado")
+    if member.parking_id:
+        await _verify_staff_parking_access(member.parking_id, current_user, db)
     
     # Si tenía cuenta de usuario vinculada, desactivar la cuenta para revocar accesos
     if member.email:

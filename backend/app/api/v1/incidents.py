@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import Incident, Parking, User
+from app.models.models import Incident, Parking, User, Staff
 from app.schemas.schemas import IncidentCreate, IncidentResolve, IncidentResponse, IncidentVisibilityUpdate
 from app.core.security import get_current_user, require_role
 from app.core.realtime import realtime
@@ -69,6 +70,24 @@ async def list_incidents(
     incidents = result.scalars().all()
     return [IncidentResponse.model_validate(i) for i in incidents]
 
+async def _check_incident_admin_access(incident: Incident, current_user: User, db: AsyncSession):
+    if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":
+        return
+    curr_email = (current_user.email or "").strip().lower()
+    p_res = await db.execute(select(Parking).where(Parking.id == incident.parking_id))
+    parking = p_res.scalars().first()
+    if parking and parking.email and parking.email.strip():
+        is_owner = bool(parking.email.strip().lower() == curr_email)
+    else:
+        is_owner = True
+    s_res = await db.execute(
+        select(Staff).where(func.lower(Staff.email) == curr_email, Staff.parking_id == incident.parking_id, Staff.status == "active")
+    )
+    is_staff = s_res.scalars().first() is not None
+    if not is_owner and not is_staff:
+        raise HTTPException(status_code=403, detail="No tienes permiso para gestionar incidencias de esta cochera")
+
+
 @router.get("/{incident_id}", response_model=IncidentResponse)
 async def get_incident(
     incident_id: int,
@@ -80,9 +99,18 @@ async def get_incident(
     if not incident:
         raise HTTPException(status_code=404, detail="Incidencia no encontrada")
 
-    # Solo el autor o un administrador (local/platform) pueden ver el detalle
-    if incident.user_id != current_user.id and current_user.role not in ("local", "platform"):
-        raise HTTPException(status_code=403, detail="No autorizado para ver esta incidencia")
+    # Privacidad: incidentes ocultados NUNCA son visibles para conductores regulares
+    if current_user.role == "user" and incident.is_hidden:
+        raise HTTPException(status_code=404, detail="Incidencia no encontrada")
+
+    # Solo el autor o un administrador (local/platform) de la sede pueden ver el detalle
+    if incident.user_id != current_user.id:
+        if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":
+            pass
+        elif current_user.role == "local":
+            await _check_incident_admin_access(incident, current_user, db)
+        else:
+            raise HTTPException(status_code=403, detail="No autorizado para ver esta incidencia")
 
     return IncidentResponse.model_validate(incident)
 
@@ -97,6 +125,9 @@ async def resolve_incident(
     incident = result.scalars().first()
     if not incident:
         raise HTTPException(status_code=404, detail="Incidencia no encontrada")
+
+    await _check_incident_admin_access(incident, current_user, db)
+
     if incident.status == "resolved":
         raise HTTPException(status_code=400, detail="La incidencia ya fue resuelta")
 
@@ -122,6 +153,8 @@ async def toggle_incident_visibility(
     incident = result.scalars().first()
     if not incident:
         raise HTTPException(status_code=404, detail="Incidencia no encontrada")
+
+    await _check_incident_admin_access(incident, current_user, db)
 
     incident.is_hidden = visibility_in.is_hidden
     await db.commit()

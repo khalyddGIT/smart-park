@@ -56,7 +56,8 @@ import {
   Box,
   Truck,
   Printer,
-  Hash
+  Hash,
+  Keyboard
 } from 'lucide-react';
 
 import { Card } from './ui/card';
@@ -1435,33 +1436,32 @@ export const InteractiveFloorPlanDrawingStudio = ({
       {/* ============================================================
           BARRA DE CONTROL SUPERIOR — PRESETS, VISTA Y GUARDADO
           ============================================================ */}
-      <div className="bg-slate-900 text-white p-3 sm:p-4 rounded-2xl border border-slate-800 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      <div className="bg-slate-900 text-white p-2.5 sm:p-3 rounded-2xl border border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-2.5">
         
         {/* Presets de Terreno y Auto-numerar (Solo en modo edición) */}
         {!readOnly ? (
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Selector de Plantilla de Lote */}
             <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
-              {[
-                { id: 'rectangular', label: 'Rectangular' },
-                { id: 'l_shape', label: "Forma en 'L'" },
-                { id: 'diagonal', label: 'Diagonal 45°' },
-                { id: 'u_shape', label: "Forma en 'U'" },
-                { id: 'free', label: 'Lienzo Libre' }
-              ].map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => handlePresetChange(p.id)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
-                    lotShape === p.id 
-                      ? 'bg-slate-800 text-white font-bold' 
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
+              <span className="text-[10px] uppercase font-bold text-slate-400 px-2 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Plantilla:</span>
+              </span>
+              <select
+                value={lotShape}
+                onChange={(e) => handlePresetChange(e.target.value)}
+                className="bg-slate-900 text-slate-200 text-xs font-bold py-1 px-2 rounded-lg border border-slate-700/80 hover:border-slate-600 focus:outline-none cursor-pointer"
+                title="Selecciona la forma del terreno de la cochera"
+              >
+                <option value="rectangular">📐 Rectangular</option>
+                <option value="l_shape">📐 Forma en 'L'</option>
+                <option value="diagonal">📐 Diagonal 45°</option>
+                <option value="u_shape">📐 Forma en 'U'</option>
+                <option value="free">✏️ Lienzo Libre</option>
+              </select>
             </div>
 
+            {/* Auto-Numerar */}
             <Button 
               onClick={handleAutoNumber}
               variant="outline" 
@@ -1472,6 +1472,12 @@ export const InteractiveFloorPlanDrawingStudio = ({
               <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-400" />
               <span>Auto-Numerar</span>
             </Button>
+
+            {parkingName && (
+              <span className="text-xs text-slate-400 font-medium hidden md:inline px-1">
+                {parkingName}
+              </span>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-2.5">
@@ -1489,23 +1495,23 @@ export const InteractiveFloorPlanDrawingStudio = ({
         )}
 
         {/* Controles de Zoom, Snapping y Guardar */}
-        <div className="flex items-center justify-between lg:justify-end gap-2 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-2 flex-wrap ml-auto">
           {/* Deshacer / Rehacer - Solo en modo edición */}
           {!readOnly && (
             <div className="flex items-center bg-slate-950 p-0.5 rounded-xl border border-slate-800 shrink-0">
               <button
                 onClick={handleUndo}
                 disabled={historyIndex <= 0}
-                className="p-1.5 hover:bg-slate-800 rounded-lg disabled:opacity-30 text-slate-300 transition cursor-pointer"
-                title="Deshacer"
+                className="p-1.5 hover:bg-slate-800 rounded-lg disabled:opacity-25 text-slate-300 transition cursor-pointer"
+                title="Deshacer (Ctrl+Z)"
               >
                 <Undo className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={handleRedo}
                 disabled={historyIndex >= history.length - 1}
-                className="p-1.5 hover:bg-slate-800 rounded-lg disabled:opacity-30 text-slate-300 transition cursor-pointer"
-                title="Rehacer"
+                className="p-1.5 hover:bg-slate-800 rounded-lg disabled:opacity-25 text-slate-300 transition cursor-pointer"
+                title="Rehacer (Ctrl+Y)"
               >
                 <Redo className="w-3.5 h-3.5" />
               </button>
@@ -1518,17 +1524,18 @@ export const InteractiveFloorPlanDrawingStudio = ({
               onClick={() => setSnapToGrid(!snapToGrid)}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition shrink-0 cursor-pointer ${
                 snapToGrid 
-                  ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800' 
-                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/80 shadow-xs' 
+                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
               }`}
+              title="Alineación magnética a cuadrícula de 20px"
             >
-              <Magnet className="w-3.5 h-3.5" />
+              <Magnet className={`w-3.5 h-3.5 ${snapToGrid ? 'text-emerald-400' : 'text-slate-500'}`} />
               <span>Rejilla</span>
             </button>
           )}
 
           {/* Controles de Zoom */}
-          <div className="flex items-center bg-slate-950 px-1.5 py-1 rounded-xl border border-slate-800 text-xs text-slate-300 gap-1.5 shrink-0">
+          <div className="flex items-center bg-slate-950 px-1.5 py-1 rounded-xl border border-slate-800 text-xs text-slate-300 gap-1 shrink-0">
             <button 
               onClick={() => setZoom(Math.max(40, zoom - 10))} 
               className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white cursor-pointer"
@@ -1537,7 +1544,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
 
-            <span className="font-mono text-[11px] font-bold text-slate-300 px-1">{zoom}%</span>
+            <span className="font-mono text-[11px] font-bold text-slate-300 px-1 w-9 text-center">{zoom}%</span>
 
             <button 
               onClick={() => setZoom(Math.min(200, zoom + 10))} 
@@ -1549,8 +1556,8 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
             <button 
               onClick={handleFitToScreen} 
-              className="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-emerald-400 font-bold text-[10px] cursor-pointer"
-              title="Ajustar plano"
+              className="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-emerald-400 font-bold text-[10px] cursor-pointer ml-0.5"
+              title="Ajustar plano a la pantalla"
             >
               Ajustar
             </button>
@@ -1560,11 +1567,11 @@ export const InteractiveFloorPlanDrawingStudio = ({
           <button
             type="button"
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 shrink-0 cursor-pointer transition"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 shrink-0 cursor-pointer transition"
             title="Imprimir o exportar plano CAD para garita"
           >
             <Printer className="w-3.5 h-3.5 text-slate-400" />
-            <span className="hidden sm:inline">Imprimir Plano</span>
+            <span className="hidden sm:inline">Imprimir</span>
           </button>
 
           {/* Guardar Cambios */}
@@ -1572,223 +1579,223 @@ export const InteractiveFloorPlanDrawingStudio = ({
             <Button 
               onClick={handleSave} 
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 px-3 h-8 rounded-xl shadow-sm shrink-0 cursor-pointer"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 px-3.5 h-8.5 rounded-xl shadow-xs shrink-0 cursor-pointer transition"
             >
               <Save className="w-3.5 h-3.5" />
-              <span>Guardar</span>
+              <span>Guardar Plano</span>
             </Button>
           )}
         </div>
       </div>
 
       {/* ============================================================
-          PALETA DE HERRAMIENTAS DE DIBUJO (BARRA HORIZONTAL COMPACTA)
+          PALETA DE HERRAMIENTAS DE DIBUJO (DOCK MODULAR POR CATEGORÍAS)
           ============================================================ */}
       {!readOnly && (
-        <div className="bg-slate-900 p-2 rounded-2xl border border-slate-800 shadow-sm flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
-          <div className="flex items-center gap-1.5 shrink-0">
-            
-            {/* Modo Selección */}
+        <div className="bg-slate-900 p-2 sm:p-2.5 rounded-2xl border border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-2.5">
+          {/* GRUPO 1: MODO / PUNTERO */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
             <button
               onClick={() => setActiveTool('select')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                 activeTool === 'select' 
                   ? 'bg-emerald-500 text-slate-950 font-black shadow-xs' 
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/80'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
+              title="Puntero de selección (V)"
             >
               <MousePointer className="w-3.5 h-3.5" />
               <span>Seleccionar</span>
             </button>
+            <button
+              onClick={() => setActiveTool('eraser')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'eraser' 
+                  ? 'bg-rose-600 text-white shadow-xs' 
+                  : 'text-rose-400/80 hover:bg-rose-950/40 hover:text-rose-300'
+              }`}
+              title="Herramienta borrador (clic para borrar)"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Borrador</span>
+            </button>
+          </div>
 
-            <div className="h-5 w-px bg-slate-800 mx-0.5" />
-
-            {/* Plazas por Tipo */}
+          {/* GRUPO 2: DIBUJO DE PLAZAS VEHICULARES */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+            <span className="text-[10px] font-bold uppercase text-slate-400 px-1.5 hidden xl:inline">Plazas:</span>
             <button
               onClick={() => setActiveTool('slot_auto')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'slot_auto' 
-                  ? 'bg-emerald-600 text-white font-bold shadow-xs' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-emerald-600 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-emerald-300'
               }`}
               title="Plaza estándar para automóvil sedán (A)"
             >
               <Car className="w-3.5 h-3.5 text-emerald-400" />
               <span>+ Auto</span>
             </button>
-
             <button
               onClick={() => setActiveTool('slot_camioneta')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'slot_camioneta' 
-                  ? 'bg-cyan-600 text-white font-bold shadow-xs' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-cyan-600 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-cyan-300'
               }`}
-              title="Plaza amplia para camioneta / SUV / Pickup 4x4 (C)"
+              title="Plaza amplia para camioneta / SUV 4x4 (C)"
             >
               <Truck className="w-3.5 h-3.5 text-cyan-400" />
               <span>+ Camioneta</span>
             </button>
-
             <button
               onClick={() => setActiveTool('slot_mototaxi')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'slot_mototaxi' 
-                  ? 'bg-yellow-600 text-white font-bold shadow-xs' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-amber-600 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-amber-300'
               }`}
               title="Plaza para Torito Bajaj / Mototaxi (X)"
             >
-              <Navigation className="w-3.5 h-3.5 text-yellow-400" />
-              <span>+ Moto Taxi</span>
+              <Navigation className="w-3.5 h-3.5 text-amber-400" />
+              <span>+ Torito</span>
             </button>
-
             <button
               onClick={() => setActiveTool('slot_moto')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'slot_moto' 
-                  ? 'bg-orange-600 text-white font-bold shadow-xs' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-orange-600 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-orange-300'
               }`}
-              title="Plaza compacta para moto lineal (M)"
+              title="Plaza para moto lineal (M)"
             >
               <Bike className="w-3.5 h-3.5 text-orange-400" />
               <span>+ Moto</span>
             </button>
-
             <button
               onClick={() => setActiveTool('slot_shaded')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'slot_shaded' 
-                  ? 'bg-amber-600 text-white font-bold shadow-xs' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-amber-600 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-amber-300'
               }`}
               title="Plaza con cubierta techada (T)"
             >
               <Umbrella className="w-3.5 h-3.5 text-amber-400" />
               <span>+ Techado</span>
             </button>
+          </div>
 
-            <button
-              onClick={() => setActiveTool('draw_row')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                activeTool === 'draw_row' 
-                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-              <span>+ Fila</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowRenumberDialog(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 text-purple-300 hover:bg-purple-950/60 hover:text-white border border-purple-800/60 transition cursor-pointer shadow-xs"
-              title="Renumerar secuencialmente todas las plazas (ej. A-01, A-02...)"
-            >
-              <Hash className="w-3.5 h-3.5 text-purple-400" />
-              <span>Renumerar</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleToggleAllShaded}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 text-amber-300 hover:bg-amber-950/60 hover:text-white border border-amber-800/60 transition cursor-pointer shadow-xs"
-              title="Alternar cubierta techada para todas las plazas"
-            >
-              <Umbrella className="w-3.5 h-3.5 text-amber-400" />
-              <span>Cubiertas</span>
-            </button>
-
-            <div className="h-5 w-px bg-slate-800 mx-0.5" />
-
-            {/* Accesos & Vías */}
+          {/* GRUPO 3: VÍAS, ACCESOS & ARQUITECTURA */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+            <span className="text-[10px] font-bold uppercase text-slate-400 px-1.5 hidden xl:inline">Vías & Muros:</span>
             <button
               onClick={() => setActiveTool('add_entry')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'add_entry' 
-                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-emerald-600 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-emerald-300'
               }`}
+              title="Garita / Puerta de Entrada LPR"
             >
               <LogIn className="w-3.5 h-3.5 text-emerald-400" />
-              <span>+ Entrada</span>
+              <span>Entrada</span>
             </button>
-
             <button
               onClick={() => setActiveTool('add_exit')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'add_exit' 
-                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-rose-600 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-rose-300'
               }`}
+              title="Garita / Puerta de Salida POS"
             >
               <LogOut className="w-3.5 h-3.5 text-rose-400" />
-              <span>+ Salida</span>
+              <span>Salida</span>
             </button>
-
             <button
               onClick={() => setActiveTool('add_road')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'add_road' 
-                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-slate-700 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
+              title="Carril de circulación vehicular de asfalto"
             >
               <Navigation className="w-3.5 h-3.5 text-amber-400" />
               <span>Carril</span>
             </button>
-
             <button
               onClick={() => setActiveTool('add_wall')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'add_wall' 
-                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-slate-700 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
+              title="Muro o delimitación estructural perimétrica"
             >
               <Square className="w-3.5 h-3.5 text-slate-400" />
               <span>Muro</span>
             </button>
-
             <button
               onClick={() => setActiveTool('add_crosswalk')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'add_crosswalk' 
-                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-slate-700 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
+              title="Cruce peatonal"
             >
-              <Footprints className="w-3.5 h-3.5 text-slate-300" />
-              <span>Cruce</span>
+              <Footprints className="w-3.5 h-3.5 text-slate-400" />
+              <span className="hidden lg:inline">Cruce</span>
             </button>
-
             <button
               onClick={() => setActiveTool('add_garden')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTool === 'add_garden' 
-                  ? 'bg-slate-700 text-white font-bold border border-slate-600' 
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                  ? 'bg-emerald-800 text-white shadow-xs' 
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-emerald-300'
               }`}
+              title="Área verde / Jardín decorativo"
             >
               <TreeIcon className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Jardín</span>
+              <span className="hidden lg:inline">Jardín</span>
             </button>
           </div>
 
-          {/* Borrador */}
-          <button
-            onClick={() => setActiveTool('eraser')}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
-              activeTool === 'eraser' 
-                ? 'bg-rose-600 text-white font-bold shadow-xs' 
-                : 'bg-slate-800/80 text-rose-300 hover:bg-rose-950/60 border border-rose-900/50'
-            }`}
-          >
-            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-            <span>Borrador</span>
-          </button>
+          {/* GRUPO 4: ASISTENTES INTELIGENTES (Automatización) */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 ml-auto shrink-0">
+            <button
+              onClick={() => setActiveTool('draw_row')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                activeTool === 'draw_row' 
+                  ? 'bg-cyan-700 text-white shadow-xs' 
+                  : 'text-cyan-300 hover:bg-cyan-950/40'
+              }`}
+              title="Asistente para generar una fila completa de plazas"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>+ Fila</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowRenumberDialog(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-purple-300 hover:bg-purple-950/40 hover:text-purple-200 transition cursor-pointer"
+              title="Renumerar plazas con prefijo personalizado (ej. A-01, B-01...)"
+            >
+              <Hash className="w-3.5 h-3.5 text-purple-400" />
+              <span>Renumerar</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleAllShaded}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-300 hover:bg-amber-950/40 hover:text-amber-200 transition cursor-pointer"
+              title="Alternar cubierta techada para todas las plazas"
+            >
+              <Umbrella className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Cubiertas</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -2894,13 +2901,13 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
                   <MousePointer className="w-6 h-6 shrink-0" />
                 </div>
-                <p className="text-xs font-bold text-slate-800">Selecciona un elemento para editar</p>
-                <p className="text-[11px] text-slate-400">Haz clic sobre cualquier cajón, muro o vía en el plano.</p>
+                <p className="text-xs font-bold text-slate-800">Inspector del Plano</p>
+                <p className="text-[11px] text-slate-400">Haz clic sobre cualquier elemento del lienzo para editar sus propiedades.</p>
               </div>
 
               {/* Resumen del Lote en Tiempo Real */}
               <div className="space-y-2">
-                <span className="text-[11px] font-bold uppercase text-slate-400 font-tech block">Métricas del Plano</span>
+                <span className="text-[11px] font-bold uppercase text-slate-400 font-tech block">Capacidad y Plazas</span>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-2xl">
                     <span className="text-[10px] text-slate-400 font-bold block uppercase">Total Plazas</span>
@@ -2929,17 +2936,34 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 </div>
               </div>
 
-              {/* Consejos de Edición */}
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-[11px] text-slate-600">
+              {/* Atajos de Teclado Profesionales */}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5 text-[11px] text-slate-600">
                 <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
-                  <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
-                  <span>Ayuda de Edición</span>
+                  <Keyboard className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Atajos de Edición Rápida</span>
                 </span>
-                <ul className="space-y-1 text-slate-500 list-disc list-inside">
-                  <li>Haz clic en cualquier elemento para editarlo o cambiar su tamaño.</li>
-                  <li>Arrastra libremente para moverlo por el plano.</li>
-                  <li>Usa los controles del panel para girar y alinear.</li>
-                </ul>
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="flex items-center justify-between py-0.5 border-b border-slate-100">
+                    <span className="text-slate-500">Seleccionar elemento</span>
+                    <kbd className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono font-bold text-[10px] text-slate-700 shadow-xs">V</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-0.5 border-b border-slate-100">
+                    <span className="text-slate-500">Duplicar selección</span>
+                    <kbd className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono font-bold text-[10px] text-slate-700 shadow-xs">Ctrl + D</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-0.5 border-b border-slate-100">
+                    <span className="text-slate-500">Eliminar selección</span>
+                    <kbd className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono font-bold text-[10px] text-rose-600 shadow-xs">Supr</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-0.5 border-b border-slate-100">
+                    <span className="text-slate-500">Deshacer cambio</span>
+                    <kbd className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono font-bold text-[10px] text-slate-700 shadow-xs">Ctrl + Z</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-0.5">
+                    <span className="text-slate-500">Zoom lienzo</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Rueda del ratón</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}

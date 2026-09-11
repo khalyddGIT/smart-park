@@ -26,6 +26,7 @@ import {
   Car,
   KeyRound,
   Shield,
+  ShieldCheck,
   Lock,
   Eye,
   EyeOff,

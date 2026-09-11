@@ -22,6 +22,7 @@ import { TermsAndConditionsModal } from './components/TermsAndConditionsModal';
 import { UserProfileModule } from './components/UserProfileModule';
 import { LandingPage } from './components/LandingPage';
 import { AutoFitFloorPlan } from './components/AutoFitFloorPlan';
+import { QuickReservationModal } from './components/QuickReservationModal';
 
 // Lazy-loaded heavy modules for code-splitting & lightning performance
 const LocalEstablishmentManager = lazy(() => import('./components/LocalEstablishmentManager').then(m => ({ default: m.LocalEstablishmentManager })));
@@ -70,7 +71,8 @@ import {
   Clock,
   ExternalLink,
   Moon,
-  Navigation
+  Navigation,
+  Zap
 } from 'lucide-react';
 
 import { Card, CardDescription } from './components/ui/card';
@@ -188,6 +190,7 @@ const AppMain = () => {
 
   useEffect(()=>{ if(personalParkingId) setSelectedParkingId(personalParkingId); },[personalParkingId]);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [quickBookingParking, setQuickBookingParking] = useState(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [paymentTarget, setPaymentTarget] = useState(null);
   const [routeTarget, setRouteTarget] = useState(null);
@@ -224,24 +227,26 @@ const AppMain = () => {
   // Obtener el establecimiento actualmente seleccionado en tiempo real desde el context
   const selectedParking = establishments.find(e => String(e.id) === String(selectedParkingId)) || null;
 
-  // Reserva de Plaza por Conductor - soporta hold (pago en garita) vs prepago con pasarela de pago
+  // Reserva de Plaza por Conductor - soporta hold (pago en garita), prepago con pasarela y reserva rápida (1-clic)
   const handleCustomerBooking = async (bookingData) => {
-    if (!selectedParking) return;
+    const targetParking = establishments.find(e => String(e.id) === String(bookingData?.parkingId)) || selectedParking || quickBookingParking;
+    if (!targetParking) return;
     try {
       const newRes = await createReservation({
-        parkingId: bookingData.parkingId || selectedParking.id,
+        parkingId: bookingData.parkingId || targetParking.id,
         slotId: bookingData.slotId,
-        parkingName: bookingData.parkingName || selectedParking.name,
+        autoAssign: !!(bookingData.autoAssign || bookingData.isQuickReservation || bookingData.slotId === null),
+        parkingName: bookingData.parkingName || targetParking.name,
         slotCode: bookingData.slotCode,
         plate: bookingData.plate,
         customerName: user?.name || user?.full_name || user?.email?.split('@')[0] || 'Conductor Registrado',
         customerPhone: user?.phone || '',
         totalCost: bookingData.totalCost,
         hours: bookingData.hours,
-        rate: selectedParking.rate,
+        rate: targetParking.rate,
         startTime: bookingData.startTime,
         expiresAt: bookingData.expiresAt,
-        toleranceMinutes: bookingData.toleranceMinutes || bookingData.arrivalWindow || bookingData.etaMinutes || 15,
+        toleranceMinutes: bookingData.toleranceMinutes || bookingData.arrivalWindow || bookingData.etaMinutes || targetParking.tolerance || targetParking.tolerance_minutes || 15,
         vehicleType: bookingData.vehicleType || 'auto',
         payNow: !!bookingData.payNow,
         billingUnit: bookingData.billingUnit || 'hour',
@@ -259,24 +264,27 @@ const AppMain = () => {
 
       const enriched = {
         ...newRes,
-        etaMinutes: bookingData.etaMinutes ?? newRes.toleranceMinutes ?? 15,
-        arrivalWindow: bookingData.arrivalWindow ?? newRes.toleranceMinutes ?? 15,
-        toleranceMinutes: bookingData.toleranceMinutes ?? newRes.toleranceMinutes ?? 15,
+        etaMinutes: bookingData.etaMinutes ?? newRes.toleranceMinutes ?? targetParking.tolerance ?? 15,
+        arrivalWindow: bookingData.arrivalWindow ?? newRes.toleranceMinutes ?? targetParking.tolerance ?? 15,
+        toleranceMinutes: bookingData.toleranceMinutes ?? newRes.toleranceMinutes ?? targetParking.tolerance ?? 15,
         payNow: !!bookingData.payNow,
         vehicleType: bookingData.vehicleType || 'auto',
         paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'Prepago asegurado' : 'Pago en garita al salir')
       };
 
+      // Si había modal de reserva rápida abierto, cerrarlo de inmediato
+      setQuickBookingParking(null);
+
       // Si es "Pagar ahora", desplegar la Pasarela de Pagos (PayPal, Tarjeta Culqi, Yape, Plin)
       if (bookingData.payNow) {
         setPaymentTarget({
           reservationId: newRes.id || newRes.code,
-          amount: Number(bookingData.totalCost) || Number((selectedParking.rate * bookingData.hours).toFixed(2)),
-          concept: `Reserva ${newRes.code || 'Smart Park'} — Cajón ${newRes.slotCode || bookingData.slotCode} en ${newRes.parkingName || selectedParking.name}`,
-          parkingName: newRes.parkingName || selectedParking.name,
+          amount: Number(bookingData.totalCost) || Number((targetParking.rate * bookingData.hours).toFixed(2)),
+          concept: `Reserva ${newRes.code || 'Smart Park'} — Cajón ${newRes.slotCode || bookingData.slotCode} en ${newRes.parkingName || targetParking.name}`,
+          parkingName: newRes.parkingName || targetParking.name,
           slotCode: newRes.slotCode || bookingData.slotCode || 'A-01',
           customerEmail: user?.email || 'conductor@smartpark.com',
-          requirePrepay: !!selectedParking.require_reservation_prepay,
+          requirePrepay: !!targetParking.require_reservation_prepay,
           enrichedData: enriched
         });
       } else {
@@ -662,6 +670,7 @@ const AppMain = () => {
                     <AyacuchoMap
                       parkings={activeCompany ? activeCompany.branches : filteredParkings}
                       onSelectParking={(parking) => handleSelectParking(parking)} 
+                      onQuickReservation={(parking) => setQuickBookingParking(parking)}
                       selectedParkingId={selectedParkingId} 
                       routeTarget={routeTarget}
                       onClearRoute={() => setRouteTarget(null)}
@@ -900,17 +909,47 @@ const AppMain = () => {
                                 </div>
                               </div>
 
-                              <div className="p-5 pt-0 space-y-2.5">
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    g.branches.length === 1 ? handleSelectParking(g.branches[0]) : setSelectedCompanyKey(g.key);
-                                  }}
-                                  className="w-full font-bold gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm cursor-pointer py-2.5 rounded-xl"
-                                >
-                                  <span>{g.branches.length === 1 ? 'Ver Plano & Reservar' : `Ver Sucursales (${g.branches.length})`}</span>
-                                  <ChevronRight className="w-4 h-4 text-emerald-400" />
-                                </Button>
+                              <div className="p-5 pt-0 space-y-2">
+                                {g.branches.length === 1 ? (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <Button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setQuickBookingParking(g.branches[0]);
+                                      }}
+                                      className="w-full font-black gap-1.5 text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-xs cursor-pointer py-2.5 rounded-xl border border-emerald-500/30"
+                                      title="Reserva express en 1 clic sin abrir el plano"
+                                    >
+                                      <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 animate-pulse" />
+                                      <span>⚡ Rápida</span>
+                                    </Button>
+
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSelectParking(g.branches[0]);
+                                      }}
+                                      className="w-full font-bold gap-1 text-xs bg-white hover:bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer py-2.5 rounded-xl"
+                                    >
+                                      <span>Ver Plano</span>
+                                      <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedCompanyKey(g.key);
+                                    }}
+                                    className="w-full font-bold gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm cursor-pointer py-2.5 rounded-xl"
+                                  >
+                                    <span>Ver Sucursales ({g.branches.length})</span>
+                                    <ChevronRight className="w-4 h-4 text-emerald-400" />
+                                  </Button>
+                                )}
                               </div>
                             </Card>
                           ))}
@@ -1029,16 +1068,31 @@ const AppMain = () => {
                                     </div>
                                 </div>
 
-                                <div className="p-5 pt-0 space-y-2.5">
+                                <div className="p-5 pt-0 space-y-2">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <Button 
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setQuickBookingParking(p);
+                                      }}
+                                      className="w-full font-black gap-1.5 text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-xs cursor-pointer py-2.5 rounded-xl border border-emerald-500/30"
+                                      title="Reserva express en 1 clic sin abrir el plano"
+                                    >
+                                      <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 animate-pulse" />
+                                      <span>⚡ Rápida</span>
+                                    </Button>
 
-
-                                  <Button 
-                                    onClick={() => handleSelectParking(p)} 
-                                    className="w-full font-bold gap-2 text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-sm cursor-pointer py-2.5 rounded-xl"
-                                  >
-                                    <span>Ver Plano & Reservar</span>
-                                    <ChevronRight className="w-4 h-4 text-emerald-400" />
-                                  </Button>
+                                    <Button 
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => handleSelectParking(p)} 
+                                      className="w-full font-bold gap-1 text-xs bg-white hover:bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer py-2.5 rounded-xl"
+                                    >
+                                      <span>Ver Plano</span>
+                                      <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                                    </Button>
+                                  </div>
                                 </div>
                               </Card>
                             );
@@ -1157,6 +1211,15 @@ const AppMain = () => {
           </Suspense>
         </main>
       </div>
+
+      {/* Modal de Reserva Rápida (1-Clic Express) */}
+      <QuickReservationModal
+        isOpen={!!quickBookingParking}
+        onClose={() => setQuickBookingParking(null)}
+        parking={quickBookingParking}
+        onConfirmBooking={handleCustomerBooking}
+        onSwitchToDetailedPlan={(p) => handleSelectParking(p)}
+      />
 
       {/* Modal de Pase Digital QR */}
       <DigitalAccessPassModal

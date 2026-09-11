@@ -1850,11 +1850,48 @@ export const EstablishmentProvider = ({ children }) => {
     }
   };
 
+  // Helper para encontrar la mejor plaza libre compatible (Reserva Rápida)
+  const findOptimalSlot = (parking, vehicleType = 'auto') => {
+    if (!parking) return null;
+    const elements = parking.elements || [];
+    const slots = elements.filter(e => e.type === 'slot' && e.status === 'free');
+    if (!slots.length) return null;
+
+    const vNorm = (vehicleType || 'auto').toLowerCase();
+    const vFamily = (v) => {
+      if (['suv', 'camioneta', 'truck', 'pickup'].includes(v)) return 'camioneta';
+      if (['moto', 'motorcycle', 'scooter', 'bike'].includes(v)) return 'moto';
+      if (['mototaxi', 'torito', 'trimovil'].includes(v)) return 'mototaxi';
+      return 'auto';
+    };
+    const targetFamily = vFamily(vNorm);
+
+    const entryGate = elements.find(e => e.type === 'gate' && (e.gateType === 'entry' || e.gateType !== 'exit')) || elements.find(e => e.type === 'gate');
+
+    const scoredSlots = slots.map(slot => {
+      let score = 0;
+      const slotFamily = vFamily(slot.slotType || slot.vehicleType || 'auto');
+      if (slotFamily === targetFamily) score += 100;
+      if (slot.shaded) score += 25;
+
+      if (entryGate && typeof slot.x === 'number' && typeof entryGate.x === 'number') {
+        const dist = Math.hypot(slot.x - entryGate.x, slot.y - entryGate.y);
+        score += Math.max(0, 50 - (dist / 20));
+      }
+
+      return { slot, score };
+    });
+
+    scoredSlots.sort((a, b) => b.score - a.score);
+    return scoredSlots[0]?.slot || slots[0];
+  };
+
   // Crear nueva reserva: POST real. Solo retorna éxito tras 201 del servidor (sin optimismo local).
   const createReservation = async (bookingData) => {
     let authed = !!getAccessToken();
     let parkingIdNum = Number(bookingData?.parkingId);
     let slotIdNum = Number(bookingData?.slotId);
+    const isAutoAssign = !!(bookingData?.autoAssign || bookingData?.isQuickReservation || bookingData?.slotId === null);
 
     // Auto-login de cortesía para usuarios invitados si no tienen sesión activa
     if (!authed) {
@@ -1896,7 +1933,16 @@ export const EstablishmentProvider = ({ children }) => {
       }
     }
 
-    if (!authed || isNaN(parkingIdNum) || isNaN(slotIdNum)) {
+    // Si es reserva rápida y aún no tiene slotId, intentar resolver con findOptimalSlot
+    if (isNaN(slotIdNum) && isAutoAssign) {
+      const est = establishments.find(e => Number(e.id) === Number(parkingIdNum));
+      const optSlot = findOptimalSlot(est, bookingData?.vehicleType || 'auto');
+      if (optSlot && !isNaN(Number(optSlot.id))) {
+        slotIdNum = Number(optSlot.id);
+      }
+    }
+
+    if (!authed || isNaN(parkingIdNum) || (isNaN(slotIdNum) && !isAutoAssign)) {
       const msg = 'No se pudo conectar con el servidor para emitir el ticket. Intenta iniciar sesión.';
       console.warn('Reserva bloqueada: ' + msg);
       setBookingError(msg);
@@ -1919,7 +1965,7 @@ export const EstablishmentProvider = ({ children }) => {
     try {
       const serverRes = await createReservationApi({
         parking_id: parkingIdNum,
-        slot_id: slotIdNum,
+        slot_id: (isNaN(slotIdNum) || slotIdNum <= 0) ? null : slotIdNum,
         license_plate: plate,
         start_time: startISO,
         end_time: endISO,
@@ -2117,6 +2163,7 @@ export const EstablishmentProvider = ({ children }) => {
       resetToDefaults,
       saveLocalUserCredential,
       getLocalUserCredentials,
+      findOptimalSlot,
       wsConnected
     }}>
       {children}

@@ -340,13 +340,38 @@ async def create_reservation(
             detail=f"El vehículo con placa {plate_clean} ya cuenta con una reserva activa en el sistema."
         )
 
-    # Verificar cajón con bloqueo FOR UPDATE para evitar doble-booking
-    slot_res = await db.execute(select(Slot).where(Slot.id == res_in.slot_id).with_for_update())
-    slot = slot_res.scalars().first()
-    if not slot or slot.status != "free":
-        raise HTTPException(status_code=409, detail="El cajón seleccionado no se encuentra libre (conflicto concurrente)")
-    if slot.parking_id != res_in.parking_id:
-        raise HTTPException(status_code=400, detail="El cajón no pertenece al estacionamiento indicado")
+    # Verificar o auto-asignar cajón con bloqueo FOR UPDATE para evitar doble-booking (Reserva Rápida)
+    vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
+    slot = None
+
+    if res_in.slot_id and res_in.slot_id > 0:
+        slot_res = await db.execute(select(Slot).where(Slot.id == res_in.slot_id).with_for_update())
+        slot = slot_res.scalars().first()
+        if not slot or slot.status != "free":
+            raise HTTPException(status_code=409, detail="El cajón seleccionado no se encuentra libre (conflicto concurrente)")
+        if slot.parking_id != res_in.parking_id:
+            raise HTTPException(status_code=400, detail="El cajón no pertenece al estacionamiento indicado")
+    else:
+        # Auto-asignación inteligente: seleccionar la mejor plaza libre compatible
+        target_family = vehicle_slot_family(vtype)
+        free_slots_res = await db.execute(
+            select(Slot).where(
+                Slot.parking_id == res_in.parking_id,
+                Slot.status == "free"
+            ).with_for_update()
+        )
+        free_slots = free_slots_res.scalars().all()
+        if not free_slots:
+            raise HTTPException(
+                status_code=409,
+                detail="No hay plazas libres disponibles en este establecimiento en este momento."
+            )
+        
+        # Filtramos por familia compatible; si no hay específica, usamos cualquiera disponible
+        matching_slots = [s for s in free_slots if vehicle_slot_family(s.slot_type) == target_family]
+        candidate_slots = matching_slots if matching_slots else free_slots
+        candidate_slots.sort(key=lambda s: s.id)
+        slot = candidate_slots[0]
 
     # Verificar local y calcular costo
     parking_res = await db.execute(select(Parking).where(Parking.id == res_in.parking_id))
@@ -375,7 +400,7 @@ async def create_reservation(
 
     vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
     slot_kind = getattr(slot, "slot_type", None) or "auto"
-    if vehicle_slot_family(slot_kind) != vehicle_slot_family(vtype):
+    if res_in.slot_id and res_in.slot_id > 0 and vehicle_slot_family(slot_kind) != vehicle_slot_family(vtype):
         raise HTTPException(
             status_code=400,
             detail=f"El cajón {slot.code} es para {slot_kind}, no para {vtype}. Elige un cajón de tu tipo de vehículo."
@@ -415,7 +440,7 @@ async def create_reservation(
         code=reservation_code,
         user_id=current_user.id,
         parking_id=res_in.parking_id,
-        slot_id=res_in.slot_id,
+        slot_id=slot.id,
         license_plate=plate_clean,
         start_time=_start,
         end_time=_end,

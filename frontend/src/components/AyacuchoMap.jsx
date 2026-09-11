@@ -4,6 +4,7 @@ import { MapContainer3D } from './map/MapContainer3D';
 export const AyacuchoMap = ({ 
   parkings = [], 
   onSelectParking, 
+  onQuickReservation,
   selectedParkingId,
   routeTarget,
   onClearRoute
@@ -12,6 +13,7 @@ export const AyacuchoMap = ({
     <MapContainer3D
       parkings={parkings}
       onSelectParking={onSelectParking}
+      onQuickReservation={onQuickReservation}
       selectedParkingId={selectedParkingId}
       routeTarget={routeTarget}
       onClearRoute={onClearRoute}

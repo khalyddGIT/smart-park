@@ -84,6 +84,16 @@ export const getLocalUserCredentials = () => {
   }
 };
 
+// Normalizador de IDs para compatibilidad total entre maquetas históricas (EST-01..EST-04) y servidor (1..4)
+export const normalizeParkingId = (id) => {
+  const s = String(id || '').trim();
+  if (s === 'EST-01') return '1';
+  if (s === 'EST-02') return '4';
+  if (s === 'EST-03') return '3';
+  if (s === 'EST-04') return '2';
+  return s;
+};
+
 // Helper universal para extraer la jerarquía comercial: Empresa / Local Principal y Sucursal
 export const getEstablishmentHierarchy = (est) => {
   if (!est) return { companyName: 'Estacionamiento', branchName: 'Sede Principal', isBranch: false };
@@ -148,9 +158,9 @@ export const isMyEstablishment = (est, user, role) => {
   if (user.parking_id && String(user.parking_id) === estId) return true;
   if (user.establishmentId && String(user.establishmentId) === estId) return true;
 
-  // 3. Cuenta semilla demo adminlocal@smartpark.com es administradora exclusiva de Smart Park Plaza Mayor (EST-01 y EST-02)
+  // 3. Cuenta semilla demo adminlocal@smartpark.com es administradora exclusiva de Smart Park Plaza Mayor (1 y 4 / EST-01 y EST-02)
   if (userEmail === 'adminlocal@smartpark.com') {
-    if (estId === 'EST-01' || estId === 'EST-02' || estId === '1' || estId === '2') return true;
+    if (['1', '4', '2', 'EST-01', 'EST-02'].includes(String(estId))) return true;
     if (estEmail === 'contacto@plazamayorpark.pe') return true;
     const { companyName } = getEstablishmentHierarchy(est);
     if (companyName.toLowerCase().includes('plaza mayor')) return true;
@@ -215,7 +225,7 @@ export const parseIsoToDate = (dateVal) => {
 
 export const INITIAL_ESTABLISHMENTS = [
   {
-    id: 'EST-01',
+    id: '1',
     name: 'Smart Park Plaza Mayor - Planta Baja',
     address: 'Portal Unión 42, Centro Histórico',
     reference: 'Frente a la Catedral de Huamanga',
@@ -272,7 +282,7 @@ export const INITIAL_ESTABLISHMENTS = [
     ]
   },
   {
-    id: 'EST-02',
+    id: '4',
     name: 'Smart Park Plaza Mayor - Sótano 1',
     address: 'Portal Unión 42, Centro Histórico',
     reference: 'Ingreso vehicular por Jr. Callao',
@@ -311,7 +321,7 @@ export const INITIAL_ESTABLISHMENTS = [
     ]
   },
   {
-    id: 'EST-03',
+    id: '3',
     name: 'Smart Park Mercado Mariscal Cáceres',
     address: 'Av. Mariscal Cáceres 450',
     reference: 'A 20 metros de la puerta principal del mercado',
@@ -347,37 +357,37 @@ export const INITIAL_ESTABLISHMENTS = [
     ]
   },
   {
-    id: 'EST-04',
-    name: 'Smart Park Terminal Terrestre',
-    address: 'Av. Pérez de Cuéllar s/n',
-    reference: 'Costado del ingreso al Terminal Libertadores de América',
+    id: '2',
+    name: 'Smart Park Jr. Bellido Colonial',
+    address: 'Jr. Bellido 240, Centro Histórico',
+    reference: 'A 2 cuadras de la Plaza Mayor',
     city: 'Ayacucho - Huamanga',
-    level: 'Nivel 1 - Exterior',
+    level: 'Playa Abierta',
     rate: 4.50,
-    status: 'Mantenimiento',
-    owner: 'Consorcio Vial Ayacucho',
-    ruc: '20401122334',
-    phone: '+51 966 999 888',
-    whatsapp: '51966999888',
-    email: 'terminal.park@ayacucho.pe',
-    schedule: '24 Horas los 365 días',
-    description: 'Estacionamiento oficial para viajeros con custodia nocturna y control computarizado.',
-    latitude: -13.1718,
-    longitude: -74.2210,
-    mapsUrl: 'https://maps.google.com/?q=-13.1718,-74.2210',
+    status: 'Operativo',
+    owner: 'Cocheras Coloniales Ayacucho',
+    ruc: '20609874123',
+    phone: '+51 966 456 789',
+    whatsapp: '51966456789',
+    email: 'bellido@smartpark.pe',
+    schedule: 'Lunes a Sábado: 06:00 - 23:00',
+    description: 'Cochera colonial céntrica y segura con cámaras de vigilancia.',
+    latitude: -13.1631,
+    longitude: -74.2236,
+    mapsUrl: 'https://maps.google.com/?q=-13.1631,-74.2236',
     socials: {
       facebook: '',
       instagram: '',
       tiktok: '',
       website: ''
     },
-    commission: '12%',
-    image: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800',
+    commission: '10%',
+    image: 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800',
     elements: [
       { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
       { id: 2, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
-      { id: 3, type: 'slot', code: 'T-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 4, type: 'slot', code: 'T-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' }
+      { id: 3, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+      { id: 4, type: 'slot', code: 'B-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' }
     ]
   }
 ];
@@ -418,7 +428,7 @@ export const INITIAL_RESERVATIONS = [
     id: 1,
     code: 'RSV-8912',
     token: 'SPK-AYC891-7B2F9A',
-    parkingId: 'EST-01',
+    parkingId: '1',
     parking: 'Smart Park Plaza Mayor - Planta Baja',
     slot: 'A-01',
     customerName: 'Carlos Mendoza Ramos',
@@ -436,7 +446,7 @@ export const INITIAL_RESERVATIONS = [
     id: 2,
     code: 'RSV-5421',
     token: 'SPK-AYC542-9D1E3F',
-    parkingId: 'EST-01',
+    parkingId: '1',
     parking: 'Smart Park Plaza Mayor - Planta Baja',
     slot: 'A-06',
     customerName: 'Valeria Quispe Castro',
@@ -454,7 +464,7 @@ export const INITIAL_RESERVATIONS = [
     id: 3,
     code: 'RSV-3319',
     token: 'SPK-AYC331-4A8C2B',
-    parkingId: 'EST-02',
+    parkingId: '4',
     parking: 'Smart Park Plaza Mayor - Sótano 1',
     slot: 'S1-03',
     customerName: 'Jorge Alarcón Díaz',
@@ -805,12 +815,33 @@ export const EstablishmentProvider = ({ children }) => {
           }, idx));
 
         setEstablishments(prev => {
-          const localOnly = prev.filter(e => String(e.id).startsWith('EST-') && !deletedIds.has(String(e.id)));
           const serverIds = new Set(mappedParkings.map(m => String(m.id)));
-          const preservedLocal = localOnly.filter(l => !serverIds.has(String(l.id)) && !deletedIds.has(String(l.id)));
+          const serverNames = new Set(mappedParkings.map(m => (m.name || '').trim().toLowerCase()));
+
+          // Evitar que maquetas demo EST-* o nombres duplicados sobrevivan y sombreen los datos del servidor
+          const legacyDemoIds = new Set(['EST-01', 'EST-02', 'EST-03', 'EST-04']);
+          const preservedLocal = prev.filter(e => {
+            const idStr = String(e.id);
+            if (serverIds.has(idStr)) return false;
+            if (deletedIds.has(idStr)) return false;
+            if (legacyDemoIds.has(idStr)) return false;
+            const normName = (e.name || '').trim().toLowerCase();
+            if (serverNames.has(normName)) return false;
+            return idStr.startsWith('EST-');
+          });
+
           const prevMap = new Map(prev.map(e => [String(e.id), e]));
+          const getBefore = (sid) => {
+            let found = prevMap.get(String(sid));
+            if (!found && sid === '1') found = prevMap.get('EST-01');
+            if (!found && sid === '4') found = prevMap.get('EST-02');
+            if (!found && sid === '3') found = prevMap.get('EST-03');
+            if (!found && sid === '2') found = prevMap.get('EST-04');
+            return found;
+          };
+
           const merged = mappedParkings.map(m => {
-            const before = prevMap.get(String(m.id));
+            const before = getBefore(String(m.id));
             return {
               ...m,
               ...(before?.password ? { password: before.password } : {}),
@@ -1519,10 +1550,18 @@ export const EstablishmentProvider = ({ children }) => {
   // Actualizar datos de un establecimiento - persistente
   const updateEstablishment = async (id, updatedFields) => {
     let updatedLocal = null;
-    // 1. Actualización inmediata local
+    const normId = normalizeParkingId(id);
+
+    // 1. Actualización inmediata local sobre el ID solicitado y sus posibles aliases
     setEstablishments(prev => {
+      const targetIds = new Set([String(id), String(normId)]);
+      if (normId === '1') targetIds.add('EST-01');
+      if (normId === '4') targetIds.add('EST-02');
+      if (normId === '3') targetIds.add('EST-03');
+      if (normId === '2') targetIds.add('EST-04');
+
       const next = prev.map(est => {
-        if (String(est.id) === String(id)) {
+        if (targetIds.has(String(est.id))) {
           updatedLocal = sanitizeEstablishment({ ...est, ...updatedFields });
           return updatedLocal;
         }
@@ -1533,7 +1572,7 @@ export const EstablishmentProvider = ({ children }) => {
     });
 
     // 2. Resolver ID numérico para el backend
-    let numId = Number(id);
+    let numId = Number(normId);
     if (isNaN(numId)) {
       const match = String(id).match(/\d+/);
       if (match) numId = Number(match[0]);
@@ -1560,7 +1599,9 @@ export const EstablishmentProvider = ({ children }) => {
         if (updatedFields.socials !== undefined) {
           payload.socials = typeof updatedFields.socials === 'object' ? JSON.stringify(updatedFields.socials) : String(updatedFields.socials);
         }
-        if (updatedFields.rate !== undefined) payload.hourly_rate = Number(updatedFields.rate);
+        // Sincronizar hourly_rate con la tarifa auto/general
+        const effRate = updatedFields.rate_auto !== undefined ? Number(updatedFields.rate_auto) : (updatedFields.rate !== undefined ? Number(updatedFields.rate) : undefined);
+        if (effRate !== undefined) payload.hourly_rate = effRate;
         if (updatedFields.tolerance !== undefined) payload.tolerance_minutes = Math.max(5, Math.min(60, Number(updatedFields.tolerance) || 15));
         if (updatedFields.status !== undefined) {
           const s = String(updatedFields.status).toLowerCase();
@@ -1594,6 +1635,11 @@ export const EstablishmentProvider = ({ children }) => {
           const res = await api.put(`/parkings/${numId}`, payload);
           // Re-sincronizar de inmediato para reflejar datos frescos en todas las pestañas y roles
           await fetchParkings();
+          try {
+            window.dispatchEvent(new CustomEvent('smart_park_establishment_updated', {
+              detail: { id: String(numId), updatedFields }
+            }));
+          } catch {}
           return res.data;
         }
       } catch (e) {
@@ -1607,7 +1653,8 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Actualizar plano topográfico - persistente via sync
   const updateEstablishmentPlan = async (id, elements) => {
-    let numId = Number(id);
+    const normId = normalizeParkingId(id);
+    let numId = Number(normId);
     if (isNaN(numId)) {
       const match = String(id).match(/\d+/);
       if (match) numId = Number(match[0]);

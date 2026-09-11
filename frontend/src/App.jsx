@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
-import { useEstablishments, isMyEstablishment, getEstablishmentHierarchy } from './context/EstablishmentContext';
+import { useEstablishments, isMyEstablishment, getEstablishmentHierarchy, normalizeParkingId } from './context/EstablishmentContext';
 import api from './services/api';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -225,11 +225,17 @@ const AppMain = () => {
   }, [realActiveReservation]);
 
   // Obtener el establecimiento actualmente seleccionado en tiempo real desde el context
-  const selectedParking = establishments.find(e => String(e.id) === String(selectedParkingId)) || null;
+  const selectedParking = React.useMemo(() => {
+    if (!selectedParkingId) return null;
+    const norm = normalizeParkingId(selectedParkingId);
+    return establishments.find(e => String(e.id) === String(selectedParkingId) || String(e.id) === String(norm)) || null;
+  }, [establishments, selectedParkingId]);
 
   // Reserva de Plaza por Conductor - soporta hold (pago en garita), prepago con pasarela y reserva rápida (1-clic)
   const handleCustomerBooking = async (bookingData) => {
-    const targetParking = establishments.find(e => String(e.id) === String(bookingData?.parkingId)) || selectedParking || quickBookingParking;
+    const rawTargetId = bookingData?.parkingId;
+    const normTarget = rawTargetId ? normalizeParkingId(rawTargetId) : null;
+    const targetParking = establishments.find(e => String(e.id) === String(rawTargetId) || (normTarget && String(e.id) === String(normTarget))) || selectedParking || quickBookingParking;
     if (!targetParking) return;
     try {
       const newRes = await createReservation({

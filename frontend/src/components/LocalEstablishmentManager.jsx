@@ -682,19 +682,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
   const handleOpenEdit = (est) => {
     setIsEditingNew(false);
     setSelectedEstablishment(est);
+    const initialRate = Number(est.rate_auto ?? est.rate ?? est.hourly_rate ?? 5.00);
     setFormData({
       name: est.name || '',
       address: est.address || '',
       reference: est.reference || '',
       city: est.city || 'Ayacucho - Huamanga',
       level: est.level || 'Nivel 1 - Superficie',
-      rate: est.rate || 5.00,
-      rate_auto: Number(est.rate_auto ?? est.rate ?? 5.00),
+      rate: initialRate,
+      rate_auto: initialRate,
       rate_suv: Number(est.rate_suv ?? 7.00),
       rate_mototaxi: Number(est.rate_mototaxi ?? 3.50),
       rate_moto: Number(est.rate_moto ?? 2.50),
       billing_unit: est.billing_unit || 'hour',
-      rate_minute_auto: Number(est.rate_minute_auto ?? ((est.rate_auto ?? 5.00) / 60).toFixed(2)),
+      rate_minute_auto: Number(est.rate_minute_auto ?? (initialRate / 60).toFixed(2)),
       rate_minute_suv: Number(est.rate_minute_suv ?? ((est.rate_suv ?? 7.00) / 60).toFixed(2)),
       rate_minute_mototaxi: Number(est.rate_minute_mototaxi ?? ((est.rate_mototaxi ?? 3.50) / 60).toFixed(2)),
       rate_minute_moto: Number(est.rate_minute_moto ?? ((est.rate_moto ?? 2.50) / 60).toFixed(2)),
@@ -762,13 +763,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           reference: formData.reference,
           city: formData.city || 'Ayacucho - Huamanga',
           level: formData.level,
-          rate: Number(formData.rate) || 5.00,
-          rate_auto: Number(formData.rate_auto) || 5.00,
+          rate: Number(formData.rate_auto || formData.rate || 5.00),
+          rate_auto: Number(formData.rate_auto || formData.rate || 5.00),
           rate_suv: Number(formData.rate_suv) || 7.00,
           rate_mototaxi: Number(formData.rate_mototaxi) || 3.50,
           rate_moto: Number(formData.rate_moto) || 2.50,
           billing_unit: formData.billing_unit || 'hour',
-          rate_minute_auto: Number(formData.rate_minute_auto) || 0.08,
+          rate_minute_auto: Number(formData.rate_minute_auto) || Number(((formData.rate_auto || formData.rate || 5.00) / 60).toFixed(2)),
           rate_minute_suv: Number(formData.rate_minute_suv) || 0.12,
           rate_minute_mototaxi: Number(formData.rate_minute_mototaxi) || 0.06,
           rate_minute_moto: Number(formData.rate_minute_moto) || 0.04,
@@ -807,19 +808,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       } else {
         if (!selectedEstablishment) return;
 
+        const effectiveRate = Number(formData.rate_auto || formData.rate || 5.00);
         const updated = {
           name: formData.name,
           address: formData.address,
           reference: formData.reference,
           city: formData.city,
           level: formData.level,
-          rate: Number(formData.rate) || 5.00,
-          rate_auto: Number(formData.rate_auto) || 5.00,
+          rate: effectiveRate,
+          rate_auto: effectiveRate,
           rate_suv: Number(formData.rate_suv) || 7.00,
           rate_mototaxi: Number(formData.rate_mototaxi) || 3.50,
           rate_moto: Number(formData.rate_moto) || 2.50,
           billing_unit: formData.billing_unit || 'hour',
-          rate_minute_auto: Number(formData.rate_minute_auto) || 0.08,
+          rate_minute_auto: Number(formData.rate_minute_auto) || Number((effectiveRate / 60).toFixed(2)),
           rate_minute_suv: Number(formData.rate_minute_suv) || 0.12,
           rate_minute_mototaxi: Number(formData.rate_minute_mototaxi) || 0.06,
           rate_minute_moto: Number(formData.rate_minute_moto) || 0.04,
@@ -1825,11 +1827,12 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               value={formData.rate_auto}
                               onChange={(e) => {
                                 const h = parseFloat(e.target.value) || 0;
-                                setFormData({
-                                  ...formData,
+                                setFormData(prev => ({
+                                  ...prev,
+                                  rate: h,
                                   rate_auto: h,
                                   rate_minute_auto: Number((h / 60).toFixed(2))
-                                });
+                                }));
                               }}
                               className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
                             />

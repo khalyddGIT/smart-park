@@ -242,8 +242,49 @@ async def startup_db():
                     FloorPlanElement(parking_id=p1.id, element_type="gate", pos_x=40, pos_y=240, width=50, height=90, z_index=3),
                 ]
                 session.add_all(slots + elems)
-                
-            # Garantizar la persistencia de las cuentas del sistema en PostgreSQL
+                await session.commit()
+
+            # Garantizar la existencia de la sucursal Sótano 1 de Smart Park Plaza Mayor
+            res_sotano = await session.execute(select(Parking).where(Parking.name.ilike("%Sótano 1%")))
+            p_sotano = res_sotano.scalars().first()
+            if not p_sotano:
+                p4 = Parking(
+                    name="Smart Park Plaza Mayor - Sótano 1",
+                    address="Portal Unión 42, Centro Histórico",
+                    city="Ayacucho",
+                    latitude=-13.1612,
+                    longitude=-74.2252,
+                    hourly_rate=4.00,
+                    tolerance_minutes=15,
+                    total_capacity=15,
+                    image_url="https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800",
+                    owner="Inversiones Plaza Mayor Huamanga",
+                    ruc="20608945123",
+                    phone="+51 966 123 456",
+                    whatsapp="51966123456",
+                    email="contacto@plazamayorpark.pe",
+                    schedule="Lunes a Domingo: 06:00 AM - 11:30 PM",
+                    reference="Ingreso vehicular por Jr. Callao",
+                    level="Sótano -1",
+                    description="Nivel subterráneo 100% techado y climatizado. Ideal para estancias prolongadas y protección solar.",
+                    maps_url="https://maps.google.com/?q=-13.1612,-74.2252",
+                    rate_auto=4.00,
+                    rate_suv=6.00,
+                    rate_mototaxi=3.00,
+                    rate_moto=2.00
+                )
+                session.add(p4)
+                await session.commit()
+                await session.refresh(p4)
+                slots_s4 = [
+                    Slot(parking_id=p4.id, code="S1-01", slot_type="auto", status="free", pos_x=80, pos_y=80, width=56, height=96),
+                    Slot(parking_id=p4.id, code="S1-02", slot_type="auto", status="free", pos_x=155, pos_y=80, width=56, height=96),
+                    Slot(parking_id=p4.id, code="S1-03", slot_type="auto", status="free", pos_x=220, pos_y=80, width=56, height=96),
+                    Slot(parking_id=p4.id, code="S1-04", slot_type="auto", status="free", pos_x=285, pos_y=80, width=56, height=96),
+                ]
+                session.add_all(slots_s4)
+                await session.commit()
+
             from app.models.models import Staff
             system_accounts = [
                 {

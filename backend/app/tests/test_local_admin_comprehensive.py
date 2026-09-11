@@ -1,4 +1,5 @@
-﻿import uuid
+import uuid
+from datetime import datetime, timedelta, timezone
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
@@ -237,3 +238,110 @@ async def test_local_admin_moderation_and_rbac_isolation():
         # Admin 2 CANNOT modify parking 1 profile
         bad_p_edit = await ac.put(f"/api/v1/parkings/{p1_id}", headers=admin2_headers, json={"name": "Robo de Cochera"})
         assert bad_p_edit.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_driver_sees_local_admin_business_rules_and_rates():
+    """Verifica que los cambios hechos por el admin local en tarifas, turno noche,
+
+    tolerancia y prepago se reflejen inmediatamente en la vista del conductor y reservas."""
+    admin_token, _, _ = await _register_and_get_token(role="local")
+    driver_token, _, _ = await _register_and_get_token(role="user")
+    transport = ASGITransport(app=app)
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    driver_headers = {"Authorization": f"Bearer {driver_token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # 1. Admin local crea sede
+        p_resp = await ac.post("/api/v1/parkings", headers=admin_headers, json={
+            "name": "Cochera Matriz Plaza",
+            "address": "Portal Unión 100",
+            "city": "Ayacucho",
+            "hourly_rate": 5.0,
+            "rate_auto": 5.0,
+            "total_capacity": 10,
+            "tolerance_minutes": 15
+        })
+        assert p_resp.status_code == 201
+        pid = p_resp.json()["id"]
+
+        # Crear cajón en la sede
+        await ac.post(f"/api/v1/parkings/{pid}/floor-plan/sync", headers=admin_headers, json={
+            "slots": [{"code": "A-01", "floor_level": "Piso 1", "slot_type": "auto", "status": "free", "pos_x": 100, "pos_y": 100, "width": 60, "height": 100, "rotation": 0}],
+            "elements": []
+        })
+
+        # 2. Admin local edita las reglas de negocio: tarifas, turno noche, tolerancia, prepago
+        rules_update = {
+            "rate_auto": 8.0,
+            "hourly_rate": 8.0,
+            "rate_suv": 11.0,
+            "rate_mototaxi": 5.0,
+            "rate_moto": 4.0,
+            "billing_unit": "hour",
+            "night_shift_enabled": True,
+            "night_shift_start": "20:00",
+            "night_shift_end": "06:00",
+            "night_shift_surcharge": 3.0,
+            "tolerance_minutes": 25,
+            "require_reservation_prepay": True,
+            "reservation_fee": 1.50
+        }
+        put_resp = await ac.put(f"/api/v1/parkings/{pid}", headers=admin_headers, json=rules_update)
+        assert put_resp.status_code == 200
+
+        # 3. Conductor consulta el listado de cocheras (GET /parkings)
+        list_resp = await ac.get("/api/v1/parkings")
+        assert list_resp.status_code == 200
+        driver_parkings = list_resp.json()
+        target = next((p for p in driver_parkings if p["id"] == pid), None)
+        assert target is not None
+
+        # Verificar que el conductor ve exactamente las tarifas y reglas editadas
+        assert target["hourly_rate"] == 8.0
+        assert target["rate_auto"] == 8.0
+        assert target["rate_suv"] == 11.0
+        assert target["rate_mototaxi"] == 5.0
+        assert target["rate_moto"] == 4.0
+        assert target["night_shift_enabled"] is True
+        assert target["night_shift_start"] == "20:00"
+        assert target["night_shift_end"] == "06:00"
+        assert target["night_shift_surcharge"] == 3.0
+        assert target["tolerance_minutes"] == 25
+        assert target["require_reservation_prepay"] is True
+        assert target["reservation_fee"] == 1.50
+
+        # 4. Conductor consulta detalle directo (GET /parkings/{id})
+        detail_resp = await ac.get(f"/api/v1/parkings/{pid}")
+        assert detail_resp.status_code == 200
+        detail = detail_resp.json()
+        assert detail["hourly_rate"] == 8.0
+        assert detail["tolerance_minutes"] == 25
+        assert detail["night_shift_enabled"] is True
+
+        # 5. Conductor realiza reserva y se verifica que tome la tolerancia y reglas actualizadas
+        # Primero registrar vehículo
+        await ac.post("/api/v1/vehicles", headers=driver_headers, json={
+            "license_plate": "TEST-888",
+            "vehicle_type": "auto"
+        })
+
+        now = datetime.now(timezone.utc)
+        start_time = (now + timedelta(hours=1)).isoformat()
+        end_time = (now + timedelta(hours=3)).isoformat()
+
+        res_create = await ac.post("/api/v1/reservations", headers=driver_headers, json={
+            "parking_id": pid,
+            "license_plate": "TEST-888",
+            "vehicle_type": "auto",
+            "start_time": start_time,
+            "end_time": end_time,
+            "estimated_hours": 2,
+            "tolerance_minutes": 25,
+            "pay_now": True
+        })
+        assert res_create.status_code == 201, res_create.text
+        res_data = res_create.json()
+        assert res_data["tolerance_minutes"] == 25
+
+

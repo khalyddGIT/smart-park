@@ -924,7 +924,7 @@ export const AffiliatedParkingsModule = () => {
                             title={`Agregar una nueva sucursal a ${group.companyName}`}
                           >
                             <Plus className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                            <span>+ Sucursal</span>
+                            <span>Sucursal</span>
                           </Button>
 
                           {/* Eliminar Sede */}

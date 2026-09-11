@@ -464,21 +464,21 @@ const RECTANGULAR_PRESET = [
   // Fila Norte: Autos, Camioneta 4x4, Moto Taxi y Motos
   { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
   { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', shaded: true, x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'ABC-123', color: '#ef4444' },
-  { id: 13, type: 'slot', code: 'C-01', slotType: 'camioneta', x: 290, y: 80, w: 68, h: 112, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#0284c7' },
+  { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', shaded: true, x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
+  { id: 13, type: 'slot', code: 'C-01', slotType: 'camioneta', x: 290, y: 80, w: 68, h: 112, rot: 0, status: 'free' },
   { id: 14, type: 'slot', code: 'C-02', slotType: 'camioneta', x: 370, y: 80, w: 68, h: 112, rot: 0, status: 'free' },
-  { id: 15, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 450, y: 80, w: 48, h: 80, rot: 0, status: 'occupied', plate: '5612-4B', color: '#ca8a04' },
+  { id: 15, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 450, y: 80, w: 48, h: 80, rot: 0, status: 'free' },
   { id: 16, type: 'slot', code: 'T-02', slotType: 'mototaxi', x: 510, y: 80, w: 48, h: 80, rot: 0, status: 'free' },
   { id: 17, type: 'slot', code: 'A-04', slotType: 'auto', x: 610, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-  { id: 18, type: 'slot', code: 'M-01', slotType: 'moto', x: 680, y: 80, w: 38, h: 65, rot: 0, status: 'occupied', plate: '5421-3A' },
+  { id: 18, type: 'slot', code: 'M-01', slotType: 'moto', x: 680, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
   { id: 19, type: 'slot', code: 'M-02', slotType: 'moto', x: 730, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
   { id: 20, type: 'slot', code: 'M-03', slotType: 'moto', x: 780, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
 
   // Fila Sur: Autos, Camionetas y Motos
-  { id: 30, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'AYC-501', color: '#10b981' },
+  { id: 30, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
   { id: 31, type: 'slot', code: 'B-02', slotType: 'auto', shaded: true, x: 145, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
   { id: 32, type: 'slot', code: 'C-03', slotType: 'camioneta', x: 215, y: 470, w: 68, h: 112, rot: 0, status: 'free' },
-  { id: 33, type: 'slot', code: 'C-04', slotType: 'camioneta', x: 295, y: 470, w: 68, h: 112, rot: 0, status: 'occupied', plate: 'T4X-882', color: '#4f46e5' },
+  { id: 33, type: 'slot', code: 'C-04', slotType: 'camioneta', x: 295, y: 470, w: 68, h: 112, rot: 0, status: 'free' },
   { id: 34, type: 'slot', code: 'T-03', slotType: 'mototaxi', x: 375, y: 480, w: 48, h: 80, rot: 0, status: 'free' },
   { id: 35, type: 'slot', code: 'B-03', slotType: 'auto', x: 435, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
   { id: 36, type: 'slot', code: 'B-04', slotType: 'auto', x: 610, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
@@ -504,8 +504,8 @@ const L_SHAPE_PRESET = [
   // Fila Norte
   { id: 12, type: 'slot', code: 'N-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
   { id: 13, type: 'slot', code: 'N-02', slotType: 'camioneta', x: 155, y: 70, w: 68, h: 112, rot: 0, status: 'free' },
-  { id: 14, type: 'slot', code: 'N-03', slotType: 'camioneta', shaded: true, x: 235, y: 70, w: 68, h: 112, rot: 0, status: 'occupied', plate: 'W1P-404' },
-  { id: 15, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 330, y: 80, w: 48, h: 80, rot: 0, status: 'occupied', plate: '5612-4B' },
+  { id: 14, type: 'slot', code: 'N-03', slotType: 'camioneta', shaded: true, x: 235, y: 70, w: 68, h: 112, rot: 0, status: 'free' },
+  { id: 15, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 330, y: 80, w: 48, h: 80, rot: 0, status: 'free' },
   { id: 16, type: 'slot', code: 'T-02', slotType: 'mototaxi', x: 390, y: 80, w: 48, h: 80, rot: 0, status: 'free' },
   { id: 17, type: 'slot', code: 'N-04', slotType: 'auto', x: 600, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
   { id: 18, type: 'slot', code: 'M-01', slotType: 'moto', x: 665, y: 80, w: 38, h: 65, rot: 0, status: 'free' },
@@ -529,15 +529,15 @@ const DIAGONAL_PRESET = [
 
   { id: 10, type: 'slot', code: 'D-01', slotType: 'auto', x: 90, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
   { id: 11, type: 'slot', code: 'D-02', slotType: 'camioneta', shaded: true, x: 165, y: 80, w: 68, h: 112, rot: 30, status: 'free' },
-  { id: 12, type: 'slot', code: 'D-03', slotType: 'camioneta', shaded: true, x: 245, y: 80, w: 68, h: 112, rot: 30, status: 'occupied', plate: 'W1P-404' },
-  { id: 13, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 325, y: 90, w: 48, h: 80, rot: 30, status: 'occupied', plate: '5612-4B' },
+  { id: 12, type: 'slot', code: 'D-03', slotType: 'camioneta', shaded: true, x: 245, y: 80, w: 68, h: 112, rot: 30, status: 'free' },
+  { id: 13, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 325, y: 90, w: 48, h: 80, rot: 30, status: 'free' },
   { id: 14, type: 'slot', code: 'T-02', slotType: 'mototaxi', x: 385, y: 90, w: 48, h: 80, rot: 30, status: 'free' },
   { id: 15, type: 'slot', code: 'D-04', slotType: 'auto', x: 450, y: 90, w: 56, h: 96, rot: 30, status: 'free' },
   { id: 16, type: 'slot', code: 'M-01', slotType: 'moto', x: 520, y: 90, w: 38, h: 65, rot: 30, status: 'free' },
 
   { id: 20, type: 'slot', code: 'D-05', slotType: 'auto', x: 90, y: 470, w: 56, h: 96, rot: -30, status: 'free' },
   { id: 21, type: 'slot', code: 'D-06', slotType: 'auto', shaded: true, x: 165, y: 470, w: 56, h: 96, rot: -30, status: 'free' },
-  { id: 22, type: 'slot', code: 'C-01', slotType: 'camioneta', x: 235, y: 460, w: 68, h: 112, rot: -30, status: 'occupied', plate: 'XYZ-999' },
+  { id: 22, type: 'slot', code: 'C-01', slotType: 'camioneta', x: 235, y: 460, w: 68, h: 112, rot: -30, status: 'free' },
   { id: 23, type: 'slot', code: 'T-03', slotType: 'mototaxi', x: 315, y: 470, w: 48, h: 80, rot: -30, status: 'free' },
   { id: 24, type: 'slot', code: 'D-07', slotType: 'auto', x: 375, y: 470, w: 56, h: 96, rot: -30, status: 'free' }
 ];
@@ -556,7 +556,7 @@ const U_SHAPE_PRESET = [
 
   { id: 10, type: 'slot', code: 'U-01', slotType: 'auto', x: 80, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
   { id: 11, type: 'slot', code: 'C-01', slotType: 'camioneta', shaded: true, x: 155, y: 65, w: 68, h: 112, rot: 0, status: 'free' },
-  { id: 12, type: 'slot', code: 'T-01', slotType: 'mototaxi', shaded: true, x: 235, y: 75, w: 48, h: 80, rot: 0, status: 'occupied', plate: '5612-4B' },
+  { id: 12, type: 'slot', code: 'T-01', slotType: 'mototaxi', shaded: true, x: 235, y: 75, w: 48, h: 80, rot: 0, status: 'free' },
   { id: 13, type: 'slot', code: 'M-01', slotType: 'moto', x: 295, y: 75, w: 38, h: 65, rot: 0, status: 'free' },
   { id: 14, type: 'slot', code: 'U-02', slotType: 'auto', x: 350, y: 75, w: 56, h: 96, rot: 0, status: 'free' },
   { id: 15, type: 'slot', code: 'U-03', slotType: 'auto', x: 415, y: 75, w: 56, h: 96, rot: 0, status: 'free' }
@@ -821,10 +821,14 @@ export const InteractiveFloorPlanDrawingStudio = ({
     else if (shape === 'u_shape') newElems = U_SHAPE_PRESET;
     else if (shape === 'free') newElems = [];
 
-    setElements(newElems);
-    pushHistory(newElems);
+    // Clonación profunda para evitar mutación de presets globales
+    const cloned = newElems.map(el => ({ ...el }));
+    setElements(cloned);
+    elementsRef.current = cloned;
+    pushHistory(cloned);
     setSelectedId(null);
-    setMessage(`Plantilla "${shape.toUpperCase()}" aplicada.`);
+    setHasUnsavedChanges(true);
+    setMessage(`Plantilla "${shape.toUpperCase()}" aplicada (todas las plazas disponibles).`);
     setTimeout(() => setMessage(''), 3000);
   };
 
@@ -858,8 +862,10 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
     const updated = [...elements, duplicated];
     setElements(updated);
+    elementsRef.current = updated;
     pushHistory(updated);
     setSelectedId(newId);
+    setHasUnsavedChanges(true);
     setMessage(`Elemento ${isSlot ? newCode : ''} duplicado con éxito.`);
     setTimeout(() => setMessage(''), 2000);
   }, [selectedElement, elements, canvasWidth]);
@@ -873,8 +879,10 @@ export const InteractiveFloorPlanDrawingStudio = ({
     if (!selectedId) return;
     const updated = elements.filter(el => el.id !== selectedId);
     setElements(updated);
+    elementsRef.current = updated;
     pushHistory(updated);
     setSelectedId(null);
+    setHasUnsavedChanges(true);
     setMessage('Elemento eliminado.');
     setTimeout(() => setMessage(''), 2000);
   }, [selectedId, elements]);
@@ -884,28 +892,83 @@ export const InteractiveFloorPlanDrawingStudio = ({
     if (!selectedElement) return;
     const nextRot = ((selectedElement.rot || 0) + degToAdd) % 360;
     const updated = elements.map(el => el.id === selectedId ? { ...el, rot: nextRot } : el);
+    elementsRef.current = updated;
     setElements(updated);
     pushHistory(updated);
+    setHasUnsavedChanges(true);
   };
 
-  // Agrandar / Redimensionar rápido (+/- px)
+  // Agrandar / Redimensionar rápido (+/- px) preservando grosor de muros y límites mínimos
   const handleQuickResize = (dw, dh) => {
     if (!selectedElement) return;
-    const newW = Math.max(20, (selectedElement.w || 75) + dw);
-    const newH = Math.max(20, (selectedElement.h || 140) + dh);
+    const isWall = selectedElement.type === 'wall';
+    let newW, newH;
+    if (isWall) {
+      if (selectedElement.w >= selectedElement.h) {
+        newW = Math.max(20, (selectedElement.w || 100) + dw);
+        newH = selectedElement.h;
+      } else {
+        newW = selectedElement.w;
+        newH = Math.max(20, (selectedElement.h || 100) + dh);
+      }
+    } else {
+      newW = Math.max(15, (selectedElement.w || 50) + dw);
+      newH = Math.max(15, (selectedElement.h || 50) + dh);
+    }
     const updated = elements.map(el => el.id === selectedId ? { ...el, w: newW, h: newH } : el);
+    elementsRef.current = updated;
     setElements(updated);
     pushHistory(updated);
+    setHasUnsavedChanges(true);
     setMessage(`Dimensiones: ${newW} × ${newH} px`);
     setTimeout(() => setMessage(''), 1500);
+  };
+
+  // Escalar proporcionalmente preservando aspecto (+/- %)
+  const handleScaleProportional = (factor) => {
+    if (!selectedElement) return;
+    const isWall = selectedElement.type === 'wall';
+    let newW, newH;
+    if (isWall) {
+      if (selectedElement.w >= selectedElement.h) {
+        newW = Math.max(20, Math.round((selectedElement.w || 100) * factor));
+        newH = selectedElement.h;
+      } else {
+        newW = selectedElement.w;
+        newH = Math.max(20, Math.round((selectedElement.h || 100) * factor));
+      }
+    } else {
+      newW = Math.max(15, Math.round((selectedElement.w || 50) * factor));
+      newH = Math.max(15, Math.round((selectedElement.h || 50) * factor));
+    }
+    const updated = elements.map(el => el.id === selectedId ? { ...el, w: newW, h: newH } : el);
+    elementsRef.current = updated;
+    setElements(updated);
+    pushHistory(updated);
+    setHasUnsavedChanges(true);
+    setMessage(`Escalado: ${newW} × ${newH} px`);
+    setTimeout(() => setMessage(''), 1500);
+  };
+
+  // Ajuste manual directo de Ancho / Alto
+  const handleUpdateDimensions = (w, h) => {
+    if (!selectedElement) return;
+    const cleanW = Math.max(10, Math.min(2500, parseInt(w) || 10));
+    const cleanH = Math.max(10, Math.min(2500, parseInt(h) || 10));
+    const updated = elements.map(el => el.id === selectedId ? { ...el, w: cleanW, h: cleanH } : el);
+    elementsRef.current = updated;
+    setElements(updated);
+    setHasUnsavedChanges(true);
   };
 
   // Preset de dimensiones
   const handleSetExactSize = (w, h) => {
     if (!selectedElement) return;
     const updated = elements.map(el => el.id === selectedId ? { ...el, w, h } : el);
+    elementsRef.current = updated;
     setElements(updated);
     pushHistory(updated);
+    setHasUnsavedChanges(true);
     setMessage(`Ajustado a ${w} × ${h} px`);
     setTimeout(() => setMessage(''), 1500);
   };
@@ -1104,7 +1167,8 @@ export const InteractiveFloorPlanDrawingStudio = ({
       origX: selectedElement.x,
       origY: selectedElement.y,
       origW: selectedElement.w,
-      origH: selectedElement.h
+      origH: selectedElement.h,
+      origRot: selectedElement.rot || 0
     });
   };
 
@@ -1151,35 +1215,47 @@ export const InteractiveFloorPlanDrawingStudio = ({
       const updated = elementsRef.current.map(el => el.id === targetId ? { ...el, x: newX, y: newY } : el);
       elementsRef.current = updated;
       setElements(updated);
+      setHasUnsavedChanges(true);
       return;
     }
 
-    // 2. Redimensionar / Agrandar elemento por agarres
+    // 2. Redimensionar / Agrandar elemento por agarres con soporte trigonométrico de rotación
     if (dragState && dragState.mode === 'resize') {
       const targetId = dragState.id || selectedId;
       const targetElement = elementsRef.current.find(el => el.id === targetId);
       if (!targetElement) return;
 
-      const dx = coords.x - dragState.startX;
-      const dy = coords.y - dragState.startY;
-      const { origX, origY, origW, origH, handle } = dragState;
+      const rawDx = coords.x - dragState.startX;
+      const rawDy = coords.y - dragState.startY;
+      const { origX, origY, origW, origH, origRot = 0, handle } = dragState;
 
-      let newX = origX;
-      let newY = origY;
+      // Transformar delta de pantalla a coordenadas locales del elemento según su ángulo
+      const rad = -(origRot * Math.PI) / 180;
+      const dx = rawDx * Math.cos(rad) - rawDy * Math.sin(rad);
+      const dy = rawDx * Math.sin(rad) + rawDy * Math.cos(rad);
+
       let newW = origW;
       let newH = origH;
+      let newX = origX;
+      let newY = origY;
 
-      if (handle.includes('r')) newW = Math.max(20, origW + dx);
-      if (handle.includes('b')) newH = Math.max(20, origH + dy);
+      if (handle.includes('r')) newW = Math.max(15, origW + dx);
+      if (handle.includes('b')) newH = Math.max(15, origH + dy);
       if (handle.includes('l')) {
-        const diff = Math.min(dx, origW - 20);
-        newX = origX + diff;
+        const diff = Math.min(dx, origW - 15);
         newW = origW - diff;
+        const worldShiftX = diff * Math.cos((origRot * Math.PI) / 180);
+        const worldShiftY = diff * Math.sin((origRot * Math.PI) / 180);
+        newX = origX + worldShiftX;
+        newY = origY + worldShiftY;
       }
       if (handle.includes('t')) {
-        const diff = Math.min(dy, origH - 20);
-        newY = origY + diff;
+        const diff = Math.min(dy, origH - 15);
         newH = origH - diff;
+        const worldShiftX = -diff * Math.sin((origRot * Math.PI) / 180);
+        const worldShiftY = diff * Math.cos((origRot * Math.PI) / 180);
+        newX = newX + worldShiftX;
+        newY = newY + worldShiftY;
       }
 
       if (snapToGrid) {
@@ -1189,15 +1265,19 @@ export const InteractiveFloorPlanDrawingStudio = ({
         newY = Math.round(newY / gridSize) * gridSize;
       }
 
+      const cleanW = Math.max(15, newW);
+      const cleanH = Math.max(15, newH);
+
       const updated = elementsRef.current.map(el => el.id === targetId ? { 
         ...el, 
         x: newX, 
         y: newY, 
-        w: Math.max(15, newW), 
-        h: Math.max(15, newH) 
+        w: cleanW, 
+        h: cleanH 
       } : el);
       elementsRef.current = updated;
       setElements(updated);
+      setHasUnsavedChanges(true);
       return;
     }
 
@@ -2587,69 +2667,169 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 </div>
               )}
 
-              {/* Botones Rápidos para Agrandar / Redimensionar */}
-              <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+              {/* Tamaño del Elemento: Entradas Numéricas, Escala Proporcional y Presets Contextuales */}
+              <div className="space-y-2.5 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase text-slate-500 font-tech flex items-center gap-1">
+                  <span className="text-[11px] font-bold uppercase text-slate-500 font-tech flex items-center gap-1.5">
                     <Scaling className="w-4 h-4 shrink-0 text-emerald-600" /> Tamaño del Elemento
                   </span>
-                  <span className="font-mono font-bold text-xs text-slate-800">
+                  <span className="font-mono font-bold text-xs text-slate-800 bg-white px-2 py-0.5 rounded-lg border border-slate-200">
                     {selectedElement.w} × {selectedElement.h} px
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-1.5">
+                {/* Inputs Numéricos Directos para Ancho y Alto */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase font-mono block mb-1">Ancho (px)</label>
+                    <Input 
+                      type="number"
+                      min={10}
+                      max={2500}
+                      value={selectedElement.w ?? 60}
+                      onChange={(e) => {
+                        const val = Math.max(10, Math.min(2500, parseInt(e.target.value) || 10));
+                        handleUpdateDimensions(val, selectedElement.h);
+                      }}
+                      className="h-8 text-xs font-mono font-bold bg-white border-slate-300 text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase font-mono block mb-1">Alto (px)</label>
+                    <Input 
+                      type="number"
+                      min={10}
+                      max={2500}
+                      value={selectedElement.h ?? 100}
+                      onChange={(e) => {
+                        const val = Math.max(10, Math.min(2500, parseInt(e.target.value) || 10));
+                        handleUpdateDimensions(selectedElement.w, val);
+                      }}
+                      className="h-8 text-xs font-mono font-bold bg-white border-slate-300 text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                {/* Botones de Escala Proporcional (+/- %) y Paso Rápido */}
+                <div className="grid grid-cols-2 gap-1.5 pt-0.5">
                   <Button 
-                    onClick={() => handleQuickResize(10, 10)} 
+                    onClick={() => handleScaleProportional(1.10)} 
                     variant="outline" 
                     size="sm" 
-                    className="h-8 text-xs font-bold gap-1 bg-white hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300"
+                    className="h-8 text-xs font-bold gap-1 bg-white hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 cursor-pointer"
+                    title="Agrandar un 10% preservando proporción"
                   >
-                    <Plus className="w-4 h-4 shrink-0 text-emerald-600" />
-                    <span>Agrandar (+10px)</span>
+                    <Plus className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                    <span>+10% Agrandar</span>
                   </Button>
                   <Button 
-                    onClick={() => handleQuickResize(-10, -10)} 
+                    onClick={() => handleScaleProportional(0.90)} 
                     variant="outline" 
                     size="sm" 
-                    className="h-8 text-xs font-bold gap-1 bg-white hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300"
+                    className="h-8 text-xs font-bold gap-1 bg-white hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300 cursor-pointer"
+                    title="Reducir un 10% preservando proporción"
                   >
-                    <Minus className="w-4 h-4 shrink-0 text-amber-600" />
-                    <span>Reducir (-10px)</span>
+                    <Minus className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                    <span>-10% Reducir</span>
                   </Button>
                 </div>
 
-                {/* Presets Rápidos de Dimensiones Especializadas */}
-                <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px] font-mono font-bold">
-                  <button
-                    onClick={() => handleSetExactSize(56, 96)}
-                    className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs"
-                    title="Tamaño estándar auto (56x96)"
-                  >
-                    56×96 (Auto)
-                  </button>
-                  <button
-                    onClick={() => handleSetExactSize(68, 112)}
-                    className="py-1.5 px-1 rounded-lg bg-white border border-cyan-200 hover:bg-cyan-50 text-cyan-800 text-center shadow-xs"
-                    title="Plaza camioneta / SUV 4x4 (68x112)"
-                  >
-                    68×112 (Camioneta)
-                  </button>
-                  <button
-                    onClick={() => handleSetExactSize(48, 80)}
-                    className="py-1.5 px-1 rounded-lg bg-white border border-yellow-200 hover:bg-yellow-50 text-yellow-800 text-center shadow-xs"
-                    title="Plaza Moto Taxi Torito (48x80)"
-                  >
-                    48×80 (Torito)
-                  </button>
-                  <button
-                    onClick={() => handleSetExactSize(38, 65)}
-                    className="py-1.5 px-1 rounded-lg bg-white border border-orange-200 hover:bg-orange-50 text-orange-800 text-center shadow-xs"
-                    title="Plaza moto lineal (38x65)"
-                  >
-                    38×65 (Moto)
-                  </button>
-                </div>
+                {/* Presets Rápidos Condicionales según Tipo de Elemento */}
+                {selectedElement.type === 'slot' && (
+                  <div className="space-y-1 pt-1 border-t border-slate-200/80">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Presets de Cajón:</span>
+                    <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono font-bold">
+                      <button
+                        onClick={() => handleSetExactSize(56, 96)}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs cursor-pointer"
+                        title="Plaza estándar auto (56×96 px)"
+                      >
+                        56×96 (Auto)
+                      </button>
+                      <button
+                        onClick={() => handleSetExactSize(68, 112)}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-cyan-200 hover:bg-cyan-50 text-cyan-800 text-center shadow-xs cursor-pointer"
+                        title="Plaza camioneta / SUV 4x4 (68×112 px)"
+                      >
+                        68×112 (Camioneta)
+                      </button>
+                      <button
+                        onClick={() => handleSetExactSize(48, 80)}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-yellow-200 hover:bg-yellow-50 text-yellow-800 text-center shadow-xs cursor-pointer"
+                        title="Plaza Moto Taxi Torito (48×80 px)"
+                      >
+                        48×80 (Torito)
+                      </button>
+                      <button
+                        onClick={() => handleSetExactSize(38, 65)}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-orange-200 hover:bg-orange-50 text-orange-800 text-center shadow-xs cursor-pointer"
+                        title="Plaza moto lineal (38×65 px)"
+                      >
+                        38×65 (Moto)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {selectedElement.type === 'gate' && (
+                  <div className="space-y-1 pt-1 border-t border-slate-200/80">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Presets de Acceso:</span>
+                    <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono font-bold">
+                      <button
+                        onClick={() => handleSetExactSize(40, 70)}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs cursor-pointer"
+                      >
+                        40×70 (Estándar)
+                      </button>
+                      <button
+                        onClick={() => handleSetExactSize(50, 85)}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs cursor-pointer"
+                      >
+                        50×85 (Amplio)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {selectedElement.type === 'wall' && (
+                  <div className="space-y-1 pt-1 border-t border-slate-200/80">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Presets de Muro:</span>
+                    <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono font-bold">
+                      <button
+                        onClick={() => handleSetExactSize(selectedElement.w >= selectedElement.h ? 1020 : 12, selectedElement.w >= selectedElement.h ? 12 : 620)}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs cursor-pointer"
+                      >
+                        Perímetro Largo
+                      </button>
+                      <button
+                        onClick={() => handleSetExactSize(selectedElement.w >= selectedElement.h ? 520 : 12, selectedElement.w >= selectedElement.h ? 12 : 320)}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs cursor-pointer"
+                      >
+                        Muro Medio
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {selectedElement.type === 'road' && (
+                  <div className="space-y-1 pt-1 border-t border-slate-200/80">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Presets de Vía:</span>
+                    <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono font-bold">
+                      <button
+                        onClick={() => handleSetExactSize(selectedElement.w >= selectedElement.h ? 980 : 140, selectedElement.w >= selectedElement.h ? 140 : 600)}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs cursor-pointer"
+                      >
+                        Carril Doble
+                      </button>
+                      <button
+                        onClick={() => handleSetExactSize(selectedElement.w >= selectedElement.h ? 980 : 90, selectedElement.w >= selectedElement.h ? 90 : 400)}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-center shadow-xs cursor-pointer"
+                      >
+                        Carril Simple
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Selector de Tipo de Plaza con 1 Clic */}
@@ -2669,15 +2849,18 @@ export const InteractiveFloorPlanDrawingStudio = ({
                         <button
                           key={t.id}
                           onClick={() => {
-                            setElements(prev => prev.map(el => el.id === selectedId ? { 
+                            const updated = elements.map(el => el.id === selectedId ? { 
                               ...el, 
                               slotType: t.id,
                               w: el.w === 56 || el.w === 38 || el.w === 68 || el.w === 48 ? t.defaultW : el.w,
                               h: el.h === 96 || el.h === 65 || el.h === 112 || el.h === 80 ? t.defaultH : el.h
-                            } : el));
+                            } : el);
+                            setElements(updated);
+                            elementsRef.current = updated;
+                            pushHistory(updated);
                             setHasUnsavedChanges(true);
                           }}
-                          className={`flex flex-col items-center justify-center p-2 rounded-xl text-xs font-bold border transition ${
+                          className={`flex flex-col items-center justify-center p-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
                             isCurrent
                               ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-emerald-400'
                               : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -2697,7 +2880,10 @@ export const InteractiveFloorPlanDrawingStudio = ({
                       checked={!!selectedElement.shaded}
                       onChange={(e) => {
                         const val = e.target.checked;
-                        setElements(prev => prev.map(el => el.id === selectedId ? { ...el, shaded: val } : el));
+                        const updated = elements.map(el => el.id === selectedId ? { ...el, shaded: val } : el);
+                        setElements(updated);
+                        elementsRef.current = updated;
+                        pushHistory(updated);
                         setHasUnsavedChanges(true);
                       }}
                       className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4 shrink-0 cursor-pointer"
@@ -2707,32 +2893,42 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 </div>
               )}
 
-              {/* Estado de Ocupación y Simulación */}
+              {/* Estado de Ocupación y Disponibilidad con Persistencia Total */}
               {selectedElement.type === 'slot' && (
                 <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
                   <label className="text-[11px] font-bold uppercase text-slate-500 font-tech block">Estado de la Plaza</label>
                   <div className="grid grid-cols-2 gap-1.5">
                     <button
                       onClick={() => {
-                        setElements(prev => prev.map(el => el.id === selectedId ? { ...el, status: 'free', plate: undefined } : el));
+                        const updated = elements.map(el => el.id === selectedId ? { ...el, status: 'free', plate: undefined } : el);
+                        setElements(updated);
+                        elementsRef.current = updated;
+                        pushHistory(updated);
                         setHasUnsavedChanges(true);
+                        setMessage(`Plaza ${selectedElement.code || ''} marcada como DISPONIBLE`);
+                        setTimeout(() => setMessage(''), 2000);
                       }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
                         selectedElement.status === 'free' 
                           ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300' 
                           : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
                       }`}
                     >
                       <span className="w-2 h-2 rounded-full bg-emerald-300" />
-                      <span>LIBRE</span>
+                      <span>DISPONIBLE</span>
                     </button>
 
                     <button
                       onClick={() => {
-                        setElements(prev => prev.map(el => el.id === selectedId ? { ...el, status: 'occupied', plate: el.plate || 'ABC-123' } : el));
+                        const updated = elements.map(el => el.id === selectedId ? { ...el, status: 'occupied', plate: el.plate || 'ABC-123' } : el);
+                        setElements(updated);
+                        elementsRef.current = updated;
+                        pushHistory(updated);
                         setHasUnsavedChanges(true);
+                        setMessage(`Plaza ${selectedElement.code || ''} marcada como OCUPADA`);
+                        setTimeout(() => setMessage(''), 2000);
                       }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
                         selectedElement.status === 'occupied' 
                           ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-300' 
                           : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
@@ -2751,7 +2947,9 @@ export const InteractiveFloorPlanDrawingStudio = ({
                         value={selectedElement.plate || ''}
                         onChange={(e) => {
                           const val = e.target.value.toUpperCase();
-                          setElements(prev => prev.map(el => el.id === selectedId ? { ...el, plate: val } : el));
+                          const updated = elements.map(el => el.id === selectedId ? { ...el, plate: val } : el);
+                          setElements(updated);
+                          elementsRef.current = updated;
                           setHasUnsavedChanges(true);
                         }}
                         className="font-mono font-bold text-xs bg-white uppercase"
@@ -2886,12 +3084,27 @@ export const InteractiveFloorPlanDrawingStudio = ({
                   onClick={handleDeleteSelected} 
                   variant="destructive" 
                   size="sm" 
-                  className="w-full text-xs font-bold gap-1.5 rounded-xl"
+                  className="w-full text-xs font-bold gap-1.5 rounded-xl cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4 shrink-0" />
                   <span>Eliminar Elemento (Supr)</span>
                 </Button>
               </div>
+
+              {/* Botón de Guardado Inmediato en Inspector si hay Cambios */}
+              {hasUnsavedChanges && (
+                <div className="pt-3 border-t-2 border-emerald-500/30 space-y-1.5">
+                  <Button
+                    onClick={handleSave}
+                    size="sm"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 h-9 rounded-xl shadow-md cursor-pointer transition"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Guardar Cambios del Plano</span>
+                  </Button>
+                  <p className="text-[10px] text-emerald-800 text-center font-bold">✓ Cambios pendientes listos para guardar</p>
+                </div>
+              )}
 
             </div>
           ) : (

@@ -254,15 +254,15 @@ export const INITIAL_ESTABLISHMENTS = [
       { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
       { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
       { id: 12, type: 'slot', code: 'C-01', slotType: 'camioneta', shaded: true, x: 230, y: 72, w: 68, h: 112, rot: 0, status: 'free' },
-      { id: 13, type: 'slot', code: 'C-02', slotType: 'camioneta', x: 310, y: 72, w: 68, h: 112, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#0284c7' },
+      { id: 13, type: 'slot', code: 'C-02', slotType: 'camioneta', x: 310, y: 72, w: 68, h: 112, rot: 0, status: 'free' },
       { id: 14, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 390, y: 85, w: 48, h: 85, rot: 0, status: 'free' },
-      { id: 15, type: 'slot', code: 'T-02', slotType: 'mototaxi', x: 450, y: 85, w: 48, h: 85, rot: 0, status: 'occupied', plate: '5612-4B', color: '#ca8a04' },
+      { id: 15, type: 'slot', code: 'T-02', slotType: 'mototaxi', x: 450, y: 85, w: 48, h: 85, rot: 0, status: 'free' },
       { id: 16, type: 'slot', code: 'M-01', slotType: 'moto', x: 520, y: 95, w: 38, h: 65, rot: 0, status: 'free' },
       { id: 17, type: 'slot', code: 'M-02', slotType: 'moto', x: 570, y: 95, w: 38, h: 65, rot: 0, status: 'free' },
       { id: 18, type: 'slot', code: 'A-03', slotType: 'auto', x: 630, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
 
       // Fila Sur (Diversificada)
-      { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'AYC-501', color: '#10b981' },
+      { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
       { id: 21, type: 'slot', code: 'B-02', slotType: 'auto', x: 145, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
       { id: 22, type: 'slot', code: 'C-03', slotType: 'camioneta', x: 220, y: 468, w: 68, h: 112, rot: 0, status: 'free' },
       { id: 23, type: 'slot', code: 'C-04', slotType: 'camioneta', x: 300, y: 468, w: 68, h: 112, rot: 0, status: 'free' },
@@ -306,7 +306,7 @@ export const INITIAL_ESTABLISHMENTS = [
       { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
       { id: 6, type: 'slot', code: 'S1-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
       { id: 7, type: 'slot', code: 'S1-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 8, type: 'slot', code: 'S1-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'occupied', plate: 'W1P-404', color: '#6366f1' },
+      { id: 8, type: 'slot', code: 'S1-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
       { id: 9, type: 'slot', code: 'S1-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' }
     ]
   },
@@ -704,7 +704,7 @@ export const EstablishmentProvider = ({ children }) => {
     return {
       id: `el-${e.id}`, type: e.element_type,
       x: e.pos_x || 0, y: e.pos_y || 0, w: e.width || 100, h: e.height || 20,
-      rot: e.rotation || 0, label: extra.label
+      rot: e.rotation || 0, label: extra.label, gateType: extra.gateType
     };
   };
 
@@ -1678,9 +1678,11 @@ export const EstablishmentProvider = ({ children }) => {
           height: e.h,
           rotation: e.rot,
           z_index: e.z_index || 1,
-          properties_json: e.label ? JSON.stringify({ label: e.label, gateType: e.gateType }) : null
+          properties_json: (e.label || e.gateType) ? JSON.stringify({ label: e.label || '', gateType: e.gateType || '' }) : null
         }));
         await api.post(`/parkings/${numId}/floor-plan/sync`, { parking_id: numId, slots, elements: elems });
+        hydratedPlansRef.current.delete(String(id));
+        if (!isNaN(numId)) hydratedPlansRef.current.delete(String(numId));
       } catch (e) {
         console.warn('sync floor-plan fail', e.response?.data);
       }

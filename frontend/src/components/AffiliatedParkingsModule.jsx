@@ -928,7 +928,7 @@ export const AffiliatedParkingsModule = () => {
                         <Trash2 className="w-4 h-4" />
                       </Button>
 
-                      {/* Botón + Nueva Sede */}
+                      {/* Botón Nueva Sede */}
                       <Button
                         type="button"
                         onClick={() => handleOpenAdd(group)}
@@ -936,7 +936,7 @@ export const AffiliatedParkingsModule = () => {
                         title={`Nueva sede para ${group.companyName}`}
                       >
                         <Plus className="w-4 h-4 shrink-0" />
-                        <span>+ Sede</span>
+                        <span>Nueva Sede</span>
                       </Button>
                     </div>
                   </div>

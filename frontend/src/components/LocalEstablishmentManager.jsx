@@ -1052,7 +1052,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     title={`Nueva sucursal para ${group.name}`}
                   >
                     <Plus className="w-4 h-4 shrink-0" />
-                    <span>+ Nueva Sucursal</span>
+                    <span>Nueva Sucursal</span>
                   </Button>
                 </div>
               </div>

@@ -935,7 +935,7 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
 
 class ParkingAdminCredentialsIn(BaseModel):
     email: str = Field(..., min_length=3)
-    password: Optional[str] = Field(None, min_length=6)
+    password: Optional[str] = Field(None, min_length=4)
     fullName: Optional[str] = None
     full_name: Optional[str] = None
     phone: Optional[str] = None
@@ -1041,8 +1041,22 @@ async def set_parking_admin_credentials(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(write_required)
 ):
+    from sqlalchemy import or_
+
     parking_res = await db.execute(select(Parking).where(Parking.id == parking_id))
     parking = parking_res.scalars().first()
+    if not parking:
+        # Fallback por email si el ID numérico difiere
+        target_email = body.email.strip().lower()
+        prev_email = (body.resolved_previous_email or "").strip().lower() or None
+        alt_res = await db.execute(select(Parking).where(
+            or_(
+                func.lower(Parking.email) == target_email,
+                func.lower(Parking.email) == prev_email if prev_email else False
+            )
+        ))
+        parking = alt_res.scalars().first()
+
     if not parking:
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
 
@@ -1051,7 +1065,7 @@ async def set_parking_admin_credentials(
     phone = (body.phone or parking.phone or "").strip() or None
     prev_email = (body.resolved_previous_email or parking.email or "").strip().lower() or None
 
-    new_password = body.password.strip() if body.password and len(body.password.strip()) >= 6 else None
+    new_password = body.password.strip() if body.password and len(body.password.strip()) >= 4 else None
 
     # 1. Crear o actualizar cuenta User con rol 'local'
     user_res = await db.execute(select(User).where(func.lower(User.email) == email))
@@ -1131,8 +1145,7 @@ async def set_parking_admin_credentials(
     if phone:
         parking.phone = phone
 
-    # 4. Sincronizar credenciales y acceso a todas las sucursales de la misma empresa comercial
-    from sqlalchemy import or_
+    # 4. Sincronizar datos de contacto a nivel de sucursales de la empresa (sin duplicar staff rows para respetar unique email)
     company_prefix = (parking.name.split(" - ")[0] if " - " in parking.name else parking.name).strip()
     sibling_stmt = select(Parking).where(
         Parking.id != parking.id,
@@ -1150,18 +1163,6 @@ async def set_parking_admin_credentials(
         sib.owner = full_name
         if phone:
             sib.phone = phone
-        sib_staff_res = await db.execute(select(Staff).where(func.lower(Staff.email) == email, Staff.parking_id == sib.id))
-        if not sib_staff_res.scalars().first():
-            db.add(Staff(
-                parking_id=sib.id,
-                full_name=full_name,
-                dni=f"DNI{secrets.randbelow(90000000) + 10000000}",
-                position="Administrador de Sede",
-                shift="Completo",
-                status="active",
-                email=email,
-                security_pin=hash_pin("1234")
-            ))
 
     await db.commit()
     await db.refresh(parking)

@@ -39,7 +39,7 @@ import {
   PauseCircle,
   PlayCircle
 } from 'lucide-react';
-import { useEstablishments, getEstablishmentHierarchy } from '../context/EstablishmentContext';
+import { useEstablishments, getEstablishmentHierarchy, getLocalUserCredentials } from '../context/EstablishmentContext';
 
 export const AffiliatedParkingsModule = () => {
   const { 
@@ -519,18 +519,22 @@ export const AffiliatedParkingsModule = () => {
       const phone = (info?.admin_phone || info?.phone || target?.phone || primaryBranch?.phone || '').trim();
       const hasExisting = !!(info?.has_account || info?.has_admin || info?.admin_email || email);
 
+      const localCreds = getLocalUserCredentials ? getLocalUserCredentials() : {};
+      const directCred = localCreds[email.toLowerCase()] || (primaryBranch?.id ? Object.values(localCreds).find(c => String(c.parkingId) === String(primaryBranch.id)) : null);
+      const savedPass = (info?.password || info?.temp_password || directCred?.password || primaryBranch?.password || '').trim();
+
       if (hasExisting) {
         setCredentialsForm({
           adminEmail: email,
           previousEmail: email,
-          adminPassword: '',
+          adminPassword: savedPass,
           adminName: name,
           adminPhone: phone,
           showPassword: false,
           hasExistingAdmin: true
         });
       } else {
-        const autoPass = generateSecurePassword('SP');
+        const autoPass = savedPass || generateSecurePassword('SP');
         setCredentialsForm({
           adminEmail: email,
           previousEmail: email,
@@ -597,18 +601,19 @@ export const AffiliatedParkingsModule = () => {
 
       setShowCredentialsModal(false);
 
+      const savedFinalPassword = password || res?.password || res?.temp_password || credentialsForm.adminPassword;
       const targetTitle = credentialsTarget?.companyName || credentialsSede.name;
       setCredentialsResult({
         title: 'Credenciales del Administrador del Local',
         parkingName: targetTitle,
         email,
-        password: password || res?.temp_password || '(Contraseña actual mantenida sin cambios)',
+        password: savedFinalPassword,
         role: 'Administrador de Sede (Local)',
         phone,
         ownerName: fullName
       });
 
-      notify(`✓ Credenciales guardadas para el local "${targetTitle}"`);
+      notify(`✓ Credenciales guardadas permanentemente para el local "${targetTitle}"`);
     } catch (err) {
       notify(`Error al actualizar credenciales: ${err.message || 'Error'}`);
     } finally {
@@ -1344,7 +1349,7 @@ export const AffiliatedParkingsModule = () => {
                     <p className="font-bold">Este local ya cuenta con un Administrador activo:</p>
                     <p className="font-mono text-[11px] mt-0.5">{credentialsForm.adminEmail}</p>
                     <p className="text-[10px] text-emerald-700 mt-1">
-                      Si especificas una nueva contraseña abajo, se actualizará. De lo contrario, se conservará la contraseña actual.
+                      Contraseña actual cargada y guardada. Puedes visualizarla con el ícono del ojo o escribir una nueva para actualizarla. Se mantendrá guardada permanentemente.
                     </p>
                   </div>
                 </div>
@@ -1404,7 +1409,7 @@ export const AffiliatedParkingsModule = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700">
-                    {credentialsForm.hasExistingAdmin ? 'Nueva Contraseña (Opcional)' : 'Contraseña de Acceso *'}
+                    Contraseña de Acceso *
                   </label>
                   <button
                     type="button"
@@ -1412,27 +1417,32 @@ export const AffiliatedParkingsModule = () => {
                     className="text-[11px] text-amber-700 hover:text-amber-800 font-bold flex items-center gap-1"
                   >
                     <Sparkles className="w-3 h-3" />
-                    <span>Generar Segura</span>
+                    <span>Generar Nueva</span>
                   </button>
                 </div>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <Input
                     type={credentialsForm.showPassword ? "text" : "password"}
-                    required={!credentialsForm.hasExistingAdmin}
+                    required
                     value={credentialsForm.adminPassword}
                     onChange={(e) => setCredentialsForm({ ...credentialsForm, adminPassword: e.target.value })}
-                    placeholder={credentialsForm.hasExistingAdmin ? "Dejar en blanco para mantener la actual" : "Contraseña de acceso"}
+                    placeholder="Contraseña de acceso"
                     className="pl-9 pr-10 text-xs font-mono font-bold"
                   />
                   <button
                     type="button"
                     onClick={() => setCredentialsForm({ ...credentialsForm, showPassword: !credentialsForm.showPassword })}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    title={credentialsForm.showPassword ? "Ocultar contraseña" : "Ver contraseña"}
                   >
                     {credentialsForm.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5">
+                  <span>ℹ️</span>
+                  <span>{credentialsForm.hasExistingAdmin ? 'Contraseña actual cargada y persistente. Puedes verla con el ícono del ojo o ingresar una nueva para actualizarla. Se conservará permanentemente.' : 'Se guardará y mantendrá hasta que decidas cambiarla.'}</span>
+                </p>
               </div>
 
               <div className="flex gap-2 pt-2">

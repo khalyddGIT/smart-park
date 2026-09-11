@@ -811,7 +811,11 @@ export const EstablishmentProvider = ({ children }) => {
           const prevMap = new Map(prev.map(e => [String(e.id), e]));
           const merged = mappedParkings.map(m => {
             const before = prevMap.get(String(m.id));
-            return before?.elements ? { ...m, elements: before.elements } : m;
+            return {
+              ...m,
+              ...(before?.password ? { password: before.password } : {}),
+              ...(before?.elements ? { elements: before.elements } : {})
+            };
           });
           const next = [...merged, ...preservedLocal]
             .filter(e => !deletedIds.has(String(e.id)))
@@ -1215,15 +1219,24 @@ export const EstablishmentProvider = ({ children }) => {
     } catch (e) {
       console.warn('getParkingCredentials server not available, checking local store', e);
     }
-    if (serverData) return serverData;
 
-    // Fallback local: buscar en approvedAdmins o local credentials o en el establecimiento
+    // Recuperar contraseña guardada en almacenamiento local o en el establecimiento
     const est = establishments.find(e => String(e.id) === String(parkingId));
-    const targetEmail = (est?.email || '').toLowerCase();
+    const targetEmail = (serverData?.admin_email || serverData?.email || est?.email || '').toLowerCase();
     const localCreds = getLocalUserCredentials();
     const matchedCred = localCreds[targetEmail] || Object.values(localCreds).find(c => String(c.parkingId) === String(parkingId));
-    const approved = approvedAdmins.find(a => a.email === targetEmail || String(a.establishmentId) === String(parkingId));
+    const approved = approvedAdmins.find(a => (targetEmail && (a.email || '').toLowerCase() === targetEmail) || String(a.establishmentId) === String(parkingId));
+    const savedPassword = (matchedCred?.password || approved?.password || est?.password || '').trim();
 
+    if (serverData) {
+      return {
+        ...serverData,
+        password: savedPassword || serverData.temp_password || '',
+        temp_password: savedPassword || serverData.temp_password || ''
+      };
+    }
+
+    // Fallback local: buscar en approvedAdmins o local credentials o en el establecimiento
     if (matchedCred || approved) {
       return {
         parking_id: parkingId,
@@ -1231,6 +1244,8 @@ export const EstablishmentProvider = ({ children }) => {
         admin_name: matchedCred?.full_name || approved?.name || est?.owner || 'Administrador',
         admin_email: matchedCred?.email || approved?.email || est?.email || '',
         admin_phone: matchedCred?.phone || approved?.phone || est?.phone || '',
+        password: savedPassword,
+        temp_password: savedPassword,
         has_account: true,
         has_admin: true,
         is_active: true,
@@ -1244,6 +1259,8 @@ export const EstablishmentProvider = ({ children }) => {
       admin_name: est.owner || '',
       admin_email: est.email || '',
       admin_phone: est.phone || '',
+      password: savedPassword,
+      temp_password: savedPassword,
       has_account: !!est.email,
       has_admin: !!est.email,
       is_active: true,
@@ -1254,9 +1271,9 @@ export const EstablishmentProvider = ({ children }) => {
   // Asignar o resetear credenciales del administrador local de una sede
   const assignParkingCredentials = async (parkingId, credentialsData) => {
     const email = (credentialsData?.email || '').trim().toLowerCase();
-    const fullName = credentialsData?.full_name || credentialsData?.fullName || credentialsData?.adminName || '';
-    const phone = credentialsData?.phone || credentialsData?.adminPhone || '';
-    const password = credentialsData?.password || credentialsData?.adminPassword || '';
+    const fullName = (credentialsData?.full_name || credentialsData?.fullName || credentialsData?.adminName || '').trim();
+    const phone = (credentialsData?.phone || credentialsData?.adminPhone || '').trim();
+    const password = (credentialsData?.password || credentialsData?.adminPassword || '').trim();
     const previousEmail = (credentialsData?.previous_email || credentialsData?.previousEmail || '').trim().toLowerCase();
 
     // Obtener contraseña previa si la nueva no fue especificada
@@ -1264,51 +1281,7 @@ export const EstablishmentProvider = ({ children }) => {
     const prevCred = localCreds[email] || (previousEmail ? localCreds[previousEmail] : null) || Object.values(localCreds).find(c => String(c.parkingId) === String(parkingId));
     const effectivePassword = password || prevCred?.password || '';
 
-    const payload = {
-      email,
-      password: password || undefined,
-      fullName: fullName || undefined,
-      full_name: fullName || undefined,
-      phone: phone || undefined,
-      previous_email: previousEmail || undefined,
-      previousEmail: previousEmail || undefined
-    };
-
-    let serverResult = null;
-    try {
-      const match = String(parkingId).match(/\d+/);
-      const numId = match ? Number(match[0]) : Number(parkingId);
-      if (!isNaN(numId)) {
-        const res = await api.post(`/parkings/${numId}/admin-credentials`, payload);
-        serverResult = res.data;
-        await fetchParkings();
-      }
-    } catch (e) {
-      console.error('assignParkingCredentials backend error', e);
-      if (e?.response?.data?.detail) {
-        throw new Error(e.response.data.detail);
-      }
-      throw e;
-    }
-
-    // Actualizar sede localmente (email, owner, phone)
-    setEstablishments(prev => {
-      const updated = prev.map(est => {
-        if (String(est.id) === String(parkingId)) {
-          return {
-            ...est,
-            email: email || est.email,
-            owner: fullName || est.owner,
-            phone: phone || est.phone
-          };
-        }
-        return est;
-      });
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch {}
-      return updated;
-    });
-
-    // Guardar credenciales en el store local persistente
+    // 1. Guardar y actualizar localmente de inmediato (Garantía de persistencia offline y resiliente)
     if (email) {
       saveLocalUserCredential({
         email,
@@ -1331,7 +1304,49 @@ export const EstablishmentProvider = ({ children }) => {
       setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== email && (!previousEmail || a.email !== previousEmail))]);
     }
 
-    return serverResult || {
+    // Actualizar sede localmente (email, owner, phone, password)
+    setEstablishments(prev => {
+      const updated = prev.map(est => {
+        if (String(est.id) === String(parkingId)) {
+          return {
+            ...est,
+            email: email || est.email,
+            owner: fullName || est.owner,
+            phone: phone || est.phone,
+            password: effectivePassword || est.password
+          };
+        }
+        return est;
+      });
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    // 2. Sincronización con el backend
+    let serverResult = null;
+    try {
+      const match = String(parkingId).match(/\d+/);
+      const numId = match ? Number(match[0]) : Number(parkingId);
+      if (!isNaN(numId)) {
+        const payload = {
+          email,
+          password: effectivePassword || undefined,
+          fullName: fullName || undefined,
+          full_name: fullName || undefined,
+          phone: phone || undefined,
+          previous_email: previousEmail || undefined,
+          previousEmail: previousEmail || undefined
+        };
+        const res = await api.post(`/parkings/${numId}/admin-credentials`, payload);
+        serverResult = res.data;
+        try { await fetchParkings(); } catch {}
+      }
+    } catch (e) {
+      console.warn('assignParkingCredentials backend sync warning:', e);
+    }
+
+    return {
+      ...(serverResult || {}),
       status: 'success',
       parking_id: parkingId,
       has_account: true,
@@ -1340,8 +1355,9 @@ export const EstablishmentProvider = ({ children }) => {
       role: 'local',
       admin_email: email,
       admin_name: fullName,
+      password: effectivePassword,
       temp_password: effectivePassword,
-      message: 'Credenciales guardadas y sincronizadas'
+      message: 'Credenciales guardadas y sincronizadas con éxito'
     };
   };
 

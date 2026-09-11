@@ -193,6 +193,7 @@ export const AuthProvider = ({ children }) => {
       } : null);
 
       if (candidate) {
+        const candPassword = candidate.password || candidate.temporary_password || '';
         // Validar contraseña si el candidato tiene una contraseña registrada
         if (candPassword && candPassword !== password) {
           throw new Error('Credenciales incorrectas');

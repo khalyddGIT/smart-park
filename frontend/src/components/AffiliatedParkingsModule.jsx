@@ -94,6 +94,7 @@ export const AffiliatedParkingsModule = () => {
   // Estados para Modal de Ver / Asignar Credenciales a Sede Activa
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [credentialsSede, setCredentialsSede] = useState(null);
+  const [credentialsTarget, setCredentialsTarget] = useState(null);
   const [credentialsForm, setCredentialsForm] = useState({
     adminEmail: '',
     adminPassword: '',
@@ -491,18 +492,32 @@ export const AffiliatedParkingsModule = () => {
     notify(`Solicitud de "${req.parkingName}" rechazada.`);
   };
 
-  // Abrir Modal de Credenciales para Sede Activa
-  const handleOpenCredentialsModal = async (parking) => {
-    setCredentialsSede(parking);
+  // Abrir Modal de Credenciales para el Local (Empresa Afiliada)
+  const handleOpenCredentialsModal = async (target) => {
+    const isGroup = !!(target?.companyName && Array.isArray(target?.branches));
+    const branches = isGroup ? target.branches : (target ? [target] : []);
+    const primaryBranch = isGroup ? (target.branches.find(b => b.email) || target.branches[0]) : target;
+    const companyName = isGroup ? target.companyName : (target?.company_name || target?.name || 'Local Comercial');
+
+    setCredentialsTarget({
+      isGroup,
+      companyName,
+      branchesCount: branches.length,
+      branches,
+      owner: isGroup ? target.owner : target?.owner,
+      email: isGroup ? target.email : target?.email,
+      phone: isGroup ? target.phone : target?.phone
+    });
+    setCredentialsSede(primaryBranch);
     setShowCredentialsModal(true);
     setCredentialsLoading(true);
 
     try {
-      const info = await getParkingCredentials(parking.id);
-      const email = (info?.admin_email || info?.email || parking.email || '').trim();
-      const name = (info?.admin_name || info?.full_name || parking.owner || '').trim();
-      const phone = (info?.admin_phone || info?.phone || parking.phone || '').trim();
-      const hasExisting = !!(info?.has_account || info?.has_admin || info?.admin_email || parking.email);
+      const info = primaryBranch?.id ? await getParkingCredentials(primaryBranch.id) : null;
+      const email = (info?.admin_email || info?.email || target?.email || primaryBranch?.email || '').trim();
+      const name = (info?.admin_name || info?.full_name || target?.owner || primaryBranch?.owner || '').trim();
+      const phone = (info?.admin_phone || info?.phone || target?.phone || primaryBranch?.phone || '').trim();
+      const hasExisting = !!(info?.has_account || info?.has_admin || info?.admin_email || email);
 
       if (hasExisting) {
         setCredentialsForm({
@@ -533,7 +548,7 @@ export const AffiliatedParkingsModule = () => {
     }
   };
 
-  // Guardar o Actualizar Credenciales de Sede Activa
+  // Guardar o Actualizar Credenciales del Local (Empresa Afiliada)
   const handleSaveCredentials = async (e) => {
     e.preventDefault();
     if (!credentialsSede) return;
@@ -563,11 +578,29 @@ export const AffiliatedParkingsModule = () => {
       }
 
       const res = await assignParkingCredentials(credentialsSede.id, payload);
+
+      // Sincronizar todas las sucursales de la empresa para que queden vinculadas al administrador
+      const branchesToSync = credentialsTarget?.branches || [];
+      for (const branch of branchesToSync) {
+        if (branch.id !== credentialsSede.id) {
+          try {
+            await updateEstablishment(branch.id, {
+              email,
+              owner: fullName,
+              phone: phone || branch.phone
+            });
+          } catch (errBranch) {
+            console.warn(`Error al sincronizar credenciales en sucursal ${branch.id}:`, errBranch);
+          }
+        }
+      }
+
       setShowCredentialsModal(false);
 
+      const targetTitle = credentialsTarget?.companyName || credentialsSede.name;
       setCredentialsResult({
-        title: 'Credenciales de Sede Actualizadas',
-        parkingName: credentialsSede.name,
+        title: 'Credenciales del Administrador del Local',
+        parkingName: targetTitle,
         email,
         password: password || res?.temp_password || '(Contraseña actual mantenida sin cambios)',
         role: 'Administrador de Sede (Local)',
@@ -575,7 +608,7 @@ export const AffiliatedParkingsModule = () => {
         ownerName: fullName
       });
 
-      notify(`✓ Credenciales guardadas para "${credentialsSede.name}"`);
+      notify(`✓ Credenciales guardadas para el local "${targetTitle}"`);
     } catch (err) {
       notify(`Error al actualizar credenciales: ${err.message || 'Error'}`);
     } finally {
@@ -857,6 +890,19 @@ export const AffiliatedParkingsModule = () => {
                         </Button>
                       )}
 
+                      {/* Botón Credenciales del Local (Empresa Afiliada) */}
+                      <Button
+                        type="button"
+                        onClick={() => handleOpenCredentialsModal(group)}
+                        variant="outline"
+                        size="sm"
+                        className="border-amber-300 text-amber-950 bg-amber-50/90 hover:bg-amber-100 text-xs font-bold rounded-xl h-10 px-3.5 gap-2 cursor-pointer transition shadow-2xs flex items-center"
+                        title={`Credenciales de acceso del Administrador para ${group.companyName}`}
+                      >
+                        <KeyRound className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Credenciales de Acceso</span>
+                      </Button>
+
                       {/* Botón Ajustes de Empresa */}
                       <Button
                         type="button"
@@ -961,18 +1007,7 @@ export const AffiliatedParkingsModule = () => {
                               </div>
                             </div>
 
-                            <div className="space-y-2 pt-2.5 border-t border-slate-100">
-                              {/* Botón de Credenciales Superadmin */}
-                              <Button 
-                                onClick={() => handleOpenCredentialsModal(p)}
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full text-xs font-bold rounded-xl h-8 border-amber-300 text-amber-900 bg-amber-50/60 hover:bg-amber-100/80 flex items-center justify-center gap-1.5 transition"
-                              >
-                                <KeyRound className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                                <span>Credenciales de Acceso</span>
-                              </Button>
-
+                            <div className="pt-2.5 border-t border-slate-100">
                               <div className="flex items-center gap-2">
                                 <Button 
                                   onClick={() => toggleStatus(p.id)} 
@@ -1283,10 +1318,15 @@ export const AffiliatedParkingsModule = () => {
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-amber-600" />
-              <span>Credenciales de Acceso</span>
+              <span>Credenciales de Acceso del Local</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Administra el usuario y contraseña del administrador del local para <strong>"{credentialsSede?.name}"</strong>.
+              Administra el usuario y contraseña del Administrador para el local (empresa afiliada) <strong>"{credentialsTarget?.companyName || credentialsSede?.name}"</strong>.
+              {credentialsTarget?.branchesCount > 1 && (
+                <span className="block mt-1 text-[11px] text-emerald-700 font-semibold">
+                  ✓ Este acceso es unificado para la empresa y le permite gestionar sus {credentialsTarget.branchesCount} sucursales registradas.
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -1301,10 +1341,10 @@ export const AffiliatedParkingsModule = () => {
                 <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-2xl text-xs flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
                   <div>
-                    <p className="font-bold">Esta sede ya tiene una cuenta activa vinculada:</p>
+                    <p className="font-bold">Este local ya cuenta con un Administrador activo:</p>
                     <p className="font-mono text-[11px] mt-0.5">{credentialsForm.adminEmail}</p>
                     <p className="text-[10px] text-emerald-700 mt-1">
-                      Si especificas una nueva contraseña abajo, se actualizará. De lo contrario, se conservará la contraseña existente.
+                      Si especificas una nueva contraseña abajo, se actualizará. De lo contrario, se conservará la contraseña actual.
                     </p>
                   </div>
                 </div>
@@ -1610,63 +1650,77 @@ export const AffiliatedParkingsModule = () => {
 
             {/* Credenciales de Acceso para el Local */}
             <div className="border-t border-slate-200 pt-3 space-y-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.createAdminAccount}
-                  onChange={(e) => setFormData({ ...formData, createAdminAccount: e.target.checked })}
-                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Crear cuenta de acceso para el Administrador del Local</span>
-                </span>
-              </label>
-
-              {formData.createAdminAccount && (
-                <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl space-y-3">
+              {formData.company_name ? (
+                <div className="bg-emerald-50/80 border border-emerald-200 p-3.5 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-950">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Correo de Acceso (Usuario) *</label>
-                    <Input
-                      type="email"
-                      required={formData.createAdminAccount}
-                      placeholder="admin@cochera.com"
-                      value={formData.adminEmail}
-                      onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
-                      className="text-xs bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-bold text-slate-700">Contraseña de Acceso *</label>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, adminPassword: generateSecurePassword('SP') })}
-                        className="text-[10px] text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        <span>Regenerar</span>
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <Input
-                        type={formData.showAdminPassword ? "text" : "password"}
-                        required={formData.createAdminAccount}
-                        value={formData.adminPassword}
-                        onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
-                        className="text-xs bg-white pr-9 font-mono font-bold"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, showAdminPassword: !formData.showAdminPassword })}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      >
-                        {formData.showAdminPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
+                    <p className="font-bold">Credenciales Unificadas del Local</p>
+                    <p className="text-[11px] text-emerald-700 mt-0.5">
+                      Esta sucursal pertenecerá al local <strong>"{formData.company_name}"</strong>. El Administrador del Local gestionará esta sucursal con sus credenciales actuales. No requiere crear usuarios adicionales.
+                    </p>
                   </div>
                 </div>
+              ) : (
+                <>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.createAdminAccount}
+                      onChange={(e) => setFormData({ ...formData, createAdminAccount: e.target.checked })}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Crear cuenta de acceso para el Administrador del Local</span>
+                    </span>
+                  </label>
+
+                  {formData.createAdminAccount && (
+                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl space-y-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Correo de Acceso (Usuario) *</label>
+                        <Input
+                          type="email"
+                          required={formData.createAdminAccount}
+                          placeholder="admin@cochera.com"
+                          value={formData.adminEmail}
+                          onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
+                          className="text-xs bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] font-bold text-slate-700">Contraseña de Acceso *</label>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, adminPassword: generateSecurePassword('SP') })}
+                            className="text-[10px] text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            <span>Regenerar</span>
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <Input
+                            type={formData.showAdminPassword ? "text" : "password"}
+                            required={formData.createAdminAccount}
+                            value={formData.adminPassword}
+                            onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
+                            className="text-xs bg-white pr-9 font-mono font-bold"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, showAdminPassword: !formData.showAdminPassword })}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          >
+                            {formData.showAdminPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

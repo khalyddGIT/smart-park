@@ -1125,11 +1125,44 @@ async def set_parking_admin_credentials(
         staff_member.position = "Administrador de Sede"
         staff_member.status = "active"
 
-    # 3. Actualizar Parking
+    # 3. Actualizar Parking principal
     parking.email = email
     parking.owner = full_name
     if phone:
         parking.phone = phone
+
+    # 4. Sincronizar credenciales y acceso a todas las sucursales de la misma empresa comercial
+    from sqlalchemy import or_
+    company_prefix = (parking.name.split(" - ")[0] if " - " in parking.name else parking.name).strip()
+    sibling_stmt = select(Parking).where(
+        Parking.id != parking.id,
+        or_(
+            Parking.email == prev_email if prev_email else False,
+            Parking.email == email,
+            Parking.name.ilike(f"{company_prefix} - %"),
+            Parking.name == company_prefix
+        )
+    )
+    sibling_res = await db.execute(sibling_stmt)
+    sibling_parkings = sibling_res.scalars().all()
+    for sib in sibling_parkings:
+        sib.email = email
+        sib.owner = full_name
+        if phone:
+            sib.phone = phone
+        sib_staff_res = await db.execute(select(Staff).where(func.lower(Staff.email) == email, Staff.parking_id == sib.id))
+        if not sib_staff_res.scalars().first():
+            db.add(Staff(
+                parking_id=sib.id,
+                full_name=full_name,
+                dni=f"DNI{secrets.randbelow(90000000) + 10000000}",
+                position="Administrador de Sede",
+                shift="Completo",
+                status="active",
+                email=email,
+                security_pin=hash_pin("1234")
+            ))
+
     await db.commit()
     await db.refresh(parking)
 

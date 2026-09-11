@@ -76,90 +76,151 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const layerGroupRef = useRef(null);
+  const isInternalUpdateRef = useRef(false);
+  const isDraggingMarkerRef = useRef(false);
+
+  // Mantener callbacks en refs para evitar regeneración y stale closures en eventos de Leaflet
+  const onChangeCoordsRef = useRef(onChangeCoords);
+  onChangeCoordsRef.current = onChangeCoords;
+  const onSelectAddressRef = useRef(onSelectAddress);
+  onSelectAddressRef.current = onSelectAddress;
+
   const [mapLayer, setMapLayer] = useState('streets'); // 'streets' | 'satellite'
   const [mapSearchQuery, setMapSearchQuery] = useState('');
+  const [liveCoords, setLiveCoords] = useState({
+    lat: Number(latitude) || -13.1604,
+    lng: Number(longitude) || -74.2259
+  });
 
+  // 1. Efecto de montaje inicial ÚNICO: crea el mapa Leaflet una sola vez
   useEffect(() => {
     if (!window.L || !mapContainerRef.current) return;
     const L = window.L;
 
-    const lat = Number(latitude) || -13.1604;
-    const lng = Number(longitude) || -74.2259;
+    const initialLat = Number(latitude) || -13.1604;
+    const initialLng = Number(longitude) || -74.2259;
 
-    if (!mapRef.current) {
-      const map = L.map(mapContainerRef.current, {
-        center: [lat, lng],
-        zoom: 16,
-        zoomControl: false,
-        attributionControl: false
-      });
+    // Crear mapa Leaflet
+    const map = L.map(mapContainerRef.current, {
+      center: [initialLat, initialLng],
+      zoom: 16,
+      zoomControl: false,
+      attributionControl: false,
+      scrollWheelZoom: true,
+      dragging: true,
+      touchZoom: true,
+      doubleClickZoom: false // Evita conflictos entre doble clic y clic para ubicar marcador
+    });
 
-      const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || atob('cGsuZXlKMUlqb2lhMmhoYkhsa1pDSXNJbUVpT2lKamJYUm5kMkk0Y21Zd01EbHNNbmh4TlhKcmJ6Qm9PREkzSW4wLjI5dUl0MGZJR2lnYmN6WlpPWmlGMFE=');
-      const streetLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
-        tileSize: 512,
-        zoomOffset: -1,
-        maxZoom: 20,
-        maxNativeZoom: 20,
-        attribution: '&copy; Mapbox &copy; OpenStreetMap'
-      });
+    const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || atob('cGsuZXlKMUlqb2lhMmhoYkhsa1pDSXNJbUVpT2lKamJYUm5kMkk0Y21Zd01EbHNNbmh4TlhKcmJ6Qm9PREkzSW4wLjI5dUl0MGZJR2lnYmN6WlpPWmlGMFE=');
+    
+    // Capa Calles (Mapbox Streets v12)
+    const streetLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+      tileSize: 512,
+      zoomOffset: -1,
+      maxZoom: 20,
+      maxNativeZoom: 20,
+      attribution: '&copy; Mapbox &copy; OpenStreetMap'
+    });
 
-      const satLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
-        tileSize: 512,
-        zoomOffset: -1,
-        maxZoom: 20,
-        maxNativeZoom: 20,
-        attribution: '&copy; Mapbox'
-      });
+    // Capa Satélite (Mapbox Satellite Streets)
+    const satLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+      tileSize: 512,
+      zoomOffset: -1,
+      maxZoom: 20,
+      maxNativeZoom: 20,
+      attribution: '&copy; Mapbox'
+    });
 
-      streetLayer.addTo(map);
-      layerGroupRef.current = { streetLayer, satLayer };
+    streetLayer.addTo(map);
+    layerGroupRef.current = { streetLayer, satLayer };
 
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      const customIcon = L.divIcon({
-        className: 'custom-picker-pin',
-        html: `
-          <div style="position: relative; width: 34px; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; cursor: grab; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.35));">
-            <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17 0C7.61116 0 0 7.61116 0 17C0 27.2 14.5 40.5 16.1 41.9C16.6 42.3 17.4 42.3 17.9 41.9C19.5 40.5 34 27.2 34 17C34 7.61116 26.3888 0 17 0Z" fill="#0F172A"/>
-              <circle cx="17" cy="17" r="13" fill="#10B981" fill-opacity="0.25"/>
-              <circle cx="17" cy="17" r="9" fill="#10B981"/>
-              <circle cx="17" cy="17" r="4" fill="#FFFFFF"/>
-            </svg>
-            <div style="width: 14px; height: 4px; background: rgba(15,23,42,0.3); border-radius: 50%; filter: blur(1.5px); margin-top: -2px;"></div>
-          </div>
-        `,
-        iconSize: [34, 44],
-        iconAnchor: [17, 42]
-      });
+    const customIcon = L.divIcon({
+      className: 'custom-picker-pin',
+      html: `
+        <div style="position: relative; width: 34px; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; cursor: grab; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.35)); user-select: none;">
+          <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17 0C7.61116 0 0 7.61116 0 17C0 27.2 14.5 40.5 16.1 41.9C16.6 42.3 17.4 42.3 17.9 41.9C19.5 40.5 34 27.2 34 17C34 7.61116 26.3888 0 17 0Z" fill="#0F172A"/>
+            <circle cx="17" cy="17" r="13" fill="#10B981" fill-opacity="0.25"/>
+            <circle cx="17" cy="17" r="9" fill="#10B981"/>
+            <circle cx="17" cy="17" r="4" fill="#FFFFFF"/>
+          </svg>
+          <div style="width: 14px; height: 4px; background: rgba(15,23,42,0.3); border-radius: 50%; filter: blur(1.5px); margin-top: -2px;"></div>
+        </div>
+      `,
+      iconSize: [34, 44],
+      iconAnchor: [17, 42]
+    });
 
-      const marker = L.marker([lat, lng], { icon: customIcon, draggable: true }).addTo(map);
+    const marker = L.marker([initialLat, initialLng], { 
+      icon: customIcon, 
+      draggable: true,
+      autoPan: true 
+    }).addTo(map);
 
-      marker.on('dragend', (e) => {
-        const newPos = e.target.getLatLng();
-        onChangeCoords(Number(newPos.lat.toFixed(6)), Number(newPos.lng.toFixed(6)));
-      });
+    // Eventos del marcador
+    marker.on('dragstart', () => {
+      isDraggingMarkerRef.current = true;
+    });
 
-      map.on('click', (e) => {
-        const { lat: clickLat, lng: clickLng } = e.latlng;
-        marker.setLatLng([clickLat, clickLng]);
-        onChangeCoords(Number(clickLat.toFixed(6)), Number(clickLng.toFixed(6)));
-      });
+    marker.on('drag', (e) => {
+      const pos = e.target.getLatLng();
+      setLiveCoords({ lat: pos.lat, lng: pos.lng });
+    });
 
-      mapRef.current = map;
-      markerRef.current = marker;
+    marker.on('dragend', (e) => {
+      const newPos = e.target.getLatLng();
+      const fixedLat = Number(newPos.lat.toFixed(6));
+      const fixedLng = Number(newPos.lng.toFixed(6));
+      setLiveCoords({ lat: fixedLat, lng: fixedLng });
+      
+      // Notificar al componente padre marcando que fue actualización interna
+      isInternalUpdateRef.current = true;
+      onChangeCoordsRef.current?.(fixedLat, fixedLng);
 
       setTimeout(() => {
-        map.invalidateSize();
-      }, 250);
-    } else {
-      mapRef.current.setView([lat, lng], mapRef.current.getZoom(), { animate: true });
-      if (markerRef.current) {
-        markerRef.current.setLatLng([lat, lng]);
+        isDraggingMarkerRef.current = false;
+      }, 100);
+    });
+
+    // Clic en cualquier punto del mapa para mover el marcador
+    map.on('click', (e) => {
+      if (isDraggingMarkerRef.current) return;
+      const { lat: clickLat, lng: clickLng } = e.latlng;
+      const fixedLat = Number(clickLat.toFixed(6));
+      const fixedLng = Number(clickLng.toFixed(6));
+
+      marker.setLatLng([fixedLat, fixedLng]);
+      setLiveCoords({ lat: fixedLat, lng: fixedLng });
+
+      isInternalUpdateRef.current = true;
+      onChangeCoordsRef.current?.(fixedLat, fixedLng);
+    });
+
+    mapRef.current = map;
+    markerRef.current = marker;
+
+    // Observador para re-calcular tamaño si el contenedor o tab cambia
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
       }
+    });
+
+    if (mapContainerRef.current) {
+      resizeObserver.observe(mapContainerRef.current);
     }
-    // Cleanup: remove map and marker on unmount to prevent memory leaks
+
+    const t1 = setTimeout(() => map.invalidateSize(), 150);
+    const t2 = setTimeout(() => map.invalidateSize(), 450);
+
+    // Limpieza únicamente cuando el componente realmente se desmonta
     return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      resizeObserver.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -167,20 +228,56 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
       markerRef.current = null;
       layerGroupRef.current = null;
     };
-  }, [latitude, longitude, onChangeCoords]);
+  }, []); // Montaje único: NUNCA destruir el mapa por cambios de coordenadas
+
+  // 2. Efecto para sincronizar cambios externos (presets, GPS actual, URL pegada o inputs numéricos)
+  useEffect(() => {
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    setLiveCoords({ lat, lng });
+
+    // Si el cambio vino del propio mapa (arrastre o clic), no forzar movimiento de cámara
+    if (isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false;
+      return;
+    }
+
+    if (markerRef.current) {
+      markerRef.current.setLatLng([lat, lng]);
+    }
+
+    if (mapRef.current) {
+      mapRef.current.panTo([lat, lng], { animate: true, duration: 0.6 });
+    }
+  }, [latitude, longitude]);
 
   // Cambiar capa Calles / Satélite
   const handleToggleLayer = (layerType) => {
     if (!mapRef.current || !layerGroupRef.current) return;
     const { streetLayer, satLayer } = layerGroupRef.current;
     if (layerType === 'satellite') {
-      mapRef.current.removeLayer(streetLayer);
-      satLayer.addTo(mapRef.current);
+      if (mapRef.current.hasLayer(streetLayer)) mapRef.current.removeLayer(streetLayer);
+      if (!mapRef.current.hasLayer(satLayer)) satLayer.addTo(mapRef.current);
     } else {
-      mapRef.current.removeLayer(satLayer);
-      streetLayer.addTo(mapRef.current);
+      if (mapRef.current.hasLayer(satLayer)) mapRef.current.removeLayer(satLayer);
+      if (!mapRef.current.hasLayer(streetLayer)) streetLayer.addTo(mapRef.current);
     }
     setMapLayer(layerType);
+  };
+
+  // Recentrar vista en el marcador
+  const handleRecenterMarker = () => {
+    if (!mapRef.current || !markerRef.current) return;
+    const pos = markerRef.current.getLatLng();
+    mapRef.current.setView([pos.lat, pos.lng], 17, { animate: true });
+  };
+
+  // Centrar en Plaza Mayor de Huamanga
+  const handleCenterHuamanga = () => {
+    if (!mapRef.current) return;
+    mapRef.current.setView([-13.1604, -74.2259], 16, { animate: true });
   };
 
   // Buscar ubicación en Ayacucho
@@ -199,8 +296,10 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
         mapRef.current.setView([foundPreset.lat, foundPreset.lng], 17, { animate: true });
         markerRef.current.setLatLng([foundPreset.lat, foundPreset.lng]);
       }
-      onChangeCoords(foundPreset.lat, foundPreset.lng);
-      if (onSelectAddress) onSelectAddress(foundPreset.address);
+      setLiveCoords({ lat: foundPreset.lat, lng: foundPreset.lng });
+      isInternalUpdateRef.current = true;
+      onChangeCoordsRef.current?.(foundPreset.lat, foundPreset.lng);
+      if (onSelectAddressRef.current) onSelectAddressRef.current(foundPreset.address);
       return;
     }
 
@@ -211,14 +310,18 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
         if (data && data.length > 0) {
           const lat = parseFloat(data[0].lat);
           const lng = parseFloat(data[0].lon);
+          const fixedLat = Number(lat.toFixed(6));
+          const fixedLng = Number(lng.toFixed(6));
           if (mapRef.current && markerRef.current) {
-            mapRef.current.setView([lat, lng], 17, { animate: true });
-            markerRef.current.setLatLng([lat, lng]);
+            mapRef.current.setView([fixedLat, fixedLng], 17, { animate: true });
+            markerRef.current.setLatLng([fixedLat, fixedLng]);
           }
-          onChangeCoords(Number(lat.toFixed(6)), Number(lng.toFixed(6)));
-          if (onSelectAddress && data[0].display_name) {
+          setLiveCoords({ lat: fixedLat, lng: fixedLng });
+          isInternalUpdateRef.current = true;
+          onChangeCoordsRef.current?.(fixedLat, fixedLng);
+          if (onSelectAddressRef.current && data[0].display_name) {
             const shortAddr = data[0].display_name.split(',').slice(0, 2).join(',');
-            onSelectAddress(shortAddr);
+            onSelectAddressRef.current(shortAddr);
           }
         }
       })
@@ -227,7 +330,7 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
 
   return (
     <div className="space-y-2.5">
-      {/* Barra de Búsqueda sobre el Mapa y Controles de Capa */}
+      {/* Barra de Búsqueda sobre el Mapa y Controles de Navegación */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
         <form onSubmit={handleSearchLocation} className="flex-1 relative flex items-center">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
@@ -246,7 +349,30 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
           </button>
         </form>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+          {/* Botón Recentrar en Marcador */}
+          <button
+            type="button"
+            onClick={handleRecenterMarker}
+            title="Recentrar vista en el marcador actual"
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-700 hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+          >
+            <LocateFixed className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span className="hidden md:inline">Ver Marcador</span>
+          </button>
+
+          {/* Botón Centro Huamanga */}
+          <button
+            type="button"
+            onClick={handleCenterHuamanga}
+            title="Ir al Centro Histórico de Huamanga"
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-700 hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+          >
+            <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className="hidden md:inline">Centro Huamanga</span>
+          </button>
+
+          {/* Selector de Capas Calles / Satélite */}
           <div className="bg-slate-100 p-0.5 rounded-xl flex items-center border border-slate-200">
             <button
               type="button"
@@ -273,16 +399,16 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
       {/* Contenedor del Mapa Leaflet */}
       <div 
         ref={mapContainerRef} 
-        className="w-full h-72 sm:h-80 rounded-2xl overflow-hidden border border-slate-200 shadow-xs z-0"
+        className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200 shadow-xs z-0 relative"
       />
 
       <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
         <span className="flex items-center gap-1.5">
-          <Navigation className="w-3.5 h-3.5 text-emerald-600" />
+          <Navigation className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
           <span>Haz clic en cualquier calle o arrastra el marcador para fijar la cochera.</span>
         </span>
-        <span className="font-mono text-[11px] font-semibold text-slate-700">
-          {Number(latitude).toFixed(5)}, {Number(longitude).toFixed(5)}
+        <span className="font-mono text-[11px] font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200 shrink-0">
+          {Number(liveCoords.lat).toFixed(5)}, {Number(liveCoords.lng).toFixed(5)}
         </span>
       </div>
     </div>
@@ -2202,7 +2328,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         step="any"
                         required
                         value={formData.latitude}
-                        onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData(prev => ({
+                            ...prev,
+                            latitude: val === '' ? '' : (parseFloat(val) || val),
+                            mapsUrl: `https://maps.google.com/?q=${val},${prev.longitude}`
+                          }));
+                        }}
                         className="text-xs font-mono font-semibold h-9 bg-white border-slate-200"
                       />
                     </div>
@@ -2213,7 +2346,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         step="any"
                         required
                         value={formData.longitude}
-                        onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData(prev => ({
+                            ...prev,
+                            longitude: val === '' ? '' : (parseFloat(val) || val),
+                            mapsUrl: `https://maps.google.com/?q=${prev.latitude},${val}`
+                          }));
+                        }}
                         className="text-xs font-mono font-semibold h-9 bg-white border-slate-200"
                       />
                     </div>

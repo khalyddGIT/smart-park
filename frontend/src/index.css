@@ -631,7 +631,8 @@ html.dark body,
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08) !important;
 }
 
-.custom-map-pin {
+.custom-map-pin,
+.custom-picker-pin {
   background: transparent !important;
   border: none !important;
 }

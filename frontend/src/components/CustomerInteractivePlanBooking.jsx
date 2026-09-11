@@ -22,7 +22,8 @@ import {
   Maximize2,
   ShieldCheck,
   Moon,
-  Lock
+  Lock,
+  XCircle
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -659,12 +660,19 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const subtotalBase = finalTotalCost / 1.18;
   const igvAmount = finalTotalCost - subtotalBase;
 
-  const canReserve = planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && slotMatchesVehicle(selectedSlot.slotType, vehicleCategory) && isPlateValid;
+  const isMaintenance = (parking?.status || '').toLowerCase() === 'mantenimiento' || (parking?.status || '').toLowerCase() === 'maintenance';
+  const isClosed = (parking?.status || '').toLowerCase() === 'cerrado' || (parking?.status || '').toLowerCase() === 'closed';
+  const isUnavailable = isMaintenance || isClosed;
+
+  const officialTolerance = Number(parking?.tolerance ?? parking?.tolerance_minutes ?? 15);
+  const isOpenStayMode = parking?.allow_open_stay !== false;
+
+  const canReserve = !isUnavailable && planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && slotMatchesVehicle(selectedSlot.slotType, vehicleCategory) && isPlateValid;
 
   const handleExecuteBooking = () => {
     if (!canReserve) return;
     const now = new Date();
-    const chosenTolerance = Number(etaMinutes) || 15;
+    const chosenTolerance = officialTolerance;
     const start = now;
     const end = new Date(start.getTime() + Math.max(120, chosenTolerance + 60) * 60 * 1000);
 
@@ -676,12 +684,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       vehicleType: vehicleCategory,
       parkingId: numericParkingId,
       parkingName: parking?.name || 'Smart Park Central',
-      hours: 1,
-      estimatedHours: 1,
-      isOpenStay: true,
-      is_open_stay: true,
+      hours: isOpenStayMode ? 1 : hours,
+      estimatedHours: isOpenStayMode ? 1 : hours,
+      isOpenStay: isOpenStayMode,
+      is_open_stay: isOpenStayMode,
       billingUnit: isMinuteBilling ? 'minute' : 'hour',
-      estimatedMinutes: 60,
+      estimatedMinutes: isMinuteBilling ? actualStayMinutes : 60,
       isNightShift: isNightShiftActive,
       nightSurcharge: isMinuteBilling ? nightMinuteSurcharge : nightSurcharge,
       reservationFee,
@@ -692,7 +700,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       plate: effectivePlate.split(' ')[0],
       rawCost: reservationFee > 0 ? reservationFee : categoryHourlyRate,
       discountAmount: 0,
-      totalCost: parking?.require_reservation_prepay ? reservationFee : categoryHourlyRate,
+      totalCost: parking?.require_reservation_prepay ? (reservationFee > 0 ? reservationFee : categoryHourlyRate) : categoryHourlyRate,
       bookingModel,
       receiptType: 'boleta',
       code: `RSV-${Date.now().toString().slice(-6)}`,
@@ -734,11 +742,32 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       {/* Cabecera Limpia de la Sede */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">{parking?.name || 'Smart Park Central'}</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg font-bold text-slate-900">{parking?.name || 'Smart Park Central'}</h2>
+            {isMaintenance ? (
+              <span className="bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 text-amber-600" /> En Mantenimiento
+              </span>
+            ) : isClosed ? (
+              <span className="bg-rose-100 text-rose-800 border border-rose-300 font-bold text-xs px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                <XCircle className="w-3 h-3 text-rose-600" /> Cerrado
+              </span>
+            ) : (
+              <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs px-2.5 py-0.5 rounded-full">
+                Operativo
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> 
             <span>{parking?.address || 'Portal Unión 42'}, {parking?.city || 'Ayacucho'}</span>
           </p>
+          {parking?.schedule && (
+            <p className="text-xs text-slate-600 flex items-center gap-1 mt-1 font-medium">
+              <Clock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <span>Horario: {parking.schedule}</span>
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-4 text-xs font-mono">
@@ -757,6 +786,30 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
           </div>
         </div>
       </div>
+
+      {isMaintenance && (
+        <div className="p-3.5 bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl text-xs flex items-center gap-2.5 shadow-sm">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+          <div>
+            <span className="font-extrabold text-sm block">Sede en Mantenimiento Técnico</span>
+            <p className="text-xs text-amber-800 mt-0.5">
+              Este local se encuentra actualmente en labores de calibración o mantenimiento de cajones. Puedes ver la distribución del plano pero las reservas están pausadas en este momento.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isClosed && (
+        <div className="p-3.5 bg-rose-50 border border-rose-300 text-rose-900 rounded-2xl text-xs flex items-center gap-2.5 shadow-sm">
+          <XCircle className="w-5 h-5 text-rose-600 shrink-0" />
+          <div>
+            <span className="font-extrabold text-sm block">Sede Cerrada Temporalmente</span>
+            <p className="text-xs text-rose-800 mt-0.5">
+              Este establecimiento no se encuentra abierto al público en este momento.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
@@ -1239,33 +1292,70 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
-            {/* Tiempo Estimado de Llegada (ETA) */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+            {/* Tiempo de Llegada y Tolerancia Oficial de la Sede */}
+            <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                  ¿En cuánto tiempo llegas? (ETA)
-                </label>
-                {(parking?.tolerance || parking?.tolerance_minutes) && (
-                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-full">
-                    Tolerancia: {parking?.tolerance || parking?.tolerance_minutes} min
-                  </span>
-                )}
+                  Tolerancia de llegada
+                </span>
+                <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950 border border-emerald-800/80 px-2.5 py-0.5 rounded-full">
+                  ~{officialTolerance} min
+                </span>
               </div>
-              <select
-                value={etaMinutes}
-                onChange={(e) => setEtaMinutes(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl h-9 px-3 text-xs font-mono font-semibold text-white outline-none cursor-pointer focus:border-emerald-500"
-              >
-                {Array.from(new Set([10, 15, 20, 25, 30, 45, 60, Number(parking?.tolerance ?? parking?.tolerance_minutes ?? 15)].filter(n => typeof n === 'number' && n > 0)))
-                  .sort((a, b) => a - b)
-                  .map((val) => (
-                    <option key={val} value={val}>
-                      ~{val} min {val === Number(parking?.tolerance ?? parking?.tolerance_minutes) ? '• Tolerancia' : ''}
-                    </option>
-                  ))}
-              </select>
+              <p className="text-[10px] text-slate-400 leading-tight">
+                Tiempo oficial establecido por la sede para presentarte en garita tras reservar.
+              </p>
             </div>
+
+            {/* Modalidad de Estadía según Reglas del Local */}
+            {parking?.allow_open_stay !== false ? (
+              <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    Modalidad de Estadía
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/90 border border-emerald-800/60 px-2 py-0.5 rounded">
+                    Hora Libre
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 leading-tight">
+                  Ingreso flexible sin hora de salida fija. Pagas al salir por el tiempo real consumido ({isMinuteBilling ? `S/ ${categoryMinuteRate.toFixed(2)}/min` : `S/ ${categoryHourlyRate.toFixed(2)}/h`}).
+                </p>
+              </div>
+            ) : (
+              <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                    Tiempo de Estadía Requerido
+                  </span>
+                  <span className="text-xs font-mono font-bold text-emerald-400">
+                    {hours} {hours === 1 ? 'hora' : 'horas'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {[1, 2, 3, 4, 6, 8, 12, 24].filter(h => h >= minStay && h <= maxStay).map((h) => (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={() => setHours(h)}
+                      className={`flex-1 min-w-[32px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                        hours === h
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      {h}h
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  Límites de esta sede: mín. {minStay}h, máx. {maxStay}h.
+                </p>
+              </div>
+            )}
 
             {/* Resumen Ejecutivo de Reserva y Tarifa */}
             <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 space-y-2 text-xs">
@@ -1286,15 +1376,26 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 </div>
               )}
               <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Llegada prevista:</span>
-                <span className="text-emerald-400 font-mono font-semibold">~{etaMinutes} min</span>
+                <span className="text-slate-400">Tolerancia para llegar:</span>
+                <span className="text-emerald-400 font-mono font-semibold">~{officialTolerance} min</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-slate-400">Régimen:</span>
+                <span className="text-slate-200 font-medium">
+                  {parking?.allow_open_stay !== false ? 'Hora Libre (Pagas al salir)' : `${hours}h pactadas`}
+                </span>
               </div>
               <div className="h-px bg-slate-800/80 my-1" />
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400">Cobro:</span>
                 <span className="text-slate-200 font-medium">En garita al salir</span>
               </div>
-              {reservationFee > 0 ? (
+              {parking?.require_reservation_prepay ? (
+                <div className="flex items-center justify-between text-amber-300 pt-1 border-t border-slate-800/80 font-mono">
+                  <span>Prepago requerido:</span>
+                  <span className="font-bold">S/ {(reservationFee > 0 ? reservationFee : categoryHourlyRate).toFixed(2)}</span>
+                </div>
+              ) : reservationFee > 0 ? (
                 <div className="flex items-center justify-between text-amber-300 pt-1 border-t border-slate-800/80 font-mono">
                   <span>Tasa de reserva:</span>
                   <span className="font-bold">S/ {reservationFee.toFixed(2)}</span>
@@ -1339,18 +1440,46 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               variant="default"
               onClick={handleExecuteBooking}
               disabled={!canReserve || !!activeUserReservation}
-              className="w-full py-3 text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className={`w-full py-3 text-xs font-bold gap-2 rounded-xl cursor-pointer transition-all ${
+                isMaintenance 
+                  ? 'bg-amber-950 border border-amber-600/70 text-amber-300 hover:bg-amber-900 cursor-not-allowed opacity-80'
+                  : isClosed
+                  ? 'bg-rose-950 border border-rose-600/70 text-rose-300 hover:bg-rose-900 cursor-not-allowed opacity-80'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 disabled:cursor-not-allowed'
+              }`}
             >
-              <span>{activeUserReservation ? 'Tienes una reserva activa' : 'Confirmar Reserva'}</span>
-              <ArrowRight className="w-4 h-4" />
+              {isMaintenance ? (
+                <>
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  <span>Sede en Mantenimiento (Reservas Pausadas)</span>
+                </>
+              ) : isClosed ? (
+                <>
+                  <XCircle className="w-4 h-4 text-rose-400" />
+                  <span>Sede Cerrada (No disponible)</span>
+                </>
+              ) : activeUserReservation ? (
+                <span>Tienes una reserva activa en curso</span>
+              ) : (
+                <>
+                  <span>{parking?.require_reservation_prepay ? 'Continuar al Pago Digital' : 'Confirmar Reserva'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </Button>
-            {!canReserve && !effectivePlate && (
+            {isMaintenance && (
+              <p className="text-[11px] text-amber-400 text-center mt-1">Esta sede no acepta reservas por mantenimiento técnico.</p>
+            )}
+            {isClosed && (
+              <p className="text-[11px] text-rose-400 text-center mt-1">Esta sede se encuentra cerrada al público temporalmente.</p>
+            )}
+            {!isUnavailable && !canReserve && !effectivePlate && (
               <p className="text-[11px] text-amber-400 text-center mt-1">Ingresa o selecciona una placa para continuar.</p>
             )}
-            {!canReserve && effectivePlate && !isPlateValid && (
+            {!isUnavailable && !canReserve && effectivePlate && !isPlateValid && (
               <p className="text-[11px] text-rose-400 text-center mt-1 font-mono">La placa debe incluir un guión (ej: ABC-123).</p>
             )}
-            {!canReserve && isPlateValid && compatibleFreeSlots.length === 0 && (
+            {!isUnavailable && !canReserve && isPlateValid && compatibleFreeSlots.length === 0 && (
               <p className="text-[11px] text-amber-400 text-center mt-1">No hay cajones libres del tipo elegido. Cambia de vehículo o de sede.</p>
             )}
           </div>

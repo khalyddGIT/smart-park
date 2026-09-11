@@ -263,6 +263,11 @@ export const MapContainer3D = ({
         ? [lng, lat] 
         : (DEFAULT_PARKING_COORDS[p.id] || [-74.2257, -13.1606]);
 
+      const pStatus = String(p.status || '').toLowerCase();
+      const isMaint = pStatus === 'mantenimiento' || pStatus === 'maintenance';
+      const isClosed = pStatus === 'cerrado' || pStatus === 'closed';
+      const isUnavailable = isMaint || isClosed;
+
       const elements = p.elements || [];
       const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
       const rateFormatted = `S/ ${Number(p.rate || 4).toFixed(2)}`;
@@ -276,9 +281,9 @@ export const MapContainer3D = ({
             ? 'bg-slate-900 text-white border-emerald-400 ring-4 ring-emerald-400/30'
             : 'bg-white text-slate-900 border-slate-200/90 hover:border-slate-400 hover:shadow-xl'
         }">
-          <span class="w-2 h-2 rounded-full ${freeSlots > 0 ? 'bg-emerald-500' : 'bg-rose-500'} shrink-0"></span>
+          <span class="w-2 h-2 rounded-full ${isMaint ? 'bg-amber-500' : isClosed ? 'bg-rose-500' : (freeSlots > 0 ? 'bg-emerald-500' : 'bg-slate-400')} shrink-0"></span>
           <span class="text-xs font-mono font-black">${rateFormatted}</span>
-          <span class="text-[10px] font-mono text-slate-500 border-l border-slate-200 pl-1 font-bold">${freeSlots} lib</span>
+          <span class="text-[10px] font-mono ${isMaint ? 'text-amber-600' : isClosed ? 'text-rose-600' : 'text-slate-500'} border-l border-slate-200 pl-1 font-bold">${isMaint ? 'manten' : isClosed ? 'cerrado' : `${freeSlots} lib`}</span>
         </div>
       `;
 
@@ -300,11 +305,21 @@ export const MapContainer3D = ({
             />
             <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(15,23,42,0.4) 0%, transparent 45%, rgba(15,23,42,0.7) 100%);"></div>
             
-            <!-- Badge Cupos Libres -->
-            <div style="position: absolute; top: 8px; left: 8px; display: flex; items-center; gap: 5px; background: rgba(5, 150, 105, 0.95); backdrop-filter: blur(6px); color: white; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; font-family: monospace; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            <!-- Badge Superior de Estado o Cupos Libres -->
+            ${isMaint ? `
+            <div style="position: absolute; top: 8px; left: 8px; display: flex; align-items: center; gap: 5px; background: rgba(217, 119, 6, 0.95); backdrop-filter: blur(6px); color: white; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+              <span>🔧 En Mantenimiento</span>
+            </div>
+            ` : isClosed ? `
+            <div style="position: absolute; top: 8px; left: 8px; display: flex; align-items: center; gap: 5px; background: rgba(225, 29, 72, 0.95); backdrop-filter: blur(6px); color: white; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+              <span>⛔ Cerrado</span>
+            </div>
+            ` : `
+            <div style="position: absolute; top: 8px; left: 8px; display: flex; align-items: center; gap: 5px; background: rgba(5, 150, 105, 0.95); backdrop-filter: blur(6px); color: white; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; font-family: monospace; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
               <span style="width: 6px; height: 6px; border-radius: 9999px; background: #6ee7b7; display: inline-block;"></span>
               <span>${freeSlots} libres</span>
             </div>
+            `}
 
             <!-- Botón Cerrar Discreto -->
             <button id="btn-close-${p.id}" type="button" style="position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 9999px; background: rgba(15, 23, 42, 0.7); border: none; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; cursor: pointer; backdrop-filter: blur(4px); transition: background 0.15s;">
@@ -333,10 +348,16 @@ export const MapContainer3D = ({
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
                 <span>Ruta</span>
               </button>
+              ${isUnavailable ? `
+              <button id="btn-quick-${p.id}" type="button" disabled style="flex: 1.1; height: 35px; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 10.5px; font-weight: 700; cursor: not-allowed; display: flex; align-items: center; justify-content: center; gap: 3px;" title="${isMaint ? 'En mantenimiento' : 'Cerrado'}">
+                <span>${isMaint ? 'Mantenimiento' : 'Cerrado'}</span>
+              </button>
+              ` : `
               <button id="btn-quick-${p.id}" type="button" style="flex: 1.1; height: 35px; background: linear-gradient(135deg, #059669 0%, #0d9488 100%); color: #ffffff; border: none; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease; box-shadow: 0 2px 6px rgba(5,150,105,0.25);" title="Reserva rápida express">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="#facc15" stroke="#facc15" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                 <span>⚡ Rápida</span>
               </button>
+              `}
               <button id="btn-select-${p.id}" type="button" style="flex: 1; height: 35px; background: #0f172a; color: #ffffff; border: none; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease;" title="Ver Plano 2D">
                 <span>Plano</span>
               </button>
@@ -380,7 +401,7 @@ export const MapContainer3D = ({
           btnClose.onclick = () => { popup.remove(); };
         }
         const btnQuick = document.getElementById(`btn-quick-${p.id}`);
-        if (btnQuick) {
+        if (btnQuick && !isUnavailable) {
           btnQuick.onclick = () => {
             popup.remove();
             if (onQuickReservation) onQuickReservation(p);

@@ -108,9 +108,22 @@ export const QuickReservationModal = ({
     setErrorMessage(null);
   };
 
+  const isMaintenance = (parking?.status || '').toLowerCase() === 'mantenimiento' || (parking?.status || '').toLowerCase() === 'maintenance';
+  const isClosed = (parking?.status || '').toLowerCase() === 'cerrado' || (parking?.status || '').toLowerCase() === 'closed';
+  const isUnavailable = isMaintenance || isClosed;
+
   // Confirmar reserva rápida
   const handleConfirm = async () => {
     if (!parking) return;
+
+    if (isMaintenance) {
+      setErrorMessage('Esta sede se encuentra en mantenimiento técnico. Las reservas están pausadas.');
+      return;
+    }
+    if (isClosed) {
+      setErrorMessage('Esta sede se encuentra cerrada al público temporalmente.');
+      return;
+    }
 
     if (!effectivePlate || effectivePlate.length < 6) {
       setErrorMessage('Ingresa una placa válida (ej. ABC-123).');
@@ -213,6 +226,26 @@ export const QuickReservationModal = ({
 
         {/* Cuerpo del Modal Express */}
         <div className="p-5 space-y-4 overflow-y-auto flex-1 text-slate-900 dark:text-slate-100">
+          {isMaintenance && (
+            <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+              <div className="flex-1 font-medium">
+                <span className="font-bold block">Sede en Mantenimiento Técnico</span>
+                Este estacionamiento se encuentra en calibración o mantenimiento. Las reservas están pausadas.
+              </div>
+            </div>
+          )}
+
+          {isClosed && (
+            <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-xs text-rose-900 dark:text-rose-200 flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+              <div className="flex-1 font-medium">
+                <span className="font-bold block">Sede Cerrada Temporalmente</span>
+                Este estacionamiento no se encuentra abierto al público en este momento.
+              </div>
+            </div>
+          )}
+
           {errorMessage && (
             <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
@@ -368,13 +401,29 @@ export const QuickReservationModal = ({
           <Button
             type="button"
             onClick={handleConfirm}
-            disabled={isSubmitting || (!effectivePlate && vehicles.length === 0)}
-            className="w-full py-3.5 rounded-2xl font-black text-sm text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer transition active:scale-[0.99] disabled:opacity-50"
+            disabled={isUnavailable || isSubmitting || (!effectivePlate && vehicles.length === 0)}
+            className={`w-full py-3.5 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 cursor-pointer transition active:scale-[0.99] disabled:opacity-50 ${
+              isMaintenance
+                ? 'bg-amber-800 dark:bg-amber-900 cursor-not-allowed'
+                : isClosed
+                ? 'bg-rose-800 dark:bg-rose-900 cursor-not-allowed'
+                : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-md shadow-emerald-600/20'
+            }`}
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-white" />
                 <span>Apartando plaza...</span>
+              </>
+            ) : isMaintenance ? (
+              <>
+                <AlertTriangle className="w-4 h-4 text-amber-300" />
+                <span>Sede en Mantenimiento (Reservas Pausadas)</span>
+              </>
+            ) : isClosed ? (
+              <>
+                <AlertTriangle className="w-4 h-4 text-rose-300" />
+                <span>Sede Cerrada (No Disponible)</span>
               </>
             ) : (
               <>

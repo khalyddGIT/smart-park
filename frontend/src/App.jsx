@@ -231,12 +231,40 @@ const AppMain = () => {
     return establishments.find(e => String(e.id) === String(selectedParkingId) || String(e.id) === String(norm)) || null;
   }, [establishments, selectedParkingId]);
 
+  const handleOpenQuickBooking = (p) => {
+    if (!p) return;
+    const pStatus = String(p.status || '').toLowerCase();
+    if (pStatus === 'mantenimiento' || pStatus === 'maintenance') {
+      setBookingFeedback(`La sede "${p.name}" se encuentra en mantenimiento técnico. Las reservas están pausadas.`);
+      setTimeout(() => setBookingFeedback(null), 5000);
+      return;
+    }
+    if (pStatus === 'cerrado' || pStatus === 'closed') {
+      setBookingFeedback(`La sede "${p.name}" se encuentra cerrada temporalmente.`);
+      setTimeout(() => setBookingFeedback(null), 5000);
+      return;
+    }
+    setQuickBookingParking(p);
+  };
+
   // Reserva de Plaza por Conductor - soporta hold (pago en garita), prepago con pasarela y reserva rápida (1-clic)
   const handleCustomerBooking = async (bookingData) => {
     const rawTargetId = bookingData?.parkingId;
     const normTarget = rawTargetId ? normalizeParkingId(rawTargetId) : null;
     const targetParking = establishments.find(e => String(e.id) === String(rawTargetId) || (normTarget && String(e.id) === String(normTarget))) || selectedParking || quickBookingParking;
     if (!targetParking) return;
+
+    const tStatus = String(targetParking.status || '').toLowerCase();
+    if (tStatus === 'mantenimiento' || tStatus === 'maintenance') {
+      setBookingFeedback(`La sede "${targetParking.name}" se encuentra en mantenimiento técnico y no acepta reservas en este momento.`);
+      setTimeout(() => setBookingFeedback(null), 5000);
+      return;
+    }
+    if (tStatus === 'cerrado' || tStatus === 'closed') {
+      setBookingFeedback(`La sede "${targetParking.name}" se encuentra cerrada temporalmente.`);
+      setTimeout(() => setBookingFeedback(null), 5000);
+      return;
+    }
     try {
       const newRes = await createReservation({
         parkingId: bookingData.parkingId || targetParking.id,
@@ -676,7 +704,7 @@ const AppMain = () => {
                     <AyacuchoMap
                       parkings={activeCompany ? activeCompany.branches : filteredParkings}
                       onSelectParking={(parking) => handleSelectParking(parking)} 
-                      onQuickReservation={(parking) => setQuickBookingParking(parking)}
+                      onQuickReservation={(parking) => handleOpenQuickBooking(parking)}
                       selectedParkingId={selectedParkingId} 
                       routeTarget={routeTarget}
                       onClearRoute={() => setRouteTarget(null)}
@@ -876,7 +904,15 @@ const AppMain = () => {
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {companyGroups.map((g) => (
+                          {companyGroups.map((g) => {
+                            const isSingle = g.branches.length === 1;
+                            const singleBranch = isSingle ? g.branches[0] : null;
+                            const sbStatus = singleBranch ? String(singleBranch.status || '').toLowerCase() : '';
+                            const isSbMaintenance = sbStatus === 'mantenimiento' || sbStatus === 'maintenance';
+                            const isSbClosed = sbStatus === 'cerrado' || sbStatus === 'closed';
+                            const isSbUnavailable = isSbMaintenance || isSbClosed;
+
+                            return (
                             <Card 
                               key={g.key} 
                               onClick={() => g.branches.length === 1 ? handleSelectParking(g.branches[0]) : setSelectedCompanyKey(g.key)}
@@ -899,14 +935,32 @@ const AppMain = () => {
                                   <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-emerald-800 shadow-sm border border-slate-200">
                                     {g.branches.length === 1 ? `S/ ${Number(g.branches[0].rate).toFixed(2)}/h` : `Desde S/ ${Number(g.minRate).toFixed(2)}/h`}
                                   </div>
-                                  <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
-                                    {g.freeSlots} Libres de {g.totalSlots}
+                                  <div className={`absolute bottom-3 left-3 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-bold font-mono border ${
+                                    isSbMaintenance 
+                                      ? 'bg-amber-950/90 text-amber-300 border-amber-500/40'
+                                      : isSbClosed
+                                      ? 'bg-rose-950/90 text-rose-300 border-rose-500/40'
+                                      : 'bg-slate-950/85 text-emerald-400 border-emerald-500/30'
+                                  }`}>
+                                    {isSbMaintenance ? '🔧 En Mantenimiento' : isSbClosed ? '⛔ Cerrado' : `${g.freeSlots} Libres de ${g.totalSlots}`}
                                   </div>
                                 </div>
 
                                 <div className="p-5 space-y-3">
                                   <div>
-                                    <h3 className="font-extrabold text-slate-900 text-base leading-tight group-hover:text-emerald-700 transition-colors">{g.name}</h3>
+                                    <div className="flex items-center justify-between gap-1.5">
+                                      <h3 className="font-extrabold text-slate-900 text-base leading-tight group-hover:text-emerald-700 transition-colors">{g.name}</h3>
+                                      {isSbMaintenance && (
+                                        <span className="shrink-0 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-300 px-1.5 py-0.5 rounded">
+                                          Mantenimiento
+                                        </span>
+                                      )}
+                                      {isSbClosed && (
+                                        <span className="shrink-0 text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-300 px-1.5 py-0.5 rounded">
+                                          Cerrado
+                                        </span>
+                                      )}
+                                    </div>
                                     <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
                                       <Building2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                                       <span className="truncate">{g.branches.length === 1 ? (g.branches[0].address || 'Ayacucho - Huamanga') : `${g.branches.length} sucursales disponibles`}</span>
@@ -920,15 +974,20 @@ const AppMain = () => {
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <Button
                                       type="button"
+                                      disabled={isSbUnavailable}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setQuickBookingParking(g.branches[0]);
+                                        handleOpenQuickBooking(g.branches[0]);
                                       }}
-                                      className="w-full font-black gap-1.5 text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-xs cursor-pointer py-2.5 rounded-xl border border-emerald-500/30"
-                                      title="Reserva express en 1 clic sin abrir el plano"
+                                      className={`w-full font-black gap-1.5 text-xs py-2.5 rounded-xl border ${
+                                        isSbUnavailable
+                                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                          : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-xs cursor-pointer border-emerald-500/30'
+                                      }`}
+                                      title={isSbMaintenance ? "Sede en mantenimiento" : isSbClosed ? "Sede cerrada" : "Reserva express en 1 clic"}
                                     >
                                       <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 animate-pulse" />
-                                      <span>⚡ Rápida</span>
+                                      <span>{isSbMaintenance ? 'Mantenimiento' : isSbClosed ? 'Cerrado' : '⚡ Rápida'}</span>
                                     </Button>
 
                                     <Button
@@ -958,7 +1017,8 @@ const AppMain = () => {
                                 )}
                               </div>
                             </Card>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -994,6 +1054,11 @@ const AppMain = () => {
                             const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
                             const shadedSlots = elements.filter(e => e.type === 'slot' && e.shaded).length;
 
+                            const pStatus = String(p.status || '').toLowerCase();
+                            const isBranchMaintenance = pStatus === 'mantenimiento' || pStatus === 'maintenance';
+                            const isBranchClosed = pStatus === 'cerrado' || pStatus === 'closed';
+                            const isBranchUnavailable = isBranchMaintenance || isBranchClosed;
+
                             return (
                               <Card key={p.id} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between">
                                 <div>
@@ -1013,18 +1078,40 @@ const AppMain = () => {
                                     <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-emerald-800 shadow-sm border border-slate-200">
                                       S/ {Number(p.rate).toFixed(2)}/h
                                     </div>
-                                    <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
-                                      {freeSlots} Libres de {totalSlots}
-                                    </div>
+                                    {isBranchMaintenance ? (
+                                      <div className="absolute bottom-3 left-3 bg-amber-950/90 backdrop-blur-md text-amber-300 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-amber-500/40 flex items-center gap-1.5">
+                                        <span>🔧 En Mantenimiento</span>
+                                      </div>
+                                    ) : isBranchClosed ? (
+                                      <div className="absolute bottom-3 left-3 bg-rose-950/90 backdrop-blur-md text-rose-300 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-rose-500/40 flex items-center gap-1.5">
+                                        <span>⛔ Cerrado</span>
+                                      </div>
+                                    ) : (
+                                      <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
+                                        {freeSlots} Libres de {totalSlots}
+                                      </div>
+                                    )}
                                   </div>
 
                                     <div className="p-5 space-y-3">
                                       <div>
                                         <div className="flex items-center justify-between gap-1.5">
                                           <h3 className="font-extrabold text-slate-900 text-base leading-tight truncate">{p.branchDisplayName || p.name}</h3>
-                                          <span className="shrink-0 text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">
-                                            Tol: {p.tolerance || 15}m
-                                          </span>
+                                          <div className="flex items-center gap-1 shrink-0">
+                                            {isBranchMaintenance && (
+                                              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-300 px-1.5 py-0.5 rounded">
+                                                Mantenimiento
+                                              </span>
+                                            )}
+                                            {isBranchClosed && (
+                                              <span className="text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-300 px-1.5 py-0.5 rounded">
+                                                Cerrado
+                                              </span>
+                                            )}
+                                            <span className="text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">
+                                              Tol: {p.tolerance || 15}m
+                                            </span>
+                                          </div>
                                         </div>
                                         <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
                                           <MapPin className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" /> 
@@ -1078,15 +1165,20 @@ const AppMain = () => {
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <Button 
                                       type="button"
+                                      disabled={isBranchUnavailable}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setQuickBookingParking(p);
+                                        handleOpenQuickBooking(p);
                                       }}
-                                      className="w-full font-black gap-1.5 text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-xs cursor-pointer py-2.5 rounded-xl border border-emerald-500/30"
-                                      title="Reserva express en 1 clic sin abrir el plano"
+                                      className={`w-full font-black gap-1.5 text-xs py-2.5 rounded-xl border ${
+                                        isBranchUnavailable
+                                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                          : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-xs cursor-pointer border-emerald-500/30'
+                                      }`}
+                                      title={isBranchMaintenance ? "Sede en mantenimiento" : isBranchClosed ? "Sede cerrada" : "Reserva express en 1 clic sin abrir el plano"}
                                     >
-                                      <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 animate-pulse" />
-                                      <span>⚡ Rápida</span>
+                                      <Zap className={`w-3.5 h-3.5 ${isBranchUnavailable ? 'text-slate-400' : 'text-amber-300 fill-amber-300 animate-pulse'}`} />
+                                      <span>{isBranchMaintenance ? 'Mantenimiento' : isBranchClosed ? 'Cerrado' : '⚡ Rápida'}</span>
                                     </Button>
 
                                     <Button 

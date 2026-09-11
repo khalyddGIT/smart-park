@@ -139,3 +139,66 @@ async def test_quick_reservation_auto_assignment_and_vehicle_matching():
         v_data = verify_res.json()
         assert v_data["slot_code"] == "MOT-01"
         assert v_data["license_plate"] == plate_moto
+
+@pytest.mark.asyncio
+async def test_reservation_rejected_when_parking_in_maintenance_or_closed():
+    admin_token, _, _ = await _register_and_get_token(role="local")
+    driver_token, _, _ = await _register_and_get_token(role="user")
+    transport = ASGITransport(app=app)
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    driver_headers = {"Authorization": f"Bearer {driver_token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Crear cochera
+        p_resp = await ac.post("/api/v1/parkings", headers=admin_headers, json={
+            "name": "Cochera Mantenimiento Test",
+            "address": "Jr. Manco Capac 120",
+            "city": "Ayacucho",
+            "hourly_rate": 5.0,
+            "rate_auto": 5.0,
+            "total_capacity": 5,
+            "tolerance_minutes": 15
+        })
+        assert p_resp.status_code == 201
+        pid = p_resp.json()["id"]
+
+        # Crear cajón
+        await ac.post(f"/api/v1/parkings/{pid}/floor-plan/sync", headers=admin_headers, json={
+            "slots": [{"code": "M-01", "floor_level": "Piso 1", "slot_type": "auto", "status": "free", "pos_x": 10, "pos_y": 10, "width": 50, "height": 80, "rotation": 0}],
+            "elements": []
+        })
+
+        # 1. Poner cochera en mantenimiento
+        up_resp = await ac.put(f"/api/v1/parkings/{pid}", headers=admin_headers, json={"status": "maintenance"})
+        assert up_resp.status_code == 200
+        assert up_resp.json()["status"] == "maintenance"
+
+        # Conductor intenta reservar -> debe ser rechazado con 400
+        now = datetime.now()
+        r1 = await ac.post("/api/v1/reservations", headers=driver_headers, json={
+            "parking_id": pid,
+            "license_plate": f"M{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().hex[:3].upper()}",
+            "vehicle_type": "auto",
+            "start_time": (now + timedelta(hours=1)).isoformat(),
+            "end_time": (now + timedelta(hours=2)).isoformat(),
+            "is_open_stay": True
+        })
+        assert r1.status_code == 400
+        assert "mantenimiento" in r1.json()["detail"].lower()
+
+        # 2. Poner cochera en cerrado
+        up_resp2 = await ac.put(f"/api/v1/parkings/{pid}", headers=admin_headers, json={"status": "closed"})
+        assert up_resp2.status_code == 200
+
+        # Conductor intenta reservar -> debe ser rechazado con 400
+        r2 = await ac.post("/api/v1/reservations", headers=driver_headers, json={
+            "parking_id": pid,
+            "license_plate": f"C{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().hex[:3].upper()}",
+            "vehicle_type": "auto",
+            "start_time": (now + timedelta(hours=1)).isoformat(),
+            "end_time": (now + timedelta(hours=2)).isoformat(),
+            "is_open_stay": True
+        })
+        assert r2.status_code == 400
+        assert "cerrad" in r2.json()["detail"].lower()
+

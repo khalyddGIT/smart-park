@@ -321,8 +321,9 @@ async def test_driver_sees_local_admin_business_rules_and_rates():
 
         # 5. Conductor realiza reserva y se verifica que tome la tolerancia y reglas actualizadas
         # Primero registrar vehículo
+        test_plate = f"T{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().hex[:3].upper()}"
         await ac.post("/api/v1/vehicles", headers=driver_headers, json={
-            "license_plate": "TEST-888",
+            "license_plate": test_plate,
             "vehicle_type": "auto"
         })
 
@@ -332,7 +333,7 @@ async def test_driver_sees_local_admin_business_rules_and_rates():
 
         res_create = await ac.post("/api/v1/reservations", headers=driver_headers, json={
             "parking_id": pid,
-            "license_plate": "TEST-888",
+            "license_plate": test_plate,
             "vehicle_type": "auto",
             "start_time": start_time,
             "end_time": end_time,

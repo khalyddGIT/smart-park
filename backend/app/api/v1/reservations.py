@@ -379,6 +379,23 @@ async def create_reservation(
     if not parking:
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
 
+    p_status = (parking.status or "active").strip().lower()
+    if p_status in ("maintenance", "mantenimiento"):
+        raise HTTPException(
+            status_code=400,
+            detail="El establecimiento se encuentra en mantenimiento y no acepta reservas en este momento."
+        )
+    if p_status in ("closed", "cerrado"):
+        raise HTTPException(
+            status_code=400,
+            detail="El establecimiento se encuentra cerrado temporalmente y no acepta reservas en este momento."
+        )
+    if p_status not in ("active", "operativo"):
+        raise HTTPException(
+            status_code=400,
+            detail="El establecimiento no se encuentra operativo para reservas en este momento."
+        )
+
     # Verificar política de prepago obligatorio
     if getattr(parking, "require_reservation_prepay", False) and not getattr(res_in, "pay_now", False):
         raise HTTPException(

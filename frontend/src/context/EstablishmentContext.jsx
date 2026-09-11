@@ -557,7 +557,12 @@ export const sanitizeEstablishment = (est, idx = 0) => {
     reservation_fee: Number(est.reservation_fee || 0.0),
     min_stay_hours: Number(est.min_stay_hours || 1),
     max_stay_hours: Number(est.max_stay_hours || 24),
-    status: (est.status === 'active' || est.status === 'Operativo') ? 'Operativo' : (est.status === 'closed' || est.status === 'Cerrado' ? 'Cerrado' : 'Mantenimiento'),
+    status: (() => {
+      const s = String(est.status || '').toLowerCase();
+      if (s === 'active' || s === 'operativo') return 'Operativo';
+      if (s === 'closed' || s === 'cerrado') return 'Cerrado';
+      return 'Mantenimiento';
+    })(),
     image: est.image || est.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800',
     image_url: est.image_url || est.image || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800',
     allow_open_stay: est.allow_open_stay !== undefined ? !!est.allow_open_stay : true
@@ -772,7 +777,12 @@ export const EstablishmentProvider = ({ children }) => {
             longitude: Number(p.longitude), 
             rate: Number(p.hourly_rate) || 5.00, 
             tolerance: Number(p.tolerance_minutes) || 15,
-            status: (p.status === 'active' || p.status === 'Operativo') ? 'Operativo' : 'Mantenimiento', 
+            status: (() => {
+              const s = String(p.status || '').toLowerCase();
+              if (s === 'active' || s === 'operativo') return 'Operativo';
+              if (s === 'closed' || s === 'cerrado') return 'Cerrado';
+              return 'Mantenimiento';
+            })(), 
             image: p.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800', 
             totalSlots: p.total_capacity, 
             available_slots: p.available_slots, 

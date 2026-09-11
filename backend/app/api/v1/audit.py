@@ -6,7 +6,8 @@ import json
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -38,6 +39,41 @@ def _fmt(dt):
         return str(dt)[:19]
 
 
+async def _get_local_user_parking_ids(db: AsyncSession, current_user: User) -> list[int]:
+    """Retorna los IDs de estacionamientos que administra o a los que pertenece el usuario local."""
+    curr_email = (current_user.email or "").strip().lower()
+    parking_ids = set()
+
+    # 1. Sedes donde es propietario por correo registrado
+    p_res = await db.execute(select(Parking.id).where(func.lower(Parking.email) == curr_email))
+    for pid in p_res.scalars().all():
+        parking_ids.add(pid)
+
+    # 2. Asignaciones de personal operativo / garita en Staff
+    s_res = await db.execute(
+        select(Staff.parking_id).where(
+            func.lower(Staff.email) == curr_email,
+            Staff.status == "active"
+        )
+    )
+    for pid in s_res.scalars().all():
+        if pid:
+            parking_ids.add(pid)
+
+    # 3. Seed demo de compatibilidad para pruebas y desarrollo
+    if curr_email == "adminlocal@smartpark.com":
+        seed_res = await db.execute(
+            select(Parking.id).where(
+                (Parking.id.in_([1, 2])) |
+                (func.lower(Parking.email) == "contacto@plazamayorpark.pe")
+            )
+        )
+        for pid in seed_res.scalars().all():
+            parking_ids.add(pid)
+
+    return list(parking_ids)
+
+
 @router.get("/logs")
 async def audit_logs(
     parking_id: Optional[int] = None,
@@ -46,14 +82,45 @@ async def audit_logs(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Retorna bitácora unificada y corporativa.
+    """Retorna bitácora unificada y corporativa con aislamiento estricto por sede.
     
-    Combina registros inmutables de AuditLog con eventos operacionales de la red.
-    Soporta filtrado por sede (parking_id) y severidad (Info, Advertencia, Crítico).
+    - Admin Local: Solo visualiza eventos, accesos ANPR, reservas, pagos e incidencias
+      de sus propios locales y usuarios interactuando en ellos.
+    - SuperAdmin / Plataforma: Visualiza bitácora global o filtra por cualquier sede.
+    - Conductor: Solo visualiza sus propias interacciones.
     """
     logs = []
-    is_local = current_user.role in ("local", "platform")
     is_platform = current_user.role == "platform"
+    is_local = current_user.role == "local"
+    is_user = current_user.role == "user"
+
+    target_parking_ids: Optional[list[int]] = None
+
+    if is_local:
+        allowed_pids = await _get_local_user_parking_ids(db, current_user)
+        if parking_id is not None:
+            if parking_id not in allowed_pids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes permiso para acceder a la auditoría de esta cochera."
+                )
+            target_parking_ids = [parking_id]
+        else:
+            target_parking_ids = allowed_pids
+            # Si el admin local no tiene ninguna sede asignada, retorna vacío de inmediato
+            if not target_parking_ids:
+                return []
+    elif is_platform:
+        if parking_id is not None:
+            target_parking_ids = [parking_id]
+        else:
+            target_parking_ids = None  # platform sin filtro ve toda la plataforma
+    else:
+        # Rol user / conductor
+        if parking_id is not None:
+            target_parking_ids = [parking_id]
+        else:
+            target_parking_ids = None
 
     # Cache de nombres de parkings y plazas
     park_res = await db.execute(select(Parking))
@@ -63,18 +130,33 @@ async def audit_logs(
 
     # 1. Eventos Administrativos y de Seguridad Inmutables (AuditLog)
     aq = select(AuditLog)
-    if not is_local and parking_id is None:
+    if is_local:
+        # Admin Local: Solo ve eventos de sus cocheras o acciones administrativas ejecutadas por él mismo
+        aq = aq.where(
+            (AuditLog.parking_id.in_(target_parking_ids)) |
+            ((AuditLog.user_id == current_user.id) & (AuditLog.parking_id.in_(target_parking_ids) | AuditLog.parking_id.is_(None)))
+        )
+    elif is_user:
         # Conductor: solo sus propios eventos
         aq = aq.where(AuditLog.user_id == current_user.id)
-    elif parking_id is not None:
-        aq = aq.where((AuditLog.parking_id == parking_id) | (AuditLog.parking_id.is_(None)))
+        if target_parking_ids is not None:
+            aq = aq.where(AuditLog.parking_id.in_(target_parking_ids))
+    elif is_platform and target_parking_ids is not None:
+        aq = aq.where(AuditLog.parking_id.in_(target_parking_ids))
     
-    if severity and severity.lower() != "all" and severity.lower() != "todos":
+    if severity and severity.lower() not in ("all", "todos"):
         aq = aq.where(AuditLog.severity.ilike(severity))
 
     aq = aq.order_by(AuditLog.id.desc()).limit(limit)
     ares = await db.execute(aq)
     for al in ares.scalars().all():
+        # Filtro de defensa en profundidad para local: jamás filtrar eventos de otra sede ni eventos globales de otros
+        if is_local:
+            if al.parking_id is not None and al.parking_id not in target_parking_ids:
+                continue
+            if al.parking_id is None and al.user_id != current_user.id:
+                continue
+
         pname = al.parking_name or park_map.get(al.parking_id, f"Sede #{al.parking_id}" if al.parking_id else "Global / Plataforma")
         op = al.user_email or (f"Usuario #{al.user_id}" if al.user_id else "Sistema Central")
         
@@ -103,12 +185,20 @@ async def audit_logs(
 
     # 2. Eventos Operacionales: Reservas (creación, check-in, check-out, cancelación)
     q = select(Reservation).order_by(Reservation.id.desc()).limit(limit)
-    if not is_local and parking_id is None:
-        q = select(Reservation).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc()).limit(limit)
-    elif parking_id is not None:
-        q = select(Reservation).where(Reservation.parking_id == parking_id).order_by(Reservation.id.desc()).limit(limit)
+    if is_local:
+        q = q.where(Reservation.parking_id.in_(target_parking_ids))
+    elif is_user:
+        q = q.where(Reservation.user_id == current_user.id)
+        if target_parking_ids is not None:
+            q = q.where(Reservation.parking_id.in_(target_parking_ids))
+    elif is_platform and target_parking_ids is not None:
+        q = q.where(Reservation.parking_id.in_(target_parking_ids))
+
     res = await db.execute(q)
     for r in res.scalars().all():
+        if is_local and r.parking_id not in target_parking_ids:
+            continue
+
         pname = park_map.get(r.parking_id, f"Sede #{r.parking_id}")
         scode = slot_map.get(r.slot_id, f"#{r.slot_id}")
         # Creación
@@ -201,24 +291,32 @@ async def audit_logs(
 
     # 3. Pagos
     pq = select(Payment).order_by(Payment.id.desc()).limit(limit)
-    if not is_local and parking_id is None:
-        pq = select(Payment).where(Payment.user_id == current_user.id).order_by(Payment.id.desc()).limit(limit)
-    elif parking_id is not None:
-        pq = select(Payment).where(Payment.reservation_id.in_(
-            select(Reservation.id).where(Reservation.parking_id == parking_id)
-        )).order_by(Payment.id.desc()).limit(limit)
+    if is_local:
+        pq = pq.where(Payment.reservation_id.in_(
+            select(Reservation.id).where(Reservation.parking_id.in_(target_parking_ids))
+        ))
+    elif is_user:
+        pq = pq.where(Payment.user_id == current_user.id)
+        if target_parking_ids is not None:
+            pq = pq.where(Payment.reservation_id.in_(
+                select(Reservation.id).where(Reservation.parking_id.in_(target_parking_ids))
+            ))
+    elif is_platform and target_parking_ids is not None:
+        pq = pq.where(Payment.reservation_id.in_(
+            select(Reservation.id).where(Reservation.parking_id.in_(target_parking_ids))
+        ))
+
     pres = await db.execute(pq)
     for p in pres.scalars().all():
         pid = None
         if p.reservation_id:
-            rr = await db.execute(select(Reservation).where(Reservation.id == p.reservation_id))
-            ro = rr.scalars().first()
-            if ro:
-                pid = ro.parking_id
-        if parking_id is not None and pid is not None and pid != parking_id:
+            rr = await db.execute(select(Reservation.parking_id).where(Reservation.id == p.reservation_id))
+            pid = rr.scalars().first()
+        if is_local and (pid is None or pid not in target_parking_ids):
             continue
-        if not is_local and p.user_id != current_user.id:
+        if is_user and p.user_id != current_user.id:
             continue
+
         pname = park_map.get(pid, f"Sede #{pid or '?'}")
         logs.append({
             "id": f"PAY-{p.id:04d}",
@@ -245,12 +343,20 @@ async def audit_logs(
 
     # 4. Incidencias
     iq = select(Incident).order_by(Incident.id.desc()).limit(limit)
-    if parking_id is not None:
-        iq = select(Incident).where(Incident.parking_id == parking_id).order_by(Incident.id.desc()).limit(limit)
-    elif not is_local:
-        iq = select(Incident).where(Incident.user_id == current_user.id).order_by(Incident.id.desc()).limit(limit)
+    if is_local:
+        iq = iq.where(Incident.parking_id.in_(target_parking_ids))
+    elif is_user:
+        iq = iq.where(Incident.user_id == current_user.id)
+        if target_parking_ids is not None:
+            iq = iq.where(Incident.parking_id.in_(target_parking_ids))
+    elif is_platform and target_parking_ids is not None:
+        iq = iq.where(Incident.parking_id.in_(target_parking_ids))
+
     ires = await db.execute(iq)
     for inc in ires.scalars().all():
+        if is_local and inc.parking_id not in target_parking_ids:
+            continue
+
         pname = park_map.get(inc.parking_id, f"Sede #{inc.parking_id}")
         sev = "Crítico" if inc.status == "reported" else "Info"
         logs.append({
@@ -297,10 +403,20 @@ async def audit_logs(
 
     # 5. Reseñas
     rq = select(Review).order_by(Review.id.desc()).limit(limit)
-    if parking_id is not None:
-        rq = select(Review).where(Review.parking_id == parking_id).order_by(Review.id.desc()).limit(limit)
+    if is_local:
+        rq = rq.where(Review.parking_id.in_(target_parking_ids))
+    elif is_user:
+        rq = rq.where(Review.user_id == current_user.id)
+        if target_parking_ids is not None:
+            rq = rq.where(Review.parking_id.in_(target_parking_ids))
+    elif is_platform and target_parking_ids is not None:
+        rq = rq.where(Review.parking_id.in_(target_parking_ids))
+
     rres = await db.execute(rq)
     for rev in rres.scalars().all():
+        if is_local and rev.parking_id not in target_parking_ids:
+            continue
+
         pname = park_map.get(rev.parking_id, f"Sede #{rev.parking_id}")
         logs.append({
             "id": f"REV-{rev.id:04d}",

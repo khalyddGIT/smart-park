@@ -31,12 +31,18 @@ import {
   Code2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useEstablishments } from '../context/EstablishmentContext';
+import { useEstablishments, isMyEstablishment } from '../context/EstablishmentContext';
 import api from '../services/api';
 
 export const AuditLogsModule = () => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { establishments } = useEstablishments();
+
+  // Filtrado de cocheras según el rol: El Admin Local SOLO tiene acceso a sus propias sedes
+  const myEstablishments = useMemo(() => {
+    if (role !== 'local') return establishments || [];
+    return (establishments || []).filter(e => isMyEstablishment(e, user, role));
+  }, [establishments, user, role]);
 
   const [globalFilter, setGlobalFilter] = useState('');
   const [severityFilter, setSeverityFilter] = useState('ALL');
@@ -213,7 +219,7 @@ export const AuditLogsModule = () => {
   };
 
   const subtitle = role === 'local'
-    ? 'Eventos verificados en tus sedes: accesos ANPR, liquidaciones, incidencias y seguridad local.'
+    ? 'Interacciones, accesos ANPR, reservas de clientes y cobros exclusivos de tu local.'
     : role === 'platform'
     ? 'Bitácora central e inmutable de auditoría: ajustes maestros, RBAC, accesos y transacciones globales.'
     : 'Registro cronológico de tus actividades en la red SmartPark.';
@@ -225,7 +231,7 @@ export const AuditLogsModule = () => {
         <div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
             <ShieldCheck className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
-            <span>{role === 'local' ? 'Auditoría de Sede' : 'Auditoría & Bitácora de Seguridad'}</span>
+            <span>{role === 'local' ? 'Auditoría de Mi Local' : 'Auditoría & Bitácora de Seguridad'}</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {subtitle}
@@ -265,13 +271,13 @@ export const AuditLogsModule = () => {
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Eventos Registrados
+              {role === 'local' ? 'Interacciones en Tu Local' : 'Eventos Registrados'}
             </div>
             <div className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
               {totalEvents}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              Historial consolidado
+              {role === 'local' ? 'Historial de tu sede' : 'Historial consolidado'}
             </div>
           </div>
         </Card>
@@ -282,13 +288,13 @@ export const AuditLogsModule = () => {
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Alertas de Seguridad
+              {role === 'local' ? 'Alertas en Tu Local' : 'Alertas de Seguridad'}
             </div>
             <div className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-0.5">
               {criticalAlerts}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              Incidentes y advertencias
+              {role === 'local' ? 'Incidencias locales' : 'Incidentes y advertencias'}
             </div>
           </div>
         </Card>
@@ -299,13 +305,13 @@ export const AuditLogsModule = () => {
           </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Operaciones Registradas
+              {role === 'local' ? 'Operaciones de Clientes' : 'Operaciones Registradas'}
             </div>
             <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
               {operationalEvents}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              Accesos, cobros y cambios de estado
+              {role === 'local' ? 'Accesos y pagos en tu sede' : 'Accesos, cobros y cambios de estado'}
             </div>
           </div>
         </Card>
@@ -346,17 +352,37 @@ export const AuditLogsModule = () => {
               <option value="Info">Info</option>
             </select>
 
-            {/* Filtro por Sede / Cochera */}
-            <select
-              value={parkingFilter}
-              onChange={e => { setParkingFilter(e.target.value); setPageIndex(0); }}
-              className="h-9 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-700 dark:text-slate-200 min-w-[170px]"
-            >
-              <option value="ALL">Todas las cocheras</option>
-              {establishments.map(est => (
-                <option key={est.id} value={est.id}>{est.name}</option>
-              ))}
-            </select>
+            {/* Filtro por Sede / Cochera (Aislado estrictamente por rol) */}
+            {role === 'local' ? (
+              myEstablishments.length > 1 ? (
+                <select
+                  value={parkingFilter}
+                  onChange={e => { setParkingFilter(e.target.value); setPageIndex(0); }}
+                  className="h-9 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-700 dark:text-slate-200 min-w-[170px]"
+                >
+                  <option value="ALL">Todas mis sedes ({myEstablishments.length})</option>
+                  {myEstablishments.map(est => (
+                    <option key={est.id} value={est.id}>{est.name}</option>
+                  ))}
+                </select>
+              ) : myEstablishments.length === 1 ? (
+                <div className="h-9 flex items-center px-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                  <Building2 className="w-3.5 h-3.5 mr-1.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="truncate max-w-[200px]">{myEstablishments[0].name}</span>
+                </div>
+              ) : null
+            ) : (
+              <select
+                value={parkingFilter}
+                onChange={e => { setParkingFilter(e.target.value); setPageIndex(0); }}
+                className="h-9 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-700 dark:text-slate-200 min-w-[170px]"
+              >
+                <option value="ALL">Todas las cocheras de la red</option>
+                {establishments.map(est => (
+                  <option key={est.id} value={est.id}>{est.name}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 self-end lg:self-auto">
@@ -425,7 +451,9 @@ export const AuditLogsModule = () => {
               ) : paginatedData.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-12 text-center text-slate-500 dark:text-slate-400 text-xs">
-                    Sin registros para los filtros seleccionados.
+                    {role === 'local' 
+                      ? 'Sin interacciones registradas en tu local para los filtros seleccionados.' 
+                      : 'Sin registros para los filtros seleccionados.'}
                   </td>
                 </tr>
               ) : paginatedData.map(row => (

@@ -147,9 +147,16 @@ export const NotificationProvider = ({ children }) => {
               const diffMs = end.getTime() - Date.now();
               const diffMin = Math.ceil(diffMs / 60000);
               if (diffMs <= 0) {
-                message = `Tu reserva ${r.code} vencida — realiza check-out. Placa ${r.license_plate}`;
+                const overMins = Math.abs(Math.floor(diffMs / 60000));
+                title = `⚠️ Estadía Excedida (+${overMins} min)`;
+                message = `Tu estadía para la reserva ${r.code} ha vencido (+${overMins}m). Sin periodo de gracia: el monto acumulado sigue incrementándose dinámicamente (Total actual: S/ ${Number(r.total_cost || 0).toFixed(2)}). Realiza tu check-out.`;
                 type = 'alert';
-              } else if (diffMin <= 120) {
+              } else if (diffMin <= 15) {
+                title = `⏰ Estadía por vencer (${diffMin} min)`;
+                message = `¡Atención! Tu tiempo para la reserva ${r.code} termina en ${diffMin} min. Recuerda que no hay tolerancia de gracia y el sistema continuará cobrando si te pasas.`;
+                type = 'alert';
+              } else if (diffMin <= 60) {
+                title = `Estadía en curso (${diffMin} min restantes)`;
                 message = `Tu reserva ${r.code} vence en ${diffMin} min. Placa ${r.license_plate} · Cochera #${r.parking_id}`;
                 type = 'warning';
               } else {
@@ -238,6 +245,33 @@ export const NotificationProvider = ({ children }) => {
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  // Reacciona a eventos en vivo de reservas (aviso de tiempo por vencer y cobro de overtime)
+  useEffect(() => {
+    const onLiveReservation = (e) => {
+      const detail = e.detail;
+      if (!detail) return;
+
+      if (detail.minutes_remaining !== undefined && detail.minutes_remaining <= 15) {
+        addNotification({
+          role: 'user',
+          title: `⏰ Estadía por vencer (${detail.minutes_remaining} min)`,
+          message: detail.message || `Tu estadía finaliza en ${detail.minutes_remaining} minutos. Sin tiempo de gracia.`,
+          type: 'alert'
+        });
+      } else if (detail.is_overtime) {
+        addNotification({
+          role: 'user',
+          title: `⚠️ Estadía Excedida (+${detail.overtime_minutes || 0} min)`,
+          message: detail.message || `Estadía vencida. Monto actual: S/ ${Number(detail.new_total_cost || 0).toFixed(2)}.`,
+          type: 'alert'
+        });
+      }
+    };
+
+    window.addEventListener('smart_park_reservation_live', onLiveReservation);
+    return () => window.removeEventListener('smart_park_reservation_live', onLiveReservation);
   }, []);
 
   // Notificaciones filtradas según el rol activo (compatibilidad API)

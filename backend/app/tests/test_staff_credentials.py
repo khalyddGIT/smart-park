@@ -13,13 +13,13 @@ def test_create_and_login_worker():
         
         # 1. Asegurar un usuario admin local para realizar las peticiones
         async with AsyncSessionLocal() as db:
-            res = await db.execute(select(User).where(User.role == "local"))
+            res = await db.execute(select(User).where(User.email == "adminlocal@smartpark.com"))
             admin_local = res.scalars().first()
             if not admin_local:
                 from app.core.security import get_password_hash
                 admin_local = User(
                     full_name="Admin Local Test",
-                    email="adminlocal_test@smartpark.pe",
+                    email="adminlocal@smartpark.com",
                     hashed_password=get_password_hash("AdminPass123!"),
                     role="local",
                     is_active=True

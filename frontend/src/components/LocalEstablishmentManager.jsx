@@ -41,7 +41,11 @@ import {
   Loader2,
   CheckCircle2,
   AlertTriangle,
-  XCircle
+  XCircle,
+  Timer,
+  CreditCard,
+  BellRing,
+  Sliders
 } from 'lucide-react';
 import { InteractiveFloorPlanDrawingStudio } from './InteractiveFloorPlanDrawingStudio';
 import { useEstablishments, isMyEstablishment, getEstablishmentHierarchy } from '../context/EstablishmentContext';
@@ -678,8 +682,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     setActiveViewMode('edit_form');
   };
 
-  // Abrir vista para editar
-  const handleOpenEdit = (est) => {
+  // Abrir vista para editar (permite acceder directamente a una pestaña, ej: 'policies' o 'pricing')
+  const handleOpenEdit = (est, initialTab = 'identity') => {
     setIsEditingNew(false);
     setSelectedEstablishment(est);
     const initialRate = Number(est.rate_auto ?? est.rate ?? est.hourly_rate ?? 5.00);
@@ -725,7 +729,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       mapsUrl: est.mapsUrl || `https://maps.google.com/?q=${est.latitude || -13.1604},${est.longitude || -74.2259}`,
       socials: est.socials || { facebook: '', instagram: '', tiktok: '', website: '' }
     });
-    setActiveTabSection('identity');
+    setActiveTabSection(initialTab);
     setActiveViewMode('edit_form');
   };
 
@@ -1274,6 +1278,30 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                 </a>
                               )}
                             </div>
+                            {/* Resumen Táctico de Reglas en Vigor */}
+                            <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-medium text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                              <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 flex items-center gap-1 text-slate-700 font-bold">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                <span>Tol: {est.tolerance || est.tolerance_minutes || 15}m</span>
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${
+                                est.require_reservation_prepay 
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              }`}>
+                                {est.require_reservation_prepay ? '💳 Prepago' : '🏢 Pospago'}
+                              </span>
+                              {est.night_shift_enabled && (
+                                <span className="bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-0.5 font-bold">
+                                  <Moon className="w-2.5 h-2.5" /> +S/{Number(est.night_shift_surcharge || 0).toFixed(2)}
+                                </span>
+                              )}
+                              {est.allow_open_stay !== false && (
+                                <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md border border-purple-200 font-bold">
+                                  Hora Libre
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -1290,21 +1318,21 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                           <Button
                             type="button"
-                            onClick={() => handleOpenPlan(est, 'viewer_2d')}
+                            onClick={() => handleOpenEdit(est, 'policies')}
                             variant="outline"
-                            className="h-8.5 px-2.5 text-slate-700 bg-white hover:bg-slate-50 border-slate-200 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
-                            title="Ver Plano"
+                            className="h-8.5 px-2.5 text-emerald-700 bg-emerald-50/60 hover:bg-emerald-100 border-emerald-200 text-xs font-bold gap-1 rounded-xl cursor-pointer"
+                            title="Configurar Reglas y Políticas de Estadía"
                           >
-                            <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                            <span>Ver</span>
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>Reglas</span>
                           </Button>
 
                           <Button
                             type="button"
-                            onClick={() => handleOpenEdit(est)}
+                            onClick={() => handleOpenEdit(est, 'identity')}
                             variant="outline"
                             className="h-8.5 px-2.5 text-slate-700 bg-white hover:bg-slate-50 border-slate-200 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
-                            title="Editar información de la sucursal"
+                            title="Editar información general de la sucursal"
                           >
                             <Edit3 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                             <span>Editar</span>
@@ -1522,12 +1550,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               onClick={() => setActiveTabSection('policies')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'policies'
-                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/80'
+                  ? 'bg-white text-emerald-950 shadow-xs ring-1 ring-emerald-300 font-black'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
               <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" />
-              <span>Políticas & Tolerancia</span>
+              <span>Reglas de Estadía & Reserva</span>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded-md">
+                Operación
+              </span>
             </button>
 
             <button
@@ -2035,185 +2066,399 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 </div>
               )}
 
-              {/* TAB 3: POLÍTICAS & TOLERANCIA */}
+              {/* TAB 3: REGLAS DE ESTADÍA & RESERVA (FLUJO CRONOLÓGICO DE 4 FASES) */}
               {activeTabSection === 'policies' && (
-                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h3 className="text-sm font-bold text-slate-900">Políticas de Reserva & Reglas de Estancia</h3>
-                    <p className="text-xs text-slate-500 font-medium">Controla los tiempos de tolerancia anti-sabotaje, modalidad de cobro y límites de estadía.</p>
-                  </div>
-
-                  {/* Tolerancia Anti-Sabotaje */}
-                  <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-2.5">
+                <div className="space-y-5">
+                  {/* Banner Explicativo del Ciclo Operativo */}
+                  <div className="p-4.5 bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl shadow-xs border border-slate-700/60 space-y-3.5">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-amber-600" />
-                        <span className="text-xs font-bold text-amber-900">Tolerancia de Reserva (Minutos)</span>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shrink-0">
+                          <ShieldCheck className="w-4.5 h-4.5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-white tracking-tight">Flujo de Reglas de Estadía & Cobro Continuo</h3>
+                          <p className="text-[11px] text-slate-300 font-normal">Ciclo cronológico de 4 etapas: desde la reserva inicial hasta el check-out en garita.</p>
+                        </div>
                       </div>
-                      <span className="text-[10px] font-bold text-amber-800 bg-white border border-amber-200 px-2 py-0.5 rounded-full">
-                        Cancelación automática si no hay ingreso
+                      <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-400/30">
+                        Automatizado en Garita
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-3 items-center">
-                      <Input
-                        type="number"
-                        min="5"
-                        max="60"
-                        step="5"
-                        value={formData.tolerance}
-                        onChange={(e) => {
-                          const v = Math.max(5, Math.min(60, Number(e.target.value) || 15));
-                          setFormData({ ...formData, tolerance: v });
-                        }}
-                        className="text-xs font-mono font-bold h-9 bg-white border-amber-300"
-                      />
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[11px] text-amber-800 font-medium">Presets:</span>
-                        {[10, 15, 20, 30].map((v) => (
-                          <button
-                            key={v}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, tolerance: v })}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
-                              Number(formData.tolerance) === v 
-                                ? 'bg-amber-600 text-white border-amber-600 shadow-2xs' 
-                                : 'bg-white text-amber-900 border-amber-200 hover:bg-amber-100'
-                            }`}
-                          >
-                            {v} min
-                          </button>
-                        ))}
+                    {/* Timeline de 4 Fases Visual */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-white/10 text-[11px]">
+                      <div className="flex items-center gap-1.5 text-emerald-300 font-medium bg-white/5 px-2 py-1 rounded-lg">
+                        <span className="w-4 h-4 rounded-full bg-emerald-500/30 border border-emerald-400 text-white font-mono text-[9px] flex items-center justify-center font-bold">1</span>
+                        <span className="truncate">Llegada & Tolerancia</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-200 font-medium bg-white/5 px-2 py-1 rounded-lg">
+                        <span className="w-4 h-4 rounded-full bg-white/20 border border-white/30 text-white font-mono text-[9px] flex items-center justify-center font-bold">2</span>
+                        <span className="truncate">Modalidad Cobro</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-indigo-300 font-medium bg-white/5 px-2 py-1 rounded-lg">
+                        <span className="w-4 h-4 rounded-full bg-indigo-500/30 border border-indigo-400 text-white font-mono text-[9px] flex items-center justify-center font-bold">3</span>
+                        <span className="truncate">Hora Libre / Rango</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-rose-300 font-medium bg-white/5 px-2 py-1 rounded-lg">
+                        <span className="w-4 h-4 rounded-full bg-rose-500/30 border border-rose-400 text-rose-200 font-mono text-[9px] flex items-center justify-center font-bold">4</span>
+                        <span className="truncate">Overtime Sin Gracia</span>
                       </div>
                     </div>
-                    <p className="text-[11px] text-amber-800/90 leading-snug">
-                      Si el conductor no se presenta dentro de los <b>{formData.tolerance} minutos</b> posteriores al inicio programado, el sistema cancela la reserva, libera el cajón y notifica al usuario.
-                    </p>
                   </div>
 
-                  {/* Modalidad de Cobro de Reserva */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-slate-700 block">Modalidad de Cobro en Reserva</label>
+                  {/* FASE 1: LLEGADA & TOLERANCIA ANTI-ABANDONO */}
+                  <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                    <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 font-bold text-xs shrink-0">
+                          1
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-black text-slate-900 tracking-tight uppercase">Fase 1: Llegada & Tolerancia Anti-Abandono</h4>
+                            <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                              Ventana de Espera
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">Tiempo que la plaza permanece bloqueada esperando que el conductor llegue a la garita.</p>
+                        </div>
+                      </div>
+                      <Timer className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-[170px_1fr] gap-4 items-center">
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Minutos de Tolerancia</label>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min="5"
+                            max="60"
+                            step="5"
+                            value={formData.tolerance}
+                            onChange={(e) => {
+                              const v = Math.max(5, Math.min(60, Number(e.target.value) || 15));
+                              setFormData({ ...formData, tolerance: v });
+                            }}
+                            className="text-xs font-mono font-bold h-9.5 bg-white border-amber-300 pr-10"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400">min</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] text-slate-600 font-semibold block">Presets rápidos:</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {[10, 15, 20, 30].map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, tolerance: v })}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
+                                Number(formData.tolerance) === v 
+                                  ? 'bg-amber-600 text-white border-amber-600 shadow-2xs ring-2 ring-amber-200' 
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-amber-50 hover:border-amber-300'
+                              }`}
+                            >
+                              <span>{v} min</span>
+                              {v === 15 && <span className="text-[9px] uppercase tracking-wider font-extrabold opacity-90 px-1 py-0.2 bg-white/20 rounded">Default</span>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>Regla de Sabotaje & No-Show:</span>
+                      </div>
+                      <p className="leading-relaxed text-amber-800">
+                        Si el conductor no se presenta dentro de los <strong className="font-mono">{formData.tolerance} minutos</strong> posteriores a la hora programada, el sistema <strong>cancela automáticamente la reserva</strong>, libera la plaza en el plano CAD y te devuelve la disponibilidad para nuevos clientes.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* FASE 2: MODALIDAD DE PAGO & COBRO DE RESERVA */}
+                  <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                    <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 font-bold text-xs shrink-0">
+                          2
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-black text-slate-900 tracking-tight uppercase">Fase 2: Modalidad de Cobro & Fianza</h4>
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                              Transacción
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">Elige cómo y cuándo abona el conductor: físicamente en tu garita o de forma anticipada.</p>
+                        </div>
+                      </div>
+                      <CreditCard className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, require_reservation_prepay: false })}
-                        className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
+                        className={`p-4 rounded-xl border text-left transition cursor-pointer relative ${
                           !formData.require_reservation_prepay
-                            ? 'border-emerald-500 bg-emerald-50/60 ring-1 ring-emerald-500'
-                            : 'border-slate-200 bg-white hover:bg-slate-50'
+                            ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
                         }`}
                       >
-                        <p className="text-xs font-bold text-slate-900">Reserva Libre (Pago en Garita)</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">El conductor aparta el cajón gratis y abona al salir según su estadía.</p>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                            <span>Pospago en Garita</span>
+                            <span className="text-[9px] font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Recomendado</span>
+                          </span>
+                          {!formData.require_reservation_prepay && (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          El conductor aparta su plaza y <strong>paga al salir en garita</strong> en efectivo, Yape, Plin o POS según su consumo exacto.
+                        </p>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, require_reservation_prepay: true })}
-                        className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
+                        className={`p-4 rounded-xl border text-left transition cursor-pointer relative ${
                           formData.require_reservation_prepay
-                            ? 'border-emerald-500 bg-emerald-50/60 ring-1 ring-emerald-500'
-                            : 'border-slate-200 bg-white hover:bg-slate-50'
+                            ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
                         }`}
                       >
-                        <p className="text-xs font-bold text-slate-900">Prepago Obligatorio</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">El conductor debe abonar con tarjeta o billetera digital antes de confirmar.</p>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                            <span>Prepago Digital Obligatorio</span>
+                          </span>
+                          {formData.require_reservation_prepay && (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          El conductor debe <strong>abonar el 100% estimado</strong> con tarjeta o billetera digital antes de emitir su Pase QR.
+                        </p>
                       </button>
                     </div>
-                  </div>
 
-                  {/* Tasa fija o fianza de reserva */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-800">Tasa fija / Fianza de Reserva (S/)</label>
-                      <span className="text-[10px] text-slate-500 font-medium">S/ 0.00 para desactivar</span>
-                    </div>
-                    <div className="max-w-xs">
-                      <Input
-                        type="number"
-                        step="0.50"
-                        min="0.00"
-                        value={formData.reservation_fee}
-                        onChange={(e) => setFormData({ ...formData, reservation_fee: parseFloat(e.target.value) || 0 })}
-                        className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Opción Hora Libre */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900">Opción "Hora Libre" (Estadía Abierta)</h4>
-                      <p className="text-[11px] text-slate-500">Permite a los usuarios ingresar sin pactar una hora exacta de salida, liquidando en garita.</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer select-none shrink-0">
-                      <input
-                        type="checkbox"
-                        checked={formData.allow_open_stay !== false}
-                        onChange={(e) => setFormData({ ...formData, allow_open_stay: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-                    </label>
-                  </div>
-
-                  {/* Límites de Tiempo Mínimo y Máximo */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                    <h4 className="text-xs font-bold text-slate-900">Rango de Tiempo de Estadía Permitido</h4>
-                    {formData.billing_unit === 'minute' ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Fianza de Reserva / Tasa de Apartado */}
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
                         <div>
-                          <span className="text-[11px] text-slate-600 block mb-1">Mínimo (minutos)</span>
+                          <label className="text-xs font-bold text-slate-800 block">Fianza de Reserva / Tasa de Apartado (S/)</label>
+                          <p className="text-[11px] text-slate-500">Monto deducible que el conductor deja al apartar plaza.</p>
+                        </div>
+                        <span className="text-[10px] font-mono font-bold text-slate-600 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                          {Number(formData.reservation_fee) > 0 ? `S/ ${Number(formData.reservation_fee).toFixed(2)} activo` : 'Desactivado (S/ 0.00)'}
+                        </span>
+                      </div>
+                      <div className="max-w-xs flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">S/</span>
                           <Input
                             type="number"
-                            min="5"
-                            max="360"
-                            step="5"
-                            value={formData.min_stay_minutes}
-                            onChange={(e) => setFormData({ ...formData, min_stay_minutes: parseInt(e.target.value) || 15 })}
-                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                            step="0.50"
+                            min="0.00"
+                            value={formData.reservation_fee}
+                            onChange={(e) => setFormData({ ...formData, reservation_fee: parseFloat(e.target.value) || 0 })}
+                            className="h-9 text-xs font-mono font-bold bg-white border-slate-300 pl-8"
                           />
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, reservation_fee: 0 })}
+                          className="px-2.5 py-2 text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition"
+                        >
+                          Cero
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* FASE 3: FLEXIBILIDAD & RANGO DE ESTADÍA */}
+                  <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                    <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">
+                          3
+                        </div>
                         <div>
-                          <span className="text-[11px] text-slate-600 block mb-1">Máximo (minutos)</span>
-                          <Input
-                            type="number"
-                            min="15"
-                            max="4320"
-                            step="15"
-                            value={formData.max_stay_minutes}
-                            onChange={(e) => setFormData({ ...formData, max_stay_minutes: parseInt(e.target.value) || 1440 })}
-                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
-                          />
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-black text-slate-900 tracking-tight uppercase">Fase 3: Flexibilidad & Rango de Estadía</h4>
+                            <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full border border-indigo-200">
+                              Tiempo
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">Controla si permites estadías abiertas sin hora de salida o exiges rangos fijos mín/máx.</p>
                         </div>
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <span className="text-[11px] text-slate-600 block mb-1">Mínimo (horas)</span>
-                          <Input
-                            type="number"
-                            min="1"
-                            max="12"
-                            value={formData.min_stay_hours}
-                            onChange={(e) => setFormData({ ...formData, min_stay_hours: parseInt(e.target.value) || 1 })}
-                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
-                          />
+                      <Sliders className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                    </div>
+
+                    {/* Toggle Hora Libre */}
+                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 flex items-center justify-between gap-4">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-xs font-bold text-slate-900">Modalidad "Hora Libre" (Estadía Abierta)</h5>
+                          <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full border ${
+                            formData.allow_open_stay !== false
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                              : 'bg-slate-200 text-slate-700 border-slate-300'
+                          }`}>
+                            {formData.allow_open_stay !== false ? 'Permitido' : 'Desactivado'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-snug">
+                          El conductor no necesita indicar hora de salida al reservar; el cobro se acumula en tiempo real hasta su retiro por garita.
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer select-none shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={formData.allow_open_stay !== false}
+                          onChange={(e) => setFormData({ ...formData, allow_open_stay: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Límites de Tiempo */}
+                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h5 className="text-xs font-bold text-slate-900">Límites Mínimo y Máximo de Estadía Programada</h5>
+                        <span className="text-[10px] font-mono text-slate-500">
+                          Unidad: {formData.billing_unit === 'minute' ? 'Minutos' : 'Horas'}
+                        </span>
+                      </div>
+
+                      {formData.billing_unit === 'minute' ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">Tiempo Mínimo (minutos)</label>
+                            <Input
+                              type="number"
+                              min="5"
+                              max="360"
+                              step="5"
+                              value={formData.min_stay_minutes}
+                              onChange={(e) => setFormData({ ...formData, min_stay_minutes: parseInt(e.target.value) || 15 })}
+                              className="h-9 text-xs font-mono font-bold bg-white border-slate-300"
+                            />
+                            <span className="text-[10px] text-slate-400 mt-1 block">Mínimo sugerido: 15 min</span>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">Tiempo Máximo (minutos)</label>
+                            <Input
+                              type="number"
+                              min="15"
+                              max="4320"
+                              step="15"
+                              value={formData.max_stay_minutes}
+                              onChange={(e) => setFormData({ ...formData, max_stay_minutes: parseInt(e.target.value) || 1440 })}
+                              className="h-9 text-xs font-mono font-bold bg-white border-slate-300"
+                            />
+                            <span className="text-[10px] text-slate-400 mt-1 block">Equivalente a {Math.round((formData.max_stay_minutes || 1440) / 60)} horas</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">Tiempo Mínimo (horas)</label>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="12"
+                              value={formData.min_stay_hours}
+                              onChange={(e) => setFormData({ ...formData, min_stay_hours: parseInt(e.target.value) || 1 })}
+                              className="h-9 text-xs font-mono font-bold bg-white border-slate-300"
+                            />
+                            <span className="text-[10px] text-slate-400 mt-1 block">Estándar: 1 hora</span>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">Tiempo Máximo (horas)</label>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="72"
+                              value={formData.max_stay_hours}
+                              onChange={(e) => setFormData({ ...formData, max_stay_hours: parseInt(e.target.value) || 24 })}
+                              className="h-9 text-xs font-mono font-bold bg-white border-slate-300"
+                            />
+                            <span className="text-[10px] text-slate-400 mt-1 block">Máximo por estadía continua</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* FASE 4: EXPIRACIÓN DE TIEMPO & COBRO CONTINUO (OVERTIME SIN GRACIA) */}
+                  <div className="p-5 bg-gradient-to-br from-rose-50/70 via-white to-amber-50/50 rounded-2xl border border-rose-200/80 shadow-2xs space-y-4">
+                    <div className="flex items-start justify-between gap-3 border-b border-rose-100 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-700 font-bold text-xs shrink-0">
+                          4
                         </div>
                         <div>
-                          <span className="text-[11px] text-slate-600 block mb-1">Máximo (horas)</span>
-                          <Input
-                            type="number"
-                            min="1"
-                            max="72"
-                            value={formData.max_stay_hours}
-                            onChange={(e) => setFormData({ ...formData, max_stay_hours: parseInt(e.target.value) || 24 })}
-                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
-                          />
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-black text-rose-950 tracking-tight uppercase">Fase 4: Expiración & Cobro Continuo (Overtime)</h4>
+                            <span className="text-[10px] font-black bg-rose-600 text-white px-2 py-0.5 rounded-full shadow-2xs">
+                              0 Min de Gracia
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-rose-800/80 mt-0.5">Política oficial Smart Park: aviso preventivo y recargo automático continuo al vencerse el tiempo.</p>
                         </div>
                       </div>
-                    )}
+                      <BellRing className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="p-3.5 bg-white rounded-xl border border-rose-200 shadow-2xs space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                          <span>Alerta Preventiva (T-15m)</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          El sistema notifica al conductor <strong>15 minutos antes</strong> de que finalice su estadía para recordarle dirigirse a garita o solicitar ampliación.
+                        </p>
+                      </div>
+
+                      <div className="p-3.5 bg-white rounded-xl border border-rose-200 shadow-2xs space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-rose-950">
+                          <span className="w-2 h-2 rounded-full bg-rose-600"></span>
+                          <span>Cero Gracia (T+0m)</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          Apenas expira el horario reservado, <strong>no existe tiempo de gracia gratuito</strong>. El estado de la reserva pasa inmediatamente a <strong>Excedido</strong>.
+                        </p>
+                      </div>
+
+                      <div className="p-3.5 bg-white rounded-xl border border-rose-200 shadow-2xs space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-950">
+                          <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                          <span>Cobro Continuo Dinámico</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          Cada minuto o fracción consumido en exceso se suma automáticamente a la tarifa final y <strong>se cobra en garita al momento del check-out</strong>.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white/80 rounded-xl border border-rose-200/60 text-[11px] text-slate-600 flex items-center justify-between flex-wrap gap-2">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Protección garantizada contra pérdidas de ingresos por permanencia extendida.</span>
+                      </span>
+                      <span className="font-mono font-bold text-[10px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                        Tarifa base: S/ {Number(formData.rate || 5).toFixed(2)}/h + Overtime
+                      </span>
+                    </div>
                   </div>
 
                 </div>
@@ -2736,25 +2981,62 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 </div>
               </div>
 
-              {/* Tarjeta Informativa de Parámetros Activos */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-xs text-slate-600">
-                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Resumen de Reglas de Sede
-                </span>
-                <ul className="space-y-1 text-[11px] text-slate-500">
-                  <li className="flex items-center justify-between">
-                    <span>Tolerancia de reserva:</span>
-                    <strong className="font-mono text-slate-800">{formData.tolerance} min</strong>
-                  </li>
-                  <li className="flex items-center justify-between">
-                    <span>Modalidad de reserva:</span>
-                    <strong className="text-slate-800">{formData.require_reservation_prepay ? 'Prepago digital' : 'Libre en garita'}</strong>
-                  </li>
-                  <li className="flex items-center justify-between">
-                    <span>Turno noche:</span>
-                    <strong className="text-slate-800">{formData.night_shift_enabled ? `S/ +${Number(formData.night_shift_surcharge).toFixed(2)}/h` : 'Desactivado'}</strong>
-                  </li>
-                </ul>
+              {/* Tarjeta Informativa de Reglas Activas (4 Fases) */}
+              <div className="bg-slate-900 text-white p-4.5 rounded-2xl border border-slate-800 space-y-3.5 text-xs shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <span className="text-[11px] font-black text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Resumen de Reglas (4 Fases)
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                    En Vivo
+                  </span>
+                </div>
+
+                <div className="space-y-2.5 text-[11px]">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <span className="font-bold text-amber-400">1.</span> Llegada:
+                    </span>
+                    <span className="font-mono font-bold text-amber-300 text-right">
+                      {formData.tolerance} min espera
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <span className="font-bold text-emerald-400">2.</span> Cobro:
+                    </span>
+                    <span className="font-semibold text-slate-200 text-right">
+                      {formData.require_reservation_prepay ? 'Prepago digital' : 'Pospago en garita'}
+                      {Number(formData.reservation_fee) > 0 ? ` (Fianza S/ ${Number(formData.reservation_fee).toFixed(2)})` : ''}
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <span className="font-bold text-indigo-400">3.</span> Flexibilidad:
+                    </span>
+                    <span className="font-semibold text-slate-200 text-right">
+                      {formData.allow_open_stay !== false ? 'Hora Libre permitida' : 'Solo fija'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <span className="font-bold text-rose-400">4.</span> Overtime:
+                    </span>
+                    <span className="font-bold text-rose-300 text-right">
+                      0m gracia · Cobro dinámico
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+                  <span>Turno Noche:</span>
+                  <span className="font-mono text-slate-300 font-semibold">
+                    {formData.night_shift_enabled ? `S/ +${Number(formData.night_shift_surcharge || 0).toFixed(2)}/h` : 'Inactivo'}
+                  </span>
+                </div>
               </div>
             </div>
 

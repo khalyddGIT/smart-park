@@ -321,7 +321,7 @@ const StickyStorytellingSection = () => {
             </div>
             <div className="flex justify-between items-center text-slate-400 text-[11px]">
               <span>Tolerancia de Llegada:</span>
-              <span className="text-cyan-400 font-bold">+15 min de gracia</span>
+              <span className="text-cyan-400 font-bold">15 min anti-demora</span>
             </div>
           </div>
         </div>

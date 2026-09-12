@@ -191,8 +191,7 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 python -m uvicorn app.main:app --port 8000 --reload
-```
-*API disponible en: `http://127.0.0.1:8000/docs` (Swagger UI). Requiere Postgres local: `docker compose up -d postgres` (puerto host `5434`) y `DATABASE_URL` en `backend/.env` (plantilla: `backend/.env.example`). **SQLite está deshabilitado**: sin Postgres el backend no arranca (fail-fast); solo la suite de tests (`TESTING=1`) usa SQLite aislado.*
+*API disponible en: `http://127.0.0.1:8000/docs` (Swagger UI). Requiere Postgres local: `docker compose up -d postgres` (puerto host `5434`) y `DATABASE_URL` en `backend/.env` (plantilla: `backend/.env.example`). **PostgreSQL exclusivo**: todo el sistema, desarrollo y suite de tests operan de forma centralizada sobre PostgreSQL.*
 
 ### 3. Iniciar el Frontend (React + Vite):
 ```bash
@@ -259,7 +258,7 @@ smart-park/
 │   │   ├── api/v1/            # Endpoints REST (auth, parkings, reservations, vehicles,
 │   │   │                      #   staff, users, reviews, anpr)
 │   │   ├── core/              # config.py (settings solo-Postgres + fail-fast), security.py (JWT/bcrypt), broker
-│   │   ├── db/                # Sesión asíncrona SQLAlchemy (solo PostgreSQL; SQLite únicamente en tests)
+│   │   ├── db/                # Sesión asíncrona SQLAlchemy (exclusivamente PostgreSQL)
 │   │   ├── models/            # Modelos relacionales en español
 │   │   ├── schemas/           # Esquemas Pydantic de validación
 │   │   ├── tests/             # Tests de API

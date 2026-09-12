@@ -579,6 +579,8 @@ class ReservationResponse(BaseModel):
     is_open_stay: Optional[bool] = False
     payment_method: Optional[str] = "efectivo"
     amount_paid: Optional[float] = 0.0
+    is_overtime: Optional[bool] = False
+    overtime_minutes: Optional[int] = 0
 
     class Config:
         from_attributes = True

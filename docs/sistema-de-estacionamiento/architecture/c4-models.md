@@ -37,7 +37,7 @@ C4Container
     Container(frontend, "Frontend SPA", "React 19, Vite, TailwindCSS, Radix UI", "Provee la interfaz de usuario, el Estudio CAD interactivo y el Gemelo Digital 3D.")
     Container(backend, "API Backend", "FastAPI (Python 3.11), SQLAlchemy, Pydantic", "Lógica de negocio, autenticación JWT, cálculo de tarifas y CRUD de planos.")
     Container(ws_gateway, "WebSocket Gateway", "Node.js (ws) / FastAPI WS", "Distribución de eventos en tiempo real (ANPR, estado de cajones y barreras).")
-    ContainerDb(database, "Base de Datos Primaria", "PostgreSQL / SQLite", "Almacena usuarios, vehículos, planos arquitectónicos, reservas y transacciones.")
+    ContainerDb(database, "Base de Datos Primaria", "PostgreSQL", "Almacena usuarios, vehículos, planos arquitectónicos, reservas y transacciones.")
 
     Rel(user, frontend, "Usa la aplicación", "HTTPS")
     Rel(frontend, backend, "Consume servicios REST", "JSON/HTTPS")

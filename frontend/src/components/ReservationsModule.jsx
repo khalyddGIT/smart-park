@@ -440,11 +440,18 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
     const end = parseIsoToDate(expiresAt).getTime();
     const diffMs = end - now;
 
-    if (diffMs <= 0) return 'Estadía vencida (en exceso)';
+    if (diffMs <= 0) {
+      const overMins = Math.floor(Math.abs(diffMs) / 60000);
+      return `⚠️ Excedida (+${overMins}m · sin gracia)`;
+    }
 
     const diffMins = Math.floor(diffMs / (1000 * 60));
     const h = Math.floor(diffMins / 60);
     const m = diffMins % 60;
+
+    if (diffMins <= 15) {
+      return `⏰ Por vencer: ${diffMins} min`;
+    }
 
     if (h > 0) {
       return `Estancia: ${h}h ${m}m restantes`;

@@ -17,6 +17,7 @@ import {
   LogOut,
   Loader2,
   AlertCircle,
+  AlertTriangle,
   XCircle,
   ShieldCheck,
   FileText,
@@ -35,12 +36,20 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
   const [localStatus, setLocalStatus] = useState(null);
   const [localActualEntry, setLocalActualEntry] = useState(null);
   const [liveBanner, setLiveBanner] = useState(null);
+  const [isOvertime, setIsOvertime] = useState(false);
+  const [overtimeSecs, setOvertimeSecs] = useState(0);
+  const [dynamicCost, setDynamicCost] = useState(null);
+  const [isExpiringSoon, setIsExpiringSoon] = useState(false);
   const qrRef = useRef(null);
 
   useEffect(() => {
     if (reservation) {
       setLocalStatus(reservation.status?.toLowerCase() || 'scheduled');
       setLocalActualEntry(reservation.actual_entry || reservation.actualEntry || null);
+      setIsOvertime(Boolean(reservation.is_overtime));
+      if (reservation.total_cost || reservation.totalCost || reservation.cost) {
+        setDynamicCost(Number(reservation.total_cost || reservation.totalCost || reservation.cost));
+      }
     }
   }, [reservation]);
 
@@ -85,19 +94,36 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
         setLocalStatus('active');
         const entryTime = detail.actual_entry || new Date().toISOString();
         setLocalActualEntry(entryTime);
-        playSuccessChime();
-        try {
-          if ('vibrate' in navigator) navigator.vibrate([100, 50, 150]);
-        } catch {}
-        setLiveBanner('Ingreso registrado • En estadía');
-        setTimeout(() => setLiveBanner(null), 6000);
+
+        if (detail.is_overtime) {
+          setIsOvertime(true);
+          if (detail.new_total_cost) {
+            setDynamicCost(Number(detail.new_total_cost));
+          }
+          setLiveBanner(`⚠️ Estadía vencida (+${detail.overtime_minutes || 0}m). Monto actual: S/ ${Number(detail.new_total_cost || 0).toFixed(2)}.`);
+        } else if (detail.minutes_remaining !== undefined && detail.minutes_remaining <= 15) {
+          setIsExpiringSoon(true);
+          setLiveBanner(`⏰ Atención: Tu estadía finaliza en ${detail.minutes_remaining} min. Sin periodo de gracia.`);
+        } else {
+          playSuccessChime();
+          try {
+            if ('vibrate' in navigator) navigator.vibrate([100, 50, 150]);
+          } catch {}
+          setLiveBanner('Ingreso registrado • En estadía');
+          setTimeout(() => setLiveBanner(null), 6000);
+        }
+
         onReservationUpdated?.({
           ...reservation,
           status: 'active',
-          actual_entry: entryTime
+          actual_entry: entryTime,
+          is_overtime: detail.is_overtime,
+          total_cost: detail.new_total_cost || reservation.total_cost
         });
       } else if (detail.reservation_status === 'completed') {
         setLocalStatus('completed');
+        setIsOvertime(false);
+        setIsExpiringSoon(false);
         playSuccessChime();
         try {
           if ('vibrate' in navigator) navigator.vibrate(200);
@@ -112,6 +138,8 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
         });
       } else if (detail.reservation_status === 'cancelled') {
         setLocalStatus('cancelled');
+        setIsOvertime(false);
+        setIsExpiringSoon(false);
         setLiveBanner('Reserva anulada');
         setTimeout(() => setLiveBanner(null), 5000);
         onReservationUpdated?.({
@@ -210,13 +238,44 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       const difference = targetDeadline - now;
 
       if (difference <= 0) {
-        setTimeLeft(isScheduled ? 'Tolerancia vencida' : '00:00:00');
-        setSecondsRemaining(0);
-        return;
+        if (isScheduled) {
+          setTimeLeft('Tolerancia vencida');
+          setSecondsRemaining(0);
+          setIsOvertime(false);
+          setIsExpiringSoon(false);
+          return;
+        } else {
+          // Fase 2 (Estadía activa): Excedido el tiempo contratado sin periodo de gracia
+          const overtimeSec = Math.abs(Math.floor(difference / 1000));
+          setIsOvertime(true);
+          setIsExpiringSoon(false);
+          setOvertimeSecs(overtimeSec);
+          setSecondsRemaining(0);
+          const oH = Math.floor(overtimeSec / 3600);
+          const oM = Math.floor((overtimeSec % 3600) / 60);
+          const oS = overtimeSec % 60;
+          setTimeLeft(`+${String(oH).padStart(2, '0')}:${String(oM).padStart(2, '0')}:${String(oS).padStart(2, '0')}`);
+
+          // Cálculo incremental dinámico en vivo (por hora o fracción)
+          const baseHours = Math.max(1, passData.hours || 1);
+          const hourlyRate = (passData.cost || 5) / baseHours;
+          const extraHours = Math.max(1, Math.ceil(overtimeSec / 3600));
+          const calculatedTotal = passData.cost + (extraHours * hourlyRate);
+          setDynamicCost(prev => Math.max(prev || passData.cost, calculatedTotal));
+          return;
+        }
       }
 
+      setIsOvertime(false);
       const totalSec = Math.max(0, Math.floor(difference / 1000));
       setSecondsRemaining(totalSec);
+
+      // Si es estadía activa y quedan 15 minutos o menos
+      if (!isScheduled && totalSec <= 15 * 60) {
+        setIsExpiringSoon(true);
+      } else {
+        setIsExpiringSoon(false);
+      }
 
       const h = Math.floor(totalSec / 3600);
       const m = Math.floor((totalSec % 3600) / 60);
@@ -656,30 +715,74 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 </p>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-medium">
-                  {isActive ? 'Tiempo en Estadía' : isScheduled ? 'Tiempo para llegar' : 'Estado'}
+              <div className={`p-2.5 rounded-xl border transition-colors ${
+                isOvertime 
+                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800' 
+                  : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700'
+              }`}>
+                <span className={`text-[10px] block font-medium ${
+                  isOvertime ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
+                }`}>
+                  {isOvertime ? '⚠️ Tiempo Excedido' : isActive ? 'Tiempo en Estadía' : isScheduled ? 'Tiempo para llegar' : 'Estado'}
                 </span>
-                <p className={`font-mono font-bold text-sm mt-0.5 ${
-                  isCancelled ? 'text-rose-600' : isCompleted ? 'text-slate-600' : 'text-slate-900 dark:text-white'
+                <p className={`font-mono font-black text-sm mt-0.5 ${
+                  isOvertime ? 'text-amber-600 dark:text-amber-400 animate-pulse' : isCancelled ? 'text-rose-600' : isCompleted ? 'text-slate-600' : 'text-slate-900 dark:text-white'
                 }`}>
                   {isCancelled ? 'Cancelada' : isCompleted ? 'Finalizada' : timeLeft || '--:--:--'}
                 </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block truncate">
-                  {isScheduled ? `Llegada hasta ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}` : `Estadía: ${passData.hours}h`}
+                <span className={`text-[10px] block truncate ${
+                  isOvertime ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
+                }`}>
+                  {isOvertime ? 'Sin periodo de gracia' : isScheduled ? `Llegada hasta ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}` : `Estadía: ${passData.hours}h`}
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-medium">Total de Reserva</span>
-                <p className="font-mono font-bold text-sm text-emerald-700 dark:text-emerald-400 mt-0.5">
-                  {isCancelled ? 'S/ 0.00' : `S/ ${passData.cost.toFixed(2)}`}
+              <div className={`p-2.5 rounded-xl border transition-colors ${
+                isOvertime 
+                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800' 
+                  : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700'
+              }`}>
+                <span className={`text-[10px] block font-medium ${
+                  isOvertime ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
+                }`}>
+                  {isOvertime ? 'Total Acumulado' : 'Total de Reserva'}
+                </span>
+                <p className={`font-mono font-black text-sm mt-0.5 ${
+                  isOvertime ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'
+                }`}>
+                  {isCancelled ? 'S/ 0.00' : `S/ ${(isOvertime && dynamicCost ? dynamicCost : passData.cost).toFixed(2)}`}
                 </p>
-                <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 block">
-                  {isCancelled ? 'Anulada' : passData.isPrepaid ? '✓ Prepagado' : 'Pago en garita'}
+                <span className={`text-[10px] font-semibold block ${
+                  isOvertime ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+                }`}>
+                  {isCancelled ? 'Anulada' : isOvertime ? 'En aumento dinámico' : passData.isPrepaid ? '✓ Prepagado' : 'Pago en garita'}
                 </span>
               </div>
             </div>
+
+            {/* Aviso Dinámico de Estadía por Vencer (<= 15 min) */}
+            {isExpiringSoon && !isOvertime && isActive && (
+              <div className="my-2.5 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 text-xs flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600 shrink-0 animate-pulse" />
+                <div className="text-[11px] font-medium leading-tight">
+                  <strong className="font-bold text-amber-900 dark:text-amber-300 block">Tu tiempo contratado está por vencer</strong>
+                  No existe periodo de gracia. Al cumplirse el tiempo, el monto se incrementará automáticamente.
+                </div>
+              </div>
+            )}
+
+            {/* Aviso Dinámico de Estadía Excedida (Overtime Activo) */}
+            {isOvertime && isActive && (
+              <div className="my-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-black text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Estadía Excedida — Cobro en Curso</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-amber-900/90 dark:text-amber-300/90 font-medium">
+                  Has superado el tiempo contratado. Sin periodo de gracia: el monto acumulado continuará aumentando en tiempo real según la tarifa oficial de la cochera hasta que registres tu salida.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Botones de Acción Operativa */}

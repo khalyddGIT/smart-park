@@ -54,7 +54,7 @@ railway variables --service smart-park-web \
   --set "UPLOADS_DIR=/data/uploads"
 ```
 
-> 🔒 **Fail-fast:** si falta `DATABASE_URL` o `SECRET_KEY` con `ENVIRONMENT=production`, el contenedor se detiene con error explícito en lugar de arrancar inseguro o con datos efímeros. SQLite está deshabilitado fuera de tests: sin Postgres la app no arranca. El puerto lo asigna Railway automáticamente (no definir `PORT`).
+> 🔒 **Fail-fast:** si falta `DATABASE_URL` o `SECRET_KEY` con `ENVIRONMENT=production`, el contenedor se detiene con error explícito en lugar de arrancar inseguro o con datos efímeros. El sistema opera exclusivamente con PostgreSQL: sin Postgres la app no arranca. El puerto lo asigna Railway automáticamente (no definir `PORT`).
 
 ### Paso 3b: Volume para Fotos (Persistencia de Uploads)
 
@@ -79,7 +79,7 @@ El filesystem del contenedor es **efímero**: sin Volume, las fotos de vehículo
 | Swagger Docs | `https://tu-app.up.railway.app/docs` |
 | API ejemplo | `https://tu-app.up.railway.app/api/v1/parkings` |
 
-> Si `/health` muestra `"db": "sqlite..."`, el deploy está mal configurado: revisa `DATABASE_URL` (solo se permite SQLite con `TESTING=1` en la suite de tests).
+> Verifica que `/health` reporte el status `ok` y el string de conexión `postgresql://...` confirmando que el backend está enlazado correctamente al servicio PostgreSQL.
 
 ---
 

@@ -39,7 +39,7 @@ Smart-Park no es propietario de los inmuebles físicos de estacionamiento (salvo
       title: '2. Obligaciones y Derechos del Conductor (Usuario Final)',
       icon: <Car className="w-4 h-4 text-blue-600 shrink-0" />,
       content: `• Reserva y Ocupación: El usuario tiene derecho a ocupar el cajón específico reservado durante el lapso de tiempo contratado.
-• Tolerancia y Horarios: Se otorga un periodo de gracia estándar de 15 minutos. El tiempo excedente será cobrado según el tarifario oficial de la cochera mediante la pasarela de pago o en garita.
+• Control de Tiempos y Cobro Continuo: No existe periodo de gracia tras culminar la estadía contratada. El sistema notifica preventivamente al usuario cuando su tiempo está por vencer, y si se excede, el monto total continúa incrementándose dinámicamente en tiempo real según el tarifario oficial de la cochera.
 • Custodia y Objetos de Valor: El conductor debe cerrar debidamente su vehículo. Smart-Park y el establecimiento no se hacen responsables por bienes no declarados expresamente en garita conforme al Art. 1756 del Código Civil Peruano.`
     },
     {

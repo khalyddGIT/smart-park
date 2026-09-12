@@ -15,12 +15,12 @@ def test_pin_garita_login_full_lifecycle():
         transport = ASGITransport(app=app)
         
         async with AsyncSessionLocal() as db:
-            res = await db.execute(select(User).where(User.role == 'local'))
+            res = await db.execute(select(User).where(User.email == 'adminlocal@smartpark.com'))
             admin_local = res.scalars().first()
             if not admin_local:
                 admin_local = User(
                     full_name='Admin Local Garita Test',
-                    email=f'admin_local_{uuid.uuid4().hex[:6]}@smartpark.pe',
+                    email='adminlocal@smartpark.com',
                     hashed_password=get_password_hash('AdminPass123!'),
                     role='local',
                     is_active=True

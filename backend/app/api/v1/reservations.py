@@ -135,6 +135,32 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
     resp.prepaid = bool(getattr(r, "prepaid", False))
     resp.is_open_stay = bool(getattr(r, "is_open_stay", False))
 
+    # Cálculo en vivo de exceso de estadía y monto acumulado incremental (sin tiempo de gracia)
+    if r.status == "active" and r.end_time:
+        now = datetime.utcnow()
+        end_naive = r.end_time.replace(tzinfo=None) if r.end_time.tzinfo else r.end_time
+        if now > end_naive:
+            resp.is_overtime = True
+            resp.overtime_minutes = max(1, int((now - end_naive).total_seconds() / 60.0))
+            entry_time = r.actual_entry or r.start_time
+            if entry_time:
+                entry_naive = entry_time.replace(tzinfo=None) if entry_time.tzinfo else entry_time
+                elapsed_sec = max(0.0, (now - entry_naive).total_seconds())
+                parking = getattr(r, "parking", None)
+                vtype = getattr(r, "vehicle_type", "auto")
+                billing_unit = getattr(r, "billing_unit", "hour") or "hour"
+                night_surcharge = float(parking.night_shift_surcharge or 0.0) if parking and getattr(r, "is_night_shift", False) else 0.0
+                if billing_unit == "minute":
+                    diff_min = max(1, math.ceil(elapsed_sec / 60.0))
+                    minute_rate = get_parking_minute_rate(parking, vtype) if parking else 0.10
+                    calculated_cost = round(diff_min * (minute_rate + (night_surcharge / 60.0 if night_surcharge else 0.0)), 2)
+                else:
+                    billed_hours = max(1, math.ceil(elapsed_sec / 3600.0))
+                    vehicle_rate = get_parking_vehicle_rate(parking, vtype) if parking else 5.0
+                    calculated_cost = round(billed_hours * (vehicle_rate + night_surcharge), 2)
+                if calculated_cost > resp.total_cost:
+                    resp.total_cost = calculated_cost
+
     return resp
 
 async def _check_reservation_access(reservation: Reservation, current_user: User, db: AsyncSession, action_label: str = "esta reserva"):
@@ -731,17 +757,34 @@ async def check_out_reservation(
         reservation.total_cost = float(checkout_in.amount_paid)
         reservation.amount_paid = float(checkout_in.amount_paid)
     else:
-        # Calcular según tiempo real y tarifa del parking
+        # Calcular según tiempo real y tarifa del parking SIN tiempo de gracia
         p_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
         parking = p_res.scalars().first()
-        rate = float(parking.hourly_rate or 5.0) if parking else 5.0
+        vtype = getattr(reservation, "vehicle_type", "auto")
+        billing_unit = (getattr(reservation, "billing_unit", None) or (parking.billing_unit if parking else "hour") or "hour").strip().lower()
+
+        # Comprobar si aplica recargo nocturno
+        night_surcharge = 0.0
+        if parking and getattr(parking, "night_shift_enabled", False):
+            if getattr(reservation, "is_night_shift", False) or _is_time_in_night_shift(now, parking.night_shift_start or "20:00", parking.night_shift_end or "06:00"):
+                night_surcharge = float(parking.night_shift_surcharge or 0.0)
 
         entry_time = reservation.actual_entry or reservation.start_time or now
-        diff_seconds = max(0, (now - entry_time).total_seconds())
-        # Tolerancia de cortesía de 15 minutos: si se pasa de 60 min pero menos de 75 min, cuenta como 1 hora
-        tol_sec = (reservation.tolerance_minutes or 15) * 60
-        billed_hours = max(1, math.ceil(max(0, diff_seconds - tol_sec) / 3600))
-        calculated_cost = round(rate * billed_hours, 2)
+        diff_seconds = max(0.0, (now - entry_time).total_seconds())
+
+        if billing_unit == "minute":
+            diff_minutes = max(1, math.ceil(diff_seconds / 60.0))
+            minute_rate = get_parking_minute_rate(parking, vtype) if parking else 0.10
+            effective_minute_rate = minute_rate + (night_surcharge / 60.0 if night_surcharge else 0.0)
+            reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0) if parking else 0.0
+            calculated_cost = round((diff_minutes * effective_minute_rate) + reservation_fee, 2)
+        else:
+            billed_hours = max(1, math.ceil(diff_seconds / 3600.0))
+            vehicle_rate = get_parking_vehicle_rate(parking, vtype) if parking else 5.0
+            effective_rate = vehicle_rate + night_surcharge
+            reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0) if parking else 0.0
+            calculated_cost = round((billed_hours * effective_rate) + reservation_fee, 2)
+
         if getattr(reservation, "is_open_stay", False) or calculated_cost > (reservation.total_cost or 0):
             reservation.total_cost = calculated_cost
         if not getattr(reservation, "amount_paid", None):

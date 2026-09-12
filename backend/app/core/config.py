@@ -47,12 +47,8 @@ class Settings(BaseSettings):
     RESERVATION_WORKER_ENABLED: bool = os.getenv("RESERVATION_WORKER_ENABLED", "True") == "True"
     RESERVATION_TOLERANCE_CHECK_INTERVAL: int = int(os.getenv("RESERVATION_TOLERANCE_CHECK_INTERVAL", "60"))
 
-    # Conexión a Base de Datos — SOLO PostgreSQL en local y producción.
-    # La persistencia se rompía porque existía un fallback a SQLite
-    # (smartpark_dev.db / smart_park.db, ignorados por git/docker y efímeros
-    # en Railway). Ese fallback queda eliminado: sin Postgres la app no arranca.
-    # Única excepción: la suite de tests (TESTING=1 o PYTEST_CURRENT_TEST),
-    # que puede usar SQLite aislado vía DATABASE_URL sqlite+aiosqlite://...
+    # Conexión a Base de Datos — EXCLUSIVAMENTE PostgreSQL en local, pruebas y producción.
+    # SQLite fue eliminado de raíz en todo el sistema Smart Park.
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres")
@@ -66,6 +62,11 @@ class Settings(BaseSettings):
 
     def _normalize_async_url(self, url: str) -> str:
         url = url.strip()
+        if url.startswith("sqlite"):
+            raise RuntimeError(
+                "[smart-park] SQLite está 100% deshabilitado y eliminado del sistema. "
+                "Smart Park requiere PostgreSQL (postgresql+asyncpg://...)."
+            )
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql+asyncpg://", 1)
         elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
@@ -77,17 +78,14 @@ class Settings(BaseSettings):
         if self.DATABASE_URL:
             url = self.DATABASE_URL.strip()
             if url.startswith("sqlite"):
-                if not self.TESTING:
-                    raise RuntimeError(
-                        "[smart-park] SQLite está deshabilitado: usa PostgreSQL "
-                        "(levanta `docker compose up -d postgres` y define DATABASE_URL). "
-                        "SQLite solo se permite con TESTING=1 para la suite de tests."
-                    )
-                return url
+                raise RuntimeError(
+                    "[smart-park] SQLite está 100% deshabilitado y eliminado del sistema. "
+                    "Smart Park requiere PostgreSQL (postgresql+asyncpg://...)."
+                )
             return self._normalize_async_url(url)
 
         # Sin DATABASE_URL se construye la URL de Postgres local por defecto.
-        # Sigue siendo PostgreSQL (no SQLite), así local y producción usan el mismo motor.
+        # Siempre PostgreSQL, garantizando paridad total entre desarrollo, tests y producción.
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -104,9 +102,8 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# Fail-fast: sin Postgres no se arranca en ningún entorno (local o producción).
-# Arrancar con SQLite o en modo degradado era lo que hacía que los datos
-# "desaparecieran" al cambiar de BD o de deploy.
+# Fail-fast: sin Postgres no se arranca en ningún entorno (local, tests o producción).
+# Todo el sistema persiste de forma centralizada y unificada en PostgreSQL.
 if not settings.DATABASE_URL:
     import logging
     logging.warning(

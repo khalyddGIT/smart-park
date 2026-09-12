@@ -1,8 +1,8 @@
 """Servicio de respaldos (backups) automáticos y bajo demanda para Smart-Park.
 
-Gestiona la extracción estructurada de todas las tablas de la base de datos
-(PostgreSQL en producción, SQLite en pruebas), cálculo de checksum de integridad SHA-256,
-escritura atómica en el volumen persistente (/data/backups) y rotación de snapshots.
+Gestiona la extracción estructurada de todas las tablas de la base de datos PostgreSQL,
+cálculo de checksum de integridad SHA-256, escritura atómica en el volumen
+persistente (/data/backups) y rotación de snapshots.
 """
 
 import os
@@ -75,7 +75,7 @@ async def generate_database_backup(session: AsyncSession, reason: str = "manual"
     lo guarda en disco de forma atómica y rota las copias obsoletas.
     """
     os.makedirs(BACKUPS_DIR, exist_ok=True)
-    engine_str = "PostgreSQL" if "postgresql" in str(engine.url) else "SQLite"
+    engine_str = "PostgreSQL"
 
     # 1. Extracción exhaustiva de datos
     data_tables: Dict[str, List[Dict[str, Any]]] = {
@@ -207,7 +207,7 @@ def get_backup_filepath(filename: str) -> Optional[str]:
 def get_backup_status() -> Dict[str, Any]:
     """Devuelve el estado general del subsistema de respaldos."""
     backups = list_backups()
-    engine_str = "PostgreSQL" if "postgresql" in str(engine.url) else "SQLite"
+    engine_str = "PostgreSQL"
     is_persistent = os.path.exists("/data") or "/data" in BACKUPS_DIR
 
     latest = None

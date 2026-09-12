@@ -327,12 +327,17 @@ export const PersonalGaritaModule = () => {
     }
 
     const finalRate = categoryRate + nightSurcharge;
-    // Tolerancia de 15 min
-    const billedHours = Math.max(1, Math.ceil(Math.max(0, diffMins - 15) / 60));
+    // Cálculo exacto por horas transcurridas (sin periodo de gracia de 15 minutos)
+    const billedHours = Math.max(1, Math.ceil(diffMins / 60));
     const calculatedCost = billedHours * finalRate;
 
-    // Verificar si ya fue pre-pagado en el ingreso
+    // Verificar si la reserva tenía una hora de fin programada y excedió el tiempo
     const raw = v.rawReservation || {};
+    const scheduledEnd = (raw.end_time || raw.endTime) ? new Date(raw.end_time || raw.endTime) : null;
+    const isOvertime = scheduledEnd ? now.getTime() > scheduledEnd.getTime() : false;
+    const overtimeMins = isOvertime ? Math.floor((now.getTime() - scheduledEnd.getTime()) / 60000) : 0;
+
+    // Verificar si ya fue pre-pagado en el ingreso
     const alreadyPaid = raw.amount_paid > 0 || (raw.payment_method && raw.payment_method !== 'pendiente' && raw.payment_method !== null);
 
     setCheckoutModal({
@@ -348,6 +353,8 @@ export const PersonalGaritaModule = () => {
       nightSurcharge,
       rate: finalRate,
       totalCost: calculatedCost,
+      isOvertime,
+      overtimeMins,
       alreadyPaid,
       originalMethod: raw.payment_method || 'efectivo',
       selectedPaymentMethod: 'efectivo',
@@ -627,6 +634,11 @@ export const PersonalGaritaModule = () => {
                   const mins = Math.max(0, Math.round((Date.now() - new Date(v.entry).getTime()) / 60000));
                   const h = Math.floor(mins / 60);
                   const m = mins % 60;
+                  const rawRes = v.rawReservation || {};
+                  const schedEnd = (rawRes.end_time || rawRes.endTime) ? new Date(rawRes.end_time || rawRes.endTime) : null;
+                  const isExceeded = schedEnd ? Date.now() > schedEnd.getTime() : false;
+                  const excessMins = isExceeded ? Math.floor((Date.now() - schedEnd.getTime()) / 60000) : 0;
+
                   return (
                     <div key={v.code} className="p-3 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
                       <div className="flex items-center gap-3">
@@ -635,9 +647,15 @@ export const PersonalGaritaModule = () => {
                         </span>
                         <div>
                           <p className="font-mono font-black text-sm text-slate-900 leading-tight">{v.plate}</p>
-                          <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 font-medium">
+                          <p className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5 font-medium">
                             <Clock className="w-3 h-3 text-slate-400" />
                             <span>{h}h {m}m de estancia</span>
+                            {isExceeded && (
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-300 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                                <AlertTriangle className="w-2.5 h-2.5 text-amber-600" />
+                                +{excessMins}m
+                              </span>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -732,10 +750,20 @@ export const PersonalGaritaModule = () => {
                     )}
                   </span>
                 </div>
-                <div className="flex justify-between text-emerald-700 dark:text-emerald-400 text-[11px] font-bold">
-                  <span>Tolerancia:</span>
-                  <span>15 min cortesía</span>
-                </div>
+                {checkoutModal.isOvertime ? (
+                  <div className="flex justify-between text-amber-600 dark:text-amber-400 text-[11px] font-bold bg-amber-50 dark:bg-amber-950/50 p-2 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <span className="flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                      Tiempo Excedido:
+                    </span>
+                    <span className="font-mono">+{checkoutModal.overtimeMins} min extras</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400 text-[11px]">
+                    <span>Cobro:</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">Tiempo exacto transcurrido (sin gracia)</span>
+                  </div>
+                )}
               </div>
 
               {/* Total y Medio de Pago */}

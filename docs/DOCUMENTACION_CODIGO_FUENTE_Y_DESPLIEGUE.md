@@ -55,7 +55,7 @@ Esta disposición tiene una consecuencia importante para el despliegue: aunque s
 
 ### 3.1 Stack tecnológico
 
-El backend está construido con **FastAPI sobre Python 3.11+**, servido mediante **Uvicorn**. Se eligió FastAPI por su rendimiento asíncrono, su validación automática de datos vía Pydantic y la generación automática de la documentación interactiva (Swagger UI disponible en `/docs`). La persistencia utiliza **SQLAlchemy en modo asíncrono**, con **PostgreSQL 15** en producción y un mecanismo práctico para desarrollo: si no existe la variable `DATABASE_URL`, el sistema cae automáticamente a **SQLite local**, lo que permite levantar el entorno completo sin instalar una base de datos. La autenticación se resuelve con tokens **JWT** firmados con `SECRET_KEY` y contraseñas hasheadas con bcrypt, implementados en `core/security.py`.
+El backend está construido con **FastAPI sobre Python 3.11+**, servido mediante **Uvicorn**. Se eligió FastAPI por su rendimiento asíncrono, su validación automática de datos vía Pydantic y la generación automática de la documentación interactiva (Swagger UI disponible en `/docs`). La persistencia utiliza **SQLAlchemy en modo asíncrono con PostgreSQL**, garantizando total consistencia y paridad entre desarrollo local, suite de pruebas y producción en Railway. La autenticación se resuelve con tokens **JWT** firmados con `SECRET_KEY` y contraseñas hasheadas con bcrypt, implementados en `core/security.py`.
 
 ### 3.2 Organización de los endpoints
 
@@ -117,7 +117,7 @@ El estado global se maneja con dos contextos de React: `AuthContext`, que conser
 
 ## 5. Ejecución en entorno local
 
-Para desarrollo local basta con dos terminales. El backend arranca con Uvicorn sobre el puerto 8000 y, al no encontrar `DATABASE_URL`, trabaja automáticamente contra SQLite:
+Para desarrollo local basta con dos terminales. El backend arranca con Uvicorn sobre el puerto 8000 conectado a PostgreSQL (`DATABASE_URL` configurado en `backend/.env`):
 
 ```powershell
 cd backend

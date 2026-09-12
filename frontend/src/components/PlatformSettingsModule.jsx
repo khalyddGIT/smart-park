@@ -602,11 +602,11 @@ export const PlatformSettingsModule = () => {
                   </button>
                 </div>
 
-                {/* Minutos de Tolerancia */}
+                {/* Aviso Previo de Expiración */}
                 <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-slate-800 block">Tolerancia de cortesía</span>
-                    <span className="text-[11px] text-slate-500">Margen posterior a la hora programada.</span>
+                    <span className="text-xs font-bold text-slate-800 block">Aviso Previo de Expiración</span>
+                    <span className="text-[11px] text-slate-500">Antelación para notificar al conductor (cobro continuo sin gracia).</span>
                   </div>
                   <select
                     value={settings.gracePeriodMinutes}
@@ -614,7 +614,7 @@ export const PlatformSettingsModule = () => {
                     className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-black text-slate-900 cursor-pointer shadow-2xs"
                   >
                     <option value="10">10 minutos</option>
-                    <option value="15">15 minutos (Recomendado)</option>
+                    <option value="15">15 minutos (Estándar)</option>
                     <option value="20">20 minutos</option>
                     <option value="30">30 minutos</option>
                   </select>
@@ -1054,10 +1054,10 @@ export const PlatformSettingsModule = () => {
                 <p className="text-[10px] text-slate-400 mt-1">Porcentaje retenido por cada reserva completada.</p>
               </div>
 
-              {/* Período de Gracia */}
+              {/* Aviso Previo de Expiración */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Período de Gracia (min)
+                  Aviso Previo de Expiración (min)
                 </label>
                 <div className="relative">
                   <Input
@@ -1070,7 +1070,7 @@ export const PlatformSettingsModule = () => {
                   />
                   <Clock className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3.5" />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">Tolerancia antes de penalidad por exceso de tiempo.</p>
+                <p className="text-[10px] text-slate-400 mt-1">Tiempo de antelación para notificar al conductor antes del cobro de exceso.</p>
               </div>
 
               {/* Tarifa Mínima Sugerida */}

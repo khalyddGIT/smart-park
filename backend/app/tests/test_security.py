@@ -203,7 +203,7 @@ async def test_cross_sede_rbac_isolation_local_admin_sede_a_cannot_modify_sede_b
         )
         session.add(rev_b)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         res_b = Reservation(
             code=f"RES-{uid_b}",
             qr_code=f"QR-{uid_b}",

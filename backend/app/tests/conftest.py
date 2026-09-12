@@ -1,18 +1,16 @@
 """Fixtures globales de la suite de pruebas.
 
-La app solo usa PostgreSQL en local/producción. Los tests son la única
-excepción y usan un SQLite AISLADO y temporal (no los .db del proyecto),
-activado con TESTING=1 antes de importar la app.
+La suite de pruebas corre única y exclusivamente sobre PostgreSQL (smartpark_test_db).
+SQLite ha sido erradicado por completo de todo el sistema Smart Park.
 """
 import asyncio
 import os
-import tempfile
 
 # Debe ir antes de cualquier import de app.* (config lee env al importarse)
 os.environ["TESTING"] = "1"
 os.environ.setdefault(
     "DATABASE_URL",
-    f"sqlite+aiosqlite:///{tempfile.gettempdir()}/smartpark_test.db",
+    "postgresql+asyncpg://postgres:root@localhost:5432/smartpark_test_db",
 )
 import pytest
 
@@ -26,7 +24,7 @@ def _ensure_schema():
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            lite_adds = [
+            pg_adds = [
                 ("estacionamientos", "owner", "VARCHAR(150)"),
                 ("estacionamientos", "ruc", "VARCHAR(20)"),
                 ("estacionamientos", "whatsapp", "VARCHAR(30)"),
@@ -78,20 +76,11 @@ def _ensure_schema():
                 ("resenas", "is_hidden", "BOOLEAN DEFAULT FALSE"),
                 ("incidencias", "is_hidden", "BOOLEAN DEFAULT FALSE"),
             ]
-            if str(engine.url).startswith("sqlite"):
-                for tbl, col, decl in lite_adds:
-                    try:
-                        rows = (await conn.execute(text(f"PRAGMA table_info({tbl})"))).all()
-                        if col not in {r[1] for r in rows}:
-                            await conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN {col} {decl}"))
-                    except Exception:
-                        pass
-            else:
-                for tbl, col, decl in lite_adds:
-                    try:
-                        await conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col} {decl}"))
-                    except Exception:
-                        pass
+            for tbl, col, decl in pg_adds:
+                try:
+                    await conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col} {decl}"))
+                except Exception:
+                    pass
 
         # Seed parkings y usuarios iniciales para pruebas
         from app.db.session import AsyncSessionLocal
@@ -129,5 +118,7 @@ def _ensure_schema():
                 )
                 session.add(super_admin)
                 await session.commit()
+
+        await engine.dispose()
 
     return asyncio.run(_run())

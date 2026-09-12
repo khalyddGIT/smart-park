@@ -32,7 +32,7 @@ graph TB
     subgraph Estacionamiento_Afiliado ["🏢 Estacionamiento Afiliado (Edge)"]
         local_agent["Agente Sistema Local<br/>(Python FastAPI Edge)"]
         vision_svc["Servicio Visión Artificial<br/>(OpenCV + YOLO ANPR)"]
-        db_local[(Base de Datos Local<br/>PostgreSQL/SQLite)]
+        db_local[(Base de Datos Local<br/>PostgreSQL Local)]
         cameras["Cámaras IP / Tótems Garita"]
     end
 
@@ -72,7 +72,7 @@ graph TB
 | **Servicio de Notificaciones** | Procesamiento asíncrono de alertas SMS/Push. | Python / FastAPI Async |
 | **Agente Sistema Local (Edge)** | Autonomía operativa de garita ante desconexiones. | Python + FastAPI Edge |
 | **Base de Datos Central** | Persistencia principal de toda la red. | PostgreSQL 15 |
-| **Base de Datos Local (Edge)** | Almacenamiento temporal autónomo en cada parqueo. | PostgreSQL / SQLite |
+| **Base de Datos Local (Edge)** | Almacenamiento temporal autónomo en cada parqueo. | PostgreSQL Local |
 | **Broker de Mensajes** | Desacoplamiento de eventos de negocio. | RabbitMQ (AMQP) |
 | **Caché en Memoria** | Consultas ultra rápidas de plazas disponibles (< 3ms). | Redis 7 |
 

@@ -1,5 +1,5 @@
 -- ==========================================================
--- SMART-PARK: ESQUEMA DE BASE DE DATOS RELACIONAL (POSTGRESQL / SQLITE)
+-- SMART-PARK: ESQUEMA DE BASE DE DATOS RELACIONAL (POSTGRESQL)
 -- ==========================================================
 
 -- 1. Tabla de Usuarios

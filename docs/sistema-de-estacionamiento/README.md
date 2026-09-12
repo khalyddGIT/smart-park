@@ -29,7 +29,7 @@ Sistema de Estacionamiento/
 │   └── c4-models.md                          # Diagramas Contexto, Contenedores y Componentes
 │
 ├── 🗄️ database/                              # Base de Datos Relacional y Migraciones
-│   ├── schema.sql                            # DDL completo (PostgreSQL / SQLite)
+│   ├── schema.sql                            # DDL completo (PostgreSQL)
 │   └── seed_data.sql                         # Datos iniciales para Ayacucho - Huamanga
 │
 ├── 📡 api-specs/                             # Contratos de Integración y Protocolos

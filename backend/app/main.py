@@ -52,10 +52,9 @@ async def startup_db():
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            # Migración ligera PostgreSQL: columnas añadidas tras el primer despliegue.
-            # (Se eliminó la rama SQLite: la app solo usa PostgreSQL en local y prod.)
+            # Migración ligera PostgreSQL nativa (columnas dinámicas)
             from sqlalchemy import text as _text
-            lite_adds = [
+            pg_adds = [
                 ("estacionamientos", "description", "TEXT"),
                 ("estacionamientos", "phone", "VARCHAR(30)"),
                 ("estacionamientos", "email", "VARCHAR(150)"),
@@ -108,22 +107,13 @@ async def startup_db():
                 ("resenas", "is_hidden", "BOOLEAN DEFAULT FALSE"),
                 ("incidencias", "is_hidden", "BOOLEAN DEFAULT FALSE"),
             ]
-            if str(engine.url).startswith("sqlite") and settings.TESTING:
-                for tbl, col, decl in lite_adds:
-                    try:
-                        rows = (await conn.execute(_text(f"PRAGMA table_info({tbl})"))).all()
-                        if col not in {r[1] for r in rows}:
-                            await conn.execute(_text(f"ALTER TABLE {tbl} ADD COLUMN {col} {decl}"))
-                    except Exception:
-                        pass
-            else:
-                for tbl, col, decl in lite_adds:
-                    try:
-                        await conn.execute(_text(
-                            f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col} {decl}"
-                        ))
-                    except Exception:
-                        pass
+            for tbl, col, decl in pg_adds:
+                try:
+                    await conn.execute(_text(
+                        f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col} {decl}"
+                    ))
+                except Exception:
+                    pass
                 # Fix: security_pin VARCHAR(20) -> VARCHAR(255) para hash (Postgres truncaba)
                 try:
                     await conn.execute(_text("ALTER TABLE personal ALTER COLUMN security_pin TYPE VARCHAR(255)"))
@@ -453,9 +443,6 @@ STATIC_DIR = os.getenv("STATIC_DIR", "")
 def _safe_db_label() -> str:
     try:
         from app.db.session import engine as _engine
-        url = str(_engine.url)
-        if url.startswith("sqlite"):
-            return "sqlite (solo tests)"
         host = _engine.url.host or "local"
         db = _engine.url.database or ""
         return f"postgresql://{host}/{db}"

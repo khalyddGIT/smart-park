@@ -1,6 +1,6 @@
 # 🗄️ Documentación Oficial del Esquema de Base de Datos — SMART-PARK
 
-> **Motor:** `PostgreSQL 15 (Railway)` / `SQLite (dev)` · **ORM:** `SQLAlchemy 2.0` · **Tablas en español** · **v2026.08 — 13 tablas** (verificadas en desplegado `SELECT tablename FROM pg_tables WHERE schemaname='public'`)
+> **Motor:** `PostgreSQL (Local & Railway)` · **ORM:** `SQLAlchemy 2.0` · **Tablas en español** · **14 tablas nativas** (verificadas en desplegado `SELECT tablename FROM pg_tables WHERE schemaname='public'`)
 
 Este documento detalla la estructura física, relacional y lógica actual de la base de datos de **Smart-Park**. Incluye todas las tablas visibles en `backend/app/models/models.py:31` y su `postgresql_schema.sql`. Migraciones ligeras se aplican en `backend/app/main.py:54` (`ALTER TABLE ... IF NOT EXISTS`).
 
@@ -255,13 +255,11 @@ erDiagram
 ## 🛠️ Migración y Ejecución
 
 ```bash
-# PostgreSQL Railway (psql)
+# PostgreSQL Local & Railway (psql)
 psql $DATABASE_URL -f backend/postgresql_schema.sql
-# SQLite dev
-sqlite3 smartpark_dev.db < backend/schema.sql
-# Migración ligera en arranque main.py:54
+# Migración ligera en arranque main.py (PostgreSQL)
 # ALTER TABLE estacionamientos ADD COLUMN IF NOT EXISTS description TEXT, etc.
-# ALTER TABLE personal ALTER COLUMN security_pin TYPE VARCHAR(255) (fix d73fa7d)
+# ALTER TABLE personal ALTER COLUMN security_pin TYPE VARCHAR(255)
 ```
 
 **Índices clave:** `usuarios(email,role)`, `vehiculos(user_id,license_plate)`, `estacionamientos(city,status)`, `plazas(parking_id,status)`, `reservas(code,user_id,parking_id)`, `personal(parking_id) + UNIQUE(dni,email)`, `pagos(reservation_id,user_id)`.

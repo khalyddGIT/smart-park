@@ -24,8 +24,7 @@ async def diagnostics_status(db: AsyncSession = Depends(get_db)):
     db_engine = "unknown"
     try:
         from app.db.session import engine as _engine
-        _url = str(_engine.url)
-        db_engine = "sqlite (solo tests)" if _url.startswith("sqlite") else f"postgresql://{_engine.url.host}/{_engine.url.database}"
+        db_engine = f"postgresql://{_engine.url.host or 'localhost'}/{_engine.url.database}"
     except Exception:
         pass
     try:

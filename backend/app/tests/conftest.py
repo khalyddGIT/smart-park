@@ -117,7 +117,13 @@ def _ensure_schema():
                     is_active=True
                 )
                 session.add(super_admin)
-                await session.commit()
+            # Sincronizar secuencias de PostgreSQL para evitar colisiones de primary key
+            for tbl in ["estacionamientos", "usuarios", "solicitudes_afiliacion", "reservas", "vehiculos"]:
+                try:
+                    await session.execute(text(f"SELECT setval(pg_get_serial_sequence('{tbl}', 'id'), COALESCE((SELECT MAX(id) FROM {tbl}), 1))"))
+                    await session.commit()
+                except Exception:
+                    pass
 
         await engine.dispose()
 

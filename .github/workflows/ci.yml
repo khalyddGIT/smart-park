@@ -10,6 +10,20 @@ jobs:
   backend-ci:
     name: Backend Tests (Pytest)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: root
+          POSTGRES_DB: smartpark_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: ./backend
@@ -34,6 +48,7 @@ jobs:
           TESTING: '1'
           PYTHONPATH: '.'
           SECRET_KEY: 'smartpark-ci-test-secret-key-minimum-32-chars-long'
+          DATABASE_URL: 'postgresql+asyncpg://postgres:root@localhost:5432/smartpark_test_db'
         run: |
           python -m pytest -q
 

@@ -1002,8 +1002,8 @@ const AppMain = () => {
                                       }`}
                                       title={isSbMaintenance ? "Sede en mantenimiento" : isSbClosed ? "Sede cerrada" : "Reserva express en 1 clic"}
                                     >
-                                      <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 animate-pulse" />
-                                      <span>{isSbMaintenance ? 'Mantenimiento' : isSbClosed ? 'Cerrado' : 'Rápida'}</span>
+                                       <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+                                       <span>{isSbMaintenance ? 'Mantenimiento' : isSbClosed ? 'Cerrado' : 'Rápida'}</span>
                                     </Button>
 
                                     <Button
@@ -1197,8 +1197,8 @@ const AppMain = () => {
                                       }`}
                                       title={isBranchMaintenance ? "Sede en mantenimiento" : isBranchClosed ? "Sede cerrada" : "Reserva express en 1 clic sin abrir el plano"}
                                     >
-                                      <Zap className={`w-3.5 h-3.5 ${isBranchUnavailable ? 'text-slate-400' : 'text-amber-300 fill-amber-300 animate-pulse'}`} />
-                                      <span>{isBranchMaintenance ? 'Mantenimiento' : isBranchClosed ? 'Cerrado' : 'Rápida'}</span>
+                                       <Zap className={`w-3.5 h-3.5 ${isBranchUnavailable ? 'text-slate-400' : 'text-white'}`} strokeWidth={2.5} />
+                                       <span>{isBranchMaintenance ? 'Mantenimiento' : isBranchClosed ? 'Cerrado' : 'Rápida'}</span>
                                     </Button>
 
                                     <Button 

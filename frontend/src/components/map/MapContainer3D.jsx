@@ -356,7 +356,7 @@ export const MapContainer3D = ({
               </button>
               ` : `
               <button id="btn-quick-${p.id}" type="button" style="flex: 1.1; height: 35px; background: linear-gradient(135deg, #059669 0%, #0d9488 100%); color: #ffffff; border: none; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease; box-shadow: 0 2px 6px rgba(5,150,105,0.25);" title="Reserva rápida express">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="#facc15" stroke="#facc15" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                 <span>Rápida</span>
               </button>
               `}

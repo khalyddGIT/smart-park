@@ -186,7 +186,7 @@ export const QuickReservationModal = ({
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 animate-pulse" />
+                <Zap className="w-3.5 h-3.5 text-emerald-300" strokeWidth={2.5} />
                 Reserva Rápida
               </span>
               <span className="text-xs text-slate-400 font-mono">1-Clic Express</span>
@@ -427,7 +427,7 @@ export const QuickReservationModal = ({
               </>
             ) : (
               <>
-                <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
+                <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
                 <span>Confirmar Reserva Inmediata</span>
               </>
             )}

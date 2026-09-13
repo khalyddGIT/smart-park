@@ -521,6 +521,7 @@ class ReservationCreate(BaseModel):
     billing_unit: Optional[str] = "hour"
     estimated_minutes: Optional[int] = Field(default=60, ge=1, le=10080)
     is_open_stay: Optional[bool] = False
+    auto_assign: Optional[bool] = False
 
     @field_validator('license_plate')
     @classmethod

@@ -390,18 +390,26 @@ async def create_reservation(
             detail=f"El vehículo con placa {plate_clean} ya cuenta con una reserva activa en el sistema."
         )
 
-    # Verificar o auto-asignar cajón con bloqueo FOR UPDATE para evitar doble-booking (Reserva Rápida)
+    # Verificar o auto-asignar cajón con bloqueo FOR UPDATE para evitar doble-booking (Reserva Rápida / Expresa)
     vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
     slot = None
+    is_auto = bool(getattr(res_in, "auto_assign", False) or not res_in.slot_id or res_in.slot_id <= 0)
 
+    # Si se solicitó un slot específico, intentar reservarlo primero
     if res_in.slot_id and res_in.slot_id > 0:
         slot_res = await db.execute(select(Slot).where(Slot.id == res_in.slot_id).with_for_update())
-        slot = slot_res.scalars().first()
-        if not slot or slot.status != "free":
-            raise HTTPException(status_code=409, detail="El cajón seleccionado no se encuentra libre (conflicto concurrente)")
-        if slot.parking_id != res_in.parking_id:
-            raise HTTPException(status_code=400, detail="El cajón no pertenece al estacionamiento indicado")
-    else:
+        cand = slot_res.scalars().first()
+        if cand and cand.status == "free" and cand.parking_id == res_in.parking_id:
+            slot = cand
+        elif not is_auto:
+            # En reserva manual en plano 2D, si el cajón exacto no está libre se devuelve 409
+            if not cand or cand.status != "free":
+                raise HTTPException(status_code=409, detail="El cajón seleccionado no se encuentra libre (conflicto concurrente)")
+            if cand.parking_id != res_in.parking_id:
+                raise HTTPException(status_code=400, detail="El cajón no pertenece al estacionamiento indicado")
+
+    # Si no tiene slot asignado (reserva rápida o fallback automático si el cajón preview fue tomado)
+    if not slot:
         # Auto-asignación inteligente: seleccionar la mejor plaza libre compatible
         target_family = vehicle_slot_family(vtype)
         free_slots_res = await db.execute(

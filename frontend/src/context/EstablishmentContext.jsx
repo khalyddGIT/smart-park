@@ -2033,7 +2033,8 @@ export const EstablishmentProvider = ({ children }) => {
         estimated_hours: Number(bookingData.estimatedHours || bookingData.hours || 1),
         billing_unit: bookingData.billingUnit || bookingData.billing_unit || 'hour',
         estimated_minutes: Number(bookingData.estimatedMinutes || bookingData.estimated_minutes || (bookingData.hours ? bookingData.hours * 60 : 60)),
-        is_open_stay: !!(bookingData.isOpenStay ?? bookingData.is_open_stay ?? true)
+        is_open_stay: !!(bookingData.isOpenStay ?? bookingData.is_open_stay ?? true),
+        auto_assign: !!isAutoAssign
       });
       setBookingError(null);
       const mapped = mapServerReservation(serverRes);

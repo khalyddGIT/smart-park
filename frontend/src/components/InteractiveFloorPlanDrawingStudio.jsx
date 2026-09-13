@@ -57,7 +57,8 @@ import {
   Truck,
   Printer,
   Hash,
-  Keyboard
+  Keyboard,
+  X
 } from 'lucide-react';
 
 import { Card } from './ui/card';
@@ -736,7 +737,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
     setElements(updated);
     pushHistory(updated);
-    setMessage(`✓ ${slots.length} plazas renumeradas correlativamente con prefijo "${customPrefix}".`);
+    setMessage(`${slots.length} plazas renumeradas correlativamente con prefijo "${customPrefix}".`);
     setTimeout(() => setMessage(''), 3500);
   };
 
@@ -756,7 +757,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
 
     setElements(updated);
     pushHistory(updated);
-    setMessage(targetState ? '✓ Todas las plazas marcadas como TECHADAS.' : '✓ Plazas marcadas como AL AIRE LIBRE.');
+    setMessage(targetState ? 'Todas las plazas marcadas como TECHADAS.' : 'Plazas marcadas como AL AIRE LIBRE.');
     setTimeout(() => setMessage(''), 3500);
   };
 
@@ -1533,11 +1534,11 @@ export const InteractiveFloorPlanDrawingStudio = ({
                 className="bg-slate-900 text-slate-200 text-xs font-bold py-1 px-2 rounded-lg border border-slate-700/80 hover:border-slate-600 focus:outline-none cursor-pointer"
                 title="Selecciona la forma del terreno de la cochera"
               >
-                <option value="rectangular">📐 Rectangular</option>
-                <option value="l_shape">📐 Forma en 'L'</option>
-                <option value="diagonal">📐 Diagonal 45°</option>
-                <option value="u_shape">📐 Forma en 'U'</option>
-                <option value="free">✏️ Lienzo Libre</option>
+                <option value="rectangular">Rectangular</option>
+                <option value="l_shape">Forma en 'L'</option>
+                <option value="diagonal">Diagonal 45°</option>
+                <option value="u_shape">Forma en 'U'</option>
+                <option value="free">Lienzo Libre</option>
               </select>
             </div>
 
@@ -1886,7 +1887,9 @@ export const InteractiveFloorPlanDrawingStudio = ({
             <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
             <span>{message}</span>
           </div>
-          <button onClick={() => setMessage('')} className="text-slate-400 hover:text-slate-600">✕</button>
+          <button onClick={() => setMessage('')} className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 

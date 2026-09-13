@@ -308,11 +308,13 @@ export const MapContainer3D = ({
             <!-- Badge Superior de Estado o Cupos Libres -->
             ${isMaint ? `
             <div style="position: absolute; top: 8px; left: 8px; display: flex; align-items: center; gap: 5px; background: rgba(217, 119, 6, 0.95); backdrop-filter: blur(6px); color: white; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-              <span>🔧 En Mantenimiento</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              <span>En Mantenimiento</span>
             </div>
             ` : isClosed ? `
             <div style="position: absolute; top: 8px; left: 8px; display: flex; align-items: center; gap: 5px; background: rgba(225, 29, 72, 0.95); backdrop-filter: blur(6px); color: white; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-              <span>⛔ Cerrado</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+              <span>Cerrado</span>
             </div>
             ` : `
             <div style="position: absolute; top: 8px; left: 8px; display: flex; align-items: center; gap: 5px; background: rgba(5, 150, 105, 0.95); backdrop-filter: blur(6px); color: white; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; font-family: monospace; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
@@ -322,8 +324,8 @@ export const MapContainer3D = ({
             `}
 
             <!-- Botón Cerrar Discreto -->
-            <button id="btn-close-${p.id}" type="button" style="position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 9999px; background: rgba(15, 23, 42, 0.7); border: none; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; cursor: pointer; backdrop-filter: blur(4px); transition: background 0.15s;">
-              ✕
+            <button id="btn-close-${p.id}" type="button" style="position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 9999px; background: rgba(15, 23, 42, 0.7); border: none; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); transition: background 0.15s;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
 
             <!-- Tarifa por Hora -->
@@ -355,7 +357,7 @@ export const MapContainer3D = ({
               ` : `
               <button id="btn-quick-${p.id}" type="button" style="flex: 1.1; height: 35px; background: linear-gradient(135deg, #059669 0%, #0d9488 100%); color: #ffffff; border: none; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease; box-shadow: 0 2px 6px rgba(5,150,105,0.25);" title="Reserva rápida express">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="#facc15" stroke="#facc15" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                <span>⚡ Rápida</span>
+                <span>Rápida</span>
               </button>
               `}
               <button id="btn-select-${p.id}" type="button" style="flex: 1; height: 35px; background: #0f172a; color: #ffffff; border: none; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease;" title="Ver Plano 2D">

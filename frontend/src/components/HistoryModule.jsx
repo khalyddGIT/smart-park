@@ -306,7 +306,12 @@ export const HistoryModule = () => {
             className="pl-9 pr-8 h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
           />
           {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-xs">✕</button>
+            <button 
+              onClick={() => setSearchTerm('')} 
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
 
@@ -359,8 +364,13 @@ export const HistoryModule = () => {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-extrabold text-slate-900 dark:text-white text-base">{h.parking}</h3>
-                      <span className="bg-slate-950 text-white px-2 py-0.5 rounded-md font-mono font-black text-[11px] border border-slate-700 shadow-2xs">
-                        🇵🇪 {h.plate}
+                      <span className="bg-slate-950 text-white px-2 py-0.5 rounded-md font-mono font-black text-[11px] border border-slate-700 shadow-2xs inline-flex items-center gap-1.5">
+                        <svg className="w-3.5 h-2.5 rounded-[1px] shrink-0" viewBox="0 0 3 2">
+                          <rect width="1" height="2" fill="#D91023"/>
+                          <rect x="1" width="1" height="2" fill="#FFFFFF"/>
+                          <rect x="2" width="1" height="2" fill="#D91023"/>
+                        </svg>
+                        <span>{h.plate}</span>
                       </span>
                       {h.slot && (
                         <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-md font-mono font-bold text-[11px] border border-emerald-200 dark:border-emerald-800/80">

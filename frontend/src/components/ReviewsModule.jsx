@@ -22,7 +22,8 @@ import {
   User,
   MessageCircle,
   HelpCircle,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
@@ -382,9 +383,9 @@ export const ReviewsModule = () => {
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer"
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -410,11 +411,11 @@ export const ReviewsModule = () => {
           className="h-10 w-full lg:w-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
         >
           <option value="all">Todas las Puntuaciones</option>
-          <option value="5">⭐⭐⭐⭐⭐ (5 Estrellas)</option>
-          <option value="4">⭐⭐⭐⭐ (4 Estrellas)</option>
-          <option value="3">⭐⭐⭐ (3 Estrellas)</option>
-          <option value="2">⭐⭐ (2 Estrellas)</option>
-          <option value="1">⭐ (1 Estrella)</option>
+          <option value="5">5 Estrellas (Excelente)</option>
+          <option value="4">4 Estrellas (Bueno)</option>
+          <option value="3">3 Estrellas (Regular)</option>
+          <option value="2">2 Estrellas (Malo)</option>
+          <option value="1">1 Estrella (Pésimo)</option>
         </select>
 
         {/* Filtro de Visibilidad (Solo para administradores) */}

@@ -350,8 +350,14 @@ const StickyStorytellingSection = () => {
               </span>
               <span className="text-[10px] text-slate-400">99.4% precisión</span>
             </div>
-            <p className="text-[10px] text-slate-300">✓ Detección de Placa W1P-404 exitosa</p>
-            <p className="text-[10px] text-emerald-400 font-bold">✓ Barrera electromecánica abierta</p>
+            <p className="text-[10px] text-slate-300 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span>Detección de Placa W1P-404 exitosa</span>
+            </p>
+            <p className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span>Barrera electromecánica abierta</span>
+            </p>
           </div>
         </div>
       )

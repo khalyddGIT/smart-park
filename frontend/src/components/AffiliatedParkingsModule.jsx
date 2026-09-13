@@ -38,7 +38,8 @@ import {
   Loader2,
   Settings,
   PauseCircle,
-  PlayCircle
+  PlayCircle,
+  Info
 } from 'lucide-react';
 import { useEstablishments, getEstablishmentHierarchy, getLocalUserCredentials } from '../context/EstablishmentContext';
 
@@ -151,7 +152,7 @@ export const AffiliatedParkingsModule = () => {
     const appUrl = window.location.origin;
     const text = `*ACCESO DE ADMINISTRADOR - SMART PARK*\n\n` +
       `Estimado(a) *${creds.ownerName || 'Administrador(a)'}*, su estacionamiento *"${creds.parkingName}"* ha sido habilitado en nuestra plataforma.\n\n` +
-      `🔑 *Sus Credenciales Oficiales:*\n` +
+      `*Sus Credenciales Oficiales:*\n` +
       `• *Plataforma:* ${appUrl}\n` +
       `• *Usuario / Correo:* ${creds.email}\n` +
       `• *Contraseña de Acceso:* ${creds.password}\n` +
@@ -410,7 +411,7 @@ export const AffiliatedParkingsModule = () => {
 
   const handleDeleteCompany = async (group) => {
     const count = group.branches.length;
-    if (!window.confirm(`⚠️ ACCIÓN DE SUPERADMIN:\n\n¿Estás seguro de que deseas ELIMINAR permanentemente la empresa "${group.companyName}" y sus ${count} sedes asociadas?\n\nEsta acción es irreversible y eliminará todos sus accesos y configuraciones.`)) {
+    if (!window.confirm(`ACCIÓN DE SUPERADMIN:\n\n¿Estás seguro de que deseas ELIMINAR permanentemente la empresa "${group.companyName}" y sus ${count} sedes asociadas?\n\nEsta acción es irreversible y eliminará todos sus accesos y configuraciones.`)) {
       return;
     }
 
@@ -1184,12 +1185,13 @@ export const AffiliatedParkingsModule = () => {
                                       )}
                                     </div>
                                   </div>
-                                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${
+                                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 inline-flex items-center gap-1.5 ${
                                     isBranchActive 
                                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                                       : 'bg-amber-50 text-amber-700 border border-amber-200'
                                   }`}>
-                                    ● {isBranchActive ? 'Operativo' : 'Mantenimiento'}
+                                    <span className={`w-1.5 h-1.5 rounded-full ${isBranchActive ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                    <span>{isBranchActive ? 'Operativo' : 'Mantenimiento'}</span>
                                   </span>
                                 </div>
 
@@ -1540,8 +1542,9 @@ export const AffiliatedParkingsModule = () => {
             <DialogDescription className="text-xs text-slate-500">
               Administra el usuario y contraseña del Administrador para el local (empresa afiliada) <strong>"{credentialsTarget?.companyName || credentialsSede?.name}"</strong>.
               {credentialsTarget?.branchesCount > 1 && (
-                <span className="block mt-1 text-[11px] text-emerald-700 font-semibold">
-                  ✓ Este acceso es unificado para la empresa y le permite gestionar sus {credentialsTarget.branchesCount} sucursales registradas.
+                <span className="block mt-1 text-[11px] text-emerald-700 font-semibold inline-flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Este acceso es unificado para la empresa y le permite gestionar sus {credentialsTarget.branchesCount} sucursales registradas.</span>
                 </span>
               )}
             </DialogDescription>
@@ -1652,7 +1655,7 @@ export const AffiliatedParkingsModule = () => {
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5">
-                  <span>ℹ️</span>
+                  <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                   <span>{credentialsForm.hasExistingAdmin ? 'Contraseña actual cargada y persistente. Puedes verla con el ícono del ojo o ingresar una nueva para actualizarla. Se conservará permanentemente.' : 'Se guardará y mantendrá hasta que decidas cambiarla.'}</span>
                 </p>
               </div>

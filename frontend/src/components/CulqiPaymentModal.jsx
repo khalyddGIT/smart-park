@@ -821,8 +821,9 @@ export const CulqiPaymentModal = ({
                   <div className="text-xl font-black text-emerald-700 font-mono tracking-tight">
                     S/ {Number(paymentSuccess.amount).toFixed(2)}
                   </div>
-                  <span className="text-[9px] font-mono text-emerald-600 font-semibold block">
-                    ✓ Operación Exitosa
+                  <span className="text-[9px] font-mono text-emerald-600 font-semibold inline-flex items-center gap-1 justify-end">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <span>Operación Exitosa</span>
                   </span>
                 </div>
               </div>

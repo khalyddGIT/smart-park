@@ -390,8 +390,9 @@ export const UserRolesModule = () => {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`text-[11px] font-bold ${u.is_active === false ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                        ● {u.is_active === false ? 'Inactivo' : 'Activo'}
+                      <span className={`text-[11px] font-bold inline-flex items-center gap-1.5 ${u.is_active === false ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${u.is_active === false ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                        <span>{u.is_active === false ? 'Inactivo' : 'Activo'}</span>
                       </span>
                     </td>
                     <td className="py-3 px-4 text-slate-400 dark:text-slate-400 text-[11px]">{formatDate(u.created_at)}</td>

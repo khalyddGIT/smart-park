@@ -47,7 +47,7 @@ export const TerrainMetricCADView = ({ slots = [], onSlotsChange, parkingLocatio
   const drivewayAreaM2 = Math.max(0, totalAreaM2 - stallsAreaM2);
   const efficiency = totalAreaM2 > 0 ? Math.min(100, Math.round((stallsAreaM2 / totalAreaM2) * 100)) : 0;
 
-  // 🪄 ASISTENTE INTELIGENTE: Auto-distribución matemática de capacidad
+  // ASISTENTE INTELIGENTE: Auto-distribución matemática de capacidad
   const handleAutoCalculateCapacity = () => {
     // Cálculo de cajones normativos (2.5m de ancho x 5.0m de largo)
     // Carril central de 6.0m de rodadura

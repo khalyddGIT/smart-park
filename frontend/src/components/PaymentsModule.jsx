@@ -311,8 +311,9 @@ export const PaymentsModule = () => {
                   <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-emerald-950/80 text-emerald-400 border border-slate-800 dark:border-emerald-800/80 flex items-center justify-center font-black shadow-sm group-hover:scale-105 transition-transform duration-300">
                     <QrCode className="w-6 h-6" />
                   </div>
-                  <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase font-mono bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/80">
-                    ● DISPONIBLE 24/7
+                  <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase font-mono bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/80 inline-flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>DISPONIBLE 24/7</span>
                   </span>
                 </div>
 
@@ -349,8 +350,9 @@ export const PaymentsModule = () => {
                       <path fill="#008cff" d="M38.914 13.35C37.31 12.511 35.365 12 33.248 12h-12.64L18.49 25.5h7.497c7.773 0 12.927-6.576 12.927-12.15"/>
                     </svg>
                   </div>
-                  <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-400 uppercase font-mono bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200 dark:border-blue-800/80">
-                    ● ACTIVO SANDBOX
+                  <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-400 uppercase font-mono bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200 dark:border-blue-800/80 inline-flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <span>ACTIVO SANDBOX</span>
                   </span>
                 </div>
 

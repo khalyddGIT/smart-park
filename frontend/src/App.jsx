@@ -72,7 +72,9 @@ import {
   ExternalLink,
   Moon,
   Navigation,
-  Zap
+  Zap,
+  Wrench,
+  Ban
 } from 'lucide-react';
 
 import { Card, CardDescription } from './components/ui/card';
@@ -942,7 +944,19 @@ const AppMain = () => {
                                       ? 'bg-rose-950/90 text-rose-300 border-rose-500/40'
                                       : 'bg-slate-950/85 text-emerald-400 border-emerald-500/30'
                                   }`}>
-                                    {isSbMaintenance ? '🔧 En Mantenimiento' : isSbClosed ? '⛔ Cerrado' : `${g.freeSlots} Libres de ${g.totalSlots}`}
+                                    {isSbMaintenance ? (
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <Wrench className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                                        <span>En Mantenimiento</span>
+                                      </span>
+                                    ) : isSbClosed ? (
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <Ban className="w-3.5 h-3.5 text-rose-300 shrink-0" />
+                                        <span>Cerrado</span>
+                                      </span>
+                                    ) : (
+                                      `${g.freeSlots} Libres de ${g.totalSlots}`
+                                    )}
                                   </div>
                                 </div>
 
@@ -951,12 +965,14 @@ const AppMain = () => {
                                     <div className="flex items-center justify-between gap-1.5">
                                       <h3 className="font-extrabold text-slate-900 text-base leading-tight group-hover:text-emerald-700 transition-colors">{g.name}</h3>
                                       {isSbMaintenance && (
-                                        <span className="shrink-0 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-300 px-1.5 py-0.5 rounded">
+                                        <span className="shrink-0 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-300 px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                                          <Wrench className="w-3 h-3 text-amber-700" />
                                           Mantenimiento
                                         </span>
                                       )}
                                       {isSbClosed && (
-                                        <span className="shrink-0 text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-300 px-1.5 py-0.5 rounded">
+                                        <span className="shrink-0 text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-300 px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                                          <Ban className="w-3 h-3 text-rose-700" />
                                           Cerrado
                                         </span>
                                       )}
@@ -987,7 +1003,7 @@ const AppMain = () => {
                                       title={isSbMaintenance ? "Sede en mantenimiento" : isSbClosed ? "Sede cerrada" : "Reserva express en 1 clic"}
                                     >
                                       <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 animate-pulse" />
-                                      <span>{isSbMaintenance ? 'Mantenimiento' : isSbClosed ? 'Cerrado' : '⚡ Rápida'}</span>
+                                      <span>{isSbMaintenance ? 'Mantenimiento' : isSbClosed ? 'Cerrado' : 'Rápida'}</span>
                                     </Button>
 
                                     <Button
@@ -1080,11 +1096,13 @@ const AppMain = () => {
                                     </div>
                                     {isBranchMaintenance ? (
                                       <div className="absolute bottom-3 left-3 bg-amber-950/90 backdrop-blur-md text-amber-300 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-amber-500/40 flex items-center gap-1.5">
-                                        <span>🔧 En Mantenimiento</span>
+                                        <Wrench className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                                        <span>En Mantenimiento</span>
                                       </div>
                                     ) : isBranchClosed ? (
                                       <div className="absolute bottom-3 left-3 bg-rose-950/90 backdrop-blur-md text-rose-300 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-rose-500/40 flex items-center gap-1.5">
-                                        <span>⛔ Cerrado</span>
+                                        <Ban className="w-3.5 h-3.5 text-rose-300 shrink-0" />
+                                        <span>Cerrado</span>
                                       </div>
                                     ) : (
                                       <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold font-mono border border-emerald-500/30">
@@ -1099,12 +1117,14 @@ const AppMain = () => {
                                           <h3 className="font-extrabold text-slate-900 text-base leading-tight truncate">{p.branchDisplayName || p.name}</h3>
                                           <div className="flex items-center gap-1 shrink-0">
                                             {isBranchMaintenance && (
-                                              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-300 px-1.5 py-0.5 rounded">
+                                              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-300 px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                                                <Wrench className="w-3 h-3 text-amber-700" />
                                                 Mantenimiento
                                               </span>
                                             )}
                                             {isBranchClosed && (
-                                              <span className="text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-300 px-1.5 py-0.5 rounded">
+                                              <span className="text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-300 px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                                                <Ban className="w-3 h-3 text-rose-700" />
                                                 Cerrado
                                               </span>
                                             )}
@@ -1178,7 +1198,7 @@ const AppMain = () => {
                                       title={isBranchMaintenance ? "Sede en mantenimiento" : isBranchClosed ? "Sede cerrada" : "Reserva express en 1 clic sin abrir el plano"}
                                     >
                                       <Zap className={`w-3.5 h-3.5 ${isBranchUnavailable ? 'text-slate-400' : 'text-amber-300 fill-amber-300 animate-pulse'}`} />
-                                      <span>{isBranchMaintenance ? 'Mantenimiento' : isBranchClosed ? 'Cerrado' : '⚡ Rápida'}</span>
+                                      <span>{isBranchMaintenance ? 'Mantenimiento' : isBranchClosed ? 'Cerrado' : 'Rápida'}</span>
                                     </Button>
 
                                     <Button 

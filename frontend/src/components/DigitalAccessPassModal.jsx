@@ -100,10 +100,10 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
           if (detail.new_total_cost) {
             setDynamicCost(Number(detail.new_total_cost));
           }
-          setLiveBanner(`⚠️ Estadía vencida (+${detail.overtime_minutes || 0}m). Monto actual: S/ ${Number(detail.new_total_cost || 0).toFixed(2)}.`);
+          setLiveBanner(`Estadía vencida (+${detail.overtime_minutes || 0}m). Monto actual: S/ ${Number(detail.new_total_cost || 0).toFixed(2)}.`);
         } else if (detail.minutes_remaining !== undefined && detail.minutes_remaining <= 15) {
           setIsExpiringSoon(true);
-          setLiveBanner(`⏰ Atención: Tu estadía finaliza en ${detail.minutes_remaining} min. Sin periodo de gracia.`);
+          setLiveBanner(`Atención: Tu estadía finaliza en ${detail.minutes_remaining} min. Sin periodo de gracia.`);
         } else {
           playSuccessChime();
           try {
@@ -551,8 +551,20 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
 
         <div className="p-4 space-y-3">
           {liveBanner && (
-            <div className="p-2.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs flex items-center gap-2 animate-bounce">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0"></span>
+            <div className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
+              isOvertime 
+                ? 'bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300' 
+                : isExpiringSoon 
+                ? 'bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300' 
+                : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+            }`}>
+              {isOvertime ? (
+                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+              ) : isExpiringSoon ? (
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+              ) : (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+              )}
               <span className="font-semibold">{liveBanner}</span>
             </div>
           )}
@@ -723,7 +735,12 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 <span className={`text-[10px] block font-medium ${
                   isOvertime ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
                 }`}>
-                  {isOvertime ? '⚠️ Tiempo Excedido' : isActive ? 'Tiempo en Estadía' : isScheduled ? 'Tiempo para llegar' : 'Estado'}
+                  {isOvertime ? (
+                    <span className="inline-flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 text-amber-600 inline shrink-0" />
+                      <span>Tiempo Excedido</span>
+                    </span>
+                  ) : isActive ? 'Tiempo en Estadía' : isScheduled ? 'Tiempo para llegar' : 'Estado'}
                 </span>
                 <p className={`font-mono font-black text-sm mt-0.5 ${
                   isOvertime ? 'text-amber-600 dark:text-amber-400 animate-pulse' : isCancelled ? 'text-rose-600' : isCompleted ? 'text-slate-600' : 'text-slate-900 dark:text-white'
@@ -755,7 +772,12 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 <span className={`text-[10px] font-semibold block ${
                   isOvertime ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
                 }`}>
-                  {isCancelled ? 'Anulada' : isOvertime ? 'En aumento dinámico' : passData.isPrepaid ? '✓ Prepagado' : 'Pago en garita'}
+                  {isCancelled ? 'Anulada' : isOvertime ? 'En aumento dinámico' : passData.isPrepaid ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Check className="w-3 h-3 text-emerald-600 inline shrink-0" />
+                      <span>Prepagado</span>
+                    </span>
+                  ) : 'Pago en garita'}
                 </span>
               </div>
             </div>

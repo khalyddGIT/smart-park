@@ -421,7 +421,7 @@ export const PersonalGaritaModule = () => {
                 : 'bg-amber-50 text-amber-700 border border-amber-300'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-              <span>{wsConnected ? '● En Vivo (WebSocket)' : '○ Reconectando...'}</span>
+              <span>{wsConnected ? 'En Vivo (WebSocket)' : 'Reconectando...'}</span>
             </span>
           </div>
           <p className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
@@ -777,8 +777,9 @@ export const PersonalGaritaModule = () => {
                   </span>
                 </div>
                 {checkoutModal.alreadyPaid && (
-                  <span className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-black">
-                    ✓ Pagado al Ingreso
+                  <span className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-black inline-flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Pagado al Ingreso</span>
                   </span>
                 )}
               </div>
@@ -1060,9 +1061,12 @@ export const PersonalGaritaModule = () => {
                         ? 'bg-blue-100 text-blue-800 border border-blue-300'
                         : 'bg-rose-100 text-rose-800 border border-rose-300'
                     }`}>
-                      {Number(shiftCountedCash) === (shiftInitialCash + shiftStats.cashTotal)
-                        ? '✓ Exacto'
-                        : Number(shiftCountedCash) > (shiftInitialCash + shiftStats.cashTotal)
+                      {Number(shiftCountedCash) === (shiftInitialCash + shiftStats.cashTotal) ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Exacto</span>
+                        </span>
+                      ) : Number(shiftCountedCash) > (shiftInitialCash + shiftStats.cashTotal)
                         ? `+ S/ ${(Number(shiftCountedCash) - (shiftInitialCash + shiftStats.cashTotal)).toFixed(2)}`
                         : `- S/ ${((shiftInitialCash + shiftStats.cashTotal) - Number(shiftCountedCash)).toFixed(2)}`}
                     </div>

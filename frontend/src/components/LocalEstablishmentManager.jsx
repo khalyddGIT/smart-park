@@ -1284,12 +1284,22 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                 <Clock className="w-3 h-3 text-amber-600" />
                                 <span>Tol: {est.tolerance || est.tolerance_minutes || 15}m</span>
                               </span>
-                              <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${
+                              <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold inline-flex items-center gap-1 ${
                                 est.require_reservation_prepay 
                                   ? 'bg-blue-50 text-blue-700 border-blue-200' 
                                   : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                               }`}>
-                                {est.require_reservation_prepay ? '💳 Prepago' : '🏢 Pospago'}
+                                {est.require_reservation_prepay ? (
+                                  <>
+                                    <CreditCard className="w-3 h-3 shrink-0 text-blue-600" />
+                                    <span>Prepago</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Building2 className="w-3 h-3 shrink-0 text-emerald-600" />
+                                    <span>Pospago</span>
+                                  </>
+                                )}
                               </span>
                               {est.night_shift_enabled && (
                                 <span className="bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-0.5 font-bold">

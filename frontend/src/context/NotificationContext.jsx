@@ -148,11 +148,11 @@ export const NotificationProvider = ({ children }) => {
               const diffMin = Math.ceil(diffMs / 60000);
               if (diffMs <= 0) {
                 const overMins = Math.abs(Math.floor(diffMs / 60000));
-                title = `⚠️ Estadía Excedida (+${overMins} min)`;
+                title = `Estadía Excedida (+${overMins} min)`;
                 message = `Tu estadía para la reserva ${r.code} ha vencido (+${overMins}m). Sin periodo de gracia: el monto acumulado sigue incrementándose dinámicamente (Total actual: S/ ${Number(r.total_cost || 0).toFixed(2)}). Realiza tu check-out.`;
                 type = 'alert';
               } else if (diffMin <= 15) {
-                title = `⏰ Estadía por vencer (${diffMin} min)`;
+                title = `Estadía por vencer (${diffMin} min)`;
                 message = `¡Atención! Tu tiempo para la reserva ${r.code} termina en ${diffMin} min. Recuerda que no hay tolerancia de gracia y el sistema continuará cobrando si te pasas.`;
                 type = 'alert';
               } else if (diffMin <= 60) {
@@ -169,7 +169,7 @@ export const NotificationProvider = ({ children }) => {
               const diffMin = Math.ceil((deadline.getTime() - Date.now()) / 60000);
 
               if (diffMin <= 10 && diffMin > 0) {
-                title = `⚠️ Llegada urgente (${diffMin} min)`;
+                title = `Llegada urgente (${diffMin} min)`;
                 message = `¡Atención! Tu reserva ${r.code} vencerá en ${diffMin} min. Preséntate en garita antes del límite o tu reserva se cancelará automáticamente.`;
                 type = 'alert';
               } else if (diffMin <= 0) {
@@ -256,14 +256,14 @@ export const NotificationProvider = ({ children }) => {
       if (detail.minutes_remaining !== undefined && detail.minutes_remaining <= 15) {
         addNotification({
           role: 'user',
-          title: `⏰ Estadía por vencer (${detail.minutes_remaining} min)`,
+          title: `Estadía por vencer (${detail.minutes_remaining} min)`,
           message: detail.message || `Tu estadía finaliza en ${detail.minutes_remaining} minutos. Sin tiempo de gracia.`,
           type: 'alert'
         });
       } else if (detail.is_overtime) {
         addNotification({
           role: 'user',
-          title: `⚠️ Estadía Excedida (+${detail.overtime_minutes || 0} min)`,
+          title: `Estadía Excedida (+${detail.overtime_minutes || 0} min)`,
           message: detail.message || `Estadía vencida. Monto actual: S/ ${Number(detail.new_total_cost || 0).toFixed(2)}.`,
           type: 'alert'
         });

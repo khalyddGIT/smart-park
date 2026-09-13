@@ -555,12 +555,13 @@ export const StaffModule = () => {
                       </div>
                     </div>
 
-                    <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${
+                    <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 ${
                       isActive 
                         ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30' 
                         : 'bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30'
                     }`}>
-                      ● {s.status || 'Activo'}
+                      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                      <span>{s.status || 'Activo'}</span>
                     </span>
                   </div>
 
@@ -1088,8 +1089,9 @@ export const StaffModule = () => {
                 </button>
               </div>
               {credsData.password && (
-                <span className="text-[10px] text-emerald-600 font-bold block mt-1">
-                  ✓ Clave asignada: <code className="font-mono bg-emerald-50 px-1 py-0.5 rounded">{credsData.password}</code> (cópiala y entrégala al trabajador)
+                <span className="text-[10px] text-emerald-600 font-bold block mt-1 inline-flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Clave asignada: <code className="font-mono bg-emerald-50 px-1 py-0.5 rounded">{credsData.password}</code> (cópiala y entrégala al trabajador)</span>
                 </span>
               )}
             </div>

@@ -27,7 +27,8 @@ import {
   Radio,
   BarChart3,
   CreditCard,
-  Wallet
+  Wallet,
+  Star
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -358,8 +359,9 @@ export const PlatformGlobalDashboard = ({ onNavigateTab }) => {
 
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800/70 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
               <span>Calificación:</span>
-              <strong className="text-amber-500 font-bold font-mono">
-                {reviewStats.count ? `${reviewStats.avg} ★` : '5.0 ★'}
+              <strong className="text-amber-500 font-bold font-mono inline-flex items-center gap-1">
+                <span>{reviewStats.count ? reviewStats.avg : '5.0'}</span>
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
               </strong>
             </div>
           </div>

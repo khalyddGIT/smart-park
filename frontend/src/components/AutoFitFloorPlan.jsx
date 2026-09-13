@@ -62,8 +62,10 @@ export const AutoFitFloorPlan = ({
         >
           {safeElements.length === 0 ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 text-slate-400">
-              <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center mb-2">
-                <span className="text-xl">🅿️</span>
+              <div className="w-12 h-12 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mb-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-mono font-black text-sm flex items-center justify-center">
+                  P
+                </div>
               </div>
               <p className="text-xs font-bold text-slate-300">Cargando distribución del plano...</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Sincronizando cajones en vivo</p>

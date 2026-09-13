@@ -18,7 +18,8 @@ import {
   Check,
   MapPin,
   Loader2,
-  Upload
+  Upload,
+  X
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useAuth } from '../context/AuthContext';
@@ -469,7 +470,9 @@ export const IncidentsModule = () => {
             className="pl-10"
           />
           {searchText && (
-            <button onClick={() => setSearchText('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">✕</button>
+            <button onClick={() => setSearchText('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
           )}
         </div>
 
@@ -556,12 +559,13 @@ export const IncidentsModule = () => {
                           <span>Oculta</span>
                         </span>
                       )}
-                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border flex items-center gap-2 ${
+                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border inline-flex items-center gap-1.5 ${
                         inc.status === 'resolved'
                           ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/80'
                           : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/80'
                       }`}>
-                        ● {inc.status === 'resolved' ? 'Resuelta' : 'Pendiente'}
+                        <span className={`w-1.5 h-1.5 rounded-full ${inc.status === 'resolved' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        <span>{inc.status === 'resolved' ? 'Resuelta' : 'Pendiente'}</span>
                       </span>
                     </div>
                   </div>
@@ -930,9 +934,9 @@ export const IncidentsModule = () => {
               <img src={selectedImage} alt="Evidencia" className="w-full h-auto max-h-[80vh] object-cover rounded-2xl" />
               <button
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-3 right-3 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center"
+                className="absolute top-3 right-3 w-8 h-8 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center cursor-pointer transition-colors"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
           </DialogContent>

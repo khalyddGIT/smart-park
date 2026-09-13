@@ -43,7 +43,9 @@ import {
   HardDrive,
   RefreshCw,
   History,
-  CalendarClock
+  CalendarClock,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useEstablishments } from '../context/EstablishmentContext';
@@ -857,7 +859,8 @@ export const PlatformSettingsModule = () => {
                     className="w-full text-center text-xs font-bold text-slate-600 hover:text-slate-900 py-1 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <History className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{showBackupsHistory ? '▲ Ocultar historial de archivos' : `▼ Ver historial de archivos en el volumen (${backupStatus.total_backups_stored})`}</span>
+                    <span>{showBackupsHistory ? 'Ocultar historial de archivos' : `Ver historial de archivos en el volumen (${backupStatus.total_backups_stored})`}</span>
+                    {showBackupsHistory ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
                   </button>
                 )}
 
@@ -972,7 +975,12 @@ export const PlatformSettingsModule = () => {
                           : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
                       }`}
                     >
-                      {isSelected ? '✓ Tema Activo' : 'Activar Tema'}
+                      {isSelected ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Tema Activo</span>
+                        </span>
+                      ) : 'Activar Tema'}
                     </button>
                   </div>
                 );
@@ -1130,7 +1138,7 @@ export const PlatformSettingsModule = () => {
               <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
               <div className="flex-1">
                 <span className="font-bold block">
-                  {gatewayStatus.paypal_configured ? '✓ Pasarelas conectadas al servidor backend' : 'Estado de conexión parcial'}
+                  {gatewayStatus.paypal_configured ? 'Pasarelas conectadas al servidor backend' : 'Estado de conexión parcial'}
                 </span>
                 <span className="text-[11px] opacity-80">{gatewayStatus.message}</span>
               </div>
@@ -1252,8 +1260,9 @@ export const PlatformSettingsModule = () => {
                   Visualización interactiva, geolocalización y ruteo de todas las cocheras registradas en Huamanga.
                 </p>
               </div>
-              <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl w-fit">
-                ✓ {establishments.length} Sedes Registradas
+              <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl w-fit inline-flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>{establishments.length} Sedes Registradas</span>
               </span>
             </div>
 

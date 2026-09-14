@@ -23,7 +23,11 @@ import {
   ShieldCheck,
   Moon,
   Lock,
-  XCircle
+  XCircle,
+  Calendar,
+  Crown,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -288,6 +292,24 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const [bookingModel, setBookingModel] = useState('postpaid');
   const [vehicleCategory, setVehicleCategory] = useState('auto');
   
+  // Modalidad de Reserva: 'immediate' (Inmediata) | 'advance' (Fecha Adelantada) | 'subscription' (Abonado Mensual 30d)
+  const [reservationType, setReservationType] = useState('immediate');
+
+  // Configuración de Reserva con Fecha Adelantada
+  const [advanceDate, setAdvanceDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [advanceTime, setAdvanceTime] = useState('09:00');
+  const [advanceHours, setAdvanceHours] = useState(2);
+
+  // Configuración de Abonado Mensual (30 días de acceso ilimitado continuo)
+  const [subscriptionStartDate, setSubscriptionStartDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+  const [subscriptionMonths, setSubscriptionMonths] = useState(1);
+
   // Comprobante SUNAT
   const [receiptType, setReceiptType] = useState('boleta');
   const [rucNumber, setRucNumber] = useState('');
@@ -649,6 +671,53 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     ? Number((actualStayMinutes / 60).toFixed(2))
     : Math.max(minStay, Math.min(maxStay, Number(hours) || 2));
 
+  // Tarifas de Abono Mensual por categoría de vehículo (30 días de cobertura)
+  const categoryMonthlyRate = useMemo(() => {
+    let r = 180.0;
+    if (vehicleCategory === 'auto') r = parking?.rate_monthly_auto ?? parking?.rate_monthly ?? 180.0;
+    else if (vehicleCategory === 'camioneta' || vehicleCategory === 'suv') r = parking?.rate_monthly_suv ?? 240.0;
+    else if (vehicleCategory === 'mototaxi') r = parking?.rate_monthly_mototaxi ?? 120.0;
+    else if (vehicleCategory === 'moto') r = parking?.rate_monthly_moto ?? 90.0;
+    return Number(r);
+  }, [parking, vehicleCategory]);
+
+  const totalSubscriptionCost = categoryMonthlyRate * subscriptionMonths;
+
+  // Fechas y horas para Fecha Adelantada
+  const advanceStartDateTime = useMemo(() => {
+    try {
+      const [year, month, day] = advanceDate.split('-').map(Number);
+      const [hour, minute] = advanceTime.split(':').map(Number);
+      return new Date(year, month - 1, day, hour || 0, minute || 0);
+    } catch {
+      return new Date();
+    }
+  }, [advanceDate, advanceTime]);
+
+  const advanceEndDateTime = useMemo(() => {
+    const d = new Date(advanceStartDateTime.getTime());
+    d.setHours(d.getHours() + advanceHours);
+    return d;
+  }, [advanceStartDateTime, advanceHours]);
+
+  const advanceCost = (categoryHourlyRate * advanceHours) + reservationFee;
+
+  // Fechas para Abono Mensual (30 días continuos)
+  const subscriptionStartDateTime = useMemo(() => {
+    try {
+      const [year, month, day] = subscriptionStartDate.split('-').map(Number);
+      return new Date(year, month - 1, day, 0, 0, 0);
+    } catch {
+      return new Date();
+    }
+  }, [subscriptionStartDate]);
+
+  const subscriptionEndDateTime = useMemo(() => {
+    const d = new Date(subscriptionStartDateTime.getTime());
+    d.setDate(d.getDate() + (30 * subscriptionMonths));
+    return d;
+  }, [subscriptionStartDateTime, subscriptionMonths]);
+
   const rawCost = isMinuteBilling
     ? (effectiveMinuteRate * actualStayMinutes) + reservationFee
     : (effectiveHourlyRate * stayHours) + reservationFee;
@@ -673,8 +742,23 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     if (!canReserve) return;
     const now = new Date();
     const chosenTolerance = officialTolerance;
-    const start = now;
-    const end = new Date(start.getTime() + Math.max(120, chosenTolerance + 60) * 60 * 1000);
+    
+    let start = now;
+    let end = new Date(start.getTime() + Math.max(120, chosenTolerance + 60) * 60 * 1000);
+    let calculatedCost = parking?.require_reservation_prepay ? (reservationFee > 0 ? reservationFee : categoryHourlyRate) : categoryHourlyRate;
+    let paymentMethodVal = parking?.require_reservation_prepay ? 'Abono digital inmediato' : 'Pago en garita al salir';
+
+    if (reservationType === 'subscription') {
+      start = subscriptionStartDateTime;
+      end = subscriptionEndDateTime;
+      calculatedCost = totalSubscriptionCost;
+      paymentMethodVal = 'Abono mensual 30 días';
+    } else if (reservationType === 'advance') {
+      start = advanceStartDateTime;
+      end = advanceEndDateTime;
+      calculatedCost = advanceCost;
+      paymentMethodVal = 'Pago en garita al presentarse';
+    }
 
     const bookingPayload = {
       slotId: selectedSlot.id,
@@ -684,31 +768,34 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       vehicleType: vehicleCategory,
       parkingId: numericParkingId,
       parkingName: parking?.name || 'Smart Park Central',
-      hours: isOpenStayMode ? 1 : hours,
-      estimatedHours: isOpenStayMode ? 1 : hours,
-      isOpenStay: isOpenStayMode,
-      is_open_stay: isOpenStayMode,
-      billingUnit: isMinuteBilling ? 'minute' : 'hour',
-      estimatedMinutes: isMinuteBilling ? actualStayMinutes : 60,
+      hours: reservationType === 'subscription' ? (30 * 24 * subscriptionMonths) : reservationType === 'advance' ? advanceHours : (isOpenStayMode ? 1 : hours),
+      estimatedHours: reservationType === 'subscription' ? (30 * 24 * subscriptionMonths) : reservationType === 'advance' ? advanceHours : (isOpenStayMode ? 1 : hours),
+      isOpenStay: reservationType === 'immediate' ? isOpenStayMode : false,
+      is_open_stay: reservationType === 'immediate' ? isOpenStayMode : false,
+      billingUnit: reservationType === 'immediate' ? (isMinuteBilling ? 'minute' : 'hour') : 'hour',
+      estimatedMinutes: reservationType === 'subscription' ? (30 * 24 * 60 * subscriptionMonths) : reservationType === 'advance' ? (advanceHours * 60) : (isMinuteBilling ? actualStayMinutes : 60),
       isNightShift: isNightShiftActive,
       nightSurcharge: isMinuteBilling ? nightMinuteSurcharge : nightSurcharge,
       reservationFee,
-      prepaid: !!parking?.require_reservation_prepay,
+      prepaid: reservationType === 'subscription' || !!parking?.require_reservation_prepay,
       etaMinutes: chosenTolerance,
       arrivalWindow: chosenTolerance,
       toleranceMinutes: chosenTolerance,
       plate: effectivePlate.split(' ')[0],
-      rawCost: reservationFee > 0 ? reservationFee : categoryHourlyRate,
+      rawCost: calculatedCost,
       discountAmount: 0,
-      totalCost: parking?.require_reservation_prepay ? (reservationFee > 0 ? reservationFee : categoryHourlyRate) : categoryHourlyRate,
+      totalCost: calculatedCost,
       bookingModel,
       receiptType: 'boleta',
       code: `RSV-${Date.now().toString().slice(-6)}`,
       token: `SPK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
       startTime: start,
       expiresAt: end,
-      payNow: !!parking?.require_reservation_prepay,
-      paymentMethod: parking?.require_reservation_prepay ? 'Abono digital inmediato' : 'Pago en garita al salir'
+      payNow: reservationType === 'subscription' || !!parking?.require_reservation_prepay,
+      paymentMethod: paymentMethodVal,
+      reservationType: reservationType,
+      isSubscription: reservationType === 'subscription',
+      subscriptionMonths: reservationType === 'subscription' ? subscriptionMonths : 0
     };
 
     if (onReserveSlot) {
@@ -1119,6 +1206,51 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
         {/* Panel Lateral de Reserva y Opciones Comerciales */}
         <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4 text-white">
           <div className="space-y-3.5">
+
+            {/* Selector de Modalidad de Reserva */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300 block">
+                Modalidad de Reserva
+              </label>
+              <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 grid grid-cols-3 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setReservationType('immediate')}
+                  className={`py-2 px-1 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                    reservationType === 'immediate'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5 shrink-0 text-emerald-300" />
+                  <span className="text-[11px] leading-tight font-semibold">Inmediata</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReservationType('advance')}
+                  className={`py-2 px-1 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                    reservationType === 'advance'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5 shrink-0 text-sky-300" />
+                  <span className="text-[11px] leading-tight font-semibold">Programada</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReservationType('subscription')}
+                  className={`py-2 px-1 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                    reservationType === 'subscription'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Crown className="w-3.5 h-3.5 shrink-0 text-amber-300" />
+                  <span className="text-[11px] leading-tight font-semibold">Abonado 30d</span>
+                </button>
+              </div>
+            </div>
             
             {/* Categoría de Vehículo */}
             <div>
@@ -1132,28 +1264,32 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     label: 'Auto', 
                     icon: Car, 
                     rate: Number(parking?.rate_auto ?? parking?.rate ?? 5.0),
-                    minuteRate: Number(parking?.rate_minute_auto ?? ((parking?.rate_auto ?? parking?.rate ?? 5.0) / 60))
+                    minuteRate: Number(parking?.rate_minute_auto ?? ((parking?.rate_auto ?? parking?.rate ?? 5.0) / 60)),
+                    monthlyRate: Number(parking?.rate_monthly_auto ?? parking?.rate_monthly ?? 180.0)
                   },
                   { 
                     id: 'camioneta', 
                     label: 'Camioneta', 
                     icon: Truck, 
                     rate: Number(parking?.rate_suv ?? 7.0),
-                    minuteRate: Number(parking?.rate_minute_suv ?? ((parking?.rate_suv ?? 7.0) / 60))
+                    minuteRate: Number(parking?.rate_minute_suv ?? ((parking?.rate_suv ?? 7.0) / 60)),
+                    monthlyRate: Number(parking?.rate_monthly_suv ?? 240.0)
                   },
                   { 
                     id: 'mototaxi', 
                     label: 'Mototaxi', 
                     icon: Navigation, 
                     rate: Number(parking?.rate_mototaxi ?? 3.5),
-                    minuteRate: Number(parking?.rate_minute_mototaxi ?? ((parking?.rate_mototaxi ?? 3.5) / 60))
+                    minuteRate: Number(parking?.rate_minute_mototaxi ?? ((parking?.rate_mototaxi ?? 3.5) / 60)),
+                    monthlyRate: Number(parking?.rate_monthly_mototaxi ?? 120.0)
                   },
                   { 
                     id: 'moto', 
                     label: 'Moto', 
                     icon: Bike, 
                     rate: Number(parking?.rate_moto ?? 2.5),
-                    minuteRate: Number(parking?.rate_minute_moto ?? ((parking?.rate_moto ?? 2.5) / 60))
+                    minuteRate: Number(parking?.rate_minute_moto ?? ((parking?.rate_moto ?? 2.5) / 60)),
+                    monthlyRate: Number(parking?.rate_monthly_moto ?? 90.0)
                   }
                 ].map((v) => {
                   const Icon = v.icon;
@@ -1172,7 +1308,9 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       <Icon className="w-3.5 h-3.5" />
                       <span className="text-[10px] font-bold">{v.label}</span>
                       <span className="text-[9px] font-mono opacity-80">
-                        {isMinuteBilling 
+                        {reservationType === 'subscription'
+                          ? `S/${v.monthlyRate.toFixed(0)}/m`
+                          : isMinuteBilling 
                           ? `S/${v.minuteRate.toFixed(2)}/min` 
                           : `S/${v.rate.toFixed(1)}/h`}
                       </span>
@@ -1292,119 +1430,292 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
-            {/* Tiempo de Llegada y Tolerancia Oficial de la Sede */}
-            <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                  Tolerancia de llegada
-                </span>
-                <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950 border border-emerald-800/80 px-2.5 py-0.5 rounded-full">
-                  ~{officialTolerance} min
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 leading-tight">
-                Tiempo oficial establecido por la sede para presentarte en garita tras reservar.
-              </p>
-            </div>
+            {/* Controles Específicos según la Modalidad de Reserva */}
+            {reservationType === 'immediate' && (
+              <>
+                {/* Tiempo de Llegada y Tolerancia Oficial de la Sede */}
+                <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                      Tolerancia de llegada
+                    </span>
+                    <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950 border border-emerald-800/80 px-2.5 py-0.5 rounded-full">
+                      ~{officialTolerance} min
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Tiempo oficial establecido por la sede para presentarte en garita tras reservar.
+                  </p>
+                </div>
 
-            {/* Modalidad de Estadía según Reglas del Local */}
-            {parking?.allow_open_stay !== false ? (
-              <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    Modalidad de Estadía
+                {/* Modalidad de Estadía según Reglas del Local */}
+                {parking?.allow_open_stay !== false ? (
+                  <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        Modalidad de Estadía
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/90 border border-emerald-800/60 px-2 py-0.5 rounded">
+                        Hora Libre
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-tight">
+                      Ingreso flexible sin hora de salida fija. Pagas al salir por el tiempo real consumido ({isMinuteBilling ? `S/ ${categoryMinuteRate.toFixed(2)}/min` : `S/ ${categoryHourlyRate.toFixed(2)}/h`}).
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                        Tiempo de Estadía Requerido
+                      </span>
+                      <span className="text-xs font-mono font-bold text-emerald-400">
+                        {hours} {hours === 1 ? 'hora' : 'horas'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {[1, 2, 3, 4, 6, 8, 12, 24].filter(h => h >= minStay && h <= maxStay).map((h) => (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={() => setHours(h)}
+                          className={`flex-1 min-w-[32px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                            hours === h
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                          }`}
+                        >
+                          {h}h
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      Límites de esta sede: mín. {minStay}h, máx. {maxStay}h.
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {reservationType === 'advance' && (
+              <div className="p-3 bg-slate-950/90 rounded-xl border border-sky-900/60 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    Programar Llegada
                   </span>
-                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/90 border border-emerald-800/60 px-2 py-0.5 rounded">
-                    Hora Libre
+                  <span className="text-[10px] font-mono text-sky-300 bg-sky-950/90 border border-sky-800/80 px-2 py-0.5 rounded-full font-bold">
+                    Reserva Anticipada
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-tight">
-                  Ingreso flexible sin hora de salida fija. Pagas al salir por el tiempo real consumido ({isMinuteBilling ? `S/ ${categoryMinuteRate.toFixed(2)}/min` : `S/ ${categoryHourlyRate.toFixed(2)}/h`}).
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-1 font-medium">Fecha de llegada</label>
+                    <input
+                      type="date"
+                      min={new Date().toISOString().split('T')[0]}
+                      max={(() => { const d = new Date(); d.setDate(d.getDate() + 60); return d.toISOString().split('T')[0]; })()}
+                      value={advanceDate}
+                      onChange={(e) => setAdvanceDate(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-1 font-medium">Hora de llegada</label>
+                    <input
+                      type="time"
+                      value={advanceTime}
+                      onChange={(e) => setAdvanceTime(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-slate-400 font-medium">Estadía planificada</span>
+                    <span className="text-xs font-mono font-bold text-sky-400">{advanceHours} horas</span>
+                  </div>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {[1, 2, 3, 4, 6, 8, 12, 24].map((h) => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() => setAdvanceHours(h)}
+                        className={`flex-1 min-w-[30px] py-1 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                          advanceHours === h
+                            ? 'bg-sky-600 text-white shadow-xs'
+                            : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                        }`}
+                      >
+                        {h}h
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-400 leading-tight bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                  Tu cajón quedará asegurado para tu llegada. La tolerancia de ~{officialTolerance} min inicia a las {advanceTime} del {advanceDate}.
                 </p>
               </div>
-            ) : (
-              <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                    Tiempo de Estadía Requerido
+            )}
+
+            {reservationType === 'subscription' && (
+              <div className="p-3 bg-slate-950/90 rounded-xl border border-amber-900/60 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                    <Crown className="w-3.5 h-3.5" />
+                    Pase de Abonado Mensual
                   </span>
-                  <span className="text-xs font-mono font-bold text-emerald-400">
-                    {hours} {hours === 1 ? 'hora' : 'horas'}
+                  <span className="text-[10px] font-mono text-amber-300 bg-amber-950/90 border border-amber-800/80 px-2 py-0.5 rounded-full font-bold">
+                    30 Días Continuos
                   </span>
                 </div>
-                <div className="flex items-center gap-1 flex-wrap">
-                  {[1, 2, 3, 4, 6, 8, 12, 24].filter(h => h >= minStay && h <= maxStay).map((h) => (
-                    <button
-                      key={h}
-                      type="button"
-                      onClick={() => setHours(h)}
-                      className={`flex-1 min-w-[32px] py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-                        hours === h
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-1 font-medium">Inicio de membresía</label>
+                    <input
+                      type="date"
+                      min={new Date().toISOString().split('T')[0]}
+                      value={subscriptionStartDate}
+                      onChange={(e) => setSubscriptionStartDate(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-1 font-medium">Duración</label>
+                    <select
+                      value={subscriptionMonths}
+                      onChange={(e) => setSubscriptionMonths(Number(e.target.value))}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-medium focus:border-amber-500 focus:outline-none"
                     >
-                      {h}h
-                    </button>
-                  ))}
+                      <option value={1}>1 Mes (30 días)</option>
+                      <option value={2}>2 Meses (60 días)</option>
+                      <option value={3}>3 Meses (90 días)</option>
+                    </select>
+                  </div>
                 </div>
-                <p className="text-[10px] text-slate-400">
-                  Límites de esta sede: mín. {minStay}h, máx. {maxStay}h.
-                </p>
+
+                <div className="bg-amber-950/30 border border-amber-800/40 p-2.5 rounded-xl space-y-1 text-[11px]">
+                  <div className="flex items-center justify-between text-amber-200">
+                    <span>Vigencia:</span>
+                    <span className="font-mono font-bold">
+                      {subscriptionStartDate} al {subscriptionEndDateTime.toISOString().split('T')[0]}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    • Acceso ilimitado 24/7 con tu código QR durante {30 * subscriptionMonths} días continuos.
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    • Plaza fija y asegurada sin riesgo de cancelación por tolerancia.
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Resumen Ejecutivo de Reserva y Tarifa */}
             <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 space-y-2 text-xs">
-              <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Tarifa ({vehicleCategory.toUpperCase()}):</span>
-                <span className="font-mono font-bold text-white">
-                  {isMinuteBilling 
-                    ? `S/ ${categoryMinuteRate.toFixed(2)} /min` 
-                    : `S/ ${categoryHourlyRate.toFixed(2)} /h`}
-                </span>
-              </div>
-              {isNightShiftActive && (
-                <div className="flex items-center justify-between text-amber-300 text-[11px]">
-                  <span>Recargo noche:</span>
-                  <span className="font-mono font-semibold">
-                    +{isMinuteBilling ? `S/ ${nightMinuteSurcharge.toFixed(3)}/min` : `S/ ${nightSurcharge.toFixed(2)}/h`}
-                  </span>
-                </div>
-              )}
-              <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Tolerancia para llegar:</span>
-                <span className="text-emerald-400 font-mono font-semibold">~{officialTolerance} min</span>
-              </div>
-              <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Régimen:</span>
-                <span className="text-slate-200 font-medium">
-                  {parking?.allow_open_stay !== false ? 'Hora Libre (Pagas al salir)' : `${hours}h pactadas`}
-                </span>
-              </div>
-              <div className="h-px bg-slate-800/80 my-1" />
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400">Cobro:</span>
-                <span className="text-slate-200 font-medium">En garita al salir</span>
-              </div>
-              {parking?.require_reservation_prepay ? (
-                <div className="flex items-center justify-between text-amber-300 pt-1 border-t border-slate-800/80 font-mono">
-                  <span>Prepago requerido:</span>
-                  <span className="font-bold">S/ {(reservationFee > 0 ? reservationFee : categoryHourlyRate).toFixed(2)}</span>
-                </div>
-              ) : reservationFee > 0 ? (
-                <div className="flex items-center justify-between text-amber-300 pt-1 border-t border-slate-800/80 font-mono">
-                  <span>Tasa de reserva:</span>
-                  <span className="font-bold">S/ {reservationFee.toFixed(2)}</span>
-                </div>
+              {reservationType === 'subscription' ? (
+                <>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Tarifa Mensual ({vehicleCategory.toUpperCase()}):</span>
+                    <span className="font-mono font-bold text-amber-400">
+                      S/ {categoryMonthlyRate.toFixed(2)} /mes
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Duración:</span>
+                    <span className="text-slate-200 font-medium">
+                      {subscriptionMonths} {subscriptionMonths === 1 ? 'mes (30 días)' : `${subscriptionMonths} meses`}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Régimen:</span>
+                    <span className="text-emerald-400 font-medium">Acceso Ilimitado 24/7</span>
+                  </div>
+                  <div className="h-px bg-slate-800/80 my-1" />
+                  <div className="flex items-center justify-between text-sm font-bold pt-0.5">
+                    <span className="text-white">Total Abono:</span>
+                    <span className="font-mono text-amber-400">S/ {totalSubscriptionCost.toFixed(2)}</span>
+                  </div>
+                </>
+              ) : reservationType === 'advance' ? (
+                <>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Tarifa Hora ({vehicleCategory.toUpperCase()}):</span>
+                    <span className="font-mono font-bold text-white">
+                      S/ {categoryHourlyRate.toFixed(2)} /h
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Llegada pactada:</span>
+                    <span className="text-sky-400 font-mono font-semibold">{advanceDate} {advanceTime}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Estadía:</span>
+                    <span className="text-slate-200 font-medium">{advanceHours}h estimadas</span>
+                  </div>
+                  <div className="h-px bg-slate-800/80 my-1" />
+                  <div className="flex items-center justify-between text-xs font-bold pt-0.5">
+                    <span className="text-white">Total Estimado:</span>
+                    <span className="font-mono text-sky-400">S/ {advanceCost.toFixed(2)}</span>
+                  </div>
+                </>
               ) : (
-                <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                  <span>Reserva:</span>
-                  <span className="text-emerald-400 font-medium">Gratis (Pagas al salir)</span>
-                </div>
+                <>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Tarifa ({vehicleCategory.toUpperCase()}):</span>
+                    <span className="font-mono font-bold text-white">
+                      {isMinuteBilling 
+                        ? `S/ ${categoryMinuteRate.toFixed(2)} /min` 
+                        : `S/ ${categoryHourlyRate.toFixed(2)} /h`}
+                    </span>
+                  </div>
+                  {isNightShiftActive && (
+                    <div className="flex items-center justify-between text-amber-300 text-[11px]">
+                      <span>Recargo noche:</span>
+                      <span className="font-mono font-semibold">
+                        +{isMinuteBilling ? `S/ ${nightMinuteSurcharge.toFixed(3)}/min` : `S/ ${nightSurcharge.toFixed(2)}/h`}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Tolerancia para llegar:</span>
+                    <span className="text-emerald-400 font-mono font-semibold">~{officialTolerance} min</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Régimen:</span>
+                    <span className="text-slate-200 font-medium">
+                      {parking?.allow_open_stay !== false ? 'Hora Libre (Pagas al salir)' : `${hours}h pactadas`}
+                    </span>
+                  </div>
+                  <div className="h-px bg-slate-800/80 my-1" />
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">Cobro:</span>
+                    <span className="text-slate-200 font-medium">En garita al salir</span>
+                  </div>
+                  {parking?.require_reservation_prepay ? (
+                    <div className="flex items-center justify-between text-amber-300 pt-1 border-t border-slate-800/80 font-mono">
+                      <span>Prepago requerido:</span>
+                      <span className="font-bold">S/ {(reservationFee > 0 ? reservationFee : categoryHourlyRate).toFixed(2)}</span>
+                    </div>
+                  ) : reservationFee > 0 ? (
+                    <div className="flex items-center justify-between text-amber-300 pt-1 border-t border-slate-800/80 font-mono">
+                      <span>Tasa de reserva:</span>
+                      <span className="font-bold">S/ {reservationFee.toFixed(2)}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                      <span>Reserva:</span>
+                      <span className="text-emerald-400 font-medium">Gratis (Pagas al salir)</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -1445,6 +1756,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   ? 'bg-amber-950 border border-amber-600/70 text-amber-300 hover:bg-amber-900 cursor-not-allowed opacity-80'
                   : isClosed
                   ? 'bg-rose-950 border border-rose-600/70 text-rose-300 hover:bg-rose-900 cursor-not-allowed opacity-80'
+                  : reservationType === 'subscription'
+                  ? 'bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-amber-950/40'
+                  : reservationType === 'advance'
+                  ? 'bg-sky-600 hover:bg-sky-500 text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-sky-950/40'
                   : 'bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 disabled:cursor-not-allowed'
               }`}
             >
@@ -1460,6 +1775,18 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 </>
               ) : activeUserReservation ? (
                 <span>Tienes una reserva activa en curso</span>
+              ) : reservationType === 'subscription' ? (
+                <>
+                  <Crown className="w-4 h-4" />
+                  <span>Adquirir Abono Mensual (S/ {totalSubscriptionCost.toFixed(2)})</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              ) : reservationType === 'advance' ? (
+                <>
+                  <Calendar className="w-4 h-4" />
+                  <span>Confirmar Reserva Programada</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
               ) : (
                 <>
                   <span>{parking?.require_reservation_prepay ? 'Continuar al Pago Digital' : 'Confirmar Reserva'}</span>

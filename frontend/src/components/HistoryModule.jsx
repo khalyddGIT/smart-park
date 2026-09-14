@@ -23,7 +23,8 @@ import {
   Sparkles,
   ThumbsUp,
   Check,
-  MessageSquare
+  MessageSquare,
+  Crown
 } from 'lucide-react';
 import { useEstablishments } from '../context/EstablishmentContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
@@ -88,7 +89,10 @@ export const HistoryModule = () => {
           cost: Number(r.cost || r.total_cost) || 10.00,
           status: 'Completado',
           invoice: `B001-00${Math.floor(1000 + Math.random() * 9000)}`,
-          paymentMethod: r.paymentMethod || 'Pase Digital / Tarjeta'
+          paymentMethod: r.paymentMethod || 'Pase Digital / Tarjeta',
+          reservationType: r.reservationType || r.reservation_type || (r.isSubscription || r.is_subscription ? 'subscription' : 'immediate'),
+          isSubscription: !!(r.isSubscription || r.is_subscription),
+          subscriptionMonths: r.subscriptionMonths || r.subscription_months || 1
         };
       });
 
@@ -375,6 +379,18 @@ export const HistoryModule = () => {
                       {h.slot && (
                         <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-md font-mono font-bold text-[11px] border border-emerald-200 dark:border-emerald-800/80">
                           Cajón {h.slot}
+                        </span>
+                      )}
+                      {h.isSubscription && (
+                        <span className="bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-md font-bold text-[11px] border border-amber-300 dark:border-amber-700/80 inline-flex items-center gap-1">
+                          <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                          <span>Abonado {h.subscriptionMonths ? `${h.subscriptionMonths}m` : '30d'}</span>
+                        </span>
+                      )}
+                      {!h.isSubscription && h.reservationType === 'advance' && (
+                        <span className="bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-md font-bold text-[11px] border border-blue-200 dark:border-blue-800/80 inline-flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                          <span>Programada</span>
                         </span>
                       )}
                     </div>

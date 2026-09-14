@@ -45,7 +45,8 @@ import {
   Timer,
   ChevronDown,
   Hash,
-  AlertTriangle
+  AlertTriangle,
+  Crown
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -1025,6 +1026,18 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                             <span className="font-mono font-bold text-xs text-slate-800 dark:text-slate-200">
                               {s.plate}
                             </span>
+                            {(s.isSubscription || s.is_subscription) && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                                <Crown className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+                                <span>Abonado</span>
+                              </span>
+                            )}
+                            {(!s.isSubscription && !s.is_subscription && (s.reservationType === 'advance' || s.reservation_type === 'advance')) && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                <Calendar className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
+                                <span>Programada</span>
+                              </span>
+                            )}
                           </div>
                           <span className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">
                             {formatTime12h(s.startTime)}
@@ -1553,6 +1566,20 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
                         {isCancelled && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
                             Cancelada
+                          </span>
+                        )}
+
+                        {(res.isSubscription || res.is_subscription) && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                            <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                            <span>Abonado 30d</span>
+                          </span>
+                        )}
+
+                        {(!res.isSubscription && !res.is_subscription && (res.reservationType === 'advance' || res.reservation_type === 'advance')) && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30">
+                            <Calendar className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                            <span>Programada</span>
                           </span>
                         )}
 

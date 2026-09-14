@@ -24,7 +24,10 @@ import {
   QrCode,
   Sparkles,
   Download,
-  Navigation
+  Navigation,
+  Crown,
+  Calendar,
+  Zap
 } from 'lucide-react';
 
 import { parseIsoToDate } from '../context/EstablishmentContext';
@@ -194,6 +197,12 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       ))
     );
 
+    const reservationType = String(reservation.reservation_type || reservation.reservationType || 'immediate').toLowerCase();
+    const isSubscription = Boolean(reservation.is_subscription || reservation.isSubscription || reservationType === 'subscription');
+    const subscriptionMonths = Number(reservation.subscription_months || reservation.subscriptionMonths || 1);
+    const isAdvance = reservationType === 'advance';
+    const expiresAt = parseIsoToDate(reservation.expiresAt || reservation.end_time || reservation.expires_at);
+
     return {
       dbId,
       id,
@@ -213,8 +222,13 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       arrivalDeadline,
       entryTime,
       stayExpiresAt,
+      expiresAt,
       qrPayload,
-      isPrepaid
+      isPrepaid,
+      reservationType,
+      isSubscription,
+      subscriptionMonths,
+      isAdvance
     };
   }, [reservation, localActualEntry]);
 
@@ -233,6 +247,39 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
 
     const updateCountdown = () => {
       const now = new Date().getTime();
+
+      // Modalidad 1: Abonado Mensual (30 días de cobertura continua)
+      if (passData.isSubscription) {
+        const diffSub = (passData.expiresAt ? passData.expiresAt.getTime() : (passData.startTime.getTime() + 30*24*60*60*1000)) - now;
+        if (diffSub <= 0) {
+          setTimeLeft('Membresía vencida');
+          setSecondsRemaining(0);
+        } else {
+          const days = Math.floor(diffSub / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diffSub % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          setTimeLeft(`${days}d ${hours}h`);
+          setSecondsRemaining(Math.floor(diffSub / 1000));
+        }
+        return;
+      }
+
+      // Modalidad 2: Fecha Adelantada antes de la hora pactada
+      if (passData.isAdvance && localStatus === 'scheduled') {
+        const diffToStart = passData.startTime.getTime() - now;
+        if (diffToStart > 0) {
+          const days = Math.floor(diffToStart / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diffToStart % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const mins = Math.floor((diffToStart % (1000 * 60 * 60)) / (1000 * 60));
+          if (days > 0) {
+            setTimeLeft(`En ${days}d ${hours}h`);
+          } else {
+            setTimeLeft(`En ${hours}h ${mins}m`);
+          }
+          setSecondsRemaining(Math.floor(diffToStart / 1000));
+          return;
+        }
+      }
+
       const isScheduled = localStatus === 'scheduled';
       const targetDeadline = isScheduled ? passData.arrivalDeadline.getTime() : passData.stayExpiresAt.getTime();
       const difference = targetDeadline - now;
@@ -400,7 +447,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       ctx.fillText('PLACA', 45, 425);
       ctx.fillText('CAJÓN', 140, 425);
       ctx.fillText('CÓDIGO', 225, 425);
-      ctx.fillText('TOLERANCIA', 305, 425);
+      ctx.fillText(passData.isSubscription ? 'MODALIDAD' : 'TOLERANCIA', 305, 425);
 
       ctx.fillStyle = '#fbbf24';
       ctx.font = 'bold 15px monospace';
@@ -411,9 +458,9 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       ctx.fillText(passData.slotCode, 140, 447);
       ctx.fillText(passData.id, 225, 447);
 
-      ctx.fillStyle = '#10b981';
+      ctx.fillStyle = passData.isSubscription ? '#f59e0b' : '#10b981';
       ctx.font = 'bold 12px system-ui, sans-serif';
-      ctx.fillText(`${passData.toleranceMinutes} min`, 305, 447);
+      ctx.fillText(passData.isSubscription ? 'Abonado 30d' : `${passData.toleranceMinutes} min`, 305, 447);
 
       ctx.fillStyle = '#94a3b8';
       ctx.font = '10px system-ui, sans-serif';
@@ -522,6 +569,10 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
             ? 'bg-rose-950 text-white border-rose-900/60' 
             : isCompleted
             ? 'bg-slate-900 text-white border-slate-800'
+            : passData.isSubscription
+            ? 'bg-amber-950 text-white border-amber-900/60'
+            : passData.isAdvance
+            ? 'bg-sky-950 text-white border-sky-900/60'
             : isActive
             ? 'bg-emerald-950 text-white border-emerald-900/60'
             : 'bg-slate-900 text-white border-slate-800'
@@ -538,14 +589,32 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' 
               : isCompleted 
               ? 'bg-slate-800 text-slate-300 border border-slate-700' 
+              : passData.isSubscription
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+              : passData.isAdvance
+              ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
               : isActive 
               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
               : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
           }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              isActive ? 'bg-emerald-400 animate-pulse' : isScheduled ? 'bg-cyan-400 animate-pulse' : isCancelled ? 'bg-rose-400' : 'bg-slate-400'
-            }`}></span>
-            <span>{isActive ? 'En estancia' : isScheduled ? 'En ruta' : isCancelled ? 'Cancelada' : 'Finalizada'}</span>
+            {passData.isSubscription ? (
+              <>
+                <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Abonado 30d</span>
+              </>
+            ) : passData.isAdvance ? (
+              <>
+                <Calendar className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                <span>Programada</span>
+              </>
+            ) : (
+              <>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  isActive ? 'bg-emerald-400 animate-pulse' : isScheduled ? 'bg-cyan-400 animate-pulse' : isCancelled ? 'bg-rose-400' : 'bg-slate-400'
+                }`}></span>
+                <span>{isActive ? 'En estancia' : isScheduled ? 'En ruta' : isCancelled ? 'Cancelada' : 'Finalizada'}</span>
+              </>
+            )}
           </span>
         </div>
 
@@ -654,8 +723,48 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               </p>
             </div>
 
-            {/* Barra de progreso de tolerancia en vivo (verde ➔ ámbar ➔ rojo) */}
-            {isScheduled && secondsRemaining !== null && (() => {
+            {/* Tolerancia / Abono / Reserva Programada */}
+            {passData.isSubscription ? (
+              <div className="my-2 p-3 rounded-xl border border-amber-300/80 dark:border-amber-700/60 bg-amber-50/60 dark:bg-amber-950/30 text-xs space-y-1.5">
+                <div className="flex items-center justify-between font-semibold text-amber-900 dark:text-amber-300">
+                  <div className="flex items-center gap-1.5">
+                    <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span>Abonado Mensual Activo</span>
+                  </div>
+                  <span className="font-mono font-bold text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/60 text-[11px]">
+                    {timeLeft || '30 días'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300/90 leading-tight">
+                  Cajón exclusivo 24/7. Exento de tolerancia y límites de estadía por hora.
+                </p>
+                <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-0.5">
+                  <span>Vencimiento del pase:</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {passData.expiresAt ? passData.expiresAt.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '30 días'}
+                  </span>
+                </div>
+              </div>
+            ) : passData.isAdvance && passData.startTime && new Date() < passData.startTime ? (
+              <div className="my-2 p-3 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/70 dark:bg-blue-950/30 text-xs space-y-1.5">
+                <div className="flex items-center justify-between font-semibold text-blue-900 dark:text-blue-300">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span>Llegada Programada</span>
+                  </div>
+                  <span className="font-mono font-bold text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-[11px]">
+                    {timeLeft || 'Programada'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-blue-800 dark:text-blue-300/90 leading-tight">
+                  Fecha pactada: <strong className="font-semibold">{passData.startTime.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short' })}</strong> a las <strong className="font-semibold">{passData.startTime.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true })}</strong>.
+                </p>
+                <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
+                  <Clock className="w-3 h-3 text-blue-500 shrink-0" />
+                  <span>La tolerancia de 15 min iniciará en la fecha pactada.</span>
+                </div>
+              </div>
+            ) : isScheduled && secondsRemaining !== null && (() => {
               const toleranceTotalSec = (passData.toleranceMinutes || 15) * 60;
               const toleranceProgressPct = Math.max(0, Math.min(100, Math.round((secondsRemaining / toleranceTotalSec) * 100)));
               const isToleranceCritical = toleranceProgressPct <= 20;
@@ -740,7 +849,13 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                       <AlertTriangle className="w-3 h-3 text-amber-600 inline shrink-0" />
                       <span>Tiempo Excedido</span>
                     </span>
-                  ) : isActive ? 'Tiempo en Estadía' : isScheduled ? 'Tiempo para llegar' : 'Estado'}
+                  ) : passData.isSubscription ? (
+                    'Vigencia Restante'
+                  ) : isActive ? (
+                    'Tiempo en Estadía'
+                  ) : isScheduled ? (
+                    passData.isAdvance && passData.startTime && new Date() < passData.startTime ? 'Llegada Pactada' : 'Tiempo para llegar'
+                  ) : 'Estado'}
                 </span>
                 <p className={`font-mono font-black text-sm mt-0.5 ${
                   isOvertime ? 'text-amber-600 dark:text-amber-400 animate-pulse' : isCancelled ? 'text-rose-600' : isCompleted ? 'text-slate-600' : 'text-slate-900 dark:text-white'
@@ -750,7 +865,15 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 <span className={`text-[10px] block truncate ${
                   isOvertime ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
                 }`}>
-                  {isOvertime ? 'Sin periodo de gracia' : isScheduled ? `Llegada hasta ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}` : `Estadía: ${passData.hours}h`}
+                  {passData.isSubscription
+                    ? `Expira: ${passData.expiresAt ? passData.expiresAt.toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }) : '30 días'}`
+                    : isOvertime
+                    ? 'Sin periodo de gracia'
+                    : isScheduled
+                    ? passData.isAdvance && passData.startTime && new Date() < passData.startTime
+                      ? `${passData.startTime.toLocaleDateString('es-PE', { day: '2-digit', month: 'short' })} ${passData.startTime.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+                      : `Llegada hasta ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}`
+                    : `Estadía: ${passData.hours}h`}
                 </span>
               </div>
 
@@ -762,7 +885,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 <span className={`text-[10px] block font-medium ${
                   isOvertime ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
                 }`}>
-                  {isOvertime ? 'Total Acumulado' : 'Total de Reserva'}
+                  {passData.isSubscription ? 'Abono Mensual' : isOvertime ? 'Total Acumulado' : 'Total de Reserva'}
                 </span>
                 <p className={`font-mono font-black text-sm mt-0.5 ${
                   isOvertime ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'
@@ -772,7 +895,12 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 <span className={`text-[10px] font-semibold block ${
                   isOvertime ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
                 }`}>
-                  {isCancelled ? 'Anulada' : isOvertime ? 'En aumento dinámico' : passData.isPrepaid ? (
+                  {isCancelled ? 'Anulada' : passData.isSubscription ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Check className="w-3 h-3 text-emerald-600 inline shrink-0" />
+                      <span>{passData.subscriptionMonths || 1} Mes(es) Activo</span>
+                    </span>
+                  ) : isOvertime ? 'En aumento dinámico' : passData.isPrepaid ? (
                     <span className="inline-flex items-center gap-1">
                       <Check className="w-3 h-3 text-emerald-600 inline shrink-0" />
                       <span>Prepagado</span>

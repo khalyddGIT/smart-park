@@ -45,7 +45,8 @@ import {
   Timer,
   CreditCard,
   BellRing,
-  Sliders
+  Sliders,
+  Crown
 } from 'lucide-react';
 import { InteractiveFloorPlanDrawingStudio } from './InteractiveFloorPlanDrawingStudio';
 import { useEstablishments, isMyEstablishment, getEstablishmentHierarchy } from '../context/EstablishmentContext';
@@ -453,6 +454,10 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     rate_suv: 7.00,
     rate_mototaxi: 3.50,
     rate_moto: 2.50,
+    rate_monthly_auto: 180.00,
+    rate_monthly_suv: 240.00,
+    rate_monthly_mototaxi: 120.00,
+    rate_monthly_moto: 90.00,
     billing_unit: 'hour',
     rate_minute_auto: 0.08,
     rate_minute_suv: 0.12,
@@ -642,6 +647,10 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       rate_suv: 7.00,
       rate_mototaxi: 3.50,
       rate_moto: 2.50,
+      rate_monthly_auto: 180.00,
+      rate_monthly_suv: 240.00,
+      rate_monthly_mototaxi: 120.00,
+      rate_monthly_moto: 90.00,
       billing_unit: 'hour',
       rate_minute_auto: 0.08,
       rate_minute_suv: 0.12,
@@ -698,6 +707,10 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       rate_suv: Number(est.rate_suv ?? 7.00),
       rate_mototaxi: Number(est.rate_mototaxi ?? 3.50),
       rate_moto: Number(est.rate_moto ?? 2.50),
+      rate_monthly_auto: Number(est.rate_monthly_auto ?? 180.00),
+      rate_monthly_suv: Number(est.rate_monthly_suv ?? 240.00),
+      rate_monthly_mototaxi: Number(est.rate_monthly_mototaxi ?? 120.00),
+      rate_monthly_moto: Number(est.rate_monthly_moto ?? 90.00),
       billing_unit: est.billing_unit || 'hour',
       rate_minute_auto: Number(est.rate_minute_auto ?? (initialRate / 60).toFixed(2)),
       rate_minute_suv: Number(est.rate_minute_suv ?? ((est.rate_suv ?? 7.00) / 60).toFixed(2)),
@@ -772,6 +785,11 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           rate_suv: Number(formData.rate_suv) || 7.00,
           rate_mototaxi: Number(formData.rate_mototaxi) || 3.50,
           rate_moto: Number(formData.rate_moto) || 2.50,
+          rate_monthly_auto: Number(formData.rate_monthly_auto) || 180.00,
+          rate_monthly_suv: Number(formData.rate_monthly_suv) || 240.00,
+          rate_monthly_mototaxi: Number(formData.rate_monthly_mototaxi) || 120.00,
+          rate_monthly_moto: Number(formData.rate_monthly_moto) || 90.00,
+          rate_monthly: Number(formData.rate_monthly_auto) || 180.00,
           billing_unit: formData.billing_unit || 'hour',
           rate_minute_auto: Number(formData.rate_minute_auto) || Number(((formData.rate_auto || formData.rate || 5.00) / 60).toFixed(2)),
           rate_minute_suv: Number(formData.rate_minute_suv) || 0.12,
@@ -824,6 +842,11 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           rate_suv: Number(formData.rate_suv) || 7.00,
           rate_mototaxi: Number(formData.rate_mototaxi) || 3.50,
           rate_moto: Number(formData.rate_moto) || 2.50,
+          rate_monthly_auto: Number(formData.rate_monthly_auto) || 180.00,
+          rate_monthly_suv: Number(formData.rate_monthly_suv) || 240.00,
+          rate_monthly_mototaxi: Number(formData.rate_monthly_mototaxi) || 120.00,
+          rate_monthly_moto: Number(formData.rate_monthly_moto) || 90.00,
+          rate_monthly: Number(formData.rate_monthly_auto) || 180.00,
           billing_unit: formData.billing_unit || 'hour',
           rate_minute_auto: Number(formData.rate_minute_auto) || Number((effectiveRate / 60).toFixed(2)),
           rate_minute_suv: Number(formData.rate_minute_suv) || 0.12,
@@ -1889,6 +1912,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
                             />
                           </div>
+                          <div>
+                            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block mb-0.5 flex items-center gap-1">
+                              <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              <span>Abonado 30 días (S/)</span>
+                            </span>
+                            <Input
+                              type="number"
+                              step="5.00"
+                              min="10.00"
+                              value={formData.rate_monthly_auto}
+                              onChange={(e) => setFormData({ ...formData, rate_monthly_auto: parseFloat(e.target.value) || 0 })}
+                              className="h-8 text-xs font-mono font-bold bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200"
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -1926,6 +1963,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               value={formData.rate_minute_suv}
                               onChange={(e) => setFormData({ ...formData, rate_minute_suv: parseFloat(e.target.value) || 0 })}
                               className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block mb-0.5 flex items-center gap-1">
+                              <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              <span>Abonado 30 días (S/)</span>
+                            </span>
+                            <Input
+                              type="number"
+                              step="5.00"
+                              min="10.00"
+                              value={formData.rate_monthly_suv}
+                              onChange={(e) => setFormData({ ...formData, rate_monthly_suv: parseFloat(e.target.value) || 0 })}
+                              className="h-8 text-xs font-mono font-bold bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200"
                             />
                           </div>
                         </div>
@@ -1967,6 +2018,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
                             />
                           </div>
+                          <div>
+                            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block mb-0.5 flex items-center gap-1">
+                              <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              <span>Abonado 30 días (S/)</span>
+                            </span>
+                            <Input
+                              type="number"
+                              step="5.00"
+                              min="10.00"
+                              value={formData.rate_monthly_mototaxi}
+                              onChange={(e) => setFormData({ ...formData, rate_monthly_mototaxi: parseFloat(e.target.value) || 0 })}
+                              className="h-8 text-xs font-mono font-bold bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200"
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -2004,6 +2069,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               value={formData.rate_minute_moto}
                               onChange={(e) => setFormData({ ...formData, rate_minute_moto: parseFloat(e.target.value) || 0 })}
                               className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block mb-0.5 flex items-center gap-1">
+                              <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              <span>Abonado 30 días (S/)</span>
+                            </span>
+                            <Input
+                              type="number"
+                              step="5.00"
+                              min="10.00"
+                              value={formData.rate_monthly_moto}
+                              onChange={(e) => setFormData({ ...formData, rate_monthly_moto: parseFloat(e.target.value) || 0 })}
+                              className="h-8 text-xs font-mono font-bold bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200"
                             />
                           </div>
                         </div>

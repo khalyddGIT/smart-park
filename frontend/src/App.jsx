@@ -289,7 +289,10 @@ const AppMain = () => {
         estimatedMinutes: bookingData.estimatedMinutes,
         estimatedHours: bookingData.estimatedHours,
         bookingModel: bookingData.bookingModel || (bookingData.payNow ? 'prepaid_discount' : 'postpaid'),
-        paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'tarjeta' : 'efectivo')
+        paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'tarjeta' : 'efectivo'),
+        reservationType: bookingData.reservationType || 'immediate',
+        isSubscription: !!bookingData.isSubscription,
+        subscriptionMonths: bookingData.subscriptionMonths || 1
       });
       if (!newRes || newRes.error) {
         const msg = newRes?.error || bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';

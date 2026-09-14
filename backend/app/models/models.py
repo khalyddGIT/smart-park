@@ -106,6 +106,13 @@ class Parking(Base):
     rate_minute_mototaxi = Column(Float, nullable=True, default=0.06)
     rate_minute_moto = Column(Float, nullable=True, default=0.04)
 
+    # Tarifas mensuales para abonados (Suscripción mensual 30 días)
+    rate_monthly_auto = Column(Float, nullable=True, default=180.00)
+    rate_monthly_suv = Column(Float, nullable=True, default=240.00)
+    rate_monthly_mototaxi = Column(Float, nullable=True, default=120.00)
+    rate_monthly_moto = Column(Float, nullable=True, default=90.00)
+    rate_monthly = Column(Float, nullable=True, default=180.00)
+
     # Configuración de Turno Noche (horario y recargo nocturno)
     night_shift_enabled = Column(Boolean, default=False)
     night_shift_start = Column(String(10), default="20:00")
@@ -201,6 +208,10 @@ class Reservation(Base):
     is_open_stay = Column(Boolean, default=False, nullable=True)
     payment_method = Column(String(50), default="efectivo", nullable=True)
     amount_paid = Column(Float, default=0.0, nullable=True)
+    # Modalidad: 'standard' (por hora/minuto), 'advance' (fecha adelantada), 'subscription' (abonado mensual)
+    reservation_type = Column(String(30), default="standard", nullable=True)
+    subscription_months = Column(Integer, default=1, nullable=True)
+    is_subscription = Column(Boolean, default=False, nullable=True)
 
     user = relationship("User", back_populates="reservations")
     parking = relationship("Parking")

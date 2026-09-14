@@ -46,6 +46,25 @@ async def _cancel_expired_once() -> int:
         res = await db.execute(select(Reservation).where(Reservation.status == "scheduled"))
         scheduled = res.scalars().all()
         for r in scheduled:
+            # Si es un abono mensual (suscripción), no se cancela por tolerancia de 15 minutos.
+            # Solo expira cuando se supera la fecha de fin del mes (30 días).
+            is_sub = bool(getattr(r, "is_subscription", False) or getattr(r, "reservation_type", "") == "subscription")
+            if is_sub:
+                end_time_naive = r.end_time.replace(tzinfo=None) if r.end_time and r.end_time.tzinfo else r.end_time
+                if end_time_naive and now >= end_time_naive:
+                    r.status = "completed"
+                    slot = await db.get(Slot, r.slot_id)
+                    if slot and slot.status == "reserved":
+                        slot.status = "free"
+                    cancelled += 1
+                continue
+
+            # Si es una reserva con fecha adelantada y todavía no ha llegado su momento de inicio:
+            start_naive = r.start_time.replace(tzinfo=None) if r.start_time and r.start_time.tzinfo else r.start_time
+            if start_naive and now < start_naive:
+                # La reserva programada es futura, aún no corre la tolerancia
+                continue
+
             # tolerancia personalizada de la reserva o fallback a sede (default 15)
             tol = getattr(r, 'tolerance_minutes', None)
             if tol is None:
@@ -102,6 +121,9 @@ async def _cancel_expired_once() -> int:
         res_active = await db.execute(select(Reservation).where(Reservation.status == "active"))
         active_reservations = res_active.scalars().all()
         for r in active_reservations:
+            # Los abonados mensuales pagan tarifa plana por mes, no exceso por hora
+            if bool(getattr(r, "is_subscription", False) or getattr(r, "reservation_type", "") == "subscription"):
+                continue
             if not r.end_time:
                 continue
             deadline = r.end_time.replace(tzinfo=None) if r.end_time.tzinfo else r.end_time

@@ -86,6 +86,26 @@ def get_parking_minute_rate(parking: Parking, vehicle_type: Optional[str]) -> fl
         base = float(parking.rate_auto if parking.rate_auto is not None else parking.hourly_rate or 5.0)
         return round(base / 60.0, 4)
 
+def get_parking_monthly_rate(parking: Parking, vehicle_type: Optional[str]) -> float:
+    """Obtiene la tarifa mensual de abonado según el tipo de vehículo configurada por el admin local."""
+    vtype = (vehicle_type or "auto").strip().lower()
+    if vtype in ("suv", "camioneta", "truck", "pickup"):
+        if getattr(parking, "rate_monthly_suv", None) is not None:
+            return float(parking.rate_monthly_suv)
+        return float(getattr(parking, "rate_monthly", 240.0) or 240.0)
+    elif vtype in ("mototaxi", "torito", "trimovil"):
+        if getattr(parking, "rate_monthly_mototaxi", None) is not None:
+            return float(parking.rate_monthly_mototaxi)
+        return float(getattr(parking, "rate_monthly", 120.0) or 120.0)
+    elif vtype in ("moto", "motorcycle", "scooter", "bike"):
+        if getattr(parking, "rate_monthly_moto", None) is not None:
+            return float(parking.rate_monthly_moto)
+        return float(getattr(parking, "rate_monthly", 90.0) or 90.0)
+    else:
+        if getattr(parking, "rate_monthly_auto", None) is not None:
+            return float(parking.rate_monthly_auto)
+        return float(getattr(parking, "rate_monthly", 180.0) or 180.0)
+
 def vehicle_slot_family(kind: Optional[str]) -> str:
     """Normaliza tipo de vehículo / cajón a una familia comparable."""
     v = (kind or "auto").strip().lower()
@@ -134,9 +154,13 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
     resp.is_night_shift = bool(getattr(r, "is_night_shift", False))
     resp.prepaid = bool(getattr(r, "prepaid", False))
     resp.is_open_stay = bool(getattr(r, "is_open_stay", False))
+    resp.reservation_type = getattr(r, "reservation_type", "standard") or "standard"
+    resp.subscription_months = getattr(r, "subscription_months", 1) or 1
+    resp.is_subscription = bool(getattr(r, "is_subscription", False))
 
     # Cálculo en vivo de exceso de estadía y monto acumulado incremental (sin tiempo de gracia)
-    if r.status == "active" and r.end_time:
+    # Los abonos mensuales pagan tarifa plana por mes, no exceso por hora
+    if not resp.is_subscription and r.status == "active" and r.end_time:
         now = datetime.utcnow()
         end_naive = r.end_time.replace(tzinfo=None) if r.end_time.tzinfo else r.end_time
         if now > end_naive:
@@ -310,6 +334,9 @@ async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
         "estimated_minutes": getattr(reservation, "estimated_minutes", 60) or 60,
         "payment_method": getattr(reservation, "payment_method", "efectivo") or "efectivo",
         "amount_paid": float(getattr(reservation, "amount_paid", 0.0) or 0.0),
+        "reservation_type": getattr(reservation, "reservation_type", "standard") or "standard",
+        "subscription_months": getattr(reservation, "subscription_months", 1) or 1,
+        "is_subscription": bool(getattr(reservation, "is_subscription", False)),
     }
 
 @router.get("/{reservation_id}", response_model=ReservationResponse)
@@ -335,10 +362,23 @@ async def create_reservation(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Validación de fechas
-    _start = _naive_utc(res_in.start_time)
-    _end = _naive_utc(res_in.end_time)
-    if _end <= _start:
+    # Validación de fechas y modalidad
+    from datetime import timedelta
+    res_type = (getattr(res_in, "reservation_type", None) or "standard").strip().lower()
+    is_sub = bool(getattr(res_in, "is_subscription", False) or res_type == "subscription")
+    if is_sub:
+        res_type = "subscription"
+    sub_months = max(1, min(12, int(getattr(res_in, "subscription_months", 1) or 1)))
+
+    _start = _naive_utc(res_in.start_time) if res_in.start_time else datetime.utcnow()
+    _end = _naive_utc(res_in.end_time) if res_in.end_time else None
+
+    # En abonos mensuales, la fecha de fin se auto-calcula para cubrir 30 días por mes
+    if is_sub:
+        _end = _start + timedelta(days=30 * sub_months)
+    elif _end is None:
+        _end = _start + timedelta(hours=res_in.estimated_hours or 1)
+    elif _end <= _start:
         raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior al inicio")
 
     plate_clean = res_in.license_plate.strip().upper()
@@ -347,21 +387,37 @@ async def create_reservation(
     # REGLAS DE NEGOCIO ANTI-SABOTAJE Y PROTECCIÓN DE INVENTARIO
     # =========================================================================
     if current_user.role not in ("local", "platform"):
-        # Regla S-01: Límite de 1 reserva activa por usuario
-        active_user_res = await db.execute(
-            select(Reservation).where(
-                Reservation.user_id == current_user.id,
-                Reservation.status.in_(["scheduled", "active"])
+        # Regla S-01: Límite de 1 reserva activa estándar por usuario
+        if res_type == "standard":
+            active_user_res = await db.execute(
+                select(Reservation).where(
+                    Reservation.user_id == current_user.id,
+                    Reservation.status.in_(["scheduled", "active"]),
+                    Reservation.reservation_type == "standard"
+                )
             )
-        )
-        if active_user_res.scalars().first():
-            raise HTTPException(
-                status_code=400,
-                detail="Ya cuentas con una reserva activa en curso. Completa o cancela tu reserva previa antes de solicitar otra."
+            if active_user_res.scalars().first():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Ya cuentas con una reserva activa en curso. Completa o cancela tu reserva previa antes de solicitar otra."
+                )
+        elif is_sub:
+            active_sub_res = await db.execute(
+                select(Reservation).where(
+                    Reservation.user_id == current_user.id,
+                    Reservation.status.in_(["scheduled", "active"]),
+                    Reservation.parking_id == res_in.parking_id,
+                    Reservation.license_plate == plate_clean,
+                    Reservation.is_subscription == True
+                )
             )
+            if active_sub_res.scalars().first():
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Ya cuentas con un abono mensual activo en esta sede para el vehículo con placa {plate_clean}."
+                )
 
         # Regla S-02: Límite de cancelaciones diarias (Cooldown 24h a partir de 5 cancelaciones)
-        from datetime import timedelta
         since_24h = datetime.utcnow() - timedelta(hours=24)
         cancelled_stmt = await db.execute(
             select(Reservation).where(
@@ -377,18 +433,20 @@ async def create_reservation(
                 detail="Límite diario de cancelaciones alcanzado (máx. 5 al día). Por seguridad del sistema, tu cuenta tiene un tiempo de espera de 24 horas."
             )
 
-    # Regla S-05: Unicidad de placa activa (no puede tener 2 reservas concurrentes)
-    active_plate_res = await db.execute(
-        select(Reservation).where(
-            Reservation.license_plate == plate_clean,
-            Reservation.status.in_(["scheduled", "active"])
+    # Regla S-05: Unicidad de placa activa (no puede tener 2 reservas concurrentes inmediatas)
+    if res_type == "standard":
+        active_plate_res = await db.execute(
+            select(Reservation).where(
+                Reservation.license_plate == plate_clean,
+                Reservation.status.in_(["scheduled", "active"]),
+                Reservation.reservation_type == "standard"
+            )
         )
-    )
-    if active_plate_res.scalars().first():
-        raise HTTPException(
-            status_code=400,
-            detail=f"El vehículo con placa {plate_clean} ya cuenta con una reserva activa en el sistema."
-        )
+        if active_plate_res.scalars().first():
+            raise HTTPException(
+                status_code=400,
+                detail=f"El vehículo con placa {plate_clean} ya cuenta con una reserva activa en el sistema."
+            )
 
     # Verificar o auto-asignar cajón con bloqueo FOR UPDATE para evitar doble-booking (Reserva Rápida / Expresa)
     vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
@@ -493,19 +551,31 @@ async def create_reservation(
 
     reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0)
 
-    if billing_unit == "minute":
+    if is_sub:
+        monthly_rate = get_parking_monthly_rate(parking, vtype)
+        total_cost = round(monthly_rate * sub_months, 2)
+        billing_unit = "month"
+        estimated_hours = 24 * 30 * sub_months
+        estimated_minutes = estimated_hours * 60
+    elif billing_unit == "minute":
+        min_stay_min = int(getattr(parking, "min_stay_minutes", 15) or 15)
+        if duration_minutes < min_stay_min:
+            raise HTTPException(status_code=422, detail=f"Duración mínima permitida para este local: {min_stay_min} minutos")
         base_minute_rate = get_parking_minute_rate(parking, vtype)
         night_minute_surcharge = (night_surcharge / 60.0) if night_surcharge else 0.0
         effective_rate = base_minute_rate + night_minute_surcharge
         total_cost = round((duration_minutes * effective_rate) + reservation_fee, 2)
+        estimated_hours = max(1, int(round(total_seconds / 3600.0)))
+        estimated_minutes = int(res_in.estimated_minutes or duration_minutes)
     else:
+        if total_seconds < 1800:
+            raise HTTPException(status_code=422, detail="Duración mínima 30 minutos")
         base_vehicle_rate = get_parking_vehicle_rate(parking, vtype)
         effective_rate = base_vehicle_rate + night_surcharge
         duration_for_calc = max(1.0, total_seconds / 3600.0)
         total_cost = round((duration_for_calc * effective_rate) + reservation_fee, 2)
-
-    estimated_hours = max(1, int(round(total_seconds / 3600.0)))
-    estimated_minutes = int(res_in.estimated_minutes or duration_minutes)
+        estimated_hours = max(1, int(round(total_seconds / 3600.0)))
+        estimated_minutes = int(res_in.estimated_minutes or duration_minutes)
 
     reservation_code = f"RSV-{uuid.uuid4().hex[:6].upper()}"
     tol_min = int(res_in.tolerance_minutes or (parking.tolerance_minutes if parking and parking.tolerance_minutes else 15))
@@ -529,7 +599,10 @@ async def create_reservation(
         estimated_minutes=estimated_minutes,
         is_night_shift=is_night,
         prepaid=is_prepaid,
-        is_open_stay=bool(getattr(res_in, "is_open_stay", False))
+        is_open_stay=bool(getattr(res_in, "is_open_stay", False)),
+        reservation_type=res_type,
+        subscription_months=sub_months if is_sub else 1,
+        is_subscription=is_sub
     )
 
     slot.status = "reserved"
@@ -549,7 +622,10 @@ async def create_reservation(
             "start_time": db_res.start_time.isoformat() if db_res.start_time else None,
             "end_time": db_res.end_time.isoformat() if db_res.end_time else None,
             "total_cost": db_res.total_cost,
-            "tolerance_minutes": getattr(db_res, "tolerance_minutes", 15)
+            "tolerance_minutes": getattr(db_res, "tolerance_minutes", 15),
+            "reservation_type": db_res.reservation_type,
+            "subscription_months": db_res.subscription_months,
+            "is_subscription": db_res.is_subscription
         }
         await realtime.broadcast("reservations:updated", broadcast_payload)
         await realtime.broadcast("spaces:update", broadcast_payload)

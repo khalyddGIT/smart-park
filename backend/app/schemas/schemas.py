@@ -280,6 +280,13 @@ class ParkingBase(BaseModel):
     rate_mototaxi: Optional[float] = Field(default=3.50, ge=0)
     rate_moto: Optional[float] = Field(default=2.50, ge=0)
 
+    # Tarifas mensuales para abonados (Suscripción mensual 30 días)
+    rate_monthly_auto: Optional[float] = Field(default=180.00, ge=0)
+    rate_monthly_suv: Optional[float] = Field(default=240.00, ge=0)
+    rate_monthly_mototaxi: Optional[float] = Field(default=120.00, ge=0)
+    rate_monthly_moto: Optional[float] = Field(default=90.00, ge=0)
+    rate_monthly: Optional[float] = Field(default=180.00, ge=0)
+
     # Unidad de facturación: 'hour' o 'minute'
     billing_unit: Optional[str] = "hour"
     rate_minute_auto: Optional[float] = Field(default=0.08, ge=0)
@@ -335,6 +342,11 @@ class ParkingUpdate(BaseModel):
     rate_suv: Optional[float] = None
     rate_mototaxi: Optional[float] = None
     rate_moto: Optional[float] = None
+    rate_monthly_auto: Optional[float] = None
+    rate_monthly_suv: Optional[float] = None
+    rate_monthly_mototaxi: Optional[float] = None
+    rate_monthly_moto: Optional[float] = None
+    rate_monthly: Optional[float] = None
     billing_unit: Optional[str] = None
     rate_minute_auto: Optional[float] = None
     rate_minute_suv: Optional[float] = None
@@ -511,8 +523,8 @@ class ReservationCreate(BaseModel):
     parking_id: int = Field(gt=0, description="ID del estacionamiento debe ser mayor a 0")
     slot_id: Optional[int] = Field(default=None, gt=0, description="ID del cajón; si es None se auto-asigna el mejor disponible")
     license_plate: str
-    start_time: datetime
-    end_time: datetime
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
     payment_method: Optional[str] = None
     pay_now: Optional[bool] = False
     tolerance_minutes: Optional[int] = Field(default=15, ge=5, le=120, description="Tolerancia entre 5 y 120 minutos")
@@ -522,6 +534,9 @@ class ReservationCreate(BaseModel):
     estimated_minutes: Optional[int] = Field(default=60, ge=1, le=10080)
     is_open_stay: Optional[bool] = False
     auto_assign: Optional[bool] = False
+    reservation_type: Optional[str] = "standard"
+    subscription_months: Optional[int] = Field(default=1, ge=1, le=12)
+    is_subscription: Optional[bool] = False
 
     @field_validator('license_plate')
     @classmethod
@@ -531,9 +546,10 @@ class ReservationCreate(BaseModel):
     @field_validator('end_time')
     @classmethod
     def validate_end_time(cls, v, info):
-        start_time = info.data.get('start_time')
-        if start_time and v <= start_time:
-            raise ValueError("La fecha y hora de fin debe ser posterior a la fecha y hora de inicio.")
+        if v is not None:
+            start_time = info.data.get('start_time')
+            if start_time and v <= start_time:
+                raise ValueError("La fecha y hora de fin debe ser posterior a la fecha y hora de inicio.")
         return v
 
 class ReservationUpdate(BaseModel):
@@ -582,6 +598,9 @@ class ReservationResponse(BaseModel):
     amount_paid: Optional[float] = 0.0
     is_overtime: Optional[bool] = False
     overtime_minutes: Optional[int] = 0
+    reservation_type: Optional[str] = "standard"
+    subscription_months: Optional[int] = 1
+    is_subscription: Optional[bool] = False
 
     class Config:
         from_attributes = True

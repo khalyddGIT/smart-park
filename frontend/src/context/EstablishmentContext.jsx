@@ -542,6 +542,11 @@ export const sanitizeEstablishment = (est, idx = 0) => {
     rate_suv: Number(est.rate_suv ?? 7.00),
     rate_mototaxi: Number(est.rate_mototaxi ?? 3.50),
     rate_moto: Number(est.rate_moto ?? 2.50),
+    rate_monthly_auto: Number(est.rate_monthly_auto ?? 180.00),
+    rate_monthly_suv: Number(est.rate_monthly_suv ?? 240.00),
+    rate_monthly_mototaxi: Number(est.rate_monthly_mototaxi ?? 120.00),
+    rate_monthly_moto: Number(est.rate_monthly_moto ?? 90.00),
+    rate_monthly: Number(est.rate_monthly ?? est.rate_monthly_auto ?? 180.00),
     billing_unit: est.billing_unit || 'hour',
     rate_minute_auto: Number(est.rate_minute_auto ?? ((est.rate_auto ?? est.rate ?? est.hourly_rate ?? 5.0) / 60).toFixed(2)),
     rate_minute_suv: Number(est.rate_minute_suv ?? ((est.rate_suv ?? 7.0) / 60).toFixed(2)),
@@ -804,6 +809,11 @@ export const EstablishmentProvider = ({ children }) => {
             rate_suv: p.rate_suv != null ? Number(p.rate_suv) : undefined,
             rate_mototaxi: p.rate_mototaxi != null ? Number(p.rate_mototaxi) : undefined,
             rate_moto: p.rate_moto != null ? Number(p.rate_moto) : undefined,
+            rate_monthly_auto: p.rate_monthly_auto != null ? Number(p.rate_monthly_auto) : undefined,
+            rate_monthly_suv: p.rate_monthly_suv != null ? Number(p.rate_monthly_suv) : undefined,
+            rate_monthly_mototaxi: p.rate_monthly_mototaxi != null ? Number(p.rate_monthly_mototaxi) : undefined,
+            rate_monthly_moto: p.rate_monthly_moto != null ? Number(p.rate_monthly_moto) : undefined,
+            rate_monthly: p.rate_monthly != null ? Number(p.rate_monthly) : undefined,
             billing_unit: p.billing_unit || 'hour',
             rate_minute_auto: p.rate_minute_auto != null ? Number(p.rate_minute_auto) : undefined,
             rate_minute_suv: p.rate_minute_suv != null ? Number(p.rate_minute_suv) : undefined,
@@ -1457,6 +1467,11 @@ export const EstablishmentProvider = ({ children }) => {
           rate_suv: newEst.rate_suv != null ? Number(newEst.rate_suv) : 7.0,
           rate_mototaxi: newEst.rate_mototaxi != null ? Number(newEst.rate_mototaxi) : 3.5,
           rate_moto: newEst.rate_moto != null ? Number(newEst.rate_moto) : 2.5,
+          rate_monthly_auto: newEst.rate_monthly_auto != null ? Number(newEst.rate_monthly_auto) : 180.0,
+          rate_monthly_suv: newEst.rate_monthly_suv != null ? Number(newEst.rate_monthly_suv) : 240.0,
+          rate_monthly_mototaxi: newEst.rate_monthly_mototaxi != null ? Number(newEst.rate_monthly_mototaxi) : 120.0,
+          rate_monthly_moto: newEst.rate_monthly_moto != null ? Number(newEst.rate_monthly_moto) : 90.0,
+          rate_monthly: newEst.rate_monthly != null ? Number(newEst.rate_monthly) : (newEst.rate_monthly_auto != null ? Number(newEst.rate_monthly_auto) : 180.0),
           billing_unit: newEst.billing_unit || 'hour',
           rate_minute_auto: newEst.rate_minute_auto != null ? Number(newEst.rate_minute_auto) : 0.08,
           rate_minute_suv: newEst.rate_minute_suv != null ? Number(newEst.rate_minute_suv) : 0.12,
@@ -1512,11 +1527,15 @@ export const EstablishmentProvider = ({ children }) => {
             level: res.data.level || newEst.level || '',
             mapsUrl: res.data.maps_url || newEst.mapsUrl || '',
             socials: res.data.socials ? (typeof res.data.socials === 'string' ? JSON.parse(res.data.socials) : res.data.socials) : (newEst.socials || {}),
-            rate: res.data.hourly_rate, 
             rate_auto: res.data.rate_auto,
             rate_suv: res.data.rate_suv,
             rate_mototaxi: res.data.rate_mototaxi,
             rate_moto: res.data.rate_moto,
+            rate_monthly_auto: res.data.rate_monthly_auto,
+            rate_monthly_suv: res.data.rate_monthly_suv,
+            rate_monthly_mototaxi: res.data.rate_monthly_mototaxi,
+            rate_monthly_moto: res.data.rate_monthly_moto,
+            rate_monthly: res.data.rate_monthly,
             billing_unit: res.data.billing_unit,
             rate_minute_auto: res.data.rate_minute_auto,
             rate_minute_suv: res.data.rate_minute_suv,
@@ -1624,6 +1643,11 @@ export const EstablishmentProvider = ({ children }) => {
         if (updatedFields.rate_suv !== undefined) payload.rate_suv = Number(updatedFields.rate_suv);
         if (updatedFields.rate_mototaxi !== undefined) payload.rate_mototaxi = Number(updatedFields.rate_mototaxi);
         if (updatedFields.rate_moto !== undefined) payload.rate_moto = Number(updatedFields.rate_moto);
+        if (updatedFields.rate_monthly_auto !== undefined) payload.rate_monthly_auto = Number(updatedFields.rate_monthly_auto);
+        if (updatedFields.rate_monthly_suv !== undefined) payload.rate_monthly_suv = Number(updatedFields.rate_monthly_suv);
+        if (updatedFields.rate_monthly_mototaxi !== undefined) payload.rate_monthly_mototaxi = Number(updatedFields.rate_monthly_mototaxi);
+        if (updatedFields.rate_monthly_moto !== undefined) payload.rate_monthly_moto = Number(updatedFields.rate_monthly_moto);
+        if (updatedFields.rate_monthly !== undefined) payload.rate_monthly = Number(updatedFields.rate_monthly);
         if (updatedFields.billing_unit !== undefined) payload.billing_unit = updatedFields.billing_unit;
         if (updatedFields.rate_minute_auto !== undefined) payload.rate_minute_auto = Number(updatedFields.rate_minute_auto);
         if (updatedFields.rate_minute_suv !== undefined) payload.rate_minute_suv = Number(updatedFields.rate_minute_suv);
@@ -1882,7 +1906,10 @@ export const EstablishmentProvider = ({ children }) => {
       estimatedMinutes: r.estimated_minutes || Math.max(1, Math.round((endMs - startMs) / 60000)) || 60,
       isNightShift: !!r.is_night_shift,
       prepaid: !!r.prepaid,
-      isOpenStay: !!r.is_open_stay
+      isOpenStay: !!r.is_open_stay,
+      reservationType: r.reservation_type || 'standard',
+      isSubscription: !!r.is_subscription,
+      subscriptionMonths: Number(r.subscription_months || 0)
     };
   };
 
@@ -2034,7 +2061,10 @@ export const EstablishmentProvider = ({ children }) => {
         billing_unit: bookingData.billingUnit || bookingData.billing_unit || 'hour',
         estimated_minutes: Number(bookingData.estimatedMinutes || bookingData.estimated_minutes || (bookingData.hours ? bookingData.hours * 60 : 60)),
         is_open_stay: !!(bookingData.isOpenStay ?? bookingData.is_open_stay ?? true),
-        auto_assign: !!isAutoAssign
+        auto_assign: !!isAutoAssign,
+        reservation_type: bookingData.reservationType || bookingData.reservation_type || 'standard',
+        is_subscription: !!(bookingData.isSubscription || bookingData.is_subscription),
+        subscription_months: Number(bookingData.subscriptionMonths || bookingData.subscription_months || 1)
       });
       setBookingError(null);
       const mapped = mapServerReservation(serverRes);

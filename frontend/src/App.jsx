@@ -23,6 +23,7 @@ import { UserProfileModule } from './components/UserProfileModule';
 import { LandingPage } from './components/LandingPage';
 import { AutoFitFloorPlan } from './components/AutoFitFloorPlan';
 import { QuickReservationModal } from './components/QuickReservationModal';
+import { MoreReservationsModal } from './components/MoreReservationsModal';
 
 // Lazy-loaded heavy modules for code-splitting & lightning performance
 const LocalEstablishmentManager = lazy(() => import('./components/LocalEstablishmentManager').then(m => ({ default: m.LocalEstablishmentManager })));
@@ -193,6 +194,7 @@ const AppMain = () => {
   useEffect(()=>{ if(personalParkingId) setSelectedParkingId(personalParkingId); },[personalParkingId]);
   const [showQRModal, setShowQRModal] = useState(false);
   const [quickBookingParking, setQuickBookingParking] = useState(null);
+  const [moreReservationsParking, setMoreReservationsParking] = useState(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [paymentTarget, setPaymentTarget] = useState(null);
   const [routeTarget, setRouteTarget] = useState(null);
@@ -253,7 +255,7 @@ const AppMain = () => {
   const handleCustomerBooking = async (bookingData) => {
     const rawTargetId = bookingData?.parkingId;
     const normTarget = rawTargetId ? normalizeParkingId(rawTargetId) : null;
-    const targetParking = establishments.find(e => String(e.id) === String(rawTargetId) || (normTarget && String(e.id) === String(normTarget))) || selectedParking || quickBookingParking;
+    const targetParking = establishments.find(e => String(e.id) === String(rawTargetId) || (normTarget && String(e.id) === String(normTarget))) || selectedParking || quickBookingParking || moreReservationsParking;
     if (!targetParking) return;
 
     const tStatus = String(targetParking.status || '').toLowerCase();
@@ -311,8 +313,9 @@ const AppMain = () => {
         paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'Prepago asegurado' : 'Pago en garita al salir')
       };
 
-      // Si había modal de reserva rápida abierto, cerrarlo de inmediato
+      // Si había modal de reserva rápida o más opciones abierto, cerrarlo de inmediato
       setQuickBookingParking(null);
+      setMoreReservationsParking(null);
 
       // Si es "Pagar ahora", desplegar la Pasarela de Pagos (PayPal, Tarjeta Culqi, Yape, Plin)
       if (bookingData.payNow) {
@@ -861,6 +864,15 @@ const AppMain = () => {
                             )}
                             <button
                               type="button"
+                              onClick={() => setMoreReservationsParking(selectedParking)}
+                              className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-amber-900 dark:text-amber-200 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-700/60 shadow-2xs transition cursor-pointer"
+                              title="Abonado mensual 30 días y reserva programada"
+                            >
+                              <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                              <span>Más Opciones de Reserva</span>
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => handleTraceRouteToParking(selectedParking)}
                               className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 shadow-2xs transition cursor-pointer"
                               title="Trazar ruta GPS en el mapa interactivo"
@@ -877,6 +889,7 @@ const AppMain = () => {
                         planElements={selectedParking.elements || []}
                         onReserveSlot={handleCustomerBooking}
                         onNavigateToVehicles={() => setActiveTab('vehicles')}
+                        onOpenMoreBookingOptions={() => setMoreReservationsParking(selectedParking)}
                       />
                     </div>
                   ) : !activeCompany ? (
@@ -990,38 +1003,52 @@ const AppMain = () => {
 
                               <div className="p-5 pt-0 space-y-2">
                                 {g.branches.length === 1 ? (
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <Button
-                                      type="button"
-                                      disabled={isSbUnavailable}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenQuickBooking(g.branches[0]);
-                                      }}
-                                      className={`w-full font-black gap-1.5 text-xs py-2.5 rounded-xl border ${
-                                        isSbUnavailable
-                                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                                          : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-xs cursor-pointer border-emerald-500/30'
-                                      }`}
-                                      title={isSbMaintenance ? "Sede en mantenimiento" : isSbClosed ? "Sede cerrada" : "Reserva express en 1 clic"}
-                                    >
-                                       <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-                                       <span>{isSbMaintenance ? 'Mantenimiento' : isSbClosed ? 'Cerrado' : 'Rápida'}</span>
-                                    </Button>
+                                  <>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <Button
+                                        type="button"
+                                        disabled={isSbUnavailable}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOpenQuickBooking(g.branches[0]);
+                                        }}
+                                        className={`w-full font-black gap-1.5 text-xs py-2.5 rounded-xl border ${
+                                          isSbUnavailable
+                                            ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-xs cursor-pointer border-emerald-500/30'
+                                        }`}
+                                        title={isSbMaintenance ? "Sede en mantenimiento" : isSbClosed ? "Sede cerrada" : "Reserva express en 1 clic"}
+                                      >
+                                         <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+                                         <span>{isSbMaintenance ? 'Mantenimiento' : isSbClosed ? 'Cerrado' : 'Rápida'}</span>
+                                      </Button>
 
-                                    <Button
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSelectParking(g.branches[0]);
+                                        }}
+                                        className="w-full font-bold gap-1 text-xs bg-white hover:bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer py-2.5 rounded-xl"
+                                      >
+                                        <span>Ver Plano</span>
+                                        <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                                      </Button>
+                                    </div>
+
+                                    <button
                                       type="button"
-                                      variant="outline"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleSelectParking(g.branches[0]);
+                                        setMoreReservationsParking(g.branches[0]);
                                       }}
-                                      className="w-full font-bold gap-1 text-xs bg-white hover:bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer py-2.5 rounded-xl"
+                                      className="w-full py-1.5 px-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-amber-700 dark:text-slate-400 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-slate-200 dark:border-slate-800 transition flex items-center justify-center gap-1.5 cursor-pointer"
                                     >
-                                      <span>Ver Plano</span>
-                                      <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                                    </Button>
-                                  </div>
+                                      <Crown className="w-3.5 h-3.5 text-amber-500" />
+                                      <span>Más opciones de reserva</span>
+                                    </button>
+                                  </>
                                 ) : (
                                   <Button
                                     onClick={(e) => {
@@ -1214,6 +1241,18 @@ const AppMain = () => {
                                       <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                                     </Button>
                                   </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setMoreReservationsParking(p);
+                                    }}
+                                    className="w-full py-1.5 px-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-amber-700 dark:text-slate-400 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-slate-200 dark:border-slate-800 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                  >
+                                    <Crown className="w-3.5 h-3.5 text-amber-500" />
+                                    <span>Más opciones de reserva</span>
+                                  </button>
                                 </div>
                               </Card>
                             );
@@ -1231,6 +1270,9 @@ const AppMain = () => {
                     setSelectedParkingId(null);
                     setActiveTab('dashboard');
                   }} 
+                  onOpenMoreReservations={(p) => {
+                    setMoreReservationsParking(p || establishments[0] || null);
+                  }}
                 />
               )}
 
@@ -1340,6 +1382,18 @@ const AppMain = () => {
         parking={quickBookingParking}
         onConfirmBooking={handleCustomerBooking}
         onSwitchToDetailedPlan={(p) => handleSelectParking(p)}
+      />
+
+      {/* Modal de Más Opciones de Reserva (Abonado Mensual y Reserva Programada) */}
+      <MoreReservationsModal
+        isOpen={!!moreReservationsParking}
+        onClose={() => setMoreReservationsParking(null)}
+        parking={moreReservationsParking}
+        onConfirmBooking={handleCustomerBooking}
+        onOpenDetailedPlan={(p) => {
+          setMoreReservationsParking(null);
+          handleSelectParking(p);
+        }}
       />
 
       {/* Modal de Pase Digital QR */}

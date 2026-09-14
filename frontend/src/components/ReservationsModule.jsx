@@ -54,7 +54,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { DigitalAccessPassModal } from './DigitalAccessPassModal';
 
-export const ReservationsModule = ({ onNavigateToBooking }) => {
+export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations }) => {
   const { user, role } = useAuth();
   const { 
     establishments, 
@@ -487,6 +487,18 @@ export const ReservationsModule = ({ onNavigateToBooking }) => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {role === 'user' && onOpenMoreReservations && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenMoreReservations()}
+              className="border-amber-300 dark:border-amber-700/60 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-200 font-bold text-xs gap-1.5 rounded-xl h-9 px-3.5 shadow-2xs cursor-pointer transition-colors"
+            >
+              <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span>Abonos y Programadas</span>
+            </Button>
+          )}
+
           {role === 'user' && onNavigateToBooking && (
             <Button
               onClick={onNavigateToBooking}

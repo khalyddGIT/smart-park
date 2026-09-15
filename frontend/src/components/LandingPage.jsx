@@ -949,7 +949,7 @@ export const LandingPage = ({
           1. HEADER FLOTANTE ULTRA-PREMIUM
           ========================================================================= */}
       <header className="sticky top-0 z-50 px-3 sm:px-6 lg:px-10 pt-2 sm:pt-3 pb-2 transition-all duration-300">
-        <div className="max-w-6xl mx-auto bg-[#002624]/90 backdrop-blur-xl border border-[#005e58]/50 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgba(0,38,36,0.35)] flex items-center justify-between text-white relative">
+        <div className="max-w-6xl mx-auto bg-slate-950/80 backdrop-blur-xl border border-white/10 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.35)] flex items-center justify-between text-white relative">
 
           <BrandLogo dark={true} />
 
@@ -1014,7 +1014,7 @@ export const LandingPage = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.97 }}
               transition={{ duration: 0.2, ease: FLUID_EASE }}
-              className="md:hidden mt-2 max-w-6xl mx-auto bg-[#002624]/95 backdrop-blur-xl border border-[#005e58]/50 p-4 rounded-2xl shadow-2xl space-y-2 text-xs font-bold text-emerald-100"
+              className="md:hidden mt-2 max-w-6xl mx-auto bg-slate-950/95 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl space-y-2 text-xs font-bold text-slate-100"
             >
               <a href="#mapa" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Mapa 3D en Vivo</a>
               <a href="#perspectiva" onClick={() => setMobileMenuOpen(false)} className="block px-3.5 py-2.5 rounded-xl hover:bg-white/10 hover:text-white transition">Conductores & Dueños</a>
@@ -1508,7 +1508,7 @@ export const LandingPage = ({
       {/* =========================================================================
           FOOTER ELEGANTE CLARO
           ========================================================================= */}
-      <footer className="border-t border-[#004D49]/15 bg-[#002624] py-10 px-4 sm:px-6 lg:px-12 text-slate-300 text-xs z-10 relative">
+      <footer className="border-t border-slate-800/80 bg-slate-950 py-10 px-4 sm:px-6 lg:px-12 text-slate-300 text-xs z-10 relative">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           
           <div className="space-y-2 flex flex-col items-center md:items-start">

@@ -22,6 +22,7 @@ import {
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { BrandIcon } from './BrandLogo';
 
 // Helper para parsear datetimes ISO con zona horaria UTC explícita
 const parseUtcDate = (isoStr) => {
@@ -355,8 +356,10 @@ export const VerifyReservationPage = () => {
         
         {/* Barra superior con navegación y botón de actualización */}
         <div className="flex items-center justify-between">
-          <a href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Smart Park
+          <a href="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white transition-colors">
+            <ArrowLeft className="w-4 h-4 text-slate-400" />
+            <BrandIcon className="w-5 h-5" />
+            <span>Smart Park</span>
           </a>
           <button 
             onClick={loadVerification} 

@@ -1,43 +1,63 @@
 import React from 'react';
+import logoImg from '../assets/logo.png';
+
+/**
+ * Isotipo oficial de Smart-Park
+ * Pin de geolocalización verde con órbita y silueta de vehículo
+ */
+export const BrandIcon = ({ className = 'h-8 w-8', alt = 'Smart-Park' }) => (
+  <img
+    src={logoImg}
+    alt={alt}
+    className={`aspect-square object-contain shrink-0 select-none drop-shadow-xs ${className}`}
+    draggable={false}
+  />
+);
 
 /**
  * Logotipo oficial de Smart-Park
- * Exclusivamente el SVG Wordmark (Sin textos adicionales alrededor)
+ * Combina el isotipo oficial con la tipografía corporativa 'Smart Park'
  */
 export const BrandLogo = ({ 
   className = 'h-8 sm:h-9 w-auto', 
-  dark = null 
+  iconClassName = '',
+  textClassName = '',
+  showText = true,
+  iconOnly = false,
+  dark = null,
+  onClick = null
 }) => {
+  const parkColorClass = dark === true 
+    ? 'text-white' 
+    : dark === false 
+    ? 'text-slate-900' 
+    : 'text-slate-900 dark:text-white';
+
   return (
-    <div className="flex items-center shrink-0 select-none bg-transparent">
-      <svg 
-        viewBox="0 0 500 120" 
-        className={className} 
-        style={{ width: 'auto', display: 'block' }}
-        fill="none" 
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Wordmark puramente tipográfico: Smart Park */}
-        <text 
-          x="250" 
-          y="72" 
-          textAnchor="middle" 
-          dominantBaseline="middle"
-          fontFamily="'Plus Jakarta Sans', 'Inter', 'Montserrat', 'Poppins', system-ui, -apple-system, sans-serif" 
-          fontSize="52" 
-          letterSpacing="-0.5px"
-        >
-          <tspan fill="#10B981" fontWeight="700">Smart</tspan>
-          <tspan 
-            dx="12" 
-            fill={dark === true ? '#FFFFFF' : dark === false ? '#0B2545' : 'currentColor'} 
-            className={dark === null ? 'text-slate-900 dark:text-white fill-current' : ''} 
-            fontWeight="800"
-          >
+    <div 
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 select-none bg-transparent ${onClick ? 'cursor-pointer' : ''}`}
+    >
+      {/* Isotipo Oficial */}
+      <img
+        src={logoImg}
+        alt="Smart-Park"
+        className={`${className} aspect-square object-contain shrink-0 drop-shadow-xs ${iconClassName}`}
+        draggable={false}
+      />
+
+      {/* Tipografía Oficial */}
+      {showText && !iconOnly && (
+        <span className={`font-sans tracking-tight leading-none text-lg sm:text-xl font-extrabold flex items-baseline ${textClassName}`}>
+          <span className="text-emerald-500 font-bold">Smart</span>
+          <span className={`ml-1 font-black transition-colors ${parkColorClass}`}>
             Park
-          </tspan>
-        </text>
-      </svg>
+          </span>
+        </span>
+      )}
     </div>
   );
 };
+
+export default BrandLogo;
+

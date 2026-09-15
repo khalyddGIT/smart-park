@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 
 import { parseIsoToDate } from '../context/EstablishmentContext';
+import { BrandIcon } from './BrandLogo';
 
 export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReservationUpdated }) => {
   const [copied, setCopied] = useState(false);
@@ -577,12 +578,15 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
             ? 'bg-emerald-950 text-white border-emerald-900/60'
             : 'bg-slate-900 text-white border-slate-800'
         }`}>
-          <div className="space-y-0.5">
-            <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">{passData.parkingName}</h2>
-            <p className="text-xs text-slate-400 flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-emerald-400 shrink-0" /> 
-              <span className="truncate max-w-[190px] sm:max-w-xs">{passData.parkingAddress || 'Ayacucho - Huamanga'}</span>
-            </p>
+          <div className="flex items-center gap-2.5">
+            <BrandIcon className="w-8 h-8 shrink-0" />
+            <div className="space-y-0.5">
+              <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">{passData.parkingName}</h2>
+              <p className="text-xs text-slate-400 flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-emerald-400 shrink-0" /> 
+                <span className="truncate max-w-[180px] sm:max-w-xs">{passData.parkingAddress || 'Ayacucho - Huamanga'}</span>
+              </p>
+            </div>
           </div>
           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-1.5 ${
             isCancelled 

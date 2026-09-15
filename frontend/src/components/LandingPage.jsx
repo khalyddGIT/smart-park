@@ -181,15 +181,6 @@ export const LandingPage = ({
     };
   }, [establishments]);
 
-  // Cocheras filtradas por buscador rápido
-  const filteredParkings = useMemo(() => {
-    if (!searchTerm.trim()) return (establishments || []).slice(0, 4);
-    const q = searchTerm.toLowerCase();
-    return (establishments || [])
-      .filter((p) => (p.name || '').toLowerCase().includes(q) || (p.address || '').toLowerCase().includes(q))
-      .slice(0, 4);
-  }, [establishments, searchTerm]);
-
   // Scroll suave hacia una sección
   const scrollTo = (id) => {
     setMobileMenuOpen(false);
@@ -219,11 +210,11 @@ export const LandingPage = ({
               <button onClick={() => scrollTo('hero')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
                 Inicio
               </button>
+              <button onClick={() => scrollTo('mapa')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
+                Mapa en Vivo
+              </button>
               <button onClick={() => scrollTo('beneficios')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
                 Ventajas
-              </button>
-              <button onClick={() => scrollTo('mapa')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
-                Directorio
               </button>
               <button onClick={() => scrollTo('tecnologia')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
                 Tecnología
@@ -286,11 +277,11 @@ export const LandingPage = ({
                 <button onClick={() => scrollTo('hero')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Inicio
                 </button>
+                <button onClick={() => scrollTo('mapa')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
+                  Mapa en Vivo
+                </button>
                 <button onClick={() => scrollTo('beneficios')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Ventajas
-                </button>
-                <button onClick={() => scrollTo('mapa')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
-                  Directorio & Mapa
                 </button>
                 <button onClick={() => scrollTo('tecnologia')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Tecnología
@@ -317,7 +308,7 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO ISLAND (COMPACTO Y COHESIVO)
+          2. HERO ISLAND (LIMPIO, SIN BADGES REDUNDANTES)
           ========================================================================= */}
       <main id="hero" className="pt-20 sm:pt-22 px-4 sm:px-6 max-w-5xl mx-auto">
         <div className="relative rounded-[32px] sm:rounded-[36px] overflow-hidden bg-gradient-to-br from-[#E2F952] via-[#D5F83C] to-[#BAEF2E] dark:from-[#0F172A] dark:via-[#090D16] dark:to-[#070B12] dark:border dark:border-slate-800 text-slate-950 dark:text-white p-6 sm:p-10 shadow-xl transition-all">
@@ -330,12 +321,6 @@ export const LandingPage = ({
             {/* Columna Izquierda: Copywriting y CTA */}
             <div className="lg:col-span-7 space-y-4 text-left">
               
-              {/* Badge Superior */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/10 dark:bg-emerald-500/15 backdrop-blur-md text-[11px] font-bold tracking-wide uppercase text-slate-900 dark:text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
-                Red Inteligente · Ayacucho, Perú
-              </div>
-
               {/* Titular Principal de Impacto */}
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.08]">
                 Estaciona al instante <span className="inline-block text-emerald-700 dark:text-lime-400">✦</span> en la ciudad
@@ -391,7 +376,7 @@ export const LandingPage = ({
                   <div className="space-y-2 text-left">
                     <div className="flex items-center justify-between px-1">
                       <span className="text-[9px] font-bold text-slate-400">PLANO 2D EN VIVO</span>
-                      <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold">15 Libres</span>
+                      <span className="text-[8px] font-bold text-emerald-400">15 Libres</span>
                     </div>
 
                     {/* Plazas */}
@@ -456,7 +441,7 @@ export const LandingPage = ({
                     <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold text-slate-900">Cochera Central</span>
-                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">S/ 3.50/h</span>
+                        <span className="text-[9px] font-black text-emerald-600">S/ 3.50/h</span>
                       </div>
                       <div className="flex items-center gap-1 text-[8px] text-slate-500">
                         <MapPin className="w-2 h-2 text-emerald-500" />
@@ -487,15 +472,51 @@ export const LandingPage = ({
       </main>
 
       {/* =========================================================================
-          3. DUAL BENTO CARDS (ESPACIADO COMPACTO)
+          3. SECCIÓN 2: MAPA EN VIVO DE AYACUCHO (COLOCADO COMO SEGUNDO)
           ========================================================================= */}
-      <ScrollRevealSection className="pt-6 pb-2 px-4 sm:px-6 max-w-5xl mx-auto text-left">
+      <ScrollRevealSection id="mapa" className="pt-8 pb-4 px-4 sm:px-6 max-w-5xl mx-auto text-left">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-4 gap-3">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+              Cocheras Afiliadas en Ayacucho
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Haz clic en cualquier establecimiento para visualizar su plano CAD 2D y reservar plaza al instante.
+            </p>
+          </div>
+
+          <div className="w-full md:w-64">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Buscar calle o nombre..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 pr-3 py-1.5 rounded-full text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[28px] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md bg-white dark:bg-slate-900 p-2 sm:p-3">
+          <AyacuchoMap
+            establishments={establishments}
+            onSelectParking={(p) => onSelectParking && onSelectParking(p)}
+          />
+        </div>
+      </ScrollRevealSection>
+
+      {/* =========================================================================
+          4. SECCIÓN 3: DUAL BENTO CARDS (LIMPIO)
+          ========================================================================= */}
+      <ScrollRevealSection className="py-6 px-4 sm:px-6 max-w-5xl mx-auto text-left">
         <div className="mb-4">
           <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
             Saca el Máximo Provecho a Cada Minuto
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Herramientas diseñadas tanto para el conductor diario como para la gestión municipal y privada.
+            Herramientas diseñadas tanto para el conductor diario como para la administración de cocheras.
           </p>
         </div>
 
@@ -578,15 +599,15 @@ export const LandingPage = ({
       </ScrollRevealSection>
 
       {/* =========================================================================
-          4. SECCIÓN "VENTAJAS" CON BADGES CIRCULARES
+          5. SECCIÓN 4: VENTAJAS EXCLUSIVAS (ICONOGRAFÍA MINIMALISTA)
           ========================================================================= */}
       <ScrollRevealSection id="beneficios" className="py-6 px-4 sm:px-6 max-w-5xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left items-start">
           
           {/* Columna Izquierda */}
-          <div className="lg:col-span-4 space-y-3">
+          <div className="lg:col-span-4 space-y-2.5">
             <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-              Ventajas Exclusivas
+              Ventajas del Sistema
             </h2>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               Diseñado minuciosamente para resolver la congestión en el centro histórico de Ayacucho, eliminando la incertidumbre de encontrar estacionamiento seguro.
@@ -602,13 +623,11 @@ export const LandingPage = ({
             </div>
           </div>
 
-          {/* Columna Derecha: Cuadrícula 2x2 */}
+          {/* Columna Derecha: Cuadrícula 2x2 Limpia */}
           <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
             
-            <div className="space-y-2">
-              <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
-                <Clock className="w-4 h-4" />
-              </div>
+            <div className="space-y-1.5">
+              <Clock className="w-5 h-5 text-emerald-600 dark:text-lime-400" />
               <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 15 Minutos de Tolerancia
               </h4>
@@ -617,10 +636,8 @@ export const LandingPage = ({
               </p>
             </div>
 
-            <div className="space-y-2">
-              <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
-                <Camera className="w-4 h-4" />
-              </div>
+            <div className="space-y-1.5">
+              <Camera className="w-5 h-5 text-emerald-600 dark:text-lime-400" />
               <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 Cámara LPR & Visión AI
               </h4>
@@ -629,10 +646,8 @@ export const LandingPage = ({
               </p>
             </div>
 
-            <div className="space-y-2">
-              <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
-                <CreditCard className="w-4 h-4" />
-              </div>
+            <div className="space-y-1.5">
+              <CreditCard className="w-5 h-5 text-emerald-600 dark:text-lime-400" />
               <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 Tarifas Justas al Minuto
               </h4>
@@ -641,10 +656,8 @@ export const LandingPage = ({
               </p>
             </div>
 
-            <div className="space-y-2">
-              <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
-                <QrCode className="w-4 h-4" />
-              </div>
+            <div className="space-y-1.5">
+              <QrCode className="w-5 h-5 text-emerald-600 dark:text-lime-400" />
               <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 Pase QR 100% Offline
               </h4>
@@ -659,10 +672,10 @@ export const LandingPage = ({
       </ScrollRevealSection>
 
       {/* =========================================================================
-          5. NUESTROS ALIADOS / TRUST BAR COMPACTO
+          6. SECCIÓN 5: NUESTROS ALIADOS / TRUST BAR COMPACTO
           ========================================================================= */}
-      <section className="py-4 px-4 max-w-5xl mx-auto text-center border-y border-slate-200/60 dark:border-slate-800/60 my-3">
-        <h3 className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-3">
+      <section className="py-4 px-4 max-w-5xl mx-auto text-center border-y border-slate-200/60 dark:border-slate-800/60 my-2">
+        <h3 className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-2.5">
           Ecosistema Conectado a los Principales Medios del Perú
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-8 text-slate-400 dark:text-slate-500 font-bold text-xs">
@@ -678,7 +691,7 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          6. CONTRAST DARK ISLAND BANNER COMPACTO
+          7. SECCIÓN 6: CONTRAST DARK ISLAND BANNER (LIMPIO)
           ========================================================================= */}
       <ScrollRevealSection className="py-6 px-4 sm:px-6 max-w-5xl mx-auto">
         <div className="relative rounded-[32px] bg-slate-950 text-white p-6 sm:p-8 overflow-hidden border border-slate-800 text-left shadow-xl">
@@ -686,9 +699,6 @@ export const LandingPage = ({
           
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center relative z-10">
             <div className="md:col-span-7 space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-[9px] font-bold tracking-wider uppercase text-emerald-400">
-                Control Total al Volante
-              </div>
               <h2 className="text-xl sm:text-3xl font-black tracking-tight leading-tight">
                 Mantén el pulso de tu estadía y tarifa en tiempo real
               </h2>
@@ -726,47 +736,7 @@ export const LandingPage = ({
       </ScrollRevealSection>
 
       {/* =========================================================================
-          7. RADAR DE COCHERAS & MAPA EN VIVO DE AYACUCHO
-          ========================================================================= */}
-      <ScrollRevealSection id="mapa" className="py-6 px-4 sm:px-6 max-w-5xl mx-auto text-left">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-4 gap-3">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-xs font-bold mb-1.5">
-              <Radio className="w-3 h-3 animate-pulse" />
-              Radar Activo de Ayacucho
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-              Cocheras Afiliadas con Cupos Disponibles
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Haz clic en cualquier establecimiento para visualizar su plano CAD 2D y reservar plaza al instante.
-            </p>
-          </div>
-
-          <div className="w-full md:w-64">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input
-                type="text"
-                placeholder="Buscar calle o nombre..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 pr-3 py-1.5 rounded-full text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-[28px] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md bg-white dark:bg-slate-900 p-2 sm:p-3">
-          <AyacuchoMap
-            establishments={establishments}
-            onSelectParking={(p) => onSelectParking && onSelectParking(p)}
-          />
-        </div>
-      </ScrollRevealSection>
-
-      {/* =========================================================================
-          8. DOBLE PERSPECTIVA: CONDUCTORES VS DUEÑOS DE COCHERA
+          8. SECCIÓN 7: DOBLE PERSPECTIVA: CONDUCTORES VS DUEÑOS DE COCHERA
           ========================================================================= */}
       <ScrollRevealSection id="tecnologia" className="py-6 px-4 sm:px-6 max-w-5xl mx-auto text-left">
         <div className="text-center max-w-xl mx-auto mb-5 space-y-2">
@@ -803,9 +773,6 @@ export const LandingPage = ({
           {activeAudienceTab === 'driver' ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-1.5">
-                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
-                  01
-                </div>
                 <h4 className="font-bold text-xs text-slate-900 dark:text-white">Cero Vueltas Inútiles</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
                   Sabrás de antemano si hay cupos libres antes de llegar a la zona céntrica de Ayacucho.
@@ -813,9 +780,6 @@ export const LandingPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
-                  02
-                </div>
                 <h4 className="font-bold text-xs text-slate-900 dark:text-white">Entrada Ágil con Placa</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
                   Sin tickets de papel que se pierden. Tu placa registrada activa la barrera en garita.
@@ -823,9 +787,6 @@ export const LandingPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
-                  03
-                </div>
                 <h4 className="font-bold text-xs text-slate-900 dark:text-white">Facturación Digital</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
                   Recibe tus boletas o facturas automáticamente en tu historial y por correo electrónico.
@@ -835,9 +796,6 @@ export const LandingPage = ({
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-1.5">
-                <div className="w-7 h-7 rounded-full bg-lime-400 dark:bg-lime-500/20 text-slate-950 dark:text-lime-400 flex items-center justify-center font-bold text-xs">
-                  01
-                </div>
                 <h4 className="font-bold text-xs text-slate-900 dark:text-white">Cero Fugas de Dinero</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
                   Cada entrada y salida queda auditada en la nube con foto del vehículo y cálculo automático.
@@ -845,9 +803,6 @@ export const LandingPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <div className="w-7 h-7 rounded-full bg-lime-400 dark:bg-lime-500/20 text-slate-950 dark:text-lime-400 flex items-center justify-center font-bold text-xs">
-                  02
-                </div>
                 <h4 className="font-bold text-xs text-slate-900 dark:text-white">Plano CAD 2D Flexible</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
                   Dibuja y reordena tus plazas de autos, camionetas y motos en nuestro editor interactivo en minutos.
@@ -855,9 +810,6 @@ export const LandingPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <div className="w-7 h-7 rounded-full bg-lime-400 dark:bg-lime-500/20 text-slate-950 dark:text-lime-400 flex items-center justify-center font-bold text-xs">
-                  03
-                </div>
                 <h4 className="font-bold text-xs text-slate-900 dark:text-white">Reportes y Arqueo</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
                   Cierres de caja automáticos por turno de garita, liquidaciones y analíticas de rentabilidad.
@@ -954,7 +906,7 @@ export const LandingPage = ({
                 Inicio
               </button>
               <button onClick={() => scrollTo('mapa')} className="hover:text-lime-400 transition cursor-pointer">
-                Directorio
+                Mapa en Vivo
               </button>
               <button onClick={() => scrollTo('beneficios')} className="hover:text-lime-400 transition cursor-pointer">
                 Ventajas

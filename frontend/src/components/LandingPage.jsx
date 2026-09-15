@@ -29,7 +29,8 @@ import {
   Radio,
   SlidersHorizontal,
   Compass,
-  Check
+  Check,
+  ChevronDown
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { QRCodeSVG } from 'qrcode.react';

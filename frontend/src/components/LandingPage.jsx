@@ -40,6 +40,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { AyacuchoMap } from './AyacuchoMap';
 import { BrandLogo } from './BrandLogo';
 import { useTheme } from '../context/ThemeContext';
+import { INITIAL_ESTABLISHMENTS } from '../context/EstablishmentContext';
 
 // Curva elástica acelerada por hardware
 const FLUID_EASE = [0.16, 1, 0.3, 1];
@@ -161,9 +162,27 @@ export const LandingPage = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [activeAudienceTab, setActiveAudienceTab] = useState('driver'); // 'driver' | 'owner'
 
+  // Lista garantizada de cocheras: prop establishments o iniciales de Huamanga
+  const effectiveList = useMemo(() => {
+    return Array.isArray(establishments) && establishments.length > 0
+      ? establishments
+      : (INITIAL_ESTABLISHMENTS || []);
+  }, [establishments]);
+
+  // Cocheras filtradas para el mapa interactivo
+  const mapParkings = useMemo(() => {
+    if (!searchTerm.trim()) return effectiveList;
+    const q = searchTerm.toLowerCase();
+    const filtered = effectiveList.filter((p) => 
+      (p.name || '').toLowerCase().includes(q) || 
+      (p.address || '').toLowerCase().includes(q)
+    );
+    return filtered.length > 0 ? filtered : effectiveList;
+  }, [effectiveList, searchTerm]);
+
   // Estadísticas dinámicas de la red de Ayacucho
   const stats = useMemo(() => {
-    const list = Array.isArray(establishments) ? establishments : [];
+    const list = effectiveList;
     let freeSlots = 0;
     let totalSlots = 0;
     list.forEach((p) => {
@@ -179,7 +198,7 @@ export const LandingPage = ({
       avgRecognitionSecs: 1.8,
       toleranceMinutes: 15
     };
-  }, [establishments]);
+  }, [effectiveList]);
 
   // Scroll suave hacia una sección
   const scrollTo = (id) => {
@@ -501,8 +520,10 @@ export const LandingPage = ({
 
         <div className="rounded-[28px] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md bg-white dark:bg-slate-900 p-2 sm:p-3">
           <AyacuchoMap
-            establishments={establishments}
+            parkings={mapParkings}
+            establishments={mapParkings}
             onSelectParking={(p) => onSelectParking && onSelectParking(p)}
+            onQuickReservation={(p) => onSelectParking && onSelectParking(p)}
           />
         </div>
       </ScrollRevealSection>

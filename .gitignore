@@ -116,4 +116,8 @@ Thumbs.db
 .agents/*
 skills-lock.json
 
+# --- Remotion Video Project & Renders ---
+video/
+video/*
+
 *.log

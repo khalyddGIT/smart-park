@@ -44,7 +44,7 @@ import { useTheme } from '../context/ThemeContext';
 // Curva elástica acelerada por hardware
 const FLUID_EASE = [0.16, 1, 0.3, 1];
 
-// Contenedor con efecto scroll reveal suave
+// Contenedor con efecto scroll reveal suave y espaciado compacto
 const ScrollRevealSection = ({ children, className = '', id = '' }) => {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -52,10 +52,10 @@ const ScrollRevealSection = ({ children, className = '', id = '' }) => {
     offset: ['start end', 'end start']
   });
 
-  const opacity = useTransform(scrollYProgress, [0, 0.15, 0.85, 1], [0, 1, 1, 0.95]);
-  const y = useTransform(scrollYProgress, [0, 0.15, 0.85, 1], [30, 0, 0, -20]);
-  const smoothOpacity = useSpring(opacity, { stiffness: 200, damping: 30 });
-  const smoothY = useSpring(y, { stiffness: 200, damping: 30 });
+  const opacity = useTransform(scrollYProgress, [0, 0.12, 0.88, 1], [0, 1, 1, 0.96]);
+  const y = useTransform(scrollYProgress, [0, 0.12, 0.88, 1], [20, 0, 0, -10]);
+  const smoothOpacity = useSpring(opacity, { stiffness: 220, damping: 32 });
+  const smoothY = useSpring(y, { stiffness: 220, damping: 32 });
 
   return (
     <motion.section
@@ -82,8 +82,8 @@ const MagneticButton = ({ children, onClick, className = '', type = 'button' }) 
     const rect = buttonRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    x.set((e.clientX - centerX) * 0.18);
-    y.set((e.clientY - centerY) * 0.18);
+    x.set((e.clientX - centerX) * 0.15);
+    y.set((e.clientY - centerY) * 0.15);
   };
 
   const handleMouseLeave = () => {
@@ -117,8 +117,8 @@ const DynamicTiltCard = ({ children, className = '' }) => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
   }, []);
 
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), { stiffness: 260, damping: 24 });
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-6, 6]), { stiffness: 260, damping: 24 });
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [5, -5]), { stiffness: 260, damping: 24 });
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-5, 5]), { stiffness: 260, damping: 24 });
 
   const handleMouseMove = (e) => {
     if (isTouchDevice || !cardRef.current) return;
@@ -200,22 +200,22 @@ export const LandingPage = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#070B12] text-slate-900 dark:text-slate-100 selection:bg-lime-400 selection:text-slate-950 transition-colors duration-300 font-sans pb-16">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#070B12] text-slate-900 dark:text-slate-100 selection:bg-lime-400 selection:text-slate-950 transition-colors duration-300 font-sans pb-8">
       
       {/* =========================================================================
           1. HEADER FLOTANTE EN ISLA DE VIDRIO
           ========================================================================= */}
-      <header className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-full px-5 py-3 shadow-lg shadow-black/5 flex items-center justify-between">
+      <header className="fixed top-3 left-0 right-0 z-50 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-full px-5 py-2.5 shadow-md shadow-black/5 flex items-center justify-between">
             
             {/* Logotipo Oficial */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <BrandLogo dark={isDark} />
             </div>
 
             {/* Enlaces de Navegación de Escritorio */}
-            <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-slate-600 dark:text-slate-300 tracking-wide">
+            <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600 dark:text-slate-300 tracking-wide">
               <button onClick={() => scrollTo('hero')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
                 Inicio
               </button>
@@ -234,20 +234,20 @@ export const LandingPage = ({
             </nav>
 
             {/* Acciones de la Cabecera */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={toggleTheme}
                 aria-label="Cambiar tema"
-                className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:scale-105 transition cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:scale-105 transition cursor-pointer"
               >
-                {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+                {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-700" />}
               </button>
 
               <button
                 type="button"
                 onClick={() => onOpenAuth && onOpenAuth('login')}
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 Ingresar
@@ -255,7 +255,7 @@ export const LandingPage = ({
 
               <MagneticButton
                 onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 px-5 py-2.5 rounded-full text-xs font-bold shadow-md hover:bg-slate-800 dark:hover:bg-slate-100 transition cursor-pointer"
+                className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 px-4 py-2 rounded-full text-xs font-bold shadow hover:bg-slate-800 dark:hover:bg-slate-100 transition cursor-pointer"
               >
                 Afiliar Cochera
               </MagneticButton>
@@ -264,7 +264,7 @@ export const LandingPage = ({
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 text-slate-700 dark:text-slate-200 hover:text-emerald-500"
+                className="md:hidden p-1.5 text-slate-700 dark:text-slate-200 hover:text-emerald-500"
                 aria-label="Abrir menú"
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -280,33 +280,33 @@ export const LandingPage = ({
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="md:hidden max-w-6xl mx-auto mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4"
+              className="md:hidden max-w-5xl mx-auto mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-2xl space-y-3"
             >
-              <div className="flex flex-col gap-3 text-sm font-semibold">
-                <button onClick={() => scrollTo('hero')} className="text-left py-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex flex-col gap-2.5 text-sm font-semibold">
+                <button onClick={() => scrollTo('hero')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Inicio
                 </button>
-                <button onClick={() => scrollTo('beneficios')} className="text-left py-2 border-b border-slate-100 dark:border-slate-800">
+                <button onClick={() => scrollTo('beneficios')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Ventajas
                 </button>
-                <button onClick={() => scrollTo('mapa')} className="text-left py-2 border-b border-slate-100 dark:border-slate-800">
+                <button onClick={() => scrollTo('mapa')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Directorio & Mapa
                 </button>
-                <button onClick={() => scrollTo('tecnologia')} className="text-left py-2 border-b border-slate-100 dark:border-slate-800">
+                <button onClick={() => scrollTo('tecnologia')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Tecnología
                 </button>
-                <button onClick={() => scrollTo('faq')} className="text-left py-2">
+                <button onClick={() => scrollTo('faq')} className="text-left py-1.5">
                   Preguntas Frecuentes
                 </button>
               </div>
-              <div className="pt-2 flex flex-col gap-2">
+              <div className="pt-1 flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     onOpenAuth && onOpenAuth('login');
                   }}
-                  className="w-full py-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold"
+                  className="w-full py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold"
                 >
                   Iniciar Sesión
                 </button>
@@ -317,120 +317,117 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO ISLAND (INSPIRADO EN EL DISEÑO FINTECH DE REFERENCIA)
-          Gran tarjeta redondeada con acento, tipografía fuerte, doodle y teléfonos 3D
+          2. HERO ISLAND (COMPACTO Y COHESIVO)
           ========================================================================= */}
-      <main id="hero" className="pt-24 sm:pt-28 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
-        <div className="relative rounded-[36px] sm:rounded-[44px] overflow-hidden bg-gradient-to-br from-[#E2F952] via-[#D5F83C] to-[#BAEF2E] dark:from-[#0F172A] dark:via-[#090D16] dark:to-[#070B12] dark:border dark:border-slate-800 text-slate-950 dark:text-white p-8 sm:p-12 lg:p-16 shadow-2xl transition-all">
+      <main id="hero" className="pt-20 sm:pt-22 px-4 sm:px-6 max-w-5xl mx-auto">
+        <div className="relative rounded-[32px] sm:rounded-[36px] overflow-hidden bg-gradient-to-br from-[#E2F952] via-[#D5F83C] to-[#BAEF2E] dark:from-[#0F172A] dark:via-[#090D16] dark:to-[#070B12] dark:border dark:border-slate-800 text-slate-950 dark:text-white p-6 sm:p-10 shadow-xl transition-all">
           
           {/* Malla decorativa de fondo */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.4),transparent_50%)] dark:bg-[radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.12),transparent_50%)] pointer-events-none" />
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-6 items-center relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center relative z-10">
             
-            {/* Columna Izquierda: Copywriting, CTA y Flecha Doodle */}
-            <div className="lg:col-span-7 space-y-6 text-left">
+            {/* Columna Izquierda: Copywriting y CTA */}
+            <div className="lg:col-span-7 space-y-4 text-left">
               
               {/* Badge Superior */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/10 dark:bg-emerald-500/15 backdrop-blur-md text-[11px] sm:text-xs font-bold tracking-wide uppercase text-slate-900 dark:text-emerald-400">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/10 dark:bg-emerald-500/15 backdrop-blur-md text-[11px] font-bold tracking-wide uppercase text-slate-900 dark:text-emerald-400">
                 <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
                 Red Inteligente · Ayacucho, Perú
               </div>
 
               {/* Titular Principal de Impacto */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05]">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.08]">
                 Estaciona al instante <span className="inline-block text-emerald-700 dark:text-lime-400">✦</span> en la ciudad
               </h1>
 
               {/* Subtítulo Conciso */}
-              <p className="text-sm sm:text-base text-slate-800 dark:text-slate-300 max-w-lg leading-relaxed font-medium">
+              <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-300 max-w-md leading-relaxed font-medium">
                 Encuentra plaza en tiempo real, ingresa con lectura automática de placa o código QR, y paga la tarifa exacta al minuto mediante Yape, Plin o tarjetas.
               </p>
 
               {/* Botones de Acción Primarios */}
-              <div className="pt-2 flex flex-wrap items-center gap-4">
+              <div className="pt-1 flex flex-wrap items-center gap-3">
                 <MagneticButton
                   onClick={() => scrollTo('mapa')}
-                  className="bg-slate-950 dark:bg-lime-400 text-white dark:text-slate-950 px-7 py-3.5 rounded-full text-sm font-black shadow-xl hover:scale-105 transition cursor-pointer flex items-center gap-2"
+                  className="bg-slate-950 dark:bg-lime-400 text-white dark:text-slate-950 px-6 py-2.5 rounded-full text-xs sm:text-sm font-black shadow-lg hover:scale-105 transition cursor-pointer flex items-center gap-2"
                 >
-                  <Search className="w-4 h-4" />
+                  <Search className="w-3.5 h-3.5" />
                   Explorar Cocheras
                 </MagneticButton>
 
                 <button
                   type="button"
                   onClick={() => scrollTo('beneficios')}
-                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-200 hover:underline cursor-pointer group"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-slate-900 dark:text-slate-200 hover:underline cursor-pointer group"
                 >
                   Ver ventajas del sistema
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
 
-              {/* Flecha Doodle Orgánica SVG (conectando el texto con los móviles) */}
-              <div className="hidden lg:block pt-4">
-                <svg className="w-48 h-16 text-slate-900/70 dark:text-lime-400/80" viewBox="0 0 200 80" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M 10 20 C 60 5, 120 40, 180 50" strokeDasharray="6 4" />
-                  <polyline points="172,40 183,50 174,62" />
+              {/* Flecha Doodle Orgánica SVG */}
+              <div className="hidden lg:block pt-1">
+                <svg className="w-36 h-10 text-slate-900/70 dark:text-lime-400/80" viewBox="0 0 160 50" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M 10 15 C 50 5, 90 28, 140 32" strokeDasharray="5 3" />
+                  <polyline points="132,24 142,32 134,40" />
                 </svg>
               </div>
             </div>
 
-            {/* Columna Derecha: Mockups 3D Superpuestos de Smartphones */}
+            {/* Columna Derecha: Mockups 3D Superpuestos Compactos */}
             <div className="lg:col-span-5 relative flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-[340px] sm:max-w-[380px] h-[460px] sm:h-[500px]">
+              <div className="relative w-full max-w-[310px] sm:max-w-[340px] h-[360px] sm:h-[390px]">
                 
                 {/* Teléfono 1: Fondo Oscuro Tilted (Plano CAD 2D & LPR) */}
                 <motion.div
-                  initial={{ y: 20, opacity: 0, rotate: 6 }}
-                  animate={{ y: 0, opacity: 1, rotate: 6 }}
-                  transition={{ duration: 0.8, ease: FLUID_EASE }}
-                  className="absolute right-0 top-6 w-[230px] sm:w-[260px] bg-slate-950 rounded-[38px] p-3 shadow-2xl border-4 border-slate-800 text-white z-10"
+                  initial={{ y: 15, opacity: 0, rotate: 5 }}
+                  animate={{ y: 0, opacity: 1, rotate: 5 }}
+                  transition={{ duration: 0.7, ease: FLUID_EASE }}
+                  className="absolute right-0 top-3 w-[210px] sm:w-[230px] bg-slate-950 rounded-[30px] p-2.5 shadow-2xl border-3 border-slate-800 text-white z-10"
                 >
-                  {/* Notch / Speaker */}
-                  <div className="w-20 h-4 bg-slate-800 rounded-full mx-auto mb-2" />
+                  <div className="w-16 h-3 bg-slate-800 rounded-full mx-auto mb-2" />
                   
-                  {/* Pantalla Simulada CAD */}
-                  <div className="space-y-3 text-left">
+                  <div className="space-y-2 text-left">
                     <div className="flex items-center justify-between px-1">
-                      <span className="text-[10px] font-bold text-slate-400">PLANO 2D EN VIVO</span>
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold">15 Libres</span>
+                      <span className="text-[9px] font-bold text-slate-400">PLANO 2D EN VIVO</span>
+                      <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold">15 Libres</span>
                     </div>
 
-                    {/* Simulación de Plazas */}
-                    <div className="grid grid-cols-3 gap-1.5 bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800">
-                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded-lg p-2 text-center">
-                        <span className="text-[9px] font-bold text-emerald-400">A-01</span>
+                    {/* Plazas */}
+                    <div className="grid grid-cols-3 gap-1 bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
+                        <span className="text-[8px] font-bold text-emerald-400">A-01</span>
                       </div>
-                      <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-2 text-center">
-                        <span className="text-[9px] font-bold text-red-400">A-02</span>
+                      <div className="bg-red-500/20 border border-red-500/50 rounded p-1 text-center">
+                        <span className="text-[8px] font-bold text-red-400">A-02</span>
                       </div>
-                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded-lg p-2 text-center">
-                        <span className="text-[9px] font-bold text-emerald-400">A-03</span>
+                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
+                        <span className="text-[8px] font-bold text-emerald-400">A-03</span>
                       </div>
-                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded-lg p-2 text-center">
-                        <span className="text-[9px] font-bold text-emerald-400">B-01</span>
+                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
+                        <span className="text-[8px] font-bold text-emerald-400">B-01</span>
                       </div>
-                      <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-2 text-center">
-                        <span className="text-[9px] font-bold text-red-400">B-02</span>
+                      <div className="bg-red-500/20 border border-red-500/50 rounded p-1 text-center">
+                        <span className="text-[8px] font-bold text-red-400">B-02</span>
                       </div>
-                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded-lg p-2 text-center">
-                        <span className="text-[9px] font-bold text-emerald-400">B-03</span>
+                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
+                        <span className="text-[8px] font-bold text-emerald-400">B-03</span>
                       </div>
                     </div>
 
-                    {/* Banner de Reconocimiento LPR */}
-                    <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                      <div className="flex items-center gap-1.5 text-[10px] text-lime-400 font-bold">
-                        <Camera className="w-3 h-3" />
+                    {/* LPR */}
+                    <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
+                      <div className="flex items-center gap-1 text-[9px] text-lime-400 font-bold">
+                        <Camera className="w-2.5 h-2.5" />
                         LPR-IA Detectado
                       </div>
-                      <div className="text-[11px] font-mono font-black text-slate-100 bg-slate-800 px-2 py-0.5 rounded text-center">
+                      <div className="text-[10px] font-mono font-black text-slate-100 bg-slate-800 px-1.5 py-0.5 rounded text-center">
                         ABC-123 · Auto
                       </div>
                     </div>
 
-                    <div className="text-[9px] text-center text-slate-400 font-medium">
+                    <div className="text-[8px] text-center text-slate-400">
                       Barrera automática desbloqueada
                     </div>
                   </div>
@@ -438,50 +435,45 @@ export const LandingPage = ({
 
                 {/* Teléfono 2: Primer Plano Blanco (Búsqueda y Pase Digital) */}
                 <motion.div
-                  initial={{ y: 40, opacity: 0, rotate: -3 }}
-                  animate={{ y: 0, opacity: 1, rotate: -3 }}
-                  transition={{ duration: 0.8, delay: 0.15, ease: FLUID_EASE }}
-                  className="absolute left-0 top-0 w-[240px] sm:w-[270px] bg-white text-slate-900 rounded-[38px] p-3.5 shadow-2xl border-4 border-slate-900/10 z-20 text-left"
+                  initial={{ y: 30, opacity: 0, rotate: -2 }}
+                  animate={{ y: 0, opacity: 1, rotate: -2 }}
+                  transition={{ duration: 0.7, delay: 0.1, ease: FLUID_EASE }}
+                  className="absolute left-0 top-0 w-[220px] sm:w-[245px] bg-white text-slate-900 rounded-[30px] p-3 shadow-2xl border-3 border-slate-900/10 z-20 text-left"
                 >
-                  {/* Notch */}
-                  <div className="w-24 h-4 bg-slate-200 rounded-full mx-auto mb-2" />
+                  <div className="w-20 h-3 bg-slate-200 rounded-full mx-auto mb-2" />
                   
-                  <div className="space-y-3">
-                    {/* Header App */}
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-slate-900">Ayacucho Parking</span>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="text-[11px] font-black text-slate-900">Ayacucho Parking</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     </div>
 
-                    {/* Mini Barra de Búsqueda */}
-                    <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full text-[10px] text-slate-500">
-                      <Search className="w-3 h-3" />
+                    <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-full text-[9px] text-slate-500">
+                      <Search className="w-2.5 h-2.5" />
                       <span>Plaza Mayor, Jr. Callao...</span>
                     </div>
 
-                    {/* Tarjeta de Cochera Destacada */}
-                    <div className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-900">Cochera Central</span>
-                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">S/ 3.50/h</span>
+                        <span className="text-[10px] font-bold text-slate-900">Cochera Central</span>
+                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">S/ 3.50/h</span>
                       </div>
-                      <div className="flex items-center gap-1 text-[9px] text-slate-500">
-                        <MapPin className="w-2.5 h-2.5 text-emerald-500" />
+                      <div className="flex items-center gap-1 text-[8px] text-slate-500">
+                        <MapPin className="w-2 h-2 text-emerald-500" />
                         Jr. 28 de Julio · 12 libres
                       </div>
-                      <div className="w-full py-1.5 rounded-xl bg-slate-950 text-white text-[10px] font-bold text-center">
+                      <div className="w-full py-1 rounded-lg bg-slate-950 text-white text-[9px] font-bold text-center">
                         Reservar Plaza
                       </div>
                     </div>
 
-                    {/* Micro Pase QR */}
-                    <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5">
-                      <div className="w-8 h-8 bg-white p-1 rounded-lg border border-emerald-300 flex items-center justify-center">
-                        <QrCode className="w-6 h-6 text-slate-900" />
+                    <div className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-2">
+                      <div className="w-7 h-7 bg-white p-0.5 rounded border border-emerald-300 flex items-center justify-center">
+                        <QrCode className="w-5 h-5 text-slate-900" />
                       </div>
-                      <div className="text-[9px]">
+                      <div className="text-[8px]">
                         <p className="font-bold text-emerald-950">Pase QR Activo</p>
-                        <p className="text-emerald-700 font-medium">Tolerancia: 14:20 min</p>
+                        <p className="text-emerald-700">Tolerancia: 14:20 min</p>
                       </div>
                     </div>
                   </div>
@@ -495,76 +487,72 @@ export const LandingPage = ({
       </main>
 
       {/* =========================================================================
-          3. DUAL BENTO CARDS ("SACA EL MÁXIMO PROVECHO A TUS VIAJES")
-          Dos tarjetas redondeadas con diseño gráfico en la esquina
+          3. DUAL BENTO CARDS (ESPACIADO COMPACTO)
           ========================================================================= */}
-      <ScrollRevealSection className="py-16 px-4 sm:px-6 max-w-6xl mx-auto text-left">
-        <div className="mb-8">
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+      <ScrollRevealSection className="pt-6 pb-2 px-4 sm:px-6 max-w-5xl mx-auto text-left">
+        <div className="mb-4">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
             Saca el Máximo Provecho a Cada Minuto
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Herramientas diseñadas tanto para el conductor diario como para la gestión municipal y privada.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           
           {/* Tarjeta 1: Red Unificada de Cocheras */}
-          <DynamicTiltCard className="rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden shadow-sm flex flex-col justify-between">
-            <div className="space-y-3 z-10">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+          <DynamicTiltCard className="rounded-[28px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 relative overflow-hidden shadow-sm flex flex-col justify-between">
+            <div className="space-y-2 z-10">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Red Unificada de Cocheras
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-sm leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm leading-relaxed">
                 Gestiona tus accesos, recibos electrónicos y reservas en múltiples sedes de Huamanga desde una única plataforma digital.
               </p>
-              <div className="pt-3">
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={() => scrollTo('mapa')}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer"
                 >
                   Explorar directorio
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
             </div>
 
-            {/* Elemento gráfico en la esquina */}
-            <div className="absolute right-4 -bottom-6 w-36 h-36 bg-lime-300/30 dark:bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
-            <div className="absolute right-6 bottom-6 flex items-center gap-2 opacity-80 pointer-events-none">
-              <div className="w-10 h-16 rounded-full bg-slate-950 dark:bg-white/10" />
-              <div className="w-14 h-14 rounded-2xl bg-lime-400 dark:bg-emerald-500 flex items-center justify-center text-slate-950 font-black text-xs">
+            <div className="absolute right-4 bottom-4 flex items-center gap-2 opacity-80 pointer-events-none">
+              <div className="w-8 h-12 rounded-full bg-slate-950 dark:bg-white/10" />
+              <div className="w-11 h-11 rounded-xl bg-lime-400 dark:bg-emerald-500 flex items-center justify-center text-slate-950 font-black text-xs">
                 +12
               </div>
             </div>
           </DynamicTiltCard>
 
           {/* Tarjeta 2: Telemetría y Precisión en Vivo */}
-          <DynamicTiltCard className="rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden shadow-sm flex flex-col justify-between">
-            <div className="space-y-3 z-10">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+          <DynamicTiltCard className="rounded-[28px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 relative overflow-hidden shadow-sm flex flex-col justify-between">
+            <div className="space-y-2 z-10">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Telemetría y Control en Tiempo Real
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-sm leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm leading-relaxed">
                 Visualiza la ocupación exacta plaza por plaza, con reconocimiento de placa por visión computacional y sincronización en la nube.
               </p>
-              <div className="pt-3">
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={() => scrollTo('tecnologia')}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer"
                 >
                   Ver arquitectura tecnológica
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
             </div>
 
-            {/* Elemento gráfico circular / medidor */}
-            <div className="absolute right-6 bottom-6 w-24 h-24 flex items-center justify-center pointer-events-none">
-              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+            <div className="absolute right-4 bottom-4 w-16 h-16 flex items-center justify-center pointer-events-none">
+              <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
                 <path
                   className="text-slate-200 dark:text-slate-800"
                   strokeWidth="3.5"
@@ -582,7 +570,7 @@ export const LandingPage = ({
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                 />
               </svg>
-              <span className="absolute text-xs font-black text-slate-900 dark:text-white">85%</span>
+              <span className="absolute text-[11px] font-black text-slate-900 dark:text-white">85%</span>
             </div>
           </DynamicTiltCard>
 
@@ -591,82 +579,77 @@ export const LandingPage = ({
 
       {/* =========================================================================
           4. SECCIÓN "VENTAJAS" CON BADGES CIRCULARES
-          Columna izquierda: Titular e intro. Columna derecha: 2x2 grid de beneficios
           ========================================================================= */}
-      <ScrollRevealSection id="beneficios" className="py-12 px-4 sm:px-6 max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 text-left items-start">
+      <ScrollRevealSection id="beneficios" className="py-6 px-4 sm:px-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left items-start">
           
-          {/* Columna Izquierda (4 columnas) */}
-          <div className="lg:col-span-4 space-y-4">
-            <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+          {/* Columna Izquierda */}
+          <div className="lg:col-span-4 space-y-3">
+            <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
               Ventajas Exclusivas
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               Diseñado minuciosamente para resolver la congestión en el centro histórico de Ayacucho, eliminando la incertidumbre de encontrar estacionamiento seguro.
             </p>
-            <div className="pt-2">
+            <div>
               <button
                 type="button"
                 onClick={() => onOpenAuth && onOpenAuth('affiliation')}
                 className="text-xs font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer"
               >
-                Afilia tu cochera en menos de 24 horas →
+                Afilia tu cochera en 24 horas →
               </button>
             </div>
           </div>
 
-          {/* Columna Derecha: Cuadrícula 2x2 con Círculos de Acento (8 columnas) */}
-          <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
+          {/* Columna Derecha: Cuadrícula 2x2 */}
+          <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
             
-            {/* Ventaja 1: 15 min de tolerancia */}
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
-                <Clock className="w-5 h-5" />
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
+                <Clock className="w-4 h-4" />
               </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 15 Minutos de Tolerancia
               </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Ventana de llegada garantizada. Si te retrasas en el tráfico, tu cupo permanece reservado y protegido contra sabotajes.
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                Ventana de llegada garantizada. Tu cupo permanece reservado y protegido contra cancelaciones.
               </p>
             </div>
 
-            {/* Ventaja 2: Reconocimiento LPR */}
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
-                <Camera className="w-5 h-5" />
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
+                <Camera className="w-4 h-4" />
               </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 Cámara LPR & Visión AI
               </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Apertura automática de barrera en garita mediante lectura óptica de placas en menos de 2 segundos.
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                Apertura automática de barrera en garita mediante lectura de placas en menos de 2 segundos.
               </p>
             </div>
 
-            {/* Ventaja 3: Cobro exacto por minuto */}
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
-                <CreditCard className="w-5 h-5" />
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
+                <CreditCard className="w-4 h-4" />
               </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 Tarifas Justas al Minuto
               </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Cero redondeos injustos. Paga exactamente los minutos utilizados vía Yape, Plin o tarjetas con comprobante electrónico.
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                Paga exactamente los minutos utilizados vía Yape, Plin o tarjeta con boleta electrónica.
               </p>
             </div>
 
-            {/* Ventaja 4: Pase Offline */}
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
-                <QrCode className="w-5 h-5" />
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-emerald-500/20 text-slate-950 dark:text-emerald-400 flex items-center justify-center font-black">
+                <QrCode className="w-4 h-4" />
               </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 Pase QR 100% Offline
               </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                ¿Sin señal en el sótano? Guarda tu pase en el teléfono y accede sin depender de datos móviles o cobertura celular.
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                ¿Sin señal en el sótano? Guarda tu pase en el teléfono y accede sin depender de datos móviles.
               </p>
             </div>
 
@@ -676,14 +659,13 @@ export const LandingPage = ({
       </ScrollRevealSection>
 
       {/* =========================================================================
-          5. NUESTROS ALIADOS / TRUST BAR
-          Row de medios de pago y entidades aliadas en formato badge
+          5. NUESTROS ALIADOS / TRUST BAR COMPACTO
           ========================================================================= */}
-      <section className="py-12 px-4 sm:px-6 max-w-6xl mx-auto text-center border-y border-slate-200/70 dark:border-slate-800/70 my-8">
-        <h3 className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 mb-6">
+      <section className="py-4 px-4 max-w-5xl mx-auto text-center border-y border-slate-200/60 dark:border-slate-800/60 my-3">
+        <h3 className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-3">
           Ecosistema Conectado a los Principales Medios del Perú
         </h3>
-        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-slate-400 dark:text-slate-500 font-bold text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-8 text-slate-400 dark:text-slate-500 font-bold text-xs">
           <span className="hover:text-emerald-500 transition">Yape</span>
           <span className="hover:text-emerald-500 transition">Plin</span>
           <span className="hover:text-emerald-500 transition">Visa</span>
@@ -696,56 +678,49 @@ export const LandingPage = ({
       </section>
 
       {/* =========================================================================
-          6. CONTRAST DARK ISLAND BANNER
-          Isla oscura con titular contundente y mockup central que sobresale
+          6. CONTRAST DARK ISLAND BANNER COMPACTO
           ========================================================================= */}
-      <ScrollRevealSection className="py-10 px-4 sm:px-6 max-w-6xl mx-auto">
-        <div className="relative rounded-[36px] sm:rounded-[44px] bg-slate-950 text-white p-8 sm:p-14 overflow-hidden border border-slate-800 text-left shadow-2xl">
+      <ScrollRevealSection className="py-6 px-4 sm:px-6 max-w-5xl mx-auto">
+        <div className="relative rounded-[32px] bg-slate-950 text-white p-6 sm:p-8 overflow-hidden border border-slate-800 text-left shadow-xl">
+          <div className="absolute -right-16 -top-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
           
-          {/* Líneas orgánicas / wave lines de fondo */}
-          <div className="absolute -right-20 -top-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center relative z-10">
-            
-            {/* Columna Izquierda: Titular y CTA */}
-            <div className="md:col-span-7 space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[10px] font-bold tracking-wider uppercase text-emerald-400">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center relative z-10">
+            <div className="md:col-span-7 space-y-3">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-[9px] font-bold tracking-wider uppercase text-emerald-400">
                 Control Total al Volante
               </div>
-              <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+              <h2 className="text-xl sm:text-3xl font-black tracking-tight leading-tight">
                 Mantén el pulso de tu estadía y tarifa en tiempo real
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400 max-w-md leading-relaxed">
-                Recibe notificaciones automáticas antes de que finalice tu tiempo, extiende tu reserva con un toque o abre la navegación directa hacia tu plaza en Waze o Google Maps.
+              <p className="text-xs text-slate-400 max-w-md leading-relaxed">
+                Recibe notificaciones antes de que finalice tu tiempo, extiende tu reserva o abre navegación en Waze o Google Maps.
               </p>
-              <div className="pt-2">
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={() => scrollTo('mapa')}
-                  className="bg-white text-slate-950 px-6 py-3 rounded-full text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+                  className="bg-white text-slate-950 px-5 py-2 rounded-full text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
                 >
                   Buscar mi plaza ahora
                 </button>
               </div>
             </div>
 
-            {/* Columna Derecha: Mockup del Pase Digital QR */}
             <div className="md:col-span-5 flex justify-center">
-              <div className="w-[220px] bg-slate-900 border-2 border-slate-800 rounded-3xl p-4 shadow-xl text-center space-y-3">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Pase de Acceso</div>
-                <div className="text-lg font-black text-white">S/ 3.50</div>
-                <div className="w-28 h-28 bg-white p-2 rounded-2xl mx-auto flex items-center justify-center">
-                  <QRCodeSVG value="SMART-PARK-DEMO-PASS" size={96} />
+              <div className="w-[190px] bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-lg text-center space-y-2">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Pase de Acceso</div>
+                <div className="text-base font-black text-white">S/ 3.50</div>
+                <div className="w-24 h-24 bg-white p-1.5 rounded-xl mx-auto flex items-center justify-center">
+                  <QRCodeSVG value="SMART-PARK-DEMO-PASS" size={84} />
                 </div>
-                <div className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 py-1 rounded-full">
+                <div className="text-[9px] text-emerald-400 font-bold bg-emerald-500/10 py-0.5 rounded-full">
                   Tolerancia: 14:58 min
                 </div>
-                <div className="text-[9px] text-slate-400">
+                <div className="text-[8px] text-slate-400">
                   Cochera Plaza Mayor · Plaza A-04
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </ScrollRevealSection>
@@ -753,38 +728,36 @@ export const LandingPage = ({
       {/* =========================================================================
           7. RADAR DE COCHERAS & MAPA EN VIVO DE AYACUCHO
           ========================================================================= */}
-      <ScrollRevealSection id="mapa" className="py-16 px-4 sm:px-6 max-w-6xl mx-auto text-left">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+      <ScrollRevealSection id="mapa" className="py-6 px-4 sm:px-6 max-w-5xl mx-auto text-left">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-4 gap-3">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-xs font-bold mb-2">
-              <Radio className="w-3.5 h-3.5 animate-pulse" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-xs font-bold mb-1.5">
+              <Radio className="w-3 h-3 animate-pulse" />
               Radar Activo de Ayacucho
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
               Cocheras Afiliadas con Cupos Disponibles
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Haz clic en cualquier establecimiento para visualizar su plano CAD 2D y reservar plaza al instante.
             </p>
           </div>
 
-          {/* Buscador Rápido */}
-          <div className="w-full md:w-72">
+          <div className="w-full md:w-64">
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
                 type="text"
-                placeholder="Buscar por calle o nombre..."
+                placeholder="Buscar calle o nombre..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 rounded-full text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                className="pl-8 pr-3 py-1.5 rounded-full text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
               />
             </div>
           </div>
         </div>
 
-        {/* Componente del Mapa de Ayacucho */}
-        <div className="rounded-[32px] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg bg-white dark:bg-slate-900 p-2 sm:p-4">
+        <div className="rounded-[28px] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md bg-white dark:bg-slate-900 p-2 sm:p-3">
           <AyacuchoMap
             establishments={establishments}
             onSelectParking={(p) => onSelectParking && onSelectParking(p)}
@@ -795,16 +768,16 @@ export const LandingPage = ({
       {/* =========================================================================
           8. DOBLE PERSPECTIVA: CONDUCTORES VS DUEÑOS DE COCHERA
           ========================================================================= */}
-      <ScrollRevealSection id="tecnologia" className="py-12 px-4 sm:px-6 max-w-6xl mx-auto text-left">
-        <div className="text-center max-w-xl mx-auto mb-8 space-y-3">
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+      <ScrollRevealSection id="tecnologia" className="py-6 px-4 sm:px-6 max-w-5xl mx-auto text-left">
+        <div className="text-center max-w-xl mx-auto mb-5 space-y-2">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
             Diseñado para Todo el Ecosistema
           </h2>
           <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-800 rounded-full">
             <button
               type="button"
               onClick={() => setActiveAudienceTab('driver')}
-              className={`px-5 py-2 rounded-full text-xs font-bold transition cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
                 activeAudienceTab === 'driver'
                   ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
                   : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -815,7 +788,7 @@ export const LandingPage = ({
             <button
               type="button"
               onClick={() => setActiveAudienceTab('owner')}
-              className={`px-5 py-2 rounded-full text-xs font-bold transition cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
                 activeAudienceTab === 'owner'
                   ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
                   : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -826,67 +799,67 @@ export const LandingPage = ({
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 p-8 sm:p-12 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
           {activeAudienceTab === 'driver' ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="space-y-2">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-1.5">
+                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
                   01
                 </div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">Cero Vueltas Inútiles</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h4 className="font-bold text-xs text-slate-900 dark:text-white">Cero Vueltas Inútiles</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
                   Sabrás de antemano si hay cupos libres antes de llegar a la zona céntrica de Ayacucho.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+              <div className="space-y-1.5">
+                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
                   02
                 </div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">Entrada Ágil con Placa</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h4 className="font-bold text-xs text-slate-900 dark:text-white">Entrada Ágil con Placa</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
                   Sin tickets de papel que se pierden. Tu placa registrada activa la barrera en garita.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+              <div className="space-y-1.5">
+                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
                   03
                 </div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">Facturación Digital</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h4 className="font-bold text-xs text-slate-900 dark:text-white">Facturación Digital</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
                   Recibe tus boletas o facturas automáticamente en tu historial y por correo electrónico.
                 </p>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="space-y-2">
-                <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-lime-500/20 text-slate-950 dark:text-lime-400 flex items-center justify-center font-bold text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-1.5">
+                <div className="w-7 h-7 rounded-full bg-lime-400 dark:bg-lime-500/20 text-slate-950 dark:text-lime-400 flex items-center justify-center font-bold text-xs">
                   01
                 </div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">Cero Fugas de Dinero</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h4 className="font-bold text-xs text-slate-900 dark:text-white">Cero Fugas de Dinero</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
                   Cada entrada y salida queda auditada en la nube con foto del vehículo y cálculo automático.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-lime-500/20 text-slate-950 dark:text-lime-400 flex items-center justify-center font-bold text-xs">
+              <div className="space-y-1.5">
+                <div className="w-7 h-7 rounded-full bg-lime-400 dark:bg-lime-500/20 text-slate-950 dark:text-lime-400 flex items-center justify-center font-bold text-xs">
                   02
                 </div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">Plano CAD 2D Flexible</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h4 className="font-bold text-xs text-slate-900 dark:text-white">Plano CAD 2D Flexible</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
                   Dibuja y reordena tus plazas de autos, camionetas y motos en nuestro editor interactivo en minutos.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <div className="w-8 h-8 rounded-full bg-lime-400 dark:bg-lime-500/20 text-slate-950 dark:text-lime-400 flex items-center justify-center font-bold text-xs">
+              <div className="space-y-1.5">
+                <div className="w-7 h-7 rounded-full bg-lime-400 dark:bg-lime-500/20 text-slate-950 dark:text-lime-400 flex items-center justify-center font-bold text-xs">
                   03
                 </div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">Reportes y Arqueo</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h4 className="font-bold text-xs text-slate-900 dark:text-white">Reportes y Arqueo</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
                   Cierres de caja automáticos por turno de garita, liquidaciones y analíticas de rentabilidad.
                 </p>
               </div>
@@ -896,19 +869,19 @@ export const LandingPage = ({
       </ScrollRevealSection>
 
       {/* =========================================================================
-          9. PREGUNTAS FRECUENTES (FAQ ACORDEÓN)
+          9. PREGUNTAS FRECUENTES (FAQ ACORDEÓN COMPACTO)
           ========================================================================= */}
-      <ScrollRevealSection id="faq" className="py-12 px-4 sm:px-6 max-w-4xl mx-auto text-left">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+      <ScrollRevealSection id="faq" className="py-6 px-4 sm:px-6 max-w-4xl mx-auto text-left">
+        <div className="text-center mb-5">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
             Preguntas Frecuentes
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Todo lo que necesitas saber antes de empezar.
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {[
             {
               q: '¿Cómo funciona la tolerancia de 15 minutos al reservar?',
@@ -936,11 +909,11 @@ export const LandingPage = ({
                 <button
                   type="button"
                   onClick={() => setActiveFaq(isOpen ? -1 : idx)}
-                  className="w-full p-5 text-left flex items-center justify-between gap-4 cursor-pointer"
+                  className="w-full p-4 text-left flex items-center justify-between gap-3 cursor-pointer"
                 >
                   <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">{item.q}</span>
                   <div className={`p-1 rounded-full bg-slate-100 dark:bg-slate-800 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-                    <ChevronDown className="w-4 h-4 text-slate-500" />
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
                   </div>
                 </button>
                 <AnimatePresence>
@@ -951,7 +924,7 @@ export const LandingPage = ({
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="px-5 pb-5 text-xs text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-800/80 pt-3">
+                      <div className="px-4 pb-4 text-xs text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-800/80 pt-2.5">
                         {item.a}
                       </div>
                     </motion.div>
@@ -964,19 +937,19 @@ export const LandingPage = ({
       </ScrollRevealSection>
 
       {/* =========================================================================
-          10. FOOTER NEGRO REDONDEADO (ESTILO FINTECH)
+          10. FOOTER NEGRO REDONDEADO COMPACTO
           ========================================================================= */}
-      <footer className="mt-16 max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="rounded-t-[36px] sm:rounded-t-[44px] bg-slate-950 text-white p-10 sm:p-14 text-xs space-y-8">
-          <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8 text-center md:text-left">
-            <div className="space-y-2">
+      <footer className="mt-8 max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="rounded-t-[30px] bg-slate-950 text-white p-6 sm:p-8 text-xs space-y-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 text-center md:text-left">
+            <div className="space-y-1.5">
               <BrandLogo dark={true} />
               <p className="text-[11px] text-slate-400 max-w-xs">
                 Plataforma tecnológica de estacionamientos inteligentes de Ayacucho, Perú.
               </p>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-6 font-semibold text-slate-300 text-xs">
+            <div className="flex flex-wrap justify-center gap-5 font-semibold text-slate-300 text-xs">
               <button onClick={() => scrollTo('hero')} className="hover:text-lime-400 transition cursor-pointer">
                 Inicio
               </button>
@@ -999,7 +972,7 @@ export const LandingPage = ({
             </div>
           </div>
 
-          <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between text-slate-500 text-[11px] gap-3">
+          <div className="border-t border-slate-800 pt-4 flex flex-col sm:flex-row items-center justify-between text-slate-500 text-[10px] gap-2">
             <span>© {new Date().getFullYear()} Smart-Park. Todos los derechos reservados.</span>
             <span>Desarrollado para Huamanga, Ayacucho</span>
           </div>

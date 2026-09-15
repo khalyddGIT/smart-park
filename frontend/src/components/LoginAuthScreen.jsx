@@ -263,7 +263,7 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
 
       {/* Header / Brand */}
       <div className="relative z-10 pt-2 sm:pt-4 flex flex-col items-center text-center space-y-1 bg-transparent">
-        <BrandLogo className="h-10 sm:h-11 w-auto" />
+        <BrandLogo iconSize="w-9 h-9 sm:w-10 sm:h-10" />
         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium pt-1 bg-transparent">
           Gestión y Reserva de Estacionamientos
         </p>

@@ -951,7 +951,7 @@ export const LandingPage = ({
       <header className="sticky top-0 z-50 px-3 sm:px-6 lg:px-10 pt-2 sm:pt-3 pb-2 transition-all duration-300">
         <div className="max-w-6xl mx-auto bg-[#002624]/90 backdrop-blur-xl border border-[#005e58]/50 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgba(0,38,36,0.35)] flex items-center justify-between text-white relative">
 
-          <BrandLogo className="h-8 sm:h-9 w-auto" dark={true} />
+          <BrandLogo dark={true} />
 
           <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 text-xs font-semibold">
             <a href="#mapa" className="px-3.5 py-1.5 rounded-xl text-emerald-100/90 hover:text-white hover:bg-white/10 transition-all duration-200">
@@ -1512,7 +1512,7 @@ export const LandingPage = ({
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           
           <div className="space-y-2 flex flex-col items-center md:items-start">
-            <BrandLogo className="h-7 w-auto" dark={true} />
+            <BrandLogo dark={true} />
             <p className="text-[11px] text-emerald-200/80 max-w-sm">
               Ecosistema Inteligente de Estacionamientos de Ayacucho, Perú.
             </p>

@@ -270,7 +270,7 @@ export const LandingPage = ({
 
               <MagneticButton
                 onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 px-5 py-2.5 rounded-full text-xs font-bold shadow-md hover:bg-slate-800 dark:hover:bg-slate-100 transition cursor-pointer"
+                className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-bold shadow-md hover:bg-slate-800 dark:hover:bg-slate-100 transition cursor-pointer whitespace-nowrap"
               >
                 Afiliar Cochera
               </MagneticButton>
@@ -297,33 +297,44 @@ export const LandingPage = ({
               exit={{ opacity: 0, y: -10 }}
               className="md:hidden max-w-7xl mx-auto mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-2xl space-y-3"
             >
-              <div className="flex flex-col gap-2.5 text-sm font-semibold">
-                <button onClick={() => scrollTo('hero')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex flex-col gap-2.5 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                <button onClick={() => { setMobileMenuOpen(false); scrollTo('hero'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Inicio
                 </button>
-                <button onClick={() => scrollTo('mapa')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
+                <button onClick={() => { setMobileMenuOpen(false); scrollTo('mapa'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Mapa en Vivo
                 </button>
-                <button onClick={() => scrollTo('beneficios')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
+                <button onClick={() => { setMobileMenuOpen(false); scrollTo('beneficios'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Ventajas
                 </button>
-                <button onClick={() => scrollTo('tecnologia')} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
+                <button onClick={() => { setMobileMenuOpen(false); scrollTo('tecnologia'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Tecnología
                 </button>
-                <button onClick={() => scrollTo('faq')} className="text-left py-1.5">
+                <button onClick={() => { setMobileMenuOpen(false); scrollTo('faq'); }} className="text-left py-1.5">
                   Preguntas Frecuentes
                 </button>
               </div>
-              <div className="pt-1 flex flex-col gap-2">
+              <div className="pt-2 flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     onOpenAuth && onOpenAuth('login');
                   }}
-                  className="w-full py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold"
+                  className="w-full py-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-2"
                 >
+                  <LogIn className="w-3.5 h-3.5" />
                   Iniciar Sesión
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenAuth && onOpenAuth('affiliation');
+                  }}
+                  className="w-full py-2.5 rounded-full bg-emerald-600 text-white text-xs font-bold shadow-md hover:bg-emerald-700 transition"
+                >
+                  Afiliar mi Cochera
                 </button>
               </div>
             </motion.div>
@@ -332,10 +343,10 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO ISLAND (EXPANSIVO, SLEEK DARK MODE)
+          2. HERO ISLAND (EXPANSIVO, RESPONSIVE & SLEEK DARK MODE)
           ========================================================================= */}
       <main id="hero" className="pt-24 sm:pt-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <div className="relative rounded-[32px] sm:rounded-[40px] overflow-hidden bg-gradient-to-br from-[#E2F952] via-[#D5F83C] to-[#BAEF2E] dark:from-[#0B1324] dark:via-[#080D1A] dark:to-[#050811] dark:border dark:border-emerald-500/20 text-slate-950 dark:text-white p-7 sm:p-12 lg:p-14 shadow-2xl transition-all">
+        <div className="relative rounded-[28px] sm:rounded-[40px] overflow-hidden bg-gradient-to-br from-[#E2F952] via-[#D5F83C] to-[#BAEF2E] dark:from-[#0B1324] dark:via-[#080D1A] dark:to-[#050811] dark:border dark:border-emerald-500/20 text-slate-950 dark:text-white p-5 sm:p-8 md:p-10 lg:p-14 shadow-2xl transition-all">
           
           {/* Malla decorativa de fondo y resplandor radial */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.45),transparent_55%)] dark:bg-[radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.18),transparent_60%)] pointer-events-none" />
@@ -386,58 +397,58 @@ export const LandingPage = ({
             </div>
 
             {/* Columna Derecha: Mockups 3D Superpuestos Expansivos */}
-            <div className="lg:col-span-5 relative flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-[340px] sm:max-w-[400px] lg:max-w-[440px] h-[390px] sm:h-[430px] lg:h-[460px]">
+            <div className="lg:col-span-5 relative flex justify-center lg:justify-end mt-4 lg:mt-0">
+              <div className="relative w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[420px] h-[340px] sm:h-[390px] lg:h-[440px]">
                 
                 {/* Teléfono 1: Fondo Oscuro Tilted (Plano CAD 2D & LPR) */}
                 <motion.div
                   initial={{ y: 15, opacity: 0, rotate: 5 }}
                   animate={{ y: 0, opacity: 1, rotate: 5 }}
                   transition={{ duration: 0.7, ease: FLUID_EASE }}
-                  className="absolute right-0 top-4 w-[220px] sm:w-[250px] lg:w-[270px] bg-slate-950 rounded-[32px] p-3 shadow-2xl border-4 border-slate-800 text-white z-10"
+                  className="absolute right-0 top-3 sm:top-4 w-[195px] sm:w-[230px] lg:w-[260px] bg-slate-950 rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3 shadow-2xl border-4 border-slate-800 text-white z-10"
                 >
-                  <div className="w-16 h-3 bg-slate-800 rounded-full mx-auto mb-2.5" />
+                  <div className="w-14 sm:w-16 h-2.5 sm:h-3 bg-slate-800 rounded-full mx-auto mb-2 sm:mb-2.5" />
                   
-                  <div className="space-y-2.5 text-left">
+                  <div className="space-y-2 sm:space-y-2.5 text-left">
                     <div className="flex items-center justify-between px-1">
-                      <span className="text-[9px] font-bold text-slate-400">PLANO 2D EN VIVO</span>
-                      <span className="text-[8px] font-bold text-emerald-400">15 Libres</span>
+                      <span className="text-[8px] sm:text-[9px] font-bold text-slate-400">PLANO 2D EN VIVO</span>
+                      <span className="text-[7px] sm:text-[8px] font-bold text-emerald-400">15 Libres</span>
                     </div>
 
                     {/* Plazas */}
-                    <div className="grid grid-cols-3 gap-1 bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+                    <div className="grid grid-cols-3 gap-1 bg-slate-900/90 p-1.5 sm:p-2 rounded-xl border border-slate-800">
                       <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[8px] font-bold text-emerald-400">A-01</span>
+                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-400">A-01</span>
                       </div>
                       <div className="bg-red-500/20 border border-red-500/50 rounded p-1 text-center">
-                        <span className="text-[8px] font-bold text-red-400">A-02</span>
+                        <span className="text-[7px] sm:text-[8px] font-bold text-red-400">A-02</span>
                       </div>
                       <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[8px] font-bold text-emerald-400">A-03</span>
+                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-400">A-03</span>
                       </div>
                       <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[8px] font-bold text-emerald-400">B-01</span>
+                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-400">B-01</span>
                       </div>
                       <div className="bg-red-500/20 border border-red-500/50 rounded p-1 text-center">
-                        <span className="text-[8px] font-bold text-red-400">B-02</span>
+                        <span className="text-[7px] sm:text-[8px] font-bold text-red-400">B-02</span>
                       </div>
                       <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[8px] font-bold text-emerald-400">B-03</span>
+                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-400">B-03</span>
                       </div>
                     </div>
 
                     {/* LPR */}
-                    <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
-                      <div className="flex items-center gap-1 text-[9px] text-lime-400 font-bold">
+                    <div className="p-1.5 sm:p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
+                      <div className="flex items-center gap-1 text-[8px] sm:text-[9px] text-lime-400 font-bold">
                         <Camera className="w-2.5 h-2.5" />
                         LPR-IA Detectado
                       </div>
-                      <div className="text-[10px] font-mono font-black text-slate-100 bg-slate-800 px-1.5 py-0.5 rounded text-center">
+                      <div className="text-[9px] sm:text-[10px] font-mono font-black text-slate-100 bg-slate-800 px-1.5 py-0.5 rounded text-center">
                         ABC-123 · Auto
                       </div>
                     </div>
 
-                    <div className="text-[8px] text-center text-slate-400">
+                    <div className="text-[7px] sm:text-[8px] text-center text-slate-400">
                       Barrera automática desbloqueada
                     </div>
                   </div>
@@ -448,7 +459,7 @@ export const LandingPage = ({
                   initial={{ y: 30, opacity: 0, rotate: -2 }}
                   animate={{ y: 0, opacity: 1, rotate: -2 }}
                   transition={{ duration: 0.7, delay: 0.1, ease: FLUID_EASE }}
-                  className="absolute left-0 top-0 w-[230px] sm:w-[260px] lg:w-[280px] bg-white dark:bg-slate-900/95 dark:backdrop-blur-md text-slate-900 dark:text-white rounded-[32px] p-3.5 shadow-2xl border-4 border-slate-900/10 dark:border-slate-700/80 z-20 text-left transition-colors"
+                  className="absolute left-0 top-0 w-[205px] sm:w-[245px] lg:w-[275px] bg-white dark:bg-slate-900/95 dark:backdrop-blur-md text-slate-900 dark:text-white rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3.5 shadow-2xl border-4 border-slate-900/10 dark:border-slate-700/80 z-20 text-left transition-colors"
                 >
                   <div className="w-20 h-3 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-2.5" />
                   
@@ -705,7 +716,7 @@ export const LandingPage = ({
         <h3 className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-3">
           Ecosistema Conectado a los Principales Medios del Perú
         </h3>
-        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 lg:gap-14 text-slate-400 dark:text-slate-500 font-bold text-xs sm:text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3.5 sm:gap-10 lg:gap-14 text-slate-400 dark:text-slate-500 font-bold text-xs sm:text-sm">
           <span className="hover:text-emerald-500 transition cursor-default">Yape</span>
           <span className="hover:text-emerald-500 transition cursor-default">Plin</span>
           <span className="hover:text-emerald-500 transition cursor-default">Visa</span>
@@ -721,7 +732,7 @@ export const LandingPage = ({
           7. SECCIÓN 6: CONTRAST DARK ISLAND BANNER (LIMPIO & EXPANSIVO)
           ========================================================================= */}
       <ScrollRevealSection className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <div className="relative rounded-[32px] sm:rounded-[40px] bg-gradient-to-br from-[#0B1324] via-[#070B14] to-[#04060A] text-white p-8 sm:p-12 lg:p-14 overflow-hidden border border-slate-800 dark:border-emerald-500/20 text-left shadow-2xl">
+        <div className="relative rounded-[28px] sm:rounded-[40px] bg-gradient-to-br from-[#0B1324] via-[#070B14] to-[#04060A] text-white p-6 sm:p-10 lg:p-14 overflow-hidden border border-slate-800 dark:border-emerald-500/20 text-left shadow-2xl">
           <div className="absolute -right-16 -top-16 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
           

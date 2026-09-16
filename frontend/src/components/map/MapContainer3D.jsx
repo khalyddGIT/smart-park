@@ -430,7 +430,7 @@ export const MapContainer3D = ({
   }, [filteredParkings, selectedParkingId, onSelectParking]);
 
   return (
-    <div className="relative isolate z-0 w-full h-[520px] sm:h-[600px] lg:h-[660px] bg-slate-100 dark:bg-slate-950 overflow-hidden rounded-xl">
+    <div className="relative isolate z-0 w-full h-[400px] sm:h-[500px] md:h-[580px] lg:h-[660px] bg-slate-100 dark:bg-slate-950 overflow-hidden rounded-xl">
       
       {/* Lienzo Normal Mapbox */}
       <div ref={mapContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />

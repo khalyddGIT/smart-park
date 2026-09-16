@@ -355,20 +355,20 @@ export const LandingPage = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center relative z-10">
             
             {/* Columna Izquierda: Copywriting y CTA */}
-            <div className="lg:col-span-7 space-y-5 text-left">
+            <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
               
               {/* Titular Principal de Impacto */}
               <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-6xl font-black tracking-tight leading-[1.08]">
-                Estaciona al instante <span className="inline-block text-emerald-700 dark:text-lime-400">✦</span> en la ciudad
+                Estaciona al instante en la ciudad
               </h1>
 
               {/* Subtítulo Conciso */}
-              <p className="text-xs sm:text-base text-slate-800 dark:text-slate-300 max-w-lg leading-relaxed font-medium">
+              <p className="text-xs sm:text-base text-slate-800 dark:text-slate-300 max-w-lg leading-relaxed font-medium mx-auto lg:mx-0">
                 Encuentra plaza en tiempo real, ingresa con lectura automática de placa o código QR, y paga la tarifa exacta al minuto mediante Yape, Plin o tarjetas.
               </p>
 
               {/* Botones de Acción Primarios */}
-              <div className="pt-2 flex flex-wrap items-center gap-3.5">
+              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3.5">
                 <MagneticButton
                   onClick={() => scrollTo('mapa')}
                   className="bg-slate-950 dark:bg-lime-400 text-white dark:text-slate-950 px-7 py-3 rounded-full text-xs sm:text-sm font-black shadow-xl hover:scale-105 transition cursor-pointer flex items-center gap-2"

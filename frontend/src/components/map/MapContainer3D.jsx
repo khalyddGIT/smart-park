@@ -435,52 +435,54 @@ export const MapContainer3D = ({
       {/* Lienzo Normal Mapbox */}
       <div ref={mapContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
-      {/* Controles de Mapa Normal (Capas, Recentrar, Zoom) */}
-      <div className="absolute top-4 right-4 z-20 pointer-events-auto flex items-center space-x-2">
-        {/* Selector de Capas Normal (Calles / Satélite) */}
-        <div className="flex items-center space-x-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-white text-xs shadow-2xl">
+      {/* Controles de Mapa Flotantes Minimalistas (Cápsula Unificada) */}
+      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-auto flex items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-lg shadow-slate-900/5 text-xs">
+        {/* Selector de Capas (Calles / Satélite) */}
+        <div className="flex items-center p-0.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-xl">
           <button
             type="button"
             onClick={() => handleChangeLayer('streets')}
-            className={`px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
               mapLayer === 'streets'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
-            <Map className="w-3.5 h-3.5" />
+            <Map className="w-3.5 h-3.5 text-emerald-600 dark:text-lime-400" />
             <span>Calles</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleChangeLayer('satellite')}
-            className={`px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
               mapLayer === 'satellite'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
+            <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-lime-400" />
             <span>Satélite</span>
           </button>
         </div>
 
+        {/* Separador sutil */}
+        <div className="w-px h-4 bg-slate-200 dark:bg-slate-800 mx-1.5" />
+
         {/* Botones de Navegación Zoom y Recentrar */}
-        <div className="flex items-center space-x-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-white shadow-2xl">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={handleRecenter}
-            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
             title="Centrar en Plaza Mayor"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
-          <div className="w-[1px] h-4 bg-slate-800" />
           <button
             type="button"
             onClick={handleZoomIn}
-            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
             title="Acercar"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -488,7 +490,7 @@ export const MapContainer3D = ({
           <button
             type="button"
             onClick={handleZoomOut}
-            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
             title="Alejar"
           >
             <Minus className="w-3.5 h-3.5" />

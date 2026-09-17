@@ -1006,8 +1006,8 @@ export const LandingPage = ({
           {/* Resplandor superior sutil */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-28 bg-emerald-500/10 blur-3xl pointer-events-none -z-0" />
 
-          {/* Bloque Central: Logo, Descripción y Badge */}
-          <div className="relative z-10 flex flex-col items-center justify-center text-center space-y-3">
+          {/* Bloque Central: Logo y Descripción sin badges */}
+          <div className="relative z-10 flex flex-col items-center justify-center text-center space-y-2.5">
             <button
               type="button"
               onClick={() => scrollTo('hero')}
@@ -1020,11 +1020,6 @@ export const LandingPage = ({
             <p className="text-xs sm:text-sm text-slate-400 max-w-md leading-relaxed">
               Plataforma tecnológica de estacionamientos inteligentes de Ayacucho, Perú.
             </p>
-
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 text-[11px] font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Huamanga &bull; Operativo 24/7</span>
-            </div>
           </div>
 
           {/* Navegación Centrada */}
@@ -1069,10 +1064,7 @@ export const LandingPage = ({
           {/* Barra Inferior: Derechos y Ubicación */}
           <div className="relative z-10 border-t border-slate-800/90 pt-6 flex flex-col sm:flex-row items-center justify-between text-slate-500 text-xs gap-3 text-center sm:text-left">
             <span>© {new Date().getFullYear()} Smart-Park. Todos los derechos reservados.</span>
-            <span className="flex items-center gap-1.5 text-slate-400">
-              <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              Desarrollado para Huamanga, Ayacucho
-            </span>
+            <span>Desarrollado para Huamanga, Ayacucho</span>
           </div>
         </div>
       </footer>

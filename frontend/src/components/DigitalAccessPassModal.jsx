@@ -24,7 +24,6 @@ import {
   QrCode,
   Sparkles,
   Download,
-  Navigation,
   Crown,
   Calendar,
   Zap
@@ -358,15 +357,6 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       ? `${passData.latitude},${passData.longitude}`
       : encodeURIComponent(`${passData.parkingName} ${passData.parkingAddress || ''} Ayacucho Peru`);
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
-  };
-
-  const openWaze = () => {
-    if (passData.latitude && passData.longitude) {
-      window.open(`https://waze.com/ul?ll=${passData.latitude},${passData.longitude}&navigate=yes`, '_blank');
-    } else {
-      const q = encodeURIComponent(`${passData.parkingName} Ayacucho Peru`);
-      window.open(`https://waze.com/ul?q=${q}&navigate=yes`, '_blank');
-    }
   };
 
   // Descarga del Pase QR offline en PNG para mostrarlo sin conexión en garita
@@ -965,26 +955,16 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
             </Button>
           )}
 
-          {/* Navegación GPS Directa con 1 Toque: Google Maps y Waze */}
+          {/* Navegación GPS Directa con 1 Toque: Google Maps */}
           {!isCancelled && !isCompleted && (
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={openGoogleMaps}
-                className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs group"
-              >
-                <Compass className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
-                <span>Google Maps</span>
-              </button>
-              <button
-                type="button"
-                onClick={openWaze}
-                className="py-2.5 px-3 rounded-xl border border-sky-200 dark:border-sky-800/80 bg-sky-50/80 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-800 dark:text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs group"
-              >
-                <Navigation className="w-4 h-4 text-sky-600 dark:text-sky-400 group-hover:scale-110 transition-transform" />
-                <span>Waze</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={openGoogleMaps}
+              className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs group"
+            >
+              <Compass className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+              <span>Abrir navegación en Google Maps</span>
+            </button>
           )}
 
           {/* Acciones Secundarias con Descarga Offline PNG */}

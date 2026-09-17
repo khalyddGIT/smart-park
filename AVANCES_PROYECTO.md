@@ -98,7 +98,7 @@ Se resolvieron las fallas donde una reserva cancelada permitía ver un pase acti
   - El QR escaneable se reemplaza por un cuadro de **Pase Inhabilitado** con icono `XCircle` rojo y marca de agua `RESERVA_CANCELADA_SIN_VALIDEZ`.
   - Se removió el texto que invitaba a escanear en el tótem.
   - El botón de copiar token se desactiva con la etiqueta `Token Anulado`.
-  - Se ocultan las opciones de navegación GPS (Google Maps / Waze).
+  - Se ocultan las opciones de navegación GPS (Google Maps).
 - **Importe en Cero**:
   - Muestra claramente `Importe de reserva: S/ 0.00 (Anulada sin costo)`.
 - **Botones Inteligentes en Tarjetas**:

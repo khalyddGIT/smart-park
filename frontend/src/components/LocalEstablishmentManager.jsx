@@ -2558,7 +2558,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
                   <div className="border-b border-slate-100 pb-3">
                     <h3 className="text-sm font-bold text-slate-900">Ubicación Satelital & Coordenadas GPS</h3>
-                    <p className="text-xs text-slate-500 font-medium">Ubica la sede con precisión para que los conductores la encuentren en Waze y Google Maps.</p>
+                    <p className="text-xs text-slate-500 font-medium">Ubica la sede con precisión para que los conductores la encuentren en Google Maps.</p>
                   </div>
 
                   {/* Dirección Exacta y Referencia */}

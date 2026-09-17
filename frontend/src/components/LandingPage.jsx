@@ -813,7 +813,7 @@ export const LandingPage = ({
                 Mantén el pulso de tu estadía y tarifa en tiempo real
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 max-w-lg leading-relaxed">
-                Recibe notificaciones antes de que finalice tu tiempo, extiende tu reserva o abre navegación en Waze o Google Maps.
+                Recibe notificaciones antes de que finalice tu tiempo, extiende tu reserva o abre navegación en Google Maps.
               </p>
               <div className="pt-2">
                 <button

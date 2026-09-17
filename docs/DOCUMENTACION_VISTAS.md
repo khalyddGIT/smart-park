@@ -223,7 +223,7 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
    - Galería de presets arquitectónicos de alta calidad.
 
 4. **4. Contacto & Redes Sociales:**
-   - Teléfono de atención, número de WhatsApp para reservas, correo electrónico y enlace de Google Maps / Waze.
+   - Teléfono de atención, número de WhatsApp para reservas, correo electrónico y enlace de Google Maps.
    - Botones interactivos `[ Probar enlace ]` que abren chats reales de WhatsApp o páginas web en nuevas pestañas.
 
 #### 📸 Capturas de Edición de Sede y Selector GPS:

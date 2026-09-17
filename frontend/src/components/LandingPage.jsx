@@ -999,44 +999,80 @@ export const LandingPage = ({
       </ScrollRevealSection>
 
       {/* =========================================================================
-          10. FOOTER NEGRO REDONDEADO COMPACTO & EXPANSIVO
+          10. FOOTER NEGRO REDONDEADO CENTRADO & ELEGANTE
           ========================================================================= */}
-      <footer className="mt-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="rounded-t-[32px] sm:rounded-t-[40px] bg-slate-950 text-white p-8 sm:p-12 text-xs space-y-8 border-t border-x border-slate-800/80">
-          <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 text-center md:text-left">
-            <div className="space-y-2">
-              <BrandLogo dark={true} />
-              <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-                Plataforma tecnológica de estacionamientos inteligentes de Ayacucho, Perú.
-              </p>
-            </div>
+      <footer className="mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="relative rounded-t-[32px] sm:rounded-t-[44px] bg-slate-950 text-white p-8 sm:p-12 text-xs border-t border-x border-slate-800/80 overflow-hidden space-y-8">
+          {/* Resplandor superior sutil */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-28 bg-emerald-500/10 blur-3xl pointer-events-none -z-0" />
 
-            <div className="flex flex-wrap justify-center gap-6 font-semibold text-slate-300 text-xs sm:text-sm">
-              <button onClick={() => scrollTo('hero')} className="hover:text-lime-400 transition cursor-pointer">
-                Inicio
-              </button>
-              <button onClick={() => scrollTo('mapa')} className="hover:text-lime-400 transition cursor-pointer">
-                Mapa en Vivo
-              </button>
-              <button onClick={() => scrollTo('beneficios')} className="hover:text-lime-400 transition cursor-pointer">
-                Ventajas
-              </button>
-              <button onClick={() => scrollTo('tecnologia')} className="hover:text-lime-400 transition cursor-pointer">
-                Tecnología
-              </button>
-              <button
-                type="button"
-                onClick={() => onOpenTerms && onOpenTerms()}
-                className="hover:text-lime-400 transition cursor-pointer"
-              >
-                Términos y Condiciones
-              </button>
+          {/* Bloque Central: Logo, Descripción y Badge */}
+          <div className="relative z-10 flex flex-col items-center justify-center text-center space-y-3">
+            <button
+              type="button"
+              onClick={() => scrollTo('hero')}
+              className="inline-flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer focus:outline-none"
+              title="Ir al inicio"
+            >
+              <BrandLogo dark={true} iconSize="w-9 h-9 sm:w-10 sm:h-10" textClassName="text-2xl sm:text-3xl" />
+            </button>
+
+            <p className="text-xs sm:text-sm text-slate-400 max-w-md leading-relaxed">
+              Plataforma tecnológica de estacionamientos inteligentes de Ayacucho, Perú.
+            </p>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 text-[11px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Huamanga &bull; Operativo 24/7</span>
             </div>
           </div>
 
-          <div className="border-t border-slate-800 pt-5 flex flex-col sm:flex-row items-center justify-between text-slate-500 text-xs gap-2">
+          {/* Navegación Centrada */}
+          <nav aria-label="Footer Navigation" className="relative z-10 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-slate-300 font-semibold text-xs sm:text-sm">
+            <button
+              type="button"
+              onClick={() => scrollTo('hero')}
+              className="px-3.5 py-1.5 rounded-xl hover:bg-slate-900 hover:text-emerald-400 transition-all cursor-pointer"
+            >
+              Inicio
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollTo('mapa')}
+              className="px-3.5 py-1.5 rounded-xl hover:bg-slate-900 hover:text-emerald-400 transition-all cursor-pointer"
+            >
+              Mapa en Vivo
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollTo('beneficios')}
+              className="px-3.5 py-1.5 rounded-xl hover:bg-slate-900 hover:text-emerald-400 transition-all cursor-pointer"
+            >
+              Ventajas
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollTo('tecnologia')}
+              className="px-3.5 py-1.5 rounded-xl hover:bg-slate-900 hover:text-emerald-400 transition-all cursor-pointer"
+            >
+              Tecnología
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenTerms && onOpenTerms()}
+              className="px-3.5 py-1.5 rounded-xl hover:bg-slate-900 hover:text-emerald-400 transition-all cursor-pointer"
+            >
+              Términos y Condiciones
+            </button>
+          </nav>
+
+          {/* Barra Inferior: Derechos y Ubicación */}
+          <div className="relative z-10 border-t border-slate-800/90 pt-6 flex flex-col sm:flex-row items-center justify-between text-slate-500 text-xs gap-3 text-center sm:text-left">
             <span>© {new Date().getFullYear()} Smart-Park. Todos los derechos reservados.</span>
-            <span>Desarrollado para Huamanga, Ayacucho</span>
+            <span className="flex items-center gap-1.5 text-slate-400">
+              <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              Desarrollado para Huamanga, Ayacucho
+            </span>
           </div>
         </div>
       </footer>

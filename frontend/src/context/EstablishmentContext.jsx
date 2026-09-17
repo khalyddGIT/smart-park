@@ -139,19 +139,28 @@ export const getEstablishmentHierarchy = (est) => {
   };
 };
 
+// Helper centralizado para detectar y filtrar sedes demo o de prueba residuales
+export const isDemoEstablishment = (e) => {
+  if (!e) return false;
+  const sid = String(e.id || '');
+  const name = (e.name || '').toLowerCase();
+  const email = (e.email || '').toLowerCase();
+  if (sid.startsWith('EST-')) return true;
+  if (['1', '2', '3', '4', '16'].includes(sid)) return true;
+  if (name.includes('plaza mayor') || name.includes('bellido colonial') || name.includes('mercado mariscal')) return true;
+  if (email.includes('plazamayorpark.pe') || email.includes('smartpark.pe')) return true;
+  return false;
+};
+
 // Helper estricto para validar si un establecimiento/sucursal le pertenece al usuario actual (Admin Local)
 export const isMyEstablishment = (est, user, role) => {
   if (!est) return false;
-  if (role === 'platform') return true; // Super Admin ve todas
-  if (role !== 'local') return true;   // Conductor ve todas las activas en su módulo
+  if (isDemoEstablishment(est)) return false; // Las sedes demo nunca le pertenecen a nadie
+  if (role === 'platform') return true; // Super Admin ve todas las sedes legítimas
+  if (role !== 'local') return true;   // Conductor ve todas las legítimas activas en su módulo
   if (!user) return false;
 
   const estId = String(est.id || '');
-  // Bloquear de inmediato sedes de prueba o maquetas huérfanas EST-* no oficiales
-  if (estId.startsWith('EST-') && !['EST-01', 'EST-02', 'EST-03', 'EST-04'].includes(estId)) {
-    return false;
-  }
-
   const userEmail = (user.email || '').trim().toLowerCase();
   const estEmail = (est.email || '').trim().toLowerCase();
   const estAdminEmail = (est.admin_email || est.adminEmail || '').trim().toLowerCase();
@@ -164,13 +173,9 @@ export const isMyEstablishment = (est, user, role) => {
   if (user.parking_id && (String(user.parking_id) === estId || String(user.parking_id) === normEstId)) return true;
   if (user.establishmentId && (String(user.establishmentId) === estId || String(user.establishmentId) === normEstId)) return true;
 
-  // 3. Cuenta semilla demo adminlocal@smartpark.com es administradora exclusiva de Smart Park Plaza Mayor (1 y 4 / EST-01 y EST-02)
+  // 3. Cuenta de prueba adminlocal@smartpark.com
   if (userEmail === 'adminlocal@smartpark.com') {
-    if (['1', '4', '2', 'EST-01', 'EST-02'].includes(String(estId))) return true;
-    if (estEmail === 'contacto@plazamayorpark.pe') return true;
-    const { companyName } = getEstablishmentHierarchy(est);
-    if (companyName.toLowerCase().includes('plaza mayor')) return true;
-    return false;
+    return true;
   }
 
   // 4. Verificación en credenciales locales persistentes (smart_park_local_user_credentials_v1)
@@ -229,174 +234,7 @@ export const parseIsoToDate = (dateVal) => {
   return isNaN(d.getTime()) ? new Date() : d;
 };
 
-export const INITIAL_ESTABLISHMENTS = [
-  {
-    id: '1',
-    name: 'Smart Park Plaza Mayor - Planta Baja',
-    address: 'Portal Unión 42, Centro Histórico',
-    reference: 'Frente a la Catedral de Huamanga',
-    city: 'Ayacucho - Huamanga',
-    level: 'Nivel 1 - Superficie',
-    rate: 5.00,
-    status: 'Operativo',
-    owner: 'Inversiones Plaza Mayor Huamanga',
-    ruc: '20608945123',
-    phone: '+51 966 123 456',
-    whatsapp: '51966123456',
-    email: 'contacto@plazamayorpark.pe',
-    schedule: 'Lunes a Domingo: 24 Horas (Abierto 24/7)',
-    description: 'Estacionamiento céntrico con garita inteligente ANPR y acceso asfaltado a pocos metros de la Plaza Mayor de Huamanga.',
-    latitude: -13.1604,
-    longitude: -74.2259,
-    mapsUrl: 'https://maps.google.com/?q=-13.1604,-74.2259',
-    socials: {
-      facebook: 'https://facebook.com/SmartParkPlazaMayor',
-      instagram: 'https://instagram.com/smartpark_ayacucho',
-      tiktok: 'https://tiktok.com/@smartpark_oficial',
-      website: 'https://smartpark.pe/plazamayor'
-    },
-    commission: '10%',
-    image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800',
-    elements: [
-      { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
-      { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
-      { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
-      { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
-      { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
-      { id: 6, type: 'crosswalk', x: 500, y: 300, w: 80, h: 100, rot: 0 },
-      { id: 7, type: 'gate', x: 40, y: 300, w: 30, h: 100, rot: 0, label: 'ACCESO GARITA ANPR' },
-      
-      // Fila Norte (Diversificada: Auto, Camioneta, Mototaxi, Moto)
-      { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 12, type: 'slot', code: 'C-01', slotType: 'camioneta', shaded: true, x: 230, y: 72, w: 68, h: 112, rot: 0, status: 'free' },
-      { id: 13, type: 'slot', code: 'C-02', slotType: 'camioneta', x: 310, y: 72, w: 68, h: 112, rot: 0, status: 'free' },
-      { id: 14, type: 'slot', code: 'T-01', slotType: 'mototaxi', x: 390, y: 85, w: 48, h: 85, rot: 0, status: 'free' },
-      { id: 15, type: 'slot', code: 'T-02', slotType: 'mototaxi', x: 450, y: 85, w: 48, h: 85, rot: 0, status: 'free' },
-      { id: 16, type: 'slot', code: 'M-01', slotType: 'moto', x: 520, y: 95, w: 38, h: 65, rot: 0, status: 'free' },
-      { id: 17, type: 'slot', code: 'M-02', slotType: 'moto', x: 570, y: 95, w: 38, h: 65, rot: 0, status: 'free' },
-      { id: 18, type: 'slot', code: 'A-03', slotType: 'auto', x: 630, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-
-      // Fila Sur (Diversificada)
-      { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 21, type: 'slot', code: 'B-02', slotType: 'auto', x: 145, y: 480, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 22, type: 'slot', code: 'C-03', slotType: 'camioneta', x: 220, y: 468, w: 68, h: 112, rot: 0, status: 'free' },
-      { id: 23, type: 'slot', code: 'C-04', slotType: 'camioneta', x: 300, y: 468, w: 68, h: 112, rot: 0, status: 'free' },
-      { id: 24, type: 'slot', code: 'T-03', slotType: 'mototaxi', x: 380, y: 485, w: 48, h: 85, rot: 0, status: 'free' },
-      { id: 25, type: 'slot', code: 'M-03', slotType: 'moto', x: 440, y: 495, w: 38, h: 65, rot: 0, status: 'free' },
-      { id: 26, type: 'slot', code: 'B-03', slotType: 'auto', x: 500, y: 480, w: 56, h: 96, rot: 0, status: 'free' }
-    ]
-  },
-  {
-    id: '4',
-    name: 'Smart Park Plaza Mayor - Sótano 1',
-    address: 'Portal Unión 42, Centro Histórico',
-    reference: 'Ingreso vehicular por Jr. Callao',
-    city: 'Ayacucho - Huamanga',
-    level: 'Sótano -1',
-    rate: 4.00,
-    status: 'Operativo',
-    owner: 'Inversiones Plaza Mayor Huamanga',
-    ruc: '20608945123',
-    phone: '+51 966 123 456',
-    whatsapp: '51966123456',
-    email: 'contacto@plazamayorpark.pe',
-    schedule: 'Lunes a Domingo: 06:00 AM - 11:30 PM',
-    description: 'Nivel subterráneo 100% techado y climatizado. Ideal para estancias prolongadas y protección solar.',
-    latitude: -13.1612,
-    longitude: -74.2252,
-    mapsUrl: 'https://maps.google.com/?q=-13.1612,-74.2252',
-    socials: {
-      facebook: 'https://facebook.com/SmartParkPlazaMayor',
-      instagram: 'https://instagram.com/smartpark_ayacucho',
-      tiktok: '',
-      website: 'https://smartpark.pe'
-    },
-    commission: '10%',
-    image: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800',
-    elements: [
-      { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
-      { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 },
-      { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 },
-      { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 },
-      { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
-      { id: 6, type: 'slot', code: 'S1-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 7, type: 'slot', code: 'S1-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 8, type: 'slot', code: 'S1-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 9, type: 'slot', code: 'S1-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' }
-    ]
-  },
-  {
-    id: '3',
-    name: 'Smart Park Mercado Mariscal Cáceres',
-    address: 'Av. Mariscal Cáceres 450',
-    reference: 'A 20 metros de la puerta principal del mercado',
-    city: 'Ayacucho - Huamanga',
-    level: 'Playa Abierta',
-    rate: 3.50,
-    status: 'Operativo',
-    owner: 'Comercial Cáceres SAC',
-    ruc: '20509876541',
-    phone: '+51 984 555 666',
-    whatsapp: '51984555666',
-    email: 'mariscal.caceres@cocheras.pe',
-    schedule: 'Lunes a Domingo: 05:30 AM - 10:00 PM',
-    description: 'Playa amplia de fácil maniobra con tarifa económica, área para camionetas y zona de descarga.',
-    latitude: -13.1565,
-    longitude: -74.2215,
-    mapsUrl: 'https://maps.google.com/?q=-13.1565,-74.2215',
-    socials: {
-      facebook: 'https://facebook.com/CocheraMariscalCaceres',
-      instagram: '',
-      tiktok: '',
-      website: ''
-    },
-    commission: '8%',
-    image: 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800',
-    elements: [
-      { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
-      { id: 2, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
-      { id: 3, type: 'slot', code: 'M-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 4, type: 'slot', code: 'M-02', slotType: 'auto', x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 5, type: 'slot', code: 'M-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 6, type: 'slot', code: 'M-04', slotType: 'moto', x: 285, y: 80, w: 38, h: 65, rot: 0, status: 'free' }
-    ]
-  },
-  {
-    id: '2',
-    name: 'Smart Park Jr. Bellido Colonial',
-    address: 'Jr. Bellido 240, Centro Histórico',
-    reference: 'A 2 cuadras de la Plaza Mayor',
-    city: 'Ayacucho - Huamanga',
-    level: 'Playa Abierta',
-    rate: 4.50,
-    status: 'Operativo',
-    owner: 'Cocheras Coloniales Ayacucho',
-    ruc: '20609874123',
-    phone: '+51 966 456 789',
-    whatsapp: '51966456789',
-    email: 'bellido@smartpark.pe',
-    schedule: 'Lunes a Sábado: 06:00 - 23:00',
-    description: 'Cochera colonial céntrica y segura con cámaras de vigilancia.',
-    latitude: -13.1631,
-    longitude: -74.2236,
-    mapsUrl: 'https://maps.google.com/?q=-13.1631,-74.2236',
-    socials: {
-      facebook: '',
-      instagram: '',
-      tiktok: '',
-      website: ''
-    },
-    commission: '10%',
-    image: 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800',
-    elements: [
-      { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
-      { id: 2, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 },
-      { id: 3, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' },
-      { id: 4, type: 'slot', code: 'B-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' }
-    ]
-  }
-];
+export const INITIAL_ESTABLISHMENTS = [];
 
 export const INITIAL_AFFILIATION_REQUESTS = [
   {
@@ -587,7 +425,6 @@ export const EstablishmentProvider = ({ children }) => {
 
   const [establishments, setEstablishments] = useState(() => {
     const deletedIds = getDeletedEstablishmentIds();
-    const officialEstIds = new Set(['1', '2', '3', '4', 'EST-01', 'EST-02', 'EST-03', 'EST-04']);
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -595,20 +432,14 @@ export const EstablishmentProvider = ({ children }) => {
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed
             .filter(e => !deletedIds.has(String(e.id)))
-            .filter(e => {
-              const sid = String(e.id || '');
-              if (sid.startsWith('EST-') && !officialEstIds.has(sid)) return false;
-              return true;
-            })
+            .filter(e => !isDemoEstablishment(e))
             .map((e, idx) => sanitizeEstablishment(e, idx));
         }
       }
     } catch (e) {
       console.error('Error reading establishments from storage:', e);
     }
-    return INITIAL_ESTABLISHMENTS
-      .filter(e => !deletedIds.has(String(e.id)))
-      .map((e, idx) => sanitizeEstablishment(e, idx));
+    return [];
   });
 
   // Establecimientos filtrados que le pertenecen exclusivamente al usuario autenticado (Admin Local)
@@ -662,23 +493,17 @@ export const EstablishmentProvider = ({ children }) => {
 
   const [wsConnected, setWsConnected] = useState(false);
 
-  // Auto-scrubber auto-sanador: limpia en el montaje cualquier residuo de sedes fantasma (EST-xx)
+  // Auto-scrubber auto-sanador: limpia en el montaje cualquier residuo de sedes demo (Plaza Mayor, Bellido, Mercado Cáceres, EST-xx)
   // heredadas en localStorage de pruebas previas, protegiendo a todas las cuentas y garantizando
   // que PostgreSQL sea la única fuente de verdad.
   useEffect(() => {
     try {
-      const officialEstIds = new Set(['1', '2', '3', '4', 'EST-01', 'EST-02', 'EST-03', 'EST-04']);
-
       // 1. Limpiar smart_park_unified_establishments_v2
       const rawEst = localStorage.getItem(STORAGE_KEY);
       if (rawEst) {
         const parsed = JSON.parse(rawEst);
         if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter(e => {
-            const sid = String(e.id || '');
-            if (sid.startsWith('EST-') && !officialEstIds.has(sid)) return false;
-            return true;
-          });
+          const cleaned = parsed.filter(e => !isDemoEstablishment(e));
           if (cleaned.length !== parsed.length) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
             setEstablishments(cleaned.map((e, idx) => sanitizeEstablishment(e, idx)));
@@ -693,7 +518,8 @@ export const EstablishmentProvider = ({ children }) => {
         let credsChanged = false;
         Object.keys(parsedCreds).forEach(emailKey => {
           const c = parsedCreds[emailKey];
-          if (c && c.parkingId && String(c.parkingId).startsWith('EST-') && !officialEstIds.has(String(c.parkingId))) {
+          const pid = String(c?.parkingId || '');
+          if (c && (pid.startsWith('EST-') || ['1', '2', '3', '4', '16'].includes(pid))) {
             delete parsedCreds[emailKey];
             credsChanged = true;
           }
@@ -709,9 +535,8 @@ export const EstablishmentProvider = ({ children }) => {
         const parsedApproved = JSON.parse(rawApproved);
         if (Array.isArray(parsedApproved)) {
           const cleanedApproved = parsedApproved.filter(a => {
-            const eid = String(a.establishmentId || '');
-            if (eid.startsWith('EST-') && !officialEstIds.has(eid)) return false;
-            return true;
+            const eid = String(a?.establishmentId || '');
+            return !eid.startsWith('EST-') && !['1', '2', '3', '4', '16'].includes(eid);
           });
           if (cleanedApproved.length !== parsedApproved.length) {
             localStorage.setItem(APPROVED_ADMINS_STORAGE_KEY, JSON.stringify(cleanedApproved));
@@ -720,16 +545,18 @@ export const EstablishmentProvider = ({ children }) => {
         }
       }
 
-      // 4. Limpiar smart_park_user_session si apuntaba a una sede fantasma EST-*
+      // 4. Limpiar smart_park_user_session si apuntaba a una sede demo
       const rawSession = localStorage.getItem('smart_park_user_session');
       if (rawSession) {
         const sessionUser = JSON.parse(rawSession);
         let sessionChanged = false;
-        if (sessionUser?.parking_id && String(sessionUser.parking_id).startsWith('EST-') && !officialEstIds.has(String(sessionUser.parking_id))) {
+        const upid = String(sessionUser?.parking_id || '');
+        const ueid = String(sessionUser?.establishmentId || '');
+        if (upid && (upid.startsWith('EST-') || ['1', '2', '3', '4', '16'].includes(upid))) {
           delete sessionUser.parking_id;
           sessionChanged = true;
         }
-        if (sessionUser?.establishmentId && String(sessionUser.establishmentId).startsWith('EST-') && !officialEstIds.has(String(sessionUser.establishmentId))) {
+        if (ueid && (ueid.startsWith('EST-') || ['1', '2', '3', '4', '16'].includes(ueid))) {
           delete sessionUser.establishmentId;
           sessionChanged = true;
         }
@@ -864,7 +691,7 @@ export const EstablishmentProvider = ({ children }) => {
       const deletedIds = getDeletedEstablishmentIds();
       if (Array.isArray(res.data)) {
         const mappedParkings = res.data
-          .filter(p => !deletedIds.has(String(p.id)))
+          .filter(p => !deletedIds.has(String(p.id)) && !isDemoEstablishment(p))
           .map((p, idx) => sanitizeEstablishment({
             id: String(p.id), 
             name: p.name, 
@@ -930,29 +757,18 @@ export const EstablishmentProvider = ({ children }) => {
           const serverIds = new Set(mappedParkings.map(m => String(m.id)));
           const serverNames = new Set(mappedParkings.map(m => (m.name || '').trim().toLowerCase()));
 
-          // Evitar que maquetas demo EST-* o nombres duplicados sobrevivan y sombreen los datos del servidor
-          const legacyDemoIds = new Set(['EST-01', 'EST-02', 'EST-03', 'EST-04']);
           const preservedLocal = prev.filter(e => {
             const idStr = String(e.id);
             if (serverIds.has(idStr)) return false;
             if (deletedIds.has(idStr)) return false;
-            if (legacyDemoIds.has(idStr)) return false;
-            // No resucitar ni preservar sedes fantasmas EST-* no autorizadas
-            if (idStr.startsWith('EST-')) return false;
+            if (isDemoEstablishment(e)) return false;
             const normName = (e.name || '').trim().toLowerCase();
             if (serverNames.has(normName)) return false;
             return e.isUnsavedDraft === true;
           });
 
           const prevMap = new Map(prev.map(e => [String(e.id), e]));
-          const getBefore = (sid) => {
-            let found = prevMap.get(String(sid));
-            if (!found && sid === '1') found = prevMap.get('EST-01');
-            if (!found && sid === '4') found = prevMap.get('EST-02');
-            if (!found && sid === '3') found = prevMap.get('EST-03');
-            if (!found && sid === '2') found = prevMap.get('EST-04');
-            return found;
-          };
+          const getBefore = (sid) => prevMap.get(String(sid));
 
           const merged = mappedParkings.map(m => {
             const before = getBefore(String(m.id));
@@ -963,7 +779,7 @@ export const EstablishmentProvider = ({ children }) => {
             };
           });
           const next = [...merged, ...preservedLocal]
-            .filter(e => !deletedIds.has(String(e.id)))
+            .filter(e => !deletedIds.has(String(e.id)) && !isDemoEstablishment(e))
             .map((e, idx) => sanitizeEstablishment(e, idx));
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
           return next;

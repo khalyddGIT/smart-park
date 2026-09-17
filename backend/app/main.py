@@ -136,152 +136,27 @@ async def startup_db():
     try:
         from app.db.session import AsyncSessionLocal
         async with AsyncSessionLocal() as session:
-            from sqlalchemy.future import select
-            res = await session.execute(select(Parking))
-            # Garantizar que existan cocheras iniciales en PostgreSQL para reservas persistentes
-            if not res.scalars().first():
-                p1 = Parking(
-                    name="Smart Park Plaza Mayor - Planta Baja",
-                    address="Portal Unión 42, Centro Histórico",
-                    city="Ayacucho",
-                    latitude=-13.1604,
-                    longitude=-74.2259,
-                    hourly_rate=5.00,
-                    tolerance_minutes=15,
-                    total_capacity=20,
-                    image_url="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800",
-                    owner="Inversiones Plaza Mayor Huamanga",
-                    ruc="20608945123",
-                    phone="+51 966 123 456",
-                    whatsapp="51966123456",
-                    email="contacto@plazamayorpark.pe",
-                    schedule="Lunes a Domingo: 24 Horas (Abierto 24/7)",
-                    reference="Frente a la Catedral de Huamanga",
-                    level="Nivel 1 - Superficie",
-                    description="Estacionamiento céntrico con garita inteligente ANPR y acceso asfaltado a pocos metros de la Plaza Mayor de Huamanga.",
-                    maps_url="https://maps.google.com/?q=-13.1604,-74.2259",
-                    rate_auto=5.00,
-                    rate_suv=7.00,
-                    rate_mototaxi=3.50,
-                    rate_moto=2.50
-                )
-                p2 = Parking(
-                    name="Smart Park Jr. Bellido Colonial",
-                    address="Jr. Bellido 240, Centro Histórico",
-                    city="Ayacucho",
-                    latitude=-13.1631,
-                    longitude=-74.2236,
-                    hourly_rate=4.50,
-                    tolerance_minutes=10,
-                    total_capacity=15,
-                    image_url="https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800",
-                    owner="Cocheras Coloniales Ayacucho",
-                    ruc="20609874123",
-                    phone="+51 966 456 789",
-                    whatsapp="51966456789",
-                    email="bellido@smartpark.pe",
-                    schedule="Lunes a Sábado: 06:00 - 23:00",
-                    reference="A 2 cuadras de la Plaza Mayor",
-                    level="Playa Abierta",
-                    description="Cochera colonial céntrica y segura con cámaras de vigilancia.",
-                    maps_url="https://maps.google.com/?q=-13.1631,-74.2236",
-                    rate_auto=4.50,
-                    rate_suv=6.50,
-                    rate_mototaxi=3.00,
-                    rate_moto=2.00
-                )
-                p3 = Parking(
-                    name="Smart Park Mercado Mariscal Cáceres",
-                    address="Av. Mariscal Cáceres 450",
-                    city="Ayacucho",
-                    latitude=-13.1565,
-                    longitude=-74.2215,
-                    hourly_rate=3.50,
-                    tolerance_minutes=15,
-                    total_capacity=25,
-                    image_url="https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800",
-                    owner="Consorcio Comercial Cáceres",
-                    ruc="20607788991",
-                    phone="+51 966 789 012",
-                    whatsapp="51966789012",
-                    email="mercado@smartpark.pe",
-                    schedule="Lunes a Domingo: 05:00 - 22:00",
-                    reference="Frente al pabellón comercial",
-                    level="Nivel 1 - Superficie",
-                    description="Amplio estacionamiento techado para autos, camionetas y mototaxis junto al mercado.",
-                    maps_url="https://maps.google.com/?q=-13.1565,-74.2215",
-                    rate_auto=3.50,
-                    rate_suv=5.00,
-                    rate_mototaxi=2.50,
-                    rate_moto=1.50
-                )
-                session.add_all([p1, p2, p3])
-                await session.commit()
-                await session.refresh(p1)
+            # Purga preventiva definitiva de sedes demo iniciales residuales ('Plaza Mayor', 'Bellido Colonial', 'Mercado Mariscal')
+            # para garantizar que únicamente existan las sedes reales registradas por los usuarios.
+            from sqlalchemy import text
+            await session.execute(text("""
+                DELETE FROM pagos WHERE reservation_id IN (SELECT id FROM reservas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe')));
+                DELETE FROM reservas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
+                DELETE FROM personal WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
+                DELETE FROM incidencias WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
+                DELETE FROM resenas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
+                DELETE FROM cameras_dispositivos WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
+                DELETE FROM elementos_plano WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
+                DELETE FROM plazas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
+                DELETE FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe');
+            """))
+            await session.commit()
 
-                # Generar conjunto completo de cajones para la sede 1
-                slots = [
-                    Slot(parking_id=p1.id, code="A-01", slot_type="auto", status="free", pos_x=60, pos_y=60, width=60, height=100),
-                    Slot(parking_id=p1.id, code="A-02", slot_type="auto", status="free", pos_x=140, pos_y=60, width=60, height=100),
-                    Slot(parking_id=p1.id, code="A-03", slot_type="auto", status="free", pos_x=220, pos_y=60, width=60, height=100),
-                    Slot(parking_id=p1.id, code="A-04", slot_type="auto", status="free", pos_x=300, pos_y=60, width=60, height=100),
-                    Slot(parking_id=p1.id, code="A-05", slot_type="auto", status="free", pos_x=380, pos_y=60, width=60, height=100),
-                    Slot(parking_id=p1.id, code="A-06", slot_type="auto", status="free", pos_x=460, pos_y=60, width=60, height=100),
-                    Slot(parking_id=p1.id, code="A-07", slot_type="moto", status="free", pos_x=540, pos_y=60, width=50, height=60),
-                    Slot(parking_id=p1.id, code="A-08", slot_type="moto", status="free", pos_x=600, pos_y=60, width=50, height=60),
-                    Slot(parking_id=p1.id, code="B-01", slot_type="auto", status="free", pos_x=60, pos_y=450, width=60, height=100),
-                    Slot(parking_id=p1.id, code="B-02", slot_type="auto", status="free", pos_x=140, pos_y=450, width=60, height=100),
-                    Slot(parking_id=p1.id, code="B-03", slot_type="auto", status="free", pos_x=220, pos_y=450, width=60, height=100),
-                    Slot(parking_id=p1.id, code="B-04", slot_type="auto", status="free", pos_x=300, pos_y=450, width=60, height=100),
-                ]
-                elems = [
-                    FloorPlanElement(parking_id=p1.id, element_type="road", pos_x=60, pos_y=220, width=800, height=140, z_index=1),
-                    FloorPlanElement(parking_id=p1.id, element_type="crosswalk", pos_x=400, pos_y=220, width=80, height=140, z_index=2),
-                    FloorPlanElement(parking_id=p1.id, element_type="gate", pos_x=40, pos_y=240, width=50, height=90, z_index=3),
-                ]
-                session.add_all(slots + elems)
-                await session.commit()
-
-            # Garantizar la existencia de la sucursal Sótano 1 de Smart Park Plaza Mayor
-            res_sotano = await session.execute(select(Parking).where(Parking.name.ilike("%Sótano 1%")))
-            p_sotano = res_sotano.scalars().first()
-            if not p_sotano:
-                p4 = Parking(
-                    name="Smart Park Plaza Mayor - Sótano 1",
-                    address="Portal Unión 42, Centro Histórico",
-                    city="Ayacucho",
-                    latitude=-13.1612,
-                    longitude=-74.2252,
-                    hourly_rate=4.00,
-                    tolerance_minutes=15,
-                    total_capacity=15,
-                    image_url="https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800",
-                    owner="Inversiones Plaza Mayor Huamanga",
-                    ruc="20608945123",
-                    phone="+51 966 123 456",
-                    whatsapp="51966123456",
-                    email="contacto@plazamayorpark.pe",
-                    schedule="Lunes a Domingo: 06:00 AM - 11:30 PM",
-                    reference="Ingreso vehicular por Jr. Callao",
-                    level="Sótano -1",
-                    description="Nivel subterráneo 100% techado y climatizado. Ideal para estancias prolongadas y protección solar.",
-                    maps_url="https://maps.google.com/?q=-13.1612,-74.2252",
-                    rate_auto=4.00,
-                    rate_suv=6.00,
-                    rate_mototaxi=3.00,
-                    rate_moto=2.00
-                )
-                session.add(p4)
-                await session.commit()
-                await session.refresh(p4)
-                slots_s4 = [
-                    Slot(parking_id=p4.id, code="S1-01", slot_type="auto", status="free", pos_x=80, pos_y=80, width=56, height=96),
-                    Slot(parking_id=p4.id, code="S1-02", slot_type="auto", status="free", pos_x=155, pos_y=80, width=56, height=96),
-                    Slot(parking_id=p4.id, code="S1-03", slot_type="auto", status="free", pos_x=220, pos_y=80, width=56, height=96),
-                    Slot(parking_id=p4.id, code="S1-04", slot_type="auto", status="free", pos_x=285, pos_y=80, width=56, height=96),
-                ]
-                session.add_all(slots_s4)
-                await session.commit()
+            try:
+                from app.core.cache import cache_delete
+                await cache_delete("parkings:all")
+            except Exception:
+                pass
 
             from app.models.models import Staff
             system_accounts = [

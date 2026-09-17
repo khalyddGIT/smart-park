@@ -651,7 +651,7 @@ export const ReviewsModule = () => {
       {/* Modal Escribir Reseña (Conductor) */}
       {role === 'user' && (
         <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
             <DialogHeader>
               <DialogTitle className="text-xl font-black flex items-center gap-2">
                 <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
@@ -748,7 +748,7 @@ export const ReviewsModule = () => {
       {/* Modal Responder Reseña (Admin Local & SuperAdmin) */}
       {isAdmin && (
         <Dialog open={showReplyModal} onOpenChange={setShowReplyModal}>
-          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
             <DialogHeader>
               <DialogTitle className="text-xl font-black flex items-center gap-2">
                 <Reply className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />

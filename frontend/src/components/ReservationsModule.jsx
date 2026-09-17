@@ -2160,32 +2160,32 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
 
       {/* Diálogo de Registro de Ingreso en Garita (Horas de Estadía) */}
       <Dialog open={!!checkInTarget} onOpenChange={(open) => !open && setCheckInTarget(null)}>
-        <DialogContent className="sm:max-w-md bg-white border border-slate-200 p-6 rounded-2xl shadow-xl">
+        <DialogContent className="sm:max-w-md bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <LogIn className="w-4 h-4 text-emerald-600" />
+            <DialogTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <LogIn className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Confirmar Ingreso</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Registra el ingreso del vehículo y define las horas de estadía.
             </DialogDescription>
           </DialogHeader>
 
           {checkInTarget && (
             <div className="space-y-4 my-2">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-2 gap-2 text-xs">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Vehículo / Placa</span>
-                  <p className="font-mono font-bold text-slate-900 mt-0.5">{checkInTarget.plate}</p>
+                  <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Vehículo / Placa</span>
+                  <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">{checkInTarget.plate}</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Cajón Asignado</span>
-                  <p className="font-mono font-bold text-slate-900 mt-0.5">{checkInTarget.slot}</p>
+                  <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Cajón Asignado</span>
+                  <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">{checkInTarget.slot}</p>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
                   Horas de estadía:
                 </label>
                 <div className="grid grid-cols-4 gap-2 mb-2">
@@ -2197,7 +2197,7 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
                       className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
                         checkInHours === h
                           ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       {h} {h === 1 ? 'hora' : 'horas'}
@@ -2206,29 +2206,29 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500">Personalizado:</span>
-                  <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 h-9">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Personalizado:</span>
+                  <div className="flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2 h-9">
                     <input
                       type="number"
                       min="1"
                       max="48"
                       value={checkInHours}
                       onChange={(e) => setCheckInHours(Math.max(1, Number(e.target.value) || 1))}
-                      className="w-16 bg-transparent text-xs font-mono font-bold text-slate-800 outline-none text-center"
+                      className="w-16 bg-transparent text-xs font-mono font-bold text-slate-800 dark:text-white outline-none text-center"
                     />
-                    <span className="text-xs text-slate-500">horas</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">horas</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setCheckInTarget(null)}
                   disabled={isProcessingCheckIn}
-                  className="text-xs rounded-xl"
+                  className="text-xs rounded-xl dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   Cancelar
                 </Button>
@@ -2244,7 +2244,7 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
                     if (resp?.ok) setFeedbackMessage(resp.message || `Ingreso registrado para ${checkInTarget.plate} por ${checkInHours}h.`);
                     else setFeedbackMessage(resp?.message || 'Error al registrar ingreso.');
                   }}
-                  className="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl gap-1.5"
+                  className="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl gap-1.5 cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>Ingreso ({checkInHours}h)</span>

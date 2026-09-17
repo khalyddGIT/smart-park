@@ -690,7 +690,7 @@ export const IncidentsModule = () => {
         if (!open) stopCamera();
         setShowModal(open);
       }}>
-        <DialogContent className="max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 shadow-2xl border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+        <DialogContent className="max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto bg-white dark:bg-[#111827] shadow-2xl border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
               <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -890,7 +890,7 @@ export const IncidentsModule = () => {
       {/* Modal Resolver Incidencia (ADMIN LOCAL / PLATAFORMA) */}
       {isAdmin && (
         <Dialog open={showResolveModal} onOpenChange={setShowResolveModal}>
-          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white shadow-2xl">
+          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white shadow-2xl">
             <DialogHeader>
               <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
                 <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />

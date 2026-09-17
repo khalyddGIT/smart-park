@@ -22,8 +22,12 @@ import {
   Upload,
   Camera,
   RefreshCw,
-  VideoOff
+  VideoOff,
+  Bike,
+  Truck,
+  Loader2
 } from 'lucide-react';
+import { MototaxiIcon } from './icons/MototaxiIcon';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { 
   listVehicles, 
@@ -84,21 +88,45 @@ export const getVehiclesStorageKey = () => {
 };
 const getVehiclesKey = getVehiclesStorageKey;
 
-const COLOR_PALETTE = ['Negro', 'Blanco', 'Gris Plata', 'Rojo', 'Azul', 'Verde', 'Beige'];
+export const VEHICLE_CATEGORIES = [
+  { id: 'auto', label: 'Auto', desc: 'Sedán / Hatchback', icon: Car },
+  { id: 'suv', label: 'Camioneta', desc: 'SUV / 4x4', icon: Truck },
+  { id: 'mototaxi', label: 'Mototaxi', desc: 'Torito / Trimóvil', icon: MototaxiIcon },
+  { id: 'moto', label: 'Moto', desc: 'Lineal / Scooter', icon: Bike },
+  { id: 'truck', label: 'Camión', desc: 'Furgón / Utilitario', icon: Truck },
+];
+
+export const POPULAR_BRANDS = [
+  'Toyota', 'Hyundai', 'Nissan', 'Kia', 'Honda', 'Bajaj', 'Yamaha', 'Suzuki'
+];
+
+export const COLOR_SWATCHES = [
+  { name: 'Negro', hex: '#0f172a', border: false },
+  { name: 'Blanco', hex: '#ffffff', border: true },
+  { name: 'Gris Plata', hex: '#94a3b8', border: false },
+  { name: 'Gris Oscuro', hex: '#475569', border: false },
+  { name: 'Rojo', hex: '#ef4444', border: false },
+  { name: 'Azul', hex: '#3b82f6', border: false },
+  { name: 'Amarillo', hex: '#eab308', border: false },
+  { name: 'Verde', hex: '#10b981', border: false },
+  { name: 'Beige', hex: '#d4b996', border: false }
+];
 
 const getDefaultCarImage = (type = 'auto') => {
   const t = (type || '').toLowerCase();
-  if (t === 'suv') return 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80';
-  if (t === 'moto') return 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80';
-  if (t === 'truck') return 'https://images.unsplash.com/photo-1586191582056-a6c382f6e975?auto=format&fit=crop&w=800&q=80';
+  if (t === 'suv' || t === 'camioneta') return 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80';
+  if (t === 'moto' || t === 'motorcycle') return 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80';
+  if (t === 'mototaxi' || t === 'torito' || t === 'trimovil') return 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=800&q=80';
+  if (t === 'truck' || t === 'camion') return 'https://images.unsplash.com/photo-1586191582056-a6c382f6e975?auto=format&fit=crop&w=800&q=80';
   return 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80';
 };
 
 const formatCategoryName = (type = '') => {
   const t = (type || '').toLowerCase();
-  if (t === 'suv') return 'Camioneta SUV';
-  if (t === 'moto') return 'Motocicleta';
-  if (t === 'truck') return 'Camión / Utilitario';
+  if (t === 'suv' || t === 'camioneta') return 'Camioneta SUV';
+  if (t === 'moto' || t === 'motorcycle') return 'Motocicleta';
+  if (t === 'mototaxi' || t === 'torito' || t === 'trimovil') return 'Mototaxi / Torito';
+  if (t === 'truck' || t === 'camion') return 'Camión / Utilitario';
   return 'Automóvil / Sedán';
 };
 
@@ -241,6 +269,7 @@ export const VehiclesModule = () => {
   });
   const [notification, setNotification] = useState(null);
   const [loadingImage, setLoadingImage] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const showToast = (msg) => {
     setNotification(msg);
@@ -389,75 +418,80 @@ export const VehiclesModule = () => {
     const plateOk = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i.test(plateClean);
     if (!plateOk) { showToast('La placa debe incluir un guión obligatorio (ej: ABC-123 o 1234-AB)'); return; }
 
-    const typeClean = (formData.vehicle_type || 'auto').trim().toLowerCase();
-    const brandClean = (formData.brand || '').trim() || 'Toyota';
-    const modelClean = (formData.model || '').trim() || 'Corolla';
-    const colorClean = (formData.color || '').trim() || 'Gris';
-    const yearClean = (formData.year || '').trim() || '2023';
-    let img = formData.imageUrl || getDefaultCarImage(typeClean);
-    const plate = plateClean;
-    
-    const token = getAccessToken();
-    if (token) {
-      try {
-        const created = await apiCreateVehicle({ 
-          license_plate: plate, 
-          vehicle_type: typeClean, 
-          brand: brandClean, 
-          model: modelClean, 
-          color: colorClean, 
-          year: yearClean, 
-          notes: formData.notes || '',
-          image_url: img
-        });
-        const newObj = { 
-          id: created.id, 
-          license_plate: created.license_plate, 
-          vehicle_type: created.vehicle_type || typeClean, 
-          brand: created.brand || brandClean, 
-          model: created.model || modelClean, 
-          color: created.color || colorClean, 
-          year: created.year || yearClean,
-          soat_expiry: formData.soat_expiry || '',
-          notes: created.notes || formData.notes || '',
-          isDefault: vehicles.length === 0, 
-          imageUrl: created.image_url || img 
-        };
-        const updatedList = [newObj, ...vehicles];
-        setVehicles(updatedList);
-        try { localStorage.setItem(getVehiclesKey(), JSON.stringify(updatedList)); } catch {}
-        window.dispatchEvent(new CustomEvent('smart_park_vehicles_updated', { detail: updatedList }));
-        setShowAddModal(false);
-        showToast(`✓ Vehículo ${newObj.license_plate} registrado con éxito.`);
-        return;
-      } catch (err) {
-        const msg = err?.response?.data?.detail;
-        const msgText = Array.isArray(msg) ? msg[0]?.msg : (typeof msg === 'string' ? msg : err.message);
-        if (msgText?.includes('ya se encuentra')) { showToast('Esta placa ya se encuentra registrada en el sistema'); return; }
-        showToast(`✕ Error al registrar vehículo: ${msgText || 'Revisa los datos ingresados'}`);
-        return;
+    setIsSaving(true);
+    try {
+      const typeClean = (formData.vehicle_type || 'auto').trim().toLowerCase();
+      const brandClean = (formData.brand || '').trim() || 'Toyota';
+      const modelClean = (formData.model || '').trim() || 'Corolla';
+      const colorClean = (formData.color || '').trim() || 'Gris';
+      const yearClean = (formData.year || '').trim() || '2023';
+      let img = formData.imageUrl || getDefaultCarImage(typeClean);
+      const plate = plateClean;
+      
+      const token = getAccessToken();
+      if (token) {
+        try {
+          const created = await apiCreateVehicle({ 
+            license_plate: plate, 
+            vehicle_type: typeClean, 
+            brand: brandClean, 
+            model: modelClean, 
+            color: colorClean, 
+            year: yearClean, 
+            notes: formData.notes || '',
+            image_url: img
+          });
+          const newObj = { 
+            id: created.id, 
+            license_plate: created.license_plate, 
+            vehicle_type: created.vehicle_type || typeClean, 
+            brand: created.brand || brandClean, 
+            model: created.model || modelClean, 
+            color: created.color || colorClean, 
+            year: created.year || yearClean,
+            soat_expiry: formData.soat_expiry || '',
+            notes: created.notes || formData.notes || '',
+            isDefault: vehicles.length === 0, 
+            imageUrl: created.image_url || img 
+          };
+          const updatedList = [newObj, ...vehicles];
+          setVehicles(updatedList);
+          try { localStorage.setItem(getVehiclesKey(), JSON.stringify(updatedList)); } catch {}
+          window.dispatchEvent(new CustomEvent('smart_park_vehicles_updated', { detail: updatedList }));
+          setShowAddModal(false);
+          showToast(`✓ Vehículo ${newObj.license_plate} registrado con éxito.`);
+          return;
+        } catch (err) {
+          const msg = err?.response?.data?.detail;
+          const msgText = Array.isArray(msg) ? msg[0]?.msg : (typeof msg === 'string' ? msg : err.message);
+          if (msgText?.includes('ya se encuentra')) { showToast('Esta placa ya se encuentra registrada en el sistema'); return; }
+          showToast(`✕ Error al registrar vehículo: ${msgText || 'Revisa los datos ingresados'}`);
+          return;
+        }
       }
+      const newObj = { 
+        id: Date.now(), 
+        license_plate: plate, 
+        vehicle_type: typeClean, 
+        brand: brandClean, 
+        model: modelClean, 
+        year: yearClean, 
+        color: colorClean, 
+        soat_expiry: formData.soat_expiry || '',
+        notes: formData.notes || '',
+        isDefault: vehicles.length === 0, 
+        imageUrl: img, 
+        user_id: 1 
+      };
+      const updated = [newObj, ...vehicles];
+      setVehicles(updated);
+      try { localStorage.setItem(getVehiclesKey(), JSON.stringify(updated)); } catch {}
+      window.dispatchEvent(new CustomEvent('smart_park_vehicles_updated', { detail: updated }));
+      setShowAddModal(false);
+      showToast(`✓ Vehículo ${newObj.license_plate} registrado.`);
+    } finally {
+      setIsSaving(false);
     }
-    const newObj = { 
-      id: Date.now(), 
-      license_plate: plate, 
-      vehicle_type: typeClean, 
-      brand: brandClean, 
-      model: modelClean, 
-      year: yearClean, 
-      color: colorClean, 
-      soat_expiry: formData.soat_expiry || '',
-      notes: formData.notes || '',
-      isDefault: vehicles.length === 0, 
-      imageUrl: img, 
-      user_id: 1 
-    };
-    const updated = [newObj, ...vehicles];
-    setVehicles(updated);
-    try { localStorage.setItem(getVehiclesKey(), JSON.stringify(updated)); } catch {}
-    window.dispatchEvent(new CustomEvent('smart_park_vehicles_updated', { detail: updated }));
-    setShowAddModal(false);
-    showToast(`✓ Vehículo ${newObj.license_plate} registrado.`);
   };
 
   const handleSaveEdit = async (e) => {
@@ -474,71 +508,76 @@ export const VehiclesModule = () => {
     const plateOk = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i.test(plateClean);
     if (!plateOk) { showToast('La placa debe incluir un guión obligatorio (ej: ABC-123 o 1234-AB)'); return; }
 
-    const typeClean = (formData.vehicle_type || 'auto').trim().toLowerCase();
-    const brandClean = (formData.brand || '').trim() || 'Toyota';
-    const modelClean = (formData.model || '').trim() || 'Corolla';
-    const colorClean = (formData.color || '').trim() || 'Gris';
-    const yearClean = (formData.year || '').trim() || '2023';
-    const plate = plateClean;
-    const token = getAccessToken();
+    setIsSaving(true);
+    try {
+      const typeClean = (formData.vehicle_type || 'auto').trim().toLowerCase();
+      const brandClean = (formData.brand || '').trim() || 'Toyota';
+      const modelClean = (formData.model || '').trim() || 'Corolla';
+      const colorClean = (formData.color || '').trim() || 'Gris';
+      const yearClean = (formData.year || '').trim() || '2023';
+      const plate = plateClean;
+      const token = getAccessToken();
 
-    let updatedObj = null;
+      let updatedObj = null;
 
-    if (token && typeof selectedVehicle.id === 'number' && selectedVehicle.id < 1000000000000) {
-      try {
-        const updatedServer = await updateVehicleApi(selectedVehicle.id, {
+      if (token && typeof selectedVehicle.id === 'number' && selectedVehicle.id < 1000000000000) {
+        try {
+          const updatedServer = await updateVehicleApi(selectedVehicle.id, {
+            license_plate: plate,
+            vehicle_type: typeClean,
+            brand: brandClean,
+            model: modelClean,
+            color: colorClean,
+            year: yearClean,
+            notes: formData.notes || '',
+            image_url: formData.imageUrl || selectedVehicle.imageUrl
+          });
+          updatedObj = {
+            ...selectedVehicle,
+            license_plate: updatedServer.license_plate,
+            vehicle_type: updatedServer.vehicle_type,
+            brand: updatedServer.brand,
+            model: updatedServer.model,
+            color: updatedServer.color,
+            year: updatedServer.year || yearClean,
+            soat_expiry: formData.soat_expiry !== undefined ? formData.soat_expiry : (selectedVehicle.soat_expiry || ''),
+            notes: updatedServer.notes || formData.notes,
+            imageUrl: updatedServer.image_url || formData.imageUrl || selectedVehicle.imageUrl
+          };
+        } catch (err) {
+          console.warn('Update vehicle API warning:', err);
+        }
+      }
+
+      if (!updatedObj) {
+        updatedObj = {
+          ...selectedVehicle,
           license_plate: plate,
           vehicle_type: typeClean,
           brand: brandClean,
           model: modelClean,
-          color: colorClean,
           year: yearClean,
-          notes: formData.notes || '',
-          image_url: formData.imageUrl || selectedVehicle.imageUrl
-        });
-        updatedObj = {
-          ...selectedVehicle,
-          license_plate: updatedServer.license_plate,
-          vehicle_type: updatedServer.vehicle_type,
-          brand: updatedServer.brand,
-          model: updatedServer.model,
-          color: updatedServer.color,
-          year: updatedServer.year || yearClean,
+          color: colorClean,
           soat_expiry: formData.soat_expiry !== undefined ? formData.soat_expiry : (selectedVehicle.soat_expiry || ''),
-          notes: updatedServer.notes || formData.notes,
-          imageUrl: updatedServer.image_url || formData.imageUrl || selectedVehicle.imageUrl
+          notes: formData.notes,
+          imageUrl: formData.imageUrl || selectedVehicle.imageUrl
         };
-      } catch (err) {
-        console.warn('Update vehicle API warning:', err);
       }
+
+      const updatedList = vehicles.map(v => v.id === selectedVehicle.id ? updatedObj : v);
+
+      setVehicles(updatedList);
+      try {
+        localStorage.setItem(getVehiclesKey(), JSON.stringify(updatedList));
+      } catch (err) {}
+      window.dispatchEvent(new CustomEvent('smart_park_vehicles_updated', { detail: updatedList }));
+
+      setShowEditModal(false);
+      setSelectedVehicle(null);
+      showToast(`✓ Vehículo ${updatedObj.license_plate} actualizado exitosamente.`);
+    } finally {
+      setIsSaving(false);
     }
-
-    if (!updatedObj) {
-      updatedObj = {
-        ...selectedVehicle,
-        license_plate: plate,
-        vehicle_type: typeClean,
-        brand: brandClean,
-        model: modelClean,
-        year: yearClean,
-        color: colorClean,
-        soat_expiry: formData.soat_expiry !== undefined ? formData.soat_expiry : (selectedVehicle.soat_expiry || ''),
-        notes: formData.notes,
-        imageUrl: formData.imageUrl || selectedVehicle.imageUrl
-      };
-    }
-
-    const updatedList = vehicles.map(v => v.id === selectedVehicle.id ? updatedObj : v);
-
-    setVehicles(updatedList);
-    try {
-      localStorage.setItem(getVehiclesKey(), JSON.stringify(updatedList));
-    } catch (err) {}
-    window.dispatchEvent(new CustomEvent('smart_park_vehicles_updated', { detail: updatedList }));
-
-    setShowEditModal(false);
-    setSelectedVehicle(null);
-    showToast(`✓ Vehículo ${updatedObj.license_plate} actualizado exitosamente.`);
   };
 
   const handleDelete = async (id, plate) => {
@@ -576,8 +615,52 @@ export const VehiclesModule = () => {
         onChange={handleFileUpload} 
       />
 
+      {/* Vista Previa de la Placa Oficial Peruana */}
+      <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+          Vista previa de placa oficial (Perú)
+        </span>
+        
+        <div className="relative w-52 h-24 rounded-xl border-[3.5px] border-slate-900 dark:border-slate-700 bg-white shadow-md flex flex-col items-center justify-between overflow-hidden p-1 select-none">
+          {/* Remaches de fijación */}
+          <div className="absolute top-1.5 left-2 w-1.5 h-1.5 rounded-full bg-slate-300 border border-slate-400" />
+          <div className="absolute top-1.5 right-2 w-1.5 h-1.5 rounded-full bg-slate-300 border border-slate-400" />
+          <div className="absolute bottom-1.5 left-2 w-1.5 h-1.5 rounded-full bg-slate-300 border border-slate-400" />
+          <div className="absolute bottom-1.5 right-2 w-1.5 h-1.5 rounded-full bg-slate-300 border border-slate-400" />
+
+          {/* Franja Superior Oficial Azul */}
+          <div className="w-full bg-[#0038a8] text-white flex items-center justify-between px-2.5 py-0.5 rounded-t-sm">
+            <span className="text-[8px] font-black tracking-widest flex items-center gap-1">
+              <span>🇵🇪</span> PERÚ
+            </span>
+            <span className="text-[7px] font-mono opacity-85 uppercase font-bold">
+              {formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto' ? 'MENOR' : 'MTC'}
+            </span>
+          </div>
+
+          {/* Número de Placa Monospace */}
+          <div className="flex-1 flex items-center justify-center">
+            <span className="font-mono text-2xl font-black tracking-widest text-slate-950 uppercase">
+              {formData.license_plate || 'ABC-123'}
+            </span>
+          </div>
+
+          {/* Franja Inferior con sello */}
+          <div className="w-full flex items-center justify-between px-2 text-[7px] text-slate-400 font-mono font-bold">
+            <span>REPÚBLICA DEL PERÚ</span>
+            <span className="w-2 h-2 rounded-full bg-gradient-to-tr from-amber-400 to-emerald-400 opacity-80" title="Holograma MTC" />
+          </div>
+        </div>
+      </div>
+
+      {/* Input de Placa */}
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-1">Placa Vehicular *</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
+            Placa Vehicular *
+          </label>
+          <span className="text-[11px] text-slate-400">Ej: ABC-123 o 1234-5A</span>
+        </div>
         <Input
           type="text"
           placeholder="ABC-123 o 1234-5A"
@@ -590,96 +673,152 @@ export const VehiclesModule = () => {
             }
             setFormData({ ...formData, license_plate: val.slice(0, 9) });
           }}
-          className="font-mono tracking-widest font-black text-center text-sm uppercase h-10 bg-white border-slate-200"
+          className="font-mono tracking-widest font-black text-center text-sm uppercase h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
           required
         />
         {formData.license_plate && !/^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/.test(formData.license_plate.trim()) && (
-          <p className="text-[11px] text-amber-600 font-medium mt-1 text-center">
+          <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-1 text-center">
             Incluye un guión obligatorio (-) (ej: ABC-123 o 1234-5A)
           </p>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Marca</label>
-          <Input
-            type="text"
-            placeholder="Toyota"
-            value={formData.brand}
-            onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-            className="text-xs h-10 bg-white border-slate-200"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Modelo</label>
-          <Input
-            type="text"
-            placeholder="RAV4"
-            value={formData.model}
-            onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-            className="text-xs h-10 bg-white border-slate-200"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <div className="col-span-2">
-          <label className="block text-xs font-bold text-slate-700 mb-1">Categoría</label>
-          <select
-            value={formData.vehicle_type}
-            onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value })}
-            className="w-full bg-white border border-slate-200 rounded-xl px-3 h-10 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500"
-          >
-            <option value="suv">Camioneta SUV</option>
-            <option value="auto">Automóvil / Sedán</option>
-            <option value="moto">Motocicleta</option>
-            <option value="truck">Camión / Furgón</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Año</label>
-          <Input
-            type="text"
-            placeholder="2023"
-            value={formData.year}
-            onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-            className="text-xs h-10 font-mono text-center bg-white border-slate-200"
-          />
-        </div>
-      </div>
-
+      {/* Selector Visual de Categorías */}
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-1">Color del Vehículo</label>
+        <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5">
+          Tipo de Vehículo *
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {VEHICLE_CATEGORIES.map((cat) => {
+            const Icon = cat.icon;
+            const isSelected = formData.vehicle_type === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setFormData(prev => ({
+                    ...prev,
+                    vehicle_type: cat.id,
+                    imageUrl: (!prev.imageUrl || prev.imageUrl.includes('unsplash.com')) ? getDefaultCarImage(cat.id) : prev.imageUrl
+                  }));
+                }}
+                className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500 shadow-2xs'
+                    : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  {isSelected && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                </div>
+                <span className="text-xs font-extrabold">{cat.label}</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">{cat.desc}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Marca con chips rápidos */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
+            Marca
+          </label>
+          <span className="text-[10px] text-slate-400">Sugerencias rápidas</span>
+        </div>
         <Input
           type="text"
-          placeholder="Gris"
-          value={formData.color}
-          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-          className="text-xs h-10 bg-white border-slate-200 mb-2"
+          placeholder="Toyota, Hyundai, Nissan, Bajaj..."
+          value={formData.brand}
+          onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+          className="text-xs h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
         />
-        <div className="flex flex-wrap gap-1.5">
-          {COLOR_PALETTE.map(c => (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {POPULAR_BRANDS.map(b => (
             <button
+              key={b}
               type="button"
-              key={c}
-              onClick={() => setFormData({ ...formData, color: c })}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border cursor-pointer ${
-                formData.color === c 
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' 
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              onClick={() => setFormData({ ...formData, brand: b })}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-colors border cursor-pointer ${
+                formData.brand?.toLowerCase() === b.toLowerCase()
+                  ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-600 shadow-2xs'
+                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
-              {c}
+              {b}
             </button>
           ))}
         </div>
       </div>
 
+      {/* Modelo y Año */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Modelo</label>
+          <Input
+            type="text"
+            placeholder="Ej. Corolla, Torito, YBR..."
+            value={formData.model}
+            onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+            className="text-xs h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Año</label>
+          <Input
+            type="text"
+            placeholder="2023"
+            value={formData.year}
+            onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+            className="text-xs h-10 font-mono text-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+          />
+        </div>
+      </div>
+
+      {/* Color con paleta de swatches */}
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+        <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Color del Vehículo</label>
+        <Input
+          type="text"
+          placeholder="Gris, Rojo, Azul..."
+          value={formData.color}
+          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+          className="text-xs h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white mb-2"
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          {COLOR_SWATCHES.map(sw => {
+            const isSelected = formData.color?.toLowerCase() === sw.name.toLowerCase();
+            const isLight = sw.name === 'Blanco' || sw.name === 'Amarillo' || sw.name === 'Gris Plata' || sw.name === 'Beige';
+            return (
+              <button
+                key={sw.name}
+                type="button"
+                onClick={() => setFormData({ ...formData, color: sw.name })}
+                title={sw.name}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                  sw.border ? 'border border-slate-300 dark:border-slate-600' : ''
+                } ${isSelected ? 'ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-slate-900 scale-110 shadow-sm' : 'hover:scale-105 opacity-85 hover:opacity-100'}`}
+                style={{ backgroundColor: sw.hex }}
+              >
+                {isSelected && (
+                  <Check className={`w-3.5 h-3.5 ${isLight ? 'text-slate-900' : 'text-white'}`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* SOAT */}
+      <div>
+        <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             Vencimiento de SOAT (Opcional)
           </span>
           <span className="text-[10px] text-slate-400 font-normal">Alerta preventiva de vigencia</span>
@@ -688,25 +827,26 @@ export const VehiclesModule = () => {
           type="date"
           value={formData.soat_expiry || ''}
           onChange={(e) => setFormData({ ...formData, soat_expiry: e.target.value })}
-          className="text-xs h-10 bg-white border-slate-200"
+          className="text-xs h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
         />
         {formData.soat_expiry && (() => {
           const s = getSoatStatus(formData.soat_expiry);
           return (
             <p className={`text-[11px] font-semibold mt-1 flex items-center gap-1 ${
-              s.status === 'expired' ? 'text-rose-600' : s.status === 'warning' ? 'text-amber-600' : 'text-emerald-600'
+              s.status === 'expired' ? 'text-rose-600 dark:text-rose-400' : s.status === 'warning' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
             }`}>
               <span>{s.label}</span>
-              {s.detail && <span className="text-slate-500 font-normal">· {s.detail}</span>}
+              {s.detail && <span className="text-slate-500 dark:text-slate-400 font-normal">· {s.detail}</span>}
             </p>
           );
         })()}
       </div>
 
-      <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+      {/* Fotografía del Vehículo */}
+      <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-            <ImageIcon className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <ImageIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             Fotografía del Vehículo
           </span>
           <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider">
@@ -720,9 +860,9 @@ export const VehiclesModule = () => {
             variant="outline"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
-            className="text-xs font-bold gap-1.5 h-9 bg-white border-slate-200 hover:bg-slate-100 rounded-xl cursor-pointer"
+            className="text-xs font-bold gap-1.5 h-9 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl cursor-pointer"
           >
-            <Upload className="w-4 h-4 text-slate-600" />
+            <Upload className="w-4 h-4 text-slate-600 dark:text-slate-400" />
             <span>Subir</span>
           </Button>
 
@@ -731,9 +871,9 @@ export const VehiclesModule = () => {
             variant="outline"
             size="sm"
             onClick={handleCameraCapture}
-            className="text-xs font-bold gap-1.5 h-9 bg-white border-slate-200 hover:bg-slate-100 rounded-xl cursor-pointer"
+            className="text-xs font-bold gap-1.5 h-9 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl cursor-pointer"
           >
-            <Camera className="w-4 h-4 text-emerald-600" />
+            <Camera className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>Tomar</span>
           </Button>
 
@@ -743,7 +883,7 @@ export const VehiclesModule = () => {
             size="sm"
             onClick={handleFetchCarPhoto}
             disabled={loadingImage || !formData.brand || !formData.model}
-            className="text-xs font-bold gap-1.5 h-9 bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-xl cursor-pointer"
+            className="text-xs font-bold gap-1.5 h-9 bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-xl cursor-pointer disabled:opacity-50"
           >
             <Search className="w-4 h-4" />
             <span>{loadingImage ? '...' : 'Oficial'}</span>
@@ -756,12 +896,12 @@ export const VehiclesModule = () => {
             placeholder="URL de la imagen del vehículo..."
             value={formData.imageUrl}
             onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-            className="text-xs h-8 bg-white border-slate-200 font-mono text-slate-600"
+            className="text-xs h-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 font-mono text-slate-600 dark:text-slate-300"
           />
         </div>
 
         {formData.imageUrl && (
-          <div className="h-28 rounded-xl overflow-hidden border border-slate-200 relative group bg-slate-950">
+          <div className="h-28 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 relative group bg-slate-950">
             <img src={resolveImageUrl(formData.imageUrl)} alt="Vista previa del vehículo" className="w-full h-full object-cover" />
             <button
               type="button"
@@ -775,22 +915,32 @@ export const VehiclesModule = () => {
         )}
       </div>
 
+      {/* Notas / Observaciones */}
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-1">Notas / Observaciones</label>
+        <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Notas / Observaciones</label>
         <textarea
           rows={2}
           placeholder="Ej. Vehículo de uso personal, color perlado..."
           value={formData.notes}
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 transition-colors resize-none"
+          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-emerald-500 transition-colors resize-none"
         />
       </div>
 
+      {/* Botón Guardar / Actualizar con Loading */}
       <Button 
         type="submit" 
-        className="w-full font-extrabold h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md cursor-pointer transition-colors"
+        disabled={isSaving}
+        className="w-full font-extrabold h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md cursor-pointer transition-colors flex items-center justify-center gap-2"
       >
-        {isEdit ? 'Actualizar Vehículo' : 'Guardar Vehículo'}
+        {isSaving ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Guardando vehículo...</span>
+          </>
+        ) : (
+          <span>{isEdit ? 'Actualizar Vehículo' : 'Guardar Vehículo'}</span>
+        )}
       </Button>
     </form>
   );
@@ -1036,11 +1186,11 @@ export const VehiclesModule = () => {
 
       {/* Modal Registrar Nuevo Vehículo */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] shadow-2xl border-slate-200 dark:border-slate-800 max-h-[92vh] overflow-y-auto text-slate-900 dark:text-white">
+        <DialogContent className="w-[95vw] sm:max-w-lg rounded-3xl p-5 sm:p-6 bg-white dark:bg-[#111827] shadow-2xl border-slate-200 dark:border-slate-800 max-h-[92vh] overflow-y-auto text-slate-900 dark:text-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-white">Registrar Vehículo</DialogTitle>
             <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Datos para reconocimiento en garita.
+              Datos para reconocimiento en garita y reserva de cupos.
             </DialogDescription>
           </DialogHeader>
           {renderVehicleForm(false)}
@@ -1050,7 +1200,7 @@ export const VehiclesModule = () => {
       {/* Modal Editar Vehículo */}
       {showEditModal && (
         <Dialog open={showEditModal} onOpenChange={(open) => { setShowEditModal(open); if (!open) setSelectedVehicle(null); }}>
-          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] shadow-2xl border-slate-200 dark:border-slate-800 max-h-[92vh] overflow-y-auto text-slate-900 dark:text-white">
+          <DialogContent className="w-[95vw] sm:max-w-lg rounded-3xl p-5 sm:p-6 bg-white dark:bg-[#111827] shadow-2xl border-slate-200 dark:border-slate-800 max-h-[92vh] overflow-y-auto text-slate-900 dark:text-white">
             <DialogHeader>
               <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-white">Editar Vehículo</DialogTitle>
               <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">

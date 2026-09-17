@@ -130,6 +130,84 @@ const formatCategoryName = (type = '') => {
   return 'Automóvil / Sedán';
 };
 
+export const getPeruvianPlateConfig = (vehicleType = 'auto', isTaxi = false) => {
+  const type = (vehicleType || '').toLowerCase();
+  
+  if (type === 'mototaxi' || type === 'torito' || type === 'trimovil') {
+    return {
+      typeId: 'mototaxi',
+      name: 'Mototaxi',
+      categorySubtitle: 'Vehículo Menor de Pasajeros (Cat. L5)',
+      headerBg: 'bg-[#ffcc00]', // Franja superior amarilla oficial
+      headerTextColor: 'text-slate-950',
+      bodyBg: 'bg-[#38bdf8]', // Fondo celeste oficial MTC
+      textColor: 'text-slate-950',
+      defaultPlate: 'AB-1234',
+      badgeLabel: 'Mototaxi (Franja Amarilla · Fondo Celeste)',
+      badgeColor: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+    };
+  }
+
+  if (type === 'moto' || type === 'motorcycle') {
+    return {
+      typeId: 'moto',
+      name: 'Motocicleta',
+      categorySubtitle: 'Vehículo Menor Lineal (Cat. L3)',
+      headerBg: 'bg-[#00a8e8]', // Franja superior celeste oficial
+      headerTextColor: 'text-slate-950',
+      bodyBg: 'bg-[#38bdf8]', // Fondo celeste oficial MTC
+      textColor: 'text-slate-950',
+      defaultPlate: 'AB-1234',
+      badgeLabel: 'Motocicleta (Celeste Oficial)',
+      badgeColor: 'bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800'
+    };
+  }
+
+  if (type === 'truck' || type === 'camion') {
+    return {
+      typeId: 'truck',
+      name: 'Tractocamión / Carga',
+      categorySubtitle: 'Vehículo Pesado / Carga (Cat. N)',
+      headerBg: 'bg-[#ffcc00]', // Franja amarilla oficial
+      headerTextColor: 'text-slate-950',
+      bodyBg: 'bg-[#fde047]', // Fondo amarillo reflectivo oficial
+      textColor: 'text-slate-950',
+      defaultPlate: 'ABC-123',
+      badgeLabel: 'Tractocamión / Carga (Amarilla)',
+      badgeColor: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+    };
+  }
+
+  if (isTaxi) {
+    return {
+      typeId: 'taxi',
+      name: 'Taxi',
+      categorySubtitle: 'Servicio Público de Taxi (Cat. M1)',
+      headerBg: 'bg-[#ffcc00]', // Franja amarilla oficial para Taxi
+      headerTextColor: 'text-slate-950',
+      bodyBg: 'bg-white', // Fondo blanco reflectivo
+      textColor: 'text-slate-950',
+      defaultPlate: 'ABC-123',
+      badgeLabel: 'Taxi (Franja Amarilla · Fondo Blanco)',
+      badgeColor: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+    };
+  }
+
+  // Auto particular o Camioneta SUV particular (Blanca)
+  return {
+    typeId: type === 'suv' || type === 'camioneta' ? 'suv' : 'auto',
+    name: type === 'suv' || type === 'camioneta' ? 'Camioneta Particular' : 'Auto Particular',
+    categorySubtitle: 'Vehículo Particular (Cat. M1)',
+    headerBg: 'bg-white', // Franja blanca oficial
+    headerTextColor: 'text-slate-950',
+    bodyBg: 'bg-white', // Fondo blanco reflectivo
+    textColor: 'text-slate-950',
+    defaultPlate: 'ABC-123',
+    badgeLabel: type === 'suv' || type === 'camioneta' ? 'Camioneta Particular (Blanca)' : 'Auto Particular (Blanca)',
+    badgeColor: 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700'
+  };
+};
+
 export const getSoatStatus = (expiryDate) => {
   if (!expiryDate) return { status: 'none', label: 'SOAT no registrado', color: 'slate', detail: '' };
   const today = new Date();
@@ -258,13 +336,14 @@ export const VehiclesModule = () => {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [formData, setFormData] = useState({ 
     license_plate: '', 
-    vehicle_type: 'suv', 
+    vehicle_type: 'auto', 
+    is_taxi: false,
     brand: '', 
     model: '', 
     year: '2023', 
     color: 'Gris', 
     soat_expiry: '',
-    imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800',
+    imageUrl: getDefaultCarImage('auto'),
     notes: ''
   });
   const [notification, setNotification] = useState(null);
@@ -279,13 +358,14 @@ export const VehiclesModule = () => {
   const handleOpenAdd = () => {
     setFormData({ 
       license_plate: '', 
-      vehicle_type: 'suv', 
+      vehicle_type: 'auto', 
+      is_taxi: false,
       brand: '', 
       model: '', 
       year: '2023', 
       color: 'Gris', 
       soat_expiry: '',
-      imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800',
+      imageUrl: getDefaultCarImage('auto'),
       notes: ''
     });
     setShowAddModal(true);
@@ -295,13 +375,14 @@ export const VehiclesModule = () => {
     setSelectedVehicle(v);
     setFormData({
       license_plate: v.license_plate,
-      vehicle_type: v.vehicle_type || 'suv',
+      vehicle_type: v.vehicle_type || 'auto',
+      is_taxi: Boolean(v.is_taxi || v.notes?.includes('[Taxi]')),
       brand: v.brand || '',
       model: v.model || '',
       year: v.year || '2023',
       color: v.color || 'Gris',
       soat_expiry: v.soat_expiry || v.soatExpiry || '',
-      imageUrl: v.imageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800',
+      imageUrl: v.imageUrl || getDefaultCarImage(v.vehicle_type || 'auto'),
       notes: v.notes || ''
     });
     setShowEditModal(true);
@@ -616,42 +697,107 @@ export const VehiclesModule = () => {
       />
 
       {/* Vista Previa de la Placa Oficial Peruana */}
-      <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
-        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-          Vista previa de placa oficial (Perú)
-        </span>
-        
-        <div className="relative w-52 h-24 rounded-xl border-[3.5px] border-slate-900 dark:border-slate-700 bg-white shadow-md flex flex-col items-center justify-between overflow-hidden p-1 select-none">
-          {/* Remaches de fijación */}
-          <div className="absolute top-1.5 left-2 w-1.5 h-1.5 rounded-full bg-slate-300 border border-slate-400" />
-          <div className="absolute top-1.5 right-2 w-1.5 h-1.5 rounded-full bg-slate-300 border border-slate-400" />
-          <div className="absolute bottom-1.5 left-2 w-1.5 h-1.5 rounded-full bg-slate-300 border border-slate-400" />
-          <div className="absolute bottom-1.5 right-2 w-1.5 h-1.5 rounded-full bg-slate-300 border border-slate-400" />
+      {(() => {
+        const plateConfig = getPeruvianPlateConfig(formData.vehicle_type, Boolean(formData.is_taxi));
+        return (
+          <div className="flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 transition-all">
+            <div className="flex items-center justify-between w-full mb-2.5 px-1">
+              <span className="text-[10px] sm:text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🇵🇪</span> Placa de Rodaje Oficial (MTC)
+              </span>
+              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border shadow-2xs ${plateConfig.badgeColor}`}>
+                {plateConfig.name}
+              </span>
+            </div>
+            
+            {/* Placa Metálica Estilizada Oficial MTC */}
+            <div className={`relative w-64 sm:w-72 h-32 rounded-2xl border-[3.5px] border-slate-950 shadow-xl flex flex-col justify-between overflow-hidden select-none ${plateConfig.bodyBg} transition-colors duration-200 ring-1 ring-black/25 ring-inset`}>
+              
+              {/* Remaches de fijación metálicos en las 4 esquinas */}
+              <div className="absolute top-1.5 left-2 w-2 h-2 rounded-full bg-slate-300 border border-slate-600 shadow-inner flex items-center justify-center z-10">
+                <div className="w-1 h-[1px] bg-slate-700 rotate-45" />
+              </div>
+              <div className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-slate-300 border border-slate-600 shadow-inner flex items-center justify-center z-10">
+                <div className="w-1 h-[1px] bg-slate-700 -rotate-45" />
+              </div>
+              <div className="absolute bottom-1.5 left-2 w-2 h-2 rounded-full bg-slate-300 border border-slate-600 shadow-inner flex items-center justify-center z-10">
+                <div className="w-1 h-[1px] bg-slate-700 -rotate-45" />
+              </div>
+              <div className="absolute bottom-1.5 right-2 w-2 h-2 rounded-full bg-slate-300 border border-slate-600 shadow-inner flex items-center justify-center z-10">
+                <div className="w-1 h-[1px] bg-slate-700 rotate-45" />
+              </div>
 
-          {/* Franja Superior Oficial Azul */}
-          <div className="w-full bg-[#0038a8] text-white flex items-center justify-between px-2.5 py-0.5 rounded-t-sm">
-            <span className="text-[8px] font-black tracking-widest flex items-center gap-1">
-              <span>🇵🇪</span> PERÚ
-            </span>
-            <span className="text-[7px] font-mono opacity-85 uppercase font-bold">
-              {formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto' ? 'MENOR' : 'MTC'}
-            </span>
-          </div>
+              {/* Franja Superior Oficial */}
+              <div className={`w-full h-8 ${plateConfig.headerBg} border-b-2 border-slate-950 flex items-center justify-between px-3 relative z-5 transition-colors duration-200`}>
+                {/* Bandera del Perú (Rojo / Blanco / Rojo oficial) */}
+                <div className="w-6 h-3.5 rounded-[2px] border border-slate-900/60 flex overflow-hidden shadow-xs shrink-0" title="República del Perú">
+                  <div className="w-1/3 bg-[#d91023] h-full" />
+                  <div className="w-1/3 bg-white h-full" />
+                  <div className="w-1/3 bg-[#d91023] h-full" />
+                </div>
 
-          {/* Número de Placa Monospace */}
-          <div className="flex-1 flex items-center justify-center">
-            <span className="font-mono text-2xl font-black tracking-widest text-slate-950 uppercase">
-              {formData.license_plate || 'ABC-123'}
-            </span>
-          </div>
+                {/* Texto PERU centrado */}
+                <span className="font-sans font-black tracking-[0.28em] text-xs sm:text-[13px] text-slate-950 uppercase leading-none pl-2 select-none">
+                  PERU
+                </span>
 
-          {/* Franja Inferior con sello */}
-          <div className="w-full flex items-center justify-between px-2 text-[7px] text-slate-400 font-mono font-bold">
-            <span>REPÚBLICA DEL PERÚ</span>
-            <span className="w-2 h-2 rounded-full bg-gradient-to-tr from-amber-400 to-emerald-400 opacity-80" title="Holograma MTC" />
+                {/* Holograma de Seguridad MTC */}
+                <div className="w-7 h-3.5 rounded-[2px] bg-gradient-to-tr from-slate-200 via-white to-slate-300 border border-slate-500/80 flex items-center justify-center text-[6px] font-mono font-black text-slate-700 shadow-2xs tracking-tighter" title="Holograma MTC">
+                  <span>MTC</span>
+                </div>
+              </div>
+
+              {/* Número de Placa Central Troquelado */}
+              <div className="flex-1 flex items-center justify-center px-4">
+                <span className="font-mono text-3xl sm:text-4xl font-black tracking-widest text-slate-950 uppercase drop-shadow-[0_1px_1px_rgba(0,0,0,0.3)] select-all">
+                  {formData.license_plate || plateConfig.defaultPlate}
+                </span>
+              </div>
+
+              {/* Pie de la Placa con número de serie y sello reflectante */}
+              <div className="w-full flex items-center justify-between px-3 pb-1 text-[7px] font-mono font-bold text-slate-800">
+                <span className="tracking-wider opacity-80">1234567</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-amber-400 via-emerald-400 to-cyan-400 opacity-80 border border-black/20 shadow-xs" title="Sello de Fabricación MTC" />
+              </div>
+            </div>
+
+            {/* Modalidad de servicio para Autos: Particular vs Taxi */}
+            {formData.vehicle_type === 'auto' && (
+              <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800 w-full justify-center">
+                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Modalidad:</span>
+                <div className="inline-flex rounded-lg p-0.5 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, is_taxi: false })}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                      !formData.is_taxi
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Particular (Blanca)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, is_taxi: true })}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                      formData.is_taxi
+                        ? 'bg-[#ffcc00] text-slate-950 shadow-2xs font-extrabold'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Taxi (Franja Amarilla)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center font-medium">
+              {plateConfig.categorySubtitle} · Formato según normativa MTC Perú
+            </p>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Input de Placa */}
       <div>
@@ -659,17 +805,33 @@ export const VehiclesModule = () => {
           <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
             Placa Vehicular *
           </label>
-          <span className="text-[11px] text-slate-400">Ej: ABC-123 o 1234-5A</span>
+          <span className="text-[11px] text-slate-400 font-mono">
+            {formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto'
+              ? 'Ej: AB-1234 o 1234-5A'
+              : 'Ej: ABC-123'}
+          </span>
         </div>
         <Input
           type="text"
-          placeholder="ABC-123 o 1234-5A"
+          placeholder={formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto' ? 'AB-1234 o 1234-5A' : 'ABC-123'}
           maxLength={9}
           value={formData.license_plate}
           onChange={(e) => {
             let val = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
-            if (!val.includes('-') && val.length > 3) {
-              val = val.slice(0, 3) + '-' + val.slice(3);
+            if (!val.includes('-')) {
+              if (formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto') {
+                if (/^[A-Z]{2}[0-9]/.test(val) && val.length > 2) {
+                  val = val.slice(0, 2) + '-' + val.slice(2);
+                } else if (/^[0-9]{4}/.test(val) && val.length > 4) {
+                  val = val.slice(0, 4) + '-' + val.slice(4);
+                } else if (val.length > 3) {
+                  val = val.slice(0, 3) + '-' + val.slice(3);
+                }
+              } else {
+                if (val.length > 3) {
+                  val = val.slice(0, 3) + '-' + val.slice(3);
+                }
+              }
             }
             setFormData({ ...formData, license_plate: val.slice(0, 9) });
           }}
@@ -678,7 +840,7 @@ export const VehiclesModule = () => {
         />
         {formData.license_plate && !/^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/.test(formData.license_plate.trim()) && (
           <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-1 text-center">
-            Incluye un guión obligatorio (-) (ej: ABC-123 o 1234-5A)
+            Incluye un guión obligatorio (-) (ej: {formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto' ? 'AB-1234 o 1234-5A' : 'ABC-123'})
           </p>
         )}
       </div>
@@ -700,6 +862,7 @@ export const VehiclesModule = () => {
                   setFormData(prev => ({
                     ...prev,
                     vehicle_type: cat.id,
+                    is_taxi: cat.id === 'auto' ? prev.is_taxi : false,
                     imageUrl: (!prev.imageUrl || prev.imageUrl.includes('unsplash.com')) ? getDefaultCarImage(cat.id) : prev.imageUrl
                   }));
                 }}

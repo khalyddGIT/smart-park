@@ -100,6 +100,104 @@ export const POPULAR_BRANDS = [
   'Toyota', 'Hyundai', 'Nissan', 'Kia', 'Honda', 'Bajaj', 'Yamaha', 'Suzuki'
 ];
 
+export const VEHICLE_MODELS_CATALOG = {
+  Toyota: ['Corolla', 'Yaris', 'RAV4', 'Hilux', 'Fortuner', 'Etios', 'Avanza', 'Land Cruiser', 'Corolla Cross', 'Rush', 'Prius', 'HiAce'],
+  Hyundai: ['Elantra', 'Accent', 'Tucson', 'Santa Fe', 'Grand i10', 'Creta', 'Venue', 'Kona', 'H-1', 'Staria', 'i20'],
+  Nissan: ['Sentra', 'Versa', 'Kicks', 'Frontier', 'X-Trail', 'Qashqai', 'Tiida', 'March', 'Navara', 'V-Drive'],
+  Kia: ['Rio', 'Cerato', 'Picanto', 'Sportage', 'Seltos', 'Sorento', 'Sonet', 'Soluto'],
+  Honda: ['Civic', 'CR-V', 'Accord', 'HR-V', 'City', 'Pilot', 'Wave 110', 'CB 190R', 'XR 150L', 'Navi'],
+  Bajaj: ['Torito 4T', 'Torito 2T', 'Torito Maxima Z', 'Torito RE Furgón', 'Pulsar NS 200', 'Pulsar 150', 'Boxer 150', 'Discover 125', 'Dominar 400'],
+  Yamaha: ['YBR 125', 'FZ 2.0', 'MT-03', 'Crypton 115', 'NMAX 155', 'XTZ 125', 'R15', 'BWS 125'],
+  Suzuki: ['Swift', 'Alto 800', 'Grand Vitara', 'Jimny', 'Baleno', 'S-Presso', 'Celerio', 'Gixxer 150', 'Ertiga'],
+  Chevrolet: ['Sail', 'Onix', 'Tracker', 'Captiva', 'Spark', 'Cruze', 'N300'],
+  Volkswagen: ['Gol', 'Polo', 'Virtus', 'T-Cross', 'Tiguan', 'Amarok', 'Jetta', 'Nivus', 'Taos'],
+  TVS: ['King Deluxe', 'King Duramax', 'King Kargo', 'Apache RTR 160', 'Apache RTR 200', 'HLX 125'],
+  Zongshen: ['ZS 150 Trimóvil', 'ZS 200 Torito', 'ZS 125', 'RX3'],
+  Wanxin: ['WX 150 Torito', 'WX 200 Furgón', 'WX 125'],
+  Lifan: ['LF 150 Trimóvil', 'LF 200', 'X60']
+};
+
+export const CATEGORY_DEFAULT_MODELS = {
+  mototaxi: [
+    { brand: 'Bajaj', model: 'Torito 4T' },
+    { brand: 'Bajaj', model: 'Torito 2T' },
+    { brand: 'TVS', model: 'King Deluxe' },
+    { brand: 'Bajaj', model: 'Maxima Z' },
+    { brand: 'Zongshen', model: 'ZS 150 Trimóvil' },
+    { brand: 'Wanxin', model: 'WX 150 Torito' }
+  ],
+  moto: [
+    { brand: 'Bajaj', model: 'Pulsar NS 200' },
+    { brand: 'Yamaha', model: 'YBR 125' },
+    { brand: 'Honda', model: 'Wave 110' },
+    { brand: 'Yamaha', model: 'FZ 2.0' },
+    { brand: 'Honda', model: 'XR 150L' },
+    { brand: 'Suzuki', model: 'Gixxer 150' }
+  ],
+  auto: [
+    { brand: 'Toyota', model: 'Corolla' },
+    { brand: 'Toyota', model: 'Yaris' },
+    { brand: 'Hyundai', model: 'Elantra' },
+    { brand: 'Hyundai', model: 'Accent' },
+    { brand: 'Kia', model: 'Rio' },
+    { brand: 'Nissan', model: 'Sentra' }
+  ],
+  suv: [
+    { brand: 'Toyota', model: 'RAV4' },
+    { brand: 'Hyundai', model: 'Tucson' },
+    { brand: 'Nissan', model: 'Kicks' },
+    { brand: 'Kia', model: 'Sportage' },
+    { brand: 'Toyota', model: 'Fortuner' },
+    { brand: 'Honda', model: 'CR-V' }
+  ],
+  truck: [
+    { brand: 'Toyota', model: 'Hilux' },
+    { brand: 'Nissan', model: 'Frontier' },
+    { brand: 'Chevrolet', model: 'N300' },
+    { brand: 'Hyundai', model: 'H-1' },
+    { brand: 'Volkswagen', model: 'Amarok' }
+  ]
+};
+
+export const getMatchingModels = (brand = '', query = '', vehicleType = 'auto') => {
+  const cleanQuery = (query || '').trim().toLowerCase();
+  const cleanBrand = (brand || '').trim();
+
+  // 1. Si hay una marca específica seleccionada
+  if (cleanBrand) {
+    const catalogKey = Object.keys(VEHICLE_MODELS_CATALOG).find(
+      k => k.toLowerCase() === cleanBrand.toLowerCase()
+    );
+    if (catalogKey) {
+      const models = VEHICLE_MODELS_CATALOG[catalogKey];
+      if (!cleanQuery) {
+        return models.slice(0, 6).map(m => ({ model: m, brand: catalogKey }));
+      }
+      const filtered = models.filter(m => m.toLowerCase().includes(cleanQuery));
+      return filtered.slice(0, 8).map(m => ({ model: m, brand: catalogKey }));
+    }
+  }
+
+  // 2. Si se busca texto libre en el query
+  if (cleanQuery) {
+    const results = [];
+    for (const [b, models] of Object.entries(VEHICLE_MODELS_CATALOG)) {
+      for (const m of models) {
+        if (m.toLowerCase().includes(cleanQuery)) {
+          results.push({ model: m, brand: b });
+          if (results.length >= 8) break;
+        }
+      }
+      if (results.length >= 8) break;
+    }
+    if (results.length > 0) return results;
+  }
+
+  // 3. Fallback sugerencias populares por categoría de vehículo
+  const catList = CATEGORY_DEFAULT_MODELS[vehicleType] || CATEGORY_DEFAULT_MODELS.auto;
+  return catList.slice(0, 6);
+};
+
 export const COLOR_SWATCHES = [
   { name: 'Negro', hex: '#0f172a', border: false },
   { name: 'Blanco', hex: '#ffffff', border: true },
@@ -349,6 +447,7 @@ export const VehiclesModule = () => {
   const [notification, setNotification] = useState(null);
   const [loadingImage, setLoadingImage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showModelSuggestions, setShowModelSuggestions] = useState(false);
 
   const showToast = (msg) => {
     setNotification(msg);
@@ -919,29 +1018,135 @@ export const VehiclesModule = () => {
         </div>
       </div>
 
-      {/* Modelo y Año */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Modelo</label>
-          <Input
-            type="text"
-            placeholder="Ej. Corolla, Torito, YBR..."
-            value={formData.model}
-            onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-            className="text-xs h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Año</label>
-          <Input
-            type="text"
-            placeholder="2023"
-            value={formData.year}
-            onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-            className="text-xs h-10 font-mono text-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-          />
-        </div>
-      </div>
+      {/* Modelo y Año con Autocompletado Inteligente */}
+      {(() => {
+        const matchingModels = getMatchingModels(formData.brand, formData.model, formData.vehicle_type);
+        return (
+          <>
+            <div className="grid grid-cols-2 gap-3 relative">
+              <div className="relative">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    Modelo *
+                  </label>
+                  {formData.model && (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                      Sugerencias activas
+                    </span>
+                  )}
+                </div>
+                <Input
+                  type="text"
+                  placeholder={
+                    formData.vehicle_type === 'mototaxi'
+                      ? 'Ej. Torito 4T, King Deluxe...'
+                      : formData.vehicle_type === 'moto'
+                      ? 'Ej. Pulsar NS 200, YBR 125...'
+                      : 'Ej. Corolla, RAV4, Elantra...'
+                  }
+                  value={formData.model}
+                  onFocus={() => setShowModelSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowModelSuggestions(false), 200)}
+                  onChange={(e) => {
+                    setFormData({ ...formData, model: e.target.value });
+                    setShowModelSuggestions(true);
+                  }}
+                  className="text-xs h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  required
+                />
+
+                {/* Menú flotante de autocompletado en tiempo real */}
+                {showModelSuggestions && matchingModels.length > 0 && (
+                  <div 
+                    className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl max-h-48 overflow-y-auto p-1.5 animate-in fade-in slide-in-from-top-1 duration-150"
+                  >
+                    <div className="flex items-center justify-between px-2 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+                      <span>Modelos sugeridos</span>
+                      <span>{matchingModels.length} opciones</span>
+                    </div>
+                    {matchingModels.map(({ model: m, brand: b }) => (
+                      <button
+                        key={`${b}-${m}`}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setFormData(prev => ({
+                            ...prev,
+                            model: m,
+                            brand: prev.brand || b
+                          }));
+                          setShowModelSuggestions(false);
+                        }}
+                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors cursor-pointer group"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Sparkles className="w-3 h-3 text-emerald-500 opacity-70 group-hover:opacity-100 shrink-0" />
+                          <span>{m}</span>
+                        </span>
+                        <span className="text-[10px] font-mono font-normal text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">
+                          {b}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Año</label>
+                <Input
+                  type="text"
+                  placeholder="2023"
+                  value={formData.year}
+                  onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                  className="text-xs h-10 font-mono text-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Chips de Modelos Frecuentes para Selección en 1 Clic */}
+            {matchingModels.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    {formData.brand ? `Modelos sugeridos para ${formData.brand}:` : 'Modelos populares sugeridos:'}
+                  </span>
+                  <span className="text-[10px] text-slate-400">1 toque</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {matchingModels.slice(0, 5).map(({ model: m, brand: b }) => {
+                    const isSelected = formData.model?.toLowerCase() === m.toLowerCase();
+                    return (
+                      <button
+                        key={`chip-${b}-${m}`}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            model: m,
+                            brand: prev.brand || b
+                          }));
+                          setShowModelSuggestions(false);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border cursor-pointer flex items-center gap-1 ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                            : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <span>{m}</span>
+                        {!formData.brand && (
+                          <span className="text-[9px] opacity-70 font-normal">({b})</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Color con paleta de swatches */}
       <div>

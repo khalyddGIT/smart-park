@@ -1,5 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, useScroll, useSpring, useTransform, useMotionValue, AnimatePresence } from 'framer-motion';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+// Registrar plugins oficiales de GSAP
+gsap.registerPlugin(useGSAP, ScrollTrigger);
+
 import {
   Search,
   MapPin,
@@ -208,8 +215,73 @@ export const LandingPage = ({
     }
   };
 
+  const landingRef = useRef(null);
+
+  // Animaciones GSAP de alto impacto: levitación 3D, parallax y revelado en scroll
+  useGSAP(() => {
+    // 1. Levitación física 3D continua de los mockups de smartphones en el Hero
+    gsap.to('.hero-phone-1', {
+      y: '-=10',
+      rotation: '+=1.8',
+      duration: 3.4,
+      ease: 'sine.inOut',
+      repeat: -1,
+      yoyo: true
+    });
+
+    gsap.to('.hero-phone-2', {
+      y: '+=9',
+      rotation: '-=1.4',
+      duration: 3.8,
+      ease: 'sine.inOut',
+      repeat: -1,
+      yoyo: true,
+      delay: 0.35
+    });
+
+    // 2. Parallax de profundidad con ScrollTrigger en los mockups al hacer scroll
+    gsap.to(['.hero-phone-1', '.hero-phone-2'], {
+      yPercent: -14,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '#hero',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 1
+      }
+    });
+
+    // 3. Entrada escalonada de las marcas aliadas en el Trust Bar
+    gsap.from('.trust-partner-item', {
+      scrollTrigger: {
+        trigger: '.trust-partners-container',
+        start: 'top 92%',
+        toggleActions: 'play none none none'
+      },
+      opacity: 0,
+      y: 12,
+      duration: 0.5,
+      stagger: 0.06,
+      ease: 'power2.out'
+    });
+
+    // 4. Aparición limpia de las métricas tipográficas en las tarjetas Bento
+    gsap.from('.bento-stat-val', {
+      scrollTrigger: {
+        trigger: '.bento-stat-val',
+        start: 'top 90%',
+        toggleActions: 'play none none none'
+      },
+      opacity: 0,
+      y: 15,
+      duration: 0.65,
+      stagger: 0.15,
+      ease: 'power3.out'
+    });
+  }, { scope: landingRef });
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#06090F] text-slate-900 dark:text-slate-100 selection:bg-lime-400 selection:text-slate-950 transition-colors duration-300 font-sans pb-12 relative overflow-x-hidden">
+    <div ref={landingRef} className="min-h-screen bg-[#F8FAFC] dark:bg-[#06090F] text-slate-900 dark:text-slate-100 selection:bg-lime-400 selection:text-slate-950 transition-colors duration-300 font-sans pb-12 relative overflow-x-hidden">
       
       {/* Halo ambiental expansivo de fondo en Modo Oscuro */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -405,7 +477,7 @@ export const LandingPage = ({
                   initial={{ y: 15, opacity: 0, rotate: 5 }}
                   animate={{ y: 0, opacity: 1, rotate: 5 }}
                   transition={{ duration: 0.7, ease: FLUID_EASE }}
-                  className="absolute right-0 top-3 sm:top-4 w-[195px] sm:w-[230px] lg:w-[260px] bg-slate-950 rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3 shadow-2xl border-4 border-slate-800 text-white z-10"
+                  className="hero-phone-1 absolute right-0 top-3 sm:top-4 w-[195px] sm:w-[230px] lg:w-[260px] bg-slate-950 rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3 shadow-2xl border-4 border-slate-800 text-white z-10 will-change-transform"
                 >
                   <div className="w-14 sm:w-16 h-2.5 sm:h-3 bg-slate-800 rounded-full mx-auto mb-2 sm:mb-2.5" />
                   
@@ -459,7 +531,7 @@ export const LandingPage = ({
                   initial={{ y: 30, opacity: 0, rotate: -2 }}
                   animate={{ y: 0, opacity: 1, rotate: -2 }}
                   transition={{ duration: 0.7, delay: 0.1, ease: FLUID_EASE }}
-                  className="absolute left-0 top-0 w-[205px] sm:w-[245px] lg:w-[275px] bg-white dark:bg-slate-900/95 dark:backdrop-blur-md text-slate-900 dark:text-white rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3.5 shadow-2xl border-4 border-slate-900/10 dark:border-slate-700/80 z-20 text-left transition-colors"
+                  className="hero-phone-2 absolute left-0 top-0 w-[205px] sm:w-[245px] lg:w-[275px] bg-white dark:bg-slate-900/95 dark:backdrop-blur-md text-slate-900 dark:text-white rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3.5 shadow-2xl border-4 border-slate-900/10 dark:border-slate-700/80 z-20 text-left transition-colors will-change-transform"
                 >
                   <div className="w-20 h-3 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-2.5" />
                   
@@ -586,7 +658,7 @@ export const LandingPage = ({
               </button>
 
               <div className="text-right">
-                <span className="block text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+                <span className="bento-stat-val block text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
                   +12
                 </span>
                 <span className="block text-[11px] text-slate-400 dark:text-slate-500 font-medium">
@@ -622,7 +694,7 @@ export const LandingPage = ({
               </button>
 
               <div className="text-right">
-                <span className="block text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+                <span className="bento-stat-val block text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
                   &lt; 2s
                 </span>
                 <span className="block text-[11px] text-slate-400 dark:text-slate-500 font-medium">
@@ -715,15 +787,15 @@ export const LandingPage = ({
         <h3 className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-3">
           Ecosistema Conectado a los Principales Medios del Perú
         </h3>
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3.5 sm:gap-10 lg:gap-14 text-slate-400 dark:text-slate-500 font-bold text-xs sm:text-sm">
-          <span className="hover:text-emerald-500 transition cursor-default">Yape</span>
-          <span className="hover:text-emerald-500 transition cursor-default">Plin</span>
-          <span className="hover:text-emerald-500 transition cursor-default">Visa</span>
-          <span className="hover:text-emerald-500 transition cursor-default">Mastercard</span>
-          <span className="hover:text-emerald-500 transition cursor-default">BCP</span>
-          <span className="hover:text-emerald-500 transition cursor-default">BBVA</span>
-          <span className="hover:text-emerald-500 transition cursor-default">Interbank</span>
-          <span className="hover:text-emerald-500 transition cursor-default">SAT Huamanga</span>
+        <div className="trust-partners-container flex flex-wrap items-center justify-center gap-x-6 gap-y-3.5 sm:gap-10 lg:gap-14 text-slate-400 dark:text-slate-500 font-bold text-xs sm:text-sm">
+          <span className="trust-partner-item hover:text-emerald-500 transition cursor-default">Yape</span>
+          <span className="trust-partner-item hover:text-emerald-500 transition cursor-default">Plin</span>
+          <span className="trust-partner-item hover:text-emerald-500 transition cursor-default">Visa</span>
+          <span className="trust-partner-item hover:text-emerald-500 transition cursor-default">Mastercard</span>
+          <span className="trust-partner-item hover:text-emerald-500 transition cursor-default">BCP</span>
+          <span className="trust-partner-item hover:text-emerald-500 transition cursor-default">BBVA</span>
+          <span className="trust-partner-item hover:text-emerald-500 transition cursor-default">Interbank</span>
+          <span className="trust-partner-item hover:text-emerald-500 transition cursor-default">SAT Huamanga</span>
         </div>
       </section>
 

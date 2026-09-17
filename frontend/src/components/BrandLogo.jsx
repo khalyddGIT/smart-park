@@ -1,5 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import logoImg from '../assets/logo.png';
+
+// Registrar plugin useGSAP oficialmente
+gsap.registerPlugin(useGSAP);
 
 /**
  * Isotipo oficial de Smart-Park
@@ -12,10 +17,13 @@ export const BrandIcon = ({
   badgeClassName = '',
   alt = 'Smart-Park' 
 }) => {
+  const iconRef = useRef(null);
+
   if (withBadge) {
     return (
       <div className={`relative flex items-center justify-center shrink-0 rounded-xl sm:rounded-2xl p-1 bg-white shadow-md shadow-emerald-950/25 ring-2 ring-emerald-400/60 ${badgeClassName}`}>
         <img
+          ref={iconRef}
           src={logoImg}
           alt={alt}
           className={`aspect-square object-contain shrink-0 select-none ${className}`}
@@ -26,6 +34,7 @@ export const BrandIcon = ({
   }
   return (
     <img
+      ref={iconRef}
       src={logoImg}
       alt={alt}
       className={`aspect-square object-contain shrink-0 select-none drop-shadow-sm ${className}`}
@@ -35,8 +44,8 @@ export const BrandIcon = ({
 };
 
 /**
- * Logotipo oficial de Smart-Park
- * Diseño de alto impacto: cápsula blanca pura de máximo contraste, resplandor esmeralda y tipografía bold
+ * Logotipo oficial de Smart-Park con animaciones GSAP
+ * Microinteracciones elásticas aceleradas por hardware en hover y entrada suave
  */
 export const BrandLogo = ({ 
   className = '', 
@@ -49,23 +58,58 @@ export const BrandLogo = ({
   dark = null,
   onClick = null
 }) => {
-  // Ajuste de contraste para el texto 'Park'
+  const containerRef = useRef(null);
+  const iconRef = useRef(null);
+
+  // Colores dinámicos de texto
   const parkColorClass = dark === true 
     ? 'text-white' 
     : dark === false 
     ? 'text-slate-900' 
     : 'text-slate-900 dark:text-white';
 
-  // Ajuste de contraste para el texto 'Smart'
   const smartColorClass = dark === true
     ? 'text-emerald-400'
     : dark === false
     ? 'text-emerald-600'
     : 'text-emerald-600 dark:text-emerald-400';
 
+  // Animaciones y microinteracciones GSAP
+  const { contextSafe } = useGSAP({ scope: containerRef });
+
+  const handleMouseEnter = contextSafe(() => {
+    if (iconRef.current) {
+      gsap.to(iconRef.current, {
+        scale: 1.14,
+        rotation: -5,
+        duration: 0.35,
+        ease: 'back.out(2)',
+        overwrite: 'auto'
+      });
+    }
+    gsap.to('.brand-smart', { y: -2, duration: 0.22, ease: 'power2.out', overwrite: 'auto' });
+    gsap.to('.brand-park', { y: -2, duration: 0.22, delay: 0.04, ease: 'power2.out', overwrite: 'auto' });
+  });
+
+  const handleMouseLeave = contextSafe(() => {
+    if (iconRef.current) {
+      gsap.to(iconRef.current, {
+        scale: 1,
+        rotation: 0,
+        duration: 0.3,
+        ease: 'power2.out',
+        overwrite: 'auto'
+      });
+    }
+    gsap.to(['.brand-smart', '.brand-park'], { y: 0, duration: 0.25, ease: 'power2.out', overwrite: 'auto' });
+  });
+
   return (
     <div 
+      ref={containerRef}
       onClick={onClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={`inline-flex items-center gap-2.5 select-none bg-transparent group ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {/* Contenedor del Isotipo */}
@@ -73,6 +117,7 @@ export const BrandLogo = ({
         <div className="relative flex items-center justify-center shrink-0">
           <div className="relative rounded-xl p-1 bg-white shadow-md ring-1 ring-slate-200/80 flex items-center justify-center">
             <img
+              ref={iconRef}
               src={logoImg}
               alt="Smart-Park"
               className={`${iconSize} aspect-square object-contain shrink-0 ${iconClassName}`}
@@ -82,9 +127,10 @@ export const BrandLogo = ({
         </div>
       ) : (
         <img
+          ref={iconRef}
           src={logoImg}
           alt="Smart-Park"
-          className={`${iconSize} aspect-square object-contain shrink-0 select-none drop-shadow-sm transition-transform duration-200 group-hover:scale-105 ${iconClassName}`}
+          className={`${iconSize} aspect-square object-contain shrink-0 select-none drop-shadow-sm will-change-transform ${iconClassName}`}
           draggable={false}
         />
       )}
@@ -92,10 +138,10 @@ export const BrandLogo = ({
       {/* Tipografía Oficial 'Smart Park' */}
       {showText && !iconOnly && (
         <span className={`font-sans tracking-tight leading-none text-xl sm:text-2xl font-black flex items-baseline ${textClassName}`}>
-          <span className={`transition-colors font-extrabold ${smartColorClass}`}>
+          <span className={`brand-smart inline-block transition-colors font-extrabold will-change-transform ${smartColorClass}`}>
             Smart
           </span>
-          <span className={`ml-1 font-black transition-colors ${parkColorClass}`}>
+          <span className={`brand-park inline-block ml-1 font-black transition-colors will-change-transform ${parkColorClass}`}>
             Park
           </span>
         </span>

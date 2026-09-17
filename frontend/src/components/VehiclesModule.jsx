@@ -96,92 +96,137 @@ export const VEHICLE_CATEGORIES = [
   { id: 'truck', label: 'Camión', desc: 'Furgón / Utilitario', icon: Truck },
 ];
 
-export const POPULAR_BRANDS = [
-  'Toyota', 'Hyundai', 'Nissan', 'Kia', 'Honda', 'Bajaj', 'Yamaha', 'Suzuki'
-];
-
-export const VEHICLE_MODELS_CATALOG = {
-  Toyota: ['Corolla', 'Yaris', 'RAV4', 'Hilux', 'Fortuner', 'Etios', 'Avanza', 'Land Cruiser', 'Corolla Cross', 'Rush', 'Prius', 'HiAce'],
-  Hyundai: ['Elantra', 'Accent', 'Tucson', 'Santa Fe', 'Grand i10', 'Creta', 'Venue', 'Kona', 'H-1', 'Staria', 'i20'],
-  Nissan: ['Sentra', 'Versa', 'Kicks', 'Frontier', 'X-Trail', 'Qashqai', 'Tiida', 'March', 'Navara', 'V-Drive'],
-  Kia: ['Rio', 'Cerato', 'Picanto', 'Sportage', 'Seltos', 'Sorento', 'Sonet', 'Soluto'],
-  Honda: ['Civic', 'CR-V', 'Accord', 'HR-V', 'City', 'Pilot', 'Wave 110', 'CB 190R', 'XR 150L', 'Navi'],
-  Bajaj: ['Torito 4T', 'Torito 2T', 'Torito Maxima Z', 'Torito RE Furgón', 'Pulsar NS 200', 'Pulsar 150', 'Boxer 150', 'Discover 125', 'Dominar 400'],
-  Yamaha: ['YBR 125', 'FZ 2.0', 'MT-03', 'Crypton 115', 'NMAX 155', 'XTZ 125', 'R15', 'BWS 125'],
-  Suzuki: ['Swift', 'Alto 800', 'Grand Vitara', 'Jimny', 'Baleno', 'S-Presso', 'Celerio', 'Gixxer 150', 'Ertiga'],
-  Chevrolet: ['Sail', 'Onix', 'Tracker', 'Captiva', 'Spark', 'Cruze', 'N300'],
-  Volkswagen: ['Gol', 'Polo', 'Virtus', 'T-Cross', 'Tiguan', 'Amarok', 'Jetta', 'Nivus', 'Taos'],
-  TVS: ['King Deluxe', 'King Duramax', 'King Kargo', 'Apache RTR 160', 'Apache RTR 200', 'HLX 125'],
-  Zongshen: ['ZS 150 Trimóvil', 'ZS 200 Torito', 'ZS 125', 'RX3'],
-  Wanxin: ['WX 150 Torito', 'WX 200 Furgón', 'WX 125'],
-  Lifan: ['LF 150 Trimóvil', 'LF 200', 'X60']
-};
-
-export const CATEGORY_DEFAULT_MODELS = {
-  mototaxi: [
-    { brand: 'Bajaj', model: 'Torito 4T' },
-    { brand: 'Bajaj', model: 'Torito 2T' },
-    { brand: 'TVS', model: 'King Deluxe' },
-    { brand: 'Bajaj', model: 'Maxima Z' },
-    { brand: 'Zongshen', model: 'ZS 150 Trimóvil' },
-    { brand: 'Wanxin', model: 'WX 150 Torito' }
-  ],
-  moto: [
-    { brand: 'Bajaj', model: 'Pulsar NS 200' },
-    { brand: 'Yamaha', model: 'YBR 125' },
-    { brand: 'Honda', model: 'Wave 110' },
-    { brand: 'Yamaha', model: 'FZ 2.0' },
-    { brand: 'Honda', model: 'XR 150L' },
-    { brand: 'Suzuki', model: 'Gixxer 150' }
-  ],
-  auto: [
-    { brand: 'Toyota', model: 'Corolla' },
-    { brand: 'Toyota', model: 'Yaris' },
-    { brand: 'Hyundai', model: 'Elantra' },
-    { brand: 'Hyundai', model: 'Accent' },
-    { brand: 'Kia', model: 'Rio' },
-    { brand: 'Nissan', model: 'Sentra' }
-  ],
-  suv: [
-    { brand: 'Toyota', model: 'RAV4' },
-    { brand: 'Hyundai', model: 'Tucson' },
-    { brand: 'Nissan', model: 'Kicks' },
-    { brand: 'Kia', model: 'Sportage' },
-    { brand: 'Toyota', model: 'Fortuner' },
-    { brand: 'Honda', model: 'CR-V' }
-  ],
-  truck: [
-    { brand: 'Toyota', model: 'Hilux' },
-    { brand: 'Nissan', model: 'Frontier' },
-    { brand: 'Chevrolet', model: 'N300' },
-    { brand: 'Hyundai', model: 'H-1' },
-    { brand: 'Volkswagen', model: 'Amarok' }
-  ]
-};
-
-export const getMatchingModels = (brand = '', query = '', vehicleType = 'auto') => {
-  const cleanQuery = (query || '').trim().toLowerCase();
-  const cleanBrand = (brand || '').trim();
-
-  // 1. Si hay una marca específica seleccionada
-  if (cleanBrand) {
-    const catalogKey = Object.keys(VEHICLE_MODELS_CATALOG).find(
-      k => k.toLowerCase() === cleanBrand.toLowerCase()
-    );
-    if (catalogKey) {
-      const models = VEHICLE_MODELS_CATALOG[catalogKey];
-      if (!cleanQuery) {
-        return models.slice(0, 6).map(m => ({ model: m, brand: catalogKey }));
-      }
-      const filtered = models.filter(m => m.toLowerCase().includes(cleanQuery));
-      return filtered.slice(0, 8).map(m => ({ model: m, brand: catalogKey }));
+export const VEHICLE_TAXONOMY = {
+  mototaxi: {
+    label: 'Mototaxi',
+    brands: ['Bajaj', 'TVS', 'Zongshen', 'Wanxin', 'Lifan', 'Piaggio'],
+    modelsByBrand: {
+      Bajaj: ['Torito 4T', 'Torito 2T', 'Torito Maxima Z', 'RE Furgón', 'Torito Compact'],
+      TVS: ['King Deluxe', 'King Duramax', 'King Kargo', 'King FI'],
+      Zongshen: ['ZS 150 Trimóvil', 'ZS 200 Torito', 'ZS 250 Carga', 'ZS 125 Pasajeros'],
+      Wanxin: ['WX 150-A Torito', 'WX 200 Furgón', 'WX 125 Trimóvil', 'WX 250 Carga'],
+      Lifan: ['LF 150 Trimóvil', 'LF 200 Torito', 'LF 250 Pasajeros'],
+      Piaggio: ['Ape City', 'Ape Auto DX', 'Ape Xtra LDX', 'Ape Calessino']
+    }
+  },
+  moto: {
+    label: 'Motocicleta',
+    brands: ['Honda', 'Yamaha', 'Bajaj', 'Suzuki', 'KTM', 'Ronco', 'Zongshen', 'Senda'],
+    modelsByBrand: {
+      Honda: ['Wave 110', 'CB 190R', 'XR 150L', 'CB 125F', 'Navi 110', 'XRE 300', 'Twister CB 250', 'Elite 125', 'Dio 110', 'CRF 250F'],
+      Yamaha: ['YBR 125', 'FZ 2.0 (FI)', 'FZ 25', 'MT-03', 'Crypton 115', 'NMAX 155', 'XTZ 125', 'XTZ 150 Crosser', 'YZF R15', 'BWS 125', 'Ray ZR 125'],
+      Bajaj: ['Pulsar NS 200', 'Pulsar 150 Neon', 'Pulsar N250', 'Boxer 150', 'Discover 125 ST', 'Dominar 400', 'Dominar 250', 'Platina 100'],
+      Suzuki: ['Gixxer 150', 'Gixxer 250 SF', 'AX 100', 'GN 125', 'GSX-R150', 'Hayate 125', 'Burgman Street 125'],
+      KTM: ['Duke 200', 'Duke 250', 'Duke 390', 'RC 200', 'Adventure 390'],
+      Ronco: ['Pantera 150', 'Demoledor 200', 'Xplorer 250', 'Titan 150', 'Aggressor 200'],
+      Zongshen: ['ZS 125', 'ZS 150-50', 'ZS 200GY', 'RX3 Adventure', 'Z-One 150'],
+      Senda: ['Echo 110', 'Viper 150', 'Tracker 200', 'Scorpion 150']
+    }
+  },
+  auto: {
+    label: 'Automóvil / Sedán',
+    brands: ['Toyota', 'Hyundai', 'Nissan', 'Kia', 'Chevrolet', 'Volkswagen', 'Suzuki', 'Honda', 'Mazda'],
+    modelsByBrand: {
+      Toyota: ['Corolla', 'Yaris', 'Etios', 'Prius', 'Camry', 'Avanza', 'Starlet', 'Crown'],
+      Hyundai: ['Elantra', 'Accent', 'Grand i10 Sedán', 'Atos', 'i20', 'Sonata', 'Verna'],
+      Nissan: ['Sentra', 'Versa', 'Tiida', 'March', 'V-Drive', 'Almera', 'Sunny'],
+      Kia: ['Rio Sedán', 'Cerato', 'Picanto', 'Soluto', 'K5', 'Forte'],
+      Chevrolet: ['Sail', 'Onix Sedán', 'Spark GT', 'Cruze', 'Prisma', 'Aveo'],
+      Volkswagen: ['Gol Sedán', 'Polo', 'Virtus', 'Jetta', 'Golf', 'Voyage', 'Passat'],
+      Suzuki: ['Swift Sedán', 'Dzire', 'Alto 800', 'Baleno', 'Celerio', 'S-Presso', 'Ciaz'],
+      Honda: ['Civic', 'City', 'Accord', 'Fit', 'Insight'],
+      Mazda: ['Mazda 3 Sedán', 'Mazda 2 Sedán', 'Mazda 6']
+    }
+  },
+  suv: {
+    label: 'Camioneta SUV',
+    brands: ['Toyota', 'Hyundai', 'Nissan', 'Kia', 'Ford', 'Mazda', 'Honda', 'Renault', 'Chery', 'Jeep'],
+    modelsByBrand: {
+      Toyota: ['RAV4', 'Fortuner', 'Rush', 'Land Cruiser Prado', 'Corolla Cross', '4Runner', 'Highlander', 'Yaris Cross'],
+      Hyundai: ['Tucson', 'Santa Fe', 'Creta', 'Venue', 'Kona', 'Palisade', 'Creta Grand'],
+      Nissan: ['Kicks', 'X-Trail', 'Qashqai', 'Pathfinder', 'Patrol', 'Murano'],
+      Kia: ['Sportage', 'Seltos', 'Sorento', 'Sonet', 'Stonic', 'Telluride', 'Soul'],
+      Ford: ['EcoSport', 'Explorer', 'Escape', 'Everest', 'Territory', 'Expedition', 'Bronco Sport'],
+      Mazda: ['CX-5', 'CX-30', 'CX-3', 'CX-9', 'CX-50'],
+      Honda: ['CR-V', 'HR-V', 'Pilot', 'WR-V', 'Passport'],
+      Renault: ['Duster', 'Kwid', 'Stepway', 'Koleos', 'Captur', 'Kardian'],
+      Chery: ['Tiggo 2 Pro', 'Tiggo 4 Pro', 'Tiggo 7 Pro', 'Tiggo 8 Pro'],
+      Jeep: ['Grand Cherokee', 'Compass', 'Renegade', 'Wrangler']
+    }
+  },
+  truck: {
+    label: 'Camión / Utilitario',
+    brands: ['Toyota', 'Hyundai', 'Nissan', 'Fuso', 'Hino', 'Isuzu', 'Chevrolet', 'Volkswagen', 'Kia'],
+    modelsByBrand: {
+      Toyota: ['Hilux', 'Dyna', 'HiAce Furgón', 'Coaster', 'Land Cruiser Pick-up'],
+      Hyundai: ['H-100', 'HD78', 'HD65', 'Mighty', 'H-1 Furgón', 'Staria Cargo'],
+      Nissan: ['Frontier', 'Navara', 'Urvan Cargo', 'Cabstar'],
+      Fuso: ['Canter 3.6T', 'Canter 5.0T', 'Canter 6.5T', 'Fighter', 'FA/FI'],
+      Hino: ['Dutro 300', 'Hino 500', 'Dutro City', 'Dutro Pro'],
+      Isuzu: ['NPR 75', 'NQR 90', 'D-Max', 'Forward 1400', 'FTR'],
+      Chevrolet: ['N300 Max', 'N400 Cargo', 'Colorado', 'D-Max', 'FTR'],
+      Volkswagen: ['Amarok', 'Delivery 9.170', 'Delivery 11.180', 'Constellation'],
+      Kia: ['K2700', 'K2500', 'Bongo']
     }
   }
+};
 
-  // 2. Si se busca texto libre en el query
+export const getBrandsForCategory = (vehicleType = 'auto') => {
+  const t = (vehicleType || 'auto').toLowerCase();
+  const cat = VEHICLE_TAXONOMY[t] || VEHICLE_TAXONOMY.auto;
+  return cat.brands || [];
+};
+
+export const POPULAR_BRANDS = getBrandsForCategory('auto');
+
+export const getModelsForBrandAndCategory = (brand = '', vehicleType = 'auto', query = '') => {
+  const t = (vehicleType || 'auto').toLowerCase();
+  const cat = VEHICLE_TAXONOMY[t] || VEHICLE_TAXONOMY.auto;
+  const cleanBrand = (brand || '').trim();
+  const cleanQuery = (query || '').trim().toLowerCase();
+
+  // 1. Si el usuario especificó una marca (ej. Toyota, Bajaj, Hyundai)
+  if (cleanBrand) {
+    // Buscar la marca dentro del catálogo de la categoría actual
+    const brandKey = Object.keys(cat.modelsByBrand).find(
+      b => b.toLowerCase() === cleanBrand.toLowerCase()
+    );
+
+    if (brandKey) {
+      const models = cat.modelsByBrand[brandKey] || [];
+      if (!cleanQuery) {
+        return models.map(m => ({ model: m, brand: brandKey }));
+      }
+      // Filtrar STRICTAMENTE dentro de los modelos de esa marca
+      return models
+        .filter(m => m.toLowerCase().includes(cleanQuery))
+        .map(m => ({ model: m, brand: brandKey }));
+    }
+
+    // Si la marca existe en otra categoría (ej. el usuario puso Honda en auto, o Bajaj en moto)
+    for (const [catKey, catData] of Object.entries(VEHICLE_TAXONOMY)) {
+      const otherBrandKey = Object.keys(catData.modelsByBrand).find(
+        b => b.toLowerCase() === cleanBrand.toLowerCase()
+      );
+      if (otherBrandKey) {
+        const otherModels = catData.modelsByBrand[otherBrandKey] || [];
+        if (!cleanQuery) {
+          return otherModels.slice(0, 8).map(m => ({ model: m, brand: otherBrandKey }));
+        }
+        return otherModels
+          .filter(m => m.toLowerCase().includes(cleanQuery))
+          .map(m => ({ model: m, brand: otherBrandKey }));
+      }
+    }
+
+    // Si la marca es totalmente desconocida/personalizada, no mezclar con modelos de otras marcas
+    return [];
+  }
+
+  // 2. Si AÚN NO ha puesto ninguna marca y escribe en el buscador de modelo:
   if (cleanQuery) {
     const results = [];
-    for (const [b, models] of Object.entries(VEHICLE_MODELS_CATALOG)) {
+    for (const [b, models] of Object.entries(cat.modelsByBrand)) {
       for (const m of models) {
         if (m.toLowerCase().includes(cleanQuery)) {
           results.push({ model: m, brand: b });
@@ -190,12 +235,21 @@ export const getMatchingModels = (brand = '', query = '', vehicleType = 'auto') 
       }
       if (results.length >= 8) break;
     }
-    if (results.length > 0) return results;
+    return results;
   }
 
-  // 3. Fallback sugerencias populares por categoría de vehículo
-  const catList = CATEGORY_DEFAULT_MODELS[vehicleType] || CATEGORY_DEFAULT_MODELS.auto;
-  return catList.slice(0, 6);
+  // 3. Si no hay marca ni texto: sugerir los modelos emblemáticos de esta categoría
+  const topDefaults = [];
+  for (const [b, models] of Object.entries(cat.modelsByBrand)) {
+    if (models[0]) topDefaults.push({ model: models[0], brand: b });
+    if (models[1]) topDefaults.push({ model: models[1], brand: b });
+    if (topDefaults.length >= 6) break;
+  }
+  return topDefaults;
+};
+
+export const getMatchingModels = (brand = '', model = '', vehicleType = 'auto') => {
+  return getModelsForBrandAndCategory(brand, vehicleType, model);
 };
 
 export const COLOR_SWATCHES = [
@@ -958,11 +1012,19 @@ export const VehiclesModule = () => {
                 key={cat.id}
                 type="button"
                 onClick={() => {
+                  const newCat = cat.id;
+                  const newCatBrands = getBrandsForCategory(newCat);
+                  const brandStillValid = newCatBrands.some(b => b.toLowerCase() === (formData.brand || '').toLowerCase());
+                  const nextBrand = brandStillValid ? formData.brand : '';
+                  const nextModels = brandStillValid ? getModelsForBrandAndCategory(nextBrand, newCat) : [];
+                  const modelStillValid = brandStillValid && nextModels.some(m => m.model.toLowerCase() === (formData.model || '').toLowerCase());
                   setFormData(prev => ({
                     ...prev,
-                    vehicle_type: cat.id,
-                    is_taxi: cat.id === 'auto' ? prev.is_taxi : false,
-                    imageUrl: (!prev.imageUrl || prev.imageUrl.includes('unsplash.com')) ? getDefaultCarImage(cat.id) : prev.imageUrl
+                    vehicle_type: newCat,
+                    brand: nextBrand,
+                    model: modelStillValid ? prev.model : '',
+                    is_taxi: newCat === 'auto' ? prev.is_taxi : false,
+                    imageUrl: (!prev.imageUrl || prev.imageUrl.includes('unsplash.com')) ? getDefaultCarImage(newCat) : prev.imageUrl
                   }));
                 }}
                 className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
@@ -985,27 +1047,57 @@ export const VehiclesModule = () => {
         </div>
       </div>
 
-      {/* Marca con chips rápidos */}
+      {/* Marca con chips rápidos adaptados por tipo de vehículo */}
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
             Marca
           </label>
-          <span className="text-[10px] text-slate-400">Sugerencias rápidas</span>
+          <span className="text-[10px] text-slate-400">
+            {formData.vehicle_type === 'mototaxi' ? 'Marcas de Mototaxi' : 
+             formData.vehicle_type === 'moto' ? 'Marcas de Moto' : 
+             formData.vehicle_type === 'suv' ? 'Marcas de Camioneta / SUV' : 
+             formData.vehicle_type === 'truck' ? 'Marcas de Camión' : 'Marcas de Auto'}
+          </span>
         </div>
         <Input
           type="text"
-          placeholder="Toyota, Hyundai, Nissan, Bajaj..."
+          placeholder={
+            formData.vehicle_type === 'mototaxi' ? 'Bajaj, TVS, Zongshen, Wanxin...' :
+            formData.vehicle_type === 'moto' ? 'Honda, Yamaha, Bajaj, Suzuki, KTM...' :
+            formData.vehicle_type === 'suv' ? 'Toyota, Hyundai, Ford, Kia, Jeep...' :
+            formData.vehicle_type === 'truck' ? 'Toyota, Fuso, Hino, Isuzu, Hyundai...' :
+            'Toyota, Hyundai, Nissan, Kia, Chevrolet...'
+          }
           value={formData.brand}
-          onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+          onChange={(e) => {
+            const newBrand = e.target.value;
+            setFormData(prev => {
+              const modelsOfBrand = getModelsForBrandAndCategory(newBrand, prev.vehicle_type);
+              const keepModel = !prev.model || modelsOfBrand.some(m => m.model.toLowerCase() === prev.model.toLowerCase());
+              return {
+                ...prev,
+                brand: newBrand,
+                model: keepModel ? prev.model : ''
+              };
+            });
+            setShowModelSuggestions(true);
+          }}
           className="text-xs h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
         />
         <div className="flex flex-wrap gap-1.5 mt-2">
-          {POPULAR_BRANDS.map(b => (
+          {getBrandsForCategory(formData.vehicle_type).map(b => (
             <button
               key={b}
               type="button"
-              onClick={() => setFormData({ ...formData, brand: b })}
+              onClick={() => {
+                setFormData(prev => ({
+                  ...prev,
+                  brand: b,
+                  model: prev.brand?.toLowerCase() === b.toLowerCase() ? prev.model : ''
+                }));
+                setShowModelSuggestions(true);
+              }}
               className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-colors border cursor-pointer ${
                 formData.brand?.toLowerCase() === b.toLowerCase()
                   ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-600 shadow-2xs'
@@ -1020,7 +1112,7 @@ export const VehiclesModule = () => {
 
       {/* Modelo y Año con Autocompletado Inteligente */}
       {(() => {
-        const matchingModels = getMatchingModels(formData.brand, formData.model, formData.vehicle_type);
+        const matchingModels = getModelsForBrandAndCategory(formData.brand, formData.vehicle_type, formData.model);
         return (
           <>
             <div className="grid grid-cols-2 gap-3 relative">
@@ -1029,24 +1121,32 @@ export const VehiclesModule = () => {
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
                     Modelo *
                   </label>
-                  {formData.model && (
+                  {formData.brand ? (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold truncate max-w-[130px]" title={`Solo modelos de ${formData.brand}`}>
+                      Solo de {formData.brand}
+                    </span>
+                  ) : formData.model ? (
                     <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
                       Sugerencias activas
                     </span>
-                  )}
+                  ) : null}
                 </div>
                 <Input
                   type="text"
                   placeholder={
-                    formData.vehicle_type === 'mototaxi'
+                    formData.brand
+                      ? `Ej. Modelo de ${formData.brand}...`
+                      : formData.vehicle_type === 'mototaxi'
                       ? 'Ej. Torito 4T, King Deluxe...'
                       : formData.vehicle_type === 'moto'
                       ? 'Ej. Pulsar NS 200, YBR 125...'
-                      : 'Ej. Corolla, RAV4, Elantra...'
+                      : formData.vehicle_type === 'suv'
+                      ? 'Ej. RAV4, Tucson, Sportage...'
+                      : 'Ej. Corolla, Elantra, Yaris...'
                   }
                   value={formData.model}
                   onFocus={() => setShowModelSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowModelSuggestions(false), 200)}
+                  onBlur={() => setTimeout(() => setShowModelSuggestions(false), 250)}
                   onChange={(e) => {
                     setFormData({ ...formData, model: e.target.value });
                     setShowModelSuggestions(true);
@@ -1061,7 +1161,7 @@ export const VehiclesModule = () => {
                     className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl max-h-48 overflow-y-auto p-1.5 animate-in fade-in slide-in-from-top-1 duration-150"
                   >
                     <div className="flex items-center justify-between px-2 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
-                      <span>Modelos sugeridos</span>
+                      <span>{formData.brand ? `Modelos de ${formData.brand}` : 'Modelos sugeridos'}</span>
                       <span>{matchingModels.length} opciones</span>
                     </div>
                     {matchingModels.map(({ model: m, brand: b }) => (
@@ -1109,12 +1209,12 @@ export const VehiclesModule = () => {
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    {formData.brand ? `Modelos sugeridos para ${formData.brand}:` : 'Modelos populares sugeridos:'}
+                    {formData.brand ? `Modelos sugeridos de ${formData.brand}:` : 'Modelos populares sugeridos:'}
                   </span>
                   <span className="text-[10px] text-slate-400">1 toque</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {matchingModels.slice(0, 5).map(({ model: m, brand: b }) => {
+                  {matchingModels.slice(0, 6).map(({ model: m, brand: b }) => {
                     const isSelected = formData.model?.toLowerCase() === m.toLowerCase();
                     return (
                       <button

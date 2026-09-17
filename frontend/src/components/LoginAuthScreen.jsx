@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
 import { GoogleLogin } from '@react-oauth/google';
@@ -19,7 +19,9 @@ import {
   Send,
   FileCheck2,
   X,
-  Shield
+  Shield,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -64,8 +66,33 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   // Estados Formulario Login (Correo o Nombre de Usuario)
-  const [loginEmail, setLoginEmail] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => {
+    try {
+      return !!localStorage.getItem('smart_park_remember_user');
+    } catch (e) {
+      return false;
+    }
+  });
+  const [loginEmail, setLoginEmail] = useState(() => {
+    try {
+      return localStorage.getItem('smart_park_remember_user') || '';
+    } catch (e) {
+      return '';
+    }
+  });
   const [loginPassword, setLoginPassword] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const loginInputRef = useRef(null);
+
+  // Autofoco suave en el campo de entrada al abrir el modo login
+  useEffect(() => {
+    if (authMode === 'login') {
+      const timer = setTimeout(() => {
+        loginInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [authMode]);
 
   // Estados Formulario PIN Express (Garita / Operadores)
   const [pinIdentifier, setPinIdentifier] = useState('');
@@ -92,16 +119,31 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
   const [reqSuccess, setReqSuccess] = useState(false);
 
   // Submit Login
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!loginEmail.trim()) {
       setErrorMsg('Por favor ingresa tu correo o nombre de usuario');
+      loginInputRef.current?.focus();
+      return;
+    }
+    if (!loginPassword) {
+      setErrorMsg('Por favor ingresa tu contraseña');
       return;
     }
     setErrorMsg('');
-    loginWithEmail(loginEmail.trim(), loginPassword).catch(err => {
-      setErrorMsg(err?.message || 'No se pudo iniciar sesión');
-    });
+    setIsLoggingIn(true);
+    try {
+      await loginWithEmail(loginEmail.trim(), loginPassword);
+      if (rememberMe) {
+        localStorage.setItem('smart_park_remember_user', loginEmail.trim());
+      } else {
+        localStorage.removeItem('smart_park_remember_user');
+      }
+    } catch (err) {
+      setErrorMsg(err?.message || 'Credenciales incorrectas o error de conexión');
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   // Submit PIN Express (Garita / Operadores)
@@ -350,18 +392,18 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
             </div>
           )}
 
-          {/* Alertas de error y éxito */}
+          {/* Alertas de error y éxito con protección de layout-shift */}
           {errorMsg && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-xs font-semibold text-rose-700 dark:text-rose-300 text-center flex items-center justify-center space-x-2 animate-fade-in">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-              <span>{errorMsg}</span>
+            <div className="p-2.5 bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs font-semibold text-rose-700 dark:text-rose-300 flex items-center justify-center space-x-2 animate-fade-in transition-all">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+              <span className="truncate">{errorMsg}</span>
             </div>
           )}
 
           {successMsg && (
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl text-xs font-semibold text-emerald-800 dark:text-emerald-300 text-center flex items-center justify-center space-x-2 animate-fade-in">
+            <div className="p-2.5 bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-xl text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center justify-center space-x-2 animate-fade-in transition-all">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>{successMsg}</span>
+              <span className="truncate">{successMsg}</span>
             </div>
           )}
 
@@ -394,25 +436,35 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
               {/* Formulario Login */}
               <form onSubmit={handleLoginSubmit} className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Correo o Nombre de Usuario</label>
+                  <label htmlFor="login-identifier" className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    Correo o Nombre de Usuario
+                  </label>
                   <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     <Input
+                      id="login-identifier"
+                      name="username"
+                      ref={loginInputRef}
                       type="text"
                       required
+                      autoComplete="username"
+                      disabled={isLoggingIn}
                       placeholder="usuario@ejemplo.com o tu nombre"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10.5 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
+                      className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10.5 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 disabled:opacity-60"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Contraseña</label>
+                    <label htmlFor="login-password" className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                      Contraseña
+                    </label>
                     <button
                       type="button"
+                      tabIndex={-1}
                       onClick={() => { setAuthMode('forgot_password'); setErrorMsg(''); }}
                       className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer"
                     >
@@ -420,30 +472,62 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     </button>
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     <Input
+                      id="login-password"
+                      name="password"
                       type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      disabled={isLoggingIn}
                       placeholder="••••••••"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="pl-10 pr-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10.5 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
+                      className="pl-10 pr-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10.5 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 disabled:opacity-60"
                     />
                     <button
                       type="button"
+                      tabIndex={-1}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 cursor-pointer transition-colors"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
                     </button>
                   </div>
                 </div>
 
+                {/* Casilla Discreta de Recordar Sesión */}
+                <div className="flex items-center justify-between pt-0.5">
+                  <label className="flex items-center space-x-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none group">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      disabled={isLoggingIn}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500/20 bg-slate-50 dark:bg-slate-800 cursor-pointer accent-emerald-600"
+                    />
+                    <span className="group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
+                      Recordar mi cuenta
+                    </span>
+                  </label>
+                </div>
+
+                {/* Botón de Ingreso con Feedback de Carga */}
                 <Button
                   type="submit"
-                  className="w-full h-10.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/25 mt-1 transition cursor-pointer"
+                  disabled={isLoggingIn}
+                  className="w-full h-10.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-75 disabled:cursor-not-allowed text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/25 mt-1 transition cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <span>Ingresar al Sistema</span>
-                  <ArrowRight className="w-4 h-4 ml-1.5 text-white" />
+                  {isLoggingIn ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Autenticando…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Ingresar al Sistema</span>
+                      <ArrowRight className="w-4 h-4 text-white" />
+                    </>
+                  )}
                 </Button>
               </form>
 

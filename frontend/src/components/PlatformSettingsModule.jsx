@@ -412,17 +412,17 @@ export const PlatformSettingsModule = () => {
       )}
 
       {/* Header Principal */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#111827] p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-slate-900 dark:bg-slate-800 text-emerald-400 flex items-center justify-center shadow-sm">
               <Sliders className="w-4 h-4" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               Configuración de Plataforma
             </h1>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Parámetros globales, pasarelas de pago y comunicados a la red.
           </p>
         </div>
@@ -432,10 +432,10 @@ export const PlatformSettingsModule = () => {
             type="button"
             onClick={handleDownloadLatestBackup}
             variant="outline"
-            className="w-full sm:w-auto border-slate-200 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs gap-2 h-10 px-3 cursor-pointer justify-center"
+            className="w-full sm:w-auto border-slate-200 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs gap-2 h-10 px-3 cursor-pointer justify-center"
             title="Exportar respaldo completo del sistema en JSON"
           >
-            <Download className="w-4 h-4 text-slate-600" />
+            <Download className="w-4 h-4 text-slate-600 dark:text-slate-400" />
             <span>Exportar Backup</span>
           </Button>
 
@@ -451,74 +451,74 @@ export const PlatformSettingsModule = () => {
           <Button
             type="button"
             onClick={handleSaveSettings}
-            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md gap-2 h-10 px-4 cursor-pointer justify-center"
+            className="w-full sm:w-auto bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-md gap-2 h-10 px-4 cursor-pointer justify-center"
           >
-            <Save className="w-4 h-4 text-emerald-400" />
+            <Save className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
             <span>Guardar Ajustes</span>
           </Button>
         </div>
       </div>
 
       {/* Pestañas de Navegación de Ajustes */}
-      <div className="flex items-center space-x-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-none">
+      <div className="flex items-center space-x-2 bg-slate-100 dark:bg-slate-900/60 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveSection('system')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeSection === 'system' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+            activeSection === 'system' ? 'bg-white dark:bg-[#111827] text-slate-900 dark:text-white shadow-xs font-black' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Sliders className="w-4 h-4 text-emerald-600" />
+          <Sliders className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>Sistema</span>
         </button>
 
         <button
           onClick={() => setActiveSection('appearance')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeSection === 'appearance' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+            activeSection === 'appearance' ? 'bg-white dark:bg-[#111827] text-slate-900 dark:text-white shadow-xs font-black' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Palette className="w-4 h-4 text-emerald-600" />
+          <Palette className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>Apariencia</span>
         </button>
 
         <button
           onClick={() => setActiveSection('business')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeSection === 'business' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+            activeSection === 'business' ? 'bg-white dark:bg-[#111827] text-slate-900 dark:text-white shadow-xs font-black' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Percent className="w-4 h-4 text-emerald-600" />
+          <Percent className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>Tarifas & Comisiones</span>
         </button>
 
         <button
           onClick={() => setActiveSection('payments')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeSection === 'payments' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+            activeSection === 'payments' ? 'bg-white dark:bg-[#111827] text-slate-900 dark:text-white shadow-xs font-black' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <CreditCard className="w-4 h-4 text-emerald-600" />
+          <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>Pasarelas</span>
         </button>
 
         <button
           onClick={() => setActiveSection('broadcasts')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeSection === 'broadcasts' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+            activeSection === 'broadcasts' ? 'bg-white dark:bg-[#111827] text-slate-900 dark:text-white shadow-xs font-black' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Bell className="w-4 h-4 text-emerald-600" />
+          <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>Comunicados ({broadcasts.length})</span>
         </button>
 
         <button
           onClick={() => setActiveSection('map')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeSection === 'map' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+            activeSection === 'map' ? 'bg-white dark:bg-[#111827] text-slate-900 dark:text-white shadow-xs font-black' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Map className="w-4 h-4 text-emerald-600" />
-          <span>Mapa</span>
+          <Map className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <span>Mapa de Sedes</span>
         </button>
       </div>
 
@@ -528,25 +528,25 @@ export const PlatformSettingsModule = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             {/* Tarjeta 1: Motor de Reservas y Cancelación Automática */}
-            <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-5">
-              <div className="flex items-center space-x-3 border-b border-slate-100 pb-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <Card className="p-6 rounded-3xl border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-[#111827] space-y-5">
+              <div className="flex items-center space-x-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                   <Clock className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black text-slate-900">Tolerancia & Reservas</h2>
-                  <p className="text-[11px] text-slate-500">Reglas de llegada y cancelación por no-show.</p>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-white">Tolerancia & Reservas</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Reglas de llegada y cancelación por no-show.</p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 {/* Auto Cancelación */}
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60">
                   <div className="space-y-0.5 max-w-[80%]">
-                    <span className="text-xs font-bold text-slate-800 block">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                       Auto-cancelación por No-Show
                     </span>
-                    <span className="text-[11px] text-slate-500 block leading-tight">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block leading-tight">
                       Libera el cajón automáticamente si se supera la tolerancia sin registrar ingreso.
                     </span>
                   </div>
@@ -554,21 +554,21 @@ export const PlatformSettingsModule = () => {
                     type="button"
                     onClick={() => setSettings(prev => ({ ...prev, autoCancelNoShow: !prev.autoCancelNoShow }))}
                     className={`w-11 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
-                      settings.autoCancelNoShow ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
+                      settings.autoCancelNoShow ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
                     }`}
                   >
-                    <span className="w-5 h-5 rounded-full bg-white shadow-sm block" />
+                    <span className="w-5 h-5 rounded-full bg-white dark:bg-slate-100 shadow-sm block" />
                   </button>
                 </div>
 
                 {/* Notificaciones Preventivas */}
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60">
                   <div className="space-y-0.5 max-w-[80%]">
-                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                       <BellRing className="w-3.5 h-3.5 text-amber-500" />
                       Alertas preventivas (10 y 5 min)
                     </span>
-                    <span className="text-[11px] text-slate-500 block leading-tight">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block leading-tight">
                       Notificación urgente al conductor antes de liberar la plaza.
                     </span>
                   </div>
@@ -576,20 +576,20 @@ export const PlatformSettingsModule = () => {
                     type="button"
                     onClick={() => setSettings(prev => ({ ...prev, advanceNotificationMinutes: prev.advanceNotificationMinutes > 0 ? 0 : 10 }))}
                     className={`w-11 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
-                      settings.advanceNotificationMinutes > 0 ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
+                      settings.advanceNotificationMinutes > 0 ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
                     }`}
                   >
-                    <span className="w-5 h-5 rounded-full bg-white shadow-sm block" />
+                    <span className="w-5 h-5 rounded-full bg-white dark:bg-slate-100 shadow-sm block" />
                   </button>
                 </div>
 
                 {/* Reserva sin Pago */}
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60">
                   <div className="space-y-0.5 max-w-[80%]">
-                    <span className="text-xs font-bold text-slate-800 block">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                       Reservas sin pago previo
                     </span>
-                    <span className="text-[11px] text-slate-500 block leading-tight">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block leading-tight">
                       Permite reservar y abonar la estadía directamente en garita al salir.
                     </span>
                   </div>
@@ -597,23 +597,23 @@ export const PlatformSettingsModule = () => {
                     type="button"
                     onClick={() => setSettings(prev => ({ ...prev, allowUnpaidBooking: !prev.allowUnpaidBooking }))}
                     className={`w-11 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
-                      settings.allowUnpaidBooking ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
+                      settings.allowUnpaidBooking ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
                     }`}
                   >
-                    <span className="w-5 h-5 rounded-full bg-white shadow-sm block" />
+                    <span className="w-5 h-5 rounded-full bg-white dark:bg-slate-100 shadow-sm block" />
                   </button>
                 </div>
 
                 {/* Aviso Previo de Expiración */}
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-slate-800 block">Aviso Previo de Expiración</span>
-                    <span className="text-[11px] text-slate-500">Antelación para notificar al conductor (cobro continuo sin gracia).</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Aviso Previo de Expiración</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">Antelación para notificar al conductor (cobro continuo sin gracia).</span>
                   </div>
                   <select
                     value={settings.gracePeriodMinutes}
                     onChange={(e) => setSettings({ ...settings, gracePeriodMinutes: Number(e.target.value) })}
-                    className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-black text-slate-900 cursor-pointer shadow-2xs"
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-black text-slate-900 dark:text-white cursor-pointer shadow-2xs"
                   >
                     <option value="10">10 minutos</option>
                     <option value="15">15 minutos (Estándar)</option>
@@ -625,25 +625,25 @@ export const PlatformSettingsModule = () => {
             </Card>
 
             {/* Tarjeta 2: Operatividad de Garitas & Reconocimiento */}
-            <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-5">
-              <div className="flex items-center space-x-3 border-b border-slate-100 pb-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <Card className="p-6 rounded-3xl border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-[#111827] space-y-5">
+              <div className="flex items-center space-x-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                   <Camera className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black text-slate-900">Garita & Afiliaciones</h2>
-                  <p className="text-[11px] text-slate-500">Detección vehicular, alertas y admisión pública.</p>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-white">Garita & Afiliaciones</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Detección vehicular, alertas y admisión pública.</p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 {/* LPR / ANPR */}
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60">
                   <div className="space-y-0.5 max-w-[80%]">
-                    <span className="text-xs font-bold text-slate-800 block">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                       Detección de placas (LPR)
                     </span>
-                    <span className="text-[11px] text-slate-500 block leading-tight">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block leading-tight">
                       Lectura asistida por cámara para validar ingresos de vehículos registrados.
                     </span>
                   </div>
@@ -651,21 +651,21 @@ export const PlatformSettingsModule = () => {
                     type="button"
                     onClick={() => setSettings(prev => ({ ...prev, lprCameraEnabled: !prev.lprCameraEnabled }))}
                     className={`w-11 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
-                      settings.lprCameraEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
+                      settings.lprCameraEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
                     }`}
                   >
-                    <span className="w-5 h-5 rounded-full bg-white shadow-sm block" />
+                    <span className="w-5 h-5 rounded-full bg-white dark:bg-slate-100 shadow-sm block" />
                   </button>
                 </div>
 
                 {/* Alertas Sonoras */}
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60">
                   <div className="space-y-0.5 max-w-[80%]">
-                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                       <Volume2 className="w-3.5 h-3.5 text-indigo-500" />
                       Alertas sonoras en garita
                     </span>
-                    <span className="text-[11px] text-slate-500 block leading-tight">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block leading-tight">
                       Efectos sonoros de confirmación al registrar accesos o incidencias.
                     </span>
                   </div>
@@ -673,20 +673,20 @@ export const PlatformSettingsModule = () => {
                     type="button"
                     onClick={() => setSettings(prev => ({ ...prev, soundAlertsEnabled: !prev.soundAlertsEnabled }))}
                     className={`w-11 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
-                      settings.soundAlertsEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
+                      settings.soundAlertsEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
                     }`}
                   >
-                    <span className="w-5 h-5 rounded-full bg-white shadow-sm block" />
+                    <span className="w-5 h-5 rounded-full bg-white dark:bg-slate-100 shadow-sm block" />
                   </button>
                 </div>
 
                 {/* Afiliaciones Públicas */}
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60">
                   <div className="space-y-0.5 max-w-[80%]">
-                    <span className="text-xs font-bold text-slate-800 block">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                       Solicitudes públicas de afiliación
                     </span>
-                    <span className="text-[11px] text-slate-500 block leading-tight">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block leading-tight">
                       Permite a nuevas cocheras postular a la red desde la página de inicio.
                     </span>
                   </div>
@@ -694,18 +694,18 @@ export const PlatformSettingsModule = () => {
                     type="button"
                     onClick={() => setSettings(prev => ({ ...prev, publicAffiliationsEnabled: !prev.publicAffiliationsEnabled }))}
                     className={`w-11 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
-                      settings.publicAffiliationsEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
+                      settings.publicAffiliationsEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
                     }`}
                   >
-                    <span className="w-5 h-5 rounded-full bg-white shadow-sm block" />
+                    <span className="w-5 h-5 rounded-full bg-white dark:bg-slate-100 shadow-sm block" />
                   </button>
                 </div>
 
                 {/* Expiración de QR */}
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-slate-800 block">Vigencia Máxima del Pase QR</span>
-                    <span className="text-[11px] text-slate-500">Tiempo de validez de lectura en el escáner.</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Vigencia Máxima del Pase QR</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">Tiempo de validez de lectura en el escáner.</span>
                   </div>
                   <select
                     value={settings.security.qrExpirationMinutes}
@@ -713,7 +713,7 @@ export const PlatformSettingsModule = () => {
                       ...settings,
                       security: { ...settings.security, qrExpirationMinutes: Number(e.target.value) }
                     })}
-                    className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-black text-slate-900 cursor-pointer shadow-2xs"
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-black text-slate-900 dark:text-white cursor-pointer shadow-2xs"
                   >
                     <option value="15">15 minutos</option>
                     <option value="30">30 minutos (Estándar)</option>
@@ -727,15 +727,15 @@ export const PlatformSettingsModule = () => {
 
           {/* Tarjeta 3: Mantenimiento Global & Respaldo */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="md:col-span-2 p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <Card className="md:col-span-2 p-6 rounded-3xl border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-[#111827] space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center space-x-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${settings.maintenanceMode ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600'}`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${settings.maintenanceMode ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                     <ShieldAlert className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-slate-900">Modo Mantenimiento de la Plataforma</h3>
-                    <p className="text-[11px] text-slate-500">Suspende temporalmente las reservas para operaciones de infraestructura.</p>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">Modo Mantenimiento de la Plataforma</h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Suspende temporalmente las reservas para operaciones de infraestructura.</p>
                   </div>
                 </div>
 
@@ -743,47 +743,47 @@ export const PlatformSettingsModule = () => {
                   type="button"
                   onClick={() => setSettings(prev => ({ ...prev, maintenanceMode: !prev.maintenanceMode }))}
                   className={`w-12 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
-                    settings.maintenanceMode ? 'bg-rose-600 justify-end' : 'bg-slate-300 justify-start'
+                    settings.maintenanceMode ? 'bg-rose-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
                   }`}
                 >
-                  <span className="w-5 h-5 rounded-full bg-white shadow-sm block" />
+                  <span className="w-5 h-5 rounded-full bg-white dark:bg-slate-100 shadow-sm block" />
                 </button>
               </div>
 
               {settings.maintenanceMode && (
                 <div className="space-y-2 animate-in fade-in">
-                  <label className="block text-xs font-bold text-rose-700">Mensaje público para usuarios y conductores:</label>
+                  <label className="block text-xs font-bold text-rose-700 dark:text-rose-400">Mensaje público para usuarios y conductores:</label>
                   <textarea
                     rows={2}
                     value={settings.maintenanceMessage}
                     onChange={(e) => setSettings({ ...settings, maintenanceMessage: e.target.value })}
-                    className="w-full bg-rose-50/50 border border-rose-200 rounded-2xl p-3 text-xs font-medium text-rose-900 focus:outline-none"
+                    className="w-full bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 rounded-2xl p-3 text-xs font-medium text-rose-900 dark:text-rose-200 focus:outline-none"
                   />
                 </div>
               )}
             </Card>
 
-            <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white flex flex-col justify-between space-y-4 lg:col-span-2">
+            <Card className="p-6 rounded-3xl border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-[#111827] flex flex-col justify-between space-y-4 lg:col-span-2">
               <div className="space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
                       <Database className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-slate-900">Respaldos de Base de Datos en Producción</h3>
-                      <p className="text-[11px] text-slate-500 leading-tight">
+                      <h3 className="text-sm font-black text-slate-900 dark:text-white">Respaldos de Base de Datos en Producción</h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
                         Copia integral de todas las tablas de PostgreSQL (usuarios, tarifas, reservas, transacciones, auditoría) firmada con SHA-256.
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3" />
                       {backupStatus?.database_engine || 'PostgreSQL'}
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 flex items-center gap-1">
                       <HardDrive className="w-3 h-3" />
                       {backupStatus?.is_persistent_volume ? '/data/backups (Volumen)' : 'Local'}
                     </span>
@@ -791,37 +791,37 @@ export const PlatformSettingsModule = () => {
                 </div>
 
                 {/* Métricas y Estado Actual */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
                   <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
                       <CalendarClock className="w-3 h-3 text-slate-400" />
                       Frecuencia
                     </p>
-                    <p className="text-xs font-black text-slate-800">Diario (cada 24h)</p>
-                    <p className="text-[10px] text-slate-400">Retención: {backupStatus?.retention_count || 14} días</p>
+                    <p className="text-xs font-black text-slate-800 dark:text-slate-200">Diario (cada 24h)</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">Retención: {backupStatus?.retention_count || 14} días</p>
                   </div>
 
                   <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Último snapshot</p>
-                    <p className="text-xs font-mono font-bold text-emerald-700 truncate">
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Último snapshot</p>
+                    <p className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 truncate">
                       {backupStatus?.latest_backup?.created_at
                         ? new Date(backupStatus.latest_backup.created_at).toLocaleString()
                         : (loadingBackup ? 'Consultando...' : 'Sin respaldos previos')}
                     </p>
-                    <p className="text-[10px] text-slate-400 truncate">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
                       {backupStatus?.latest_backup?.filename || 'Pendiente'}
                     </p>
                   </div>
 
                   <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Volumen & Registros</p>
-                    <p className="text-xs font-mono font-bold text-slate-800">
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Volumen & Registros</p>
+                    <p className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
                       {backupStatus?.latest_backup?.metadata?.total_records != null
                         ? `${backupStatus.latest_backup.metadata.total_records} filas`
                         : '—'}
                       {' '}• {backupStatus?.latest_backup?.size_kb || 0} KB
                     </p>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">
                       Total archivados: {backupStatus?.total_backups_stored || 0} copias
                     </p>
                   </div>
@@ -835,9 +835,9 @@ export const PlatformSettingsModule = () => {
                     type="button"
                     disabled={generatingBackup}
                     onClick={handleGenerateServerBackup}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs gap-2 h-10 cursor-pointer justify-center"
+                    className="w-full bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-xs gap-2 h-10 cursor-pointer justify-center"
                   >
-                    <RefreshCw className={`w-4 h-4 text-emerald-400 ${generatingBackup ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-4 h-4 text-emerald-400 dark:text-emerald-600 ${generatingBackup ? 'animate-spin' : ''}`} />
                     <span>{generatingBackup ? 'Generando snapshot...' : 'Crear Snapshot Ahora (Servidor)'}</span>
                   </Button>
 
@@ -856,24 +856,24 @@ export const PlatformSettingsModule = () => {
                   <button
                     type="button"
                     onClick={() => setShowBackupsHistory(!showBackupsHistory)}
-                    className="w-full text-center text-xs font-bold text-slate-600 hover:text-slate-900 py-1 flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full text-center text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white py-1 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <History className="w-3.5 h-3.5 text-slate-500" />
+                    <History className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                     <span>{showBackupsHistory ? 'Ocultar historial de archivos' : `Ver historial de archivos en el volumen (${backupStatus.total_backups_stored})`}</span>
-                    {showBackupsHistory ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
+                    {showBackupsHistory ? <ChevronUp className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />}
                   </button>
                 )}
 
                 {/* Lista Histórica Desplegable */}
                 {showBackupsHistory && backupStatus?.available_backups && (
-                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 max-h-48 overflow-y-auto animate-in fade-in">
-                    <p className="text-[11px] font-bold text-slate-700">Archivos almacenados en volumen persistente (/data/backups):</p>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 max-h-48 overflow-y-auto animate-in fade-in">
+                    <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Archivos almacenados en volumen persistente (/data/backups):</p>
                     <div className="space-y-1.5">
                       {backupStatus.available_backups.map((b) => (
-                        <div key={b.filename} className="flex items-center justify-between text-[11px] p-2 bg-white rounded-xl border border-slate-200">
+                        <div key={b.filename} className="flex items-center justify-between text-[11px] p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
                           <div className="truncate pr-2">
-                            <p className="font-mono font-bold text-slate-800 truncate">{b.filename}</p>
-                            <p className="text-[10px] text-slate-400">
+                            <p className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">{b.filename}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
                               {new Date(b.created_at).toLocaleString()} • {b.size_kb} KB
                             </p>
                           </div>
@@ -881,7 +881,7 @@ export const PlatformSettingsModule = () => {
                             type="button"
                             size="sm"
                             onClick={() => handleDownloadSpecificBackup(b.filename)}
-                            className="h-7 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[10px] font-bold gap-1 cursor-pointer"
+                            className="h-7 px-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg text-[10px] font-bold gap-1 cursor-pointer"
                           >
                             <Download className="w-3 h-3" />
                             <span>Descargar</span>
@@ -900,21 +900,21 @@ export const PlatformSettingsModule = () => {
       {/* SECCIÓN 2: TEMAS & APARIENCIA VISUAL */}
       {activeSection === 'appearance' && (
         <div className="space-y-6">
-          <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-5">
-            <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <Card className="p-6 rounded-3xl border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-[#111827] space-y-5">
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                  <Palette className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   <span>Personalización de Temas Visuales</span>
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Selecciona la paleta de colores del sistema. Se aplica instantáneamente a todos los módulos y se recuerda en tu navegador.
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-600 font-mono">Tema activo:</span>
-                <span className="text-xs font-mono font-black text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 font-mono">Tema activo:</span>
+                <span className="text-xs font-mono font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800/60">
                   {availableThemes.find(t => t.id === theme)?.name || 'Claro Esmeralda'}
                 </span>
               </div>
@@ -933,18 +933,18 @@ export const PlatformSettingsModule = () => {
                     }}
                     className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-4 relative ${
                       isSelected
-                        ? 'border-emerald-500 bg-emerald-50/20 shadow-md ring-2 ring-emerald-500/20'
-                        : 'border-slate-200 hover:border-slate-300 bg-slate-50/40 hover:bg-slate-50'
+                        ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/30 shadow-md ring-2 ring-emerald-500/20'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/40 dark:bg-slate-900/40 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                     }`}
                   >
                     {/* Header de la tarjeta */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h4 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                        <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                           {t.isDark ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
                           <span>{t.name}</span>
                         </h4>
-                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">{t.desc}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">{t.desc}</p>
                       </div>
 
                       {isSelected && (
@@ -955,7 +955,7 @@ export const PlatformSettingsModule = () => {
                     </div>
 
                     {/* Previsualización de Muestra de Paleta */}
-                    <div className="rounded-xl p-2.5 border border-slate-200/80 space-y-2" style={{ backgroundColor: t.preview.bg }}>
+                    <div className="rounded-xl p-2.5 border border-slate-200/80 dark:border-slate-700/60 space-y-2" style={{ backgroundColor: t.preview.bg }}>
                       <div className="flex items-center justify-between px-2 py-1.5 rounded-lg shadow-xs" style={{ backgroundColor: t.preview.card, borderColor: t.preview.border }}>
                         <span className="text-[10px] font-bold" style={{ color: t.preview.text }}>Smart-Park</span>
                         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: t.preview.accent }} />
@@ -972,7 +972,7 @@ export const PlatformSettingsModule = () => {
                       className={`w-full py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
                         isSelected
                           ? 'bg-emerald-600 text-white shadow-xs font-black'
-                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                          : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       {isSelected ? (
@@ -988,14 +988,14 @@ export const PlatformSettingsModule = () => {
             </div>
 
             {/* Configuración Adicional de Apariencia */}
-            <div className="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60">
                 <div className="space-y-0.5 max-w-[80%]">
-                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-indigo-500" />
                     Modo Oscuro Automático según la Hora Local
                   </span>
-                  <span className="text-[11px] text-slate-500 block leading-tight">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block leading-tight">
                     Activa automáticamente el tema oscuro a partir de las 19:00 (7:00 PM) y vuelve a claro al amanecer (06:00 AM).
                   </span>
                 </div>
@@ -1007,19 +1007,19 @@ export const PlatformSettingsModule = () => {
                     notify(next ? '✓ Modo oscuro automático activado (19:00 - 06:00).' : 'Modo oscuro automático desactivado.');
                   }}
                   className={`w-11 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
-                    autoDark ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
+                    autoDark ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
                   }`}
                 >
-                  <span className="w-5 h-5 rounded-full bg-white shadow-sm block" />
+                  <span className="w-5 h-5 rounded-full bg-white dark:bg-slate-100 shadow-sm block" />
                 </button>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Estilo del Mapa de Sedes</span>
-                  <span className="text-[11px] text-slate-500">Modo visual predeterminado para el visor geoespacial.</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Estilo del Mapa de Sedes</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Modo visual predeterminado para el visor geoespacial.</span>
                 </div>
-                <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
+                <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800/60">
                   Calles Normal (Mapbox)
                 </span>
               </div>
@@ -1031,13 +1031,13 @@ export const PlatformSettingsModule = () => {
       {/* SECCIÓN 3: REGLAS COMERCIALES & TOLERANCIA */}
       {activeSection === 'business' && (
         <div className="space-y-6">
-          <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-5">
-            <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+          <Card className="p-6 rounded-3xl border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-[#111827] space-y-5">
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-black text-slate-900">Comisiones de Plataforma & Políticas Arancelarias</h2>
-                <p className="text-xs text-slate-500">Configura la comisión retenida por reserva y los límites arancelarios para cocheras en Ayacucho.</p>
+                <h2 className="text-base font-black text-slate-900 dark:text-white">Comisiones de Plataforma & Políticas Arancelarias</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Configura la comisión retenida por reserva y los límites arancelarios para cocheras en Ayacucho.</p>
               </div>
-              <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+              <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800/60">
                 Comisión Vigente: {settings.defaultCommission}%
               </span>
             </div>
@@ -1045,7 +1045,7 @@ export const PlatformSettingsModule = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Comisión Estándar */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Comisión Estándar (%)
                 </label>
                 <div className="relative">
@@ -1055,16 +1055,16 @@ export const PlatformSettingsModule = () => {
                     max="50"
                     value={settings.defaultCommission}
                     onChange={(e) => setSettings({ ...settings, defaultCommission: Number(e.target.value) })}
-                    className="pr-8 text-xs font-bold h-10"
+                    className="pr-8 text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                   <Percent className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3.5" />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">Porcentaje retenido por cada reserva completada.</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Porcentaje retenido por cada reserva completada.</p>
               </div>
 
               {/* Aviso Previo de Expiración */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Aviso Previo de Expiración (min)
                 </label>
                 <div className="relative">
@@ -1074,16 +1074,16 @@ export const PlatformSettingsModule = () => {
                     max="60"
                     value={settings.gracePeriodMinutes}
                     onChange={(e) => setSettings({ ...settings, gracePeriodMinutes: Number(e.target.value) })}
-                    className="pr-8 text-xs font-bold h-10"
+                    className="pr-8 text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                   <Clock className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3.5" />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">Tiempo de antelación para notificar al conductor antes del cobro de exceso.</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Tiempo de antelación para notificar al conductor antes del cobro de exceso.</p>
               </div>
 
               {/* Tarifa Mínima Sugerida */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Tarifa Mínima Sugerida (S/)
                 </label>
                 <Input
@@ -1091,14 +1091,14 @@ export const PlatformSettingsModule = () => {
                   step="0.50"
                   value={settings.minHourlyRate}
                   onChange={(e) => setSettings({ ...settings, minHourlyRate: Number(e.target.value) })}
-                  className="text-xs font-bold h-10"
+                  className="text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Piso arancelario para cocheras afiliadas.</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Piso arancelario para cocheras afiliadas.</p>
               </div>
 
               {/* Tarifa Máxima Permitida */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Tarifa Máxima Permitida (S/)
                 </label>
                 <Input
@@ -1106,9 +1106,9 @@ export const PlatformSettingsModule = () => {
                   step="0.50"
                   value={settings.maxHourlyRate}
                   onChange={(e) => setSettings({ ...settings, maxHourlyRate: Number(e.target.value) })}
-                  className="text-xs font-bold h-10"
+                  className="text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Techo regulatorio para evitar abusos en temporada alta.</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Techo regulatorio para evitar abusos en temporada alta.</p>
               </div>
             </div>
           </Card>
@@ -1118,13 +1118,13 @@ export const PlatformSettingsModule = () => {
       {/* SECCIÓN 4: PASARELAS DE PAGO */}
       {activeSection === 'payments' && (
         <div className="space-y-6">
-          <Card className="p-6 rounded-3xl border-slate-200 shadow-xs bg-white space-y-5">
-            <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+          <Card className="p-6 rounded-3xl border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-[#111827] space-y-5">
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-black text-slate-900">Estado de Pasarelas de Pago Digital</h2>
-                <p className="text-xs text-slate-500">Monitoreo de Culqi (Yape/Tarjetas) y PayPal en servidores de Smart-Park.</p>
+                <h2 className="text-base font-black text-slate-900 dark:text-white">Estado de Pasarelas de Pago Digital</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Monitoreo de Culqi (Yape/Tarjetas) y PayPal en servidores de Smart-Park.</p>
               </div>
-              <span className="text-xs font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-xl border border-indigo-200">
+              <span className="text-xs font-mono font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-xl border border-indigo-200 dark:border-indigo-800/60">
                 Entorno: {settings.paymentGateways.environment.toUpperCase()}
               </span>
             </div>
@@ -1132,27 +1132,27 @@ export const PlatformSettingsModule = () => {
             {/* Banner de Estado Real del Servidor */}
             <div className={`p-4 rounded-2xl border flex items-center space-x-3 text-xs font-medium ${
               gatewayStatus.paypal_configured 
-                ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900' 
-                : 'bg-amber-50/80 border-amber-200 text-amber-900'
+                ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50 text-emerald-900 dark:text-emerald-300' 
+                : 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 text-amber-900 dark:text-amber-300'
             }`}>
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <div className="flex-1">
                 <span className="font-bold block">
                   {gatewayStatus.paypal_configured ? 'Pasarelas conectadas al servidor backend' : 'Estado de conexión parcial'}
                 </span>
                 <span className="text-[11px] opacity-80">{gatewayStatus.message}</span>
               </div>
-              <span className="font-mono text-[10px] bg-white/80 px-2 py-1 rounded-lg border border-slate-200 shrink-0">
+              <span className="font-mono text-[10px] bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-slate-200 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shrink-0">
                 TC: S/ 1 = ${gatewayStatus.exchange_rate} USD
               </span>
             </div>
 
             {/* Switches de Métodos de Pago */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Yape & Plin (Vía Pasarela)</span>
-                  <span className="text-[11px] text-slate-500">Permite pagos móviles directos en reservas.</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Yape & Plin (Vía Pasarela)</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Permite pagos móviles directos en reservas.</span>
                 </div>
                 <input
                   type="checkbox"
@@ -1165,10 +1165,10 @@ export const PlatformSettingsModule = () => {
                 />
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Tarjetas de Débito y Crédito</span>
-                  <span className="text-[11px] text-slate-500">Visa, Mastercard, Amex a través de Culqi/PayPal.</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Tarjetas de Débito y Crédito</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Visa, Mastercard, Amex a través de Culqi/PayPal.</span>
                 </div>
                 <input
                   type="checkbox"
@@ -1189,8 +1189,8 @@ export const PlatformSettingsModule = () => {
       {activeSection === 'broadcasts' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-              <Bell className="w-5 h-5 text-emerald-600" />
+            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Bell className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span>Registro Histórico de Comunicados Emitidos</span>
             </h2>
             <Button
@@ -1205,36 +1205,36 @@ export const PlatformSettingsModule = () => {
 
           <div className="space-y-3">
             {broadcasts.length === 0 ? (
-              <Card className="p-8 rounded-3xl border-slate-200 text-center bg-white">
-                <p className="text-xs text-slate-400 font-medium">No hay comunicados registrados aún.</p>
+              <Card className="p-8 rounded-3xl border-slate-200 dark:border-slate-800 text-center bg-white dark:bg-[#111827]">
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">No hay comunicados registrados aún.</p>
               </Card>
             ) : (
               broadcasts.map((b) => (
-                <Card key={b.id} className="p-4 rounded-2xl border-slate-200 bg-white shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 transition">
+                <Card key={b.id} className="p-4 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition">
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
+                      <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                         {b.id}
                       </span>
-                      <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md border border-emerald-200">
+                      <span className="text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/60">
                         {b.target}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                         {b.sentAt}
                       </span>
                     </div>
-                    <h4 className="text-xs font-black text-slate-900">{b.title}</h4>
-                    <p className="text-[11px] text-slate-600 leading-snug">{b.message}</p>
+                    <h4 className="text-xs font-black text-slate-900 dark:text-white">{b.title}</h4>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{b.message}</p>
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[11px] font-mono font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+                    <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
                       {b.sentCount} recibidos
                     </span>
                     <button
                       onClick={() => handleDeleteBroadcast(b.id)}
                       title="Eliminar del historial"
-                      className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                      className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -1249,24 +1249,24 @@ export const PlatformSettingsModule = () => {
       {/* SECCIÓN 6: MAPA GENERAL DE SEDES */}
       {activeSection === 'map' && (
         <div className="space-y-4 animate-in fade-in duration-200">
-          <Card className="p-5 rounded-3xl border-slate-200 shadow-xs bg-white space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <Card className="p-5 rounded-3xl border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-[#111827] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                  <Map className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Map className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   <span>Mapa General de Cocheras en Ayacucho</span>
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Visualización interactiva, geolocalización y ruteo de todas las cocheras registradas en Huamanga.
                 </p>
               </div>
-              <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl w-fit inline-flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span className="text-[11px] font-extrabold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1 rounded-xl w-fit inline-flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>{establishments.length} Sedes Registradas</span>
               </span>
             </div>
 
-            <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-xl relative min-h-[480px]">
+            <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl relative min-h-[480px]">
               <MapContainer3D 
                 parkings={establishments} 
                 forceShowAdminPanel={true} 
@@ -1278,24 +1278,24 @@ export const PlatformSettingsModule = () => {
 
       {/* MODAL PARA EMITIR COMUNICADO MASIVO */}
       <Dialog open={showBroadcastModal} onOpenChange={setShowBroadcastModal}>
-        <DialogContent className="max-w-lg rounded-3xl p-6 bg-white">
+        <DialogContent className="max-w-lg rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black flex items-center gap-2">
-              <Send className="w-5 h-5 text-emerald-600" />
+            <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
+              <Send className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span>Nuevo Comunicado</span>
             </DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Notificación directa a conductores y administradores de la red.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSendBroadcast} className="space-y-4 my-2">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Audiencia *</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Audiencia *</label>
               <select
                 value={newBroadcast.target}
                 onChange={(e) => setNewBroadcast({ ...newBroadcast, target: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 cursor-pointer"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer"
               >
                 <option value="ALL">Todos (Conductores + Cocheras)</option>
                 <option value="CONDUCTORES">Solo Conductores</option>
@@ -1304,25 +1304,25 @@ export const PlatformSettingsModule = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Título *</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Título *</label>
               <Input
                 type="text"
                 placeholder="Ej. Mantenimiento programado o aviso importante"
                 value={newBroadcast.title}
                 onChange={(e) => setNewBroadcast({ ...newBroadcast, title: e.target.value })}
-                className="text-xs font-bold h-10"
+                className="text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Mensaje *</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Mensaje *</label>
               <textarea
                 rows={4}
                 placeholder="Contenido de la notificación..."
                 value={newBroadcast.message}
                 onChange={(e) => setNewBroadcast({ ...newBroadcast, message: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs font-medium text-slate-800 focus:outline-none"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
                 required
               />
             </div>

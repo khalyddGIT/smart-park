@@ -423,7 +423,7 @@ export const ResiliencySimModule = () => {
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                Cada evento vehicular posee un identificador <code className="text-slate-800 dark:text-slate-200 font-mono">UUIDv4</code> único. Si una garita pierde conectividad temporalmente, las operaciones se ejecutan de manera autónoma y se concilian al restablecer el enlace sin duplicar cobros.
+                Identificadores únicos <code className="text-slate-800 dark:text-slate-200 font-mono">UUIDv4</code> por evento vehicular. Conciliación automática al restablecer enlace sin duplicidad de cobros.
               </p>
             </div>
           </Card>
@@ -454,7 +454,7 @@ export const ResiliencySimModule = () => {
                 <button
                   onClick={clearLogs}
                   title="Limpiar registro"
-                  className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -489,7 +489,7 @@ export const ResiliencySimModule = () => {
 
             {/* Footer de la Terminal */}
             <div className="px-4 py-2 bg-slate-900/60 border-t border-slate-800/60 text-[10px] font-mono text-slate-400 flex items-center justify-between">
-              <span>Host: 127.0.0.1:8000 · Python 3.12 · FastAPI</span>
+              <span>FastAPI ASGI · Stream activo</span>
               <span>Eventos registrados: {logs.length}</span>
             </div>
           </div>

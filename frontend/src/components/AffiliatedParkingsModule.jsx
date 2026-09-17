@@ -700,37 +700,37 @@ export const AffiliatedParkingsModule = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <Building2 className="w-7 h-7 text-emerald-600" />
-            <span>Red de Estacionamientos & Afiliaciones</span>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <Building2 className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+            <span>Cocheras & Afiliaciones</span>
           </h1>
-          <p className="text-xs text-slate-500">
-            Administra las empresas y sus sedes activas, asigna credenciales a los administradores y gestiona solicitudes.
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Gestión de empresas matrices, sedes activas, credenciales de acceso y solicitudes de alta.
           </p>
         </div>
 
         {/* Pestañas Sub-Navegación */}
-        <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold self-start md:self-auto">
+        <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 text-xs font-bold self-start md:self-auto">
           <button
             onClick={() => setActiveSubTab('establishments')}
-            className={`px-4 py-2 rounded-xl transition flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl transition flex items-center gap-2 cursor-pointer ${
               activeSubTab === 'establishments'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white dark:bg-[#111827] text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Building2 className="w-4 h-4 shrink-0" />
+            <Building2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
             <span>Empresas & Sedes ({companyGroups.length} emp. / {establishments.length} sedes)</span>
           </button>
           <button
             onClick={() => setActiveSubTab('requests')}
-            className={`px-4 py-2 rounded-xl transition flex items-center gap-2 relative ${
+            className={`px-4 py-2 rounded-xl transition flex items-center gap-2 relative cursor-pointer ${
               activeSubTab === 'requests'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white dark:bg-[#111827] text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Inbox className="w-4 h-4 shrink-0" />
+            <Inbox className="w-4 h-4 shrink-0 text-amber-500" />
             <span>Solicitudes de Afiliación</span>
             {pendingRequestsCount > 0 && (
               <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center animate-pulse">
@@ -748,12 +748,12 @@ export const AffiliatedParkingsModule = () => {
         <div className="space-y-6 animate-fade-in">
           
           {/* Controles de filtro y botón crear */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-[#111827] p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
             <div className="flex items-center gap-2.5 w-full sm:w-auto">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
               >
                 <option value="all">Todos los Estados</option>
                 <option value="operativo">Solo Operativos</option>
@@ -766,12 +766,12 @@ export const AffiliatedParkingsModule = () => {
                   placeholder="Buscar empresa, sede o dirección..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 text-xs h-9 rounded-xl border-slate-200 bg-slate-50"
+                  className="pl-9 text-xs h-9 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-slate-100"
                 />
               </div>
             </div>
 
-            <Button onClick={() => handleOpenAdd(null)} className="w-full sm:w-auto gap-2 font-bold shadow-xs bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs h-9">
+            <Button onClick={() => handleOpenAdd(null)} className="w-full sm:w-auto gap-2 font-bold shadow-xs bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded-xl text-xs h-9 cursor-pointer">
               <Plus className="w-4 h-4" />
               <span>Nueva Empresa / Sede Manual</span>
             </Button>
@@ -779,10 +779,10 @@ export const AffiliatedParkingsModule = () => {
 
           {/* Listado Agrupado: Empresa Matriz -> Sedes contenidas */}
           {companyGroups.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 space-y-2">
-              <Building2 className="w-8 h-8 text-slate-400 mx-auto" />
-              <h3 className="text-sm font-bold text-slate-700">No se encontraron empresas ni sedes</h3>
-              <p className="text-xs text-slate-400">
+            <div className="p-12 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <Building2 className="w-8 h-8 text-slate-400 dark:text-slate-500 mx-auto" />
+              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">No se encontraron empresas ni sedes</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500">
                 {search ? `No hay coincidencias para "${search}".` : 'Registra la primera empresa o sede para comenzar.'}
               </p>
             </div>
@@ -800,62 +800,62 @@ export const AffiliatedParkingsModule = () => {
                   return (
                     <div 
                       key={group.key} 
-                      className="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition-all duration-200 p-5 sm:p-6 space-y-5"
+                      className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md dark:hover:border-slate-700 transition-all duration-200 p-5 sm:p-6 space-y-5"
                     >
                       {/* Cabecera Principal de Sede Única / Establecimiento */}
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
                         <div className="flex items-start gap-3.5 min-w-0">
                           <div className="p-3 rounded-2xl bg-slate-900 text-emerald-400 shrink-0 shadow-sm mt-0.5">
                             <Store className="w-6 h-6" />
                           </div>
                           <div className="min-w-0 space-y-1.5">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                                 {group.companyName}
                               </h2>
                               {isActive ? (
-                                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                   <span>Operativo</span>
                                 </span>
                               ) : (
-                                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20 flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                   <span>Mantenimiento</span>
                                 </span>
                               )}
-                              <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                              <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                                 Local Afiliado
                               </span>
                               {group.ruc && (
-                                <span className="text-[11px] font-mono text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200">
+                                <span className="text-[11px] font-mono text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                                   RUC: {group.ruc}
                                 </span>
                               )}
                             </div>
 
                             {/* Metadatos en Fila Horizontal Elegante */}
-                            <div className="flex items-center gap-y-1 gap-x-4 text-xs text-slate-500 flex-wrap">
+                            <div className="flex items-center gap-y-1 gap-x-4 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
                               {(primaryBranch.address || group.city) && (
-                                <span className="flex items-center gap-1 text-slate-600">
+                                <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                                   <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                   <span className="truncate">{primaryBranch.address || group.city} {primaryBranch.level ? `• ${primaryBranch.level}` : ''}</span>
                                 </span>
                               )}
                               {(group.owner || primaryBranch.owner) && (
-                                <span className="flex items-center gap-1 text-slate-600">
+                                <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                                   <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                  <span className="truncate">Titular: <strong className="text-slate-700 font-semibold">{primaryBranch.owner || group.owner}</strong></span>
+                                  <span className="truncate">Titular: <strong className="text-slate-700 dark:text-slate-200 font-semibold">{primaryBranch.owner || group.owner}</strong></span>
                                 </span>
                               )}
                               {(group.phone || primaryBranch.phone) && (
-                                <span className="flex items-center gap-1 text-slate-600">
+                                <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                                   <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                   <span>{primaryBranch.phone || group.phone}</span>
                                 </span>
                               )}
                               {(group.email || primaryBranch.email) && (
-                                <span className="flex items-center gap-1 text-slate-600">
+                                <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                                   <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                   <span className="truncate">{primaryBranch.email || group.email}</span>
                                 </span>
@@ -883,10 +883,10 @@ export const AffiliatedParkingsModule = () => {
                             onClick={() => handleOpenEdit(primaryBranch)}
                             variant="outline"
                             size="sm"
-                            className="border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
+                            className="border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
                             title="Editar información y tarifas de la sede"
                           >
-                            <Edit3 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <Edit3 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                             <span>Editar Sede</span>
                           </Button>
 
@@ -898,19 +898,19 @@ export const AffiliatedParkingsModule = () => {
                             size="sm"
                             className={`text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition ${
                               isActive
-                                ? 'border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100'
-                                : 'border-emerald-200 text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100'
+                                ? 'border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20'
+                                : 'border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20'
                             }`}
                             title={isActive ? 'Pausar operaciones de la cochera' : 'Reanudar operaciones de la cochera'}
                           >
                             {isActive ? (
                               <>
-                                <PauseCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                <PauseCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                                 <span>Pausar</span>
                               </>
                             ) : (
                               <>
-                                <PlayCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <PlayCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                 <span>Reanudar</span>
                               </>
                             )}
@@ -922,10 +922,10 @@ export const AffiliatedParkingsModule = () => {
                             onClick={() => handleOpenAdd(group)}
                             variant="outline"
                             size="sm"
-                            className="border-slate-200 text-slate-700 hover:text-emerald-700 hover:border-emerald-200 hover:bg-emerald-50/50 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
+                            className="border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/30 hover:bg-emerald-50/50 dark:hover:bg-emerald-500/10 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
                             title={`Agregar una nueva sucursal a ${group.companyName}`}
                           >
-                            <Plus className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <Plus className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                             <span>Sucursal</span>
                           </Button>
 
@@ -935,7 +935,7 @@ export const AffiliatedParkingsModule = () => {
                             onClick={() => handleDelete(primaryBranch.id, primaryBranch.name)}
                             variant="ghost"
                             size="sm"
-                            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl h-9 px-2.5 cursor-pointer transition"
+                            className="text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl h-9 px-2.5 cursor-pointer transition"
                             title="Eliminar sede"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -945,43 +945,43 @@ export const AffiliatedParkingsModule = () => {
 
                       {/* Chips de Métricas Tácticas de la Sede */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between">
+                        <div className="bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                             <Car className="w-3 h-3 text-slate-400" />
                             <span>Capacidad</span>
                           </span>
-                          <span className="font-mono font-black text-slate-900 text-base mt-1">
-                            {primaryBranch.calculatedSlots} <span className="text-xs font-sans font-medium text-slate-500">plazas</span>
+                          <span className="font-mono font-black text-slate-900 dark:text-white text-base mt-1">
+                            {primaryBranch.calculatedSlots} <span className="text-xs font-sans font-medium text-slate-500 dark:text-slate-400">plazas</span>
                           </span>
                         </div>
 
-                        <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between">
+                        <div className="bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                            <DollarSign className="w-3 h-3 text-emerald-600" />
+                            <DollarSign className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                             <span>Tarifa Base</span>
                           </span>
-                          <span className="font-mono font-black text-emerald-700 text-base mt-1">
-                            S/ {rateAuto.toFixed(2)} <span className="text-xs font-sans font-medium text-slate-500">/ hora</span>
+                          <span className="font-mono font-black text-emerald-700 dark:text-emerald-400 text-base mt-1">
+                            S/ {rateAuto.toFixed(2)} <span className="text-xs font-sans font-medium text-slate-500 dark:text-slate-400">/ hora</span>
                           </span>
                         </div>
 
-                        <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between">
+                        <div className="bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                             <Percent className="w-3 h-3 text-slate-400" />
                             <span>Comisión</span>
                           </span>
-                          <span className="font-mono font-bold text-slate-800 text-base mt-1">
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-200 text-base mt-1">
                             {primaryBranch.commission || '12%'}
                           </span>
                         </div>
 
-                        <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between">
+                        <div className="bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                             <Clock className="w-3 h-3 text-slate-400" />
                             <span>Tolerancia</span>
                           </span>
-                          <span className="font-mono font-bold text-slate-800 text-base mt-1">
-                            {tolerance} <span className="text-xs font-sans font-medium text-slate-500">minutos</span>
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-200 text-base mt-1">
+                            {tolerance} <span className="text-xs font-sans font-medium text-slate-500 dark:text-slate-400">minutos</span>
                           </span>
                         </div>
                       </div>
@@ -994,61 +994,61 @@ export const AffiliatedParkingsModule = () => {
                 return (
                   <div 
                     key={group.key} 
-                    className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden space-y-5 p-5 sm:p-6 transition hover:border-slate-300"
+                    className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden space-y-5 p-5 sm:p-6 transition hover:border-slate-300 dark:hover:border-slate-700"
                   >
                     {/* CABECERA DE LA EMPRESA MATRIZ */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
                       <div className="flex items-start gap-3.5 min-w-0">
                         <div className="p-3 rounded-2xl bg-slate-900 text-emerald-400 shrink-0 shadow-sm mt-0.5">
                           <Building2 className="w-6 h-6" />
                         </div>
                         <div className="min-w-0 space-y-1.5">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                            <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                               {group.companyName}
                             </h2>
                             {isGroupActive ? (
-                              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 <span>Activa</span>
                               </span>
                             ) : (
-                              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
+                              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                                 <span>Deshabilitada</span>
                               </span>
                             )}
-                            <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
                               Red Comercial ({group.branches.length} sedes)
                             </span>
                             {group.ruc && (
-                              <span className="text-[11px] font-mono text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200">
+                              <span className="text-[11px] font-mono text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                                 RUC: {group.ruc}
                               </span>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-y-1 gap-x-4 text-xs text-slate-500 flex-wrap">
+                          <div className="flex items-center gap-y-1 gap-x-4 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
                             {group.city && (
-                              <span className="flex items-center gap-1 text-slate-600">
+                              <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                 <span>{group.city}</span>
                               </span>
                             )}
                             {group.owner && (
-                              <span className="flex items-center gap-1 text-slate-600">
+                              <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                                 <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                <span>Titular: <strong className="text-slate-700 font-semibold">{group.owner}</strong></span>
+                                <span>Titular: <strong className="text-slate-700 dark:text-slate-200 font-semibold">{group.owner}</strong></span>
                               </span>
                             )}
                             {group.phone && (
-                              <span className="flex items-center gap-1 text-slate-600">
+                              <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                                 <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                 <span>{group.phone}</span>
                               </span>
                             )}
                             {group.email && (
-                              <span className="flex items-center gap-1 text-slate-600">
+                              <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                                 <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                 <span>{group.email}</span>
                               </span>
@@ -1059,15 +1059,15 @@ export const AffiliatedParkingsModule = () => {
 
                       {/* Métricas y Acciones Globales de la Red */}
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 flex-wrap">
-                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-2xl text-xs">
+                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-3.5 py-1.5 rounded-2xl text-xs">
                           <div className="space-y-0.5">
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sedes</div>
-                            <div className="font-black text-slate-900 font-mono text-sm leading-none">{group.branches.length}</div>
+                            <div className="font-black text-slate-900 dark:text-white font-mono text-sm leading-none">{group.branches.length}</div>
                           </div>
-                          <div className="h-6 w-px bg-slate-200"></div>
+                          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
                           <div className="space-y-0.5">
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capacidad Total</div>
-                            <div className="font-bold text-emerald-700 font-mono text-xs leading-none">
+                            <div className="font-bold text-emerald-700 dark:text-emerald-400 font-mono text-xs leading-none">
                               {group.totalSlots} Plazas
                             </div>
                           </div>
@@ -1090,10 +1090,10 @@ export const AffiliatedParkingsModule = () => {
                           onClick={() => handleOpenEditCompany(group)}
                           variant="outline"
                           size="sm"
-                          className="border-slate-200 text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
+                          className="border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
                           title="Ajustes de la empresa matriz"
                         >
-                          <Settings className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <Settings className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                           <span>Ajustes</span>
                         </Button>
 
@@ -1105,19 +1105,19 @@ export const AffiliatedParkingsModule = () => {
                           size="sm"
                           className={`text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition ${
                             isGroupActive
-                              ? 'border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100'
-                              : 'border-emerald-200 text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100'
+                              ? 'border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20'
+                              : 'border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20'
                           }`}
                           title={isGroupActive ? 'Deshabilitar toda la cadena' : 'Habilitar toda la cadena'}
                         >
                           {isGroupActive ? (
                             <>
-                              <PauseCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <PauseCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                               <span>Pausar</span>
                             </>
                           ) : (
                             <>
-                              <PlayCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <PlayCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                               <span>Habilitar</span>
                             </>
                           )}
@@ -1140,7 +1140,7 @@ export const AffiliatedParkingsModule = () => {
                           onClick={() => handleDeleteCompany(group)}
                           variant="ghost"
                           size="sm"
-                          className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl h-9 px-2.5 cursor-pointer transition"
+                          className="text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl h-9 px-2.5 cursor-pointer transition"
                           title="Eliminar empresa y todas sus sedes"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1151,11 +1151,11 @@ export const AffiliatedParkingsModule = () => {
                     {/* LISTA / GRID DE SUCURSALES */}
                     <div className="space-y-3 pt-1">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                          <Layers className="w-4 h-4 text-emerald-600" />
+                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           <span>Sucursales y Sedes de la Red ({group.branches.length})</span>
                         </h3>
-                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium hidden sm:inline">
                           Gestión individual de accesos, tarifas y operatividad por sede
                         </span>
                       </div>
@@ -1168,16 +1168,16 @@ export const AffiliatedParkingsModule = () => {
                           return (
                             <Card 
                               key={p.id} 
-                              className="p-4 border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition-all rounded-2xl bg-white space-y-3.5"
+                              className="p-4 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between hover:shadow-md dark:hover:border-slate-700 transition-all rounded-2xl bg-white dark:bg-slate-900/60 space-y-3.5"
                             >
                               <div>
                                 <div className="flex justify-between items-start mb-2">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black shrink-0">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-black shrink-0">
                                       <Building2 className="w-4 h-4" />
                                     </div>
                                     <div className="min-w-0">
-                                      <h4 className="font-extrabold text-slate-900 text-sm truncate leading-tight">
+                                      <h4 className="font-extrabold text-slate-900 dark:text-white text-sm truncate leading-tight">
                                         {p.branchDisplayName || p.name}
                                       </h4>
                                       {p.branchDisplayName && p.branchDisplayName !== p.name && (
@@ -1187,50 +1187,50 @@ export const AffiliatedParkingsModule = () => {
                                   </div>
                                   <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 inline-flex items-center gap-1.5 ${
                                     isBranchActive 
-                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                                      : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                      ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' 
+                                      : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20'
                                   }`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${isBranchActive ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                                     <span>{isBranchActive ? 'Operativo' : 'Mantenimiento'}</span>
                                   </span>
                                 </div>
 
-                                <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
-                                  <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1">
+                                  <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                                   <span className="truncate">{p.address} {p.level ? `• ${p.level}` : ''}</span>
                                 </p>
 
                                 {/* Mini Grid de Métricas de la Sucursal */}
-                                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
+                                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50/80 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
                                   <div>
-                                    <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Capacidad</span>
-                                    <span className="font-mono font-bold text-slate-900">{p.calculatedSlots} Plazas</span>
+                                    <span className="text-slate-400 dark:text-slate-500 text-[10px] block font-bold uppercase tracking-wider">Capacidad</span>
+                                    <span className="font-mono font-bold text-slate-900 dark:text-white">{p.calculatedSlots} Plazas</span>
                                   </div>
                                   <div>
-                                    <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Tarifa Base</span>
-                                    <span className="font-mono font-bold text-emerald-700">S/ {branchRate.toFixed(2)}/h</span>
+                                    <span className="text-slate-400 dark:text-slate-500 text-[10px] block font-bold uppercase tracking-wider">Tarifa Base</span>
+                                    <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">S/ {branchRate.toFixed(2)}/h</span>
                                   </div>
                                   <div>
-                                    <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Comisión</span>
-                                    <span className="font-mono font-bold text-slate-700">{p.commission || '12%'}</span>
+                                    <span className="text-slate-400 dark:text-slate-500 text-[10px] block font-bold uppercase tracking-wider">Comisión</span>
+                                    <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{p.commission || '12%'}</span>
                                   </div>
                                   <div>
-                                    <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Nivel</span>
-                                    <span className="font-bold text-slate-700 truncate block">{p.level || 'Superficie'}</span>
+                                    <span className="text-slate-400 dark:text-slate-500 text-[10px] block font-bold uppercase tracking-wider">Nivel</span>
+                                    <span className="font-bold text-slate-700 dark:text-slate-300 truncate block">{p.level || 'Superficie'}</span>
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="pt-2 border-t border-slate-100">
+                              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                                 <div className="flex items-center gap-2">
                                   <Button 
                                     onClick={() => toggleStatus(p.id)} 
                                     variant="outline" 
                                     size="sm" 
-                                    className={`flex-1 text-xs font-bold rounded-xl h-8 ${
+                                    className={`flex-1 text-xs font-bold rounded-xl h-8 cursor-pointer ${
                                       isBranchActive
-                                        ? 'border-amber-200 text-amber-800 bg-amber-50/60 hover:bg-amber-100'
-                                        : 'border-emerald-200 text-emerald-800 bg-emerald-50/60 hover:bg-emerald-100'
+                                        ? 'border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20'
+                                        : 'border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 bg-emerald-50/60 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20'
                                     }`}
                                   >
                                     {isBranchActive ? 'Pausar' : 'Reanudar'}
@@ -1239,7 +1239,7 @@ export const AffiliatedParkingsModule = () => {
                                     onClick={() => handleOpenEdit(p)} 
                                     variant="ghost" 
                                     size="sm" 
-                                    className="p-2 text-slate-600 hover:text-slate-900 rounded-xl"
+                                    className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl cursor-pointer"
                                     title="Editar información de sede"
                                   >
                                     <Edit3 className="w-4 h-4" />
@@ -1248,7 +1248,7 @@ export const AffiliatedParkingsModule = () => {
                                     onClick={() => handleDelete(p.id, p.name)} 
                                     variant="ghost" 
                                     size="sm" 
-                                    className="p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl"
+                                    className="p-2 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl cursor-pointer"
                                     title="Eliminar sede"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -1275,10 +1275,10 @@ export const AffiliatedParkingsModule = () => {
         <div className="space-y-4 animate-fade-in">
 
           {affiliationRequests.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 space-y-2">
-              <Inbox className="w-8 h-8 text-slate-400 mx-auto" />
-              <h3 className="text-sm font-bold text-slate-700">No hay solicitudes pendientes</h3>
-              <p className="text-xs text-slate-400">Las nuevas solicitudes aparecerán aquí para su revisión y alta.</p>
+            <div className="p-12 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <Inbox className="w-8 h-8 text-slate-400 dark:text-slate-600 mx-auto" />
+              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">No hay solicitudes pendientes</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Las nuevas solicitudes aparecerán aquí para su revisión y alta.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1287,59 +1287,59 @@ export const AffiliatedParkingsModule = () => {
                 const isApproved = req.status === 'APPROVED';
 
                 return (
-                  <Card key={req.id} className="p-5 border-slate-200 rounded-3xl bg-white shadow-xs space-y-4 flex flex-col justify-between">
+                  <Card key={req.id} className="p-5 border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-[#111827] shadow-xs space-y-4 flex flex-col justify-between">
                     <div className="space-y-3">
                       
                       {/* Estado y Fecha */}
                       <div className="flex items-center justify-between">
                         <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
                           isPending
-                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
                             : isApproved
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                            : 'bg-rose-100 text-rose-800 border border-rose-300'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                         }`}>
-                          {isPending && <Clock className="w-4 h-4 shrink-0" />}
-                          {isApproved && <CheckCircle2 className="w-4 h-4 shrink-0" />}
-                          {!isPending && !isApproved && <XCircle className="w-4 h-4 shrink-0" />}
+                          {isPending && <Clock className="w-3.5 h-3.5 shrink-0" />}
+                          {isApproved && <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
+                          {!isPending && !isApproved && <XCircle className="w-3.5 h-3.5 shrink-0" />}
                           <span>{req.status === 'PENDING' ? 'Pendiente' : req.status === 'APPROVED' ? 'Aprobada' : 'Rechazada'}</span>
                         </span>
 
-                        <span className="text-[11px] text-slate-400 font-mono">
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                           ID: {req.id}
                         </span>
                       </div>
 
                       {/* Nombre y Contacto */}
                       <div>
-                        <h3 className="text-base font-extrabold text-slate-900">{req.parkingName}</h3>
-                        <p className="text-xs text-slate-600 font-medium mt-0.5">
-                          Titular: <strong className="text-slate-800">{req.ownerName}</strong>
+                        <h3 className="text-base font-extrabold text-slate-900 dark:text-white">{req.parkingName}</h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-0.5">
+                          Titular: <strong className="text-slate-800 dark:text-slate-200">{req.ownerName}</strong>
                         </p>
                       </div>
 
                       {/* Grid de Datos */}
-                      <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-2xl border border-slate-100 font-mono">
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/60 font-mono">
                         <div>
-                          <span className="text-slate-400 block text-[10px]">Correo:</span>
-                          <span className="font-bold text-slate-800 truncate block">{req.email}</span>
+                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Correo:</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">{req.email}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block text-[10px]">Teléfono:</span>
-                          <span className="font-bold text-slate-800">{req.phone || '—'}</span>
+                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Teléfono:</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200">{req.phone || '—'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block text-[10px]">Ubicación:</span>
-                          <span className="text-slate-700 truncate block">{req.address}, {req.city}</span>
+                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Ubicación:</span>
+                          <span className="text-slate-700 dark:text-slate-300 truncate block">{req.address}, {req.city}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block text-[10px]">Capacidad & Tarifa:</span>
-                          <span className="font-bold text-emerald-700">{req.capacity} plazas • S/ {Number(req.rate).toFixed(2)}/h</span>
+                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Capacidad & Tarifa:</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{req.capacity} plazas • S/ {Number(req.rate).toFixed(2)}/h</span>
                         </div>
                       </div>
 
                       {req.notes && (
-                        <p className="text-xs text-slate-500 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 italic">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 italic">
                           "{req.notes}"
                         </p>
                       )}
@@ -1348,19 +1348,19 @@ export const AffiliatedParkingsModule = () => {
 
                     {/* Botones de Acción para el Administrador del Sistema */}
                     {isPending && (
-                      <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                      <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                         <Button
                           onClick={() => handleRejectRequest(req)}
                           variant="outline"
                           size="sm"
-                          className="border-slate-200 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl h-9 px-3"
+                          className="border-slate-200 dark:border-slate-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-xs font-bold rounded-xl h-9 px-3 cursor-pointer"
                         >
                           Rechazar
                         </Button>
                         <Button
                           onClick={() => handleOpenApproveModal(req)}
                           size="sm"
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl h-9 shadow-xs flex items-center justify-center gap-1.5"
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl h-9 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <KeyRound className="w-3.5 h-3.5" />
                           <span>Aprobar Sede</span>
@@ -1369,12 +1369,12 @@ export const AffiliatedParkingsModule = () => {
                     )}
 
                     {isApproved && (
-                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-emerald-700">
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400">
                         <span className="flex items-center gap-1 font-semibold">
                           <CheckCircle2 className="w-4 h-4" />
                           <span>Habilitada ({req.email})</span>
                         </span>
-                        <span className="text-[10px] text-slate-400 font-mono">Operativa</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">Operativa</span>
                       </div>
                     )}
 
@@ -1391,13 +1391,13 @@ export const AffiliatedParkingsModule = () => {
           MODAL 1: APROBAR COCHERA Y ASIGNAR CREDENCIALES
           ========================================================================= */}
       <Dialog open={showApproveModal} onOpenChange={setShowApproveModal}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6">
+        <DialogContent className="max-w-md bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 rounded-3xl p-6 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-emerald-600" />
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span>Aprobar Sede</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Crea la cuenta de usuario para el administrador de <strong>"{approvingRequest?.parkingName}"</strong>.
             </DialogDescription>
           </DialogHeader>
@@ -1405,19 +1405,19 @@ export const AffiliatedParkingsModule = () => {
           {approvingRequest && (
             <form onSubmit={handleConfirmApprove} className="space-y-4 mt-2">
               {/* Resumen del establecimiento */}
-              <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-2xl text-xs space-y-1">
-                <p className="font-bold text-slate-800 flex items-center justify-between">
+              <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 p-3 rounded-2xl text-xs space-y-1">
+                <p className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
                   <span>{approvingRequest.parkingName}</span>
-                  <span className="text-emerald-700 font-black">S/ {Number(approvingRequest.rate).toFixed(2)}/h</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black">S/ {Number(approvingRequest.rate).toFixed(2)}/h</span>
                 </p>
-                <p className="text-slate-500 text-[11px] truncate">
+                <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate">
                   {approvingRequest.address}, {approvingRequest.city} • {approvingRequest.capacity} plazas
                 </p>
               </div>
 
               {/* Correo / Usuario */}
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
                   Correo Electrónico (Usuario de Acceso) *
                 </label>
                 <div className="relative">
@@ -1428,7 +1428,7 @@ export const AffiliatedParkingsModule = () => {
                     value={approveForm.adminEmail}
                     onChange={(e) => setApproveForm({ ...approveForm, adminEmail: e.target.value })}
                     placeholder="propietario@ejemplo.com"
-                    className="pl-9 text-xs"
+                    className="pl-9 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -1436,17 +1436,17 @@ export const AffiliatedParkingsModule = () => {
               {/* Nombre del Administrador */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre Completo</label>
                   <Input
                     type="text"
                     value={approveForm.adminName}
                     onChange={(e) => setApproveForm({ ...approveForm, adminName: e.target.value })}
                     placeholder="Juan Pérez"
-                    className="text-xs"
+                    className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Teléfono / WhatsApp</label>
                   <div className="relative">
                     <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <Input
@@ -1454,7 +1454,7 @@ export const AffiliatedParkingsModule = () => {
                       value={approveForm.adminPhone}
                       onChange={(e) => setApproveForm({ ...approveForm, adminPhone: e.target.value })}
                       placeholder="966 123 456"
-                      className="pl-8 text-xs"
+                      className="pl-8 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -1463,11 +1463,11 @@ export const AffiliatedParkingsModule = () => {
               {/* Contraseña */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-slate-700">Contraseña de Acceso *</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Contraseña de Acceso *</label>
                   <button
                     type="button"
                     onClick={() => setApproveForm({ ...approveForm, adminPassword: generateSecurePassword('SP') })}
-                    className="text-[11px] text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1"
+                    className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
                     <span>Regenerar</span>
@@ -1481,17 +1481,17 @@ export const AffiliatedParkingsModule = () => {
                     value={approveForm.adminPassword}
                     onChange={(e) => setApproveForm({ ...approveForm, adminPassword: e.target.value })}
                     placeholder="Contraseña segura"
-                    className="pl-9 pr-10 text-xs font-mono font-bold"
+                    className="pl-9 pr-10 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                   <button
                     type="button"
                     onClick={() => setApproveForm({ ...approveForm, showPassword: !approveForm.showPassword })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     {approveForm.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                   El propietario podrá iniciar sesión inmediatamente con este usuario y contraseña.
                 </p>
               </div>
@@ -1502,14 +1502,14 @@ export const AffiliatedParkingsModule = () => {
                   variant="outline" 
                   onClick={() => setShowApproveModal(false)} 
                   disabled={approvingLoading}
-                  className="flex-1 text-xs rounded-xl"
+                  className="flex-1 text-xs rounded-xl border-slate-200 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Cancelar
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={approvingLoading}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {approvingLoading ? (
                     <>
@@ -1533,47 +1533,47 @@ export const AffiliatedParkingsModule = () => {
           MODAL 2: GESTIONAR CREDENCIALES DE SEDE ACTIVA
           ========================================================================= */}
       <Dialog open={showCredentialsModal} onOpenChange={setShowCredentialsModal}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6">
+        <DialogContent className="max-w-md bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 rounded-3xl p-6 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-amber-600" />
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               <span>Credenciales de Acceso del Local</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Administra el usuario y contraseña del Administrador para el local (empresa afiliada) <strong>"{credentialsTarget?.companyName || credentialsSede?.name}"</strong>.
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+              Administra el usuario y contraseña del Administrador para el local <strong>"{credentialsTarget?.companyName || credentialsSede?.name}"</strong>.
               {credentialsTarget?.branchesCount > 1 && (
-                <span className="block mt-1 text-[11px] text-emerald-700 font-semibold inline-flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Este acceso es unificado para la empresa y le permite gestionar sus {credentialsTarget.branchesCount} sucursales registradas.</span>
+                <span className="block mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Acceso unificado para sus {credentialsTarget.branchesCount} sucursales.</span>
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
 
           {credentialsLoading ? (
-            <div className="py-8 flex flex-col items-center justify-center space-y-2 text-slate-500">
-              <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+            <div className="py-8 flex flex-col items-center justify-center space-y-2 text-slate-500 dark:text-slate-400">
+              <Loader2 className="w-6 h-6 animate-spin text-amber-600 dark:text-amber-400" />
               <p className="text-xs">Consultando credenciales...</p>
             </div>
           ) : (
             <form onSubmit={handleSaveCredentials} className="space-y-4 mt-2">
               {credentialsForm.hasExistingAdmin ? (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-2xl text-xs flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 p-3 rounded-2xl text-xs flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
                   <div>
-                    <p className="font-bold">Este local ya cuenta con un Administrador activo:</p>
+                    <p className="font-bold">Administrador activo asignado:</p>
                     <p className="font-mono text-[11px] mt-0.5">{credentialsForm.adminEmail}</p>
-                    <p className="text-[10px] text-emerald-700 mt-1">
-                      Contraseña actual cargada y guardada. Puedes visualizarla con el ícono del ojo o escribir una nueva para actualizarla. Se mantendrá guardada permanentemente.
+                    <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1">
+                      Contraseña actual cargada y guardada. Puedes visualizarla o escribir una nueva para actualizarla.
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-2xl text-xs flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                <div className="bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-3 rounded-2xl text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                   <div>
                     <p className="font-bold">Sin cuenta asignada todavía</p>
-                    <p className="text-[11px] text-amber-700 mt-0.5">
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
                       Ingresa el correo y genera una contraseña para crear el usuario con rol "local".
                     </p>
                   </div>
@@ -1581,7 +1581,7 @@ export const AffiliatedParkingsModule = () => {
               )}
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Correo Electrónico *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Correo Electrónico *</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <Input
@@ -1590,24 +1590,24 @@ export const AffiliatedParkingsModule = () => {
                     value={credentialsForm.adminEmail}
                     onChange={(e) => setCredentialsForm({ ...credentialsForm, adminEmail: e.target.value })}
                     placeholder="admin@cochera.com"
-                    className="pl-9 text-xs"
+                    className="pl-9 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre Completo</label>
                   <Input
                     type="text"
                     value={credentialsForm.adminName}
                     onChange={(e) => setCredentialsForm({ ...credentialsForm, adminName: e.target.value })}
                     placeholder="Nombre del encargado"
-                    className="text-xs"
+                    className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Teléfono</label>
                   <div className="relative">
                     <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <Input
@@ -1615,7 +1615,7 @@ export const AffiliatedParkingsModule = () => {
                       value={credentialsForm.adminPhone}
                       onChange={(e) => setCredentialsForm({ ...credentialsForm, adminPhone: e.target.value })}
                       placeholder="966 000 000"
-                      className="pl-8 text-xs"
+                      className="pl-8 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -1623,13 +1623,13 @@ export const AffiliatedParkingsModule = () => {
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-slate-700">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                     Contraseña de Acceso *
                   </label>
                   <button
                     type="button"
                     onClick={() => setCredentialsForm({ ...credentialsForm, adminPassword: generateSecurePassword('SP') })}
-                    className="text-[11px] text-amber-700 hover:text-amber-800 font-bold flex items-center gap-1"
+                    className="text-[11px] text-amber-600 dark:text-amber-400 hover:text-amber-700 font-bold flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" />
                     <span>Generar Nueva</span>
@@ -1643,20 +1643,20 @@ export const AffiliatedParkingsModule = () => {
                     value={credentialsForm.adminPassword}
                     onChange={(e) => setCredentialsForm({ ...credentialsForm, adminPassword: e.target.value })}
                     placeholder="Contraseña de acceso"
-                    className="pl-9 pr-10 text-xs font-mono font-bold"
+                    className="pl-9 pr-10 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                   <button
                     type="button"
                     onClick={() => setCredentialsForm({ ...credentialsForm, showPassword: !credentialsForm.showPassword })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                     title={credentialsForm.showPassword ? "Ocultar contraseña" : "Ver contraseña"}
                   >
                     {credentialsForm.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span>{credentialsForm.hasExistingAdmin ? 'Contraseña actual cargada y persistente. Puedes verla con el ícono del ojo o ingresar una nueva para actualizarla. Se conservará permanentemente.' : 'Se guardará y mantendrá hasta que decidas cambiarla.'}</span>
+                  <span>{credentialsForm.hasExistingAdmin ? 'Contraseña actual cargada y persistente.' : 'Se guardará y mantendrá permanentemente.'}</span>
                 </p>
               </div>
 
@@ -1666,14 +1666,14 @@ export const AffiliatedParkingsModule = () => {
                   variant="outline" 
                   onClick={() => setShowCredentialsModal(false)}
                   disabled={savingCredentials}
-                  className="flex-1 text-xs rounded-xl"
+                  className="flex-1 text-xs rounded-xl border-slate-200 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Cancelar
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={savingCredentials}
-                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
+                  className="flex-1 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {savingCredentials ? (
                     <>
@@ -1697,15 +1697,15 @@ export const AffiliatedParkingsModule = () => {
           MODAL 3: DIÁLOGO DE CREDENCIALES RESULTANTES (COPIAR & WHATSAPP)
           ========================================================================= */}
       <Dialog open={!!credentialsResult} onOpenChange={(open) => !open && setCredentialsResult(null)}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6">
+        <DialogContent className="max-w-md bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 rounded-3xl p-6 text-slate-900 dark:text-white">
           <DialogHeader>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2 mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2 mx-auto">
               <KeyRound className="w-6 h-6" />
             </div>
-            <DialogTitle className="text-lg font-black text-slate-900 text-center">
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white text-center">
               {credentialsResult?.title || 'Credenciales Listas'}
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 text-center">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 text-center">
               Comparte las credenciales oficiales de acceso con el administrador del local.
             </DialogDescription>
           </DialogHeader>
@@ -1713,7 +1713,7 @@ export const AffiliatedParkingsModule = () => {
           {credentialsResult && (
             <div className="space-y-4 mt-2">
               {/* Tarjeta Visual de Credenciales */}
-              <div className="bg-slate-900 text-white p-4 rounded-2xl space-y-3 font-mono text-xs border border-slate-800">
+              <div className="bg-slate-950 dark:bg-slate-900 text-white p-4 rounded-2xl space-y-3 font-mono text-xs border border-slate-800">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-800 text-[11px] text-slate-400">
                   <span className="truncate max-w-[200px]">{credentialsResult.parkingName}</span>
                   <span className="text-emerald-400 font-bold">ROL: LOCAL</span>
@@ -1741,16 +1741,16 @@ export const AffiliatedParkingsModule = () => {
                   <Button
                     type="button"
                     onClick={() => copyCredentialsToClipboard(credentialsResult)}
-                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs rounded-xl h-10 flex items-center justify-center gap-1.5"
+                    className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-bold text-xs rounded-xl h-10 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     {copied ? (
                       <>
-                        <Check className="w-4 h-4 text-emerald-600" />
-                        <span className="text-emerald-700">¡Copiado al Portapapeles!</span>
+                        <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-emerald-600 dark:text-emerald-400">¡Copiado al Portapapeles!</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="w-4 h-4 text-slate-600" />
+                        <Copy className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                         <span>Copiar Credenciales</span>
                       </>
                     )}
@@ -1761,7 +1761,7 @@ export const AffiliatedParkingsModule = () => {
                       href={getWhatsAppMessageUrl(credentialsResult)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl h-10 flex items-center justify-center gap-1.5 transition shadow-xs"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl h-10 flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
                     >
                       <MessageSquare className="w-4 h-4" />
                       <span>Enviar WhatsApp</span>
@@ -1772,7 +1772,7 @@ export const AffiliatedParkingsModule = () => {
                 <Button
                   type="button"
                   onClick={() => setCredentialsResult(null)}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl h-9"
+                  className="w-full bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl h-9 cursor-pointer"
                 >
                   Entendido / Cerrar
                 </Button>
@@ -1786,101 +1786,101 @@ export const AffiliatedParkingsModule = () => {
           MODAL 4: CREAR AFILIADO MANUAL
           ========================================================================= */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6">
+        <DialogContent className="max-w-md bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 rounded-3xl p-6 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-emerald-600" />
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span>Afiliar Nueva Sede Manualmente</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Registra un nuevo local comercial y asígnale su cuenta de administrador de local.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreate} className="space-y-4 mt-2">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Empresa / Razón Social (Matriz)</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Empresa / Razón Social (Matriz)</label>
               <Input
                 placeholder="Ej. Inversiones Plaza S.A.C."
                 value={formData.company_name}
                 onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
-              <span className="text-[10px] text-slate-400">Si pertenece a una empresa registrada, se agrupará bajo ella automáticamente.</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">Si pertenece a una empresa registrada, se agrupará bajo ella automáticamente.</span>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la Sede / Sucursal *</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre de la Sede / Sucursal *</label>
               <Input
                 required
                 placeholder="Ej. Smart Park Jr. Cusco"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Dirección Exacta *</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Dirección Exacta *</label>
               <Input
                 required
                 placeholder="Ej. Jr. Cusco 320"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Ciudad / Distrito</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Ciudad / Distrito</label>
                 <Input
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="text-xs"
+                  className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Tarifa por Hora (S/)</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Tarifa por Hora (S/)</label>
                 <Input
                   type="number"
                   step="0.5"
                   value={formData.rate}
                   onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-                  className="text-xs"
+                  className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Titular / Empresa</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Titular / Empresa</label>
                 <Input
                   value={formData.owner}
                   onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
                   placeholder="Inversiones Ayacucho"
-                  className="text-xs"
+                  className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Teléfono / WhatsApp</label>
                 <Input
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="966 123 456"
-                  className="text-xs"
+                  className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
             </div>
 
             {/* Credenciales de Acceso para el Local */}
-            <div className="border-t border-slate-200 pt-3 space-y-3">
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-3">
               {formData.company_name ? (
-                <div className="bg-emerald-50/80 border border-emerald-200 p-3.5 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-950">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-950 dark:text-emerald-300">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-bold">Credenciales Unificadas del Local</p>
-                    <p className="text-[11px] text-emerald-700 mt-0.5">
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
                       Esta sucursal pertenecerá al local <strong>"{formData.company_name}"</strong>. El Administrador del Local gestionará esta sucursal con sus credenciales actuales. No requiere crear usuarios adicionales.
                     </p>
                   </div>
@@ -1892,35 +1892,35 @@ export const AffiliatedParkingsModule = () => {
                       type="checkbox"
                       checked={formData.createAdminAccount}
                       onChange={(e) => setFormData({ ...formData, createAdminAccount: e.target.checked })}
-                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      className="rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500"
                     />
-                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>Crear cuenta de acceso para el Administrador del Local</span>
                     </span>
                   </label>
 
                   {formData.createAdminAccount && (
-                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl space-y-3">
+                    <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl space-y-3">
                       <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Correo de Acceso (Usuario) *</label>
+                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Correo de Acceso (Usuario) *</label>
                         <Input
                           type="email"
                           required={formData.createAdminAccount}
                           placeholder="admin@cochera.com"
                           value={formData.adminEmail}
                           onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
-                          className="text-xs bg-white"
+                          className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                         />
                       </div>
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-bold text-slate-700">Contraseña de Acceso *</label>
+                          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Contraseña de Acceso *</label>
                           <button
                             type="button"
                             onClick={() => setFormData({ ...formData, adminPassword: generateSecurePassword('SP') })}
-                            className="text-[10px] text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1"
+                            className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer"
                           >
                             <Sparkles className="w-3 h-3" />
                             <span>Regenerar</span>
@@ -1932,12 +1932,12 @@ export const AffiliatedParkingsModule = () => {
                             required={formData.createAdminAccount}
                             value={formData.adminPassword}
                             onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
-                            className="text-xs bg-white pr-9 font-mono font-bold"
+                            className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white pr-9 font-mono font-bold"
                           />
                           <button
                             type="button"
                             onClick={() => setFormData({ ...formData, showAdminPassword: !formData.showAdminPassword })}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                           >
                             {formData.showAdminPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                           </button>
@@ -1950,10 +1950,10 @@ export const AffiliatedParkingsModule = () => {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setShowAddModal(false)} className="flex-1 text-xs">
+              <Button type="button" variant="outline" onClick={() => setShowAddModal(false)} className="flex-1 text-xs rounded-xl border-slate-200 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer">
                 Cancelar
               </Button>
-              <Button type="submit" className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs">
+              <Button type="submit" className="flex-1 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs rounded-xl cursor-pointer">
                 Guardar Sede
               </Button>
             </div>
@@ -1965,81 +1965,81 @@ export const AffiliatedParkingsModule = () => {
           MODAL 5: EDITAR AFILIADO
           ========================================================================= */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6">
+        <DialogContent className="max-w-md bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 rounded-3xl p-6 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900">Editar Sede</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">Editar Sede</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Modifica los datos operativos de esta sede afiliada.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleEdit} className="space-y-4 mt-2">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Empresa / Razón Social (Matriz)</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Empresa / Razón Social (Matriz)</label>
               <Input
                 placeholder="Ej. Inversiones Plaza S.A.C."
                 value={formData.company_name}
                 onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la Sede / Sucursal</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre de la Sede / Sucursal</label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Dirección</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Dirección</label>
               <Input
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Tarifa (S/)</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Tarifa (S/)</label>
                 <Input
                   type="number"
                   step="0.5"
                   value={formData.rate}
                   onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-                  className="text-xs"
+                  className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Titular</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Titular</label>
                 <Input
                   value={formData.owner}
                   onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
-                  className="text-xs"
+                  className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
             </div>
 
             <div className="pt-1">
-              <label className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
+              <label className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-2xl cursor-pointer">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Habilitar opción "Hora (Libre)"</span>
                 </span>
                 <input
                   type="checkbox"
                   checked={formData.allow_open_stay !== false}
                   onChange={(e) => setFormData({ ...formData, allow_open_stay: e.target.checked })}
-                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500"
                 />
               </label>
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setShowEditModal(false)} className="flex-1 text-xs">
+              <Button type="button" variant="outline" onClick={() => setShowEditModal(false)} className="flex-1 text-xs rounded-xl border-slate-200 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer">
                 Cancelar
               </Button>
-              <Button type="submit" className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs">
+              <Button type="submit" className="flex-1 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs rounded-xl cursor-pointer">
                 Guardar Cambios
               </Button>
             </div>
@@ -2051,13 +2051,13 @@ export const AffiliatedParkingsModule = () => {
           MODAL 6: AJUSTES DE EMPRESA COMERCIAL (MATRIZ)
           ========================================================================= */}
       <Dialog open={showEditCompanyModal} onOpenChange={setShowEditCompanyModal}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6">
+        <DialogContent className="max-w-md bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 rounded-3xl p-6 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-emerald-600" />
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Settings className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span>Ajustes de Empresa Comercial</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Modifica los datos comerciales de la empresa matriz y sus sedes afiliadas.
             </DialogDescription>
           </DialogHeader>
@@ -2065,82 +2065,82 @@ export const AffiliatedParkingsModule = () => {
           {selectedCompany && (
             <form onSubmit={handleSaveCompany} className="space-y-4 mt-2">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Comercial de la Empresa *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre Comercial de la Empresa *</label>
                 <Input
                   required
                   value={companyFormData.company_name}
                   onChange={(e) => setCompanyFormData({ ...companyFormData, company_name: e.target.value })}
                   placeholder="Ej. Inversiones Plaza S.A.C."
-                  className="text-xs font-bold"
+                  className="text-xs font-bold bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Titular / Representante</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Titular / Representante</label>
                   <Input
                     value={companyFormData.owner}
                     onChange={(e) => setCompanyFormData({ ...companyFormData, owner: e.target.value })}
                     placeholder="Ej. Carlos Mendoza"
-                    className="text-xs"
+                    className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">RUC (Opcional)</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">RUC (Opcional)</label>
                   <Input
                     value={companyFormData.ruc}
                     onChange={(e) => setCompanyFormData({ ...companyFormData, ruc: e.target.value })}
                     placeholder="20601234567"
-                    className="text-xs font-mono"
+                    className="text-xs font-mono bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Teléfono / WhatsApp</label>
                   <Input
                     value={companyFormData.phone}
                     onChange={(e) => setCompanyFormData({ ...companyFormData, phone: e.target.value })}
                     placeholder="966 123 456"
-                    className="text-xs"
+                    className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Correo de Contacto</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Correo de Contacto</label>
                   <Input
                     type="email"
                     value={companyFormData.email}
                     onChange={(e) => setCompanyFormData({ ...companyFormData, email: e.target.value })}
                     placeholder="contacto@empresa.com"
-                    className="text-xs"
+                    className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Ciudad / Ubicación Central</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Ciudad / Ubicación Central</label>
                 <Input
                   value={companyFormData.city}
                   onChange={(e) => setCompanyFormData({ ...companyFormData, city: e.target.value })}
                   placeholder="Ayacucho - Huamanga"
-                  className="text-xs"
+                  className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
 
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] text-slate-600 space-y-1">
-                <p className="font-bold text-slate-800">Alcance de los cambios:</p>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-2xl text-[11px] text-slate-600 dark:text-slate-400 space-y-1">
+                <p className="font-bold text-slate-800 dark:text-slate-200">Alcance de los cambios:</p>
                 <p>Se sincronizarán los datos comerciales en las <strong>{selectedCompany.branches?.length || 0} sedes</strong> registradas bajo esta empresa.</p>
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setShowEditCompanyModal(false)} className="flex-1 text-xs">
+                <Button type="button" variant="outline" onClick={() => setShowEditCompanyModal(false)} className="flex-1 text-xs rounded-xl border-slate-200 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer">
                   Cancelar
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={savingCompany}
-                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5"
+                  className="flex-1 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {savingCompany ? (
                     <>

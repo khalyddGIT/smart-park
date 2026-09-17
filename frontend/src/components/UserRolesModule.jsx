@@ -257,7 +257,7 @@ export const UserRolesModule = () => {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs">
+        <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#111827] shadow-xs">
           <div>
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Conductores</span>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stats.user}</p>
@@ -267,7 +267,7 @@ export const UserRolesModule = () => {
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs">
+        <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#111827] shadow-xs">
           <div>
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Operadores de Garita</span>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stats.local}</p>
@@ -277,7 +277,7 @@ export const UserRolesModule = () => {
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs">
+        <Card className="p-4 flex items-center justify-between border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#111827] shadow-xs">
           <div>
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Super Admins</span>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stats.platform}</p>
@@ -289,7 +289,7 @@ export const UserRolesModule = () => {
       </div>
 
       {/* Filters & Table */}
-      <Card className="border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#151D2F] shadow-xs overflow-hidden">
+      <Card className="border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#111827] shadow-xs overflow-hidden">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/60 dark:bg-slate-900/40">
           <div className="relative w-full md:w-80">
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -426,37 +426,37 @@ export const UserRolesModule = () => {
 
       {/* Modal Agregar Usuario */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-md rounded-3xl p-6 bg-white border-slate-200">
-          <DialogHeader className="border-b border-slate-100 pb-3">
-            <DialogTitle className="text-base font-black text-slate-900">Registrar Nuevo Usuario</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">Crea credenciales de acceso al sistema.</DialogDescription>
+        <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+          <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <DialogTitle className="text-base font-black text-slate-900 dark:text-white">Registrar Nuevo Usuario</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">Crea credenciales de acceso al sistema.</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreate} className="space-y-4 pt-2">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo *</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre Completo *</label>
               <Input
                 type="text"
                 placeholder="Nombres y Apellidos"
                 value={formData.full_name}
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 required
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Correo Electrónico *</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Correo Electrónico *</label>
               <Input
                 type="email"
                 placeholder="usuario@correo.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Contraseña * (mínimo 8 caracteres)</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Contraseña * (mínimo 8 caracteres)</label>
               <Input
                 type="password"
                 placeholder="********"
@@ -464,10 +464,10 @@ export const UserRolesModule = () => {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 minLength={8}
                 required
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
-            <div className="flex items-start gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-100 text-[11px] text-slate-500">
+            <div className="flex items-start gap-2 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
               <Info className="w-4 h-4 shrink-0 mt-0.5 text-slate-400 shrink-0" />
               <span>
                 Los nuevos usuarios se crean siempre con rol <strong>Conductor (user)</strong>.
@@ -475,7 +475,7 @@ export const UserRolesModule = () => {
               </span>
             </div>
 
-            <Button type="submit" className="w-full font-bold text-xs py-3 bg-emerald-600 hover:bg-emerald-700 mt-2">
+            <Button type="submit" className="w-full font-bold text-xs py-3 bg-emerald-600 hover:bg-emerald-700 text-white mt-2 cursor-pointer">
               Crear Usuario
             </Button>
           </form>
@@ -484,48 +484,48 @@ export const UserRolesModule = () => {
 
       {/* Modal Editar Usuario */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-md rounded-3xl p-6 bg-white border-slate-200">
-          <DialogHeader className="border-b border-slate-100 pb-3">
-            <DialogTitle className="text-base font-black text-slate-900">Editar Usuario</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">Actualiza los datos y nivel de acceso.</DialogDescription>
+        <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+          <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <DialogTitle className="text-base font-black text-slate-900 dark:text-white">Editar Usuario</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">Actualiza los datos y nivel de acceso.</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleEdit} className="space-y-4 pt-2">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo *</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre Completo *</label>
               <Input
                 type="text"
                 value={formData.full_name}
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 required
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Correo Electrónico</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Correo Electrónico</label>
               <Input
                 type="email"
                 value={formData.email}
                 disabled
-                className="text-xs bg-slate-100 text-slate-400 cursor-not-allowed"
+                className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800 cursor-not-allowed"
               />
-              <span className="text-[10px] text-slate-400">El correo no puede modificarse desde la plataforma.</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">El correo no puede modificarse desde la plataforma.</span>
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono Móvil</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Teléfono Móvil</label>
               <Input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="text-xs font-mono"
+                className="text-xs font-mono bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Rol de Acceso *</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Rol de Acceso *</label>
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200"
               >
                 <option value="user">Conductor</option>
                 <option value="local">Operador de Garita</option>
@@ -533,19 +533,19 @@ export const UserRolesModule = () => {
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Nueva Contraseña (opcional)</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nueva Contraseña (opcional)</label>
               <Input
                 type="password"
                 placeholder="•••••••• (dejar en blanco para conservar actual)"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 minLength={8}
-                className="text-xs"
+                className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
-              <span className="text-[10px] text-slate-400">Mínimo 8 caracteres para cambiar la clave de acceso.</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">Mínimo 8 caracteres para cambiar la clave de acceso.</span>
             </div>
 
-            <Button type="submit" className="w-full font-bold text-xs py-3 bg-emerald-600 hover:bg-emerald-700 mt-2">
+            <Button type="submit" className="w-full font-bold text-xs py-3 bg-emerald-600 hover:bg-emerald-700 text-white mt-2 cursor-pointer">
               Guardar Cambios
             </Button>
           </form>
@@ -554,10 +554,10 @@ export const UserRolesModule = () => {
 
       {/* Modal Cambiar PIN */}
       <Dialog open={showPinModal} onOpenChange={setShowPinModal}>
-        <DialogContent className="max-w-xs rounded-3xl p-6 bg-white border-slate-200 text-center">
-          <DialogHeader className="border-b border-slate-100 pb-3">
-            <DialogTitle className="text-base font-black text-slate-900">PIN de Garita / Acceso</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">Define un nuevo PIN para {selectedUser?.full_name}</DialogDescription>
+        <DialogContent className="max-w-xs rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-center">
+          <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <DialogTitle className="text-base font-black text-slate-900 dark:text-white">PIN de Garita / Acceso</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">Define un nuevo PIN para {selectedUser?.full_name}</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSavePin} className="space-y-4 pt-4">
@@ -569,12 +569,12 @@ export const UserRolesModule = () => {
                 placeholder="4 a 6 dígitos"
                 value={pinValue}
                 onChange={(e) => setPinValue(e.target.value.replace(/\D/g, ''))}
-                className="pl-9 font-mono text-center text-lg tracking-widest font-black"
+                className="pl-9 font-mono text-center text-lg tracking-widest font-black bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 required
               />
             </div>
 
-            <Button type="submit" className="w-full font-bold text-xs py-3 bg-slate-900 hover:bg-slate-800">
+            <Button type="submit" className="w-full font-bold text-xs py-3 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 cursor-pointer">
               Actualizar PIN
             </Button>
           </form>

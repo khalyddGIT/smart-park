@@ -529,7 +529,7 @@ export const AuditLogsModule = () => {
 
       {/* Modal de Inspección Detallada */}
       <Dialog open={!!selectedLog} onOpenChange={open => !open && setSelectedLog(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
           {selectedLog && (
             <>
               <DialogHeader>

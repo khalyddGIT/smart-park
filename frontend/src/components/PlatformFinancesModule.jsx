@@ -406,9 +406,15 @@ export const PlatformFinancesModule = () => {
                           </td>
 
                           <td className="p-4 font-mono text-xs">
-                            <div className="font-bold text-slate-800 dark:text-slate-200">{p.bank}</div>
-                            <div className="text-slate-500 dark:text-slate-400 text-xs">Cta: {p.accountNumber}</div>
-                            <div className="text-slate-400 dark:text-slate-500 text-xs">CCI: {p.cci}</div>
+                            {p.bank === 'Pendiente de completar' ? (
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-sans text-[10px]">Sin cuenta bancaria</span>
+                            ) : (
+                              <>
+                                <div className="font-bold text-slate-800 dark:text-slate-200">{p.bank}</div>
+                                <div className="text-slate-500 dark:text-slate-400 text-xs">Cta: {p.accountNumber}</div>
+                                <div className="text-slate-400 dark:text-slate-500 text-xs">CCI: {p.cci}</div>
+                              </>
+                            )}
                           </td>
 
                           <td className="p-4 text-right font-mono font-bold text-slate-900 dark:text-white">{fmt(p.totalRevenue)}</td>
@@ -479,13 +485,13 @@ export const PlatformFinancesModule = () => {
 
       {/* MODAL DE CONFIRMACIÓN */}
       <Dialog open={showPayoutModal} onOpenChange={setShowPayoutModal}>
-        <DialogContent className="max-w-md rounded-3xl p-6">
+        <DialogContent className="max-w-md bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-3xl p-6">
           <DialogHeader>
             <DialogTitle className="text-heading flex items-center gap-2">
               <Send className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
               Emitir Liquidación
             </DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Confirma el registro contable de liquidación y desembolso bancario.
             </DialogDescription>
           </DialogHeader>
@@ -548,13 +554,13 @@ export const PlatformFinancesModule = () => {
 
       {/* MODAL COMPROBANTE */}
       <Dialog open={showReceiptModal} onOpenChange={setShowReceiptModal}>
-        <DialogContent className="max-w-md rounded-3xl p-6">
+        <DialogContent className="max-w-md bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-3xl p-6">
           <DialogHeader>
             <DialogTitle className="text-heading text-center flex items-center justify-center gap-2">
               <Receipt className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
               Comprobante de Liquidación
             </DialogTitle>
-            <DialogDescription className="text-xs text-center">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 text-center">
               Constancia oficial de liquidación bancaria emitida.
             </DialogDescription>
           </DialogHeader>

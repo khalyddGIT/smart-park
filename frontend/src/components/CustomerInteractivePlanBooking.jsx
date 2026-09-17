@@ -533,8 +533,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       return { minX: 0, minY: 0, width: 960, height: 600 };
     }
 
-    const paddingX = 40;
-    const paddingY = 35;
+    const paddingX = 20;
+    const paddingY = 20;
     const width = Math.max(480, (maxX - minX) + paddingX * 2);
     const height = Math.max(340, (maxY - minY) + paddingY * 2);
 
@@ -551,10 +551,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       if (containerRef.current) {
         const { clientWidth, clientHeight } = containerRef.current;
         if (clientWidth > 0 && clientHeight > 0) {
-          const scaleX = (clientWidth * 0.94) / layoutBounds.width;
-          const scaleY = (clientHeight * 0.94) / layoutBounds.height;
+          const scaleX = (clientWidth * 0.98) / layoutBounds.width;
+          const scaleY = (clientHeight * 0.98) / layoutBounds.height;
           const fitScale = Math.min(scaleX, scaleY);
-          setBaseScale(Math.max(0.2, fitScale));
+          setBaseScale(Math.max(0.25, fitScale));
         }
       }
     };
@@ -952,81 +952,70 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
-        {/* Contenedor del Plano Asfáltico Cenital con Auto-Encuadre Dinámico & Pan/Drag */}
-        <div 
-          ref={containerRef}
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          className={`lg:col-span-2 bg-[#090d16] rounded-2xl border border-slate-800 flex items-center justify-center relative overflow-hidden h-[440px] sm:h-[500px] lg:h-[580px] shadow-2xl select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-        >
-          {/* Indicador táctico de navegación */}
-          <div className="absolute top-3 left-3 z-30 hidden sm:flex items-center gap-1.5 bg-slate-900/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-700/80 text-[11px] text-slate-300 font-medium pointer-events-none shadow-md">
-            <Move className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span>Arrastra para mover el plano &bull; Rueda para zoom</span>
-          </div>
+        {/* Columna Izquierda: Visor del Plano CAD con Controles y Leyenda Exteriores */}
+        <div className="lg:col-span-2 flex flex-col gap-2.5">
+          {/* Barra Superior Exterior: Indicador de Navegación y Controles de Zoom */}
+          <div className="flex items-center justify-between gap-2 px-1 text-xs">
+            <div className="flex items-center gap-2 text-slate-400 font-medium">
+              <Move className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="hidden sm:inline text-[11px]">Arrastra para mover el plano &bull; Rueda para zoom</span>
+              <span className="sm:hidden text-[11px]">Arrastra &bull; Pellizca para zoom</span>
+            </div>
 
-          {/* Controles Flotantes de Zoom y Recentrado */}
-          <div className="absolute top-3 right-3 z-30 flex items-center gap-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-700/80 shadow-lg">
-            <button
-              type="button"
-              onClick={() => setUserZoom(prev => Math.min(3.0, +(prev + 0.2).toFixed(2)))}
-              title="Acercar plano (+)"
-              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setUserZoom(prev => Math.max(0.4, +(prev - 0.2).toFixed(2)))}
-              title="Alejar plano (-)"
-              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleResetView}
-              title="Reajustar y centrar plano"
-              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Leyenda Arquitectónica Limpia en la Base */}
-          <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2.5 sm:gap-3.5 bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[10px] font-mono shadow-md pointer-events-none">
-            <div className="flex items-center gap-1.5 text-slate-300">
-              <div className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>Libre</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-300">
-              <div className="w-2 h-2 rounded-full bg-rose-500" />
-              <span>Ocupado</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-300">
-              <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
-              <span className="font-bold text-cyan-300">Tu Plaza</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-300">
-              <div className="w-2 h-2 rounded-full bg-amber-500" />
-              <span>Otro tipo</span>
+            <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setUserZoom(prev => Math.max(0.4, +(prev - 0.2).toFixed(2)))}
+                title="Alejar plano (-)"
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[11px] font-mono text-slate-300 px-1.5 select-none min-w-[38px] text-center">
+                {Math.round(effectiveScale * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setUserZoom(prev => Math.min(3.0, +(prev + 0.2).toFixed(2)))}
+                title="Acercar plano (+)"
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              <div className="w-px h-3.5 bg-slate-700 mx-0.5" />
+              <button
+                type="button"
+                onClick={handleResetView}
+                title="Centrar y reencuadrar plano"
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer flex items-center gap-1 text-[11px]"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span className="hidden md:inline font-mono">Centrar</span>
+              </button>
             </div>
           </div>
 
-          {/* Lienzo Arquitectónico Asfáltico Cenital con Pan 2D */}
+          {/* Contenedor del Plano Asfáltico Cenital con Pan/Drag */}
           <div 
-            style={{ 
-              width: `${layoutBounds.width}px`, 
-              height: `${layoutBounds.height}px`,
-              transform: `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) scale(${effectiveScale})`,
-              transformOrigin: 'center center',
-              backgroundColor: '#0c121e',
-              transition: isDragging ? 'none' : 'transform 180ms cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
-            className="relative rounded-2xl border border-slate-700/80 overflow-hidden select-none shrink-0 shadow-2xl will-change-transform"
+            ref={containerRef}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className={`w-full bg-[#080d16] rounded-2xl border border-slate-800 flex items-center justify-center relative overflow-hidden h-[460px] sm:h-[520px] lg:h-[600px] shadow-2xl select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           >
+            {/* Lienzo Arquitectónico Asfáltico Cenital con Pan 2D */}
+            <div 
+              style={{ 
+                width: `${layoutBounds.width}px`, 
+                height: `${layoutBounds.height}px`,
+                transform: `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) scale(${effectiveScale})`,
+                transformOrigin: 'center center',
+                backgroundColor: '#0c121e',
+                transition: isDragging ? 'none' : 'transform 180ms cubic-bezier(0.16, 1, 0.3, 1)'
+              }}
+              className="relative rounded-xl border border-slate-700/60 overflow-hidden select-none shrink-0 shadow-xl will-change-transform"
+            >
             {/* Grano Asfáltico y Trazado Vial de Fondo */}
             <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_50%,#141d2e_0%,#090d16_100%)]" />
             <div className="absolute inset-0 pointer-events-none opacity-15 bg-[linear-gradient(to_right,rgba(255,255,255,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.12)_1px,transparent_1px)] bg-[size:50px_50px]" />
@@ -1265,6 +1254,37 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             })}
           </div>
         </div>
+
+        {/* Barra Inferior Exterior: Leyenda de Estados y Plazas Disponibles */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-1 py-0.5 text-xs">
+          {/* Leyenda de Estados */}
+          <div className="flex items-center gap-3 sm:gap-4 text-[11px] font-mono">
+            <div className="flex items-center gap-1.5 text-slate-300">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]" />
+              <span>Libre</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+              <span>Ocupado</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-200">
+              <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
+              <span className="font-bold text-cyan-300">Tu Plaza</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+              <span>Otro tipo</span>
+            </div>
+          </div>
+
+          {/* Resumen de Plazas Disponibles */}
+          <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
+            <span>Disponibles:</span>
+            <span className="text-emerald-400 font-bold text-xs">{compatibleFreeSlots.length}</span>
+            <span className="text-slate-500">de {slots.length} plazas</span>
+          </div>
+        </div>
+      </div>
 
         {/* Panel Lateral de Reserva y Opciones Comerciales */}
         <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4 text-white">

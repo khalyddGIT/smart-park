@@ -201,6 +201,8 @@ npm install
 npm run dev
 ```
 
+> 📖 **Guía Completa Paso a Paso**: Consulta [docs/GUIA_EJECUCION_LOCAL.md](docs/GUIA_EJECUCION_LOCAL.md) para el manual detallado con credenciales semilla de los 4 roles, comandos de Windows PowerShell / Linux y resolución de problemas.
+
 ### Alternativa: Docker Compose (entorno completo local)
 ```bash
 docker compose up --build

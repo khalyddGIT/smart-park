@@ -6,6 +6,7 @@
 
 | Documento | Contenido |
 | :--- | :--- |
+| [GUIA_EJECUCION_LOCAL.md](GUIA_EJECUCION_LOCAL.md) | Guía definitiva paso a paso de ejecución y pruebas locales (PostgreSQL, FastAPI, React Vite, credenciales por rol y troubleshooting) |
 | [DOCUMENTACION_CODIGO_FUENTE_Y_DESPLIEGUE.md](DOCUMENTACION_CODIGO_FUENTE_Y_DESPLIEGUE.md) | Informe técnico integral: arquitectura del código fuente, incidente de despliegue, diagnóstico con CLIs, solución CI/CD y checklist de verificación |
 | [DOCUMENTACION_YOLO_INTEGRACION.md](DOCUMENTACION_YOLO_INTEGRACION.md) | Documentación técnica de integración de la red neuronal YOLOv8, control de concurrencia y clasificador híbrido OpenCV |
 | [RAILWAY_DEPLOY.md](RAILWAY_DEPLOY.md) | Guía paso a paso del despliegue en producción (Railway) |

@@ -742,6 +742,68 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     return Number(Number(r).toFixed(2));
   }, [parking, vehicleCategory]);
 
+  const [showAllVehicleTypes, setShowAllVehicleTypes] = useState(false);
+
+  // Categorías de vehículos que el usuario tiene en su garaje
+  const userVehicleFamilies = useMemo(() => {
+    if (!vehicles || vehicles.length === 0) return [];
+    const families = new Set();
+    vehicles.forEach((v) => {
+      const fam = slotFamily(v.vehicle_type);
+      if (fam) families.add(fam);
+    });
+    return Array.from(families);
+  }, [vehicles]);
+
+  const allVehicleOptions = useMemo(() => [
+    { 
+      id: 'auto', 
+      label: 'Auto', 
+      icon: Car, 
+      rate: Number(parking?.rate_auto ?? parking?.rate ?? 5.0),
+      minuteRate: Number(parking?.rate_minute_auto ?? ((parking?.rate_auto ?? parking?.rate ?? 5.0) / 60))
+    },
+    { 
+      id: 'camioneta', 
+      label: 'Camioneta', 
+      icon: Truck, 
+      rate: Number(parking?.rate_suv ?? 7.0),
+      minuteRate: Number(parking?.rate_minute_suv ?? ((parking?.rate_suv ?? 7.0) / 60))
+    },
+    { 
+      id: 'mototaxi', 
+      label: 'Mototaxi', 
+      icon: MototaxiIcon, 
+      rate: Number(parking?.rate_mototaxi ?? 3.5),
+      minuteRate: Number(parking?.rate_minute_mototaxi ?? ((parking?.rate_mototaxi ?? 3.5) / 60))
+    },
+    { 
+      id: 'moto', 
+      label: 'Moto', 
+      icon: Bike, 
+      rate: Number(parking?.rate_moto ?? 2.5),
+      minuteRate: Number(parking?.rate_minute_moto ?? ((parking?.rate_moto ?? 2.5) / 60))
+    }
+  ], [parking, isMinuteBilling]);
+
+  const displayedVehicleOptions = useMemo(() => {
+    if (userVehicleFamilies.length === 0 || showAllVehicleTypes || useCustomPlate) {
+      return allVehicleOptions;
+    }
+    const filtered = allVehicleOptions.filter((opt) => userVehicleFamilies.includes(opt.id));
+    return filtered.length > 0 ? filtered : allVehicleOptions;
+  }, [allVehicleOptions, userVehicleFamilies, showAllVehicleTypes, useCustomPlate]);
+
+  const handleSelectVehicleCategory = (catId) => {
+    setVehicleCategory(catId);
+    if (!useCustomPlate && vehicles.length > 0) {
+      const match = vehicles.find((v) => slotFamily(v.vehicle_type) === catId);
+      if (match) {
+        setSelectedPlate(match.license_plate);
+      }
+    }
+  };
+
   // Turno noche dinámico según la hora actual
   const isNightShiftActive = useMemo(() => {
     if (!parking?.night_shift_enabled) return false;
@@ -1293,47 +1355,33 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
             {/* Categoría de Vehículo */}
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1.5">
-                Tipo de Vehículo
-              </label>
-              <div className="grid grid-cols-4 gap-1.5">
-                {[
-                  { 
-                    id: 'auto', 
-                    label: 'Auto', 
-                    icon: Car, 
-                    rate: Number(parking?.rate_auto ?? parking?.rate ?? 5.0),
-                    minuteRate: Number(parking?.rate_minute_auto ?? ((parking?.rate_auto ?? parking?.rate ?? 5.0) / 60))
-                  },
-                  { 
-                    id: 'camioneta', 
-                    label: 'Camioneta', 
-                    icon: Truck, 
-                    rate: Number(parking?.rate_suv ?? 7.0),
-                    minuteRate: Number(parking?.rate_minute_suv ?? ((parking?.rate_suv ?? 7.0) / 60))
-                  },
-                  { 
-                    id: 'mototaxi', 
-                    label: 'Mototaxi', 
-                    icon: MototaxiIcon, 
-                    rate: Number(parking?.rate_mototaxi ?? 3.5),
-                    minuteRate: Number(parking?.rate_minute_mototaxi ?? ((parking?.rate_mototaxi ?? 3.5) / 60))
-                  },
-                  { 
-                    id: 'moto', 
-                    label: 'Moto', 
-                    icon: Bike, 
-                    rate: Number(parking?.rate_moto ?? 2.5),
-                    minuteRate: Number(parking?.rate_minute_moto ?? ((parking?.rate_moto ?? 2.5) / 60))
-                  }
-                ].map((v) => {
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-300 block">
+                  Tipo de Vehículo
+                </label>
+                {userVehicleFamilies.length > 0 && userVehicleFamilies.length < 4 && !useCustomPlate && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllVehicleTypes(prev => !prev)}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 hover:underline cursor-pointer font-medium"
+                  >
+                    {showAllVehicleTypes ? 'Mis vehículos' : '+ Más tipos'}
+                  </button>
+                )}
+              </div>
+              <div className={`grid gap-1.5 ${
+                displayedVehicleOptions.length === 1 ? 'grid-cols-1' :
+                displayedVehicleOptions.length === 2 ? 'grid-cols-2' :
+                displayedVehicleOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-4'
+              }`}>
+                {displayedVehicleOptions.map((v) => {
                   const Icon = v.icon;
                   const isCur = vehicleCategory === v.id;
                   return (
                     <button
                       key={v.id}
                       type="button"
-                      onClick={() => setVehicleCategory(v.id)}
+                      onClick={() => handleSelectVehicleCategory(v.id)}
                       className={`p-2 rounded-xl text-xs font-semibold transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
                         isCur 
                           ? 'bg-emerald-600 text-white shadow-sm' 
@@ -1396,7 +1444,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   <div className="flex items-center justify-between text-xs text-slate-400 pt-0.5">
                     <button
                       type="button"
-                      onClick={() => setUseCustomPlate(true)}
+                      onClick={() => {
+                        setUseCustomPlate(true);
+                        setShowAllVehicleTypes(true);
+                      }}
                       className="text-emerald-400 hover:underline font-semibold cursor-pointer"
                     >
                       + Ingresar otra placa
@@ -1440,7 +1491,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     {vehicles.length > 0 ? (
                       <button
                         type="button"
-                        onClick={() => setUseCustomPlate(false)}
+                        onClick={() => {
+                          setUseCustomPlate(false);
+                          setShowAllVehicleTypes(false);
+                        }}
                         className="text-emerald-400 hover:underline font-semibold cursor-pointer"
                       >
                         ← Seleccionar de mis autos

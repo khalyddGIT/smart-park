@@ -1,4 +1,4 @@
-// Módulo Avanzado de Rutas 3D, GPS en Tiempo Real, Framing fitBounds, Indicador Vocal y Neón en Mapbox GL JS v3
+// Módulo Profesional de Navegación GPS, Trazado Real y Turn-by-Turn en Mapbox GL JS
 
 import { MAPBOX_TOKEN } from './mapConfig';
 
@@ -7,19 +7,14 @@ export class MapRoutesManager {
     this.map = map;
     this.routeSourceId = 'mapbox-3d-route-source';
     this.routeLayerId = 'mapbox-3d-route-layer';
-    this.pulseLayerId = 'mapbox-3d-route-pulse';
-    this.vehicleMarker = null;
     this.userGpsMarker = null;
     this.destPinMarker = null;
     this.watchId = null;
-    this.animFrameId = null;
-    this.dashOffset = 0;
-    this.dashAnimationId = null;
     this.lastSpokenStep = null;
     this.isMuted = false;
   }
 
-  // Trazar ruta 3D interactiva con Turn-by-Turn, encuadre fitBounds e voz usando Mapbox Directions API
+  // Trazar ruta real con Turn-by-Turn y encuadre fitBounds usando Mapbox Directions API
   async drawRoute(originLngLat, destLngLat, destName, profile = 'driving') {
     if (!this.map) return null;
 
@@ -45,7 +40,7 @@ export class MapRoutesManager {
         data: geojson
       });
 
-      // Capa 1: Sombra de fondo (Glow Casing)
+      // Capa 1: Casing suave y elegante estilo Google Maps
       this.map.addLayer({
         id: `${this.routeLayerId}-casing`,
         type: 'line',
@@ -55,13 +50,13 @@ export class MapRoutesManager {
           'line-cap': 'round'
         },
         paint: {
-          'line-color': '#0284c7',
-          'line-width': 12,
-          'line-opacity': 0.4
+          'line-color': '#1d4ed8',
+          'line-width': 10,
+          'line-opacity': 0.35
         }
       });
 
-      // Capa 2: Ruta Turquesa Neón Principal 3D
+      // Capa 2: Línea de navegación continua y sólida HD (Azul Eléctrico)
       this.map.addLayer({
         id: this.routeLayerId,
         type: 'line',
@@ -71,45 +66,43 @@ export class MapRoutesManager {
           'line-cap': 'round'
         },
         paint: {
-          'line-color': '#06b6d4',
-          'line-width': 6,
-          'line-opacity': 0.95
+          'line-color': '#2563eb',
+          'line-width': 5.5,
+          'line-opacity': 1.0
         }
       });
 
-      // Capa 3: Pulso de luz Neón animado (Dash Array Flow)
-      this.map.addLayer({
-        id: this.pulseLayerId,
-        type: 'line',
-        source: this.routeSourceId,
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round'
-        },
-        paint: {
-          'line-color': '#ffffff',
-          'line-width': 3,
-          'line-dasharray': [0, 2, 2],
-          'line-opacity': 0.9
-        }
-      });
-
-      this.startPulseAnimation();
-
-      // Marcador Neón en la Cochera Destino
       const mapboxgl = window.mapboxgl;
+
+      // Marcador 1: Puck de Ubicación Real del Usuario (Punto Azul con pulso suave de radar)
       if (mapboxgl) {
-        const destEl = document.createElement('div');
-        destEl.className = 'dest-neon-flag-pin';
-        destEl.innerHTML = `
+        const originEl = document.createElement('div');
+        originEl.className = 'user-real-gps-puck pointer-events-none';
+        originEl.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            <span style="position: absolute; width: 32px; height: 32px; border-radius: 50%; background: #06b6d4; opacity: 0.35; animation: ping 2s infinite;"></span>
-            <div style="background: #0f172a; color: #06b6d4; padding: 6px; border-radius: 50%; border: 2px solid #06b6d4; box-shadow: 0 8px 20px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-            </div>
+            <span style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: #3b82f6; opacity: 0.35; animation: ping 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+            <div style="width: 16px; height: 16px; border-radius: 50%; background: #2563eb; border: 3px solid #ffffff; box-shadow: 0 3px 10px rgba(0,0,0,0.35); position: relative; z-index: 2;"></div>
           </div>
         `;
-        this.destPinMarker = new mapboxgl.Marker({ element: destEl })
+        this.userGpsMarker = new mapboxgl.Marker({ element: originEl })
+          .setLngLat(originLngLat)
+          .addTo(this.map);
+      }
+
+      // Marcador 2: Pin de Llegada en la Cochera Destino (Estilo Limpio y Arquitectónico)
+      if (mapboxgl) {
+        const destEl = document.createElement('div');
+        destEl.className = 'dest-clean-arrival-pin pointer-events-none';
+        destEl.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; transform: translateY(-4px);">
+            <div style="background: #0f172a; color: #ffffff; padding: 4px 9px; border-radius: 8px; font-size: 11px; font-weight: 800; font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 4px 12px rgba(15,23,42,0.35); white-space: nowrap; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 5px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; background: #059669; color: white; border-radius: 4px; font-weight: 900; font-size: 9px;">P</span>
+              <span style="max-width: 170px; overflow: hidden; text-overflow: ellipsis;">${destName}</span>
+            </div>
+            <div style="width: 10px; height: 10px; background: #0f172a; transform: rotate(45deg); margin-top: -6px; border-bottom: 2px solid #059669; border-right: 2px solid #059669;"></div>
+          </div>
+        `;
+        this.destPinMarker = new mapboxgl.Marker({ element: destEl, anchor: 'bottom' })
           .setLngLat(destLngLat)
           .addTo(this.map);
       }
@@ -123,22 +116,19 @@ export class MapRoutesManager {
         location: s.maneuver?.location || originLngLat
       }));
 
-      // Encuadre de Cámara automático (fitBounds) con perspectiva 3D
+      // Encuadre de Cámara suave (fitBounds) con buen margen
       const coords = route.geometry.coordinates;
       if (mapboxgl && coords.length > 0) {
         const bounds = coords.reduce((b, coord) => b.extend(coord), new mapboxgl.LngLatBounds(coords[0], coords[0]));
         this.map.fitBounds(bounds, {
-          padding: { top: 75, bottom: 85, left: 65, right: 65 },
+          padding: { top: 60, bottom: 60, left: 50, right: 50 },
           pitch: 0,
-          duration: 1200
+          duration: 900
         });
       }
 
-      // Animar vehículo recorriendo el camino
-      this.animateVehicleOnRoute(coords);
-
       // Reproducir por voz la primera maniobra si no está silenciado
-      const currentStep = steps[0] || { instruction: 'Avanza hacia la cochera', distance: 100 };
+      const currentStep = steps[0] || { instruction: `Avanza hacia ${destName}`, distance: 100 };
       if (currentStep.instruction && this.lastSpokenStep !== currentStep.instruction && !this.isMuted) {
         this.speakInstruction(currentStep.instruction);
         this.lastSpokenStep = currentStep.instruction;
@@ -156,6 +146,7 @@ export class MapRoutesManager {
 
       return {
         destinationName: destName,
+        destCoords: destLngLat,
         distanceKm: distanceFormatted,
         durationMin: durationFormatted,
         steps,
@@ -190,22 +181,6 @@ export class MapRoutesManager {
     return this.isMuted;
   }
 
-  // Animación de pulso continuo sobre la polilínea 3D
-  startPulseAnimation() {
-    if (this.dashAnimationId) cancelAnimationFrame(this.dashAnimationId);
-
-    const animateDash = () => {
-      if (!this.map || !this.map.getLayer(this.pulseLayerId)) return;
-      this.dashOffset = (this.dashOffset + 0.15) % 4;
-      try {
-        this.map.setPaintProperty(this.pulseLayerId, 'line-dasharray', [this.dashOffset, 2, 2]);
-      } catch (e) {}
-      this.dashAnimationId = requestAnimationFrame(animateDash);
-    };
-
-    animateDash();
-  }
-
   // Activar seguimiento GPS en tiempo real del conductor (HTML5 Geolocation watchPosition)
   startRealtimeTracking(destLngLat, destName, onLocationUpdate) {
     this.stopRealtimeTracking();
@@ -218,20 +193,7 @@ export class MapRoutesManager {
       async (pos) => {
         const userLngLat = [pos.coords.longitude, pos.coords.latitude];
 
-        // Crear/Actualizar marcador de usuario en vivo con pulso de GPS
-        if (!this.userGpsMarker && mapboxgl && this.map) {
-          const el = document.createElement('div');
-          el.className = 'user-gps-live-pin';
-          el.innerHTML = `
-            <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-              <span style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: #10b981; opacity: 0.4; animation: ping 1.5s infinite;"></span>
-              <div style="width: 16px; height: 16px; background: #059669; border: 2.5px solid #ffffff; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
-            </div>
-          `;
-          this.userGpsMarker = new mapboxgl.Marker({ element: el })
-            .setLngLat(userLngLat)
-            .addTo(this.map);
-        } else if (this.userGpsMarker) {
+        if (this.userGpsMarker) {
           this.userGpsMarker.setLngLat(userLngLat);
         }
 
@@ -242,9 +204,9 @@ export class MapRoutesManager {
         }
       },
       (err) => {
-        console.warn('GPS Realtime error:', err);
+        console.warn('GPS Realtime watch error:', err);
       },
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 12000 }
     );
   }
 
@@ -259,47 +221,6 @@ export class MapRoutesManager {
     }
   }
 
-  // Animación del vehículo moviéndose por la ruta 3D con icono SVG vectorial
-  animateVehicleOnRoute(coords) {
-    if (!this.map || !coords || coords.length < 2) return;
-
-    const mapboxgl = window.mapboxgl;
-    if (!mapboxgl) return;
-
-    if (!this.vehicleMarker) {
-      const el = document.createElement('div');
-      el.className = 'vehicle-3d-marker shadow-2xl';
-      el.innerHTML = `
-        <div style="background: #0f172a; color: #38bdf8; padding: 6px; border-radius: 50%; border: 2px solid #06b6d4; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.6);">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-            <circle cx="7" cy="17" r="2"/>
-            <path d="M9 17h6"/>
-            <circle cx="17" cy="17" r="2"/>
-          </svg>
-        </div>
-      `;
-      this.vehicleMarker = new mapboxgl.Marker({ element: el })
-        .setLngLat(coords[0])
-        .addTo(this.map);
-    } else {
-      this.vehicleMarker.setLngLat(coords[0]);
-    }
-
-    let step = 0;
-    const totalSteps = coords.length;
-
-    const animateStep = () => {
-      if (step >= totalSteps) step = 0;
-      const targetPos = coords[step];
-      this.vehicleMarker.setLngLat(targetPos);
-      step++;
-      this.animFrameId = setTimeout(animateStep, 180);
-    };
-
-    animateStep();
-  }
-
   clearRoute() {
     this.stopRealtimeTracking();
 
@@ -307,39 +228,23 @@ export class MapRoutesManager {
       window.speechSynthesis.cancel();
     }
 
-    if (!this.map) return;
-
-    if (this.dashAnimationId) {
-      cancelAnimationFrame(this.dashAnimationId);
-      this.dashAnimationId = null;
-    }
-
-    if (this.animFrameId) {
-      clearTimeout(this.animFrameId);
-      this.animFrameId = null;
-    }
-
-    if (this.vehicleMarker) {
-      this.vehicleMarker.remove();
-      this.vehicleMarker = null;
-    }
-
     if (this.destPinMarker) {
       this.destPinMarker.remove();
       this.destPinMarker = null;
     }
 
-    if (this.map.getLayer(this.pulseLayerId)) {
-      this.map.removeLayer(this.pulseLayerId);
-    }
-    if (this.map.getLayer(this.routeLayerId)) {
-      this.map.removeLayer(this.routeLayerId);
-    }
-    if (this.map.getLayer(`${this.routeLayerId}-casing`)) {
-      this.map.removeLayer(`${this.routeLayerId}-casing`);
-    }
-    if (this.map.getSource(this.routeSourceId)) {
-      this.map.removeSource(this.routeSourceId);
-    }
+    if (!this.map) return;
+
+    try {
+      if (this.map.getLayer(this.routeLayerId)) {
+        this.map.removeLayer(this.routeLayerId);
+      }
+      if (this.map.getLayer(`${this.routeLayerId}-casing`)) {
+        this.map.removeLayer(`${this.routeLayerId}-casing`);
+      }
+      if (this.map.getSource(this.routeSourceId)) {
+        this.map.removeSource(this.routeSourceId);
+      }
+    } catch (e) {}
   }
 }

@@ -21,10 +21,24 @@ import {
   ExternalLink,
   Loader2,
   Compass,
-  CheckCircle2
+  CheckCircle2,
+  ArrowUp,
+  CornerUpRight,
+  CornerUpLeft
 } from 'lucide-react';
 import { FALLBACK_PARKING_IMAGE } from './mapConfig';
 import { useAuth } from '../../context/AuthContext';
+
+// Helper para obtener el ícono direccional según la maniobra Turn-by-Turn
+const getManeuverIcon = (step) => {
+  const mod = (step?.modifier || '').toLowerCase();
+  const type = (step?.type || '').toLowerCase();
+  if (type === 'arrive') return <CheckCircle2 className="w-5 h-5 text-emerald-400" />;
+  if (mod.includes('right')) return <CornerUpRight className="w-5 h-5 text-blue-400" />;
+  if (mod.includes('left')) return <CornerUpLeft className="w-5 h-5 text-blue-400" />;
+  if (mod.includes('uturn')) return <RotateCcw className="w-5 h-5 text-amber-400" />;
+  return <ArrowUp className="w-5 h-5 text-blue-400" />;
+};
 
 export const MapContainer3D = ({ 
   parkings = [], 
@@ -263,6 +277,34 @@ export const MapContainer3D = ({
         ? [lng, lat] 
         : (DEFAULT_PARKING_COORDS[p.id] || [-74.2257, -13.1606]);
 
+      // Modo Enfoque de Ruta (Route Focus Mode):
+      // Si hay una ruta activa hacia un destino, se ocultan los badges anchos de otras cocheras
+      // para evitar colisiones visuales y dejar el trazado completamente limpio.
+      if (activeRoute) {
+        const isThisDest = activeRoute.destinationName && p.name && (
+          p.name.trim().toLowerCase() === activeRoute.destinationName.trim().toLowerCase() ||
+          (targetDest?.coords && Math.abs(coords[0] - targetDest.coords[0]) < 0.0002 && Math.abs(coords[1] - targetDest.coords[1]) < 0.0002)
+        );
+
+        if (!isThisDest) {
+          // Marcador atenuado minimalista (pequeño punto limpio que no interfiere)
+          const dotEl = document.createElement('div');
+          dotEl.className = 'w-2.5 h-2.5 rounded-full bg-slate-400/50 hover:bg-slate-700 border border-white shadow-xs cursor-pointer transition-all hover:scale-125';
+          dotEl.title = p.name;
+          dotEl.addEventListener('click', () => {
+            if (onSelectParking) onSelectParking(p);
+          });
+          const dotMarker = new mapboxgl.Marker({ element: dotEl })
+            .setLngLat(coords)
+            .addTo(map);
+          markersRef.current[p.id] = dotMarker;
+          return;
+        }
+
+        // Si es el destino de la ruta, MapRoutesManager ya coloca el pin destacado destPinMarker
+        return;
+      }
+
       const pStatus = String(p.status || '').toLowerCase();
       const isMaint = pStatus === 'mantenimiento' || pStatus === 'maintenance';
       const isClosed = pStatus === 'cerrado' || pStatus === 'closed';
@@ -276,14 +318,14 @@ export const MapContainer3D = ({
       const el = document.createElement('div');
       el.className = `marker-3d-pin cursor-pointer transition-transform duration-200 hover:scale-105 ${isSelected ? 'scale-110 z-30' : 'z-10'}`;
       el.innerHTML = `
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg border transition-all ${
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-md border transition-all ${
           isSelected
-            ? 'bg-slate-900 text-white border-emerald-400 ring-4 ring-emerald-400/30'
-            : 'bg-white text-slate-900 border-slate-200/90 hover:border-slate-400 hover:shadow-xl'
+            ? 'bg-slate-900 text-white border-emerald-400 ring-4 ring-emerald-400/30 scale-105'
+            : 'bg-white text-slate-900 border-slate-200 hover:border-slate-300 hover:shadow-lg'
         }">
           <span class="w-2 h-2 rounded-full ${isMaint ? 'bg-amber-500' : isClosed ? 'bg-rose-500' : (freeSlots > 0 ? 'bg-emerald-500' : 'bg-slate-400')} shrink-0"></span>
-          <span class="text-xs font-mono font-black">${rateFormatted}</span>
-          <span class="text-[10px] font-mono ${isMaint ? 'text-amber-600' : isClosed ? 'text-rose-600' : 'text-slate-500'} border-l border-slate-200 pl-1 font-bold">${isMaint ? 'manten' : isClosed ? 'cerrado' : `${freeSlots} lib`}</span>
+          <span class="text-xs font-bold font-mono">${rateFormatted}</span>
+          <span class="text-[10px] font-semibold ${isMaint ? 'text-amber-600' : isClosed ? 'text-rose-600' : 'text-slate-500'} border-l border-slate-200 pl-1.5">${isMaint ? 'manten' : isClosed ? 'cerrado' : `${freeSlots} lib`}</span>
         </div>
       `;
 
@@ -427,215 +469,281 @@ export const MapContainer3D = ({
 
       markersRef.current[p.id] = marker;
     });
-  }, [filteredParkings, selectedParkingId, onSelectParking]);
+  }, [filteredParkings, selectedParkingId, onSelectParking, activeRoute, targetDest]);
+
+  const targetCoords = activeRoute?.destCoords || targetDest?.coords;
+  const targetParking = parkings.find(p => {
+    if (activeRoute?.destinationName && p.name && p.name.trim().toLowerCase() === activeRoute.destinationName.trim().toLowerCase()) {
+      return true;
+    }
+    if (targetCoords && p.latitude && p.longitude) {
+      return Math.abs(Number(p.latitude) - targetCoords[1]) < 0.0002 && Math.abs(Number(p.longitude) - targetCoords[0]) < 0.0002;
+    }
+    return false;
+  });
 
   return (
-    <div className="relative isolate z-0 w-full h-[400px] sm:h-[500px] md:h-[580px] lg:h-[660px] bg-slate-100 dark:bg-slate-950 overflow-hidden rounded-xl">
-      
-      {/* Lienzo Normal Mapbox */}
-      <div ref={mapContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+    <div className="w-full space-y-3">
+      {/* Contenedor del Mapa (100% Despejado, sin modales bloqueando la vista en móvil) */}
+      <div className="relative isolate z-0 w-full h-[380px] sm:h-[460px] md:h-[540px] lg:h-[600px] bg-slate-100 dark:bg-slate-950 overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm">
+        
+        {/* Lienzo Normal Mapbox */}
+        <div ref={mapContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
-      {/* Controles de Mapa Flotantes Minimalistas (Cápsula Unificada) */}
-      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-auto flex items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-lg shadow-slate-900/5 text-xs">
-        {/* Selector de Capas (Calles / Satélite) */}
-        <div className="flex items-center p-0.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-xl">
-          <button
-            type="button"
-            onClick={() => handleChangeLayer('streets')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
-              mapLayer === 'streets'
-                ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            <Map className="w-3.5 h-3.5 text-emerald-600 dark:text-lime-400" />
-            <span>Calles</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleChangeLayer('satellite')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
-              mapLayer === 'satellite'
-                ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-lime-400" />
-            <span>Satélite</span>
-          </button>
-        </div>
-
-        {/* Separador sutil */}
-        <div className="w-px h-4 bg-slate-200 dark:bg-slate-800 mx-1.5" />
-
-        {/* Botones de Navegación Zoom y Recentrar */}
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            onClick={handleRecenter}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
-            title="Centrar en Plaza Mayor"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleZoomIn}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
-            title="Acercar"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleZoomOut}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
-            title="Alejar"
-          >
-            <Minus className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Tarjeta Turn-by-Turn Flotante Superior (Giro a Giro en Tiempo Real) */}
-      {activeRoute && activeRoute.currentStep && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-cyan-500/40 flex items-center space-x-3 text-xs animate-in fade-in slide-in-from-top-4 duration-300 max-w-[92vw]">
-          <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/40">
-            <Navigation className="w-5 h-5 stroke-[2.5]" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-cyan-400 font-mono uppercase tracking-wider font-extrabold flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-              Navegación GPS en Vivo
-            </span>
-            <span className="font-extrabold text-slate-100 text-sm">{activeRoute.currentStep.instruction}</span>
-          </div>
-
-          <div className="flex items-center space-x-2 shrink-0 border-l border-slate-800 pl-3">
-            {activeRoute.currentStep.distance > 0 && (
-              <span className="font-mono font-black text-xs text-emerald-400 bg-emerald-950/90 px-2 py-1 rounded-lg border border-emerald-800">
-                {activeRoute.currentStep.distance} m
-              </span>
-            )}
+        {/* Controles de Mapa Flotantes Minimalistas (Cápsula Unificada) */}
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-auto flex items-center bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-lg shadow-slate-900/5 text-xs">
+          {/* Selector de Capas (Calles / Satélite) */}
+          <div className="flex items-center p-0.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-xl">
             <button
               type="button"
-              onClick={() => {
-                if (routesManagerRef.current) {
-                  const muted = routesManagerRef.current.toggleMute();
-                  setIsMuted(muted);
-                }
-              }}
-              className={`p-1.5 rounded-lg border transition cursor-pointer ${
-                isMuted 
-                  ? 'bg-rose-950/80 border-rose-800 text-rose-400' 
-                  : 'bg-emerald-950/80 border-emerald-800 text-emerald-400'
+              onClick={() => handleChangeLayer('streets')}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                mapLayer === 'streets'
+                  ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
-              title={isMuted ? 'Activar voz GPS' : 'Silenciar voz GPS'}
             >
-              {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+              <Map className="w-3.5 h-3.5 text-emerald-600 dark:text-lime-400" />
+              <span>Calles</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleChangeLayer('satellite')}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                mapLayer === 'satellite'
+                  ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-lime-400" />
+              <span>Satélite</span>
+            </button>
+          </div>
+
+          {/* Separador sutil */}
+          <div className="w-px h-4 bg-slate-200 dark:bg-slate-800 mx-1.5" />
+
+          {/* Botones de Navegación Zoom y Recentrar */}
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={handleRecenter}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
+              title="Centrar en Plaza Mayor"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
+              title="Acercar"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
+              title="Alejar"
+            >
+              <Minus className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
-      )}
 
-      {/* Alerta de Estado del GPS */}
-      {gpsStatus === 'locating' && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-none bg-slate-900/95 backdrop-blur-md border border-cyan-500/60 text-cyan-300 px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2">
-          <Loader2 className="w-4 h-4 animate-spin text-cyan-400 shrink-0" />
-          <span>Obteniendo tu ubicación GPS en tiempo real...</span>
-        </div>
-      )}
-      {gpsStatus === 'located' && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-none bg-emerald-950/95 backdrop-blur-md border border-emerald-500/60 text-emerald-300 px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>¡Ubicación GPS detectada! Ruta trazada desde tu posición.</span>
-        </div>
-      )}
-      {gpsStatus === 'fallback' && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-none bg-amber-950/95 backdrop-blur-md border border-amber-500/60 text-amber-300 px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2">
-          <Compass className="w-4 h-4 text-amber-400 shrink-0" />
-          <span>GPS no activo o denegado: Trazando desde el centro de Huamanga.</span>
-        </div>
-      )}
+        {/* Chip Minimalista Discreto sobre el Mapa (Informa que hay ruta activa sin tapar calles) */}
+        {activeRoute && (
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 pointer-events-auto bg-slate-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-slate-700/80 shadow-md flex items-center gap-2 text-xs">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" />
+            <span className="text-slate-300 font-medium text-[11px] hidden sm:inline">Ruta hacia</span>
+            <strong className="text-white font-extrabold truncate max-w-[130px] sm:max-w-[200px]">{activeRoute.destinationName}</strong>
+            <button
+              type="button"
+              onClick={handleClearRoute}
+              className="text-slate-400 hover:text-white p-0.5 rounded transition cursor-pointer ml-0.5"
+              title="Cerrar recorrido"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
-      {/* Tarjeta de Ruta en Vivo con Controles de Perfil y Enlace a Google Maps */}
+        {/* Notificación sutil de GPS (discreta en la esquina inferior izquierda) */}
+        {gpsStatus === 'locating' && (
+          <div className="absolute bottom-3 left-3 z-20 pointer-events-none bg-slate-900/90 backdrop-blur-md text-cyan-300 px-3 py-1.5 rounded-xl border border-cyan-500/50 text-[11px] font-medium flex items-center gap-2 shadow-md">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400 shrink-0" />
+            <span>Detectando ubicación GPS...</span>
+          </div>
+        )}
+      </div>
+
+      {/* =========================================================================
+          CONSOLA DE NAVEGACIÓN Y RECORRIDO (FUERA DEL MAPA - 100% RESPONSIVE)
+          ========================================================================= */}
       {activeRoute && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white p-3 sm:px-4 sm:py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-wrap items-center justify-between gap-2.5 text-xs animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-[96vw] sm:max-w-max">
-          <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
-            <Navigation className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span className="font-bold text-slate-200 truncate max-w-[130px] sm:max-w-[200px]" title={activeRoute.destinationName}>
-              Hacia <strong className="text-white">{activeRoute.destinationName}</strong>:
-            </span>
-            <span className="font-mono font-black text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800 shrink-0">
-              {activeRoute.distanceKm}
-            </span>
-            <span className="font-mono font-black text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800 shrink-0">
-              {activeRoute.durationMin}
-            </span>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3 animate-in fade-in slide-in-from-top-2">
+          
+          {/* Fila 1: Cabecera de Viaje, Métricas y Acciones Principales */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/60">
+                <Navigation className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10.5px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                    Rumbo al Destino
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                </div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white truncate">
+                  {activeRoute.destinationName}
+                </h3>
+              </div>
+            </div>
+
+            {/* Métricas y Controles de Voz / Finalizar */}
+            <div className="flex items-center gap-2 ml-auto shrink-0">
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold">
+                <span className="text-slate-900 dark:text-white font-mono">{activeRoute.distanceKm}</span>
+                <span className="text-slate-400">·</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-mono">{activeRoute.durationMin}</span>
+              </div>
+
+              {/* Botón de Voz GPS */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (routesManagerRef.current) {
+                    const muted = routesManagerRef.current.toggleMute();
+                    setIsMuted(muted);
+                  }
+                }}
+                className={`p-2 rounded-xl border transition cursor-pointer ${
+                  isMuted 
+                    ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600' 
+                    : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
+                }`}
+                title={isMuted ? 'Activar voz GPS' : 'Silenciar voz GPS'}
+              >
+                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+
+              {/* Botón Finalizar Recorrido */}
+              <button
+                type="button"
+                onClick={handleClearRoute}
+                className="px-3 py-2 bg-slate-100 hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-950/60 text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 rounded-xl text-xs font-bold transition cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"
+                title="Finalizar navegación"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Finalizar</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 ml-auto">
-            {/* Selector de Modo: Auto vs A pie */}
+          {/* Fila 2: Indicación de Maniobra Actual (Turn-by-Turn Real) */}
+          {activeRoute.currentStep && (
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-3 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                {getManeuverIcon(activeRoute.currentStep)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                  {activeRoute.currentStep.instruction}
+                </p>
+              </div>
+              {activeRoute.currentStep.distance > 0 && (
+                <div className="text-right shrink-0">
+                  <span className="text-xs font-mono font-black text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                    en {activeRoute.currentStep.distance} m
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fila 3: Opciones y Accesos Directos (Auto vs A pie, Waze, Google Maps, Ficha) */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            {/* Selector de Modo: En Auto vs A pie */}
             {targetDest && (
-              <div className="flex items-center bg-slate-800/90 rounded-lg p-0.5 border border-slate-700">
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 border border-slate-200 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => handleCalculateRoute(targetDest.coords, targetDest.name, 'driving')}
-                  className={`p-1.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     activeProfile === 'driving' 
-                      ? 'bg-cyan-600 text-white shadow-xs' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' 
+                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                   }`}
-                  title="Ruta en Auto"
                 >
-                  <Car className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Auto</span>
+                  <Car className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>En Auto</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleCalculateRoute(targetDest.coords, targetDest.name, 'walking')}
-                  className={`p-1.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     activeProfile === 'walking' 
-                      ? 'bg-cyan-600 text-white shadow-xs' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' 
+                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                   }`}
-                  title="Ruta a Pie"
                 >
-                  <Footprints className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">A pie</span>
+                  <Footprints className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>A pie</span>
                 </button>
               </div>
             )}
 
-            {/* Abrir en Google Maps si se desea app nativa */}
-            {activeRoute.destCoords && (
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${activeRoute.destCoords[1]},${activeRoute.destCoords[0]}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-2.5 py-1.5 bg-blue-600/90 hover:bg-blue-600 text-white rounded-lg font-bold text-[11px] transition flex items-center gap-1 shadow-xs cursor-pointer"
-                title="Abrir en Google Maps"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Google Maps</span>
-              </a>
-            )}
+            {/* Accesos a Navegadores Nativos: Waze y Google Maps */}
+            <div className="flex items-center gap-2 ml-auto flex-wrap">
+              {targetCoords && (
+                <>
+                  {/* Waze */}
+                  <a
+                    href={`https://waze.com/ul?ll=${targetCoords[1]},${targetCoords[0]}&navigate=yes`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-950/50 dark:hover:bg-cyan-900/60 text-cyan-800 dark:text-cyan-300 rounded-xl font-bold text-xs transition flex items-center gap-1.5 border border-cyan-200 dark:border-cyan-800 shadow-2xs cursor-pointer"
+                    title="Abrir en Waze para navegación guiada con alertas de tráfico"
+                  >
+                    <Navigation className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                    <span>Waze</span>
+                  </a>
 
-            {/* Limpiar ruta */}
-            <button
-              type="button"
-              onClick={handleClearRoute}
-              className="px-2.5 py-1.5 bg-slate-800 hover:bg-rose-900 text-slate-300 hover:text-white rounded-lg font-bold text-[11px] transition cursor-pointer border border-slate-700 flex items-center gap-1"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>Limpiar</span>
-            </button>
+                  {/* Google Maps */}
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${targetCoords[1]},${targetCoords[0]}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-300 rounded-xl font-bold text-xs transition flex items-center gap-1.5 border border-blue-200 dark:border-blue-800 shadow-2xs cursor-pointer"
+                    title="Abrir en Google Maps"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>Google Maps</span>
+                  </a>
+                </>
+              )}
+
+              {/* Botón Ver Sede / Ficha */}
+              {targetParking && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectParking) onSelectParking(targetParking);
+                  }}
+                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  title="Ver detalles y plano de la sede"
+                >
+                  <span>Ver Sede & Plaza</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

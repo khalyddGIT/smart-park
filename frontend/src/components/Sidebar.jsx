@@ -69,17 +69,17 @@ const SECTIONS_BY_ROLE = {
   ],
   local: [
     {
-      section: 'GARITA & SEDE',
+      section: 'ADMINISTRACIÓN DE SEDE',
       items: [
-        { id: 'dashboard', label: 'Espacios & Plano', shortLabel: 'Espacios', icon: Building2 },
-        { id: 'reservations', label: 'Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
-        { id: 'anpr', label: 'Control de Estadías', shortLabel: 'Garita', icon: Camera },
-        { id: 'cameras', label: 'Monitoreo Cámara', shortLabel: 'Cámara', icon: Video },
+        { id: 'dashboard', label: 'Mi Sede & Plano CAD', shortLabel: 'Sede', icon: Building2 },
+        { id: 'anpr', label: 'Control de Garita', shortLabel: 'Garita', icon: Camera },
+        { id: 'reservations', label: 'Reservas & Tickets', shortLabel: 'Tickets', icon: CalendarCheck },
+        { id: 'cameras', label: 'Monitoreo CCTV', shortLabel: 'Cámaras', icon: Video },
+        { id: 'staff', label: 'Personal & Turnos', shortLabel: 'Personal', icon: Users },
+        { id: 'reports', label: 'Reportes & Cierres', shortLabel: 'Reportes', icon: BarChart3 },
+        { id: 'reviews', label: 'Reseñas de Clientes', shortLabel: 'Reseñas', icon: Star },
         { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
-        { id: 'staff', label: 'Personal', shortLabel: 'Personal', icon: Users },
-        { id: 'reports', label: 'Reportes', shortLabel: 'Reportes', icon: BarChart3 },
         { id: 'audit', label: 'Auditoría Local', shortLabel: 'Auditoría', icon: ShieldCheck },
-        { id: 'reviews', label: 'Reseñas', shortLabel: 'Reseñas', icon: Star },
       ]
     }
   ],

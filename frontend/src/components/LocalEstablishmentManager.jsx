@@ -344,11 +344,11 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
             placeholder="Buscar calle, jirón o lugar en Ayacucho (ej. Jr. Bellido, Mariscal Cáceres)..."
             value={mapSearchQuery}
             onChange={(e) => setMapSearchQuery(e.target.value)}
-            className="pl-9 pr-20 h-9 text-xs bg-white border-slate-200 rounded-xl w-full"
+            className="pl-9 pr-20 h-9 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white rounded-xl w-full"
           />
           <button
             type="submit"
-            className="absolute right-1.5 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-semibold cursor-pointer"
+            className="absolute right-1.5 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-lg text-[11px] font-semibold cursor-pointer transition"
           >
             Buscar
           </button>
@@ -360,9 +360,9 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
             type="button"
             onClick={handleRecenterMarker}
             title="Recentrar vista en el marcador actual"
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-700 hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition shadow-2xs"
           >
-            <LocateFixed className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <LocateFixed className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span className="hidden md:inline">Ver Marcador</span>
           </button>
 
@@ -371,19 +371,21 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
             type="button"
             onClick={handleCenterHuamanga}
             title="Ir al Centro Histórico de Huamanga"
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-700 hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition shadow-2xs"
           >
-            <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <Building2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
             <span className="hidden md:inline">Centro Huamanga</span>
           </button>
 
           {/* Selector de Capas Calles / Satélite */}
-          <div className="bg-slate-100 p-0.5 rounded-xl flex items-center border border-slate-200">
+          <div className="bg-slate-100 dark:bg-slate-900 p-0.5 rounded-xl flex items-center border border-slate-200 dark:border-slate-800">
             <button
               type="button"
               onClick={() => handleToggleLayer('streets')}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
-                mapLayer === 'streets' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                mapLayer === 'streets' 
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs' 
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Calles
@@ -392,7 +394,9 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
               type="button"
               onClick={() => handleToggleLayer('satellite')}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
-                mapLayer === 'satellite' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                mapLayer === 'satellite' 
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs' 
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Satélite
@@ -404,15 +408,15 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
       {/* Contenedor del Mapa Leaflet */}
       <div 
         ref={mapContainerRef} 
-        className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200 shadow-xs z-0 relative"
+        className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs z-0 relative"
       />
 
-      <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
         <span className="flex items-center gap-1.5">
-          <Navigation className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <Navigation className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>Haz clic en cualquier calle o arrastra el marcador para fijar la cochera.</span>
         </span>
-        <span className="font-mono text-[11px] font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200 shrink-0">
+        <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0">
           {Number(liveCoords.lat).toFixed(5)}, {Number(liveCoords.lng).toFixed(5)}
         </span>
       </div>
@@ -1069,13 +1073,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           {/* Header - mejorado responsive y jerarquía */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5 leading-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5 leading-tight">
                 <span className="p-2 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20 shrink-0">
                   <Building2 className="w-5 h-5 shrink-0" />
                 </span>
                 <span className="truncate">Gestión de Sedes</span>
               </h1>
-              <p className="text-xs text-slate-500 mt-1.5 max-w-2xl">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 max-w-2xl">
                 {role === 'local'
                   ? 'Sedes, planos y tarifas en tiempo real.'
                   : 'Supervisión de empresas y sedes conectadas.'}
@@ -1099,29 +1103,29 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 placeholder="Buscar sede, dirección o ciudad..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-10 border-slate-200 bg-white rounded-xl text-xs focus-visible:ring-emerald-500 w-full"
+                className="pl-10 h-10 border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] text-slate-900 dark:text-white rounded-xl text-xs focus-visible:ring-emerald-500 w-full"
               />
             </div>
-            <div className="bg-white px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 border border-slate-200 shadow-2xs flex items-center justify-center gap-2 shrink-0">
-              <span className="text-slate-400">Locales:</span>
-              <span className="font-mono font-bold text-slate-900">{establishmentGroups.length}</span>
-              <span className="text-slate-300">•</span>
-              <span className="text-slate-400">Sucursales:</span>
-              <span className="font-mono font-bold text-emerald-700">{filteredEstablishments.length}</span>
+            <div className="bg-white dark:bg-[#111827] px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center justify-center gap-2 shrink-0">
+              <span className="text-slate-400 dark:text-slate-500">Locales:</span>
+              <span className="font-mono font-bold text-slate-900 dark:text-white">{establishmentGroups.length}</span>
+              <span className="text-slate-300 dark:text-slate-700">•</span>
+              <span className="text-slate-400 dark:text-slate-500">Sucursales:</span>
+              <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{filteredEstablishments.length}</span>
             </div>
           </div>
 
           {/* ESTADO VACÍO */}
           {establishmentGroups.length === 0 && (
-            <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-2xs">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-4 shadow-2xs">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-sm">
                 <Building2 className="w-8 h-8" />
               </div>
               <div className="max-w-md mx-auto space-y-1">
-                <h3 className="text-base font-black text-slate-900">
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
                   {search ? 'No se encontraron sucursales' : 'No tienes sedes ni sucursales registradas'}
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {search
                     ? `No hay coincidencias para "${search}". Intenta con otro término.`
                     : 'Registra tu primer establecimiento y sucursal para activar el plano interactivo CAD, garita ANPR y reservas.'}
@@ -1141,28 +1145,28 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
           {/* LISTADO AGRUPADO: LOCAL / ESTABLECIMIENTO -> SUS SUCURSALES */}
           {establishmentGroups.map((group) => (
-            <div key={group.key} className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden space-y-5 p-5 sm:p-6 transition">
+            <div key={group.key} className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden space-y-5 p-5 sm:p-6 transition">
               {/* CABECERA DEL ESTABLECIMIENTO / LOCAL */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-start gap-3.5 min-w-0">
-                  <div className="p-3 rounded-2xl bg-slate-900 text-emerald-400 shrink-0 shadow-sm">
+                  <div className="p-3 rounded-2xl bg-slate-900 dark:bg-slate-800 text-emerald-400 shrink-0 shadow-sm border border-slate-800 dark:border-slate-700">
                     <Store className="w-6 h-6" />
                   </div>
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
                         Local Principal
                       </span>
                       {group.ruc && (
-                        <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                        <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                           RUC: {group.ruc}
                         </span>
                       )}
                     </div>
-                    <h2 className="text-lg sm:text-xl font-black text-slate-900 truncate">
+                    <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white truncate">
                       {group.name}
                     </h2>
-                    <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+                    <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
                       {group.address && (
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -1187,15 +1191,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                 {/* Métricas consolidadas del Local + Botón para agregar sucursal a este local */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-                  <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs">
+                  <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-2xl text-xs">
                     <div className="space-y-0.5">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sucursales</div>
-                      <div className="font-black text-slate-900 font-mono text-sm leading-none">{group.branches.length}</div>
+                      <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Sucursales</div>
+                      <div className="font-black text-slate-900 dark:text-white font-mono text-sm leading-none">{group.branches.length}</div>
                     </div>
-                    <div className="h-6 w-px bg-slate-200"></div>
+                    <div className="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
                     <div className="space-y-0.5">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capacidad Total</div>
-                      <div className="font-bold text-emerald-700 font-mono text-xs leading-none">
+                      <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Capacidad Total</div>
+                      <div className="font-bold text-emerald-700 dark:text-emerald-400 font-mono text-xs leading-none">
                         {group.freeSlots} libres / {group.totalSlots}
                       </div>
                     </div>
@@ -1215,11 +1219,11 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               {/* SECCIÓN SUCURSALES DE ESTE LOCAL */}
               <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-emerald-600" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>Sucursales ({group.branches.length})</span>
                   </h3>
-                  <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium hidden sm:inline">
                     Plano CAD y garita independiente
                   </span>
                 </div>
@@ -1232,10 +1236,10 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
 
                     return (
-                      <div key={est.id} className="border border-slate-200/90 shadow-2xs hover:shadow-md transition overflow-hidden rounded-2xl bg-white flex flex-col justify-between group">
+                      <div key={est.id} className="border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-md transition overflow-hidden rounded-2xl bg-white dark:bg-[#0B0F19] flex flex-col justify-between group">
                         <div>
                           {/* Imagen de la Sucursal */}
-                          <div className="h-40 relative bg-slate-100 overflow-hidden">
+                          <div className="h-40 relative bg-slate-100 dark:bg-slate-800 overflow-hidden">
                             <img 
                               src={est.image || FALLBACK_PARKING_IMAGE} 
                               alt={est.name} 
@@ -1252,7 +1256,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               S/ {Number(est.rate).toFixed(2)}/h
                             </div>
                             {est.level && (
-                              <div className="absolute bottom-2.5 left-2.5 bg-white/90 backdrop-blur-md text-slate-800 px-2 py-0.5 rounded-lg text-[10px] font-bold border border-slate-200">
+                              <div className="absolute bottom-2.5 left-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-700">
                                 {est.level}
                               </div>
                             )}
@@ -1262,30 +1266,30 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           <div className="p-4 space-y-3">
                             <div>
                               <div className="flex items-start justify-between gap-2">
-                                <h4 className="font-bold text-slate-900 text-sm leading-tight">
+                                <h4 className="font-bold text-slate-900 dark:text-white text-sm leading-tight">
                                   {est.branchDisplayName || est.name}
                                 </h4>
-                                <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full shrink-0 ${est.status === 'Operativo' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
+                                <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full shrink-0 ${est.status === 'Operativo' ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30' : 'bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30'}`}>
                                   {est.status || 'Operativo'}
                                 </span>
                               </div>
-                              <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                                <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                              <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
+                                <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                                 <span className="truncate">{est.address} {est.reference ? `(${est.reference})` : ''}</span>
                               </p>
                             </div>
 
                             {/* Capacidad */}
-                            <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
                               <span className="font-medium">Ocupación:</span>
-                              <span className="font-mono font-bold text-emerald-700">
+                              <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
                                 {freeSlots} libres / {totalSlots} plazas
                               </span>
                             </div>
 
                             {/* Coordenadas & Enlace de Mapa */}
-                            <div className="flex items-center justify-between gap-2 text-xs p-2 rounded-xl border border-slate-100 bg-slate-50 font-mono">
-                              <span className="flex items-center gap-1.5 truncate text-slate-600 text-[11px]">
+                            <div className="flex items-center justify-between gap-2 text-xs p-2 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 font-mono">
+                              <span className="flex items-center gap-1.5 truncate text-slate-600 dark:text-slate-300 text-[11px]">
                                 <Navigation className="w-3 h-3 shrink-0 text-slate-400" />
                                 <span className="truncate">{est.latitude ? `${Number(est.latitude).toFixed(4)}, ${Number(est.longitude).toFixed(4)}` : 'Sin GPS'}</span>
                               </span>
@@ -1294,7 +1298,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                   href={`https://www.google.com/maps/dir/?api=1&destination=${est.latitude},${est.longitude}`} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 shrink-0 bg-white px-2 py-0.5 rounded-lg border border-slate-200 transition text-[11px]"
+                                  className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 font-semibold flex items-center gap-1 shrink-0 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 transition text-[11px]"
                                 >
                                   <span>Maps</span>
                                   <ExternalLink className="w-3 h-3 shrink-0" />
@@ -1302,35 +1306,35 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               )}
                             </div>
                             {/* Resumen Táctico de Reglas en Vigor */}
-                            <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-medium text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                              <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 flex items-center gap-1 text-slate-700 font-bold">
-                                <Clock className="w-3 h-3 text-amber-600" />
+                            <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                              <span className="bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 flex items-center gap-1 text-slate-700 dark:text-slate-300 font-bold">
+                                <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                                 <span>Tol: {est.tolerance || est.tolerance_minutes || 15}m</span>
                               </span>
                               <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold inline-flex items-center gap-1 ${
                                 est.require_reservation_prepay 
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' 
+                                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
                               }`}>
                                 {est.require_reservation_prepay ? (
                                   <>
-                                    <CreditCard className="w-3 h-3 shrink-0 text-blue-600" />
+                                    <CreditCard className="w-3 h-3 shrink-0 text-blue-600 dark:text-blue-400" />
                                     <span>Prepago</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Building2 className="w-3 h-3 shrink-0 text-emerald-600" />
+                                    <Building2 className="w-3 h-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
                                     <span>Pospago</span>
                                   </>
                                 )}
                               </span>
                               {est.night_shift_enabled && (
-                                <span className="bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-0.5 font-bold">
+                                <span className="bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800 flex items-center gap-0.5 font-bold">
                                   <Moon className="w-2.5 h-2.5" /> +S/{Number(est.night_shift_surcharge || 0).toFixed(2)}
                                 </span>
                               )}
                               {est.allow_open_stay !== false && (
-                                <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md border border-purple-200 font-bold">
+                                <span className="bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800 font-bold">
                                   Hora Libre
                                 </span>
                               )}
@@ -1339,11 +1343,11 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         </div>
 
                         {/* Acciones de la Sucursal */}
-                        <div className="p-3.5 pt-2.5 border-t border-slate-100 flex items-center gap-1.5 bg-slate-50/40">
+                        <div className="p-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1.5 bg-slate-50/40 dark:bg-slate-900/60">
                           <Button
                             type="button"
                             onClick={() => handleOpenPlan(est, 'editor_cad')}
-                            className="flex-1 h-8.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold gap-1.5 rounded-xl shadow-xs cursor-pointer"
+                            className="flex-1 h-8.5 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 rounded-xl shadow-xs cursor-pointer"
                           >
                             <Grid className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                             <span>Plano</span>
@@ -1353,10 +1357,10 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             type="button"
                             onClick={() => handleOpenEdit(est, 'policies')}
                             variant="outline"
-                            className="h-8.5 px-2.5 text-emerald-700 bg-emerald-50/60 hover:bg-emerald-100 border-emerald-200 text-xs font-bold gap-1 rounded-xl cursor-pointer"
+                            className="h-8.5 px-2.5 text-emerald-700 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border-emerald-200 dark:border-emerald-800 text-xs font-bold gap-1 rounded-xl cursor-pointer"
                             title="Configurar Reglas y Políticas de Estadía"
                           >
-                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                             <span>Reglas</span>
                           </Button>
 
@@ -1364,10 +1368,10 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             type="button"
                             onClick={() => handleOpenEdit(est, 'identity')}
                             variant="outline"
-                            className="h-8.5 px-2.5 text-slate-700 bg-white hover:bg-slate-50 border-slate-200 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
+                            className="h-8.5 px-2.5 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-xs font-semibold gap-1 rounded-xl cursor-pointer"
                             title="Editar información general de la sucursal"
                           >
-                            <Edit3 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <Edit3 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                             <span>Editar</span>
                           </Button>
 
@@ -1375,7 +1379,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             type="button"
                             onClick={() => handleDelete(est.id, est.name)}
                             variant="ghost"
-                            className="h-8.5 w-8.5 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl shrink-0 flex items-center justify-center cursor-pointer transition-colors"
+                            className="h-8.5 w-8.5 p-0 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl shrink-0 flex items-center justify-center cursor-pointer transition-colors"
                             title="Eliminar Sucursal"
                           >
                             <Trash2 className="w-3.5 h-3.5 shrink-0" />
@@ -1394,26 +1398,26 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       {/* VISTA 2: VER PLANO 2D */}
       {activeViewMode === 'viewer_2d' && selectedEstablishment && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#111827] p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveViewMode('list')}
-                className="font-bold text-xs gap-1.5 rounded-xl"
+                className="font-bold text-xs gap-1.5 rounded-xl border-slate-200 dark:border-slate-800 dark:text-slate-200"
               >
                 <ArrowLeft className="w-4 h-4 shrink-0" />
                 <span>Volver al Padrón</span>
               </Button>
               <div>
-                <h2 className="text-lg font-black text-slate-900 leading-tight">{selectedEstablishment.name}</h2>
-                <p className="text-xs text-slate-500">{selectedEstablishment.address} • {selectedEstablishment.level}</p>
+                <h2 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{selectedEstablishment.name}</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{selectedEstablishment.address} • {selectedEstablishment.level}</p>
               </div>
             </div>
 
             <Button
               onClick={() => setActiveViewMode('editor_cad')}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-black text-xs gap-1.5 shadow-sm rounded-xl"
+              className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs gap-1.5 shadow-sm rounded-xl"
             >
               <Grid className="w-4 h-4 shrink-0 text-emerald-400" />
               <span>Editar Plano</span>
@@ -1431,27 +1435,27 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       {/* VISTA 3: EDITAR PLANO CAD */}
       {activeViewMode === 'editor_cad' && selectedEstablishment && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#111827] p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveViewMode('list')}
-                className="font-bold text-xs gap-1.5 rounded-xl"
+                className="font-bold text-xs gap-1.5 rounded-xl border-slate-200 dark:border-slate-800 dark:text-slate-200"
               >
                 <ArrowLeft className="w-4 h-4 shrink-0" />
                 <span>Volver al Padrón</span>
               </Button>
               <div>
-                <h2 className="text-lg font-bold text-slate-900 leading-tight">Editor de Plano — {selectedEstablishment.name}</h2>
-                <p className="text-xs text-slate-500 font-medium">Diseña y distribuye espacios de esta sede.</p>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">Editor de Plano — {selectedEstablishment.name}</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Diseña y distribuye espacios de esta sede.</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-              <Camera className="w-4 h-4 text-emerald-600" />
+          <div className="bg-white dark:bg-[#111827] p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+              <Camera className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               Detección por Cámara
             </div>
             <input type="file" accept="image/*" id="camera-upload" className="hidden" onChange={handleCameraDetect} />
@@ -1464,7 +1468,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               <Upload className="w-4 h-4" />
               {cameraDetecting ? 'Detectando...' : 'Subir foto del playón'}
             </Button>
-            <span className="text-[11px] text-slate-500">Detección IA de vehículos para actualizar ocupación en el plano</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Detección IA de vehículos para actualizar ocupación en el plano</span>
           </div>
 
           <InteractiveFloorPlanDrawingStudio
@@ -1483,29 +1487,29 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
         <div className="space-y-5 animate-in fade-in">
           
           {/* Header Superior Sticky con Identificador y Estado */}
-          <div className="sticky top-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200/90 shadow-sm">
+          <div className="sticky top-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-3 min-w-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveViewMode('list')}
                 disabled={isSaving}
-                className="font-bold text-xs gap-1.5 rounded-xl h-9 text-slate-700 bg-slate-50 hover:bg-slate-100 border-slate-200 shrink-0 cursor-pointer"
+                className="font-bold text-xs gap-1.5 rounded-xl h-9 text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4 shrink-0" />
                 <span>Volver</span>
               </Button>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-base font-bold text-slate-900 truncate">
+                  <h1 className="text-base font-bold text-slate-900 dark:text-white truncate">
                     {isEditingNew ? 'Registrar Nueva Sede' : (formData.name || 'Editar Establecimiento')}
                   </h1>
                   <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
                     formData.status === 'Operativo'
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
                       : formData.status === 'Mantenimiento'
-                      ? 'bg-amber-50 text-amber-700 border-amber-200'
-                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                      ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30'
+                      : 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30'
                   }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${
                       formData.status === 'Operativo' ? 'bg-emerald-500' : formData.status === 'Mantenimiento' ? 'bg-amber-500' : 'bg-rose-500'
@@ -1513,7 +1517,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     {formData.status}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 font-medium truncate">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
                   Configura tarifas, políticas, geolocalización satelital y medios de contacto.
                 </p>
               </div>
@@ -1525,7 +1529,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                 variant="outline"
                 onClick={() => setActiveViewMode('list')}
                 disabled={isSaving}
-                className="text-xs font-semibold rounded-xl h-9 px-3.5 border-slate-200 text-slate-700 cursor-pointer"
+                className="text-xs font-semibold rounded-xl h-9 px-3.5 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Cancelar
               </Button>
@@ -1551,17 +1555,17 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           </div>
 
           {/* Navegación por 5 Pestañas Especializadas */}
-          <div className="flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/80 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-1.5 bg-slate-100/90 dark:bg-slate-900/90 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveTabSection('identity')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'identity'
-                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/80'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-white dark:bg-[#151D2F] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-200/80 dark:ring-slate-700'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
               }`}
             >
-              <Building2 className="w-4 h-4 shrink-0 text-emerald-600" />
+              <Building2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               <span>General & Identidad</span>
             </button>
 
@@ -1570,11 +1574,11 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               onClick={() => setActiveTabSection('pricing')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'pricing'
-                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/80'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-white dark:bg-[#151D2F] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-200/80 dark:ring-slate-700'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
               }`}
             >
-              <DollarSign className="w-4 h-4 shrink-0 text-emerald-600" />
+              <DollarSign className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               <span>Tarifas & Turno Noche</span>
             </button>
 
@@ -1583,13 +1587,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               onClick={() => setActiveTabSection('policies')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'policies'
-                  ? 'bg-white text-emerald-950 shadow-xs ring-1 ring-emerald-300 font-black'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-white dark:bg-[#151D2F] text-emerald-950 dark:text-emerald-300 shadow-xs ring-1 ring-emerald-300 dark:ring-emerald-700 font-black'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
               }`}
             >
-              <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" />
+              <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               <span>Reglas de Estadía & Reserva</span>
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded-md">
+              <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded-md">
                 Operación
               </span>
             </button>
@@ -1599,11 +1603,11 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               onClick={() => setActiveTabSection('location')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'location'
-                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/80'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-white dark:bg-[#151D2F] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-200/80 dark:ring-slate-700'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
               }`}
             >
-              <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
+              <MapPin className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               <span>Ubicación & GPS</span>
             </button>
 
@@ -1612,11 +1616,11 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               onClick={() => setActiveTabSection('media_contact')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'media_contact'
-                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/80'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-white dark:bg-[#151D2F] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-200/80 dark:ring-slate-700'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
               }`}
             >
-              <Camera className="w-4 h-4 shrink-0 text-emerald-600" />
+              <Camera className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               <span>Fotografía & Contacto</span>
             </button>
           </div>
@@ -1629,31 +1633,31 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               
               {/* TAB 1: IDENTIDAD & GENERAL */}
               {activeTabSection === 'identity' && (
-                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h3 className="text-sm font-bold text-slate-900">Identidad & Operación Comercial</h3>
-                    <p className="text-xs text-slate-500 font-medium">Define el nombre de la sede, nivel arquitectónico, estado operativo y datos fiscales.</p>
+                <div className="p-5 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-5">
+                  <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Identidad & Operación Comercial</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Define el nombre de la sede, nivel arquitectónico, estado operativo y datos fiscales.</p>
                   </div>
 
                   <div className="space-y-4">
                     {/* Nombre y Nivel */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="sm:col-span-2">
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">Nombre Comercial de la Sede *</label>
+                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Nombre Comercial de la Sede *</label>
                         <Input
                           required
                           placeholder="Ej. Smart Park Jr. Bellido - Planta Baja"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="text-xs h-9.5 bg-white border-slate-200"
+                          className="text-xs h-9.5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">Nivel / Estructura</label>
+                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Nivel / Estructura</label>
                         <select
                           value={formData.level}
                           onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                          className="w-full bg-white border border-slate-200 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-9.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-500 cursor-pointer"
                         >
                           <option>Nivel 1 - Superficie</option>
                           <option>Sótano -1</option>
@@ -1666,21 +1670,21 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                     {/* Estado de Operación: Tarjetas Visuales Semánticas */}
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-700 block">Estado Operativo de la Sede</label>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">Estado Operativo de la Sede</label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                         <button
                           type="button"
                           onClick={() => setFormData({ ...formData, status: 'Operativo' })}
                           className={`p-3 rounded-xl border text-left transition flex items-center gap-3 cursor-pointer ${
                             formData.status === 'Operativo'
-                              ? 'border-emerald-500 bg-emerald-50/70 ring-1 ring-emerald-500 shadow-2xs'
-                              : 'border-slate-200 bg-white hover:bg-slate-50'
+                              ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-500/15 ring-1 ring-emerald-500 shadow-2xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
                         >
-                          <span className={`w-3 h-3 rounded-full shrink-0 ${formData.status === 'Operativo' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                          <span className={`w-3 h-3 rounded-full shrink-0 ${formData.status === 'Operativo' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-900">Operativo</p>
-                            <p className="text-[10px] text-slate-500">Abierto al público y reservas activas</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-white">Operativo</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400">Abierto al público y reservas activas</p>
                           </div>
                         </button>
 
@@ -1689,14 +1693,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           onClick={() => setFormData({ ...formData, status: 'Mantenimiento' })}
                           className={`p-3 rounded-xl border text-left transition flex items-center gap-3 cursor-pointer ${
                             formData.status === 'Mantenimiento'
-                              ? 'border-amber-500 bg-amber-50/70 ring-1 ring-amber-500 shadow-2xs'
-                              : 'border-slate-200 bg-white hover:bg-slate-50'
+                              ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-500/15 ring-1 ring-amber-500 shadow-2xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
                         >
-                          <span className={`w-3 h-3 rounded-full shrink-0 ${formData.status === 'Mantenimiento' ? 'bg-amber-500' : 'bg-slate-300'}`} />
+                          <span className={`w-3 h-3 rounded-full shrink-0 ${formData.status === 'Mantenimiento' ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-900">Mantenimiento</p>
-                            <p className="text-[10px] text-slate-500">Cajones en calibración o reparación</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-white">Mantenimiento</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400">Cajones en calibración o reparación</p>
                           </div>
                         </button>
 
@@ -1705,57 +1709,57 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           onClick={() => setFormData({ ...formData, status: 'Cerrado' })}
                           className={`p-3 rounded-xl border text-left transition flex items-center gap-3 cursor-pointer ${
                             formData.status === 'Cerrado'
-                              ? 'border-rose-500 bg-rose-50/70 ring-1 ring-rose-500 shadow-2xs'
-                              : 'border-slate-200 bg-white hover:bg-slate-50'
+                              ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-500/15 ring-1 ring-rose-500 shadow-2xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
                         >
-                          <span className={`w-3 h-3 rounded-full shrink-0 ${formData.status === 'Cerrado' ? 'bg-rose-500' : 'bg-slate-300'}`} />
+                          <span className={`w-3 h-3 rounded-full shrink-0 ${formData.status === 'Cerrado' ? 'bg-rose-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-900">Cerrado</p>
-                            <p className="text-[10px] text-slate-500">Fuera de servicio temporal</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-white">Cerrado</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400">Fuera de servicio temporal</p>
                           </div>
                         </button>
                       </div>
                     </div>
 
                     {/* Titular y RUC */}
-                    <div className="border-t border-slate-100 pt-4 space-y-3">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+                      <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block font-mono">
                         Datos Fiscales y Titularidad
                       </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">Titular / Razón Social</label>
+                          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Titular / Razón Social</label>
                           <Input
                             placeholder="Ej. Inversiones Huamanga S.A.C."
                             value={formData.owner}
                             onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
-                            className="text-xs h-9.5 bg-white border-slate-200"
+                            className="text-xs h-9.5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                           />
                         </div>
                         <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">RUC o DNI del Titular</label>
+                          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">RUC o DNI del Titular</label>
                           <Input
                             placeholder="Ej. 20601234567"
                             value={formData.ruc}
                             onChange={(e) => setFormData({ ...formData, ruc: e.target.value })}
-                            className="text-xs font-mono h-9.5 bg-white border-slate-200"
+                            className="text-xs font-mono h-9.5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* Horario de Atención con Chips Rápidos */}
-                    <div className="border-t border-slate-100 pt-4 space-y-2">
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-2">
                       <div className="flex items-center justify-between flex-wrap gap-1">
-                        <label className="text-xs font-semibold text-slate-700">Horario de Atención</label>
+                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Horario de Atención</label>
                         <div className="flex items-center gap-1">
                           {['24/7 (24 Horas)', '06:00 AM - 10:00 PM', 'Lun a Sáb: 07:00 - 21:00'].map((h) => (
                             <button
                               key={h}
                               type="button"
                               onClick={() => setFormData({ ...formData, schedule: h })}
-                              className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium transition cursor-pointer"
+                              className="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-medium transition cursor-pointer"
                             >
                               {h.split(' ')[0]}
                             </button>
@@ -1766,19 +1770,19 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         placeholder="Ej. Lunes a Domingo: 24 Horas (Abierto 24/7)"
                         value={formData.schedule}
                         onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
-                        className="text-xs h-9.5 bg-white border-slate-200"
+                        className="text-xs h-9.5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                       />
                     </div>
 
                     {/* Indicaciones de Acceso */}
-                    <div className="border-t border-slate-100 pt-4">
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">Indicaciones de Acceso para Conductores</label>
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Indicaciones de Acceso para Conductores</label>
                       <textarea
                         rows={3}
                         placeholder="Describe accesos viales, garita ANPR, altura máxima permitida o puntos de entrada vehicular..."
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 shadow-inner"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 shadow-inner"
                       />
                     </div>
                   </div>
@@ -1787,20 +1791,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
               {/* TAB 2: TARIFAS & TURNO NOCHE */}
               {activeTabSection === 'pricing' && (
-                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
-                  <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="p-5 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-5">
+                  <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">Tarifas por Categoría & Turno Noche</h3>
-                      <p className="text-xs text-slate-500 font-medium">Estructura de precios por hora y fracción por minuto con recargos nocturnos.</p>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Tarifas por Categoría & Turno Noche</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Estructura de precios por hora y fracción por minuto con recargos nocturnos.</p>
                     </div>
 
                     {/* Selector de Modalidad */}
-                    <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+                    <div className="inline-flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, billing_unit: 'hour' })}
                         className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                          formData.billing_unit !== 'minute' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                          formData.billing_unit !== 'minute' ? 'bg-white dark:bg-[#151D2F] text-slate-900 dark:text-white shadow-2xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         Por hora
@@ -1809,7 +1813,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         type="button"
                         onClick={() => setFormData({ ...formData, billing_unit: 'minute' })}
                         className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                          formData.billing_unit === 'minute' ? 'bg-white text-emerald-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                          formData.billing_unit === 'minute' ? 'bg-white dark:bg-[#151D2F] text-emerald-700 dark:text-emerald-400 shadow-2xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         Por minuto
@@ -1818,13 +1822,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   </div>
 
                   {/* Tarifa Base General y Presets */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
+                  <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <label className="text-xs font-bold text-slate-800">
+                      <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
                         Tarifa Base Referencial por Hora (S/) *
                       </label>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-slate-400 font-medium">Presets:</span>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Presets:</span>
                         {[3.00, 5.00, 8.00, 10.00].map((val) => (
                           <button
                             key={val}
@@ -1839,8 +1843,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             }}
                             className={`px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer border ${
                               Number(formData.rate) === val 
-                                ? 'bg-slate-900 text-white border-slate-900' 
-                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                                ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-500' 
+                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                           >
                             S/ {val.toFixed(2)}
@@ -1863,27 +1867,27 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             rate_minute_auto: Number((r / 60).toFixed(2))
                           }));
                         }}
-                        className="text-xs font-mono font-bold h-9 bg-white border-slate-200"
+                        className="text-xs font-mono font-bold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
 
                   {/* 4 Tarjetas de Vehículos */}
                   <div className="space-y-3">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
+                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block font-mono">
                       Tarifas por Categoría de Vehículo
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       
                       {/* Auto / Sedán */}
-                      <div className={`p-3.5 rounded-xl border bg-white shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/20' : 'border-slate-200'}`}>
-                        <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs">
-                          <Car className="w-4 h-4 text-emerald-600" />
+                      <div className={`p-3.5 rounded-xl border bg-white dark:bg-[#151D2F] shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-400/20' : 'border-slate-200 dark:border-slate-800'}`}>
+                        <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-bold text-xs">
+                          <Car className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           <span>Auto / Sedán</span>
                         </div>
                         <div className="space-y-2">
                           <div>
-                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por hora (S/)</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por hora (S/)</span>
                             <Input
                               type="number"
                               step="0.50"
@@ -1898,18 +1902,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                   rate_minute_auto: Number((h / 60).toFixed(2))
                                 }));
                               }}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                             />
                           </div>
                           <div>
-                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por minuto (S/)</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por minuto (S/)</span>
                             <Input
                               type="number"
                               step="0.01"
                               min="0.01"
                               value={formData.rate_minute_auto}
                               onChange={(e) => setFormData({ ...formData, rate_minute_auto: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                             />
                           </div>
                           <div>
@@ -1930,14 +1934,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
 
                       {/* Camioneta / SUV */}
-                      <div className={`p-3.5 rounded-xl border bg-white shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/20' : 'border-slate-200'}`}>
-                        <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs">
-                          <Truck className="w-4 h-4 text-emerald-600" />
+                      <div className={`p-3.5 rounded-xl border bg-white dark:bg-[#151D2F] shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-400/20' : 'border-slate-200 dark:border-slate-800'}`}>
+                        <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-bold text-xs">
+                          <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           <span>Camioneta / SUV</span>
                         </div>
                         <div className="space-y-2">
                           <div>
-                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por hora (S/)</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por hora (S/)</span>
                             <Input
                               type="number"
                               step="0.50"
@@ -1951,18 +1955,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                   rate_minute_suv: Number((h / 60).toFixed(2))
                                 });
                               }}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                             />
                           </div>
                           <div>
-                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por minuto (S/)</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por minuto (S/)</span>
                             <Input
                               type="number"
                               step="0.01"
                               min="0.01"
                               value={formData.rate_minute_suv}
                               onChange={(e) => setFormData({ ...formData, rate_minute_suv: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                             />
                           </div>
                           <div>
@@ -1983,14 +1987,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
 
                       {/* Mototaxi / Torito */}
-                      <div className={`p-3.5 rounded-xl border bg-white shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/20' : 'border-slate-200'}`}>
-                        <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs">
-                          <Car className="w-4 h-4 text-emerald-600" />
+                      <div className={`p-3.5 rounded-xl border bg-white dark:bg-[#151D2F] shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-400/20' : 'border-slate-200 dark:border-slate-800'}`}>
+                        <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-bold text-xs">
+                          <Car className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           <span>Mototaxi / Torito</span>
                         </div>
                         <div className="space-y-2">
                           <div>
-                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por hora (S/)</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por hora (S/)</span>
                             <Input
                               type="number"
                               step="0.50"
@@ -2004,18 +2008,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                   rate_minute_mototaxi: Number((h / 60).toFixed(2))
                                 });
                               }}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                             />
                           </div>
                           <div>
-                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por minuto (S/)</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por minuto (S/)</span>
                             <Input
                               type="number"
                               step="0.01"
                               min="0.01"
                               value={formData.rate_minute_mototaxi}
                               onChange={(e) => setFormData({ ...formData, rate_minute_mototaxi: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                             />
                           </div>
                           <div>
@@ -2036,14 +2040,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
 
                       {/* Moto Lineal */}
-                      <div className={`p-3.5 rounded-xl border bg-white shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 ring-1 ring-emerald-400/20' : 'border-slate-200'}`}>
-                        <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs">
-                          <Bike className="w-4 h-4 text-emerald-600" />
+                      <div className={`p-3.5 rounded-xl border bg-white dark:bg-[#151D2F] shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-400/20' : 'border-slate-200 dark:border-slate-800'}`}>
+                        <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-bold text-xs">
+                          <Bike className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           <span>Moto Lineal</span>
                         </div>
                         <div className="space-y-2">
                           <div>
-                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por hora (S/)</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por hora (S/)</span>
                             <Input
                               type="number"
                               step="0.50"
@@ -2057,18 +2061,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                                   rate_minute_moto: Number((h / 60).toFixed(2))
                                 });
                               }}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                             />
                           </div>
                           <div>
-                            <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">Por minuto (S/)</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por minuto (S/)</span>
                             <Input
                               type="number"
                               step="0.01"
                               min="0.01"
                               value={formData.rate_minute_moto}
                               onChange={(e) => setFormData({ ...formData, rate_minute_moto: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 border-slate-200"
+                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                             />
                           </div>
                           <div>
@@ -2092,13 +2096,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   </div>
 
                   {/* Configuración de Turno Noche */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3.5">
+                  <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Moon className="w-4 h-4 text-indigo-600" />
+                        <Moon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                         <div>
-                          <h4 className="text-xs font-bold text-slate-900">Turno Noche Diferenciado</h4>
-                          <p className="text-[11px] text-slate-500">Aplica un recargo por hora en horarios nocturnos de alta seguridad.</p>
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">Turno Noche Diferenciado</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">Aplica un recargo por hora en horarios nocturnos de alta seguridad.</p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer select-none">
@@ -2108,47 +2112,47 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           onChange={(e) => setFormData({ ...formData, night_shift_enabled: e.target.checked })}
                           className="sr-only peer"
                         />
-                        <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-                        <span className="ml-2 text-xs font-bold text-slate-700">
+                        <div className="w-10 h-5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        <span className="ml-2 text-xs font-bold text-slate-700 dark:text-slate-300">
                           {formData.night_shift_enabled ? 'Habilitado' : 'Desactivado'}
                         </span>
                       </label>
                     </div>
 
                     {formData.night_shift_enabled ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/80">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/80 dark:border-slate-700">
                         <div>
-                          <label className="text-[11px] font-semibold text-slate-700 block mb-1">Hora Inicio Nocturno</label>
+                          <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">Hora Inicio Nocturno</label>
                           <Input
                             type="time"
                             value={formData.night_shift_start || '20:00'}
                             onChange={(e) => setFormData({ ...formData, night_shift_start: e.target.value })}
-                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                            className="h-8.5 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] font-semibold text-slate-700 block mb-1">Hora Fin Nocturno</label>
+                          <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">Hora Fin Nocturno</label>
                           <Input
                             type="time"
                             value={formData.night_shift_end || '06:00'}
                             onChange={(e) => setFormData({ ...formData, night_shift_end: e.target.value })}
-                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                            className="h-8.5 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] font-semibold text-slate-700 block mb-1">Recargo Nocturno (S/ por hora)</label>
+                          <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">Recargo Nocturno (S/ por hora)</label>
                           <Input
                             type="number"
                             step="0.50"
                             min="0.00"
                             value={formData.night_shift_surcharge}
                             onChange={(e) => setFormData({ ...formData, night_shift_surcharge: parseFloat(e.target.value) || 0 })}
-                            className="h-8.5 text-xs font-mono font-bold bg-white border-slate-200"
+                            className="h-8.5 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                           />
                         </div>
                       </div>
                     ) : (
-                      <p className="text-[11px] text-slate-500">Tarifa diurna regular aplicada uniformemente las 24 horas del día.</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Tarifa diurna regular aplicada uniformemente las 24 horas del día.</p>
                     )}
                   </div>
 
@@ -2197,20 +2201,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   </div>
 
                   {/* FASE 1: LLEGADA & TOLERANCIA ANTI-ABANDONO */}
-                  <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                    <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="p-5 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-4">
+                    <div className="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 font-bold text-xs shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold text-xs shrink-0">
                           1
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-black text-slate-900 tracking-tight uppercase">Fase 1: Llegada & Tolerancia Anti-Abandono</h4>
-                            <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                            <h4 className="text-xs font-black text-slate-900 dark:text-white tracking-tight uppercase">Fase 1: Llegada & Tolerancia Anti-Abandono</h4>
+                            <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/60">
                               Ventana de Espera
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5">Tiempo que la plaza permanece bloqueada esperando que el conductor llegue a la garita.</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Tiempo que la plaza permanece bloqueada esperando que el conductor llegue a la garita.</p>
                         </div>
                       </div>
                       <Timer className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
@@ -2218,7 +2222,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                     <div className="grid grid-cols-1 sm:grid-cols-[170px_1fr] gap-4 items-center">
                       <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Minutos de Tolerancia</label>
+                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Minutos de Tolerancia</label>
                         <div className="relative">
                           <Input
                             type="number"
@@ -2230,14 +2234,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               const v = Math.max(5, Math.min(60, Number(e.target.value) || 15));
                               setFormData({ ...formData, tolerance: v });
                             }}
-                            className="text-xs font-mono font-bold h-9.5 bg-white border-amber-300 pr-10"
+                            className="text-xs font-mono font-bold h-9.5 bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-500/50 dark:text-white pr-10"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400">min</span>
                         </div>
                       </div>
 
                       <div className="space-y-1.5">
-                        <span className="text-[11px] text-slate-600 font-semibold block">Presets rápidos:</span>
+                        <span className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold block">Presets rápidos:</span>
                         <div className="flex items-center gap-2 flex-wrap">
                           {[10, 15, 20, 30].map((v) => (
                             <button
@@ -2246,8 +2250,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               onClick={() => setFormData({ ...formData, tolerance: v })}
                               className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
                                 Number(formData.tolerance) === v 
-                                  ? 'bg-amber-600 text-white border-amber-600 shadow-2xs ring-2 ring-amber-200' 
-                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-amber-50 hover:border-amber-300'
+                                  ? 'bg-amber-600 text-white border-amber-600 shadow-2xs ring-2 ring-amber-200 dark:ring-amber-900' 
+                                  : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:border-amber-300'
                               }`}
                             >
                               <span>{v} min</span>
@@ -2258,35 +2262,35 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
                     </div>
 
-                    <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 space-y-1">
+                    <div className="p-3 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 rounded-xl text-[11px] text-amber-900 dark:text-amber-200 space-y-1">
                       <div className="flex items-center gap-1.5 font-bold">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                         <span>Regla de Sabotaje & No-Show:</span>
                       </div>
-                      <p className="leading-relaxed text-amber-800">
+                      <p className="leading-relaxed text-amber-800 dark:text-amber-300">
                         Si el conductor no se presenta dentro de los <strong className="font-mono">{formData.tolerance} minutos</strong> posteriores a la hora programada, el sistema <strong>cancela automáticamente la reserva</strong>, libera la plaza en el plano CAD y te devuelve la disponibilidad para nuevos clientes.
                       </p>
                     </div>
                   </div>
 
                   {/* FASE 2: MODALIDAD DE PAGO & COBRO DE RESERVA */}
-                  <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                    <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="p-5 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-4">
+                    <div className="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 font-bold text-xs shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-xs shrink-0">
                           2
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-black text-slate-900 tracking-tight uppercase">Fase 2: Modalidad de Cobro & Fianza</h4>
-                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                            <h4 className="text-xs font-black text-slate-900 dark:text-white tracking-tight uppercase">Fase 2: Modalidad de Cobro & Fianza</h4>
+                            <span className="text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
                               Transacción
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5">Elige cómo y cuándo abona el conductor: físicamente en tu garita o de forma anticipada.</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Elige cómo y cuándo abona el conductor: físicamente en tu garita o de forma anticipada.</p>
                         </div>
                       </div>
-                      <CreditCard className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                      <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2295,20 +2299,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         onClick={() => setFormData({ ...formData, require_reservation_prepay: false })}
                         className={`p-4 rounded-xl border text-left transition cursor-pointer relative ${
                           !formData.require_reservation_prepay
-                            ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/20'
-                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                            ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-800/50'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                          <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                             <span>Pospago en Garita</span>
-                            <span className="text-[9px] font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Recomendado</span>
+                            <span className="text-[9px] font-extrabold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.5 rounded">Recomendado</span>
                           </span>
                           {!formData.require_reservation_prepay && (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-600 leading-snug">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                           El conductor aparta su plaza y <strong>paga al salir en garita</strong> en efectivo, Yape, Plin o POS según su consumo exacto.
                         </p>
                       </button>
@@ -2318,32 +2322,32 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         onClick={() => setFormData({ ...formData, require_reservation_prepay: true })}
                         className={`p-4 rounded-xl border text-left transition cursor-pointer relative ${
                           formData.require_reservation_prepay
-                            ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/20'
-                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                            ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-800/50'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                          <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                             <span>Prepago Digital Obligatorio</span>
                           </span>
                           {formData.require_reservation_prepay && (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-600 leading-snug">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                           El conductor debe <strong>abonar el 100% estimado</strong> con tarjeta o billetera digital antes de emitir su Pase QR.
                         </p>
                       </button>
                     </div>
 
                     {/* Fianza de Reserva / Tasa de Apartado */}
-                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div>
-                          <label className="text-xs font-bold text-slate-800 block">Fianza de Reserva / Tasa de Apartado (S/)</label>
-                          <p className="text-[11px] text-slate-500">Monto deducible que el conductor deja al apartar plaza.</p>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Fianza de Reserva / Tasa de Apartado (S/)</label>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">Monto deducible que el conductor deja al apartar plaza.</p>
                         </div>
-                        <span className="text-[10px] font-mono font-bold text-slate-600 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                        <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                           {Number(formData.reservation_fee) > 0 ? `S/ ${Number(formData.reservation_fee).toFixed(2)} activo` : 'Desactivado (S/ 0.00)'}
                         </span>
                       </div>
@@ -2356,13 +2360,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             min="0.00"
                             value={formData.reservation_fee}
                             onChange={(e) => setFormData({ ...formData, reservation_fee: parseFloat(e.target.value) || 0 })}
-                            className="h-9 text-xs font-mono font-bold bg-white border-slate-300 pl-8"
+                            className="h-9 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 dark:text-white pl-8"
                           />
                         </div>
                         <button
                           type="button"
                           onClick={() => setFormData({ ...formData, reservation_fee: 0 })}
-                          className="px-2.5 py-2 text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition"
+                          className="px-2.5 py-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition"
                         >
                           Cero
                         </button>
@@ -2371,39 +2375,39 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   </div>
 
                   {/* FASE 3: FLEXIBILIDAD & RANGO DE ESTADÍA */}
-                  <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                    <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="p-5 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-4">
+                    <div className="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs shrink-0">
                           3
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-black text-slate-900 tracking-tight uppercase">Fase 3: Flexibilidad & Rango de Estadía</h4>
-                            <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full border border-indigo-200">
+                            <h4 className="text-xs font-black text-slate-900 dark:text-white tracking-tight uppercase">Fase 3: Flexibilidad & Rango de Estadía</h4>
+                            <span className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800/60">
                               Tiempo
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5">Controla si permites estadías abiertas sin hora de salida o exiges rangos fijos mín/máx.</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Controla si permites estadías abiertas sin hora de salida o exiges rangos fijos mín/máx.</p>
                         </div>
                       </div>
-                      <Sliders className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                      <Sliders className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
                     </div>
 
                     {/* Toggle Hora Libre */}
-                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 flex items-center justify-between gap-4">
+                    <div className="p-4 bg-slate-50/80 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <h5 className="text-xs font-bold text-slate-900">Modalidad "Hora Libre" (Estadía Abierta)</h5>
+                          <h5 className="text-xs font-bold text-slate-900 dark:text-white">Modalidad "Hora Libre" (Estadía Abierta)</h5>
                           <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full border ${
                             formData.allow_open_stay !== false
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                              : 'bg-slate-200 text-slate-700 border-slate-300'
+                              ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-300 dark:border-slate-700'
                           }`}>
                             {formData.allow_open_stay !== false ? 'Permitido' : 'Desactivado'}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 leading-snug">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
                           El conductor no necesita indicar hora de salida al reservar; el cobro se acumula en tiempo real hasta su retiro por garita.
                         </p>
                       </div>
@@ -2414,15 +2418,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           onChange={(e) => setFormData({ ...formData, allow_open_stay: e.target.checked })}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                       </label>
                     </div>
 
                     {/* Límites de Tiempo */}
-                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-3">
+                    <div className="p-4 bg-slate-50/80 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
                       <div className="flex items-center justify-between">
-                        <h5 className="text-xs font-bold text-slate-900">Límites Mínimo y Máximo de Estadía Programada</h5>
-                        <span className="text-[10px] font-mono text-slate-500">
+                        <h5 className="text-xs font-bold text-slate-900 dark:text-white">Límites Mínimo y Máximo de Estadía Programada</h5>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
                           Unidad: {formData.billing_unit === 'minute' ? 'Minutos' : 'Horas'}
                         </span>
                       </div>
@@ -2430,7 +2434,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       {formData.billing_unit === 'minute' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">Tiempo Mínimo (minutos)</label>
+                            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">Tiempo Mínimo (minutos)</label>
                             <Input
                               type="number"
                               min="5"
@@ -2438,12 +2442,12 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               step="5"
                               value={formData.min_stay_minutes}
                               onChange={(e) => setFormData({ ...formData, min_stay_minutes: parseInt(e.target.value) || 15 })}
-                              className="h-9 text-xs font-mono font-bold bg-white border-slate-300"
+                              className="h-9 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 dark:text-white"
                             />
                             <span className="text-[10px] text-slate-400 mt-1 block">Mínimo sugerido: 15 min</span>
                           </div>
                           <div>
-                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">Tiempo Máximo (minutos)</label>
+                            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">Tiempo Máximo (minutos)</label>
                             <Input
                               type="number"
                               min="15"
@@ -2451,7 +2455,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                               step="15"
                               value={formData.max_stay_minutes}
                               onChange={(e) => setFormData({ ...formData, max_stay_minutes: parseInt(e.target.value) || 1440 })}
-                              className="h-9 text-xs font-mono font-bold bg-white border-slate-300"
+                              className="h-9 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 dark:text-white"
                             />
                             <span className="text-[10px] text-slate-400 mt-1 block">Equivalente a {Math.round((formData.max_stay_minutes || 1440) / 60)} horas</span>
                           </div>
@@ -2459,26 +2463,26 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">Tiempo Mínimo (horas)</label>
+                            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">Tiempo Mínimo (horas)</label>
                             <Input
                               type="number"
                               min="1"
                               max="12"
                               value={formData.min_stay_hours}
                               onChange={(e) => setFormData({ ...formData, min_stay_hours: parseInt(e.target.value) || 1 })}
-                              className="h-9 text-xs font-mono font-bold bg-white border-slate-300"
+                              className="h-9 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 dark:text-white"
                             />
                             <span className="text-[10px] text-slate-400 mt-1 block">Estándar: 1 hora</span>
                           </div>
                           <div>
-                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">Tiempo Máximo (horas)</label>
+                            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">Tiempo Máximo (horas)</label>
                             <Input
                               type="number"
                               min="1"
                               max="72"
                               value={formData.max_stay_hours}
                               onChange={(e) => setFormData({ ...formData, max_stay_hours: parseInt(e.target.value) || 24 })}
-                              className="h-9 text-xs font-mono font-bold bg-white border-slate-300"
+                              className="h-9 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 dark:text-white"
                             />
                             <span className="text-[10px] text-slate-400 mt-1 block">Máximo por estadía continua</span>
                           </div>
@@ -2488,63 +2492,63 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   </div>
 
                   {/* FASE 4: EXPIRACIÓN DE TIEMPO & COBRO CONTINUO (OVERTIME SIN GRACIA) */}
-                  <div className="p-5 bg-gradient-to-br from-rose-50/70 via-white to-amber-50/50 rounded-2xl border border-rose-200/80 shadow-2xs space-y-4">
-                    <div className="flex items-start justify-between gap-3 border-b border-rose-100 pb-3">
+                  <div className="p-5 bg-gradient-to-br from-rose-50/70 via-white to-amber-50/50 dark:from-rose-950/30 dark:via-[#111827] dark:to-amber-950/20 rounded-2xl border border-rose-200/80 dark:border-rose-900/50 shadow-2xs space-y-4">
+                    <div className="flex items-start justify-between gap-3 border-b border-rose-100 dark:border-rose-900/40 pb-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-700 font-bold text-xs shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800/60 flex items-center justify-center text-rose-700 dark:text-rose-400 font-bold text-xs shrink-0">
                           4
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-black text-rose-950 tracking-tight uppercase">Fase 4: Expiración & Cobro Continuo (Overtime)</h4>
+                            <h4 className="text-xs font-black text-rose-950 dark:text-rose-200 tracking-tight uppercase">Fase 4: Expiración & Cobro Continuo (Overtime)</h4>
                             <span className="text-[10px] font-black bg-rose-600 text-white px-2 py-0.5 rounded-full shadow-2xs">
                               0 Min de Gracia
                             </span>
                           </div>
-                          <p className="text-[11px] text-rose-800/80 mt-0.5">Política oficial Smart Park: aviso preventivo y recargo automático continuo al vencerse el tiempo.</p>
+                          <p className="text-[11px] text-rose-800/80 dark:text-rose-300/80 mt-0.5">Política oficial Smart Park: aviso preventivo y recargo automático continuo al vencerse el tiempo.</p>
                         </div>
                       </div>
                       <BellRing className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="p-3.5 bg-white rounded-xl border border-rose-200 shadow-2xs space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                      <div className="p-3.5 bg-white dark:bg-slate-900/80 rounded-xl border border-rose-200 dark:border-rose-900/40 shadow-2xs space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
                           <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
                           <span>Alerta Preventiva (T-15m)</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 leading-snug">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                           El sistema notifica al conductor <strong>15 minutos antes</strong> de que finalice su estadía para recordarle dirigirse a garita o solicitar ampliación.
                         </p>
                       </div>
 
-                      <div className="p-3.5 bg-white rounded-xl border border-rose-200 shadow-2xs space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-rose-950">
+                      <div className="p-3.5 bg-white dark:bg-slate-900/80 rounded-xl border border-rose-200 dark:border-rose-900/40 shadow-2xs space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-rose-950 dark:text-rose-300">
                           <span className="w-2 h-2 rounded-full bg-rose-600"></span>
                           <span>Cero Gracia (T+0m)</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 leading-snug">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                           Apenas expira el horario reservado, <strong>no existe tiempo de gracia gratuito</strong>. El estado de la reserva pasa inmediatamente a <strong>Excedido</strong>.
                         </p>
                       </div>
 
-                      <div className="p-3.5 bg-white rounded-xl border border-rose-200 shadow-2xs space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-950">
+                      <div className="p-3.5 bg-white dark:bg-slate-900/80 rounded-xl border border-rose-200 dark:border-rose-900/40 shadow-2xs space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-950 dark:text-emerald-300">
                           <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
                           <span>Cobro Continuo Dinámico</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 leading-snug">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                           Cada minuto o fracción consumido en exceso se suma automáticamente a la tarifa final y <strong>se cobra en garita al momento del check-out</strong>.
                         </p>
                       </div>
                     </div>
 
-                    <div className="p-3 bg-white/80 rounded-xl border border-rose-200/60 text-[11px] text-slate-600 flex items-center justify-between flex-wrap gap-2">
+                    <div className="p-3 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-rose-200/60 dark:border-rose-900/40 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between flex-wrap gap-2">
                       <span className="flex items-center gap-1.5 font-medium">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                         <span>Protección garantizada contra pérdidas de ingresos por permanencia extendida.</span>
                       </span>
-                      <span className="font-mono font-bold text-[10px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                      <span className="font-mono font-bold text-[10px] text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
                         Tarifa base: S/ {Number(formData.rate || 5).toFixed(2)}/h + Overtime
                       </span>
                     </div>
@@ -2555,47 +2559,47 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
               {/* TAB 4: UBICACIÓN & GPS */}
               {activeTabSection === 'location' && (
-                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h3 className="text-sm font-bold text-slate-900">Ubicación Satelital & Coordenadas GPS</h3>
-                    <p className="text-xs text-slate-500 font-medium">Ubica la sede con precisión para que los conductores la encuentren en Google Maps.</p>
+                <div className="p-5 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-5">
+                  <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Ubicación Satelital & Coordenadas GPS</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Ubica la sede con precisión para que los conductores la encuentren en Google Maps.</p>
                   </div>
 
                   {/* Dirección Exacta y Referencia */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">Dirección Exacta *</label>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Dirección Exacta *</label>
                       <Input
                         required
                         placeholder="Ej. Jr. Bellido 240, Huamanga"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="text-xs h-9.5 bg-white border-slate-200"
+                        className="text-xs h-9.5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">Referencia Urbana</label>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Referencia Urbana</label>
                       <Input
                         placeholder="Ej. Frente a la Iglesia San Blas"
                         value={formData.reference}
                         onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                        className="text-xs h-9.5 bg-white border-slate-200"
+                        className="text-xs h-9.5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                       />
                     </div>
                   </div>
 
                   {/* Extractor de Coordenadas Google Maps y GPS */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
                     <div className="sm:col-span-2 space-y-1">
-                      <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>Pegar enlace de Google Maps (Extrae latitud/longitud):</span>
                       </label>
                       <Input
                         placeholder="https://maps.google.com/?q=-13.1604,-74.2259"
                         value={formData.mapsUrl}
                         onChange={(e) => handleParseMapsUrl(e.target.value)}
-                        className="text-xs bg-white h-9 border-slate-200"
+                        className="text-xs bg-white dark:bg-slate-900 h-9 border-slate-200 dark:border-slate-800 dark:text-white"
                       />
                     </div>
                     <div>
@@ -2604,9 +2608,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         onClick={handleGetDeviceLocation}
                         disabled={gpsLocating}
                         variant="outline"
-                        className="w-full bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl h-9 gap-1.5 border-slate-200 cursor-pointer"
+                        className="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl h-9 gap-1.5 border-slate-200 dark:border-slate-700 cursor-pointer"
                       >
-                        <LocateFixed className={`w-3.5 h-3.5 text-emerald-600 ${gpsLocating ? 'animate-spin' : ''}`} />
+                        <LocateFixed className={`w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 ${gpsLocating ? 'animate-spin' : ''}`} />
                         <span>{gpsLocating ? 'Detectando...' : 'Mi GPS Actual'}</span>
                       </Button>
                     </div>
@@ -2614,7 +2618,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                   {/* Zonas Rápidas de Ayacucho */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-600 block mb-1.5">Puntos de referencia frecuentes en Ayacucho:</label>
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block mb-1.5">Puntos de referencia frecuentes en Ayacucho:</label>
                     <div className="flex flex-wrap gap-1.5">
                       {AYACUCHO_PRESET_LOCATIONS.map((loc, idx) => (
                         <button
@@ -2630,9 +2634,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             }));
                             showToast(`Ubicación fijada en ${loc.name}`);
                           }}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 border border-slate-200 text-xs font-medium transition flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-800 dark:hover:text-emerald-300 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium transition flex items-center gap-1 cursor-pointer"
                         >
-                          <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <MapPin className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>{loc.name}</span>
                         </button>
                       ))}
@@ -2659,7 +2663,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   {/* Coordenadas Numéricas */}
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">Latitud GPS</label>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Latitud GPS</label>
                       <Input
                         type="number"
                         step="any"
@@ -2673,11 +2677,11 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             mapsUrl: `https://maps.google.com/?q=${val},${prev.longitude}`
                           }));
                         }}
-                        className="text-xs font-mono font-semibold h-9 bg-white border-slate-200"
+                        className="text-xs font-mono font-semibold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">Longitud GPS</label>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Longitud GPS</label>
                       <Input
                         type="number"
                         step="any"
@@ -2691,7 +2695,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             mapsUrl: `https://maps.google.com/?q=${prev.latitude},${val}`
                           }));
                         }}
-                        className="text-xs font-mono font-semibold h-9 bg-white border-slate-200"
+                        className="text-xs font-mono font-semibold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                       />
                     </div>
                   </div>
@@ -2700,14 +2704,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
               {/* TAB 5: FOTOGRAFÍA & CONTACTO */}
               {activeTabSection === 'media_contact' && (
-                <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h3 className="text-sm font-bold text-slate-900">Fotografía Oficial & Canales de Contacto</h3>
-                    <p className="text-xs text-slate-500 font-medium">Imagen visible en la app del conductor y medios de comunicación directa.</p>
+                <div className="p-5 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-5">
+                  <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Fotografía Oficial & Canales de Contacto</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Imagen visible en la app del conductor y medios de comunicación directa.</p>
                   </div>
 
                   {/* Previsualización de Foto */}
-                  <div className="relative w-full h-52 sm:h-64 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-inner">
+                  <div className="relative w-full h-52 sm:h-64 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 shadow-inner">
                     <img 
                       src={formData.image || FALLBACK_PARKING_IMAGE} 
                       alt="Vista previa de la cochera" 
@@ -2722,14 +2726,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   </div>
 
                   {/* Subir archivo local */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-300 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
                         <Upload className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-slate-900">Subir foto desde tu dispositivo</p>
-                        <p className="text-[11px] text-slate-500">Compresión automática ligera (JPG/PNG/WebP hasta 10MB)</p>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">Subir foto desde tu dispositivo</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Compresión automática ligera (JPG/PNG/WebP hasta 10MB)</p>
                       </div>
                     </div>
                     <div>
@@ -2744,7 +2748,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         type="button" 
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
-                        className="bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold rounded-xl h-8.5 px-3.5 border-slate-200 cursor-pointer"
+                        className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl h-8.5 px-3.5 border-slate-200 dark:border-slate-700 cursor-pointer"
                       >
                         Examinar Foto...
                       </Button>
@@ -2753,18 +2757,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                   {/* URL Externa */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">O escribe la URL de la imagen:</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">O escribe la URL de la imagen:</label>
                     <Input
                       placeholder="https://ejemplo.com/foto-cochera.jpg"
                       value={formData.image}
                       onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                      className="text-xs h-9 bg-white border-slate-200"
+                      className="text-xs h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                     />
                   </div>
 
                   {/* Galería Sugerida */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-600 block mb-2">Galería de fotos recomendadas para cocheras:</label>
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block mb-2">Galería de fotos recomendadas para cocheras:</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                       {PRESET_IMAGES.map((img, idx) => (
                         <button
@@ -2775,7 +2779,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             showToast(`Foto "${img.label}" seleccionada.`);
                           }}
                           className={`group relative h-18 rounded-xl overflow-hidden border-2 transition cursor-pointer flex flex-col justify-end p-1.5 ${
-                            formData.image === img.url ? 'border-emerald-500 ring-2 ring-emerald-400' : 'border-slate-200 hover:border-slate-300'
+                            formData.image === img.url 
+                              ? 'border-emerald-500 ring-2 ring-emerald-400' 
+                              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                           }`}
                           title={img.label}
                         >
@@ -2805,27 +2811,27 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   </div>
 
                   {/* Medios de Contacto */}
-                  <div className="border-t border-slate-100 pt-4 space-y-3">
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
                       Canales de Comunicación
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">WhatsApp de Atención</label>
+                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">WhatsApp de Atención</label>
                         <div className="relative flex items-center">
-                          <MessageSquare className="w-3.5 h-3.5 text-emerald-600 absolute left-3 pointer-events-none" />
+                          <MessageSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 absolute left-3 pointer-events-none" />
                           <Input
                             placeholder="51966123456"
                             value={formData.whatsapp}
                             onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                            className="pl-9 pr-14 text-xs font-mono h-9 bg-white border-slate-200"
+                            className="pl-9 pr-14 text-xs font-mono h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                           />
                           {formData.whatsapp && (
                             <a
                               href={`https://wa.me/${formData.whatsapp.replace(/\D/g, '')}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="absolute right-2 text-[10px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 cursor-pointer"
+                              className="absolute right-2 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/60 cursor-pointer"
                             >
                               Probar
                             </a>
@@ -2834,21 +2840,21 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       </div>
 
                       <div>
-                        <label className="text-xs font-semibold text-slate-700 block mb-1">Teléfono Garita / Central</label>
+                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Teléfono Garita / Central</label>
                         <div className="relative">
                           <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                           <Input
                             placeholder="+51 966 123 456"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            className="pl-9 text-xs font-mono h-9 bg-white border-slate-200"
+                            className="pl-9 text-xs font-mono h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                           />
                         </div>
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">Correo Electrónico de Consultas</label>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Correo Electrónico de Consultas</label>
                       <div className="relative">
                         <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                         <Input
@@ -2856,23 +2862,23 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           placeholder="contacto@cocherahuamanga.pe"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className="pl-9 text-xs h-9 bg-white border-slate-200"
+                          className="pl-9 text-xs h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* Redes Sociales */}
-                  <div className="border-t border-slate-100 pt-4 space-y-3">
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
                       Redes Sociales & Sitio Web
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-semibold text-slate-600">Facebook</label>
+                          <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Facebook</label>
                           {formData.socials?.facebook && (
-                            <a href={formData.socials.facebook} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 hover:underline flex items-center gap-0.5">
+                            <a href={formData.socials.facebook} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5">
                               <span>Abrir</span>
                               <ExternalLink className="w-2.5 h-2.5" />
                             </a>
@@ -2885,15 +2891,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             ...formData,
                             socials: { ...formData.socials, facebook: e.target.value }
                           })}
-                          className="text-xs h-9 bg-white border-slate-200"
+                          className="text-xs h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                         />
                       </div>
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-semibold text-slate-600">Instagram</label>
+                          <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Instagram</label>
                           {formData.socials?.instagram && (
-                            <a href={formData.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-[10px] text-pink-600 hover:underline flex items-center gap-0.5">
+                            <a href={formData.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-[10px] text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-0.5">
                               <span>Abrir</span>
                               <ExternalLink className="w-2.5 h-2.5" />
                             </a>
@@ -2906,15 +2912,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             ...formData,
                             socials: { ...formData.socials, instagram: e.target.value }
                           })}
-                          className="text-xs h-9 bg-white border-slate-200"
+                          className="text-xs h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                         />
                       </div>
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-semibold text-slate-600">TikTok</label>
+                          <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">TikTok</label>
                           {formData.socials?.tiktok && (
-                            <a href={formData.socials.tiktok} target="_blank" rel="noopener noreferrer" className="text-[10px] text-slate-700 hover:underline flex items-center gap-0.5">
+                            <a href={formData.socials.tiktok} target="_blank" rel="noopener noreferrer" className="text-[10px] text-slate-700 dark:text-slate-300 hover:underline flex items-center gap-0.5">
                               <span>Abrir</span>
                               <ExternalLink className="w-2.5 h-2.5" />
                             </a>
@@ -2927,15 +2933,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             ...formData,
                             socials: { ...formData.socials, tiktok: e.target.value }
                           })}
-                          className="text-xs h-9 bg-white border-slate-200"
+                          className="text-xs h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                         />
                       </div>
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-semibold text-slate-600">Sitio Web Oficial</label>
+                          <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Sitio Web Oficial</label>
                           {formData.socials?.website && (
-                            <a href={formData.socials.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-emerald-600 hover:underline flex items-center gap-0.5">
+                            <a href={formData.socials.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5">
                               <span>Abrir</span>
                               <ExternalLink className="w-2.5 h-2.5" />
                             </a>
@@ -2948,7 +2954,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                             ...formData,
                             socials: { ...formData.socials, website: e.target.value }
                           })}
-                          className="text-xs h-9 bg-white border-slate-200"
+                          className="text-xs h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                         />
                       </div>
                     </div>
@@ -2958,13 +2964,13 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               )}
 
               {/* Barra Inferior de Acción */}
-              <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+              <div className="flex justify-between items-center bg-white dark:bg-[#111827] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={() => setActiveViewMode('list')}
                   disabled={isSaving}
-                  className="text-xs rounded-xl h-9 font-semibold text-slate-700 cursor-pointer"
+                  className="text-xs rounded-xl h-9 font-semibold text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Cancelar
                 </Button>
@@ -3000,9 +3006,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               </div>
 
               {/* Tarjeta idéntica a la vista padrón */}
-              <div className="border border-slate-200/90 shadow-2xs rounded-2xl bg-white flex flex-col justify-between overflow-hidden">
+              <div className="border border-slate-200/90 dark:border-slate-800 shadow-2xs rounded-2xl bg-white dark:bg-[#111827] flex flex-col justify-between overflow-hidden">
                 <div>
-                  <div className="h-44 relative bg-slate-100 overflow-hidden">
+                  <div className="h-44 relative bg-slate-100 dark:bg-slate-900 overflow-hidden">
                     <img 
                       src={formData.image || FALLBACK_PARKING_IMAGE} 
                       alt={formData.name || 'Preview'} 
@@ -3030,42 +3036,42 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                   <div className="p-4 space-y-3">
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-slate-900 text-sm leading-tight line-clamp-1">
+                        <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight line-clamp-1">
                           {formData.name || 'Nombre de la Sede'}
                         </h3>
-                        <span className="font-mono font-bold text-emerald-700 text-xs shrink-0 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300 text-xs shrink-0 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/60">
                           S/ {Number(formData.rate || 5).toFixed(2)}/h
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 flex items-center gap-1 mt-1 line-clamp-1">
-                        <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600" /> 
+                      <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1 line-clamp-1">
+                        <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" /> 
                         <span>{formData.address || 'Dirección en Huamanga'} {formData.reference ? `(${formData.reference})` : ''}</span>
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
                       <span className="font-medium">{formData.level}</span>
-                      <span className="font-mono text-[11px] text-slate-500">
+                      <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
                         {formData.billing_unit === 'minute' ? 'Cobro fraccionado min' : 'Cobro por hora'}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 text-xs p-2.5 rounded-xl border border-slate-100 bg-slate-50 font-mono">
-                      <span className="flex items-center gap-1.5 truncate text-slate-600">
+                    <div className="flex items-center justify-between gap-2 text-xs p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 font-mono">
+                      <span className="flex items-center gap-1.5 truncate text-slate-600 dark:text-slate-300">
                         <Navigation className="w-3.5 h-3.5 shrink-0 text-slate-400" />
                         <span className="truncate">{Number(formData.latitude).toFixed(4)}, {Number(formData.longitude).toFixed(4)}</span>
                       </span>
-                      <span className="text-emerald-700 font-semibold text-[11px] bg-white px-2 py-0.5 rounded-lg border border-slate-200">
+                      <span className="text-emerald-700 dark:text-emerald-300 font-semibold text-[11px] bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                         GPS OK
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 pt-0 border-t border-slate-100 pt-3">
-                  <div className="w-full py-2 text-center font-bold text-xs bg-slate-900 text-white rounded-xl shadow-xs flex items-center justify-center gap-1.5">
+                <div className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800 pt-3">
+                  <div className="w-full py-2 text-center font-bold text-xs bg-slate-900 dark:bg-emerald-600 hover:dark:bg-emerald-700 text-white rounded-xl shadow-xs flex items-center justify-center gap-1.5">
                     <span>Plano & Garita</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-emerald-400" />
+                    <ChevronRight className="w-3.5 h-3.5 text-emerald-400 dark:text-white" />
                   </div>
                 </div>
               </div>

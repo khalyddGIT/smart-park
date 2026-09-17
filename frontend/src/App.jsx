@@ -1293,18 +1293,18 @@ const AppMain = () => {
               )}
               {isPersonalStaff && (activeTab === 'dashboard' || activeTab === 'editor') && (
                 <div className="space-y-4">
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
+                  <div className="bg-white dark:bg-[#111827] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <div>
-                      <h2 className="text-sm font-black text-slate-900 flex items-center gap-2"><Building2 className="w-4 h-4 text-emerald-600"/> Mapa de Sedes — Solo lectura</h2>
-                      <p className="text-xs text-slate-500">Vista del personal: consulta ubicación, tarifa y ocupación en vivo. Edición solo Admin Local.</p>
+                      <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2"><Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400"/> Mapa de Sedes — Solo lectura</h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Vista del personal: consulta ubicación, tarifa y ocupación en vivo. Edición solo Admin Local.</p>
                     </div>
-                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">Personal</span>
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-lg">Personal</span>
                   </div>
                   {/* Solo mapa del parking del establecimiento para el trabajador */}
                   {(() => {
                     const localEsts = (establishments || []).filter(e => isMyEstablishment(e, user, role));
                     const est = localEsts.find(e => String(e.id) === String(selectedParkingId)) || localEsts[0] || establishments[0];
-                    if (!est) return <div className="p-6 text-center text-xs text-slate-500">Sin sede asignada</div>;
+                    if (!est) return <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">Sin sede asignada</div>;
                     
                     if (est && est.elements === null && ensureFloorPlan) {
                       ensureFloorPlan(est.id);
@@ -1316,21 +1316,21 @@ const AppMain = () => {
                     const occupied = total - free;
                     return (
                       <div className="space-y-3">
-                        <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="bg-white dark:bg-[#111827] p-3 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             {isPersonalStaff ? (
-                              <span className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs font-bold text-emerald-800">Sede asignada: {est.name} — S/ {Number(est.rate).toFixed(2)}/h</span>
+                              <span className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl px-3 py-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">Sede asignada: {est.name} — S/ {Number(est.rate).toFixed(2)}/h</span>
                             ) : (
-                              <select value={est.id} onChange={e => setSelectedParkingId(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none">
-                                {(localEsts || []).map(p => <option key={p.id} value={p.id}>{p.name} — S/ {Number(p.rate).toFixed(2)}/h</option>)}
+                              <select value={est.id} onChange={e => setSelectedParkingId(e.target.value)} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none">
+                                {(localEsts || []).map(p => <option key={p.id} value={p.id} className="dark:bg-slate-900">{p.name} — S/ {Number(p.rate).toFixed(2)}/h</option>)}
                               </select>
                             )}
-                            <span className="text-xs font-mono font-bold text-emerald-700">{free} libres / {occupied} ocupados</span>
+                            <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400">{free} libres / {occupied} ocupados</span>
                           </div>
-                          <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg">{isPersonalStaff ? 'Asignada' : 'Solo Lectura'}</span>
+                          <span className="text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-lg">{isPersonalStaff ? 'Asignada' : 'Solo Lectura'}</span>
                         </div>
                         <AutoFitFloorPlan elements={elements} name={est.name} />
-                        <p className="text-[11px] text-center text-slate-500">Para registrar entradas/salidas usa <b>Garita → Walk-in</b> (toca un cajón libre en el mapa de arriba) o <b>Scanner</b>.</p>
+                        <p className="text-[11px] text-center text-slate-500 dark:text-slate-400">Para registrar entradas/salidas usa <b>Garita → Walk-in</b> (toca un cajón libre en el mapa de arriba) o <b>Scanner</b>.</p>
                       </div>
                     );
                   })()}
@@ -1342,7 +1342,7 @@ const AppMain = () => {
               {activeTab === 'cameras' && (isPersonalStaff ? <CameraMonitorModule readOnly /> : <CameraMonitorModule />)}
               {activeTab === 'incidents' && <IncidentsModule />}
               {activeTab === 'staff' && !isPersonalStaff && <StaffModule />}
-              {activeTab === 'staff' && isPersonalStaff && <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center text-xs text-slate-500">Solo el Admin Local gestiona el personal.</div>}
+              {activeTab === 'staff' && isPersonalStaff && <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center text-xs text-slate-500 dark:text-slate-400">Solo el Admin Local gestiona el personal.</div>}
               {activeTab === 'audit' && <AuditLogsModule />}
               {activeTab === 'reviews' && <ReviewsModule />}
               {activeTab === 'resiliency' && !isPersonalStaff && <ResiliencySimModule />}

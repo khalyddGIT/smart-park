@@ -454,11 +454,11 @@ export const AnalyticsGlobalModule = () => {
       {/* Encabezado */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-heading text-2xl text-slate-900 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 shrink-0 text-emerald-600" />
+          <h1 className="text-heading text-2xl text-slate-900 dark:text-white flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
             Analítica &amp; Tendencias de Ocupación
           </h1>
-          <p className="text-xs text-slate-500 max-w-2xl">
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-2xl">
             Métricas de aforo en tiempo real, demanda horaria y recaudación de la red.
           </p>
         </div>
@@ -466,13 +466,13 @@ export const AnalyticsGlobalModule = () => {
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="bg-white border border-slate-200 rounded-xl h-10 px-4 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl h-10 px-4 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300"
           >
-            <option value="today">Hoy</option>
-            <option value="7d">Últimos 7 Días</option>
-            <option value="30d">Últimos 30 Días</option>
+            <option value="today" className="dark:bg-slate-900">Hoy</option>
+            <option value="7d" className="dark:bg-slate-900">Últimos 7 Días</option>
+            <option value="30d" className="dark:bg-slate-900">Últimos 30 Días</option>
           </select>
-          <Button onClick={exportReport} variant="secondary" size="sm">
+          <Button onClick={exportReport} variant="secondary" size="sm" className="dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700">
             <Download className="w-4 h-4 shrink-0" />
             Exportar CSV
           </Button>
@@ -484,13 +484,13 @@ export const AnalyticsGlobalModule = () => {
         <Card className="p-6 h-full flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between gap-2">
             <span className="text-caption text-slate-400">Recaudación en rango</span>
-            <DollarSign className="w-5 h-5 shrink-0 text-emerald-600" />
+            <DollarSign className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-heading text-2xl text-slate-900">
+            <p className="text-heading text-2xl text-slate-900 dark:text-white">
               S/ {revenueStats.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               {hasAnyRevenue ? `${revenueStats.count} estancias registradas` : 'Sin movimientos en el periodo'}
             </span>
           </div>
@@ -499,11 +499,11 @@ export const AnalyticsGlobalModule = () => {
         <Card className="p-6 h-full flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between gap-2">
             <span className="text-caption text-slate-400">Estancias en rango</span>
-            <Car className="w-5 h-5 shrink-0 text-teal-600" />
+            <Car className="w-5 h-5 shrink-0 text-teal-600 dark:text-teal-400" />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-heading text-2xl text-slate-900">{revenueStats.count}</p>
-            <span className="text-xs text-slate-500 font-medium">
+            <p className="text-heading text-2xl text-slate-900 dark:text-white">{revenueStats.count}</p>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               {revenueStats.cancelled ? `${revenueStats.cancelled} canceladas excluidas` : 'Excluye canceladas'}
             </span>
           </div>
@@ -515,8 +515,8 @@ export const AnalyticsGlobalModule = () => {
             <Activity className="w-5 h-5 shrink-0 text-amber-500" />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-heading text-2xl text-slate-900">{hasAnyParking ? `${maxOcupacion}%` : '—'}</p>
-            <span className="text-xs text-amber-700 font-bold truncate" title={picoSede}>
+            <p className="text-heading text-2xl text-slate-900 dark:text-white">{hasAnyParking ? `${maxOcupacion}%` : '—'}</p>
+            <span className="text-xs text-amber-700 dark:text-amber-400 font-bold truncate" title={picoSede}>
               {hasAnyParking ? picoSede : 'Aún no hay datos para graficar'}
             </span>
           </div>
@@ -525,28 +525,28 @@ export const AnalyticsGlobalModule = () => {
         <Card className="p-6 h-full flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between gap-2">
             <span className="text-caption text-slate-400">Rotación por plaza</span>
-            <Clock className="w-5 h-5 shrink-0 text-blue-500" />
+            <Clock className="w-5 h-5 shrink-0 text-blue-500 dark:text-blue-400" />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-heading text-2xl text-slate-900">{rotacion === '—' ? '—' : `${rotacion} veh/plaza`}</p>
-            <span className="text-xs text-slate-500 font-medium">Estancias / capacidad total en rango</span>
+            <p className="text-heading text-2xl text-slate-900 dark:text-white">{rotacion === '—' ? '—' : `${rotacion} veh/plaza`}</p>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Estancias / capacidad total en rango</span>
           </div>
         </Card>
       </div>
 
       {/* Desglose Financiero por Método de Cobro (Efectivo vs Yape/Plin vs Tarjeta POS) */}
       <Card className="p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h3 className="text-subheading text-slate-900 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-emerald-600" />
+            <h3 className="text-subheading text-slate-900 dark:text-white flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               Desglose Financiero por Medio de Cobro
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Distribución de ingresos según medio utilizado por los conductores en rango {timeRange}.
             </p>
           </div>
-          <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-xl w-fit">
+          <span className="text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-xl w-fit">
             Total Auditado: S/ {revenueStats.total.toFixed(2)}
           </span>
         </div>
@@ -555,7 +555,7 @@ export const AnalyticsGlobalModule = () => {
           {paymentMethodBreakdown.map((item) => (
             <div 
               key={item.key} 
-              className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow"
+              className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -563,24 +563,24 @@ export const AnalyticsGlobalModule = () => {
                     className="w-3 h-3 rounded-full shrink-0" 
                     style={{ backgroundColor: item.color }} 
                   />
-                  <span className="text-xs font-bold text-slate-800">{item.label}</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{item.label}</span>
                 </div>
-                <span className="text-xs font-black font-mono px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-700">
+                <span className="text-xs font-black font-mono px-2 py-0.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
                   {item.percent}%
                 </span>
               </div>
 
               <div>
-                <p className="text-xl font-mono font-black text-slate-900">
+                <p className="text-xl font-mono font-black text-slate-900 dark:text-white">
                   S/ {item.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   {item.count} {item.count === 1 ? 'transacción registrada' : 'transacciones registradas'}
                 </p>
               </div>
 
               {/* Barra de progreso porcentual */}
-              <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">
+              <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                 <div 
                   className="h-full rounded-full transition-all duration-500" 
                   style={{ width: `${item.percent}%`, backgroundColor: item.color }} 
@@ -598,17 +598,17 @@ export const AnalyticsGlobalModule = () => {
           <Card className="p-6 h-full flex flex-col gap-4">
             <div className="flex justify-between items-center gap-2">
               <div className="flex flex-col gap-1">
-                <h3 className="text-subheading text-slate-900">Afluencia por franja horaria</h3>
-                <p className="text-xs text-slate-500">Distribución de reservas por hora en rango {timeRange}</p>
+                <h3 className="text-subheading text-slate-900 dark:text-white">Afluencia por franja horaria</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Distribución de reservas por hora en rango {timeRange}</p>
               </div>
             </div>
 
             <div className="h-64 w-full">
               {!hasHourly ? (
-                <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
-                  <Clock className="w-5 h-5 shrink-0 text-slate-300" />
-                  <span className="text-xs font-bold">Sin datos para graficar</span>
-                  <span className="text-xs">No hay reservas activas o completadas en este rango.</span>
+                <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 p-6">
+                  <Clock className="w-5 h-5 shrink-0 text-slate-300 dark:text-slate-600" />
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Sin datos para graficar</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">No hay reservas activas o completadas en este rango.</span>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -642,18 +642,18 @@ export const AnalyticsGlobalModule = () => {
         <div className="lg:col-span-4">
           <Card className="p-6 h-full flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <h3 className="text-subheading text-slate-900 flex items-center gap-2">
+              <h3 className="text-subheading text-slate-900 dark:text-white flex items-center gap-2">
                 <Star className="w-5 h-5 shrink-0 text-amber-500 fill-amber-400" /> Distribución de calificaciones
               </h3>
-              <p className="text-xs text-slate-500">Promedio {reviewStats.avg != null ? `${reviewStats.avg.toFixed(1)} / 5.0` : '—'} · {reviewStats.count} reseñas</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Promedio {reviewStats.avg != null ? `${reviewStats.avg.toFixed(1)} / 5.0` : '—'} · {reviewStats.count} reseñas</p>
             </div>
 
             <div className="h-64 w-full flex items-center justify-center">
                 {!hasAnyReview ? (
                   <div className="text-center flex flex-col items-center gap-2">
-                    <Star className="w-5 h-5 shrink-0 text-slate-200" />
-                    <p className="text-xs font-bold text-slate-500">Sin datos de reseñas</p>
-                    <p className="text-xs text-slate-400">Aún no se han registrado valoraciones.</p>
+                    <Star className="w-5 h-5 shrink-0 text-slate-200 dark:text-slate-700" />
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Sin datos de reseñas</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">Aún no se han registrado valoraciones.</p>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -680,19 +680,19 @@ export const AnalyticsGlobalModule = () => {
                 )}
               </div>
 
-            <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+            <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               {hasAnyReview ? (
                 reviewStats.distribution.map((v) => (
                   <div key={v.star} className="flex justify-between items-center gap-2 text-xs">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: v.color }} />
-                      <span className="text-slate-600 font-bold">{v.star} estrellas</span>
+                      <span className="text-slate-600 dark:text-slate-300 font-bold">{v.star} estrellas</span>
                     </div>
-                    <span className="font-mono font-bold text-slate-900">{v.value} · {v.percent}%</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{v.value} · {v.percent}%</span>
                   </div>
                 ))
               ) : (
-                <span className="text-xs text-slate-400 font-medium">Sin datos de reseñas.</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">Sin datos de reseñas.</span>
               )}
             </div>
           </Card>
@@ -702,22 +702,22 @@ export const AnalyticsGlobalModule = () => {
       {/* Recaudación por sede */}
       <Card className="p-6 h-full flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <h3 className="text-subheading text-slate-900">Recaudación por sede</h3>
-          <p className="text-xs text-slate-500">Ingresos brutos generados por establecimiento en rango.</p>
+          <h3 className="text-subheading text-slate-900 dark:text-white">Recaudación por sede</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Ingresos brutos generados por establecimiento en rango.</p>
         </div>
 
         <div className="h-64 w-full">
           {!hasAnyParking ? (
-            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
-              <BarChart3 className="w-5 h-5 shrink-0 text-slate-300" />
-              <span className="text-xs font-bold">Sin datos para graficar</span>
-              <span className="text-xs">Sin cocheras registradas.</span>
+            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 p-6">
+              <BarChart3 className="w-5 h-5 shrink-0 text-slate-300 dark:text-slate-600" />
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Sin datos para graficar</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Sin cocheras registradas.</span>
             </div>
           ) : recaudacionPorSede.every((r) => r.recaudacion === 0) ? (
-            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
-              <DollarSign className="w-5 h-5 shrink-0 text-slate-300" />
-              <span className="text-xs font-bold">Sin datos para graficar</span>
-              <span className="text-xs">Sin recaudación registrada en este rango.</span>
+            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 p-6">
+              <DollarSign className="w-5 h-5 shrink-0 text-slate-300 dark:text-slate-600" />
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Sin datos para graficar</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Sin recaudación registrada en este rango.</span>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
@@ -738,14 +738,14 @@ export const AnalyticsGlobalModule = () => {
       {/* Ocupación por sede */}
       <Card className="p-6 h-full flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <h3 className="text-subheading text-slate-900">Ocupación en tiempo real por sede</h3>
-          <p className="text-xs text-slate-500">Porcentaje de aforo y plazas ocupadas según planos operativos.</p>
+          <h3 className="text-subheading text-slate-900 dark:text-white">Ocupación en tiempo real por sede</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Porcentaje de aforo y plazas ocupadas según planos operativos.</p>
         </div>
         <div className="h-64 w-full">
           {!hasAnyParking ? (
-            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 p-6">
-              <Users className="w-5 h-5 shrink-0 text-slate-300" />
-              <span className="text-xs font-bold">Aún no hay datos para graficar</span>
+            <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 p-6">
+              <Users className="w-5 h-5 shrink-0 text-slate-300 dark:text-slate-600" />
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Aún no hay datos para graficar</span>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">

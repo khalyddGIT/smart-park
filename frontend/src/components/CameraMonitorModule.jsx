@@ -517,63 +517,63 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
           </div>
         </div>
         {!readOnly && showConfig && (
-          <div className="bg-white rounded-2xl p-3 flex flex-col gap-2 text-slate-900">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 flex flex-col gap-2 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 shadow-lg">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black">URL MJPEG/JPEG de la sede · {currentEst?.name}</span>
-              <button type="button" onClick={() => setShowConfig(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X className="w-4 h-4" /></button>
+              <button type="button" onClick={() => setShowConfig(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400"><X className="w-4 h-4" /></button>
             </div>
             <div className="grid md:grid-cols-[1fr_auto] gap-2">
-              <input value={urlDraft} onChange={(e) => setUrlDraft(e.target.value)} placeholder="http://192.168.1.50:8080/video" className="h-10 rounded-xl border border-slate-300 px-3 text-sm outline-none focus:border-emerald-500" />
-              <label className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={enabledDraft} onChange={(e) => setEnabledDraft(e.target.checked)} className="w-4 h-4 accent-emerald-500" /> Habilitada</label>
+              <input value={urlDraft} onChange={(e) => setUrlDraft(e.target.value)} placeholder="http://192.168.1.50:8080/video" className="h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm outline-none focus:border-emerald-500 dark:text-white" />
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300"><input type="checkbox" checked={enabledDraft} onChange={(e) => setEnabledDraft(e.target.checked)} className="w-4 h-4 accent-emerald-500" /> Habilitada</label>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center flex-wrap">
               <Button type="button" onClick={saveCameraConfig} disabled={savingConfig || !numericId} className="h-9 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs gap-1.5"><Save className="w-3.5 h-3.5" /> Guardar URL</Button>
-              <Button type="button" variant="outline" onClick={refreshSnapshot} disabled={!cameraUrl} className="h-9 rounded-xl text-xs"><Eye className="w-3.5 h-3.5" /> Probar snapshot</Button>
-              <span className="text-xs text-slate-500 self-center truncate">{cameraUrl ? `Actual: ${cameraUrl.slice(0, 60)}` : 'Sin URL'} {calibration ? '· calibrada' : ''}</span>
+              <Button type="button" variant="outline" onClick={refreshSnapshot} disabled={!cameraUrl} className="h-9 rounded-xl text-xs border-slate-200 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"><Eye className="w-3.5 h-3.5" /> Probar snapshot</Button>
+              <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{cameraUrl ? `Actual: ${cameraUrl.slice(0, 60)}` : 'Sin URL'} {calibration ? '· calibrada' : ''}</span>
             </div>
           </div>
         )}
       </div>
 
       {!readOnly && (
-      <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-[#111827] rounded-[20px] border border-slate-200 dark:border-slate-800 shadow-sm p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-black text-slate-900">FUENTE:</span>
-          <div className="bg-slate-100 p-1 rounded-xl flex gap-1 border border-slate-200">
-            <button type="button" onClick={() => setSourceMode('camera')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${sourceMode === 'camera' ? 'bg-slate-900 text-white shadow' : 'text-slate-600 hover:bg-white'}`}><Radio className="w-3.5 h-3.5" /> Cámara IP</button>
-            <button type="button" onClick={() => setSourceMode('webcam')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${sourceMode === 'webcam' ? 'bg-slate-900 text-white shadow' : 'text-slate-600 hover:bg-white'}`}><Video className="w-3.5 h-3.5" /> WebCam</button>
-            <button type="button" onClick={() => setSourceMode('image')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${sourceMode === 'image' ? 'bg-slate-900 text-white shadow' : 'text-slate-600 hover:bg-white'}`}><ImageIcon className="w-3.5 h-3.5" /> Imagen</button>
+          <span className="text-xs font-black text-slate-900 dark:text-white">FUENTE:</span>
+          <div className="bg-slate-100 dark:bg-slate-900 p-1 rounded-xl flex gap-1 border border-slate-200 dark:border-slate-800">
+            <button type="button" onClick={() => setSourceMode('camera')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition ${sourceMode === 'camera' ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}`}><Radio className="w-3.5 h-3.5" /> Cámara IP</button>
+            <button type="button" onClick={() => setSourceMode('webcam')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition ${sourceMode === 'webcam' ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}`}><Video className="w-3.5 h-3.5" /> WebCam</button>
+            <button type="button" onClick={() => setSourceMode('image')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition ${sourceMode === 'image' ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}`}><ImageIcon className="w-3.5 h-3.5" /> Imagen</button>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
-            <span className="text-[10px] font-black tracking-widest text-slate-500">UMBRAL</span>
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5">
+            <span className="text-[10px] font-black tracking-widest text-slate-500 dark:text-slate-400">UMBRAL</span>
             <input type="range" min={300} max={1800} step={50} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className="w-24 accent-emerald-500" title="Sensibilidad de detección" />
-            <span className="text-xs font-mono font-bold min-w-[48px]">{threshold}</span>
+            <span className="text-xs font-mono font-bold text-slate-900 dark:text-white min-w-[48px]">{threshold}</span>
             <span className="text-[10px] text-slate-400 hidden sm:inline">Defecto: 900</span>
-            <label className="flex items-center gap-1 text-xs font-bold ml-2 border-l border-slate-300 pl-2"><input type="checkbox" checked={debugMode} onChange={(e) => setDebugMode(e.target.checked)} className="w-3.5 h-3.5 accent-violet-500" /> Debug</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300 ml-2 border-l border-slate-300 dark:border-slate-700 pl-2"><input type="checkbox" checked={debugMode} onChange={(e) => setDebugMode(e.target.checked)} className="w-3.5 h-3.5 accent-violet-500" /> Debug</label>
           </div>
           {sourceMode === 'webcam' && availableDevices.length > 1 && (
-            <select value={selectedWebcamId} onChange={(e) => setSelectedWebcamId(e.target.value)} className="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs font-bold outline-none">
-              {availableDevices.map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Cámara ${d.deviceId.slice(0, 6)}`}</option>)}
+            <select value={selectedWebcamId} onChange={(e) => setSelectedWebcamId(e.target.value)} className="h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-2 text-xs font-bold outline-none">
+              {availableDevices.map((d) => <option key={d.deviceId} value={d.deviceId} className="dark:bg-slate-900">{d.label || `Cámara ${d.deviceId.slice(0, 6)}`}</option>)}
             </select>
           )}
           {sourceMode === 'image' && (
             <>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUploadTestImage} className="hidden" />
-              <Button type="button" onClick={() => fileInputRef.current?.click()} className="h-9 rounded-xl bg-slate-900 text-white text-xs font-black gap-1.5"><Upload className="w-3.5 h-3.5" /> Subir imagen</Button>
-              {testFile && <span className="text-xs font-medium text-slate-600 max-w-[150px] truncate">{testFile.name}</span>}
+              <Button type="button" onClick={() => fileInputRef.current?.click()} className="h-9 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white text-xs font-black gap-1.5 cursor-pointer"><Upload className="w-3.5 h-3.5" /> Subir imagen</Button>
+              {testFile && <span className="text-xs font-medium text-slate-600 dark:text-slate-400 max-w-[150px] truncate">{testFile.name}</span>}
             </>
           )}
-          <button type="button" onClick={() => setAutoScan((v) => !v)} disabled={mode === 'edit'} className={`h-9 px-3 rounded-xl font-black text-xs flex items-center gap-1.5 border ${autoScan ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200'} disabled:opacity-40`}>
+          <button type="button" onClick={() => setAutoScan((v) => !v)} disabled={mode === 'edit'} className={`h-9 px-3 rounded-xl font-black text-xs flex items-center gap-1.5 border transition cursor-pointer ${autoScan ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800'} disabled:opacity-40`}>
             <span className={`w-2 h-2 rounded-full ${autoScan ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />{autoScan ? 'Auto ON' : 'Auto OFF'}
           </button>
           {autoScan && (
-            <select value={scanIntervalSec} onChange={(e) => setScanIntervalSec(Number(e.target.value))} className="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs font-bold outline-none">
-              <option value={3}>cada 3 s</option><option value={5}>cada 5 s</option><option value={10}>cada 10 s</option>
+            <select value={scanIntervalSec} onChange={(e) => setScanIntervalSec(Number(e.target.value))} className="h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-2 text-xs font-bold outline-none">
+              <option value={3} className="dark:bg-slate-900">cada 3 s</option><option value={5} className="dark:bg-slate-900">cada 5 s</option><option value={10} className="dark:bg-slate-900">cada 10 s</option>
             </select>
           )}
-          <Button type="button" onClick={() => runScan()} disabled={scanning || mode === 'edit'} className="h-9 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs gap-1.5 disabled:opacity-40">
+          <Button type="button" onClick={() => runScan()} disabled={scanning || mode === 'edit'} className="h-9 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs gap-1.5 disabled:opacity-40 cursor-pointer">
             {scanning ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}{scanning ? 'Escaneando…' : 'Escanear ahora'}
           </Button>
         </div>
@@ -662,49 +662,49 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
         </div>
       )}
 
-      <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm p-4">
-        <h3 className="text-xs font-black tracking-widest text-slate-900 flex items-center gap-2 mb-3"><ListChecks className="w-4 h-4 text-emerald-500" /> ZONAS DE CÁMARA — {camZones.length} zonas {readOnly && <span className="text-[10px] font-bold text-slate-400">(solo lectura)</span>}</h3>
+      <div className="bg-white dark:bg-[#111827] rounded-[20px] border border-slate-200 dark:border-slate-800 shadow-sm p-4">
+        <h3 className="text-xs font-black tracking-widest text-slate-900 dark:text-white flex items-center gap-2 mb-3"><ListChecks className="w-4 h-4 text-emerald-500" /> ZONAS DE CÁMARA — {camZones.length} zonas {readOnly && <span className="text-[10px] font-bold text-slate-400">(solo lectura)</span>}</h3>
         {!readOnly && selectedZoneIdx !== null && camZones[selectedZoneIdx] && (
-          <div className="mb-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+          <div className="mb-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl p-3 flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-black text-slate-900 flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-amber-600" /> {camZones[selectedZoneIdx].code}</span>
-              <span className="text-xs text-slate-500">— {Math.round(camZones[selectedZoneIdx].w)}×{Math.round(camZones[selectedZoneIdx].h)}{camZones[selectedZoneIdx].rot ? ` · ${camZones[selectedZoneIdx].rot}°` : ''} · {camZones[selectedZoneIdx].status === 'occupied' ? 'OCUPADA' : 'LIBRE'}</span>
-              <button type="button" onClick={() => setSelectedZoneIdx(null)} className="ml-auto h-7 px-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50"><X className="w-3.5 h-3.5" /></button>
+              <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> {camZones[selectedZoneIdx].code}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">— {Math.round(camZones[selectedZoneIdx].w)}×{Math.round(camZones[selectedZoneIdx].h)}{camZones[selectedZoneIdx].rot ? ` · ${camZones[selectedZoneIdx].rot}°` : ''} · {camZones[selectedZoneIdx].status === 'occupied' ? 'OCUPADA' : 'LIBRE'}</span>
+              <button type="button" onClick={() => setSelectedZoneIdx(null)} className="ml-auto h-7 px-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-white rounded-lg border border-slate-300 px-2 py-1">
-                <span className="text-[11px] font-black text-slate-600">Código</span>
-                <input value={camZones[selectedZoneIdx].code} onChange={(e)=> setCamZones((prev)=>{ const next=prev.map((z,i)=> i===selectedZoneIdx ? {...z, code: e.target.value.toUpperCase().slice(0,12)}:z); persistZones(next); return next; })} className="w-20 h-7 text-xs font-mono font-bold text-center outline-none" />
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1">
+                <span className="text-[11px] font-black text-slate-600 dark:text-slate-400">Código</span>
+                <input value={camZones[selectedZoneIdx].code} onChange={(e)=> setCamZones((prev)=>{ const next=prev.map((z,i)=> i===selectedZoneIdx ? {...z, code: e.target.value.toUpperCase().slice(0,12)}:z); persistZones(next); return next; })} className="w-20 h-7 text-xs font-mono font-bold text-center outline-none bg-transparent dark:text-white" />
               </div>
-              <div className="flex items-center gap-1.5 bg-white rounded-lg border border-slate-300 px-2 py-1">
-                <span className="text-[11px] font-black text-slate-600">Umbral</span>
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1">
+                <span className="text-[11px] font-black text-slate-600 dark:text-slate-400">Umbral</span>
                 <input type="number" min={200} max={2500} step={50} value={camZones[selectedZoneIdx].thr ?? ''} placeholder={`${threshold}`} onChange={(e) => {
                   const v = e.target.value === '' ? null : Number(e.target.value);
                   setCamZones((prev) => { const next = prev.map((z,i)=> i===selectedZoneIdx ? {...z, thr: v} : z); persistZones(next); return next; });
-                }} className="w-20 h-7 text-xs font-mono font-bold text-center outline-none" />
-                <button type="button" onClick={() => setCamZones((prev)=>{ const next=prev.map((z,i)=> i===selectedZoneIdx ? {...z, thr: null}:z); persistZones(next); return next; })} className="text-[11px] font-bold text-slate-600 hover:text-slate-900">Global</button>
+                }} className="w-20 h-7 text-xs font-mono font-bold text-center outline-none bg-transparent dark:text-white" />
+                <button type="button" onClick={() => setCamZones((prev)=>{ const next=prev.map((z,i)=> i===selectedZoneIdx ? {...z, thr: null}:z); persistZones(next); return next; })} className="text-[11px] font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer">Global</button>
               </div>
               <div className="flex items-center gap-1 ml-auto">
-                <Button type="button" variant="outline" onClick={() => { pushHistory(); const z=camZones[selectedZoneIdx]; const nz={...z, id:`cz_${Date.now()}`, code:`CAM-${String(camZones.length+1).padStart(2,'0')}`, x: Math.min(CANVAS_W - z.w, z.x+16), y: Math.min(CANVAS_H - z.h, z.y+16)}; const next=[...camZones, nz]; setCamZones(next); persistZones(next); setSelectedZoneIdx(next.length-1); }} className="h-8 rounded-lg bg-white border-slate-300 text-xs font-bold gap-1"><Copy className="w-3.5 h-3.5" /> Duplicar</Button>
-                <Button type="button" variant="outline" onClick={() => handleRotate(45)} className="h-8 rounded-lg bg-white border-slate-300 text-xs font-bold gap-1"><RotateCw className="w-3.5 h-3.5" /> Rotar</Button>
-                <Button type="button" variant="outline" onClick={() => setConfirmDeleteIdx(selectedZoneIdx)} className="h-8 rounded-lg bg-white border-rose-200 text-rose-600 text-xs font-bold gap-1"><Trash2 className="w-3.5 h-3.5" /> Borrar</Button>
+                <Button type="button" variant="outline" onClick={() => { pushHistory(); const z=camZones[selectedZoneIdx]; const nz={...z, id:`cz_${Date.now()}`, code:`CAM-${String(camZones.length+1).padStart(2,'0')}`, x: Math.min(CANVAS_W - z.w, z.x+16), y: Math.min(CANVAS_H - z.h, z.y+16)}; const next=[...camZones, nz]; setCamZones(next); persistZones(next); setSelectedZoneIdx(next.length-1); }} className="h-8 rounded-lg bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold gap-1 cursor-pointer"><Copy className="w-3.5 h-3.5" /> Duplicar</Button>
+                <Button type="button" variant="outline" onClick={() => handleRotate(45)} className="h-8 rounded-lg bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold gap-1 cursor-pointer"><RotateCw className="w-3.5 h-3.5" /> Rotar</Button>
+                <Button type="button" variant="outline" onClick={() => setConfirmDeleteIdx(selectedZoneIdx)} className="h-8 rounded-lg bg-white dark:bg-slate-800 border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold gap-1 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /> Borrar</Button>
               </div>
             </div>
-            <p className="text-[11px] text-slate-500">Tip: arrastra la zona, usa flechas (Shift = 10px), <b>Supr</b> borra, <b>Ctrl+D</b> duplica. Esquinas amarillas = redimensiona (próximamente). Código editable.</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">Tip: arrastra la zona, usa flechas (Shift = 10px), <b>Supr</b> borra, <b>Ctrl+D</b> duplica. Esquinas amarillas = redimensiona (próximamente). Código editable.</p>
           </div>
         )}
         {camZones.length === 0 ? (
-          <div className="py-8 text-center border-2 border-dashed border-slate-200 rounded-2xl">
-            <Layers className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm font-bold text-slate-600">Sin zonas de cámara</p>
-            <p className="text-xs text-slate-500 mt-1">Pulsa <b>Editar zonas</b> y dibuja rectángulos sobre la vista. Son independientes del plano del estacionamiento.</p>
+          <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+            <Layers className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+            <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Sin zonas de cámara</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Pulsa <b>Editar zonas</b> y dibuja rectángulos sobre la vista. Son independientes del plano del estacionamiento.</p>
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
             {camZones.map((z, idx) => (
-              <button key={z.id} type="button" onClick={() => setSelectedZoneIdx(idx)} className={`rounded-xl border-2 px-2 py-2 text-center transition ${idx === selectedZoneIdx ? 'ring-2 ring-amber-400' : ''} ${z.status === 'occupied' ? 'bg-rose-50 border-rose-300' : 'bg-emerald-50 border-emerald-300'}`}>
-                <p className="text-xs font-mono font-black text-slate-900">{z.code}</p>
-                <p className={`text-[10px] font-black tracking-widest ${z.status === 'occupied' ? 'text-rose-700' : 'text-emerald-700'}`}>{z.status === 'occupied' ? 'OCUPADA' : 'LIBRE'}</p>
+              <button key={z.id} type="button" onClick={() => setSelectedZoneIdx(idx)} className={`rounded-xl border-2 px-2 py-2 text-center transition cursor-pointer ${idx === selectedZoneIdx ? 'ring-2 ring-amber-400' : ''} ${z.status === 'occupied' ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800/60' : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800/60'}`}>
+                <p className="text-xs font-mono font-black text-slate-900 dark:text-white">{z.code}</p>
+                <p className={`text-[10px] font-black tracking-widest ${z.status === 'occupied' ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>{z.status === 'occupied' ? 'OCUPADA' : 'LIBRE'}</p>
                 <p className="text-[9px] font-mono text-slate-400">{Math.round(z.w)}×{Math.round(z.h)}{z.rot ? ` · ${z.rot}°` : ''}</p>
               </button>
             ))}

@@ -664,39 +664,39 @@ export const StaffModule = () => {
           MODAL 1: REGISTRAR NUEVO COLABORADOR & CREDENCIALES
           ========================================================================= */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-lg rounded-3xl p-6 bg-white border-slate-200 max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2 text-emerald-700">
+        <DialogContent className="max-w-lg rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
               <UserCheck className="w-5 h-5" />
-              <DialogTitle className="text-lg font-black text-slate-900">Nuevo Colaborador</DialogTitle>
+              <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">Nuevo Colaborador</DialogTitle>
             </div>
-            <DialogDescription className="text-xs text-slate-500">
-              Datos personales y credenciales de acceso.
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+              Datos personales y credenciales de acceso a garita.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreate} className="space-y-4 pt-2">
             {/* Sección 1: Datos Laborales */}
             <div className="space-y-3">
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
                 1. Datos del Colaborador
               </span>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre Completo *</label>
                 <Input 
                   type="text" 
                   placeholder="Ej. Juan Carlos Pérez Gómez" 
                   value={formData.full_name} 
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} 
                   required 
-                  className="text-xs h-10 rounded-xl"
+                  className="text-xs h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">DNI / Documento *</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">DNI / Documento *</label>
                   <Input 
                     type="text" 
                     maxLength={8} 
@@ -704,16 +704,16 @@ export const StaffModule = () => {
                     value={formData.dni} 
                     onChange={(e) => setFormData({ ...formData, dni: e.target.value.replace(/\D/g, '') })} 
                     required 
-                    className="text-xs h-10 rounded-xl font-mono"
+                    className="text-xs h-10 rounded-xl font-mono bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Cargo</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Cargo</label>
                   <select 
                     value={formData.position} 
                     onChange={(e) => setFormData({ ...formData, position: e.target.value })} 
-                    className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white"
+                    className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:bg-white dark:focus:bg-slate-900"
                   >
                     <option value="Operador de Garita">Operador de Garita</option>
                     <option value="Supervisor de Turno">Supervisor de Turno</option>
@@ -725,11 +725,11 @@ export const StaffModule = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Turno Asignado</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Turno Asignado</label>
                   <select 
                     value={formData.shift} 
                     onChange={(e) => setFormData({ ...formData, shift: e.target.value })} 
-                    className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white"
+                    className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:bg-white dark:focus:bg-slate-900"
                   >
                     <option value="Mañana (07:00 - 15:00)">Mañana (07:00 - 15:00)</option>
                     <option value="Tarde (15:00 - 23:00)">Tarde (15:00 - 23:00)</option>
@@ -739,11 +739,11 @@ export const StaffModule = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Estado</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Estado</label>
                   <select 
                     value={formData.status} 
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })} 
-                    className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white"
+                    className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:bg-white dark:focus:bg-slate-900"
                   >
                     <option value="Activo">Activo</option>
                     <option value="Inactivo">Inactivo</option>
@@ -752,16 +752,16 @@ export const StaffModule = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Sede / Cochera Asignada *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Sede / Cochera Asignada *</label>
                 {validEstablishments.length === 0 ? (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-bold">
+                  <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl text-xs text-amber-800 dark:text-amber-300 font-bold">
                     No hay sedes registradas en el servidor. Crea una sede en Espacios & Plano antes de registrar personal.
                   </div>
                 ) : (
                   <select
                     value={formData.parking_id}
                     onChange={(e) => setFormData({ ...formData, parking_id: Number(e.target.value) })}
-                    className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white"
+                    className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:bg-white dark:focus:bg-slate-900"
                   >
                     {validEstablishments.map(est => (
                       <option key={est.id} value={est.id}>
@@ -866,47 +866,47 @@ export const StaffModule = () => {
           MODAL 2: EDITAR COLABORADOR & CREDENCIALES
           ========================================================================= */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-lg rounded-3xl p-6 bg-white border-slate-200 max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2 text-slate-900">
-              <Edit3 className="w-5 h-5 text-emerald-600" />
-              <DialogTitle className="text-lg font-black text-slate-900">Editar Colaborador</DialogTitle>
+        <DialogContent className="max-w-lg rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+              <Edit3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">Editar Colaborador</DialogTitle>
             </div>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Modifica datos laborales, turno, correo o restablece la contraseña de acceso.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleEdit} className="space-y-4 pt-2">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Completo *</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre Completo *</label>
               <Input 
                 type="text" 
                 value={formData.full_name} 
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} 
                 required 
-                className="text-xs h-10 rounded-xl"
+                className="text-xs h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">DNI *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">DNI *</label>
                 <Input 
                   type="text" 
                   value={formData.dni} 
                   onChange={(e) => setFormData({ ...formData, dni: e.target.value.replace(/\D/g, '') })} 
                   required 
-                  className="text-xs h-10 rounded-xl font-mono"
+                  className="text-xs h-10 rounded-xl font-mono bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Cargo</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Cargo</label>
                 <select 
                   value={formData.position} 
                   onChange={(e) => setFormData({ ...formData, position: e.target.value })} 
-                  className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800"
+                  className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200"
                 >
                   <option value="Operador de Garita">Operador de Garita</option>
                   <option value="Supervisor de Turno">Supervisor de Turno</option>
@@ -918,11 +918,11 @@ export const StaffModule = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Turno Asignado</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Turno Asignado</label>
                 <select 
                   value={formData.shift} 
                   onChange={(e) => setFormData({ ...formData, shift: e.target.value })} 
-                  className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800"
+                  className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200"
                 >
                   <option value="Mañana (07:00 - 15:00)">Mañana (07:00 - 15:00)</option>
                   <option value="Tarde (15:00 - 23:00)">Tarde (15:00 - 23:00)</option>
@@ -932,11 +932,11 @@ export const StaffModule = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Estado</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Estado</label>
                 <select 
                   value={formData.status} 
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })} 
-                  className="h-10 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800"
+                  className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200"
                 >
                   <option value="Activo">Activo</option>
                   <option value="Inactivo">Inactivo (Suspender Acceso)</option>
@@ -945,7 +945,7 @@ export const StaffModule = () => {
             </div>
 
             {/* Credenciales en Edición */}
-            <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-3">
+            <div className="p-4 bg-slate-900 dark:bg-slate-950 text-white rounded-2xl border border-slate-800 space-y-3">
               <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5">
                 <KeyRound className="w-4 h-4" />
                 <span>Credenciales de Acceso</span>
@@ -1009,7 +1009,7 @@ export const StaffModule = () => {
 
             <Button 
               type="submit" 
-              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
+              className="w-full h-11 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
             >
               Guardar Cambios
             </Button>
@@ -1021,22 +1021,22 @@ export const StaffModule = () => {
           MODAL 3: GESTIÓN RÁPIDA DE CREDENCIALES & CAMBIO DE CONTRASEÑA
           ========================================================================= */}
       <Dialog open={showCredsModal} onOpenChange={setShowCredsModal}>
-        <DialogContent className="max-w-md rounded-3xl p-6 bg-white border-slate-200">
-          <DialogHeader className="border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2 text-emerald-700">
+        <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+          <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
               <KeyRound className="w-5 h-5" />
-              <DialogTitle className="text-base font-black text-slate-900">
+              <DialogTitle className="text-base font-black text-slate-900 dark:text-white">
                 Credenciales de Acceso
               </DialogTitle>
             </div>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Configura o restablece el acceso de <strong>{selectedMember?.full_name}</strong>.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSaveCreds} className="space-y-4 pt-3">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
                 Correo de acceso *
               </label>
               <div className="relative">
@@ -1047,14 +1047,14 @@ export const StaffModule = () => {
                   placeholder="operador@smartpark.pe" 
                   value={credsData.email} 
                   onChange={(e) => setCredsData({ ...credsData, email: e.target.value })} 
-                  className="pl-9 text-xs h-10 rounded-xl"
+                  className="pl-9 text-xs h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-slate-700">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Nueva Contraseña (mínimo 8 caracteres)
                 </label>
                 <button
@@ -1064,7 +1064,7 @@ export const StaffModule = () => {
                     setCredsData({ ...credsData, password: pass });
                     setShowQuickPassword(true);
                   }}
-                  className="text-[11px] text-emerald-600 hover:text-emerald-700 flex items-center gap-1 font-bold cursor-pointer"
+                  className="text-[11px] text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 flex items-center gap-1 font-bold cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Generar Contraseña</span>
@@ -1078,33 +1078,33 @@ export const StaffModule = () => {
                   placeholder={selectedMember?.has_account ? "Dejar en blanco para mantener la actual" : "Ingresa una contraseña segura"} 
                   value={credsData.password} 
                   onChange={(e) => setCredsData({ ...credsData, password: e.target.value })} 
-                  className="pl-9 pr-10 text-xs h-10 rounded-xl font-mono"
+                  className="pl-9 pr-10 text-xs h-10 rounded-xl font-mono bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
                 <button
                   type="button"
                   onClick={() => setShowQuickPassword(!showQuickPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
                 >
                   {showQuickPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               {credsData.password && (
-                <span className="text-[10px] text-emerald-600 font-bold block mt-1 inline-flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Clave asignada: <code className="font-mono bg-emerald-50 px-1 py-0.5 rounded">{credsData.password}</code> (cópiala y entrégala al trabajador)</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mt-1 inline-flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Clave asignada: <code className="font-mono bg-emerald-50 dark:bg-emerald-950/60 px-1 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">{credsData.password}</code> (cópiala y entrégala al trabajador)</span>
                 </span>
               )}
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">PIN Garita (4 dígitos)</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">PIN Garita (4 dígitos)</label>
               <Input 
                 type="password" 
                 maxLength={4} 
                 placeholder="••••" 
                 value={credsData.security_pin} 
                 onChange={(e) => setCredsData({ ...credsData, security_pin: e.target.value.replace(/\D/g, '') })} 
-                className="font-mono font-bold text-xs h-10 rounded-xl"
+                className="font-mono font-bold text-xs h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>
 

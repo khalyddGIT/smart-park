@@ -253,14 +253,14 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           ))}
         </div>
 
-        {/* Footer del Sidebar: Rol & Botón para Colapsar/Expandir */}
+        {/* Footer del Sidebar: Rol (solo para roles administrativos/operativos) & Botón Colapsar */}
         <div className="p-2 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-[#0B0F19] space-y-1">
-          {!isCollapsed && (
+          {!isCollapsed && role !== 'user' && (
             <div className="flex items-center space-x-2 px-2.5 py-1.5 rounded-xl text-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
               <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">Rol:</span>
               <strong className="text-slate-800 dark:text-slate-200 font-bold capitalize text-xs truncate">
-                {role === 'user' ? 'Conductor' : isPersonal ? 'Personal' : role === 'local' ? 'Admin Local' : 'Admin'}
+                {isPersonal ? 'Trabajador' : role === 'local' ? 'Admin Local' : 'SuperAdmin'}
               </strong>
             </div>
           )}
@@ -372,7 +372,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 <h3 className="font-black text-slate-900 dark:text-white text-sm">
-                  Menú Completo • {role === 'user' ? 'Conductor' : isPersonal ? 'Personal' : role === 'local' ? 'Admin Local' : 'Super Admin'}
+                  {role === 'user' ? 'Menú Principal' : `Menú • ${isPersonal ? 'Trabajador' : role === 'local' ? 'Admin Local' : 'Super Admin'}`}
                 </h3>
               </div>
               <button 

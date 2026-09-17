@@ -546,176 +546,89 @@ export const LandingPage = ({
       </ScrollRevealSection>
 
       {/* =========================================================================
-          4. SECCIÓN 3: DUAL BENTO CARDS (LIMPIO & EXPANSIVO)
+          4. SECCIÓN 3: DUAL BENTO CARDS (LIMPIO & MINIMALISTA)
           ========================================================================= */}
-      <ScrollRevealSection className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full text-left">
-        <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-lime-400 border border-emerald-500/20 mb-2">
-              <Zap className="w-3 h-3" />
-              Ecosistema Inteligente
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-              Saca el Máximo Provecho a Cada Minuto
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-xl">
-              Herramientas diseñadas tanto para el conductor diario como para la administración y automatización de cocheras.
-            </p>
-          </div>
+      <ScrollRevealSection className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full text-left">
+        <div className="mb-7 max-w-2xl">
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+            Saca el Máximo Provecho a Cada Minuto
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+            Herramientas diseñadas tanto para el conductor diario como para la administración de cocheras.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
           
           {/* Tarjeta 1: Red Unificada de Cocheras */}
-          <DynamicTiltCard className="rounded-[28px] sm:rounded-[32px] bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-7 relative overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-            {/* Resplandor ambiental de fondo */}
-            <div className="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
-            <div className="space-y-2.5 z-10">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-lime-400 border border-emerald-200/80 dark:border-emerald-800/60">
-                <Layers className="w-3 h-3" />
-                Red Multi-Sede
-              </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                Red Unificada de Cocheras
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Gestiona tus accesos, recibos electrónicos y reservas en múltiples sedes de Huamanga desde una única plataforma digital sin cambiar de cuenta.
-              </p>
-            </div>
-
-            {/* Widget Visual: Directorio y Telemetría Multi-Sede */}
-            <div className="my-5 p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/70 dark:border-slate-800/80 space-y-2.5 z-10">
-              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Sedes Activas en Huamanga
-                </span>
-                <span className="text-emerald-600 dark:text-lime-400 font-mono text-[10px] font-black">100% OPERATIVO</span>
-              </div>
-
-              {/* Sede 1 */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm text-xs">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-lime-400 shrink-0 font-black text-[11px]">
-                    01
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-slate-900 dark:text-slate-200 truncate">Cochera Central Plaza</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Jr. 28 de Julio · 12 libres</p>
-                  </div>
-                </div>
-                <span className="text-[11px] font-black text-emerald-600 dark:text-lime-400 font-mono shrink-0 ml-2">S/ 3.50/h</span>
-              </div>
-
-              {/* Sede 2 */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm text-xs">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0 font-black text-[11px]">
-                    02
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-slate-900 dark:text-slate-200 truncate">Parqueo Portal Unión</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Plaza Mayor · 6 libres</p>
-                  </div>
-                </div>
-                <span className="text-[11px] font-black text-emerald-600 dark:text-lime-400 font-mono shrink-0 ml-2">S/ 4.00/h</span>
-              </div>
-
-              {/* Resumen inferior del widget */}
-              <div className="flex items-center justify-between pt-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
-                  <Building2 className="w-3 h-3 text-emerald-500" />
-                  +12 Sedes Verificadas
-                </span>
-                <span className="text-slate-500 dark:text-slate-400">Pase QR único digital</span>
+          <DynamicTiltCard className="rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 p-7 sm:p-8 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+            <div className="space-y-3">
+              <Layers className="w-6 h-6 text-emerald-600 dark:text-lime-400" strokeWidth={1.5} />
+              
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  Red Unificada de Cocheras
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+                  Gestiona tus accesos, recibos electrónicos y reservas en múltiples sedes de Huamanga desde una única plataforma digital.
+                </p>
               </div>
             </div>
 
-            {/* Enlace CTA */}
-            <div className="pt-1 z-10">
+            <div className="pt-7 sm:pt-8 flex items-end justify-between border-t border-slate-100 dark:border-slate-800/80 mt-7 sm:mt-8">
               <button
                 type="button"
                 onClick={() => scrollTo('mapa')}
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer group-hover:translate-x-0.5 transition-transform"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer group"
               >
-                Explorar directorio de cocheras
-                <ArrowRight className="w-3.5 h-3.5" />
+                Explorar directorio
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </button>
+
+              <div className="text-right">
+                <span className="block text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+                  +12
+                </span>
+                <span className="block text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                  Sedes en Ayacucho
+                </span>
+              </div>
             </div>
           </DynamicTiltCard>
 
           {/* Tarjeta 2: Telemetría y Control en Tiempo Real */}
-          <DynamicTiltCard className="rounded-[28px] sm:rounded-[32px] bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-7 relative overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-            {/* Resplandor ambiental de fondo */}
-            <div className="absolute -right-12 -top-12 w-48 h-48 bg-lime-500/5 dark:bg-lime-500/10 rounded-full blur-2xl pointer-events-none" />
-
-            <div className="space-y-2.5 z-10">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-lime-50 dark:bg-lime-950/60 text-emerald-700 dark:text-lime-400 border border-lime-200/80 dark:border-lime-800/60">
-                <Radio className="w-3 h-3 animate-pulse" />
-                Telemetría LPR en Vivo
-              </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                Telemetría y Control en Tiempo Real
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Visualiza la ocupación plaza por plaza con reconocimiento óptico de placas por visión artificial y sincronización instantánea con la nube.
-              </p>
-            </div>
-
-            {/* Widget Visual: Cámara HUD LPR y Telemetría de Ocupación */}
-            <div className="my-5 p-3 sm:p-4 rounded-2xl bg-slate-950 text-white border border-slate-800 space-y-3 z-10 shadow-inner">
-              <div className="flex items-center justify-between text-[11px] font-mono border-b border-slate-800 pb-1.5">
-                <span className="flex items-center gap-1.5 text-slate-400 text-[10px]">
-                  <Camera className="w-3 h-3 text-emerald-400" />
-                  SENSOR LPR · CAM-01
-                </span>
-                <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  ACTIVO · 18ms
-                </span>
-              </div>
-
-              {/* Escaneo de Placa Reconocida */}
-              <div className="flex items-center justify-between bg-slate-900/90 p-2 rounded-xl border border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-14 h-6 rounded bg-white text-slate-950 font-mono font-black text-[11px] flex items-center justify-center tracking-wider border border-slate-400 shadow-sm">
-                    ABC-123
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-200 leading-none">Placa Validada</p>
-                    <p className="text-[9px] text-emerald-400 mt-0.5">Acceso concedido en 1.4s</p>
-                  </div>
-                </div>
-                <div className="text-right font-mono">
-                  <span className="text-[10px] font-bold text-lime-400 bg-lime-400/10 border border-lime-400/30 px-1.5 py-0.5 rounded">
-                    99.8% LPR
-                  </span>
-                </div>
-              </div>
-
-              {/* Barra de Ocupación con Contexto Claro */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
-                  <span>Ocupación Global de Plazas</span>
-                  <span className="font-mono text-emerald-400 font-bold">85% (34 / 40 ocupadas)</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                  <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-lime-400 to-emerald-400 w-[85%] transition-all" />
-                </div>
+          <DynamicTiltCard className="rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 p-7 sm:p-8 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+            <div className="space-y-3">
+              <Radio className="w-6 h-6 text-emerald-600 dark:text-lime-400" strokeWidth={1.5} />
+              
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  Telemetría y Control en Tiempo Real
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+                  Visualiza la ocupación exacta plaza por plaza, con reconocimiento de placa por visión computacional y sincronización en la nube.
+                </p>
               </div>
             </div>
 
-            {/* Enlace CTA */}
-            <div className="pt-1 z-10">
+            <div className="pt-7 sm:pt-8 flex items-end justify-between border-t border-slate-100 dark:border-slate-800/80 mt-7 sm:mt-8">
               <button
                 type="button"
                 onClick={() => scrollTo('tecnologia')}
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer group-hover:translate-x-0.5 transition-transform"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer group"
               >
                 Ver arquitectura tecnológica
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </button>
+
+              <div className="text-right">
+                <span className="block text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+                  &lt; 2s
+                </span>
+                <span className="block text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                  Acceso automatizado
+                </span>
+              </div>
             </div>
           </DynamicTiltCard>
 

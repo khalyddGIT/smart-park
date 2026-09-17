@@ -274,20 +274,24 @@ export const AffiliatedParkingsModule = () => {
       };
     }
 
-    await addEstablishment(newObj, adminCredentials);
-    setShowAddModal(false);
-    notify(`Establecimiento "${newObj.name}" afiliado a la red.`);
+    try {
+      const created = await addEstablishment(newObj, adminCredentials);
+      setShowAddModal(false);
+      notify(`Establecimiento "${created?.name || newObj.name}" afiliado a la red.`);
 
-    if (adminCredentials) {
-      setCredentialsResult({
-        title: '¡Sede Creada y Administrador Asignado!',
-        parkingName: newObj.name,
-        email: adminCredentials.email,
-        password: adminCredentials.password,
-        role: 'Administrador de Sede (Local)',
-        phone: adminCredentials.phone,
-        ownerName: adminCredentials.full_name
-      });
+      if (adminCredentials) {
+        setCredentialsResult({
+          title: '¡Sede Creada y Administrador Asignado!',
+          parkingName: created?.name || newObj.name,
+          email: adminCredentials.email,
+          password: adminCredentials.password,
+          role: 'Administrador de Sede (Local)',
+          phone: adminCredentials.phone,
+          ownerName: adminCredentials.full_name
+        });
+      }
+    } catch (err) {
+      notify(`Error al afiliar establecimiento: ${err.message || 'Error inesperado'}`);
     }
   };
 

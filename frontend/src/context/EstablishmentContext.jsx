@@ -146,17 +146,23 @@ export const isMyEstablishment = (est, user, role) => {
   if (role !== 'local') return true;   // Conductor ve todas las activas en su módulo
   if (!user) return false;
 
+  const estId = String(est.id || '');
+  // Bloquear de inmediato sedes de prueba o maquetas huérfanas EST-* no oficiales
+  if (estId.startsWith('EST-') && !['EST-01', 'EST-02', 'EST-03', 'EST-04'].includes(estId)) {
+    return false;
+  }
+
   const userEmail = (user.email || '').trim().toLowerCase();
   const estEmail = (est.email || '').trim().toLowerCase();
   const estAdminEmail = (est.admin_email || est.adminEmail || '').trim().toLowerCase();
-  const estId = String(est.id || '');
+  const normEstId = normalizeParkingId(estId);
 
   // 1. Coincidencia directa por correo de acceso o correo de administración de la sede
   if (userEmail && (userEmail === estEmail || userEmail === estAdminEmail)) return true;
 
   // 2. Asignación directa por ID de cochera en la sesión del usuario
-  if (user.parking_id && String(user.parking_id) === estId) return true;
-  if (user.establishmentId && String(user.establishmentId) === estId) return true;
+  if (user.parking_id && (String(user.parking_id) === estId || String(user.parking_id) === normEstId)) return true;
+  if (user.establishmentId && (String(user.establishmentId) === estId || String(user.establishmentId) === normEstId)) return true;
 
   // 3. Cuenta semilla demo adminlocal@smartpark.com es administradora exclusiva de Smart Park Plaza Mayor (1 y 4 / EST-01 y EST-02)
   if (userEmail === 'adminlocal@smartpark.com') {
@@ -173,7 +179,7 @@ export const isMyEstablishment = (est, user, role) => {
     if (credsRaw) {
       const creds = JSON.parse(credsRaw);
       const myCred = creds[userEmail];
-      if (myCred && myCred.parkingId && String(myCred.parkingId) === estId) return true;
+      if (myCred && myCred.parkingId && (String(myCred.parkingId) === estId || String(myCred.parkingId) === normEstId)) return true;
     }
   } catch {}
 
@@ -183,7 +189,7 @@ export const isMyEstablishment = (est, user, role) => {
     if (approvedRaw) {
       const approvedList = JSON.parse(approvedRaw);
       if (Array.isArray(approvedList)) {
-        const match = approvedList.find(a => (a.email || '').trim().toLowerCase() === userEmail && String(a.establishmentId || '') === estId);
+        const match = approvedList.find(a => (a.email || '').trim().toLowerCase() === userEmail && (String(a.establishmentId || '') === estId || String(a.establishmentId || '') === normEstId));
         if (match) return true;
       }
     }
@@ -581,6 +587,7 @@ export const EstablishmentProvider = ({ children }) => {
 
   const [establishments, setEstablishments] = useState(() => {
     const deletedIds = getDeletedEstablishmentIds();
+    const officialEstIds = new Set(['1', '2', '3', '4', 'EST-01', 'EST-02', 'EST-03', 'EST-04']);
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -588,6 +595,11 @@ export const EstablishmentProvider = ({ children }) => {
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed
             .filter(e => !deletedIds.has(String(e.id)))
+            .filter(e => {
+              const sid = String(e.id || '');
+              if (sid.startsWith('EST-') && !officialEstIds.has(sid)) return false;
+              return true;
+            })
             .map((e, idx) => sanitizeEstablishment(e, idx));
         }
       }
@@ -649,6 +661,86 @@ export const EstablishmentProvider = ({ children }) => {
   });
 
   const [wsConnected, setWsConnected] = useState(false);
+
+  // Auto-scrubber auto-sanador: limpia en el montaje cualquier residuo de sedes fantasma (EST-xx)
+  // heredadas en localStorage de pruebas previas, protegiendo a todas las cuentas y garantizando
+  // que PostgreSQL sea la única fuente de verdad.
+  useEffect(() => {
+    try {
+      const officialEstIds = new Set(['1', '2', '3', '4', 'EST-01', 'EST-02', 'EST-03', 'EST-04']);
+
+      // 1. Limpiar smart_park_unified_establishments_v2
+      const rawEst = localStorage.getItem(STORAGE_KEY);
+      if (rawEst) {
+        const parsed = JSON.parse(rawEst);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter(e => {
+            const sid = String(e.id || '');
+            if (sid.startsWith('EST-') && !officialEstIds.has(sid)) return false;
+            return true;
+          });
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+            setEstablishments(cleaned.map((e, idx) => sanitizeEstablishment(e, idx)));
+          }
+        }
+      }
+
+      // 2. Limpiar smart_park_local_user_credentials_v1
+      const rawCreds = localStorage.getItem(LOCAL_USER_CREDENTIALS_KEY);
+      if (rawCreds) {
+        const parsedCreds = JSON.parse(rawCreds);
+        let credsChanged = false;
+        Object.keys(parsedCreds).forEach(emailKey => {
+          const c = parsedCreds[emailKey];
+          if (c && c.parkingId && String(c.parkingId).startsWith('EST-') && !officialEstIds.has(String(c.parkingId))) {
+            delete parsedCreds[emailKey];
+            credsChanged = true;
+          }
+        });
+        if (credsChanged) {
+          localStorage.setItem(LOCAL_USER_CREDENTIALS_KEY, JSON.stringify(parsedCreds));
+        }
+      }
+
+      // 3. Limpiar smart_park_approved_admins_v1
+      const rawApproved = localStorage.getItem(APPROVED_ADMINS_STORAGE_KEY);
+      if (rawApproved) {
+        const parsedApproved = JSON.parse(rawApproved);
+        if (Array.isArray(parsedApproved)) {
+          const cleanedApproved = parsedApproved.filter(a => {
+            const eid = String(a.establishmentId || '');
+            if (eid.startsWith('EST-') && !officialEstIds.has(eid)) return false;
+            return true;
+          });
+          if (cleanedApproved.length !== parsedApproved.length) {
+            localStorage.setItem(APPROVED_ADMINS_STORAGE_KEY, JSON.stringify(cleanedApproved));
+            setApprovedAdmins(cleanedApproved);
+          }
+        }
+      }
+
+      // 4. Limpiar smart_park_user_session si apuntaba a una sede fantasma EST-*
+      const rawSession = localStorage.getItem('smart_park_user_session');
+      if (rawSession) {
+        const sessionUser = JSON.parse(rawSession);
+        let sessionChanged = false;
+        if (sessionUser?.parking_id && String(sessionUser.parking_id).startsWith('EST-') && !officialEstIds.has(String(sessionUser.parking_id))) {
+          delete sessionUser.parking_id;
+          sessionChanged = true;
+        }
+        if (sessionUser?.establishmentId && String(sessionUser.establishmentId).startsWith('EST-') && !officialEstIds.has(String(sessionUser.establishmentId))) {
+          delete sessionUser.establishmentId;
+          sessionChanged = true;
+        }
+        if (sessionChanged) {
+          localStorage.setItem('smart_park_user_session', JSON.stringify(sessionUser));
+        }
+      }
+    } catch (err) {
+      console.warn('Auto-scrubber cleanup error:', err);
+    }
+  }, []);
 
   // Guardar en localStorage siempre que cambie
   useEffect(() => {
@@ -845,9 +937,11 @@ export const EstablishmentProvider = ({ children }) => {
             if (serverIds.has(idStr)) return false;
             if (deletedIds.has(idStr)) return false;
             if (legacyDemoIds.has(idStr)) return false;
+            // No resucitar ni preservar sedes fantasmas EST-* no autorizadas
+            if (idStr.startsWith('EST-')) return false;
             const normName = (e.name || '').trim().toLowerCase();
             if (serverNames.has(normName)) return false;
-            return idStr.startsWith('EST-');
+            return e.isUnsavedDraft === true;
           });
 
           const prevMap = new Map(prev.map(e => [String(e.id), e]));
@@ -1182,78 +1276,8 @@ export const EstablishmentProvider = ({ children }) => {
 
       return res.data;
     } catch (e) {
-      console.warn('approve affiliation fallback local', e?.response?.data);
-      // Fallback local resiliente (mantiene compatibilidad offline)
-      const req = affiliationRequests.find(r => String(r.id) === String(requestId));
-      if (!req) return null;
-      const newEstId = `EST-${Date.now().toString().slice(-4)}`;
-      const fallbackEmail = (adminEmail || req.email || '').trim().toLowerCase();
-      const fallbackName = adminName || req.ownerName || 'Administrador Local';
-      const fallbackPassword = adminPassword || `SmartPark_${Date.now().toString().slice(-4)}!`;
-
-      const newEstablishment = {
-        id: newEstId,
-        name: req.parkingName,
-        address: req.address || 'Jr. 28 de Julio 100',
-        city: req.city || 'Ayacucho - Huamanga',
-        level: 'Nivel 1 - Superficie',
-        rate: Number(req.rate) || 5.0,
-        status: 'Operativo',
-        owner: fallbackName,
-        ruc: '20' + Math.floor(100000000 + Math.random() * 900000000),
-        phone: req.phone || '+51 966 000 000',
-        whatsapp: (req.phone || '').replace(/\D/g, '') || '51966000000',
-        email: fallbackEmail,
-        schedule: 'Lunes a Domingo: 24 Horas',
-        description: req.notes || 'Estacionamiento afiliado',
-        latitude: -13.1606 + (Math.random() - 0.5) * 0.008,
-        longitude: -74.2257 + (Math.random() - 0.5) * 0.008,
-        mapsUrl: `https://maps.google.com/?q=-13.1606,-74.2257`,
-        socials: { facebook: '', instagram: '', tiktok: '', website: '' },
-        commission: '10%',
-        image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800',
-        elements: [{ id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 }, { id: 2, type: 'wall', x: 40, y: 40, w: 12, h: 620, rot: 0 }, { id: 3, type: 'wall', x: 40, y: 648, w: 1020, h: 12, rot: 0 }, { id: 4, type: 'wall', x: 1048, y: 40, w: 12, h: 620, rot: 0 }, { id: 5, type: 'road', x: 52, y: 250, w: 996, h: 200, rot: 0 }, { id: 6, type: 'crosswalk', x: 500, y: 250, w: 80, h: 200, rot: 0 }, { id: 7, type: 'gate', x: 40, y: 280, w: 30, h: 120, rot: 0, label: 'ACCESO GARITA ANPR' }, { id: 10, type: 'slot', code: 'A-01', slotType: 'auto', x: 80, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 11, type: 'slot', code: 'A-02', slotType: 'auto', shaded: true, x: 155, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 12, type: 'slot', code: 'A-03', slotType: 'auto', x: 220, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 13, type: 'slot', code: 'A-04', slotType: 'auto', x: 285, y: 80, w: 56, h: 96, rot: 0, status: 'free' }, { id: 20, type: 'slot', code: 'B-01', slotType: 'auto', x: 80, y: 480, w: 56, h: 96, rot: 0, status: 'free' }, { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 145, y: 480, w: 38, h: 65, rot: 0, status: 'free' }]
-      };
-      setEstablishments(prev => [newEstablishment, ...prev]);
-
-      saveLocalUserCredential({
-        email: fallbackEmail,
-        password: fallbackPassword,
-        full_name: fallbackName,
-        phone: req.phone,
-        role: 'local',
-        parkingId: newEstId
-      });
-
-      const newAdmin = {
-        id: Date.now(),
-        name: fallbackName,
-        email: fallbackEmail,
-        phone: req.phone,
-        password: fallbackPassword,
-        establishmentId: newEstId,
-        establishmentName: req.parkingName,
-        role: 'local'
-      };
-      setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== fallbackEmail)]);
-      setAffiliationRequests(prev => prev.map(r => String(r.id) === String(requestId) ? { ...r, status: 'APPROVED', approvedAt: new Date().toISOString(), establishmentId: newEstId } : r));
-
-      return {
-        status: 'approved',
-        parking_id: newEstId,
-        parking_name: req.parkingName,
-        admin_email: fallbackEmail,
-        admin_password: fallbackPassword,
-        admin_name: fallbackName,
-        admin_phone: req.phone,
-        admin_credentials: {
-          email: fallbackEmail,
-          temporary_password: fallbackPassword,
-          full_name: fallbackName,
-          phone: req.phone
-        },
-        message: 'Sede aprobada con credenciales'
-      };
+      console.warn('approve affiliation backend error', e?.response?.data || e);
+      throw new Error(e?.response?.data?.detail || 'Error al aprobar la solicitud de afiliación en el servidor.');
     }
   };
 
@@ -1559,21 +1583,12 @@ export const EstablishmentProvider = ({ children }) => {
           await fetchParkings();
           return created;
         }
-      } catch (e) { console.warn('addEstablishment backend fallback', e.response?.data); }
+      } catch (e) {
+        console.error('addEstablishment backend error', e.response?.data || e);
+        throw new Error(e.response?.data?.detail || 'Error al guardar el establecimiento en el servidor.');
+      }
     }
-    const hierarchy = getEstablishmentHierarchy(newEst);
-    const effectiveCompany = newEst.company_name || newEst.companyName || hierarchy.companyName;
-    const effectiveAdminEmail = adminCredentials?.email || (role === 'local' ? user?.email : newEst.email) || newEst.email || '';
-    const fallbackCreated = sanitizeEstablishment({
-      ...newEst,
-      company_name: effectiveCompany,
-      companyName: effectiveCompany,
-      admin_email: effectiveAdminEmail,
-      adminEmail: effectiveAdminEmail
-    });
-    unrecordDeletedEstablishmentId(String(fallbackCreated.id));
-    setEstablishments(prev => [fallbackCreated, ...prev]);
-    return fallbackCreated;
+    throw new Error('No se pudo establecer conexión con el servidor para registrar el establecimiento.');
   };
 
   // Actualizar datos de un establecimiento - persistente

@@ -806,17 +806,17 @@ export const VehiclesModule = () => {
         </div>
       )}
 
-      {/* Header Compacto y Limpio (Fondo Blanco, Sin Badges) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+      {/* Header Compacto y Limpio (Fondo Blanco/Oscuro, Sin Badges) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#111827] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/80">
             <Car className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-900 leading-tight">
+            <h1 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
               Mis Vehículos
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {vehicles.length} {vehicles.length === 1 ? 'vehículo registrado' : 'vehículos registrados'}.
             </p>
           </div>
@@ -832,20 +832,20 @@ export const VehiclesModule = () => {
       </div>
 
       {/* Buscador y Filtros Compactos */}
-      <div className="p-3 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col md:flex-row items-center justify-between gap-2.5">
+      <div className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-2xs flex flex-col md:flex-row items-center justify-between gap-2.5">
         <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
           <Input
             type="text"
             placeholder="Buscar por placa, marca o modelo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 rounded-xl bg-slate-50 border-slate-200 text-xs"
+            className="pl-9 h-9 rounded-xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
           />
           {search && (
             <button 
               onClick={() => setSearch('')} 
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer p-0.5"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -867,8 +867,8 @@ export const VehiclesModule = () => {
                 onClick={() => setTypeFilter(t.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
                   isSelected 
-                    ? 'bg-slate-900 text-white font-bold shadow-2xs' 
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-slate-900 dark:bg-emerald-600 text-white font-bold shadow-2xs' 
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
                 {t.label}
@@ -880,13 +880,13 @@ export const VehiclesModule = () => {
 
       {/* Grid de Vehículos */}
       {filteredVehicles.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-2xs space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+        <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center shadow-2xs space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
             <Car className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900">No se encontraron vehículos</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">No se encontraron vehículos</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {search ? 'No hay resultados para la búsqueda ingresada.' : 'No tienes vehículos registrados.'}
             </p>
           </div>
@@ -908,11 +908,11 @@ export const VehiclesModule = () => {
             return (
               <div 
                 key={v.id} 
-                className="overflow-hidden border border-slate-200/90 rounded-2xl bg-white flex flex-col justify-between shadow-2xs hover:shadow-md transition-all duration-200"
+                className="overflow-hidden border border-slate-200/90 dark:border-slate-800/90 rounded-2xl bg-white dark:bg-[#111827] flex flex-col justify-between shadow-2xs hover:shadow-md dark:shadow-black/50 transition-all duration-200"
               >
                 <div>
                   {/* Foto con Encuadre Perfecto */}
-                  <div className="h-48 bg-slate-100 relative overflow-hidden flex items-center justify-center">
+                  <div className="h-48 bg-slate-100 dark:bg-slate-800/60 relative overflow-hidden flex items-center justify-center">
                     <img 
                       src={resolveImageUrl(carImg)} 
                       alt={`${v.brand} ${v.model}`} 
@@ -927,15 +927,15 @@ export const VehiclesModule = () => {
                     {/* Marca, Modelo y Categoría */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className="font-bold text-slate-900 text-sm leading-tight">
+                        <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight">
                           {v.brand || 'Vehículo'} {v.model || ''}
                         </h3>
-                        <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
                           {formatCategoryName(v.vehicle_type)} {v.year ? `• ${v.year}` : ''}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-xs font-semibold text-slate-600">
+                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
                           {v.color || 'Gris'}
                         </span>
                       </div>
@@ -982,8 +982,8 @@ export const VehiclesModule = () => {
 
                     {/* Observaciones si existen */}
                     {v.notes && (
-                      <div className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100 italic">
-                        <span className="font-semibold text-slate-600 not-italic">Nota: </span>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 italic">
+                        <span className="font-semibold text-slate-600 dark:text-slate-300 not-italic">Nota: </span>
                         {v.notes}
                       </div>
                     )}
@@ -991,19 +991,19 @@ export const VehiclesModule = () => {
                 </div>
 
                 {/* Barra de Acciones */}
-                <div className="px-4 pb-4 pt-0 flex items-center space-x-2 border-t border-slate-100 pt-3">
+                <div className="px-4 pb-4 pt-0 flex items-center space-x-2 border-t border-slate-100 dark:border-slate-800/80 pt-3">
                   {!v.isDefault ? (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleSetDefault(v.id)}
-                      className="h-8 px-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl cursor-pointer"
+                      className="h-8 px-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
                       title="Marcar como vehículo predeterminado"
                     >
                       <Star className="w-3.5 h-3.5" />
                     </Button>
                   ) : (
-                    <div className="h-8 px-2.5 flex items-center justify-center rounded-xl bg-amber-50 border border-amber-200 text-amber-700" title="Vehículo predeterminado">
+                    <div className="h-8 px-2.5 flex items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-amber-700 dark:text-amber-400" title="Vehículo predeterminado">
                       <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                     </div>
                   )}
@@ -1012,9 +1012,9 @@ export const VehiclesModule = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleOpenEdit(v)}
-                    className="flex-1 h-8 font-semibold text-xs gap-1.5 text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer"
+                    className="flex-1 h-8 font-semibold text-xs gap-1.5 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-emerald-600" />
+                    <Edit3 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Editar</span>
                   </Button>
 
@@ -1022,7 +1022,7 @@ export const VehiclesModule = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDelete(v.id, v.license_plate)}
-                    className="h-8 px-2.5 font-semibold text-xs text-rose-600 hover:bg-rose-50 border-rose-200 rounded-xl cursor-pointer"
+                    className="h-8 px-2.5 font-semibold text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900/60 rounded-xl cursor-pointer"
                     title="Eliminar vehículo"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -1036,10 +1036,10 @@ export const VehiclesModule = () => {
 
       {/* Modal Registrar Nuevo Vehículo */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-md rounded-3xl p-6 bg-white shadow-2xl border-slate-200 max-h-[92vh] overflow-y-auto">
+        <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] shadow-2xl border-slate-200 dark:border-slate-800 max-h-[92vh] overflow-y-auto text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-xl font-extrabold text-slate-900">Registrar Vehículo</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-white">Registrar Vehículo</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Datos para reconocimiento en garita.
             </DialogDescription>
           </DialogHeader>
@@ -1050,10 +1050,10 @@ export const VehiclesModule = () => {
       {/* Modal Editar Vehículo */}
       {showEditModal && (
         <Dialog open={showEditModal} onOpenChange={(open) => { setShowEditModal(open); if (!open) setSelectedVehicle(null); }}>
-          <DialogContent className="max-w-md rounded-3xl p-6 bg-white shadow-2xl border-slate-200 max-h-[92vh] overflow-y-auto">
+          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] shadow-2xl border-slate-200 dark:border-slate-800 max-h-[92vh] overflow-y-auto text-slate-900 dark:text-white">
             <DialogHeader>
-              <DialogTitle className="text-xl font-extrabold text-slate-900">Editar Vehículo</DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
+              <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-white">Editar Vehículo</DialogTitle>
+              <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
                 Actualiza los datos del vehículo.
               </DialogDescription>
             </DialogHeader>

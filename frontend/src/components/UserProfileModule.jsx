@@ -191,7 +191,7 @@ export const UserProfileModule = ({ onBack }) => {
       )}
 
       {/* Header Limpio y Minimalista */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+      <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
         <div className="flex items-center space-x-4">
           
           {/* Avatar con botón de cámara sutil */}
@@ -202,17 +202,17 @@ export const UserProfileModule = ({ onBack }) => {
                 alt={formData.name || 'Usuario'}
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
-                className="w-16 h-16 rounded-2xl object-cover border border-slate-200 bg-slate-50" 
+                className="w-16 h-16 rounded-2xl object-cover border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" 
               />
             ) : (
-              <div className="w-16 h-16 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold text-xl border border-slate-800">
+              <div className="w-16 h-16 rounded-2xl bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center font-bold text-xl border border-slate-800 dark:border-slate-700">
                 <User className="w-7 h-7 text-slate-300" />
               </div>
             )}
 
             <label 
               title="Cambiar foto de perfil"
-              className="absolute -bottom-1 -right-1 bg-slate-900 hover:bg-slate-800 text-white p-1.5 rounded-xl shadow-sm cursor-pointer transition-all border border-white"
+              className="absolute -bottom-1 -right-1 bg-slate-900 hover:bg-slate-800 text-white p-1.5 rounded-xl shadow-sm cursor-pointer transition-all border border-white dark:border-slate-900"
             >
               <Camera className="w-3.5 h-3.5" />
               <input 
@@ -225,17 +225,17 @@ export const UserProfileModule = ({ onBack }) => {
             </label>
           </div>
 
-          {/* Información Principal Limpia: sin datos ficticios ni badges */}
+          {/* Información Principal Limpia */}
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               {formData.name || 'Conductor Registrado'}
             </h1>
-            <p className="text-xs text-slate-500 font-medium mt-1 flex flex-wrap items-center gap-x-2">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 flex flex-wrap items-center gap-x-2">
               <span>{formData.email || 'Sin correo'}</span>
               {formData.phone && (
                 <>
-                  <span className="text-slate-300">•</span>
-                  <span className="font-mono text-slate-600">{formData.phone}</span>
+                  <span className="text-slate-300 dark:text-slate-600">•</span>
+                  <span className="font-mono text-slate-600 dark:text-slate-300">{formData.phone}</span>
                 </>
               )}
             </p>
@@ -250,9 +250,9 @@ export const UserProfileModule = ({ onBack }) => {
               type="button"
               variant="outline"
               onClick={onBack}
-              className="flex-1 sm:flex-none border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl h-9 px-4 cursor-pointer"
+              className="flex-1 sm:flex-none border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl h-9 px-4 cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4 mr-1.5 text-slate-500" />
+              <ArrowLeft className="w-4 h-4 mr-1.5 text-slate-500 dark:text-slate-400" />
               <span>Volver</span>
             </Button>
           )}
@@ -267,48 +267,48 @@ export const UserProfileModule = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Métricas / Resumen Real (Sin datos inflados ni tarjetas ficticias) */}
+      {/* Métricas / Resumen Real */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        <div className="p-4 rounded-2xl border border-slate-200/80 bg-white shadow-xs">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+        <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#111827] shadow-xs">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">
             Estancias completadas
           </span>
-          <span className="text-2xl font-bold font-mono text-slate-900">
+          <span className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
             {completedStays}
           </span>
         </div>
 
-        <div className="p-4 rounded-2xl border border-slate-200/80 bg-white shadow-xs">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+        <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#111827] shadow-xs">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">
             Vehículos registrados
           </span>
-          <span className="text-2xl font-bold font-mono text-slate-900">
+          <span className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
             {vehiclesCount}
           </span>
         </div>
 
-        <div className="p-4 rounded-2xl border border-slate-200/80 bg-white shadow-xs">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+        <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#111827] shadow-xs">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">
             Método principal
           </span>
-          <span className={`text-base sm:text-lg font-bold font-mono ${primaryPaymentMethod === 'Sin registrar' ? 'text-slate-400' : 'text-slate-900'}`}>
+          <span className={`text-base sm:text-lg font-bold font-mono ${primaryPaymentMethod === 'Sin registrar' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-white'}`}>
             {primaryPaymentMethod}
           </span>
         </div>
       </div>
 
       {/* Selector de Pestañas Tipo Segmented Control */}
-      <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/60 text-xs font-semibold">
+      <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200/60 dark:border-slate-800 text-xs font-semibold">
         <button
           type="button"
           onClick={() => setActiveTab('general')}
           className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'general' 
-              ? 'bg-white text-slate-900 shadow-xs' 
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs' 
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
           }`}
         >
-          <User className="w-4 h-4 text-slate-700" />
+          <User className="w-4 h-4 text-slate-700 dark:text-slate-300" />
           <span>Personal</span>
         </button>
 
@@ -317,11 +317,11 @@ export const UserProfileModule = ({ onBack }) => {
           onClick={() => setActiveTab('security')}
           className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'security' 
-              ? 'bg-white text-slate-900 shadow-xs' 
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs' 
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
           }`}
         >
-          <Key className="w-4 h-4 text-slate-700" />
+          <Key className="w-4 h-4 text-slate-700 dark:text-slate-300" />
           <span>Seguridad</span>
         </button>
 
@@ -330,11 +330,11 @@ export const UserProfileModule = ({ onBack }) => {
           onClick={() => setActiveTab('preferences')}
           className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'preferences' 
-              ? 'bg-white text-slate-900 shadow-xs' 
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs' 
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
           }`}
         >
-          <Bell className="w-4 h-4 text-slate-700" />
+          <Bell className="w-4 h-4 text-slate-700 dark:text-slate-300" />
           <span>Preferencias</span>
         </button>
       </div>
@@ -347,38 +347,38 @@ export const UserProfileModule = ({ onBack }) => {
           
           {/* TAB 1: DATOS PERSONALES */}
           {activeTab === 'general' && (
-            <Card className="p-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-5">
-              <div className="border-b border-slate-100 pb-3">
-                <h2 className="text-base font-bold text-slate-900">Datos del Conductor</h2>
+            <Card className="p-6 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-5">
+              <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">Datos del Conductor</h2>
               </div>
 
               <form onSubmit={handleSaveProfile} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Nombre Completo */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                       Nombre Completo
                     </label>
-                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 border border-slate-200 rounded-xl focus-within:border-slate-800 focus-within:bg-white transition">
-                      <User className="w-4 h-4 text-slate-400 shrink-0" />
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus-within:border-slate-800 dark:focus-within:border-emerald-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition">
+                      <User className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
                       <input
                         type="text"
                         required
                         placeholder="Tu nombre completo"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full bg-transparent text-xs font-medium text-slate-900 outline-none"
+                        className="w-full bg-transparent text-xs font-medium text-slate-900 dark:text-white outline-none"
                       />
                     </div>
                   </div>
 
                   {/* DNI / CE (Permite ingresar y actualizar) */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                       DNI / CE
                     </label>
-                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 border border-slate-200 rounded-xl focus-within:border-slate-800 focus-within:bg-white transition">
-                      <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus-within:border-slate-800 dark:focus-within:border-emerald-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition">
+                      <ShieldCheck className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
                       <input
                         type="text"
                         maxLength={8}
@@ -386,7 +386,7 @@ export const UserProfileModule = ({ onBack }) => {
                         placeholder="Ingresa tu DNI (8 dígitos)"
                         value={formData.dni}
                         onChange={(e) => setFormData({ ...formData, dni: e.target.value.replace(/\D/g, '').slice(0, 8) })}
-                        className="w-full bg-transparent text-xs font-mono font-medium text-slate-900 outline-none"
+                        className="w-full bg-transparent text-xs font-mono font-medium text-slate-900 dark:text-white outline-none"
                       />
                     </div>
                   </div>
@@ -395,33 +395,33 @@ export const UserProfileModule = ({ onBack }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Correo Electrónico (Lectura protegida) */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                       Correo Electrónico
                     </label>
-                    <div className="flex items-center justify-between h-10 px-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                    <div className="flex items-center justify-between h-10 px-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700 rounded-xl">
                       <div className="flex items-center gap-2.5 w-full overflow-hidden">
-                        <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span className="text-xs font-mono font-medium text-slate-700 truncate">
+                        <Mail className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+                        <span className="text-xs font-mono font-medium text-slate-700 dark:text-slate-300 truncate">
                           {formData.email || 'Sin correo registrado'}
                         </span>
                       </div>
-                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" title="Correo verificado en cuenta" />
+                      <Lock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" title="Correo verificado en cuenta" />
                     </div>
                   </div>
 
                   {/* Teléfono / WhatsApp */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                       Teléfono / WhatsApp
                     </label>
-                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 border border-slate-200 rounded-xl focus-within:border-slate-800 focus-within:bg-white transition">
-                      <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus-within:border-slate-800 dark:focus-within:border-emerald-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition">
+                      <Phone className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
                       <input
                         type="tel"
                         placeholder="Ej. +51 987 654 321"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full bg-transparent text-xs font-mono font-medium text-slate-900 outline-none"
+                        className="w-full bg-transparent text-xs font-mono font-medium text-slate-900 dark:text-white outline-none"
                       />
                     </div>
                   </div>
@@ -430,16 +430,16 @@ export const UserProfileModule = ({ onBack }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Dirección Habitual */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                       Dirección Habitual
                     </label>
-                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 border border-slate-200 rounded-xl focus-within:border-slate-800 focus-within:bg-white transition">
-                      <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                    <div className="flex items-center gap-2.5 h-10 px-3 bg-slate-50/50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus-within:border-slate-800 dark:focus-within:border-emerald-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition">
+                      <MapPin className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
                       <input
                         type="text"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="w-full bg-transparent text-xs font-medium text-slate-900 outline-none"
+                        className="w-full bg-transparent text-xs font-medium text-slate-900 dark:text-white outline-none"
                         placeholder="Ej. Jr. 28 de Julio 340, Huamanga"
                       />
                     </div>
@@ -447,17 +447,17 @@ export const UserProfileModule = ({ onBack }) => {
 
                   {/* Placa Principal */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                       Placa Principal
                     </label>
-                    <div className="flex items-center justify-between h-10 px-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                    <div className="flex items-center justify-between h-10 px-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700 rounded-xl">
                       <div className="flex items-center gap-2.5 w-full">
-                        <Car className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span className={`text-xs font-mono font-bold ${formData.plate ? 'text-slate-800 uppercase' : 'text-slate-400'}`}>
+                        <Car className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+                        <span className={`text-xs font-mono font-bold ${formData.plate ? 'text-slate-800 dark:text-slate-200 uppercase' : 'text-slate-400 dark:text-slate-500'}`}>
                           {formData.plate || 'Sin placa registrada'}
                         </span>
                       </div>
-                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" title="Gestionar en Mis Vehículos" />
+                      <Lock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" title="Gestionar en Mis Vehículos" />
                     </div>
                   </div>
                 </div>
@@ -477,20 +477,20 @@ export const UserProfileModule = ({ onBack }) => {
 
           {/* TAB 2: SEGURIDAD */}
           {activeTab === 'security' && (
-            <Card className="p-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-              <div className="border-b border-slate-100 pb-3">
-                <h2 className="text-base font-bold text-slate-900">Seguridad & Acceso</h2>
+            <Card className="p-6 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">Seguridad & Acceso</h2>
               </div>
 
               {/* Fila PIN de Garita */}
-              <div className="p-4 rounded-xl border border-slate-200/70 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-4 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
-                    <Lock className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center shrink-0">
+                    <Lock className="w-4 h-4 text-slate-700 dark:text-slate-200" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-bold text-slate-900">PIN de Garita</h3>
-                    <p className="text-[11px] text-slate-500 font-mono">••••</p>
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white">PIN de Garita</h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">••••</p>
                   </div>
                 </div>
 
@@ -500,7 +500,7 @@ export const UserProfileModule = ({ onBack }) => {
                       type="button"
                       variant="outline"
                       onClick={() => setIsEditingPin(true)}
-                      className="text-xs font-semibold border-slate-200 hover:bg-white text-slate-700 h-8 px-3 rounded-lg cursor-pointer"
+                      className="text-xs font-semibold border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 h-8 px-3 rounded-lg cursor-pointer"
                     >
                       Cambiar PIN
                     </Button>
@@ -514,18 +514,18 @@ export const UserProfileModule = ({ onBack }) => {
                         placeholder="4 a 6 dígitos"
                         value={newPin}
                         onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                        className="w-28 h-8 px-2.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 outline-none text-center"
+                        className="w-28 h-8 px-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-mono font-bold text-slate-900 dark:text-white outline-none text-center"
                       />
                       <Button
                         type="submit"
-                        className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold h-8 px-3 rounded-lg cursor-pointer"
+                        className="bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white text-xs font-semibold h-8 px-3 rounded-lg cursor-pointer"
                       >
                         Guardar
                       </Button>
                       <button
                         type="button"
                         onClick={() => { setIsEditingPin(false); setNewPin(''); }}
-                        className="text-xs text-slate-400 hover:text-slate-600 px-1 cursor-pointer"
+                        className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-1 cursor-pointer"
                       >
                         Cancelar
                       </button>
@@ -535,21 +535,21 @@ export const UserProfileModule = ({ onBack }) => {
               </div>
 
               {/* Fila Autenticación */}
-              <div className="p-4 rounded-xl border border-slate-200/70 bg-slate-50/50 flex items-center justify-between">
+              <div className="p-4 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-4 h-4 text-slate-700" />
+                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-slate-700 dark:text-slate-200" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-bold text-slate-900">Autenticación</h3>
-                    <p className="text-[11px] text-slate-500">
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white">Autenticación</h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       {user?.isGoogleAuth ? 'Google Account vinculada' : 'Contraseña estándar activa'}
                     </p>
                   </div>
                 </div>
 
-                <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Activo</span>
                 </span>
               </div>
@@ -558,22 +558,22 @@ export const UserProfileModule = ({ onBack }) => {
 
           {/* TAB 3: PREFERENCIAS */}
           {activeTab === 'preferences' && (
-            <Card className="p-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-              <div className="border-b border-slate-100 pb-3">
-                <h2 className="text-base font-bold text-slate-900">Preferencias</h2>
+            <Card className="p-6 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">Preferencias</h2>
               </div>
 
               <div className="space-y-3">
                 {/* Switch 1: WhatsApp */}
-                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/70 bg-slate-50/50">
-                  <span className="text-xs font-semibold text-slate-900">Avisos y QR por WhatsApp</span>
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                  <span className="text-xs font-semibold text-slate-900 dark:text-white">Avisos y QR por WhatsApp</span>
                   <button
                     type="button"
                     role="switch"
                     aria-checked={formData.notifyWhatsapp}
                     onClick={() => setFormData({ ...formData, notifyWhatsapp: !formData.notifyWhatsapp })}
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      formData.notifyWhatsapp ? 'bg-emerald-600' : 'bg-slate-300'
+                      formData.notifyWhatsapp ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
                     }`}
                   >
                     <span
@@ -585,15 +585,15 @@ export const UserProfileModule = ({ onBack }) => {
                 </div>
 
                 {/* Switch 2: LPR */}
-                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/70 bg-slate-50/50">
-                  <span className="text-xs font-semibold text-slate-900">Apertura automática de barrera (LPR)</span>
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                  <span className="text-xs font-semibold text-slate-900 dark:text-white">Apertura automática de barrera (LPR)</span>
                   <button
                     type="button"
                     role="switch"
                     aria-checked={formData.autoGateOpen}
                     onClick={() => setFormData({ ...formData, autoGateOpen: !formData.autoGateOpen })}
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      formData.autoGateOpen ? 'bg-emerald-600' : 'bg-slate-300'
+                      formData.autoGateOpen ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
                     }`}
                   >
                     <span
@@ -605,15 +605,15 @@ export const UserProfileModule = ({ onBack }) => {
                 </div>
 
                 {/* Switch 3: Email */}
-                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/70 bg-slate-50/50">
-                  <span className="text-xs font-semibold text-slate-900">Boleta digital por correo</span>
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                  <span className="text-xs font-semibold text-slate-900 dark:text-white">Boleta digital por correo</span>
                   <button
                     type="button"
                     role="switch"
                     aria-checked={formData.notifyEmail}
                     onClick={() => setFormData({ ...formData, notifyEmail: !formData.notifyEmail })}
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      formData.notifyEmail ? 'bg-emerald-600' : 'bg-slate-300'
+                      formData.notifyEmail ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
                     }`}
                   >
                     <span
@@ -682,12 +682,12 @@ export const UserProfileModule = ({ onBack }) => {
             </div>
           </div>
 
-          {/* Enlace Sutil de Soporte (Limpio, sin párrafos redundantes) */}
-          <div className="p-4 bg-white border border-slate-200/80 rounded-2xl flex items-center justify-between shadow-xs">
-            <span className="text-xs font-semibold text-slate-700">¿Dudas con tu cuenta?</span>
+          {/* Enlace Sutil de Soporte */}
+          <div className="p-4 bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex items-center justify-between shadow-xs">
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">¿Dudas con tu cuenta?</span>
             <a 
               href="mailto:soporte@smartpark.pe" 
-              className="text-xs font-semibold text-slate-900 hover:underline"
+              className="text-xs font-semibold text-slate-900 dark:text-emerald-400 hover:underline"
             >
               Contactar soporte
             </a>

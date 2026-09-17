@@ -19,7 +19,6 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import { KeypadModal } from './KeypadModal';
 import { BrandLogo } from './BrandLogo';
 import { useTheme } from '../context/ThemeContext';
 
@@ -61,31 +60,18 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
     clearRoleNotifications 
   } = useNotifications();
 
-  const [showKeypad, setShowKeypad] = useState(false);
-  const [pendingRole, setPendingRole] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [filterUnreadOnly, setFilterUnreadOnly] = useState(false);
   const notifRef = useRef(null);
 
-  const handleRoleChange = (e) => {
-    const selected = e.target.value;
-    if (selected === 'local' || selected === 'platform') {
-      if (!pinVerified) {
-        setPendingRole(selected);
-        setShowKeypad(true);
-        return;
-      }
-    }
-    setRole(selected);
-    setShowNotifications(false);
-  };
-
-  const handlePinSuccess = () => {
-    if (pendingRole) {
-      setRole(pendingRole);
-      setPendingRole(null);
-    }
-  };
+  const isPersonal = user?.position || user?.staffPosition || user?.isStaffOperator;
+  const staffRoleLabel = isPersonal 
+    ? 'Trabajador' 
+    : role === 'local' 
+    ? 'Admin Local' 
+    : role === 'platform' 
+    ? 'SuperAdmin' 
+    : 'Operador';
 
   // Cerrar panel de notificaciones al hacer clic afuera
   useEffect(() => {
@@ -193,7 +179,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                       <Bell className="w-4 h-4 text-emerald-400" />
                       <div>
                         <h3 className="font-extrabold text-xs tracking-tight">
-                          Notificaciones ({role === 'user' ? 'Conductor' : role === 'local' ? 'Garita / Cochera' : 'Super Admin'})
+                          {role === 'user' ? 'Notificaciones' : `Notificaciones • ${staffRoleLabel}`}
                         </h3>
                         <p className="text-[10px] text-slate-400">
                           {unreadCount > 0 ? `${unreadCount} sin leer` : 'Al día'}
@@ -322,8 +308,8 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                   </div>
 
                   <div className="p-2.5 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-100 dark:border-slate-800 text-center">
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
-                      Notificaciones en tiempo real para {role.toUpperCase()}
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                      Avisos y alertas del sistema en tiempo real
                     </span>
                   </div>
 
@@ -346,12 +332,18 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                 <User className="w-4 h-4 shrink-0" />
               </div>
               <div className="hidden sm:block text-left min-w-0 pr-1">
-                <span className="text-xs font-black text-slate-900 dark:text-slate-100 block leading-tight tracking-tight truncate max-w-[90px]">
+                <span className="text-xs font-black text-slate-900 dark:text-slate-100 block leading-tight tracking-tight truncate max-w-[100px]">
                   {user?.name?.split(' ')[0] || 'Usuario'}
                 </span>
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 block uppercase leading-none tracking-wider">
-                  {role}
-                </span>
+                {role !== 'user' ? (
+                  <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 block uppercase leading-none tracking-wider">
+                    {staffRoleLabel}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 block leading-none truncate max-w-[100px]">
+                    {user?.email ? user.email.split('@')[0] : 'Cuenta Personal'}
+                  </span>
+                )}
               </div>
             </button>
             <button
@@ -368,12 +360,6 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
         </div>
         )}
       </header>
-
-      <KeypadModal
-        isOpen={showKeypad}
-        onClose={() => setShowKeypad(false)}
-        onSuccess={handlePinSuccess}
-      />
     </>
   );
 };

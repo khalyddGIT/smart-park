@@ -55,15 +55,15 @@ const PERSONAL_SECTIONS = [
 const SECTIONS_BY_ROLE = {
   user: [
     {
-      section: 'CONDUCTOR',
+      section: 'EXPLORAR & SERVICIOS',
       items: [
         { id: 'dashboard', label: 'Búsqueda & Mapa', shortLabel: 'Mapa', icon: Search },
         { id: 'reservations', label: 'Mis Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
         { id: 'vehicles', label: 'Mis Vehículos', shortLabel: 'Vehículos', icon: Car },
         { id: 'payments', label: 'Métodos de Pago', shortLabel: 'Pagos', icon: CreditCard },
-        { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
-        { id: 'history', label: 'Historial', shortLabel: 'Historial', icon: History },
-        { id: 'reviews', label: 'Reseñas', shortLabel: 'Reseñas', icon: Star },
+        { id: 'history', label: 'Historial & Boletas', shortLabel: 'Historial', icon: History },
+        { id: 'reviews', label: 'Reseñas & Opiniones', shortLabel: 'Reseñas', icon: Star },
+        { id: 'incidents', label: 'Incidencias & Soporte', shortLabel: 'Soporte', icon: AlertTriangle },
       ]
     }
   ],

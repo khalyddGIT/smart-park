@@ -20,6 +20,7 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  Move,
   ShieldCheck,
   Moon,
   Lock,
@@ -262,6 +263,11 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   
   const [baseScale, setBaseScale] = useState(1);
   const [userZoom, setUserZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const hasMovedRef = useRef(false);
+  const touchDistanceRef = useRef(null);
   const containerRef = useRef(null);
   
   const [remotePlan, setRemotePlan] = useState(null);
@@ -417,6 +423,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     setSelectedSlot(null);
     setRemotePlan(null);
     setPlanErrorDetail('');
+    setPanOffset({ x: 0, y: 0 });
+    setUserZoom(1);
     if (!parking || isNaN(numericParkingId)) {
       setPlanStatus('unregistered');
       return;
@@ -578,7 +586,125 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     setSelectedSlot(compatibleFreeSlots[0] || null);
   }, [vehicleCategory, compatibleFreeSlots, selectedSlot]);
 
+  // Recentrar y resetear zoom y desplazamiento
+  const handleResetView = useCallback(() => {
+    setUserZoom(1);
+    setPanOffset({ x: 0, y: 0 });
+  }, []);
+
+  // Manejo de inicio de arrastre (Mouse)
+  const handleMouseDown = useCallback((e) => {
+    if (e.button !== 0 && e.button !== 1) return;
+    setIsDragging(true);
+    hasMovedRef.current = false;
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      panX: panOffset.x,
+      panY: panOffset.y
+    };
+  }, [panOffset]);
+
+  // Listener global de movimiento y liberación para que el arrastre no se corte al salir del contenedor
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleWindowMouseMove = (e) => {
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      if (Math.hypot(dx, dy) > 3) {
+        hasMovedRef.current = true;
+      }
+      setPanOffset({
+        x: Math.round(dragStartRef.current.panX + dx),
+        y: Math.round(dragStartRef.current.panY + dy)
+      });
+    };
+
+    const handleWindowMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+  }, [isDragging]);
+
+  // Soporte táctil en dispositivos móviles (drag de 1 dedo, pinch-to-zoom de 2 dedos)
+  const handleTouchStart = useCallback((e) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      setIsDragging(true);
+      hasMovedRef.current = false;
+      dragStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        panX: panOffset.x,
+        panY: panOffset.y
+      };
+      touchDistanceRef.current = null;
+    } else if (e.touches.length === 2) {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      touchDistanceRef.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    }
+  }, [panOffset]);
+
+  const handleTouchMove = useCallback((e) => {
+    if (e.touches.length === 1 && isDragging) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - dragStartRef.current.x;
+      const dy = touch.clientY - dragStartRef.current.y;
+      if (Math.hypot(dx, dy) > 3) {
+        hasMovedRef.current = true;
+      }
+      setPanOffset({
+        x: Math.round(dragStartRef.current.panX + dx),
+        y: Math.round(dragStartRef.current.panY + dy)
+      });
+    } else if (e.touches.length === 2 && touchDistanceRef.current) {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const diff = dist - touchDistanceRef.current;
+      if (Math.abs(diff) > 6) {
+        hasMovedRef.current = true;
+        setUserZoom((prev) => {
+          const factor = diff > 0 ? 0.06 : -0.06;
+          return Math.min(3.0, Math.max(0.4, +(prev + factor).toFixed(2)));
+        });
+        touchDistanceRef.current = dist;
+      }
+    }
+  }, [isDragging]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+    touchDistanceRef.current = null;
+  }, []);
+
+  // Zoom suave con rueda del ratón
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheelNative = (e) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.15 : -0.15;
+      setUserZoom((prev) => Math.min(3.0, Math.max(0.4, +(prev + delta).toFixed(2))));
+    };
+
+    el.addEventListener('wheel', onWheelNative, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheelNative);
+    };
+  }, []);
+
   const handleSlotClick = (slot) => {
+    if (hasMovedRef.current) return;
     if (slot.status !== 'free') return;
     if (!slotMatchesVehicle(slot.slotType, vehicleCategory)) return;
     setSelectedSlot(slot);
@@ -826,16 +952,26 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
-        {/* Contenedor del Plano Asfáltico Cenital con Auto-Encuadre Dinámico */}
+        {/* Contenedor del Plano Asfáltico Cenital con Auto-Encuadre Dinámico & Pan/Drag */}
         <div 
           ref={containerRef}
-          className="lg:col-span-2 bg-[#090d16] rounded-2xl border border-slate-800 flex items-center justify-center relative overflow-hidden h-[440px] sm:h-[500px] lg:h-[580px] shadow-2xl select-none"
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className={`lg:col-span-2 bg-[#090d16] rounded-2xl border border-slate-800 flex items-center justify-center relative overflow-hidden h-[440px] sm:h-[500px] lg:h-[580px] shadow-2xl select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         >
+          {/* Indicador táctico de navegación */}
+          <div className="absolute top-3 left-3 z-30 hidden sm:flex items-center gap-1.5 bg-slate-900/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-700/80 text-[11px] text-slate-300 font-medium pointer-events-none shadow-md">
+            <Move className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>Arrastra para mover el plano &bull; Rueda para zoom</span>
+          </div>
+
           {/* Controles Flotantes de Zoom y Recentrado */}
           <div className="absolute top-3 right-3 z-30 flex items-center gap-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-700/80 shadow-lg">
             <button
               type="button"
-              onClick={() => setUserZoom(prev => Math.min(2.2, +(prev + 0.15).toFixed(2)))}
+              onClick={() => setUserZoom(prev => Math.min(3.0, +(prev + 0.2).toFixed(2)))}
               title="Acercar plano (+)"
               className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
             >
@@ -843,7 +979,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             </button>
             <button
               type="button"
-              onClick={() => setUserZoom(prev => Math.max(0.6, +(prev - 0.15).toFixed(2)))}
+              onClick={() => setUserZoom(prev => Math.max(0.4, +(prev - 0.2).toFixed(2)))}
               title="Alejar plano (-)"
               className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
             >
@@ -851,7 +987,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             </button>
             <button
               type="button"
-              onClick={() => setUserZoom(1)}
+              onClick={handleResetView}
               title="Reajustar y centrar plano"
               className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
             >
@@ -879,16 +1015,17 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
             </div>
           </div>
 
-          {/* Lienzo Arquitectónico Asfáltico Cenital */}
+          {/* Lienzo Arquitectónico Asfáltico Cenital con Pan 2D */}
           <div 
             style={{ 
               width: `${layoutBounds.width}px`, 
               height: `${layoutBounds.height}px`,
-              transform: `scale(${effectiveScale})`,
+              transform: `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) scale(${effectiveScale})`,
               transformOrigin: 'center center',
-              backgroundColor: '#0c121e'
+              backgroundColor: '#0c121e',
+              transition: isDragging ? 'none' : 'transform 180ms cubic-bezier(0.16, 1, 0.3, 1)'
             }}
-            className="relative rounded-2xl border border-slate-700/80 overflow-hidden select-none shrink-0 shadow-2xl transition-transform duration-150 ease-out"
+            className="relative rounded-2xl border border-slate-700/80 overflow-hidden select-none shrink-0 shadow-2xl will-change-transform"
           >
             {/* Grano Asfáltico y Trazado Vial de Fondo */}
             <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_50%,#141d2e_0%,#090d16_100%)]" />

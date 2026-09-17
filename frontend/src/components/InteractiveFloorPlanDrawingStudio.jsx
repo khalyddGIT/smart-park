@@ -65,6 +65,7 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { MototaxiIcon } from './icons/MototaxiIcon';
 
 // ============================================================
 // ============================================================
@@ -2085,7 +2086,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                           <div className="w-8 h-11 rounded-lg border-2 border-dashed border-yellow-400/40 flex flex-col items-center justify-between p-1 bg-yellow-950/20">
                             <div className="w-2.5 h-1.5 bg-yellow-400/40 rounded-full" />
                             <div className="flex flex-col items-center">
-                              <Navigation className="w-4 h-4 shrink-0 text-yellow-400/80 rotate-45" />
+                              <MototaxiIcon className="w-4 h-4 shrink-0 text-yellow-400/80" />
                               <span className="text-[6px] font-mono font-black text-yellow-300">★ TORITO ★</span>
                             </div>
                             <div className="w-7 h-1 bg-yellow-400/30 rounded-xs" />
@@ -2843,7 +2844,7 @@ export const InteractiveFloorPlanDrawingStudio = ({
                     {[
                       { id: 'auto', label: 'Auto', icon: Car, defaultW: 56, defaultH: 96 },
                       { id: 'camioneta', label: 'Camioneta 4x4', icon: Truck, defaultW: 68, defaultH: 112 },
-                      { id: 'mototaxi', label: 'Moto Taxi', icon: Navigation, defaultW: 48, defaultH: 80 },
+                      { id: 'mototaxi', label: 'Moto Taxi', icon: MototaxiIcon, defaultW: 48, defaultH: 80 },
                       { id: 'moto', label: 'Moto', icon: Bike, defaultW: 38, defaultH: 65 }
                     ].map(t => {
                       const Icon = t.icon;

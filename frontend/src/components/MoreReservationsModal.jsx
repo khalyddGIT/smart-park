@@ -21,6 +21,7 @@ import {
   Check
 } from 'lucide-react';
 import { Button } from './ui/button';
+import { MototaxiIcon } from './icons/MototaxiIcon';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
@@ -409,7 +410,7 @@ export const MoreReservationsModal = ({
               {[
                 { id: 'auto', label: 'Auto', icon: Car, rate: rates.auto.hourly, monthly: rates.auto.monthly },
                 { id: 'camioneta', label: 'Camioneta', icon: Truck, rate: rates.camioneta.hourly, monthly: rates.camioneta.monthly },
-                { id: 'mototaxi', label: 'Mototaxi', icon: Navigation, rate: rates.mototaxi.hourly, monthly: rates.mototaxi.monthly },
+                { id: 'mototaxi', label: 'Mototaxi', icon: MototaxiIcon, rate: rates.mototaxi.hourly, monthly: rates.mototaxi.monthly },
                 { id: 'moto', label: 'Moto', icon: Bike, rate: rates.moto.hourly, monthly: rates.moto.monthly },
               ].map((v) => {
                 const Icon = v.icon;

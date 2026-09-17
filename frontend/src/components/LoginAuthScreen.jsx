@@ -895,28 +895,19 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
             </div>
           )}
 
-          {/* Botón inferior dinámico para alternar entre Garita y Conductor */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center">
-            {authMode === 'garita' ? (
+          {/* Botón para volver al login principal si se accedió en modo garita */}
+          {authMode === 'garita' && (
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center">
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
                 className="w-full py-2 text-center text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4 shrink-0" />
-                <span>Volver al Acceso Principal de Conductores</span>
+                <span>Volver al Acceso Principal</span>
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => { setAuthMode('garita'); setGaritaSubTab('pin'); setErrorMsg(''); }}
-                className="w-full py-2.5 px-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition flex items-center justify-center space-x-2 group cursor-pointer shadow-xs"
-              >
-                <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
-                <span>¿Operador o Administrador? <strong>Acceso Garita & Afiliaciones</strong></span>
-              </button>
-            )}
-          </div>
+            </div>
+          )}
 
         </div>
       </main>

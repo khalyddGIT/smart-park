@@ -623,6 +623,13 @@ class ReservationCheckOut(BaseModel):
     payment_method: Optional[str] = "efectivo"
     amount_paid: Optional[float] = None
 
+class PaginatedReservationResponse(BaseModel):
+    items: List[ReservationResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
 # ==========================================
 # 7. SCHEMAS DE RESEÑAS & CALIFICACIONES
 # ==========================================

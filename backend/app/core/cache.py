@@ -31,6 +31,9 @@ _memory_ratelimit_lock = threading.Lock()
 _memory_blacklist = {}
 _memory_blacklist_lock = threading.Lock()
 
+_memory_idempotency = {}
+_memory_idempotency_lock = threading.Lock()
+
 
 
 def get_client():
@@ -184,6 +187,59 @@ async def is_blacklisted(jti: str) -> bool:
                 del _memory_blacklist[jti]
     return False
 
+
+# ------------------------------------------------------------------
+# Idempotencia de transacciones (Pagos, Órdenes) — Redis + memoria local
+# ------------------------------------------------------------------
+
+async def get_idempotency_record(key: str):
+    """Retorna {status_code, body} si existe para la clave, o None."""
+    if not key:
+        return None
+    full_key = f"idemp:{key}"
+    client = get_client()
+    if client:
+        try:
+            raw = await client.get(full_key)
+            if raw:
+                return json.loads(raw)
+        except Exception as exc:
+            logger.warning(f"[idempotency] Redis GET {key} falló: {exc}")
+
+    now = time.time()
+    with _memory_idempotency_lock:
+        rec = _memory_idempotency.get(key)
+        if rec:
+            if rec.get("expires_at", 0) > now:
+                return rec.get("data")
+            else:
+                del _memory_idempotency[key]
+    return None
+
+
+async def save_idempotency_record(key: str, status_code: int, response_body: dict, ttl_seconds: int = 86400) -> None:
+    """Guarda respuesta de operación idempotente para evitar ejecuciones duplicadas."""
+    if not key:
+        return
+    full_key = f"idemp:{key}"
+    payload = {"status_code": status_code, "body": response_body}
+    client = get_client()
+    if client:
+        try:
+            await client.set(full_key, json.dumps(payload, default=str), ex=max(60, int(ttl_seconds)))
+        except Exception as exc:
+            logger.warning(f"[idempotency] Redis SET {key} falló: {exc}")
+
+    now = time.time()
+    with _memory_idempotency_lock:
+        _memory_idempotency[key] = {
+            "data": payload,
+            "expires_at": now + max(60, int(ttl_seconds))
+        }
+        if len(_memory_idempotency) > 5000:
+            stale = [k for k, v in _memory_idempotency.items() if v.get("expires_at", 0) <= now]
+            for k in stale:
+                del _memory_idempotency[k]
 
 
 # ------------------------------------------------------------------

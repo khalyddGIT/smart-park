@@ -24,6 +24,7 @@ import { LandingPage } from './components/LandingPage';
 import { AutoFitFloorPlan } from './components/AutoFitFloorPlan';
 import { QuickReservationModal } from './components/QuickReservationModal';
 import { MoreReservationsModal } from './components/MoreReservationsModal';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
 // Lazy-loaded heavy modules for code-splitting & lightning performance
 const LocalEstablishmentManager = lazy(() => import('./components/LocalEstablishmentManager').then(m => ({ default: m.LocalEstablishmentManager })));
@@ -1472,6 +1473,9 @@ const AppMain = () => {
           defaultAuthMode={authModalMode}
         />
       )}
+
+      {/* Banner de Instalación PWA Móvil/Desktop (Pilar 2) */}
+      <PWAInstallPrompt />
     </div>
   );
 };

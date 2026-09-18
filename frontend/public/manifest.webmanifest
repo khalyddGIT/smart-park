@@ -1,0 +1,42 @@
+{
+  "name": "Smart-Park — Estacionamientos Inteligentes",
+  "short_name": "Smart-Park",
+  "description": "Encuentra, reserva y entra a cocheras con pase digital QR y reconocimiento de placa.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "scope": "/",
+  "lang": "es",
+  "categories": ["utilities", "navigation", "transportation"],
+  "icons": [
+    {
+      "src": "/logo-icon-64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

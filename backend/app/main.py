@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 
 from app.core.config import settings
 from app.db.session import engine, Base
@@ -82,13 +83,27 @@ class SecurityHardeningMiddleware(BaseHTTPMiddleware):
                 f"Path={path} IP={client_ip} UserAgent={user_agent[:120]}"
             )
 
-        # Cabeceras de seguridad HTTP
+        # Cabeceras de seguridad HTTP Enterprise (HSTS, CSP, no-sniff, clickjacking)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.culqi.com https://www.paypal.com https://*.paypalobjects.com https://*.paypal.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: blob: https:; "
+            "connect-src 'self' https://api.culqi.com https://*.paypal.com https://*.paypalobjects.com wss: ws: https:; "
+            "frame-src 'self' https://checkout.culqi.com https://*.paypal.com; "
+            "manifest-src 'self'; "
+            "object-src 'none'; "
+            "base-uri 'self';"
+        )
 
         return response
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(SecurityHardeningMiddleware)
 
 # Configuración CORS por entorno: en producción solo orígenes explícitos.

@@ -29,3 +29,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </React.StrictMode>,
 )
+
+// Registro automático del Service Worker para PWA (Pilar 2)
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((reg) => {
+        console.log('[PWA] Service Worker activo con alcance:', reg.scope);
+      })
+      .catch((err) => {
+        console.warn('[PWA] Fallo al registrar Service Worker:', err);
+      });
+  });
+}

@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, Enum
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, Enum, Index
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 
@@ -151,6 +151,10 @@ class CameraDevice(Base):
 
 class Slot(Base):
     __tablename__ = "plazas"
+    __table_args__ = (
+        Index("ix_slots_parking_status", "parking_id", "status"),
+        Index("ix_slots_parking_code", "parking_id", "code"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
@@ -184,6 +188,11 @@ class FloorPlanElement(Base):
 
 class Reservation(Base):
     __tablename__ = "reservas"
+    __table_args__ = (
+        Index("ix_reservations_user_status", "user_id", "status"),
+        Index("ix_reservations_parking_status", "parking_id", "status"),
+        Index("ix_reservations_parking_start_end", "parking_id", "start_time", "end_time"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     code = Column(String(50), unique=True, index=True, nullable=False)
@@ -278,6 +287,10 @@ CamaraDispositivo = CameraDevice
 
 class Payment(Base):
     __tablename__ = "pagos"
+    __table_args__ = (
+        Index("ix_payments_user_status", "user_id", "status"),
+        Index("ix_payments_res_status", "reservation_id", "status"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     reservation_id = Column(Integer, ForeignKey("reservas.id"), nullable=True, index=True)
@@ -316,6 +329,10 @@ class PlatformSettings(Base):
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
+    __table_args__ = (
+        Index("ix_audit_parking_created", "parking_id", "created_at"),
+        Index("ix_audit_user_created", "user_id", "created_at"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=True, index=True)

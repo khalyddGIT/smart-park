@@ -23,6 +23,7 @@ import {
   ArrowRight,
   Printer,
   ChevronRight,
+  ChevronLeft,
   LogOut,
   LogIn,
   RotateCcw,
@@ -351,6 +352,20 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
 
     return matchesSearch && matchesStatus && matchesParking && matchesDate;
   });
+
+  // Paginación estándar fluida (Pilar 3)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, parkingFilter, dateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredReservations.length / pageSize));
+  const paginatedReservations = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredReservations.slice(start, start + pageSize);
+  }, [filteredReservations, currentPage, pageSize]);
 
   // Métricas y conteos en tiempo real
   const totalReservations = reservations.length;
@@ -1552,7 +1567,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
             </p>
           </div>
         ) : (
-          filteredReservations.map((res) => {
+          paginatedReservations.map((res) => {
             const isScheduled = res.status === 'SCHEDULED';
             const isActive = res.status === 'ACTIVE';
             const isCompleted = res.status === 'COMPLETED';
@@ -1871,6 +1886,56 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               </div>
             );
           })
+        )}
+
+        {/* Barra de Paginación Estándar (Pilar 3) */}
+        {filteredReservations.length > pageSize && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 px-3 py-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs text-xs text-slate-500 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Mostrar</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="font-medium">por página</span>
+              <span className="text-slate-400 font-mono">({filteredReservations.length} total)</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-40"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Anterior</span>
+              </Button>
+              <div className="px-3 py-1 font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-md border border-slate-200 dark:border-slate-700">
+                Página {currentPage} de {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-40"
+              >
+                <span>Siguiente</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>

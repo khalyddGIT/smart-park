@@ -1,14 +1,21 @@
 from datetime import datetime, timezone
 import uuid
 import math
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional, Union
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import Reservation, Slot, Parking, Payment, User, Staff
-from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationStayUpdate, ReservationResponse, ReservationCheckOut
+from app.schemas.schemas import (
+    ReservationCreate,
+    ReservationUpdate,
+    ReservationStayUpdate,
+    ReservationResponse,
+    ReservationCheckOut,
+    PaginatedReservationResponse,
+)
 from app.core.security import get_current_user, require_role
 from app.core.realtime import realtime
 from app.core.cache import cache_delete
@@ -207,10 +214,12 @@ async def _check_reservation_access(reservation: Reservation, current_user: User
         return
     raise HTTPException(status_code=403, detail=f"No autorizado para {action_label}")
 
-@router.get("", response_model=List[ReservationResponse])
+@router.get("", response_model=Union[PaginatedReservationResponse, List[ReservationResponse]])
 async def list_reservations(
     parking_id: Optional[int] = None,
     status_filter: Optional[str] = None,
+    page: Optional[int] = Query(None, ge=1, description="Número de página"),
+    page_size: Optional[int] = Query(None, ge=1, le=100, description="Cantidad de elementos por página"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -222,7 +231,7 @@ async def list_reservations(
     )
 
     if current_user.role in ("local", "platform"):
-        stmt = select(Reservation).options(*options_load).order_by(Reservation.id.desc())
+        base_filters = []
         if current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
             curr_email = (current_user.email or "").strip().lower()
             p_res = await db.execute(select(Parking.id).where(func.lower(Parking.email) == curr_email))
@@ -234,26 +243,74 @@ async def list_reservations(
             if parking_id:
                 if parking_id not in allowed_pids:
                     raise HTTPException(status_code=403, detail="No tienes permiso para ver reservas de esta sede")
-                stmt = stmt.where(Reservation.parking_id == parking_id)
+                base_filters.append(Reservation.parking_id == parking_id)
             else:
-                stmt = stmt.where(Reservation.parking_id.in_(allowed_pids) if allowed_pids else False)
+                base_filters.append(Reservation.parking_id.in_(allowed_pids) if allowed_pids else False)
         elif parking_id:
-            stmt = stmt.where(Reservation.parking_id == parking_id)
+            base_filters.append(Reservation.parking_id == parking_id)
 
         if status_filter:
-            stmt = stmt.where(Reservation.status == status_filter)
+            base_filters.append(Reservation.status == status_filter)
+
+        stmt = select(Reservation).options(*options_load)
+        count_stmt = select(func.count(Reservation.id))
+        if base_filters:
+            stmt = stmt.where(*base_filters)
+            count_stmt = count_stmt.where(*base_filters)
+
+        stmt = stmt.order_by(Reservation.id.desc())
+
+        if page is None:
+            result = await db.execute(stmt)
+            return [_format_reservation_response(r) for r in result.scalars().all()]
+
+        eff_page_size = page_size or 20
+        total_res = await db.execute(count_stmt)
+        total_count = total_res.scalar() or 0
+
+        paged_stmt = stmt.offset((page - 1) * eff_page_size).limit(eff_page_size)
+        result = await db.execute(paged_stmt)
+        items = [_format_reservation_response(r) for r in result.scalars().all()]
+        total_pages = math.ceil(total_count / eff_page_size) if total_count > 0 else 1
+
+        return PaginatedReservationResponse(
+            items=items,
+            total=total_count,
+            page=page,
+            page_size=eff_page_size,
+            total_pages=total_pages
+        )
+
+    # Fallback conductor: solo suyas
+    base_filters = [Reservation.user_id == current_user.id]
+    if parking_id:
+        base_filters.append(Reservation.parking_id == parking_id)
+    if status_filter:
+        base_filters.append(Reservation.status == status_filter)
+
+    stmt = select(Reservation).options(*options_load).where(*base_filters).order_by(Reservation.id.desc())
+    count_stmt = select(func.count(Reservation.id)).where(*base_filters)
+
+    if page is None:
         result = await db.execute(stmt)
         return [_format_reservation_response(r) for r in result.scalars().all()]
 
-    # Fallback conductor: solo suyas
-    stmt = select(Reservation).options(*options_load).where(Reservation.user_id == current_user.id).order_by(Reservation.id.desc())
-    if parking_id:
-        stmt = stmt.where(Reservation.parking_id == parking_id)
-    if status_filter:
-        stmt = stmt.where(Reservation.status == status_filter)
-    
-    result = await db.execute(stmt)
-    return [_format_reservation_response(r) for r in result.scalars().all()]
+    eff_page_size = page_size or 20
+    total_res = await db.execute(count_stmt)
+    total_count = total_res.scalar() or 0
+
+    paged_stmt = stmt.offset((page - 1) * eff_page_size).limit(eff_page_size)
+    result = await db.execute(paged_stmt)
+    items = [_format_reservation_response(r) for r in result.scalars().all()]
+    total_pages = math.ceil(total_count / eff_page_size) if total_count > 0 else 1
+
+    return PaginatedReservationResponse(
+        items=items,
+        total=total_count,
+        page=page,
+        page_size=eff_page_size,
+        total_pages=total_pages
+    )
 
 @router.get("/my-reservations", response_model=List[ReservationResponse])
 async def get_my_reservations(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):

@@ -1850,8 +1850,9 @@ export const EstablishmentProvider = ({ children }) => {
         ? await api.get('/reservations').then(r => r.data)
         : await listMyReservations();
 
-      if (Array.isArray(data)) {
-        const mapped = data.map(mapServerReservation);
+      const rawList = Array.isArray(data) ? data : (data?.items || []);
+      if (Array.isArray(rawList) && rawList.length >= 0) {
+        const mapped = rawList.map(mapServerReservation);
         setReservations(mapped);
         try { localStorage.setItem(getReservationsKey(), JSON.stringify(mapped)); } catch {}
       }

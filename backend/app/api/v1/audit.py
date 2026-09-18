@@ -3,10 +3,11 @@ Unifica eventos administrativos y de seguridad (AuditLog) con eventos operaciona
 derivados (reservas, pagos, incidencias, reseñas).
 """
 import json
+import math
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -91,6 +92,8 @@ async def _get_local_user_parking_ids(db: AsyncSession, current_user: User) -> l
 async def audit_logs(
     parking_id: Optional[int] = None,
     severity: Optional[str] = None,
+    page: Optional[int] = Query(None, ge=1, description="Número de página"),
+    page_size: Optional[int] = Query(None, ge=1, le=100, description="Elementos por página"),
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -488,5 +491,20 @@ async def audit_logs(
     logs.sort(key=sort_key, reverse=True)
     for entry in logs:
         entry.pop("_sort_ts", None)
+
+    if page is not None:
+        eff_size = page_size or 20
+        total_items = len(logs)
+        start_idx = (page - 1) * eff_size
+        end_idx = start_idx + eff_size
+        paged_items = logs[start_idx:end_idx]
+        total_pages = math.ceil(total_items / eff_size) if total_items > 0 else 1
+        return {
+            "items": paged_items,
+            "total": total_items,
+            "page": page,
+            "page_size": eff_size,
+            "total_pages": total_pages,
+        }
 
     return logs[:limit]

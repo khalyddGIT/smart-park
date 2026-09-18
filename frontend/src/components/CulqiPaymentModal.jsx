@@ -61,6 +61,15 @@ export const CulqiPaymentModal = ({
   const [paypalSdkLoading, setPaypalSdkLoading] = useState(false);
   const [paypalSdkError, setPaypalSdkError] = useState('');
   const paypalContainerRef = useRef(null);
+  const idempotencyKeyRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && !paymentSuccess) {
+      idempotencyKeyRef.current = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `idemp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    }
+  }, [isOpen, paymentSuccess]);
 
   // Culqi Checkout v4 SDK Loading State
   const [culqiSdkLoaded, setCulqiSdkLoaded] = useState(false);
@@ -180,6 +189,8 @@ export const CulqiPaymentModal = ({
               currency: 'PEN',
               reservation_id: reservationId,
               description: concept
+            }, {
+              headers: idempotencyKeyRef.current ? { 'Idempotency-Key': `pp-ord-${idempotencyKeyRef.current}` } : {}
             });
             setIsProcessing(false);
             if (!res.data?.order_id) {
@@ -202,6 +213,8 @@ export const CulqiPaymentModal = ({
               reservation_id: reservationId,
               amount_pen: amountPen,
               description: concept
+            }, {
+              headers: idempotencyKeyRef.current ? { 'Idempotency-Key': `pp-cap-${idempotencyKeyRef.current}` } : {}
             });
 
             const captureData = res.data;
@@ -337,7 +350,9 @@ export const CulqiPaymentModal = ({
           };
           if (reservationId) payload.reservation_id = reservationId;
 
-          const res = await api.post('/payments/charge', payload);
+          const res = await api.post('/payments/charge', payload, {
+            headers: idempotencyKeyRef.current ? { 'Idempotency-Key': idempotencyKeyRef.current } : {}
+          });
           const data = res.data;
 
           const chargeData = {
@@ -452,7 +467,9 @@ export const CulqiPaymentModal = ({
       };
       if (reservationId) payload.reservation_id = reservationId;
 
-      const res = await api.post('/payments/charge', payload);
+      const res = await api.post('/payments/charge', payload, {
+        headers: idempotencyKeyRef.current ? { 'Idempotency-Key': idempotencyKeyRef.current } : {}
+      });
       const data = res.data;
 
       const chargeData = {
@@ -563,7 +580,9 @@ export const CulqiPaymentModal = ({
       };
       if (reservationId) payload.reservation_id = reservationId;
 
-      const res = await api.post('/payments/charge', payload);
+      const res = await api.post('/payments/charge', payload, {
+        headers: idempotencyKeyRef.current ? { 'Idempotency-Key': idempotencyKeyRef.current } : {}
+      });
       const data = res.data;
 
       const chargeData = {

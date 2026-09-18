@@ -78,8 +78,8 @@ export const AuditLogsModule = () => {
         }
       }
       if (severityFilter !== 'ALL') params.severity = severityFilter;
-      const res = await api.get('/audit/logs', { params });
-      if (Array.isArray(res.data)) setRawData(res.data);
+      const list = Array.isArray(res.data) ? res.data : (res.data?.items || []);
+      setRawData(list);
     } catch {
       // Fail-safe: mantener estado sin mock si hay error de red o permisos
     } finally {

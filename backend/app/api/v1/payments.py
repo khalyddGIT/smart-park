@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -18,7 +19,7 @@ from app.core.config import settings
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.models import User, Payment
-from app.core.cache import rate_limit_hit
+from app.core.cache import rate_limit_hit, get_idempotency_record, save_idempotency_record
 
 router = APIRouter(prefix="/payments", tags=["Pagos Culqi & PayPal"])
 
@@ -141,10 +142,22 @@ async def payments_status():
 @router.post("/charge")
 async def create_charge(
     body: ChargeRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Cobra un token Culqi contra la API real de Culqi y persiste el pago."""
+    """Cobra un token Culqi contra la API real de Culqi y persiste el pago con soporte de idempotencia."""
+    idempotency_key = request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key")
+    if idempotency_key:
+        cache_key = f"pay:{current_user.id}:{idempotency_key.strip()}"
+        cached = await get_idempotency_record(cache_key)
+        if cached:
+            return JSONResponse(
+                status_code=cached.get("status_code", 200),
+                content=cached.get("body"),
+                headers={"X-Cache-Lookup": "HIT", "Idempotency-Key": idempotency_key.strip()}
+            )
+
     allowed, _ = await rate_limit_hit(f"ratelimit:pay:{current_user.id}", PAYMENT_RATE_LIMIT, PAYMENT_RATE_WINDOW)
     if not allowed:
         raise HTTPException(
@@ -242,6 +255,9 @@ async def create_charge(
                 data["payment_id"] = payment.id
                 data["payment_method"] = detected_method
                 data["reservation_paid"] = bool(body.reservation_id)
+            if idempotency_key:
+                cache_key = f"pay:{current_user.id}:{idempotency_key.strip()}"
+                await save_idempotency_record(cache_key, 200, data if isinstance(data, dict) else {"payment_id": payment.id})
             return data
         if outcome.get("type") != "venta_exitosa" and outcome:
             user_msg = outcome.get("user_message") or data.get("user_message") or ""
@@ -274,9 +290,21 @@ async def create_charge(
 @router.post("/paypal/create-order")
 async def create_paypal_order(
     body: PayPalCreateOrderRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
 ):
-    """Crea una orden de pago en PayPal REST API (v2) con conversión transparente PEN -> USD."""
+    """Crea una orden de pago en PayPal REST API (v2) con conversión transparente PEN -> USD e idempotencia."""
+    idempotency_key = request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key")
+    if idempotency_key:
+        cache_key = f"pp_ord:{current_user.id}:{idempotency_key.strip()}"
+        cached = await get_idempotency_record(cache_key)
+        if cached:
+            return JSONResponse(
+                status_code=cached.get("status_code", 200),
+                content=cached.get("body"),
+                headers={"X-Cache-Lookup": "HIT", "Idempotency-Key": idempotency_key.strip()}
+            )
+
     allowed, _ = await rate_limit_hit(f"ratelimit:pay:{current_user.id}", PAYMENT_RATE_LIMIT, PAYMENT_RATE_WINDOW)
     if not allowed:
         raise HTTPException(
@@ -355,7 +383,7 @@ async def create_paypal_order(
     if not order_id:
         raise HTTPException(status_code=502, detail="PayPal no devolvió un ID de orden válido.")
 
-    return {
+    result_payload = {
         "order_id": order_id,
         "status": data.get("status", "CREATED"),
         "amount_pen": body.amount,
@@ -364,17 +392,33 @@ async def create_paypal_order(
         "currency": "USD",
         "links": data.get("links", [])
     }
+    if idempotency_key:
+        cache_key = f"pp_ord:{current_user.id}:{idempotency_key.strip()}"
+        await save_idempotency_record(cache_key, 200, result_payload)
+    return result_payload
 
 
 @router.post("/paypal/capture-order")
 async def capture_paypal_order(
     body: PayPalCaptureOrderRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Captura el pago de una orden de PayPal autorizada, valida la liquidación y persiste el registro."""
+    """Captura el pago de una orden de PayPal autorizada, valida la liquidación y persiste el registro con idempotencia."""
     if not body.order_id or not body.order_id.strip():
         raise HTTPException(status_code=400, detail="order_id es obligatorio")
+
+    idempotency_key = request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key") or f"paypal:{body.order_id.strip()}"
+    if idempotency_key:
+        cache_key = f"pp_cap:{current_user.id}:{idempotency_key.strip()}"
+        cached = await get_idempotency_record(cache_key)
+        if cached:
+            return JSONResponse(
+                status_code=cached.get("status_code", 200),
+                content=cached.get("body"),
+                headers={"X-Cache-Lookup": "HIT", "Idempotency-Key": idempotency_key.strip()}
+            )
 
     token = get_paypal_access_token()
     url = f"{settings.PAYPAL_API_BASE_URL}/v2/checkout/orders/{body.order_id.strip()}/capture"
@@ -446,7 +490,7 @@ async def capture_paypal_order(
     formatted_invoice = f"B001-{payment.id:06d}"
     formatted_auth = f"PP-{str(capture_id)[-8:].upper()}"
 
-    return {
+    ret_data = {
         "status": "COMPLETED",
         "order_id": body.order_id,
         "capture_id": capture_id,
@@ -466,6 +510,10 @@ async def capture_paypal_order(
         "reservation_paid": bool(body.reservation_id),
         "raw": data
     }
+    if idempotency_key:
+        cache_key = f"pp_cap:{current_user.id}:{idempotency_key.strip()}"
+        await save_idempotency_record(cache_key, 200, ret_data)
+    return ret_data
 
 
 # --- History Endpoint ---

@@ -27,5 +27,6 @@ playwright-report/
 blob-report/
 playwright/.cache/
 videos/
+!public/videos/
 e2e/screenshots/
 *.webm

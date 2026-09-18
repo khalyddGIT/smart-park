@@ -40,7 +40,13 @@ import {
   Check,
   Smartphone,
   ExternalLink,
-  Crown
+  Crown,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Activity
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { QRCodeSVG } from 'qrcode.react';
@@ -167,6 +173,37 @@ export const LandingPage = ({
   const [activeFaq, setActiveFaq] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeAudienceTab, setActiveAudienceTab] = useState('driver'); // 'driver' | 'owner'
+
+  // Estados y referencias para el video cinemático demostrativo
+  const videoRef = useRef(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
+
+  const toggleVideoPlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play();
+      setIsVideoPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsVideoPlaying(false);
+    }
+  };
+
+  const toggleVideoMute = () => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsVideoMuted(videoRef.current.muted);
+  };
+
+  const toggleVideoFullscreen = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.requestFullscreen) {
+      videoRef.current.requestFullscreen();
+    } else if (videoRef.current.webkitRequestFullscreen) {
+      videoRef.current.webkitRequestFullscreen();
+    }
+  };
 
   // Lista garantizada de cocheras: prop establishments o iniciales de Huamanga
   const effectiveList = useMemo(() => {
@@ -302,9 +339,13 @@ export const LandingPage = ({
             </div>
 
             {/* Enlaces de Navegación de Escritorio */}
-            <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-600 dark:text-slate-300 tracking-wide">
+            <nav className="hidden md:flex items-center gap-7 lg:gap-8 text-xs font-semibold text-slate-600 dark:text-slate-300 tracking-wide">
               <button onClick={() => scrollTo('hero')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
                 Inicio
+              </button>
+              <button onClick={() => scrollTo('video-demo')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer flex items-center gap-1">
+                <Play className="w-2.5 h-2.5 text-lime-500 dark:text-lime-400 fill-current" />
+                Demostración
               </button>
               <button onClick={() => scrollTo('mapa')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
                 Mapa en Vivo
@@ -372,6 +413,10 @@ export const LandingPage = ({
               <div className="flex flex-col gap-2.5 text-sm font-semibold text-slate-800 dark:text-slate-200">
                 <button onClick={() => { setMobileMenuOpen(false); scrollTo('hero'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Inicio
+                </button>
+                <button onClick={() => { setMobileMenuOpen(false); scrollTo('video-demo'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2 text-emerald-600 dark:text-lime-400 font-bold">
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  Demostración en Video
                 </button>
                 <button onClick={() => { setMobileMenuOpen(false); scrollTo('mapa'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
                   Mapa en Vivo
@@ -451,10 +496,21 @@ export const LandingPage = ({
 
                 <button
                   type="button"
+                  onClick={() => scrollTo('video-demo')}
+                  className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full text-xs sm:text-sm font-bold bg-slate-900/10 dark:bg-white/10 hover:bg-slate-900/15 dark:hover:bg-white/15 backdrop-blur-md text-slate-950 dark:text-white border border-slate-900/15 dark:border-white/15 transition cursor-pointer group shadow-sm"
+                >
+                  <span className="w-5 h-5 rounded-full bg-slate-950 dark:bg-lime-400 text-white dark:text-slate-950 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
+                  </span>
+                  Ver Demostración en Video
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => scrollTo('beneficios')}
                   className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-200 hover:underline cursor-pointer group"
                 >
-                  Ver ventajas del sistema
+                  Ventajas del sistema
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -580,7 +636,190 @@ export const LandingPage = ({
       </main>
 
       {/* =========================================================================
-          3. SECCIÓN 2: MAPA EN VIVO DE AYACUCHO (COLOCADO COMO SEGUNDO)
+          3. SECCIÓN DEMOSTRATIVA EN VIDEO: SMART PARK EN ACCIÓN
+          ========================================================================= */}
+      <ScrollRevealSection id="video-demo" className="pt-14 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full text-left">
+        {/* Cabecera de Sección */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60 text-[11px] font-bold text-emerald-700 dark:text-lime-400 mb-3 tracking-wide">
+              <Activity className="w-3.5 h-3.5 animate-pulse text-emerald-500 dark:text-lime-400" />
+              DEMOSTRACIÓN EN VIDEO OPERACIONAL
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+              Tecnología Real en Acción: De la Cámara a la Barrera
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+              Observa cómo opera Smart Park en condiciones reales: detección ANPR en tiempo real, validación digital en terminales táctiles, apertura automática de barreras y monitoreo continuo sin tickets de papel.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/60">
+              <Camera className="w-3.5 h-3.5 text-emerald-500 dark:text-lime-400" />
+              Visión Artificial & Hardware IoT
+            </span>
+          </div>
+        </div>
+
+        {/* Reproductor Cinemático Panorámico */}
+        <div className="relative rounded-[28px] sm:rounded-[36px] overflow-hidden border border-slate-200/80 dark:border-slate-800/80 shadow-2xl bg-slate-950 group">
+          {/* Ambient Glow Bloom */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-lime-400/20 to-emerald-500/20 rounded-[36px] blur-2xl opacity-40 group-hover:opacity-70 transition duration-1000 pointer-events-none -z-10" />
+
+          {/* Video Container (16:9) */}
+          <div className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center">
+            <video
+              ref={videoRef}
+              src="/videos/smart-park-demo.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover select-none"
+              onPlay={() => setIsVideoPlaying(true)}
+              onPause={() => setIsVideoPlaying(false)}
+            />
+
+            {/* Top HUD Overlay */}
+            <div className="absolute top-3 sm:top-5 left-3 sm:left-5 right-3 sm:right-5 flex items-center justify-between pointer-events-none z-20">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 text-white text-[10px] sm:text-xs font-semibold shadow-lg">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="font-mono text-emerald-400 font-bold">● LIVE DEMO</span>
+                <span className="text-slate-400 hidden sm:inline">|</span>
+                <span className="hidden sm:inline text-slate-200">RECONOCIMIENTO ANPR & BARRERA AUTOMATIZADA</span>
+              </div>
+
+              <div className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-md border border-white/10 text-slate-300 text-[10px] sm:text-xs font-mono font-bold tracking-wider">
+                1080p HD
+              </div>
+            </div>
+
+            {/* Bottom Glassmorphic Floating Control Bar */}
+            <div className="absolute bottom-3 sm:bottom-5 left-3 sm:left-5 right-3 sm:right-5 z-20 flex items-center justify-between pointer-events-auto">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                {/* Play / Pause Toggle */}
+                <button
+                  type="button"
+                  onClick={toggleVideoPlay}
+                  aria-label={isVideoPlaying ? 'Pausar video' : 'Reproducir video'}
+                  className="px-3 sm:px-4 py-2 rounded-full bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-white/15 text-white text-xs font-bold flex items-center gap-2 shadow-lg transition hover:scale-105 active:scale-95 cursor-pointer"
+                >
+                  {isVideoPlaying ? (
+                    <>
+                      <Pause className="w-3.5 h-3.5 text-lime-400 fill-current" />
+                      <span className="hidden sm:inline">Pausar</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3.5 h-3.5 text-lime-400 fill-current ml-0.5" />
+                      <span className="hidden sm:inline">Reproducir</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Sound Toggle */}
+                <button
+                  type="button"
+                  onClick={toggleVideoMute}
+                  aria-label={isVideoMuted ? 'Activar sonido' : 'Silenciar sonido'}
+                  className="px-3 sm:px-4 py-2 rounded-full bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-white/15 text-white text-xs font-bold flex items-center gap-2 shadow-lg transition hover:scale-105 active:scale-95 cursor-pointer"
+                >
+                  {isVideoMuted ? (
+                    <>
+                      <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="text-[11px] text-slate-300 hidden sm:inline">Activar Sonido</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-[11px] text-emerald-300 hidden sm:inline">Sonido Activo</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Fullscreen Button */}
+              <button
+                type="button"
+                onClick={toggleVideoFullscreen}
+                aria-label="Pantalla completa"
+                className="px-3 sm:px-4 py-2 rounded-full bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-white/15 text-white text-xs font-bold flex items-center gap-2 shadow-lg transition hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-slate-300" />
+                <span className="hidden sm:inline text-xs">Pantalla Completa</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 Tarjetas de Pilares Sincronizados con el Video */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+          <div className="rounded-2xl p-4 bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 dark:hover:border-lime-400/40 transition-all shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-lime-400/10 text-emerald-600 dark:text-lime-400 flex items-center justify-center mb-3">
+              <Camera className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-lime-400 uppercase tracking-wider block mb-1">
+              01 · Visión IA
+            </span>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+              Lectura ANPR en &lt;1.8s
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              Detección óptica automática de matrículas con 99.4% de precisión bajo cualquier condición climática.
+            </p>
+          </div>
+
+          <div className="rounded-2xl p-4 bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 dark:hover:border-lime-400/40 transition-all shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-lime-400/10 text-emerald-600 dark:text-lime-400 flex items-center justify-center mb-3">
+              <Zap className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-lime-400 uppercase tracking-wider block mb-1">
+              02 · Automatización
+            </span>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+              Barrera Automatizada
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              Apertura y cierre instantáneo sincronizado con el software, sin boletos de papel ni atascos.
+            </p>
+          </div>
+
+          <div className="rounded-2xl p-4 bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 dark:hover:border-lime-400/40 transition-all shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-lime-400/10 text-emerald-600 dark:text-lime-400 flex items-center justify-center mb-3">
+              <Smartphone className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-lime-400 uppercase tracking-wider block mb-1">
+              03 · Acceso Digital
+            </span>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+              Kioskos & Pases QR
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              Confirmación digital de placa en pantalla táctil o validación con código QR dinámico desde el móvil.
+            </p>
+          </div>
+
+          <div className="rounded-2xl p-4 bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 dark:hover:border-lime-400/40 transition-all shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-lime-400/10 text-emerald-600 dark:text-lime-400 flex items-center justify-center mb-3">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-lime-400 uppercase tracking-wider block mb-1">
+              04 · Seguridad 24/7
+            </span>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+              Vigilancia Perimetral
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              Registro continuo con cámaras HD para tranquilidad de conductores y dueños de vehículos.
+            </p>
+          </div>
+        </div>
+      </ScrollRevealSection>
+
+      {/* =========================================================================
+          4. SECCIÓN: MAPA EN VIVO DE AYACUCHO
           ========================================================================= */}
       <ScrollRevealSection id="mapa" className="pt-10 pb-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full text-left">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-5 gap-3">

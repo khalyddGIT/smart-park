@@ -282,12 +282,12 @@ export const LandingPage = ({
   }, { scope: landingRef });
 
   return (
-    <div ref={landingRef} className="min-h-screen bg-[#F8FAFC] dark:bg-[#06090F] text-slate-900 dark:text-slate-100 selection:bg-lime-400 selection:text-slate-950 transition-colors duration-300 font-sans pb-12 relative overflow-x-hidden">
+    <div ref={landingRef} className="min-h-screen bg-[#F8FAFC] dark:bg-[#06090F] text-slate-900 dark:text-slate-100 selection:bg-emerald-500 selection:text-white transition-colors duration-300 font-sans pb-12 relative overflow-x-hidden">
       
       {/* Halo ambiental expansivo de fondo en Modo Oscuro */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[700px] bg-gradient-to-b from-emerald-500/10 via-lime-500/5 to-transparent dark:from-emerald-500/15 dark:via-lime-400/5 dark:to-transparent rounded-full blur-3xl opacity-70" />
-        <div className="absolute inset-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:32px_32px] opacity-20 dark:opacity-30" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[700px] bg-gradient-to-b from-emerald-500/10 via-teal-500/5 to-transparent dark:from-emerald-500/12 dark:via-teal-500/5 dark:to-transparent rounded-full blur-3xl opacity-60" />
+        <div className="absolute inset-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:32px_32px] opacity-15 dark:opacity-25" />
       </div>
 
       {/* =========================================================================
@@ -295,7 +295,7 @@ export const LandingPage = ({
           ========================================================================= */}
       <header className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-full px-6 py-3 shadow-md shadow-black/5 flex items-center justify-between">
+          <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-full px-6 py-3 shadow-md shadow-slate-900/5 dark:shadow-black/20 flex items-center justify-between transition-colors">
             
             {/* Logotipo Oficial */}
             <div className="flex items-center gap-2.5">
@@ -304,19 +304,19 @@ export const LandingPage = ({
 
             {/* Enlaces de Navegación de Escritorio */}
             <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-600 dark:text-slate-300 tracking-wide">
-              <button onClick={() => scrollTo('hero')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
+              <button onClick={() => scrollTo('hero')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer">
                 Inicio
               </button>
-              <button onClick={() => scrollTo('mapa')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
+              <button onClick={() => scrollTo('mapa')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer">
                 Mapa en Vivo
               </button>
-              <button onClick={() => scrollTo('beneficios')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
+              <button onClick={() => scrollTo('beneficios')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer">
                 Ventajas
               </button>
-              <button onClick={() => scrollTo('tecnologia')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
+              <button onClick={() => scrollTo('tecnologia')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer">
                 Tecnología
               </button>
-              <button onClick={() => scrollTo('faq')} className="hover:text-emerald-500 dark:hover:text-lime-400 transition cursor-pointer">
+              <button onClick={() => scrollTo('faq')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer">
                 Preguntas
               </button>
             </nav>
@@ -416,11 +416,11 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO CINEMÁTICO A PANTALLA COMPLETA (EDGE-TO-EDGE FULL WIDTH)
+          2. HERO CINEMÁTICO ADAPTATIVO (CLARO / OSCURO INTEGRADO)
           ========================================================================= */}
-      <main id="hero" className="relative w-full min-h-[85vh] sm:min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-950 text-white">
+      <main id="hero" className="relative w-full min-h-[85vh] sm:min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
         
-        {/* Video de Fondo Operacional en Bucle Infinito a Ancho Completo */}
+        {/* Video de Fondo Operacional con opacidad y brillo adaptados según tema */}
         <video
           src="/videos/smart-park-demo.mp4"
           autoPlay
@@ -428,31 +428,31 @@ export const LandingPage = ({
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 filter brightness-[0.45] contrast-[1.12]"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-35 dark:opacity-100 filter brightness-[0.95] dark:brightness-[0.45] contrast-[1.05] dark:contrast-[1.12] transition-all duration-500"
         />
 
-        {/* Gradientes y máscaras de alto contraste cinematográfico */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/80 to-slate-950/40 pointer-events-none z-0" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.2),transparent_60%)] pointer-events-none z-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/60 pointer-events-none z-0" />
+        {/* Gradientes y máscaras adaptadas: Alta legibilidad en Claro y profundidad en Oscuro */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-50/98 via-slate-50/90 to-slate-50/55 dark:from-slate-950/95 dark:via-slate-950/80 dark:to-slate-950/40 pointer-events-none z-0 transition-colors duration-300" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.1),transparent_60%)] dark:bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.18),transparent_60%)] pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-transparent to-slate-50/70 dark:from-slate-950 dark:via-transparent dark:to-slate-950/60 pointer-events-none z-0 transition-colors duration-300" />
 
-        {/* Transición inferior elegante hacia la siguiente sección */}
-        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-slate-50 dark:from-slate-950 to-transparent pointer-events-none z-0" />
+        {/* Transición inferior limpia e invisible hacia el fondo de la página */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#F8FAFC] dark:from-[#06090F] to-transparent pointer-events-none z-0" />
 
         {/* Contenido Centralizado del Hero */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20 sm:pt-36 sm:pb-24">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
             
-            {/* Columna Izquierda: Copywriting y CTA (Limpio y directo) */}
+            {/* Columna Izquierda: Copywriting y CTA */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               
               {/* Titular Principal de Impacto */}
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.05] text-white">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.05] text-slate-950 dark:text-white transition-colors">
                 Estaciona al instante en la ciudad
               </h1>
 
               {/* Subtítulo Conciso */}
-              <p className="text-sm sm:text-base lg:text-lg text-slate-300 max-w-xl leading-relaxed font-medium mx-auto lg:mx-0">
+              <p className="text-sm sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 max-w-xl leading-relaxed font-medium mx-auto lg:mx-0 transition-colors">
                 Encuentra plaza en tiempo real, ingresa con lectura automática de placa o código QR, y paga la tarifa exacta al minuto mediante Yape, Plin o tarjetas.
               </p>
 
@@ -460,95 +460,93 @@ export const LandingPage = ({
               <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3.5">
                 <MagneticButton
                   onClick={() => scrollTo('mapa')}
-                  className="bg-lime-400 hover:bg-lime-300 text-slate-950 px-7 py-3 sm:px-8 sm:py-3.5 rounded-full text-xs sm:text-sm font-black shadow-xl hover:scale-105 transition cursor-pointer flex items-center gap-2"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 px-7 py-3 sm:px-8 sm:py-3.5 rounded-full text-xs sm:text-sm font-black shadow-lg shadow-emerald-600/20 dark:shadow-emerald-500/15 hover:scale-105 transition cursor-pointer flex items-center gap-2"
                 >
-                  <Search className="w-4 h-4 text-slate-950" />
+                  <Search className="w-4 h-4 text-white dark:text-slate-950" />
                   Explorar Cocheras
                 </MagneticButton>
 
                 <button
                   type="button"
                   onClick={() => scrollTo('beneficios')}
-                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-200 hover:text-white hover:underline cursor-pointer group"
+                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:underline cursor-pointer group transition-colors"
                 >
                   Ver ventajas del sistema
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-lime-400" />
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-emerald-600 dark:text-emerald-400" />
                 </button>
               </div>
 
-              {/* Flecha Doodle Orgánica SVG */}
-              <div className="hidden lg:block pt-1">
-                <svg className="w-36 h-10 text-lime-400/80" viewBox="0 0 160 50" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M 10 15 C 50 5, 90 28, 140 32" strokeDasharray="5 3" />
-                  <polyline points="132,24 142,32 134,40" />
-                </svg>
+              {/* Micro-insignia de confianza en lugar de flecha doodle estridente */}
+              <div className="hidden lg:flex items-center gap-2 pt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Sin costo de suscripción para conductores • Reserva 100% garantizada</span>
               </div>
             </div>
 
-            {/* Columna Derecha: Mockups 3D Superpuestos Expansivos */}
+            {/* Columna Derecha: Mockups 3D Superpuestos Expansivos Adaptativos */}
             <div className="lg:col-span-5 relative flex justify-center lg:justify-end mt-4 lg:mt-0">
               <div className="relative w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[420px] h-[340px] sm:h-[390px] lg:h-[440px]">
                 
-                {/* Teléfono 1: Fondo Oscuro Tilted (Plano CAD 2D & LPR) */}
+                {/* Teléfono 1: Plano CAD 2D & LPR Adaptativo */}
                 <motion.div
                   initial={{ y: 15, opacity: 0, rotate: 5 }}
                   animate={{ y: 0, opacity: 1, rotate: 5 }}
                   transition={{ duration: 0.7, ease: FLUID_EASE }}
-                  className="hero-phone-1 absolute right-0 top-3 sm:top-4 w-[195px] sm:w-[230px] lg:w-[260px] bg-slate-950 rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3 shadow-2xl border-4 border-slate-800 text-white z-10 will-change-transform"
+                  className="hero-phone-1 absolute right-0 top-3 sm:top-4 w-[195px] sm:w-[230px] lg:w-[260px] bg-white dark:bg-slate-950 rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3 shadow-xl dark:shadow-2xl border-4 border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-white z-10 will-change-transform transition-colors"
                 >
-                  <div className="w-14 sm:w-16 h-2.5 sm:h-3 bg-slate-800 rounded-full mx-auto mb-2 sm:mb-2.5" />
+                  <div className="w-14 sm:w-16 h-2.5 sm:h-3 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-2 sm:mb-2.5" />
                   
                   <div className="space-y-2 sm:space-y-2.5 text-left">
                     <div className="flex items-center justify-between px-1">
-                      <span className="text-[8px] sm:text-[9px] font-bold text-slate-400">PLANO 2D EN VIVO</span>
-                      <span className="text-[7px] sm:text-[8px] font-bold text-emerald-400">15 Libres</span>
+                      <span className="text-[8px] sm:text-[9px] font-bold text-slate-500 dark:text-slate-400">PLANO 2D EN VIVO</span>
+                      <span className="text-[7px] sm:text-[8px] font-bold text-emerald-600 dark:text-emerald-400">15 Libres</span>
                     </div>
 
                     {/* Plazas */}
-                    <div className="grid grid-cols-3 gap-1 bg-slate-900/90 p-1.5 sm:p-2 rounded-xl border border-slate-800">
-                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-400">A-01</span>
+                    <div className="grid grid-cols-3 gap-1 bg-slate-50 dark:bg-slate-900/90 p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <div className="bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/50 rounded p-1 text-center">
+                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-700 dark:text-emerald-400">A-01</span>
                       </div>
-                      <div className="bg-red-500/20 border border-red-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-red-400">A-02</span>
+                      <div className="bg-rose-50 dark:bg-red-500/20 border border-rose-300 dark:border-red-500/50 rounded p-1 text-center">
+                        <span className="text-[7px] sm:text-[8px] font-bold text-rose-700 dark:text-red-400">A-02</span>
                       </div>
-                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-400">A-03</span>
+                      <div className="bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/50 rounded p-1 text-center">
+                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-700 dark:text-emerald-400">A-03</span>
                       </div>
-                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-400">B-01</span>
+                      <div className="bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/50 rounded p-1 text-center">
+                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-700 dark:text-emerald-400">B-01</span>
                       </div>
-                      <div className="bg-red-500/20 border border-red-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-red-400">B-02</span>
+                      <div className="bg-rose-50 dark:bg-red-500/20 border border-rose-300 dark:border-red-500/50 rounded p-1 text-center">
+                        <span className="text-[7px] sm:text-[8px] font-bold text-rose-700 dark:text-red-400">B-02</span>
                       </div>
-                      <div className="bg-emerald-500/20 border border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-400">B-03</span>
+                      <div className="bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/50 rounded p-1 text-center">
+                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-700 dark:text-emerald-400">B-03</span>
                       </div>
                     </div>
 
                     {/* LPR */}
-                    <div className="p-1.5 sm:p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
-                      <div className="flex items-center gap-1 text-[8px] sm:text-[9px] text-lime-400 font-bold">
+                    <div className="p-1.5 sm:p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-0.5">
+                      <div className="flex items-center gap-1 text-[8px] sm:text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">
                         <Camera className="w-2.5 h-2.5" />
                         LPR-IA Detectado
                       </div>
-                      <div className="text-[9px] sm:text-[10px] font-mono font-black text-slate-100 bg-slate-800 px-1.5 py-0.5 rounded text-center">
+                      <div className="text-[9px] sm:text-[10px] font-mono font-black text-slate-800 dark:text-slate-100 bg-slate-200/80 dark:bg-slate-800 px-1.5 py-0.5 rounded text-center">
                         ABC-123 · Auto
                       </div>
                     </div>
 
-                    <div className="text-[7px] sm:text-[8px] text-center text-slate-400">
+                    <div className="text-[7px] sm:text-[8px] text-center text-slate-500 dark:text-slate-400">
                       Barrera automática desbloqueada
                     </div>
                   </div>
                 </motion.div>
 
-                {/* Teléfono 2: Primer Plano (Búsqueda y Pase Digital Adaptado a Dark Mode) */}
+                {/* Teléfono 2: Búsqueda y Pase Digital Adaptativo */}
                 <motion.div
                   initial={{ y: 30, opacity: 0, rotate: -2 }}
                   animate={{ y: 0, opacity: 1, rotate: -2 }}
                   transition={{ duration: 0.7, delay: 0.1, ease: FLUID_EASE }}
-                  className="hero-phone-2 absolute left-0 top-0 w-[205px] sm:w-[245px] lg:w-[275px] bg-white dark:bg-slate-900/95 dark:backdrop-blur-md text-slate-900 dark:text-white rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3.5 shadow-2xl border-4 border-slate-900/10 dark:border-slate-700/80 z-20 text-left transition-colors will-change-transform"
+                  className="hero-phone-2 absolute left-0 top-0 w-[205px] sm:w-[245px] lg:w-[275px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-slate-900 dark:text-white rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3.5 shadow-2xl border-4 border-slate-200/90 dark:border-slate-700/80 z-20 text-left transition-colors will-change-transform"
                 >
                   <div className="w-20 h-3 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-2.5" />
                   
@@ -558,28 +556,28 @@ export const LandingPage = ({
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
 
-                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/60">
-                      <Search className="w-3 h-3 shrink-0" />
+                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700/60">
+                      <Search className="w-3 h-3 shrink-0 text-slate-400" />
                       <span className="truncate">Plaza Mayor, Jr. Callao...</span>
                     </div>
 
                     <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] sm:text-xs font-bold text-slate-900 dark:text-white">Cochera Central</span>
-                        <span className="text-[9px] sm:text-[10px] font-black text-emerald-600 dark:text-lime-400">S/ 3.50/h</span>
+                        <span className="text-[9px] sm:text-[10px] font-black text-emerald-600 dark:text-emerald-400">S/ 3.50/h</span>
                       </div>
                       <div className="flex items-center gap-1 text-[8px] sm:text-[9px] text-slate-500 dark:text-slate-400">
-                        <MapPin className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
+                        <MapPin className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                         <span className="truncate">Jr. 28 de Julio · 12 libres</span>
                       </div>
-                      <div className="w-full py-1.5 rounded-lg bg-slate-950 dark:bg-lime-400 text-white dark:text-slate-950 text-[9px] sm:text-[10px] font-black text-center shadow-sm">
+                      <div className="w-full py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 text-[9px] sm:text-[10px] font-black text-center shadow-sm transition">
                         Reservar Plaza
                       </div>
                     </div>
 
-                    <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-2.5">
-                      <div className="w-8 h-8 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-emerald-300 dark:border-emerald-700/60 flex items-center justify-center shrink-0">
-                        <QrCode className="w-5 h-5 text-slate-900 dark:text-emerald-400" />
+                    <div className="p-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-2.5">
+                      <div className="w-8 h-8 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-emerald-200 dark:border-emerald-700/60 flex items-center justify-center shrink-0">
+                        <QrCode className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
                       </div>
                       <div className="text-[8px] sm:text-[9px] min-w-0">
                         <p className="font-bold text-emerald-950 dark:text-emerald-300 truncate">Pase QR Activo</p>
@@ -652,7 +650,7 @@ export const LandingPage = ({
           {/* Tarjeta 1: Red Unificada de Cocheras */}
           <DynamicTiltCard className="rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 p-7 sm:p-8 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
             <div className="space-y-3">
-              <Layers className="w-6 h-6 text-emerald-600 dark:text-lime-400" strokeWidth={1.5} />
+              <Layers className="w-6 h-6 text-emerald-600 dark:text-emerald-400" strokeWidth={1.5} />
               
               <div>
                 <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -668,7 +666,7 @@ export const LandingPage = ({
               <button
                 type="button"
                 onClick={() => scrollTo('mapa')}
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer group"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer group"
               >
                 Explorar directorio
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
@@ -688,7 +686,7 @@ export const LandingPage = ({
           {/* Tarjeta 2: Telemetría y Control en Tiempo Real */}
           <DynamicTiltCard className="rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 p-7 sm:p-8 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
             <div className="space-y-3">
-              <Radio className="w-6 h-6 text-emerald-600 dark:text-lime-400" strokeWidth={1.5} />
+              <Radio className="w-6 h-6 text-emerald-600 dark:text-emerald-400" strokeWidth={1.5} />
               
               <div>
                 <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -704,7 +702,7 @@ export const LandingPage = ({
               <button
                 type="button"
                 onClick={() => scrollTo('tecnologia')}
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer group"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer group"
               >
                 Ver arquitectura tecnológica
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
@@ -742,7 +740,7 @@ export const LandingPage = ({
               <button
                 type="button"
                 onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-lime-400 hover:underline cursor-pointer"
+                className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
               >
                 Afilia tu cochera en 24 horas →
               </button>
@@ -753,7 +751,7 @@ export const LandingPage = ({
           <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-7">
             
             <div className="p-4 sm:p-5 rounded-2xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
-              <Clock className="w-5 h-5 text-emerald-600 dark:text-lime-400" />
+              <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 15 Minutos de Tolerancia
               </h4>
@@ -763,7 +761,7 @@ export const LandingPage = ({
             </div>
 
             <div className="p-4 sm:p-5 rounded-2xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
-              <Camera className="w-5 h-5 text-emerald-600 dark:text-lime-400" />
+              <Camera className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 Cámara LPR & Visión AI
               </h4>
@@ -773,7 +771,7 @@ export const LandingPage = ({
             </div>
 
             <div className="p-4 sm:p-5 rounded-2xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
-              <CreditCard className="w-5 h-5 text-emerald-600 dark:text-lime-400" />
+              <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 Tarifas Justas al Minuto
               </h4>
@@ -783,7 +781,7 @@ export const LandingPage = ({
             </div>
 
             <div className="p-4 sm:p-5 rounded-2xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
-              <QrCode className="w-5 h-5 text-emerald-600 dark:text-lime-400" />
+              <QrCode className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 Pase QR 100% Offline
               </h4>
@@ -822,7 +820,7 @@ export const LandingPage = ({
       <ScrollRevealSection className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <div className="relative rounded-[28px] sm:rounded-[40px] bg-gradient-to-br from-[#0B1324] via-[#070B14] to-[#04060A] text-white p-6 sm:p-10 lg:p-14 overflow-hidden border border-slate-800 dark:border-emerald-500/20 text-left shadow-2xl">
           <div className="absolute -right-16 -top-16 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
           
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center relative z-10">
             <div className="md:col-span-7 space-y-4">
@@ -836,7 +834,7 @@ export const LandingPage = ({
                 <button
                   type="button"
                   onClick={() => scrollTo('mapa')}
-                  className="bg-white dark:bg-lime-400 text-slate-950 px-6 py-2.5 rounded-full text-xs sm:text-sm font-black hover:bg-slate-200 dark:hover:bg-lime-300 transition cursor-pointer shadow-lg"
+                  className="bg-white hover:bg-slate-100 text-slate-950 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 px-6 py-2.5 rounded-full text-xs sm:text-sm font-black transition cursor-pointer shadow-lg"
                 >
                   Buscar mi plaza ahora
                 </button>

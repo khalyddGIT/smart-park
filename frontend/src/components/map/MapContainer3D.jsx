@@ -503,7 +503,7 @@ export const MapContainer3D = ({
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              <Map className="w-3.5 h-3.5 text-emerald-600 dark:text-lime-400" />
+              <Map className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Calles</span>
             </button>
 
@@ -516,7 +516,7 @@ export const MapContainer3D = ({
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-lime-400" />
+              <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Satélite</span>
             </button>
           </div>

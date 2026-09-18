@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useEstablishments, parseIsoToDate, isMyEstablishment } from '../context/EstablishmentContext';
+import { useEstablishments, parseIsoToDate, isMyEstablishment, isDemoEstablishment } from '../context/EstablishmentContext';
 import api, { getAccessToken } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
@@ -119,17 +119,23 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   // Modal de Ticket / Comprobante
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
-  // Establecimiento seleccionado para nueva reserva
-  const activeEstablishment = establishments.find(e => e.id === selectedParkingId) || establishments[0];
-  const availableSlots = (activeEstablishment?.elements || []).filter(el => el.type === 'slot' && el.status === 'free');
-
-  // Sedes asociadas al usuario actual
+  // Sedes asociadas al usuario actual (aisladas estrictamente por empresa para admin local)
   const myEstablishments = useMemo(() => {
-    return (establishments || []).filter(e => isMyEstablishment(e, user, role));
+    return (establishments || []).filter(e => isMyEstablishment(e, user, role, establishments));
   }, [establishments, user, role]);
 
+  const displayEstablishments = useMemo(() => {
+    if (role === 'platform') return (establishments || []).filter(e => !isDemoEstablishment(e));
+    if (Array.isArray(myEstablishments) && myEstablishments.length > 0) return myEstablishments;
+    return (establishments || []).filter(e => isMyEstablishment(e, user, role, establishments));
+  }, [establishments, myEstablishments, user, role]);
+
+  // Establecimiento seleccionado para nueva reserva (restringido a sedes autorizadas)
+  const activeEstablishment = displayEstablishments.find(e => String(e.id) === String(selectedParkingId)) || displayEstablishments[0] || establishments[0];
+  const availableSlots = (activeEstablishment?.elements || []).filter(el => el.type === 'slot' && el.status === 'free');
+
   const [currentParkingId, setCurrentParkingId] = useState(() => {
-    return myEstablishments[0]?.id || establishments[0]?.id || '';
+    return myEstablishments[0]?.id || displayEstablishments[0]?.id || establishments[0]?.id || '';
   });
 
   useEffect(() => {
@@ -1444,16 +1450,16 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
 
           {/* Selectores de Sede y Fecha */}
           <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end">
-            <select
-              value={parkingFilter}
-              onChange={(e) => setParkingFilter(e.target.value)}
-              className="h-9 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none cursor-pointer focus:border-emerald-500"
-            >
-              <option value="ALL">Todas las Sedes ({establishments.length})</option>
-              {establishments.map(e => (
-                <option key={e.id} value={e.id}>{e.name}</option>
-              ))}
-            </select>
+              <select
+                value={parkingFilter}
+                onChange={(e) => setParkingFilter(e.target.value)}
+                className="h-9 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none cursor-pointer focus:border-emerald-500"
+              >
+                <option value="ALL">{role === 'local' ? `Todas mis sedes (${displayEstablishments.length})` : `Todas las Sedes (${displayEstablishments.length})`}</option>
+                {displayEstablishments.map(e => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
+                ))}
+              </select>
 
             <select
               value={dateFilter}
@@ -1839,7 +1845,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                   }}
                   className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none"
                 >
-                  {establishments.map(est => (
+                  {displayEstablishments.map(est => (
                     <option key={est.id} value={est.id}>
                       {est.name} (S/ {Number(est.rate).toFixed(2)}/h)
                     </option>

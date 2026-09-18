@@ -152,61 +152,152 @@ export const isDemoEstablishment = (e) => {
   return false;
 };
 
+// Helper universal para extraer la empresa autorizada para un usuario local (Admin Local / Garita)
+export const getUserAuthorizedCompanyNames = (user, establishments = []) => {
+  if (!user) return new Set();
+  const userEmail = (user.email || '').trim().toLowerCase();
+  const authorizedCompanies = new Set();
+
+  // 1. Empresa explícita en el perfil del usuario
+  if (user.companyName) authorizedCompanies.add(user.companyName.trim().toLowerCase());
+  if (user.establishmentName) {
+    const hier = getEstablishmentHierarchy({ name: user.establishmentName });
+    if (hier.companyName) authorizedCompanies.add(hier.companyName.trim().toLowerCase());
+  }
+
+  // 2. ID de establecimiento asignado directamente en sesión del usuario
+  const userAssignedIds = [user.parking_id, user.parkingId, user.establishmentId]
+    .filter(Boolean)
+    .map(id => String(id));
+
+  userAssignedIds.forEach(id => {
+    const norm = normalizeParkingId(id);
+    const matched = (establishments || []).find(e => String(e.id) === id || String(e.id) === norm);
+    if (matched) {
+      const { companyName } = getEstablishmentHierarchy(matched);
+      if (companyName) authorizedCompanies.add(companyName.trim().toLowerCase());
+    }
+  });
+
+  // 3. Coincidencia por correo electrónico del usuario
+  if (userEmail) {
+    (establishments || []).forEach(est => {
+      const eMail = (est.email || '').trim().toLowerCase();
+      const aMail = (est.admin_email || est.adminEmail || '').trim().toLowerCase();
+      if (eMail === userEmail || aMail === userEmail) {
+        const { companyName } = getEstablishmentHierarchy(est);
+        if (companyName) authorizedCompanies.add(companyName.trim().toLowerCase());
+      }
+    });
+
+    // 4. Búsqueda en credenciales locales persistentes (smart_park_local_user_credentials_v1)
+    try {
+      const credsRaw = localStorage.getItem(LOCAL_USER_CREDENTIALS_KEY);
+      if (credsRaw) {
+        const creds = JSON.parse(credsRaw);
+        const myCred = creds[userEmail];
+        if (myCred) {
+          if (myCred.companyName) authorizedCompanies.add(myCred.companyName.trim().toLowerCase());
+          if (myCred.establishmentName) {
+            const h = getEstablishmentHierarchy({ name: myCred.establishmentName });
+            if (h.companyName) authorizedCompanies.add(h.companyName.trim().toLowerCase());
+          }
+          if (myCred.parkingId) {
+            const pid = String(myCred.parkingId);
+            const pNorm = normalizeParkingId(pid);
+            const matched = (establishments || []).find(e => String(e.id) === pid || String(e.id) === pNorm);
+            if (matched) {
+              const { companyName } = getEstablishmentHierarchy(matched);
+              if (companyName) authorizedCompanies.add(companyName.trim().toLowerCase());
+            }
+          }
+        }
+      }
+    } catch {}
+
+    // 5. Búsqueda en administradores aprobados persistentes (smart_park_approved_admins_v1)
+    try {
+      const approvedRaw = localStorage.getItem('smart_park_approved_admins_v1');
+      if (approvedRaw) {
+        const approvedList = JSON.parse(approvedRaw);
+        if (Array.isArray(approvedList)) {
+          const match = approvedList.find(a => (a.email || '').trim().toLowerCase() === userEmail);
+          if (match) {
+            if (match.companyName) authorizedCompanies.add(match.companyName.trim().toLowerCase());
+            if (match.establishmentName) {
+              const h = getEstablishmentHierarchy({ name: match.establishmentName });
+              if (h.companyName) authorizedCompanies.add(h.companyName.trim().toLowerCase());
+            }
+            if (match.establishmentId) {
+              const eid = String(match.establishmentId);
+              const eNorm = normalizeParkingId(eid);
+              const matched = (establishments || []).find(e => String(e.id) === eid || String(e.id) === eNorm);
+              if (matched) {
+                const { companyName } = getEstablishmentHierarchy(matched);
+                if (companyName) authorizedCompanies.add(companyName.trim().toLowerCase());
+              }
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 6. Aislamiento estricto de multitenancy:
+  // Si no hay empresa identificada todavía, se asocia a la empresa de su garita activa o a la primera empresa legítima,
+  // pero NUNCA a todas las empresas a la vez.
+  if (authorizedCompanies.size === 0 && Array.isArray(establishments) && establishments.length > 0) {
+    let fallbackEst = null;
+    try {
+      const savedActive = localStorage.getItem('smart_park_active_garita_est');
+      if (savedActive) {
+        fallbackEst = establishments.find(e => String(e.id) === String(savedActive) && !isDemoEstablishment(e));
+      }
+    } catch {}
+
+    if (!fallbackEst) {
+      fallbackEst = establishments.find(e => !isDemoEstablishment(e)) || establishments[0];
+    }
+
+    if (fallbackEst) {
+      const { companyName } = getEstablishmentHierarchy(fallbackEst);
+      if (companyName) authorizedCompanies.add(companyName.trim().toLowerCase());
+    }
+  }
+
+  return authorizedCompanies;
+};
+
 // Helper estricto para validar si un establecimiento/sucursal le pertenece al usuario actual (Admin Local)
-export const isMyEstablishment = (est, user, role) => {
+export const isMyEstablishment = (est, user, role, allEstablishments = null) => {
   if (!est) return false;
   if (isDemoEstablishment(est)) return false; // Las sedes demo nunca le pertenecen a nadie
   if (role === 'platform') return true; // Super Admin ve todas las sedes legítimas
   if (role !== 'local') return true;   // Conductor ve todas las legítimas activas en su módulo
   if (!user) return false;
 
-  const estId = String(est.id || '');
-  const userEmail = (user.email || '').trim().toLowerCase();
-  const estEmail = (est.email || '').trim().toLowerCase();
-  const estAdminEmail = (est.admin_email || est.adminEmail || '').trim().toLowerCase();
-  const normEstId = normalizeParkingId(estId);
+  const estHierarchy = getEstablishmentHierarchy(est);
+  const estCompany = (estHierarchy.companyName || '').trim().toLowerCase();
+  if (!estCompany) return false;
 
-  // 1. Coincidencia directa por correo de acceso o correo de administración de la sede
-  if (userEmail && (userEmail === estEmail || userEmail === estAdminEmail)) return true;
-
-  // 2. Asignación directa por ID de cochera en la sesión del usuario
-  if (user.parking_id && (String(user.parking_id) === estId || String(user.parking_id) === normEstId)) return true;
-  if (user.establishmentId && (String(user.establishmentId) === estId || String(user.establishmentId) === normEstId)) return true;
-
-  // 3. Cuenta de prueba adminlocal@smartpark.com
-  if (userEmail === 'adminlocal@smartpark.com') {
-    return true;
-  }
-
-  // 4. Verificación en credenciales locales persistentes (smart_park_local_user_credentials_v1)
-  try {
-    const credsRaw = localStorage.getItem(LOCAL_USER_CREDENTIALS_KEY);
-    if (credsRaw) {
-      const creds = JSON.parse(credsRaw);
-      const myCred = creds[userEmail];
-      if (myCred && myCred.parkingId && (String(myCred.parkingId) === estId || String(myCred.parkingId) === normEstId)) return true;
-    }
-  } catch {}
-
-  // 5. Verificación en administradores aprobados persistentes (smart_park_approved_admins_v1)
-  try {
-    const approvedRaw = localStorage.getItem('smart_park_approved_admins_v1');
-    if (approvedRaw) {
-      const approvedList = JSON.parse(approvedRaw);
-      if (Array.isArray(approvedList)) {
-        const match = approvedList.find(a => (a.email || '').trim().toLowerCase() === userEmail && (String(a.establishmentId || '') === estId || String(a.establishmentId || '') === normEstId));
-        if (match) return true;
+  let pool = allEstablishments;
+  if (!pool || !pool.length) {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          pool = parsed;
+        }
       }
-    }
-  } catch {}
-
-  // 6. Si el usuario tiene una empresa/local registrado (user.establishmentName)
-  if (user.establishmentName) {
-    const { companyName } = getEstablishmentHierarchy(est);
-    if (companyName.toLowerCase() === user.establishmentName.trim().toLowerCase()) return true;
+    } catch {}
+  }
+  if (!pool || !pool.length) {
+    pool = [est];
   }
 
-  return false;
+  const authorizedCompanies = getUserAuthorizedCompanyNames(user, pool);
+  return authorizedCompanies.has(estCompany);
 };
 
 // Helper para aislar datos por usuario - evita fuga entre usuarios
@@ -444,7 +535,7 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Establecimientos filtrados que le pertenecen exclusivamente al usuario autenticado (Admin Local)
   const myEstablishments = React.useMemo(() => {
-    return establishments.filter(est => isMyEstablishment(est, user, role));
+    return establishments.filter(est => isMyEstablishment(est, user, role, establishments));
   }, [establishments, user, role]);
 
   const [reservations, setReservations] = useState(() => {
@@ -2092,6 +2183,7 @@ export const EstablishmentProvider = ({ children }) => {
       setEstablishments,
       myEstablishments,
       isMyEstablishment,
+      getUserAuthorizedCompanyNames,
       getEstablishmentHierarchy,
       reservations,
       setReservations,

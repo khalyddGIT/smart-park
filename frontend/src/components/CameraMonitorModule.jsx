@@ -29,7 +29,8 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { ConfirmDialog } from './ui/confirm-dialog';
-import { useEstablishments } from '../context/EstablishmentContext';
+import { useAuth } from '../context/AuthContext';
+import { useEstablishments, isDemoEstablishment } from '../context/EstablishmentContext';
 import api from '../services/api';
 
 const CAMERA_EST_STORAGE_KEY = 'smart_park_active_cctv_est';
@@ -47,19 +48,40 @@ function parseCalibration(raw) {
 }
 
 export const CameraMonitorModule = ({ readOnly = false }) => {
-  const { establishments, setEstablishments } = useEstablishments();
+  const { role, user } = useAuth();
+  const { establishments, setEstablishments, myEstablishments, isMyEstablishment } = useEstablishments();
+
+  // Filtrar establecimientos autorizados para este rol local:
+  const availableEstablishments = useMemo(() => {
+    if (role === 'platform') return (establishments || []).filter((e) => !isDemoEstablishment(e));
+    if (Array.isArray(myEstablishments) && myEstablishments.length > 0) return myEstablishments;
+    return (establishments || []).filter((e) => isMyEstablishment(e, user, role, establishments));
+  }, [establishments, myEstablishments, isMyEstablishment, user, role]);
 
   const [selectedEstId, setSelectedEstId] = useState(() => {
     try {
       const saved = localStorage.getItem(CAMERA_EST_STORAGE_KEY);
       if (saved && establishments.some((e) => String(e.id) === String(saved))) return saved;
     } catch {}
-    return establishments[0]?.id || '';
+    return availableEstablishments[0]?.id || establishments[0]?.id || '';
   });
 
+  useEffect(() => {
+    if (availableEstablishments.length > 0) {
+      const exists = availableEstablishments.some((e) => String(e.id) === String(selectedEstId));
+      if (!exists) {
+        const nextId = String(availableEstablishments[0].id);
+        setSelectedEstId(nextId);
+        try {
+          localStorage.setItem(CAMERA_EST_STORAGE_KEY, nextId);
+        } catch {}
+      }
+    }
+  }, [availableEstablishments, selectedEstId]);
+
   const currentEst = useMemo(
-    () => establishments.find((e) => String(e.id) === String(selectedEstId)) || establishments[0] || null,
-    [establishments, selectedEstId]
+    () => availableEstablishments.find((e) => String(e.id) === String(selectedEstId)) || availableEstablishments[0] || null,
+    [availableEstablishments, selectedEstId]
   );
   const numericId = useMemo(() => {
     if (!currentEst) return null;
@@ -503,8 +525,17 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
           <div className="flex items-center gap-2 flex-wrap shrink-0">
             <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-xl px-2 py-1">
               <Building2 className="w-3.5 h-3.5 text-slate-400" />
-              <select value={selectedEstId} onChange={(e) => setSelectedEstId(e.target.value)} className="bg-transparent text-xs font-bold text-white outline-none min-w-[180px]">
-                {establishments.map((est) => (<option key={est.id} value={est.id} className="text-slate-900">{est.name}</option>))}
+              <select 
+                value={selectedEstId} 
+                onChange={(e) => {
+                  setSelectedEstId(e.target.value);
+                  try {
+                    localStorage.setItem(CAMERA_EST_STORAGE_KEY, e.target.value);
+                  } catch {}
+                }} 
+                className="bg-transparent text-xs font-bold text-white outline-none min-w-[180px]"
+              >
+                {availableEstablishments.map((est) => (<option key={est.id} value={est.id} className="text-slate-900">{est.name}</option>))}
               </select>
             </div>
             {!readOnly && (mode === 'monitor' ? (

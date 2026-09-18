@@ -33,7 +33,8 @@ import {
   normalizarPlaca,
   formatearPlacaConGuion
 } from '../utils/plateOcr';
-import { useEstablishments } from '../context/EstablishmentContext';
+import { useAuth } from '../context/AuthContext';
+import { useEstablishments, isDemoEstablishment } from '../context/EstablishmentContext';
 import { CarParkZoneEditor } from './CarParkZoneEditor';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
 
@@ -48,8 +49,11 @@ const getCurrentTimeStr = () => {
 };
 
 export const ANPRMonitor = () => {
+  const { role, user } = useAuth();
   const {
     establishments,
+    myEstablishments,
+    isMyEstablishment,
     reservations,
     occupySlot,
     freeSlot,
@@ -61,15 +65,36 @@ export const ANPRMonitor = () => {
     updateEstablishmentPlan
   } = useEstablishments();
 
+  // Filtrar establecimientos autorizados para este administrador local u operador:
+  const availableEstablishments = useMemo(() => {
+    if (role === 'platform') return (establishments || []).filter(e => !isDemoEstablishment(e));
+    if (Array.isArray(myEstablishments) && myEstablishments.length > 0) return myEstablishments;
+    return (establishments || []).filter(e => isMyEstablishment(e, user, role, establishments));
+  }, [establishments, myEstablishments, isMyEstablishment, user, role]);
+
   const [selectedEstId, setSelectedEstId] = useState(() => {
     const saved = localStorage.getItem('smart_park_active_garita_est');
     if (saved && establishments.some(e => String(e.id) === String(saved))) return saved;
-    return establishments[0]?.id || 'EST-01';
+    return availableEstablishments[0]?.id || establishments[0]?.id || 'EST-01';
   });
 
+  // Asegurar que selectedEstId siempre pertenezca a availableEstablishments de la empresa
+  useEffect(() => {
+    if (availableEstablishments.length > 0) {
+      const exists = availableEstablishments.some(e => String(e.id) === String(selectedEstId));
+      if (!exists) {
+        const nextId = String(availableEstablishments[0].id);
+        setSelectedEstId(nextId);
+        try {
+          localStorage.setItem('smart_park_active_garita_est', nextId);
+        } catch {}
+      }
+    }
+  }, [availableEstablishments, selectedEstId]);
+
   const currentEst = useMemo(
-    () => establishments.find(e => String(e.id) === String(selectedEstId)) || establishments[0],
-    [establishments, selectedEstId]
+    () => availableEstablishments.find(e => String(e.id) === String(selectedEstId)) || availableEstablishments[0] || establishments[0],
+    [availableEstablishments, selectedEstId, establishments]
   );
 
   // Formulario de estadía: entry | exit | inside
@@ -483,8 +508,17 @@ export const ANPRMonitor = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-2 transition-colors">
               <Building2 className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
-              <select value={selectedEstId} onChange={(e) => setSelectedEstId(e.target.value)} className="bg-transparent text-xs font-bold text-slate-900 dark:text-slate-100 outline-none cursor-pointer max-w-[200px] truncate">
-                {establishments.map(est => <option key={est.id} value={est.id}>{est.name}</option>)}
+              <select 
+                value={selectedEstId} 
+                onChange={(e) => {
+                  setSelectedEstId(e.target.value);
+                  try {
+                    localStorage.setItem('smart_park_active_garita_est', e.target.value);
+                  } catch {}
+                }} 
+                className="bg-transparent text-xs font-bold text-slate-900 dark:text-slate-100 outline-none cursor-pointer max-w-[200px] truncate"
+              >
+                {availableEstablishments.map(est => <option key={est.id} value={est.id}>{est.name}</option>)}
               </select>
             </div>
 

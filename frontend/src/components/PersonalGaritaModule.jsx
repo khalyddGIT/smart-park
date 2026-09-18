@@ -31,7 +31,7 @@ import { playTone, isAudioMuted, toggleAudioMute } from '../utils/soundEffects';
 import api from '../services/api';
 
 export const PersonalGaritaModule = () => {
-  const { establishments, reservations, createReservation, checkInReservation, checkOutReservation, ensureFloorPlan, fetchParkings, wsConnected } = useEstablishments();
+  const { establishments, myEstablishments, reservations, createReservation, checkInReservation, checkOutReservation, ensureFloorPlan, fetchParkings, wsConnected } = useEstablishments();
   const { user } = useAuth();
   const [assignedParkingId, setAssignedParkingId] = useState(null);
   const [audioMuted, setAudioMutedState] = useState(isAudioMuted());
@@ -56,9 +56,10 @@ export const PersonalGaritaModule = () => {
   }, [user?.email]);
 
   const currentEst = useMemo(() => {
-    if (assignedParkingId) return establishments.find(e => String(e.id) === String(assignedParkingId)) || establishments[0];
-    return establishments[0];
-  }, [establishments, assignedParkingId]);
+    const list = Array.isArray(myEstablishments) && myEstablishments.length > 0 ? myEstablishments : establishments;
+    if (assignedParkingId) return list.find(e => String(e.id) === String(assignedParkingId)) || list[0];
+    return list[0];
+  }, [establishments, myEstablishments, assignedParkingId]);
 
   // Asegura que el plano del parking asignado esté hidratado
   useEffect(() => {

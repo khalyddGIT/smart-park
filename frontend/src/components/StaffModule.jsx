@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useEstablishments } from '../context/EstablishmentContext';
+import { useAuth } from '../context/AuthContext';
+import { useEstablishments, isMyEstablishment } from '../context/EstablishmentContext';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -30,7 +31,6 @@ import {
   Building2,
   Lightbulb
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 // Función auxiliar para generar contraseñas seguras aleatorias
@@ -44,7 +44,7 @@ const generateSecurePassword = () => {
 };
 
 export const StaffModule = () => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const canManage = role === 'local' || role === 'platform';
 
   const [staff, setStaff] = useState([]);
@@ -65,7 +65,9 @@ export const StaffModule = () => {
   const [showQuickPassword, setShowQuickPassword] = useState(false);
 
   const { establishments } = useEstablishments();
-  const validEstablishments = establishments.filter(e => !String(e.id).startsWith('EST-') && !isNaN(Number(e.id)));
+  const validEstablishments = (establishments || [])
+    .filter(e => isMyEstablishment(e, user, role, establishments))
+    .filter(e => !String(e.id).startsWith('EST-') && !isNaN(Number(e.id)));
   const defaultParkingId = validEstablishments.length ? Number(validEstablishments[0].id) : null;
 
   // Estados de formularios

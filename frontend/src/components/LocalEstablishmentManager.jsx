@@ -777,9 +777,15 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           { id: 21, type: 'slot', code: 'B-02', slotType: 'moto', x: 165, y: 470, w: 50, h: 140, rot: 0, status: 'free' }
         ];
 
+        const newEstHierarchy = getEstablishmentHierarchy({ name: formData.name });
+        const targetCompanyName = formData.company_name || formData.companyName || companyName || newEstHierarchy.companyName;
         const newEst = {
           id: `EST-${Math.floor(10 + Math.random() * 90)}`,
           name: formData.name,
+          company_name: targetCompanyName,
+          companyName: targetCompanyName,
+          admin_email: formData.admin_email || user?.email || '',
+          adminEmail: formData.admin_email || user?.email || '',
           address: formData.address,
           reference: formData.reference,
           city: formData.city || 'Ayacucho - Huamanga',

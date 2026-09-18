@@ -71,6 +71,19 @@ async def _get_local_user_parking_ids(db: AsyncSession, current_user: User) -> l
         for pid in seed_res.scalars().all():
             parking_ids.add(pid)
 
+    # 4. Incluir sucursales de la misma empresa
+    if parking_ids:
+        owned_parkings = await db.execute(select(Parking.name).where(Parking.id.in_(list(parking_ids))))
+        for nm in owned_parkings.scalars().all():
+            if nm:
+                comp = nm.split(" - ")[0].strip() if " - " in nm else nm.strip()
+                if len(comp) >= 2:
+                    branch_res = await db.execute(
+                        select(Parking.id).where(func.lower(Parking.name).like(f"{comp.lower()}%"))
+                    )
+                    for b_id in branch_res.scalars().all():
+                        parking_ids.add(b_id)
+
     return list(parking_ids)
 
 

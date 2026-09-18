@@ -53,6 +53,11 @@ export const AuthProvider = ({ children }) => {
           role: serverRole,
           dni: serverUser.dni || '',
           address: serverUser.address || '',
+          parking_id: serverUser.parking_id || user?.parking_id || null,
+          parkingId: serverUser.parking_id || user?.parkingId || null,
+          establishmentId: serverUser.establishment_id || user?.establishmentId || null,
+          establishmentName: serverUser.establishment_name || user?.establishmentName || '',
+          companyName: serverUser.company_name || user?.companyName || '',
           isGoogleAuth: user?.isGoogleAuth || false
         };
         setUser(corrected);
@@ -142,6 +147,11 @@ export const AuthProvider = ({ children }) => {
         phone: serverUser.phone,
         avatar: serverUser.avatar_url || null,
         role: serverUser.role || explicitRole || 'user',
+        parking_id: serverUser.parking_id || null,
+        parkingId: serverUser.parking_id || null,
+        establishmentId: serverUser.establishment_id || serverUser.establishmentId || null,
+        establishmentName: serverUser.establishment_name || serverUser.establishmentName || '',
+        companyName: serverUser.company_name || serverUser.companyName || '',
         isGoogleAuth: false
       };
       setUser(u);
@@ -206,6 +216,11 @@ export const AuthProvider = ({ children }) => {
           phone: candidate.phone || '',
           avatar: null,
           role: candidate.role || 'local',
+          parking_id: candidate.parking_id || candidate.parkingId || candidate.establishmentId || null,
+          parkingId: candidate.parkingId || candidate.parking_id || candidate.establishmentId || null,
+          establishmentId: candidate.establishmentId || candidate.parkingId || candidate.parking_id || null,
+          establishmentName: candidate.establishmentName || candidate.parkingName || candidate.companyName || '',
+          companyName: candidate.companyName || candidate.establishmentName || '',
           isGoogleAuth: false
         };
 

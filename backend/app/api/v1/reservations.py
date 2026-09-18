@@ -678,6 +678,10 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
     
     if reservation.status == "cancelled":
         raise HTTPException(status_code=400, detail="La reserva ya ha sido cancelada")
+    if reservation.status == "completed":
+        raise HTTPException(status_code=400, detail="La estadía ya fue completada y no puede cancelarse")
+    if reservation.status == "active":
+        raise HTTPException(status_code=400, detail="No es posible cancelar una estadía en curso con el vehículo dentro de la cochera. La salida debe ser gestionada por el personal de garita.")
 
     reservation.status = "cancelled"
 

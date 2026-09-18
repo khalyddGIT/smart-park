@@ -523,6 +523,11 @@ async def test_driver_cannot_delete_vehicle_with_active_reservation_or_stay():
         assert checkin_resp.status_code == 200
         assert checkin_resp.json()["status"] == "active"
 
+        # 5.1 INTENTO DE CANCELAR RESERVA CON VEHÍCULO EN COCHERA (active) -> DEBE FALLAR (400)
+        cancel_active = await ac.put(f"/api/v1/reservations/{res_id}/cancel", headers=driver_headers)
+        assert cancel_active.status_code == 400
+        assert "vehículo dentro de la cochera" in cancel_active.json()["detail"].lower() or "en curso" in cancel_active.json()["detail"].lower()
+
         # 6. INTENTO DE ELIMINAR VEHÍCULO CON ESTADÍA EN CURSO -> DEBE FALLAR (400)
         del_attempt2 = await ac.delete(f"/api/v1/vehicles/{veh_id}", headers=driver_headers)
         assert del_attempt2.status_code == 400
@@ -535,6 +540,11 @@ async def test_driver_cannot_delete_vehicle_with_active_reservation_or_stay():
         })
         assert checkout_resp.status_code == 200
         assert checkout_resp.json()["status"] == "completed"
+
+        # 7.1 INTENTO DE CANCELAR RESERVA FINALIZADA (completed) -> DEBE FALLAR (400)
+        cancel_completed = await ac.put(f"/api/v1/reservations/{res_id}/cancel", headers=driver_headers)
+        assert cancel_completed.status_code == 400
+        assert "completada" in cancel_completed.json()["detail"].lower()
 
         # 8. AHORA SÍ: Conductor elimina su vehículo exitosamente
         del_success = await ac.delete(f"/api/v1/vehicles/{veh_id}", headers=driver_headers)

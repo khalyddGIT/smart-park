@@ -13,8 +13,6 @@ import {
   Compass, 
   ExternalLink,
   Camera,
-  LogIn,
-  LogOut,
   Loader2,
   AlertCircle,
   AlertTriangle,
@@ -472,8 +470,12 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgData)}`;
   };
 
-  // Cancelar Reserva Justa (Libera el cajón sin penalidad dentro de la tolerancia)
+  // Cancelar Reserva (Únicamente permitido si está programada antes de ingresar a la cochera)
   const handleCancelReservation = async () => {
+    if (localStatus !== 'scheduled') {
+      alert('No es posible cancelar una estadía una vez que el vehículo ha ingresado a la cochera.');
+      return;
+    }
     if (!passData.dbId) {
       setLocalStatus('cancelled');
       onClose();
@@ -495,47 +497,6 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     }
   };
 
-  // Check-in (Registrar Ingreso y arrancar tiempo real de estadía)
-  const handleCheckIn = async () => {
-    if (!passData.dbId) {
-      const now = new Date().toISOString();
-      setLocalStatus('active');
-      setLocalActualEntry(now);
-      return;
-    }
-    setIsUpdating(true);
-    try {
-      const res = await api.put(`/reservations/${passData.dbId}/check-in`);
-      setLocalStatus('active');
-      setLocalActualEntry(res.data.actual_entry || new Date().toISOString());
-      if (onReservationUpdated) onReservationUpdated(res.data);
-    } catch (err) {
-      const now = new Date().toISOString();
-      setLocalStatus('active');
-      setLocalActualEntry(now);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  // Check-out (Registrar Salida)
-  const handleCheckOut = async () => {
-    if (!passData.dbId) {
-      setLocalStatus('completed');
-      return;
-    }
-    setIsUpdating(true);
-    try {
-      const res = await api.put(`/reservations/${passData.dbId}/check-out`);
-      setLocalStatus('completed');
-      if (onReservationUpdated) onReservationUpdated(res.data);
-    } catch (err) {
-      setLocalStatus('completed');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const isScheduled = localStatus === 'scheduled';
   const isActive = localStatus === 'active';
   const isCompleted = localStatus === 'completed';
@@ -543,7 +504,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-sm sm:max-w-md w-[95vw] rounded-2xl sm:rounded-3xl p-0 overflow-y-auto max-h-[92vh] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl">
+      <DialogContent className="max-w-sm sm:max-w-md w-[92vw] rounded-2xl sm:rounded-3xl p-0 overflow-y-auto max-h-[90vh] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl">
         
         {/* Estilos para impresión limpia del pase */}
         <style dangerouslySetInnerHTML={{ __html: `
@@ -554,106 +515,68 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
           }
         `}} />
 
-        {/* Encabezado Ejecutivo del Pase */}
-        <div className={`px-5 py-3.5 flex justify-between items-center border-b ${
-          isCancelled 
-            ? 'bg-rose-950 text-white border-rose-900/60' 
-            : isCompleted
-            ? 'bg-slate-900 text-white border-slate-800'
-            : passData.isSubscription
-            ? 'bg-amber-950 text-white border-amber-900/60'
-            : passData.isAdvance
-            ? 'bg-sky-950 text-white border-sky-900/60'
-            : isActive
-            ? 'bg-emerald-950 text-white border-emerald-900/60'
-            : 'bg-slate-900 text-white border-slate-800'
-        }`}>
-          <div className="flex items-center gap-2.5">
-            <BrandIcon className="w-8 h-8 shrink-0" />
-            <div className="space-y-0.5">
-              <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">{passData.parkingName}</h2>
-              <p className="text-xs text-slate-400 flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-emerald-400 shrink-0" /> 
-                <span className="truncate max-w-[180px] sm:max-w-xs">{passData.parkingAddress || 'Ayacucho - Huamanga'}</span>
+        {/* Encabezado Limpio y Sobrio (Sin Badges) */}
+        <div className="px-5 py-3.5 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <BrandIcon className="w-7 h-7 shrink-0" />
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
+                {passData.parkingName}
+              </h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 truncate">
+                <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> 
+                <span className="truncate">{passData.parkingAddress || 'Ayacucho - Huamanga'}</span>
               </p>
             </div>
           </div>
-          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-1.5 ${
-            isCancelled 
-              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' 
-              : isCompleted 
-              ? 'bg-slate-800 text-slate-300 border border-slate-700' 
-              : passData.isSubscription
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-              : passData.isAdvance
-              ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-              : isActive 
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
-              : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-          }`}>
-            {passData.isSubscription ? (
-              <>
-                <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>Abonado 30d</span>
-              </>
-            ) : passData.isAdvance ? (
-              <>
-                <Calendar className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                <span>Programada</span>
-              </>
-            ) : (
-              <>
-                <span className={`w-1.5 h-1.5 rounded-full ${
-                  isActive ? 'bg-emerald-400 animate-pulse' : isScheduled ? 'bg-cyan-400 animate-pulse' : isCancelled ? 'bg-rose-400' : 'bg-slate-400'
-                }`}></span>
-                <span>{isActive ? 'En estancia' : isScheduled ? 'En ruta' : isCancelled ? 'Cancelada' : 'Finalizada'}</span>
-              </>
-            )}
-          </span>
+          <div className="shrink-0 pl-2">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 tracking-wide uppercase">
+              {passData.isSubscription 
+                ? 'Abonado 30d' 
+                : passData.isAdvance 
+                ? 'Programada' 
+                : isActive 
+                ? 'En estancia' 
+                : isScheduled 
+                ? 'En ruta' 
+                : isCancelled 
+                ? 'Cancelada' 
+                : 'Finalizada'}
+            </span>
+          </div>
         </div>
 
         <div className="p-4 space-y-3">
           {liveBanner && (
-            <div className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
-              isOvertime 
-                ? 'bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300' 
-                : isExpiringSoon 
-                ? 'bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300' 
-                : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-            }`}>
+            <div className="p-2.5 rounded-xl text-xs flex items-center gap-2 bg-slate-100 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
               {isOvertime ? (
-                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
               ) : isExpiringSoon ? (
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
               ) : (
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
               )}
-              <span className="font-semibold">{liveBanner}</span>
+              <span className="font-medium text-[11px]">{liveBanner}</span>
             </div>
           )}
 
-          {/* Tarjeta Pase Digital Tipo Boarding Pass */}
+          {/* Tarjeta Pase Digital Tipo Ticket */}
           <div 
             id="digital-access-pass-card"
-            className="relative bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 dark:from-slate-800 dark:via-slate-800/80 dark:to-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-700 p-4 shadow-sm"
+            className="relative bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl border border-slate-200/90 dark:border-slate-700/70 p-3.5 shadow-xs"
           >
             {/* Header del Ticket */}
-            <div className="flex items-center justify-between pb-2.5 border-b border-dashed border-slate-200 dark:border-slate-700 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-md bg-slate-900 text-white flex items-center justify-center text-[9px] font-black">
-                  SP
-                </div>
-                <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px] tracking-tight">
-                  Pase de Acceso
-                </span>
-              </div>
-              <span className="font-mono font-bold text-slate-500 dark:text-slate-400 text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-700/60 text-xs">
+              <span className="font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">
+                Pase de Acceso Digital
+              </span>
+              <span className="font-mono font-bold text-slate-600 dark:text-slate-300 text-xs">
                 {passData.id}
               </span>
             </div>
 
-            {/* Código QR Hero */}
-            <div className="pt-3 pb-2 text-center flex flex-col items-center justify-center">
+            {/* Código QR */}
+            <div className="pt-2.5 pb-1 text-center flex flex-col items-center justify-center">
               {isCancelled ? (
                 <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-rose-200 dark:border-rose-800/80 inline-block shadow-xs">
                   <div className="relative">
@@ -667,8 +590,8 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                       />
                     </div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="w-11 h-11 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-md">
-                        <XCircle className="w-6 h-6 stroke-[2.5]" />
+                      <div className="w-10 h-10 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-md">
+                        <XCircle className="w-5 h-5 stroke-[2.5]" />
                       </div>
                     </div>
                   </div>
@@ -676,17 +599,17 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               ) : (
                 <div 
                   ref={qrRef}
-                  className="p-3 bg-white rounded-2xl border border-slate-200 dark:border-slate-700 inline-block shadow-md hover:scale-[1.02] transition-transform duration-300"
+                  className="p-2.5 bg-white rounded-xl border border-slate-200 dark:border-slate-700 inline-block shadow-xs"
                 >
                   <QRCodeSVG
                     value={passData.qrPayload}
-                    size={135}
+                    size={130}
                     level="H"
                     includeMargin={false}
                     imageSettings={{
                       src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230f172a'><circle cx='12' cy='12' r='12'/></svg>",
-                      height: 18,
-                      width: 18,
+                      height: 16,
+                      width: 16,
                       excavate: true,
                     }}
                   />
@@ -698,65 +621,57 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 <button
                   type="button"
                   onClick={handleCopyCode}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold transition cursor-pointer group"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-mono font-semibold transition cursor-pointer"
                 >
                   <span>{passData.token}</span>
                   {copied ? (
                     <Check className="w-3 h-3 text-emerald-600" />
                   ) : (
-                    <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
+                    <Copy className="w-3 h-3 text-slate-400" />
                   )}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
                 {isCancelled 
                   ? 'Reserva anulada' 
                   : isCompleted 
                   ? 'Estancia finalizada' 
-                  : 'Muestra este código en garita'}
+                  : isActive
+                  ? 'Vehículo registrado en garita'
+                  : 'Muestra este código al ingresar en garita'}
               </p>
             </div>
 
-            {/* Tolerancia / Abono / Reserva Programada */}
+            {/* Bloque Informativo de Fase / Tolerancia */}
             {passData.isSubscription ? (
-              <div className="my-2 p-3 rounded-xl border border-amber-300/80 dark:border-amber-700/60 bg-amber-50/60 dark:bg-amber-950/30 text-xs space-y-1.5">
-                <div className="flex items-center justify-between font-semibold text-amber-900 dark:text-amber-300">
+              <div className="my-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-xs space-y-1">
+                <div className="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200">
                   <div className="flex items-center gap-1.5">
-                    <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span>Abonado Mensual Activo</span>
                   </div>
-                  <span className="font-mono font-bold text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/60 text-[11px]">
+                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300 text-[11px]">
                     {timeLeft || '30 días'}
                   </span>
                 </div>
-                <p className="text-[11px] text-amber-800 dark:text-amber-300/90 leading-tight">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
                   Cajón exclusivo 24/7. Exento de tolerancia y límites de estadía por hora.
                 </p>
-                <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-0.5">
-                  <span>Vencimiento del pase:</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
-                    {passData.expiresAt ? passData.expiresAt.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '30 días'}
-                  </span>
-                </div>
               </div>
             ) : passData.isAdvance && passData.startTime && new Date() < passData.startTime ? (
-              <div className="my-2 p-3 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/70 dark:bg-blue-950/30 text-xs space-y-1.5">
-                <div className="flex items-center justify-between font-semibold text-blue-900 dark:text-blue-300">
+              <div className="my-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-xs space-y-1">
+                <div className="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200">
                   <div className="flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     <span>Llegada Programada</span>
                   </div>
-                  <span className="font-mono font-bold text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-[11px]">
+                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300 text-[11px]">
                     {timeLeft || 'Programada'}
                   </span>
                 </div>
-                <p className="text-[11px] text-blue-800 dark:text-blue-300/90 leading-tight">
-                  Fecha pactada: <strong className="font-semibold">{passData.startTime.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short' })}</strong> a las <strong className="font-semibold">{passData.startTime.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true })}</strong>.
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                  Pactada para el {passData.startTime.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short' })} a las {passData.startTime.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true })}.
                 </p>
-                <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
-                  <Clock className="w-3 h-3 text-blue-500 shrink-0" />
-                  <span>La tolerancia de 15 min iniciará en la fecha pactada.</span>
-                </div>
               </div>
             ) : isScheduled && secondsRemaining !== null && (() => {
               const toleranceTotalSec = (passData.toleranceMinutes || 15) * 60;
@@ -764,40 +679,32 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               const isToleranceCritical = toleranceProgressPct <= 20;
               const isToleranceWarning = toleranceProgressPct <= 50 && toleranceProgressPct > 20;
               const toleranceBarColor = isToleranceCritical 
-                ? 'bg-rose-500 animate-pulse' 
+                ? 'bg-rose-500' 
                 : isToleranceWarning 
                 ? 'bg-amber-500' 
                 : 'bg-emerald-500';
 
               return (
-                <div className={`my-2 p-2.5 rounded-xl border text-xs space-y-1.5 transition-colors ${
-                  isToleranceCritical 
-                    ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 text-rose-900 dark:text-rose-300' 
-                    : isToleranceWarning 
-                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-900 dark:text-amber-300'
-                    : 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-300'
-                }`}>
-                  <div className="flex items-center justify-between font-semibold">
+                <div className="my-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200">
                     <div className="flex items-center gap-1.5">
-                      <Clock className={`w-3.5 h-3.5 shrink-0 ${
-                        isToleranceCritical ? 'text-rose-600' : isToleranceWarning ? 'text-amber-600' : 'text-emerald-600'
-                      }`} />
+                      <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       <span>Tolerancia de llegada:</span>
                     </div>
-                    <span className="font-mono font-bold">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
                       {timeLeft || '--:--'}
                     </span>
                   </div>
 
-                  {/* Barra de Progreso Dinámica */}
-                  <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                  {/* Barra de Progreso */}
+                  <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                     <div 
                       className={`h-full transition-all duration-1000 ${toleranceBarColor}`}
                       style={{ width: `${toleranceProgressPct}%` }}
                     />
                   </div>
 
-                  <div className="flex justify-between items-center text-[10px] opacity-90">
+                  <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400">
                     <span>
                       {isToleranceCritical 
                         ? 'Tiempo límite por vencer'
@@ -805,178 +712,114 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                         ? 'Acércate a la cochera'
                         : 'En tiempo de llegada'}
                     </span>
-                    <span className="font-mono font-bold">{toleranceProgressPct}%</span>
+                    <span className="font-mono font-semibold">{toleranceProgressPct}%</span>
                   </div>
                 </div>
               );
             })()}
 
-            {/* Separador Perforado */}
-            <div className="border-t border-dashed border-slate-200 dark:border-slate-700 my-2.5"></div>
+            {/* Aviso Operativo de Garita para Vehículo en Cochera */}
+            {isActive && (
+              <div className="my-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-xs flex items-center gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-snug">
+                  <strong className="font-semibold text-slate-900 dark:text-white">Vehículo en cochera.</strong> Al momento de retirarte, presenta este pase al operador de garita para registrar tu salida y abrir la barrera.
+                </p>
+              </div>
+            )}
 
             {/* Grid 2x2 de Datos Esenciales */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700">
+            <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700">
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-medium">Cajón Asignado</span>
-                <p className="text-base font-mono font-black text-slate-900 dark:text-white mt-0.5">
+                <p className="text-base font-mono font-bold text-slate-900 dark:text-white mt-0.5">
                   {passData.slotCode}
                 </p>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700">
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700">
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-medium">Placa Registrada</span>
-                <p className="text-base font-mono font-black text-slate-900 dark:text-white mt-0.5">
+                <p className="text-base font-mono font-bold text-slate-900 dark:text-white mt-0.5">
                   {passData.plate}
                 </p>
               </div>
 
-              <div className={`p-2.5 rounded-xl border transition-colors ${
-                isOvertime 
-                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800' 
-                  : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700'
-              }`}>
-                <span className={`text-[10px] block font-medium ${
-                  isOvertime ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
-                }`}>
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-medium">
                   {isOvertime ? (
-                    <span className="inline-flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3 text-amber-600 inline shrink-0" />
-                      <span>Tiempo Excedido</span>
-                    </span>
+                    'Tiempo Excedido'
                   ) : passData.isSubscription ? (
-                    'Vigencia Restante'
+                    'Vigencia'
                   ) : isActive ? (
                     'Tiempo en Estadía'
                   ) : isScheduled ? (
-                    passData.isAdvance && passData.startTime && new Date() < passData.startTime ? 'Llegada Pactada' : 'Tiempo para llegar'
+                    'Tiempo para llegar'
                   ) : 'Estado'}
                 </span>
-                <p className={`font-mono font-black text-sm mt-0.5 ${
-                  isOvertime ? 'text-amber-600 dark:text-amber-400 animate-pulse' : isCancelled ? 'text-rose-600' : isCompleted ? 'text-slate-600' : 'text-slate-900 dark:text-white'
+                <p className={`font-mono font-bold text-sm mt-0.5 ${
+                  isOvertime ? 'text-amber-600 dark:text-amber-400' : isCancelled ? 'text-rose-600' : isCompleted ? 'text-slate-500' : 'text-slate-900 dark:text-white'
                 }`}>
                   {isCancelled ? 'Cancelada' : isCompleted ? 'Finalizada' : timeLeft || '--:--:--'}
                 </p>
-                <span className={`text-[10px] block truncate ${
-                  isOvertime ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
-                }`}>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 block truncate">
                   {passData.isSubscription
                     ? `Expira: ${passData.expiresAt ? passData.expiresAt.toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }) : '30 días'}`
                     : isOvertime
                     ? 'Sin periodo de gracia'
                     : isScheduled
-                    ? passData.isAdvance && passData.startTime && new Date() < passData.startTime
-                      ? `${passData.startTime.toLocaleDateString('es-PE', { day: '2-digit', month: 'short' })} ${passData.startTime.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true })}`
-                      : `Llegada hasta ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}`
+                    ? `Llegada hasta ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}`
                     : `Estadía: ${passData.hours}h`}
                 </span>
               </div>
 
-              <div className={`p-2.5 rounded-xl border transition-colors ${
-                isOvertime 
-                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800' 
-                  : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700'
-              }`}>
-                <span className={`text-[10px] block font-medium ${
-                  isOvertime ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
-                }`}>
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-medium">
                   {passData.isSubscription ? 'Abono Mensual' : isOvertime ? 'Total Acumulado' : 'Total de Reserva'}
                 </span>
-                <p className={`font-mono font-black text-sm mt-0.5 ${
-                  isOvertime ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'
-                }`}>
+                <p className="font-mono font-bold text-sm mt-0.5 text-slate-900 dark:text-white">
                   {isCancelled ? 'S/ 0.00' : `S/ ${(isOvertime && dynamicCost ? dynamicCost : passData.cost).toFixed(2)}`}
                 </p>
-                <span className={`text-[10px] font-semibold block ${
-                  isOvertime ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
-                }`}>
-                  {isCancelled ? 'Anulada' : passData.isSubscription ? (
-                    <span className="inline-flex items-center gap-1">
-                      <Check className="w-3 h-3 text-emerald-600 inline shrink-0" />
-                      <span>{passData.subscriptionMonths || 1} Mes(es) Activo</span>
-                    </span>
-                  ) : isOvertime ? 'En aumento dinámico' : passData.isPrepaid ? (
-                    <span className="inline-flex items-center gap-1">
-                      <Check className="w-3 h-3 text-emerald-600 inline shrink-0" />
-                      <span>Prepagado</span>
-                    </span>
-                  ) : 'Pago en garita'}
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+                  {isCancelled ? 'Anulada' : passData.isSubscription ? 'Membresía activa' : passData.isPrepaid ? 'Prepagado' : 'Pago en garita'}
                 </span>
               </div>
             </div>
 
-            {/* Aviso Dinámico de Estadía por Vencer (<= 15 min) */}
-            {isExpiringSoon && !isOvertime && isActive && (
-              <div className="my-2.5 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 text-xs flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-600 shrink-0 animate-pulse" />
-                <div className="text-[11px] font-medium leading-tight">
-                  <strong className="font-bold text-amber-900 dark:text-amber-300 block">Tu tiempo contratado está por vencer</strong>
-                  No existe periodo de gracia. Al cumplirse el tiempo, el monto se incrementará automáticamente.
-                </div>
-              </div>
-            )}
-
-            {/* Aviso Dinámico de Estadía Excedida (Overtime Activo) */}
+            {/* Aviso Dinámico de Estadía Excedida */}
             {isOvertime && isActive && (
-              <div className="my-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 text-xs space-y-1">
-                <div className="flex items-center gap-1.5 font-black text-amber-800 dark:text-amber-300">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Estadía Excedida — Cobro en Curso</span>
-                </div>
-                <p className="text-[11px] leading-relaxed text-amber-900/90 dark:text-amber-300/90 font-medium">
-                  Has superado el tiempo contratado. Sin periodo de gracia: el monto acumulado continuará aumentando en tiempo real según la tarifa oficial de la cochera hasta que registres tu salida.
+              <div className="mt-2.5 p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs space-y-0.5">
+                <p className="text-[11px] font-semibold text-amber-900 dark:text-amber-300">
+                  Estadía excedida — Cobro según tiempo adicional
+                </p>
+                <p className="text-[10px] text-amber-700 dark:text-amber-400">
+                  El monto se actualiza en tiempo real hasta que el operador de garita registre tu salida.
                 </p>
               </div>
             )}
           </div>
 
-          {/* Botones de Acción Operativa */}
+          {/* Navegación GPS Directa: solo si está programada para guiar al conductor a la cochera */}
           {isScheduled && (
-            <Button
-              type="button"
-              onClick={handleCheckIn}
-              disabled={isUpdating}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-11 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm transition active:scale-[0.99]"
-            >
-              {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-              <span>Marcar Ingreso</span>
-            </Button>
-          )}
-
-          {isActive && (
-            <Button
-              type="button"
-              onClick={handleCheckOut}
-              disabled={isUpdating}
-              variant="outline"
-              className="w-full border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold h-11 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-            >
-              {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
-              <span>Registrar Salida</span>
-            </Button>
-          )}
-
-          {/* Navegación GPS Directa con 1 Toque: Google Maps */}
-          {!isCancelled && !isCompleted && (
             <button
               type="button"
               onClick={openGoogleMaps}
-              className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs group"
+              className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
             >
-              <Compass className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+              <Compass className="w-4 h-4" />
               <span>Abrir navegación en Google Maps</span>
             </button>
           )}
 
-          {/* Acciones Secundarias con Descarga Offline PNG */}
-          <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+          {/* Acciones Secundarias Limpias: Guardar PNG / Imprimir / Cerrar */}
+          <div className="grid grid-cols-3 gap-2 pt-0.5">
             <Button
               type="button"
               onClick={handleDownloadOfflinePass}
               variant="outline"
-              className="text-[11px] font-bold gap-1 rounded-xl h-9 px-2 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer shadow-2xs"
-              title="Descargar imagen PNG para mostrar sin internet en garita"
+              className="text-xs font-semibold gap-1.5 rounded-xl h-9 px-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              title="Guardar imagen para mostrar sin conexión"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <Download className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <span className="truncate">Guardar PNG</span>
             </Button>
 
@@ -984,8 +827,8 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               type="button"
               onClick={handlePrintPass}
               variant="outline"
-              className="text-[11px] font-semibold gap-1 rounded-xl h-9 px-2 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer shadow-2xs"
-              title="Imprimir pase en papel o PDF"
+              className="text-xs font-semibold gap-1.5 rounded-xl h-9 px-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              title="Imprimir comprobante"
             >
               <Printer className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <span className="truncate">Imprimir</span>
@@ -994,22 +837,22 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
             <Button
               type="button"
               onClick={onClose}
-              className="bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold h-9 rounded-xl text-xs cursor-pointer shadow-sm"
+              className="bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold h-9 rounded-xl text-xs cursor-pointer shadow-xs"
             >
               Cerrar
             </Button>
           </div>
 
-          {/* Enlace discreto de Cancelar Reserva (solo si está programada) */}
+          {/* Cancelar Reserva: ÚNICAMENTE visible cuando está programada (antes de ingresar) */}
           {isScheduled && (
-            <div className="text-center pt-0.5">
+            <div className="text-center pt-0.5 pb-1">
               <button
                 type="button"
                 onClick={handleCancelReservation}
                 disabled={isUpdating}
-                className="text-[11px] text-slate-400 hover:text-rose-600 transition cursor-pointer font-medium"
+                className="text-[11px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer font-medium"
               >
-                Cancelar reserva
+                {isUpdating ? 'Cancelando...' : 'Cancelar reserva'}
               </button>
             </div>
           )}

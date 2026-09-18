@@ -82,8 +82,8 @@ export const ANPRMonitor = () => {
   const [entryPlate, setEntryPlate] = useState('');
   const [entryName, setEntryName] = useState('');
   const [entrySlot, setEntrySlot] = useState('');
-  const [entryStayMode, setEntryStayMode] = useState('2'); // 'free' | '1' | '2' | '3' | '4' | '6' | '8' | '12' | '24' | 'custom'
-  const [entryHours, setEntryHours] = useState(2);
+  const [entryMode, setEntryMode] = useState('free'); // 'free' | 'hours'
+  const [entryPresetHours, setEntryPresetHours] = useState(2);
   const [entryCustomHours, setEntryCustomHours] = useState(3);
   const [entryTime, setEntryTime] = useState(() => getCurrentTimeStr());
 
@@ -167,6 +167,12 @@ export const ANPRMonitor = () => {
 
   const freeSlotList = useMemo(() => slotList.filter(s => s.status === 'free'), [slotList]);
 
+  useEffect(() => {
+    if (!entrySlot && freeSlotList.length > 0) {
+      setEntrySlot(freeSlotList[0].code);
+    }
+  }, [freeSlotList, entrySlot]);
+
   const vehiclesInside = useMemo(() => {
     const activeRes = reservations.filter(r => String(r.parkingId) === String(selectedEstId) && (r.status === 'ACTIVE' || r.status === 'active')).map(r => ({ 
       source: 'RESERVATION', 
@@ -234,10 +240,10 @@ export const ANPRMonitor = () => {
       }
 
       // 2. Determinar si es Tiempo Libre o cantidad de horas
-      const isOpenStay = entryStayMode === 'free';
+      const isOpenStay = entryMode === 'free';
       const effectiveHours = isOpenStay
         ? 24 // ventana de reserva abierta para la sede
-        : (entryStayMode === 'custom' ? Math.max(0.5, Number(entryCustomHours) || 1) : Number(entryStayMode || 2));
+        : (entryPresetHours === 'custom' ? Math.max(0.5, Number(entryCustomHours) || 1) : Number(entryPresetHours || 2));
 
       const normalized = normalizarPlaca(plate);
       const matched = reservations.find(r => String(r.parkingId) === String(selectedEstId) && normalizarPlaca(r.plate) === normalized && (r.status === 'SCHEDULED' || r.status === 'ACTIVE' || !r.status));
@@ -557,58 +563,158 @@ export const ANPRMonitor = () => {
 
       {/* ── Formulario de entrada ── */}
       {garitaTab === 'entry' && (
-        <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5 space-y-4 transition-colors">
-          <div className="flex items-center gap-2 pb-1">
-            <LogIn className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-sm font-black text-slate-900 dark:text-slate-100">Registrar entrada</h2>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium hidden sm:inline">Si existe reserva programada, se hace check-in automático</span>
+        <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 space-y-5 transition-colors">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/80">
+            <div className="flex items-center gap-2">
+              <LogIn className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Registrar Entrada a Cochera</h2>
+            </div>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium hidden sm:inline">
+              Check-in automático si existe reserva
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Fila 1: Placa y Conductor */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Placa del vehículo</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">
+                Placa del vehículo <span className="text-rose-500">*</span>
+              </label>
               <Input
                 type="text"
                 placeholder="ABC-123"
                 value={entryPlate}
                 onChange={e => setEntryPlate(e.target.value.toUpperCase())}
                 onKeyDown={e => { if (e.key === 'Enter') handleEntrySubmit(); }}
-                className="font-mono font-black text-center uppercase h-11 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100"
+                className="font-mono font-black text-center text-base tracking-widest uppercase h-11 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border-slate-200 dark:border-slate-700 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Conductor (opcional)</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">
+                Conductor <span className="text-slate-400 font-normal">(opcional)</span>
+              </label>
               <Input
                 type="text"
-                placeholder="Nombre del conductor"
+                placeholder="Nombre o teléfono"
                 value={entryName}
                 onChange={e => setEntryName(e.target.value)}
-                className="h-11 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100"
+                className="h-11 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border-slate-200 dark:border-slate-700 dark:text-slate-100"
               />
             </div>
           </div>
 
+          {/* Fila 2: Cajón Asignado */}
           <div>
-            <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-2">Cajón libre <span className="text-emerald-600 dark:text-emerald-400">({freeSlotList.length} disponibles)</span></label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                Cajón asignado <span className="text-slate-400 font-normal">({freeSlotList.length} disponibles)</span>
+              </label>
+              {entrySlot && (
+                <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                  Seleccionado: {entrySlot}
+                </span>
+              )}
+            </div>
             {freeSlotList.length === 0 ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 rounded-xl p-3 transition-colors">No hay cajones libres en esta sede.</p>
+              <p className="text-xs text-rose-500 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-xl p-3">
+                No hay cajones libres disponibles en esta sede.
+              </p>
             ) : (
-              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
+              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1">
                 {freeSlotList.map(s => (
-                  <button key={s.code} onClick={() => setEntrySlot(s.code)} className={`px-3 py-1.5 rounded-xl text-xs font-mono font-black border transition ${entrySlot === s.code ? 'bg-emerald-600 text-white border-emerald-600 shadow' : 'bg-slate-100 dark:bg-[#0B0F19] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500'}`}>{s.code}</button>
+                  <button
+                    key={s.code}
+                    type="button"
+                    onClick={() => setEntrySlot(s.code)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-colors ${entrySlot === s.code ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-[#0B0F19] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-500'}`}
+                  >
+                    {s.code}
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-end">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-black text-slate-700 dark:text-slate-200">Hora de ingreso</label>
+          {/* Fila 3: Modalidad de Estadía & Hora de Ingreso */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start pt-2 border-t border-slate-100 dark:border-slate-800">
+            {/* Modalidad de Estadía */}
+            <div className="md:col-span-8 space-y-2.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block">
+                Modalidad de estadía
+              </label>
+              
+              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#0B0F19] rounded-xl border border-slate-200 dark:border-slate-800 max-w-sm">
+                <button
+                  type="button"
+                  onClick={() => setEntryMode('free')}
+                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all ${entryMode === 'free' ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 shadow-sm border border-slate-200/60 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                >
+                  Tiempo Libre
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEntryMode('hours')}
+                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all ${entryMode === 'hours' ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 shadow-sm border border-slate-200/60 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                >
+                  Por Horas
+                </button>
+              </div>
+
+              {entryMode === 'free' ? (
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Estadía abierta. El importe se calcula al registrar la salida según el tiempo transcurrido.
+                </p>
+              ) : (
+                <div className="space-y-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[1, 2, 3, 4, 6, 8, 12, 24].map(h => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() => setEntryPresetHours(h)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors ${entryPresetHours === h ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-[#0B0F19] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                      >
+                        {h}h
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setEntryPresetHours('custom')}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors ${entryPresetHours === 'custom' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-[#0B0F19] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                    >
+                      Personalizado
+                    </button>
+                  </div>
+
+                  {entryPresetHours === 'custom' && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <Input
+                        type="number"
+                        step="0.5"
+                        min="0.5"
+                        max="720"
+                        value={entryCustomHours}
+                        onChange={e => setEntryCustomHours(e.target.value)}
+                        placeholder="Ej. 1.5, 3"
+                        className="h-10 w-28 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border-slate-200 dark:border-slate-700 dark:text-slate-100 font-bold text-center"
+                      />
+                      <span className="text-xs text-slate-500 font-medium">horas estimadas</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Hora de Ingreso */}
+            <div className="md:col-span-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  Hora de entrada
+                </label>
                 <button
                   type="button"
                   onClick={() => setEntryTime(getCurrentTimeStr())}
-                  className="text-[10px] font-bold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
+                  className="text-[10px] font-semibold text-emerald-600 hover:underline dark:text-emerald-400 cursor-pointer"
                 >
                   Hora actual
                 </button>
@@ -617,63 +723,23 @@ export const ANPRMonitor = () => {
                 type="time"
                 value={entryTime}
                 onChange={e => setEntryTime(e.target.value)}
-                className="h-11 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100 font-mono font-bold text-center"
+                className="h-11 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border-slate-200 dark:border-slate-700 dark:text-slate-100 font-mono font-bold text-center"
               />
-            </div>
-
-            <div>
-              <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Estadía / Horas</label>
-              <select
-                value={entryStayMode}
-                onChange={e => setEntryStayMode(e.target.value)}
-                className="h-11 w-full px-3 bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-slate-100 cursor-pointer"
-              >
-                <option value="free">⏳ Tiempo Libre (Cobro al salir)</option>
-                <option value="1">1 hora</option>
-                <option value="2">2 horas</option>
-                <option value="3">3 horas</option>
-                <option value="4">4 horas</option>
-                <option value="6">6 horas</option>
-                <option value="8">8 horas</option>
-                <option value="12">12 horas</option>
-                <option value="24">24 horas</option>
-                <option value="custom">✏️ Personalizado (Escribir horas)</option>
-              </select>
-            </div>
-
-            {entryStayMode === 'custom' ? (
-              <div>
-                <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Cant. Horas</label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0.5"
-                  max="720"
-                  value={entryCustomHours}
-                  onChange={e => setEntryCustomHours(e.target.value)}
-                  placeholder="Ej. 1.5, 3"
-                  className="h-11 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100 font-bold"
-                />
-              </div>
-            ) : null}
-
-            <div className={entryStayMode === 'custom' ? 'col-span-1 sm:col-span-2 md:col-span-3' : ''}>
-              <Button
-                type="button"
-                onClick={handleEntrySubmit}
-                disabled={loading || !entryPlate || !entrySlot}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black text-sm h-11 rounded-xl gap-1.5 transition-colors shadow-sm"
-              >
-                {loading ? <RefreshCw className="w-4 h-4 animate-spin"/> : <ArrowUpRight className="w-4 h-4"/>} Registrar ingreso
-              </Button>
             </div>
           </div>
 
-          {entryStayMode === 'free' && (
-            <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-3 py-2 rounded-xl">
-              💡 <strong>Tiempo Libre:</strong> El vehículo permanecerá activo sin límite preestablecido y la tarifa final se calculará al registrar su salida según el tiempo exacto transcurrido.
-            </p>
-          )}
+          {/* Botón de Confirmación Principal */}
+          <div className="pt-2">
+            <Button
+              type="button"
+              onClick={handleEntrySubmit}
+              disabled={loading || !entryPlate || !entrySlot}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-sm h-12 rounded-xl gap-2 transition-colors shadow-sm cursor-pointer"
+            >
+              {loading ? <RefreshCw className="w-4 h-4 animate-spin"/> : <ArrowUpRight className="w-4 h-4"/>}
+              Registrar ingreso
+            </Button>
+          </div>
         </div>
       )}
 
@@ -782,7 +848,7 @@ export const ANPRMonitor = () => {
                       <td className="px-3 py-2 font-mono text-slate-600 dark:text-slate-400">
                         <div>{entry.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</div>
                         <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5 ${v.isOpenStay ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-                          {v.isOpenStay ? '⏳ Libre' : `${v.hours || 1}h est.`}
+                          {v.isOpenStay ? 'Libre' : `${v.hours || 1}h est.`}
                         </span>
                       </td>
                       <td className="px-3 py-2 font-mono font-black text-slate-900 dark:text-slate-100">{elapsedLabel(v.entryTime)}</td>
@@ -881,7 +947,7 @@ export const ANPRMonitor = () => {
                   onChange={e => setEditStayMode(e.target.value)}
                   className="h-10 w-full px-3 bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100"
                 >
-                  <option value="free">⏳ Tiempo Libre</option>
+                  <option value="free">Tiempo Libre (al salir)</option>
                   <option value="1">1 hora</option>
                   <option value="2">2 horas</option>
                   <option value="3">3 horas</option>
@@ -890,7 +956,7 @@ export const ANPRMonitor = () => {
                   <option value="8">8 horas</option>
                   <option value="12">12 horas</option>
                   <option value="24">24 horas</option>
-                  <option value="custom">✏️ Personalizado</option>
+                  <option value="custom">Personalizado...</option>
                 </select>
               </div>
 

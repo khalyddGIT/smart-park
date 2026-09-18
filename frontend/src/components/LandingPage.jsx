@@ -420,7 +420,7 @@ export const LandingPage = ({
           ========================================================================= */}
       <main id="hero" className="relative w-full min-h-[85vh] sm:min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
         
-        {/* Video de Fondo Operacional con opacidad y brillo equilibrados para máxima visibilidad */}
+        {/* Video de Fondo Operacional con nitidez total y sin opacidad opaca en modo claro */}
         <video
           src="/videos/smart-park-demo.mp4"
           autoPlay
@@ -428,16 +428,16 @@ export const LandingPage = ({
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-80 dark:opacity-85 filter brightness-[1.0] dark:brightness-[0.78] contrast-[1.05] dark:contrast-[1.08] transition-all duration-500"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-100 dark:opacity-85 filter brightness-100 dark:brightness-[0.78] contrast-[1.02] dark:contrast-[1.08] transition-all duration-500"
         />
 
-        {/* Gradientes y máscaras ligeras: sombras reducidas para permitir ver el video claramente manteniendo legibilidad */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-50/65 via-slate-50/30 to-transparent dark:from-slate-950/70 dark:via-slate-950/35 dark:to-transparent pointer-events-none z-0 transition-colors duration-300" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.08),transparent_60%)] dark:bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.12),transparent_60%)] pointer-events-none z-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-50/60 via-transparent to-slate-50/20 dark:from-slate-950/60 dark:via-transparent dark:to-slate-950/20 pointer-events-none z-0 transition-colors duration-300" />
+        {/* Gradientes ultraligeros: en modo claro sin niebla blanca para apreciar el video con total fidelidad */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/[0.04] via-transparent to-transparent dark:from-slate-950/80 dark:via-slate-950/40 dark:to-transparent pointer-events-none z-0 transition-colors duration-300" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.03),transparent_60%)] dark:bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.12),transparent_60%)] pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-transparent dark:from-slate-950/60 dark:via-transparent dark:to-slate-950/20 pointer-events-none z-0 transition-colors duration-300" />
 
-        {/* Transición inferior suave hacia el fondo de la página */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#F8FAFC] dark:from-[#06090F] to-transparent pointer-events-none z-0" />
+        {/* Transición inferior mínima y limpia */}
+        <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-50/20 dark:from-[#06090F] to-transparent pointer-events-none z-0" />
 
         {/* Contenido Centralizado del Hero */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20 sm:pt-36 sm:pb-24">
@@ -447,12 +447,12 @@ export const LandingPage = ({
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               
               {/* Titular Principal de Impacto */}
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.05] text-slate-950 dark:text-white transition-colors">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.05] text-slate-950 dark:text-white drop-shadow-[0_1px_2px_rgba(255,255,255,0.85)] dark:drop-shadow-none transition-colors">
                 Estaciona al instante en la ciudad
               </h1>
 
               {/* Subtítulo Conciso */}
-              <p className="text-sm sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 max-w-xl leading-relaxed font-medium mx-auto lg:mx-0 transition-colors">
+              <p className="text-sm sm:text-base lg:text-lg text-slate-800 dark:text-slate-300 max-w-xl leading-relaxed font-semibold dark:font-medium mx-auto lg:mx-0 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)] dark:drop-shadow-none transition-colors">
                 Encuentra plaza en tiempo real, ingresa con lectura automática de placa o código QR, y paga la tarifa exacta al minuto mediante Yape, Plin o tarjetas.
               </p>
 
@@ -469,7 +469,7 @@ export const LandingPage = ({
                 <button
                   type="button"
                   onClick={() => scrollTo('beneficios')}
-                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:underline cursor-pointer group transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:underline cursor-pointer group transition-colors drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] dark:drop-shadow-none"
                 >
                   Ver ventajas del sistema
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-emerald-600 dark:text-emerald-400" />
@@ -477,8 +477,8 @@ export const LandingPage = ({
               </div>
 
               {/* Micro-insignia de confianza en lugar de flecha doodle estridente */}
-              <div className="hidden lg:flex items-center gap-2 pt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <div className="hidden lg:flex items-center gap-2 pt-1 text-xs text-slate-700 dark:text-slate-400 font-semibold dark:font-medium drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)] dark:drop-shadow-none">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>Sin costo de suscripción para conductores • Reserva 100% garantizada</span>
               </div>
             </div>

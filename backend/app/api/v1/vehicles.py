@@ -7,11 +7,11 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func, or_
 from app.db.session import get_db
-from app.models.models import Vehicle
+from app.models.models import Vehicle, User, Reservation
 from app.schemas.schemas import VehicleCreate, VehicleUpdate, VehicleResponse
 from app.core.security import get_current_user
-from app.models.models import User
 
 router = APIRouter(prefix="/vehicles", tags=["Vehículos & Matrículas ANPR"])
 
@@ -177,6 +177,31 @@ async def delete_vehicle(vehicle_id: int, db: AsyncSession = Depends(get_db), cu
     if vehicle.user_id != current_user.id and current_user.role != "platform":
         raise HTTPException(status_code=403, detail="No autorizado para este vehículo")
     
+    # Validar que el vehículo no tenga una reserva activa programada ni una estadía en curso
+    plate_clean = vehicle.license_plate.strip().upper().replace("-", "").replace(" ", "")
+    active_res = await db.execute(
+        select(Reservation).where(
+            Reservation.status.in_(["scheduled", "active"]),
+            or_(
+                Reservation.license_plate == vehicle.license_plate,
+                Reservation.license_plate.ilike(vehicle.license_plate),
+                func.replace(func.replace(func.upper(Reservation.license_plate), "-", ""), " ", "") == plate_clean
+            )
+        )
+    )
+    active_reservation = active_res.scalars().first()
+    if active_reservation:
+        if active_reservation.status == "active":
+            raise HTTPException(
+                status_code=400,
+                detail=f"No puedes eliminar el vehículo con placa {vehicle.license_plate} porque se encuentra actualmente estacionado en una sede con una estadía en curso. Concluye la estadía antes de retirarlo."
+            )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No puedes eliminar el vehículo con placa {vehicle.license_plate} porque cuenta con una reserva programada activa (Código: {active_reservation.code}). Cancela o finaliza la reserva antes de retirarlo."
+            )
+
     await db.delete(vehicle)
     await db.commit()
     return {"status": "success", "message": f"Vehículo con ID {vehicle_id} eliminado exitosamente"}

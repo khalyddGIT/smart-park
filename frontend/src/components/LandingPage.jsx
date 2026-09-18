@@ -420,7 +420,7 @@ export const LandingPage = ({
           ========================================================================= */}
       <main id="hero" className="relative w-full min-h-[85vh] sm:min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
         
-        {/* Video de Fondo Operacional con opacidad y brillo adaptados según tema */}
+        {/* Video de Fondo Operacional con opacidad y brillo equilibrados para máxima visibilidad */}
         <video
           src="/videos/smart-park-demo.mp4"
           autoPlay
@@ -428,16 +428,16 @@ export const LandingPage = ({
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-35 dark:opacity-100 filter brightness-[0.95] dark:brightness-[0.45] contrast-[1.05] dark:contrast-[1.12] transition-all duration-500"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-80 dark:opacity-85 filter brightness-[1.0] dark:brightness-[0.78] contrast-[1.05] dark:contrast-[1.08] transition-all duration-500"
         />
 
-        {/* Gradientes y máscaras adaptadas: Alta legibilidad en Claro y profundidad en Oscuro */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-50/98 via-slate-50/90 to-slate-50/55 dark:from-slate-950/95 dark:via-slate-950/80 dark:to-slate-950/40 pointer-events-none z-0 transition-colors duration-300" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.1),transparent_60%)] dark:bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.18),transparent_60%)] pointer-events-none z-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-transparent to-slate-50/70 dark:from-slate-950 dark:via-transparent dark:to-slate-950/60 pointer-events-none z-0 transition-colors duration-300" />
+        {/* Gradientes y máscaras ligeras: sombras reducidas para permitir ver el video claramente manteniendo legibilidad */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-50/65 via-slate-50/30 to-transparent dark:from-slate-950/70 dark:via-slate-950/35 dark:to-transparent pointer-events-none z-0 transition-colors duration-300" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.08),transparent_60%)] dark:bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.12),transparent_60%)] pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-50/60 via-transparent to-slate-50/20 dark:from-slate-950/60 dark:via-transparent dark:to-slate-950/20 pointer-events-none z-0 transition-colors duration-300" />
 
-        {/* Transición inferior limpia e invisible hacia el fondo de la página */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#F8FAFC] dark:from-[#06090F] to-transparent pointer-events-none z-0" />
+        {/* Transición inferior suave hacia el fondo de la página */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#F8FAFC] dark:from-[#06090F] to-transparent pointer-events-none z-0" />
 
         {/* Contenido Centralizado del Hero */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20 sm:pt-36 sm:pb-24">

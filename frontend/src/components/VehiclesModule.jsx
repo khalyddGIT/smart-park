@@ -39,6 +39,7 @@ import {
   resolveImageUrl,
   getAccessToken 
 } from '../services/api';
+import { useEstablishments } from '../context/EstablishmentContext';
 
 // Función para consultar la API y obtener foto real del modelo (vía backend proxy y fallback directo)
 export const fetchCarPhoto = async (brand, model, year = '2023', vehicleType = 'auto') => {
@@ -405,6 +406,31 @@ export const VehiclesModule = () => {
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [cameraFacing, setCameraFacing] = useState('environment');
   const [cameraError, setCameraError] = useState(false);
+
+  // Contexto de Reservas para validar reservas y estadías activas
+  const establishmentContext = useEstablishments ? useEstablishments() : null;
+  const reservations = establishmentContext?.reservations || [];
+  const refreshMyReservations = establishmentContext?.refreshMyReservations;
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (token && typeof refreshMyReservations === 'function') {
+      refreshMyReservations();
+    }
+  }, []);
+
+  const normalizePlate = (p) => (p || '').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+  const getActiveVehicleReservation = (plate) => {
+    const norm = normalizePlate(plate);
+    if (!norm || !Array.isArray(reservations)) return null;
+    return reservations.find(r => {
+      const rPlate = normalizePlate(r.plate || r.license_plate || r.licensePlate);
+      if (rPlate !== norm) return false;
+      const st = (r.status || '').toString().toLowerCase();
+      return st === 'scheduled' || st === 'active';
+    });
+  };
 
   const [vehicles, setVehicles] = useState(() => {
     try {
@@ -815,11 +841,35 @@ export const VehiclesModule = () => {
   };
 
   const handleDelete = async (id, plate) => {
+    // 1. Validar activamente en cliente si el vehículo tiene reserva o estadía activa
+    const activeUsage = getActiveVehicleReservation(plate);
+    if (activeUsage) {
+      const isStay = (activeUsage.status || '').toString().toLowerCase() === 'active';
+      showToast(
+        isStay
+          ? `⚠️ No puedes eliminar el vehículo (${plate}) porque tiene una estadía en curso en el estacionamiento. Finaliza la estadía primero.`
+          : `⚠️ No puedes eliminar el vehículo (${plate}) porque tiene una reserva activa programada (${activeUsage.code ? '#' + activeUsage.code : 'activa'}). Cancela o concluye la reserva primero.`
+      );
+      return;
+    }
+
     if (!window.confirm(`¿Deseas eliminar el vehículo ${plate}?`)) return;
+
     const token = getAccessToken();
     if (token && typeof id === 'number' && id < 1000000000000) {
-      try { await deleteVehicleApi(id); } catch (e) { console.warn('Delete backend fail', e.response?.data); }
+      try {
+        await deleteVehicleApi(id);
+      } catch (e) {
+        console.warn('Delete backend fail', e.response?.data);
+        const detailMsg = e.response?.data?.detail;
+        const errorText = typeof detailMsg === 'string'
+          ? detailMsg
+          : (Array.isArray(detailMsg) ? detailMsg[0]?.msg : 'No se pudo eliminar el vehículo porque tiene reservas o estadías activas asociadas.');
+        showToast(`⚠️ ${errorText}`);
+        return; // IMPORTANTE: no borrar de la interfaz ni de localStorage si el backend lo rechaza
+      }
     }
+
     const updated = vehicles.filter(v => v.id !== id);
     setVehicles(updated);
     try {
@@ -1418,9 +1468,17 @@ export const VehiclesModule = () => {
       
       {/* Toast Alert */}
       {notification && (
-        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center space-x-2 text-xs font-semibold">
-          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{notification}</span>
+        <div className={`fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl shadow-xl flex items-center space-x-2 text-xs font-semibold max-w-md transition-all animate-in fade-in slide-in-from-bottom-2 ${
+          notification.startsWith('⚠️') || notification.startsWith('✕')
+            ? 'bg-rose-950 text-rose-100 border border-rose-700/80 shadow-rose-950/50'
+            : 'bg-slate-900 text-white border border-slate-700'
+        }`}>
+          {notification.startsWith('⚠️') || notification.startsWith('✕') ? (
+            <span className="text-amber-400 text-sm shrink-0">⚠️</span>
+          ) : (
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+          )}
+          <span>{notification.replace(/^[⚠️✓✕]\s*/, '')}</span>
         </div>
       )}
 
@@ -1572,6 +1630,39 @@ export const VehiclesModule = () => {
                       </span>
                     </div>
 
+                    {/* Indicador de Reserva Activa o Estadía en Curso */}
+                    {(() => {
+                      const activeUsage = getActiveVehicleReservation(v.license_plate);
+                      if (!activeUsage) return null;
+                      const isStay = (activeUsage.status || '').toString().toLowerCase() === 'active';
+                      return (
+                        <div className={`py-1.5 px-2.5 rounded-xl text-xs flex items-center justify-between border font-medium transition-colors ${
+                          isStay
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
+                            : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                        }`}>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="relative flex h-2 w-2 shrink-0">
+                              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                                isStay ? 'bg-amber-400' : 'bg-emerald-400'
+                              }`} />
+                              <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                                isStay ? 'bg-amber-500' : 'bg-emerald-500'
+                              }`} />
+                            </span>
+                            <span className="font-bold text-[11px] truncate">
+                              {isStay ? 'Estadía en curso' : 'Reserva programada'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono opacity-85 truncate ml-1">
+                            {isStay 
+                              ? (activeUsage.parking || activeUsage.slot || 'En estancia') 
+                              : (activeUsage.code ? `#${activeUsage.code}` : 'Activa')}
+                          </span>
+                        </div>
+                      );
+                    })()}
+
                     {/* Alerta Preventiva de SOAT */}
                     {(() => {
                       const soat = getSoatStatus(v.soat_expiry);
@@ -1636,15 +1727,32 @@ export const VehiclesModule = () => {
                     <span>Editar</span>
                   </Button>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(v.id, v.license_plate)}
-                    className="h-8 px-2.5 font-semibold text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900/60 rounded-xl cursor-pointer"
-                    title="Eliminar vehículo"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+                  {(() => {
+                    const activeUsage = getActiveVehicleReservation(v.license_plate);
+                    const isStay = activeUsage && (activeUsage.status || '').toString().toLowerCase() === 'active';
+                    return (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(v.id, v.license_plate)}
+                        disabled={!!activeUsage}
+                        className={`h-8 px-2.5 font-semibold text-xs rounded-xl transition-colors ${
+                          activeUsage
+                            ? 'opacity-40 text-slate-400 border-slate-200 dark:border-slate-800 cursor-not-allowed bg-slate-100/60 dark:bg-slate-800/40'
+                            : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900/60 cursor-pointer'
+                        }`}
+                        title={
+                          activeUsage
+                            ? isStay
+                              ? `No puedes eliminar este vehículo mientras tenga una estadía en curso (${activeUsage.parking || 'estancia activa'}).`
+                              : `No puedes eliminar este vehículo mientras tenga una reserva activa programada (${activeUsage.code ? '#' + activeUsage.code : 'activa'}).`
+                            : "Eliminar vehículo"
+                        }
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    );
+                  })()}
                 </div>
               </div>
             );

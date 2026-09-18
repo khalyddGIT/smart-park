@@ -439,3 +439,110 @@ async def test_driver_interactive_2d_cad_pricing_and_open_stay():
         assert data_night["total_cost"] == 15.50
         assert data_night["is_night_shift"] is True
         assert data_night["is_open_stay"] is True
+
+@pytest.mark.asyncio
+async def test_driver_cannot_delete_vehicle_with_active_reservation_or_stay():
+    """
+    Verifica que un usuario conductor no pueda eliminar su vehículo si:
+    1. Tiene una reserva programada activa (status='scheduled').
+    2. Tiene una estadía en curso en el estacionamiento (status='active').
+    Una vez concluida/cancelada la reserva, el vehículo puede eliminarse sin problemas.
+    """
+    driver_token, _, driver_id = await _register_and_get_token(role="user")
+    admin_token, _, admin_id = await _register_and_get_token(role="local")
+
+    transport = ASGITransport(app=app)
+    driver_headers = {"Authorization": f"Bearer {driver_token}"}
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # 1. Crear estacionamiento con tarifa
+        parking_resp = await ac.post("/api/v1/parkings", headers=admin_headers, json={
+            "name": "Cochera Bloqueo Eliminación",
+            "address": "Av. La Marina 500",
+            "city": "Lima",
+            "latitude": -12.08,
+            "longitude": -77.08,
+            "hourly_rate": 8.0,
+            "total_capacity": 10,
+            "tolerance_minutes": 15
+        })
+        assert parking_resp.status_code == 201
+        parking_id = parking_resp.json()["id"]
+
+        # Crear cajón
+        slot_resp = await ac.post(f"/api/v1/parkings/{parking_id}/slots", headers=admin_headers, json={
+            "code": "BL-01",
+            "floor_level": "Piso 1",
+            "slot_type": "auto",
+            "pos_x": 10,
+            "pos_y": 10,
+            "width": 60,
+            "height": 100
+        })
+        assert slot_resp.status_code == 201
+        slot_id = slot_resp.json()["id"]
+
+        # 2. Conductor registra vehículo
+        plate = f"B{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().hex[:3].upper()}"
+        veh_resp = await ac.post("/api/v1/vehicles", headers=driver_headers, json={
+            "license_plate": plate,
+            "brand": "Nissan",
+            "model": "Sentra",
+            "color": "Negro",
+            "vehicle_type": "auto",
+            "year": "2023"
+        })
+        assert veh_resp.status_code == 201
+        veh_id = veh_resp.json()["id"]
+
+        # 3. Conductor programa una reserva para este vehículo
+        now = datetime.utcnow()
+        res_resp = await ac.post("/api/v1/reservations", headers=driver_headers, json={
+            "parking_id": parking_id,
+            "slot_id": slot_id,
+            "license_plate": plate,
+            "vehicle_type": "auto",
+            "start_time": (now + timedelta(hours=1)).isoformat(),
+            "end_time": (now + timedelta(hours=2)).isoformat(),
+            "is_open_stay": False
+        })
+        assert res_resp.status_code == 201
+        res_data = res_resp.json()
+        res_id = res_data["id"]
+        assert res_data["status"] == "scheduled"
+
+        # 4. INTENTO DE ELIMINAR VEHÍCULO CON RESERVA PROGRAMADA -> DEBE FALLAR (400)
+        del_attempt1 = await ac.delete(f"/api/v1/vehicles/{veh_id}", headers=driver_headers)
+        assert del_attempt1.status_code == 400
+        assert "reserva" in del_attempt1.json()["detail"].lower()
+        assert plate in del_attempt1.json()["detail"]
+
+        # 5. Se realiza check-in del vehículo en garita -> estadía en curso (status='active')
+        checkin_resp = await ac.put(f"/api/v1/reservations/{res_id}/check-in", headers=admin_headers)
+        assert checkin_resp.status_code == 200
+        assert checkin_resp.json()["status"] == "active"
+
+        # 6. INTENTO DE ELIMINAR VEHÍCULO CON ESTADÍA EN CURSO -> DEBE FALLAR (400)
+        del_attempt2 = await ac.delete(f"/api/v1/vehicles/{veh_id}", headers=driver_headers)
+        assert del_attempt2.status_code == 400
+        assert "estadía en curso" in del_attempt2.json()["detail"].lower() or "estacionado" in del_attempt2.json()["detail"].lower()
+
+        # 7. Se realiza check-out del vehículo -> estadía finalizada (status='completed')
+        checkout_resp = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=admin_headers, json={
+            "payment_method": "cash",
+            "amount_paid": 8.0
+        })
+        assert checkout_resp.status_code == 200
+        assert checkout_resp.json()["status"] == "completed"
+
+        # 8. AHORA SÍ: Conductor elimina su vehículo exitosamente
+        del_success = await ac.delete(f"/api/v1/vehicles/{veh_id}", headers=driver_headers)
+        assert del_success.status_code == 200
+        assert del_success.json()["status"] == "success"
+
+        # 9. Verificar que el vehículo ya no exista en la lista del conductor
+        list_veh = await ac.get("/api/v1/vehicles", headers=driver_headers)
+        assert list_veh.status_code == 200
+        assert plate not in [v["license_plate"] for v in list_veh.json()]
+

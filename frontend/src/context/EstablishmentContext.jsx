@@ -2005,6 +2005,47 @@ export const EstablishmentProvider = ({ children }) => {
     }
   };
 
+  // Actualizar hora, cajón o duración de estadía: PUT /reservations/{id}/stay
+  const updateStayReservation = async (codeOrId, stayData = {}) => {
+    const target = reservations.find(r => r.code === codeOrId || String(r.id) === String(codeOrId));
+    if (!target) return { ok: false, message: 'Reserva no encontrada.' };
+
+    const payload = {};
+    if (stayData.actual_entry) payload.actual_entry = stayData.actual_entry;
+    if (stayData.hours_stay !== undefined && stayData.hours_stay !== null) payload.hours_stay = Number(stayData.hours_stay);
+    if (stayData.is_open_stay !== undefined) payload.is_open_stay = !!stayData.is_open_stay;
+    if (stayData.slot_code) payload.slot_code = stayData.slot_code;
+
+    if (isBackendReservation(target)) {
+      try {
+        const res = await api.put(`/reservations/${target.id}/stay`, payload);
+        await refreshMyReservations();
+        if (target.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
+        return { ok: true, message: 'Estadía actualizada correctamente.', data: res.data };
+      } catch (e) {
+        const detail = e?.response?.data?.detail || 'No se pudo actualizar la estadía.';
+        return { ok: false, message: detail };
+      }
+    } else {
+      // Fallback local
+      setReservations(prev => prev.map(r => {
+        if (r.code === target.code || String(r.id) === String(target.id)) {
+          const entryTime = stayData.actual_entry || r.startTime;
+          return {
+            ...r,
+            startTime: entryTime,
+            actual_entry: entryTime,
+            slot: stayData.slot_code || r.slot,
+            hours: stayData.hours_stay || r.hours,
+            isOpenStay: stayData.is_open_stay !== undefined ? stayData.is_open_stay : r.isOpenStay
+          };
+        }
+        return r;
+      }));
+      return { ok: true, message: 'Estadía actualizada localmente.' };
+    }
+  };
+
   // Mutación de estado puramente local (solo datos demo sin backend)
   const updateReservationStatusLocal = (code, newStatus) => {
     const target = reservations.find(r => r.code === code);
@@ -2078,6 +2119,7 @@ export const EstablishmentProvider = ({ children }) => {
       cancelReservation,
       checkInReservation,
       checkOutReservation,
+      updateStayReservation,
       completeReservation,
       resetToDefaults,
       saveLocalUserCredential,

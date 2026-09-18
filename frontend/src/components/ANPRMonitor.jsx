@@ -23,6 +23,13 @@ import {
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from './ui/dialog';
+import {
   normalizarPlaca,
   formatearPlacaConGuion
 } from '../utils/plateOcr';
@@ -35,6 +42,11 @@ const GARITA_ACTIVE_TICKETS_KEY = 'smart_park_garita_walkin_tickets_v2';
 
 const TICK = 30000;
 
+const getCurrentTimeStr = () => {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
 export const ANPRMonitor = () => {
   const {
     establishments,
@@ -44,6 +56,7 @@ export const ANPRMonitor = () => {
     checkInReservation,
     checkOutReservation,
     createReservation,
+    updateStayReservation,
     updateEstablishment,
     updateEstablishmentPlan
   } = useEstablishments();
@@ -69,7 +82,17 @@ export const ANPRMonitor = () => {
   const [entryPlate, setEntryPlate] = useState('');
   const [entryName, setEntryName] = useState('');
   const [entrySlot, setEntrySlot] = useState('');
+  const [entryStayMode, setEntryStayMode] = useState('2'); // 'free' | '1' | '2' | '3' | '4' | '6' | '8' | '12' | '24' | 'custom'
   const [entryHours, setEntryHours] = useState(2);
+  const [entryCustomHours, setEntryCustomHours] = useState(3);
+  const [entryTime, setEntryTime] = useState(() => getCurrentTimeStr());
+
+  // Modal de edición de estadía en cochera
+  const [editingVehicle, setEditingVehicle] = useState(null);
+  const [editTime, setEditTime] = useState('');
+  const [editStayMode, setEditStayMode] = useState('free');
+  const [editHours, setEditHours] = useState(2);
+  const [editSlot, setEditSlot] = useState('');
 
   // Salida manual
   const [exitPlate, setExitPlate] = useState('');
@@ -145,8 +168,34 @@ export const ANPRMonitor = () => {
   const freeSlotList = useMemo(() => slotList.filter(s => s.status === 'free'), [slotList]);
 
   const vehiclesInside = useMemo(() => {
-    const activeRes = reservations.filter(r => String(r.parkingId) === String(selectedEstId) && (r.status === 'ACTIVE' || r.status === 'active')).map(r => ({ source: 'RESERVATION', id: r.id, code: r.code, plate: r.plate, slot: r.slot, driverName: r.customerName || 'Usuario Registrado', phone: r.customerPhone || 'N/A', entryTime: r.startTime || r.createdAt || new Date().toISOString(), rate: r.ratePerHour || currentEst?.rate || 5.0, token: r.token }));
-    const activeWalkIns = walkInTickets.filter(t => String(t.estId) === String(selectedEstId) && t.status === 'ACTIVE').map(t => ({ source: 'WALK_IN', id: t.id, code: t.ticketNumber, plate: t.plate, slot: t.slot, driverName: t.driverName || 'Cliente en garita', phone: t.phone || 'Registro manual', entryTime: t.entryTime, rate: t.rate || currentEst?.rate || 5.0, token: t.ticketNumber }));
+    const activeRes = reservations.filter(r => String(r.parkingId) === String(selectedEstId) && (r.status === 'ACTIVE' || r.status === 'active')).map(r => ({ 
+      source: 'RESERVATION', 
+      id: r.id, 
+      code: r.code, 
+      plate: r.plate, 
+      slot: r.slot, 
+      driverName: r.customerName || 'Usuario Registrado', 
+      phone: r.customerPhone || 'N/A', 
+      entryTime: r.actual_entry || r.startTime || r.createdAt || new Date().toISOString(), 
+      rate: r.ratePerHour || currentEst?.rate || 5.0, 
+      token: r.token,
+      isOpenStay: !!(r.isOpenStay ?? r.is_open_stay),
+      hours: r.hours || r.estimated_hours || (r.is_open_stay ? 0 : 2)
+    }));
+    const activeWalkIns = walkInTickets.filter(t => String(t.estId) === String(selectedEstId) && t.status === 'ACTIVE').map(t => ({ 
+      source: 'WALK_IN', 
+      id: t.id, 
+      code: t.ticketNumber, 
+      plate: t.plate, 
+      slot: t.slot, 
+      driverName: t.driverName || 'Cliente en garita', 
+      phone: t.phone || 'Registro manual', 
+      entryTime: t.entryTime, 
+      rate: t.rate || currentEst?.rate || 5.0, 
+      token: t.ticketNumber,
+      isOpenStay: !!t.isOpenStay,
+      hours: t.hours || (t.isOpenStay ? 0 : 2)
+    }));
     return [...activeRes, ...activeWalkIns];
   }, [reservations, walkInTickets, selectedEstId, currentEst]);
 
@@ -175,28 +224,64 @@ export const ANPRMonitor = () => {
     }
     setLoading(true);
     try {
+      // 1. Calcular hora de entrada real según entryTime
+      const targetEntryDate = new Date();
+      if (entryTime) {
+        const [h, m] = entryTime.split(':').map(Number);
+        if (!isNaN(h) && !isNaN(m)) {
+          targetEntryDate.setHours(h, m, 0, 0);
+        }
+      }
+
+      // 2. Determinar si es Tiempo Libre o cantidad de horas
+      const isOpenStay = entryStayMode === 'free';
+      const effectiveHours = isOpenStay
+        ? 24 // ventana de reserva abierta para la sede
+        : (entryStayMode === 'custom' ? Math.max(0.5, Number(entryCustomHours) || 1) : Number(entryStayMode || 2));
+
       const normalized = normalizarPlaca(plate);
       const matched = reservations.find(r => String(r.parkingId) === String(selectedEstId) && normalizarPlaca(r.plate) === normalized && (r.status === 'SCHEDULED' || r.status === 'ACTIVE' || !r.status));
+      
       if (matched) {
         const targetSlot = matched.slot || entrySlot;
-        await checkInReservation(matched.code);
+        await checkInReservation(matched.code, isOpenStay ? null : effectiveHours);
+        if (entryTime) {
+          await updateStayReservation(matched.id || matched.code, {
+            actual_entry: targetEntryDate.toISOString(),
+            hours_stay: isOpenStay ? 0 : effectiveHours,
+            is_open_stay: isOpenStay,
+            slot_code: targetSlot
+          });
+        }
         occupySlot(selectedEstId, targetSlot, plate);
-        setFormResult({ matched: true, message: `Ingreso registrado. Reserva ${matched.code} en cajón ${targetSlot}.` });
-        addAuditLog({ type: 'GARITA', action: 'INGRESO_RESERVA', plate, slot: targetSlot, status: 'ACTIVO', detail: `Reserva ${matched.code} con check-in manual.` });
+        const stayDesc = isOpenStay ? 'Tiempo libre' : `${effectiveHours}h`;
+        const timeStr = targetEntryDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+        setFormResult({ matched: true, message: `Ingreso registrado. Reserva ${matched.code} en cajón ${targetSlot} (${stayDesc}, Entrada: ${timeStr}).` });
+        addAuditLog({ type: 'GARITA', action: 'INGRESO_RESERVA', plate, slot: targetSlot, status: 'ACTIVO', detail: `Reserva ${matched.code} con check-in manual (${stayDesc}).` });
       } else {
-        const nowDate = new Date();
         const res = await createReservation({
           parkingId: currentEst.id,
           slotCode: entrySlot,
           plate,
-          hours: entryHours,
-          startTime: nowDate.toISOString(),
-          expiresAt: new Date(nowDate.getTime() + entryHours * 3600000).toISOString()
+          hours: effectiveHours,
+          isOpenStay,
+          is_open_stay: isOpenStay,
+          startTime: targetEntryDate.toISOString(),
+          expiresAt: new Date(targetEntryDate.getTime() + effectiveHours * 3600000).toISOString()
         });
         if (res && !res.error && res.code) {
-          await checkInReservation(res.code);
-          setFormResult({ matched: true, message: `Ingreso registrado. Ticket ${res.code} en cajón ${entrySlot} por ${entryHours}h.` });
-          addAuditLog({ type: 'GARITA', action: 'INGRESO_MANUAL', plate, slot: entrySlot, status: 'ACTIVO', detail: `Ticket ${res.code} creado en garita.` });
+          await checkInReservation(res.code, isOpenStay ? null : effectiveHours);
+          if (entryTime) {
+            await updateStayReservation(res.id || res.code, {
+              actual_entry: targetEntryDate.toISOString(),
+              hours_stay: isOpenStay ? 0 : effectiveHours,
+              is_open_stay: isOpenStay
+            });
+          }
+          const stayDesc = isOpenStay ? 'Tiempo libre' : `${effectiveHours}h`;
+          const timeStr = targetEntryDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+          setFormResult({ matched: true, message: `Ingreso registrado. Ticket ${res.code} en cajón ${entrySlot} (${stayDesc}, Entrada: ${timeStr}).` });
+          addAuditLog({ type: 'GARITA', action: 'INGRESO_MANUAL', plate, slot: entrySlot, status: 'ACTIVO', detail: `Ticket ${res.code} creado en garita (${stayDesc}, Entrada: ${timeStr}).` });
         } else {
           setFormResult({ matched: false, message: `No se pudo registrar el ingreso: ${res?.error || 'Cajón no disponible.'}` });
         }
@@ -204,6 +289,92 @@ export const ANPRMonitor = () => {
       setEntryPlate('');
       setEntrySlot('');
       setEntryName('');
+      setEntryTime(getCurrentTimeStr());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenEditModal = (vehicle) => {
+    setEditingVehicle(vehicle);
+    const entryD = new Date(vehicle.entryTime);
+    setEditTime(`${String(entryD.getHours()).padStart(2, '0')}:${String(entryD.getMinutes()).padStart(2, '0')}`);
+    setEditSlot(vehicle.slot);
+    if (vehicle.isOpenStay || !vehicle.hours || vehicle.hours === 0) {
+      setEditStayMode('free');
+      setEditHours(2);
+    } else {
+      const h = Number(vehicle.hours);
+      const isPreset = [1, 2, 3, 4, 6, 8, 12, 24].includes(h);
+      setEditStayMode(isPreset ? String(h) : 'custom');
+      setEditHours(h);
+    }
+  };
+
+  const handleSaveEditStay = async () => {
+    if (!editingVehicle) return;
+    setLoading(true);
+    try {
+      const currentEntry = new Date(editingVehicle.entryTime);
+      const newEntryDate = new Date(currentEntry.getTime());
+      if (editTime) {
+        const [h, m] = editTime.split(':').map(Number);
+        if (!isNaN(h) && !isNaN(m)) {
+          newEntryDate.setHours(h, m, 0, 0);
+        }
+      }
+
+      const isOpenStay = editStayMode === 'free';
+      const effectiveHours = isOpenStay ? 0 : Number(editHours || 2);
+
+      if (editingVehicle.source === 'RESERVATION') {
+        const res = await updateStayReservation(editingVehicle.id, {
+          actual_entry: newEntryDate.toISOString(),
+          hours_stay: effectiveHours,
+          is_open_stay: isOpenStay,
+          slot_code: editSlot
+        });
+        if (!res.ok) {
+          setFormResult({ matched: false, message: `Error al actualizar: ${res.message}` });
+          return;
+        }
+      }
+
+      if (editingVehicle.source === 'WALK_IN') {
+        setWalkInTickets(prev => prev.map(t => {
+          if (t.id === editingVehicle.id || t.ticketNumber === editingVehicle.code) {
+            return {
+              ...t,
+              entryTime: newEntryDate.toISOString(),
+              slot: editSlot,
+              hours: effectiveHours,
+              isOpenStay
+            };
+          }
+          return t;
+        }));
+      }
+
+      if (editSlot && editSlot !== editingVehicle.slot) {
+        freeSlot(selectedEstId, editingVehicle.slot);
+        occupySlot(selectedEstId, editSlot, editingVehicle.plate);
+      }
+
+      const timeFormatted = newEntryDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      const stayDesc = isOpenStay ? 'Tiempo libre' : `${effectiveHours}h`;
+      setFormResult({ matched: true, message: `Estadía de ${editingVehicle.plate} actualizada: Entrada ${timeFormatted}, ${stayDesc}, Cajón ${editSlot}.` });
+      addAuditLog({
+        type: 'GARITA',
+        action: 'EDICION_ESTADIA',
+        plate: editingVehicle.plate,
+        slot: editSlot,
+        status: 'ACTIVO',
+        detail: `Hora de entrada corregida a ${timeFormatted}, ${stayDesc}.`
+      });
+
+      setEditingVehicle(null);
+    } catch (err) {
+      setFormResult({ matched: false, message: 'Error al actualizar la estadía.' });
     } finally {
       setLoading(false);
     }
@@ -224,7 +395,7 @@ export const ANPRMonitor = () => {
       setFormResult({ matched: false, message: `No hay estadía activa para ${formatearPlacaConGuion(exitPlate)} en esta sede.` });
       return;
     }
-    const entryDate = new Date(item.startTime || item.entryTime || Date.now() - 3600000);
+    const entryDate = new Date(item.actual_entry || item.actualEntry || item.startTime || item.entryTime || Date.now() - 3600000);
     const minutesParked = Math.max(15, Math.round((Date.now() - entryDate.getTime()) / 60000));
     const hoursParked = Math.ceil(minutesParked / 60);
     const totalCost = Number((hoursParked * (item.rate || item.ratePerHour || currentEst?.rate || 5.0)).toFixed(2));
@@ -430,27 +601,79 @@ export const ANPRMonitor = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-end">
             <div>
-              <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Horas de estadía</label>
-              <select value={entryHours} onChange={e => setEntryHours(Number(e.target.value))} className="h-11 w-full px-3 bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-slate-100">
-                <option value={1}>1 hora</option>
-                <option value={2}>2 horas</option>
-                <option value={4}>4 horas</option>
-                <option value={8}>8 horas</option>
-                <option value={12}>12 horas</option>
-                <option value={24}>24 horas</option>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-black text-slate-700 dark:text-slate-200">Hora de ingreso</label>
+                <button
+                  type="button"
+                  onClick={() => setEntryTime(getCurrentTimeStr())}
+                  className="text-[10px] font-bold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
+                >
+                  Hora actual
+                </button>
+              </div>
+              <Input
+                type="time"
+                value={entryTime}
+                onChange={e => setEntryTime(e.target.value)}
+                className="h-11 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100 font-mono font-bold text-center"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Estadía / Horas</label>
+              <select
+                value={entryStayMode}
+                onChange={e => setEntryStayMode(e.target.value)}
+                className="h-11 w-full px-3 bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-slate-100 cursor-pointer"
+              >
+                <option value="free">⏳ Tiempo Libre (Cobro al salir)</option>
+                <option value="1">1 hora</option>
+                <option value="2">2 horas</option>
+                <option value="3">3 horas</option>
+                <option value="4">4 horas</option>
+                <option value="6">6 horas</option>
+                <option value="8">8 horas</option>
+                <option value="12">12 horas</option>
+                <option value="24">24 horas</option>
+                <option value="custom">✏️ Personalizado (Escribir horas)</option>
               </select>
             </div>
-            <Button
-              type="button"
-              onClick={handleEntrySubmit}
-              disabled={loading || !entryPlate || !entrySlot}
-              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black text-sm h-11 rounded-2xl gap-1.5 transition-colors"
-            >
-              {loading ? <RefreshCw className="w-4 h-4 animate-spin"/> : <ArrowUpRight className="w-4 h-4"/>} Registrar ingreso
-            </Button>
+
+            {entryStayMode === 'custom' ? (
+              <div>
+                <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Cant. Horas</label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0.5"
+                  max="720"
+                  value={entryCustomHours}
+                  onChange={e => setEntryCustomHours(e.target.value)}
+                  placeholder="Ej. 1.5, 3"
+                  className="h-11 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100 font-bold"
+                />
+              </div>
+            ) : null}
+
+            <div className={entryStayMode === 'custom' ? 'col-span-1 sm:col-span-2 md:col-span-3' : ''}>
+              <Button
+                type="button"
+                onClick={handleEntrySubmit}
+                disabled={loading || !entryPlate || !entrySlot}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black text-sm h-11 rounded-xl gap-1.5 transition-colors shadow-sm"
+              >
+                {loading ? <RefreshCw className="w-4 h-4 animate-spin"/> : <ArrowUpRight className="w-4 h-4"/>} Registrar ingreso
+              </Button>
+            </div>
           </div>
+
+          {entryStayMode === 'free' && (
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-3 py-2 rounded-xl">
+              💡 <strong>Tiempo Libre:</strong> El vehículo permanecerá activo sin límite preestablecido y la tarifa final se calculará al registrar su salida según el tiempo exacto transcurrido.
+            </p>
+          )}
         </div>
       )}
 
@@ -556,7 +779,12 @@ export const ANPRMonitor = () => {
                           {v.source === 'RESERVATION' ? 'RESERVA' : 'GARITA'}
                         </span>
                       </td>
-                      <td className="px-3 py-2 font-mono text-slate-600 dark:text-slate-400">{entry.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</td>
+                      <td className="px-3 py-2 font-mono text-slate-600 dark:text-slate-400">
+                        <div>{entry.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5 ${v.isOpenStay ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                          {v.isOpenStay ? '⏳ Libre' : `${v.hours || 1}h est.`}
+                        </span>
+                      </td>
                       <td className="px-3 py-2 font-mono font-black text-slate-900 dark:text-slate-100">{elapsedLabel(v.entryTime)}</td>
                       <td className="px-3 py-2 hidden sm:table-cell">
                         {isPaid
@@ -564,7 +792,15 @@ export const ANPRMonitor = () => {
                           : <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-2 py-1 rounded-lg">POR COBRAR</span>}
                       </td>
                       <td className="px-3 py-2 text-right">
-                        <span className="inline-flex items-center gap-1">
+                        <span className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(v)}
+                            title="Editar hora o estadía"
+                            className="p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
                           {!isPaid && <button onClick={() => { const r = reservations.find(x => String(x.id) === String(v.id)); if (r) setPayTarget(r); }} className="text-[10px] font-black bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1 rounded-lg transition-colors">Cobrar</button>}
                           <button onClick={() => handleInsideExit(v)} disabled={loading} className="text-[10px] font-bold bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg transition-colors disabled:opacity-40">Salida</button>
                         </span>
@@ -602,6 +838,115 @@ export const ANPRMonitor = () => {
           onPaymentSuccess={() => { setPaidIds(prev => new Set([...prev, Number(payTarget.id)])); setPayTarget(null); }}
         />
       )}
+
+      {/* Modal Editar Estadía / Hora de Ingreso */}
+      <Dialog open={!!editingVehicle} onOpenChange={open => !open && setEditingVehicle(null)}>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-[#111827] text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-800">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-black">
+              <Pencil className="w-4 h-4 text-emerald-600" />
+              Editar Estadía • {editingVehicle?.plate}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+              Modifica la hora de ingreso real, el cajón o el régimen de tiempo para este vehículo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-black text-slate-700 dark:text-slate-200">Hora de ingreso (HH:mm)</label>
+                <button
+                  type="button"
+                  onClick={() => setEditTime(getCurrentTimeStr())}
+                  className="text-[10px] font-bold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
+                >
+                  Poner hora actual
+                </button>
+              </div>
+              <Input
+                type="time"
+                value={editTime}
+                onChange={e => setEditTime(e.target.value)}
+                className="h-10 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100 font-mono font-bold text-center"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">Si el auto ingresó antes de registrarlo, ajusta aquí su hora de llegada real.</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Régimen</label>
+                <select
+                  value={editStayMode}
+                  onChange={e => setEditStayMode(e.target.value)}
+                  className="h-10 w-full px-3 bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100"
+                >
+                  <option value="free">⏳ Tiempo Libre</option>
+                  <option value="1">1 hora</option>
+                  <option value="2">2 horas</option>
+                  <option value="3">3 horas</option>
+                  <option value="4">4 horas</option>
+                  <option value="6">6 horas</option>
+                  <option value="8">8 horas</option>
+                  <option value="12">12 horas</option>
+                  <option value="24">24 horas</option>
+                  <option value="custom">✏️ Personalizado</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Cajón</label>
+                <select
+                  value={editSlot}
+                  onChange={e => setEditSlot(e.target.value)}
+                  className="h-10 w-full px-3 bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-slate-100"
+                >
+                  <option value={editingVehicle?.slot}>{editingVehicle?.slot} (Actual)</option>
+                  {freeSlotList.map(s => (
+                    <option key={s.code} value={s.code}>{s.code} (Libre)</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {editStayMode === 'custom' && (
+              <div>
+                <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Horas estimadas</label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0.5"
+                  max="720"
+                  value={editHours}
+                  onChange={e => setEditHours(e.target.value)}
+                  placeholder="Ej. 1.5, 3"
+                  className="h-10 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100 font-bold text-sm"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditingVehicle(null)}
+              className="text-xs h-9 rounded-xl"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveEditStay}
+              disabled={loading}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 rounded-xl"
+            >
+              {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1"/> : null}
+              Guardar cambios
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

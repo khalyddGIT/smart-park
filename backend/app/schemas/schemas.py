@@ -567,6 +567,12 @@ class ReservationUpdate(BaseModel):
             raise ValueError("La fecha y hora de fin debe ser posterior a la fecha y hora de inicio.")
         return v
 
+class ReservationStayUpdate(BaseModel):
+    actual_entry: Optional[datetime] = None
+    hours_stay: Optional[float] = None
+    is_open_stay: Optional[bool] = None
+    slot_code: Optional[str] = None
+
 class ReservationResponse(BaseModel):
     id: int
     code: str

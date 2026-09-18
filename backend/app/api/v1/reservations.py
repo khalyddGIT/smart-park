@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.models import Reservation, Slot, Parking, Payment, User, Staff
-from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationResponse, ReservationCheckOut
+from app.schemas.schemas import ReservationCreate, ReservationUpdate, ReservationStayUpdate, ReservationResponse, ReservationCheckOut
 from app.core.security import get_current_user, require_role
 from app.core.realtime import realtime
 from app.core.cache import cache_delete
@@ -811,6 +811,91 @@ async def check_in_reservation(
         await realtime.broadcast("spaces:update", broadcast_payload)
     except Exception:
         pass
+    await db.refresh(reservation)
+    return _format_reservation_response(reservation)
+
+@router.put("/{reservation_id}/stay", response_model=ReservationResponse)
+async def update_reservation_stay(
+    reservation_id: int,
+    stay_in: ReservationStayUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    await _check_reservation_access(reservation, current_user, db, action_label="editar la estadía de esta reserva")
+
+    from datetime import timedelta
+
+    # 1. Modificar hora de entrada real si fue provista
+    if stay_in.actual_entry is not None:
+        clean_entry = _naive_utc(stay_in.actual_entry)
+        reservation.actual_entry = clean_entry
+        reservation.start_time = clean_entry
+
+    # 2. Modificar cajón asignado si fue provisto
+    if stay_in.slot_code:
+        code_clean = stay_in.slot_code.strip()
+        slot_res = await db.execute(
+            select(Slot).where(
+                Slot.parking_id == reservation.parking_id,
+                func.lower(Slot.spot_number) == code_clean.lower()
+            )
+        )
+        new_slot = slot_res.scalars().first()
+        if new_slot and new_slot.id != reservation.slot_id:
+            # Liberar el cajón anterior si estaba ocupado
+            old_slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))
+            old_slot = old_slot_res.scalars().first()
+            if old_slot and old_slot.status == "occupied":
+                old_slot.status = "free"
+            # Asignar nuevo cajón
+            new_slot.status = "occupied" if reservation.status == "active" else "reserved"
+            reservation.slot_id = new_slot.id
+
+    # 3. Modificar horas o régimen de estadía
+    parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
+    parking = parking_res.scalars().first()
+    vtype = getattr(reservation, "vehicle_type", "auto")
+    vehicle_rate = get_parking_vehicle_rate(parking, vtype) if parking else 5.0
+
+    entry_ref = reservation.actual_entry or reservation.start_time or datetime.utcnow()
+
+    if stay_in.is_open_stay is not None:
+        reservation.is_open_stay = stay_in.is_open_stay
+
+    if stay_in.hours_stay is not None and stay_in.hours_stay > 0:
+        stay_hours = float(stay_in.hours_stay)
+        reservation.end_time = entry_ref + timedelta(hours=stay_hours)
+        reservation.estimated_hours = stay_hours
+        night_surcharge = float(parking.night_shift_surcharge or 0.0) if getattr(reservation, "is_night_shift", False) else 0.0
+        reservation.total_cost = round((vehicle_rate + night_surcharge) * stay_hours, 2)
+    elif getattr(reservation, "is_open_stay", False):
+        # En estadía abierta, el end_time proyectado se extiende 24h desde la entrada
+        reservation.end_time = entry_ref + timedelta(hours=24)
+
+    await db.commit()
+    try:
+        await invalidate_parkings_cache()
+        await invalidate_finances_cache()
+        broadcast_payload = {
+            "parking_id": reservation.parking_id,
+            "slot_id": reservation.slot_id,
+            "status": "occupied" if reservation.status == "active" else reservation.status,
+            "reservation_id": reservation.id,
+            "code": reservation.code,
+            "actual_entry": reservation.actual_entry.isoformat() if reservation.actual_entry else None,
+            "start_time": reservation.start_time.isoformat() if reservation.start_time else None,
+            "end_time": reservation.end_time.isoformat() if reservation.end_time else None,
+            "total_cost": reservation.total_cost
+        }
+        await realtime.broadcast("reservations:updated", broadcast_payload)
+        await realtime.broadcast("spaces:update", broadcast_payload)
+    except Exception:
+        pass
+
     await db.refresh(reservation)
     return _format_reservation_response(reservation)
 

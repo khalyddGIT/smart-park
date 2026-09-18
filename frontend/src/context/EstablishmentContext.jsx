@@ -924,12 +924,13 @@ export const EstablishmentProvider = ({ children }) => {
             if (msg.event === 'pong') return;
 
             // Disparar eventos CustomEvent tipados para sincronización instantánea de componentes reactivos
-            if (msg.payload) {
+            if (msg.payload || msg.event) {
               try {
+                const eventPayload = { ...(msg.payload || {}), event: msg.event };
                 if (msg.event === 'spaces:update') {
-                  window.dispatchEvent(new CustomEvent('smart_park_spaces_live', { detail: msg.payload }));
+                  window.dispatchEvent(new CustomEvent('smart_park_spaces_live', { detail: eventPayload }));
                 } else if (msg.event && (msg.event.startsWith('reservations:') || msg.event === 'reservations:updated')) {
-                  window.dispatchEvent(new CustomEvent('smart_park_reservation_live', { detail: msg.payload }));
+                  window.dispatchEvent(new CustomEvent('smart_park_reservation_live', { detail: eventPayload }));
                 }
               } catch {}
             }

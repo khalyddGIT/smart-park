@@ -92,9 +92,11 @@ async def _cancel_expired_once() -> int:
                         "slot_id": r.slot_id,
                         "slot_code": getattr(slot, "code", "") or getattr(slot, "spot_number", "") if slot else "",
                         "status": "free",
+                        "reservation_status": "cancelled",
                         "reason": "tolerancia_vencida",
                         "tolerance_minutes": tol,
                         "deadline": deadline.isoformat(),
+                        "message": f"Tu reserva {r.code} fue cancelada por tolerancia de llegada vencida."
                     }
                     await realtime.broadcast("reservations:cancelled", c_payload)
                     await realtime.broadcast("spaces:update", c_payload)
@@ -112,7 +114,11 @@ async def _cancel_expired_once() -> int:
                             "user_id": r.user_id,
                             "parking_id": r.parking_id,
                             "minutes_left": mins_left,
+                            "minutes_remaining": mins_left,
                             "deadline": deadline.isoformat(),
+                            "status": "scheduled",
+                            "reservation_status": "scheduled",
+                            "message": f"Tu reserva {r.code} vencerá en {mins_left} min. Preséntate en garita antes del límite."
                         })
                     except Exception:
                         pass
@@ -143,9 +149,15 @@ async def _cancel_expired_once() -> int:
                         "slot_id": r.slot_id,
                         "license_plate": r.license_plate,
                         "minutes_left": mins_left,
+                        "minutes_remaining": mins_left,
                         "deadline": deadline.isoformat(),
                         "current_cost": r.total_cost,
-                        "status": "active"
+                        "updated_cost": r.total_cost,
+                        "new_total_cost": r.total_cost,
+                        "status": "active",
+                        "reservation_status": "active",
+                        "is_expiring_soon": True,
+                        "message": f"Tu estadía finaliza en {mins_left} minutos. Sin tiempo de gracia."
                     })
                 except Exception:
                     pass
@@ -186,8 +198,12 @@ async def _cancel_expired_once() -> int:
                         "license_plate": r.license_plate,
                         "overtime_minutes": overtime_min,
                         "updated_cost": r.total_cost,
+                        "new_total_cost": r.total_cost,
+                        "current_cost": r.total_cost,
                         "is_overtime": True,
-                        "status": "active"
+                        "status": "active",
+                        "reservation_status": "active",
+                        "message": f"Estadía vencida (+{overtime_min}m). Monto actual: S/ {r.total_cost:.2f}."
                     })
                 except Exception:
                     pass

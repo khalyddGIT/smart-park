@@ -91,20 +91,25 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
 
       if (!matches) return;
 
-      if (detail.reservation_status === 'active') {
+      const resStatus = detail.reservation_status || detail.status;
+      const newCost = detail.updated_cost ?? detail.new_total_cost ?? detail.current_cost ?? detail.total_cost;
+      const minutesLeft = detail.minutes_left ?? detail.minutes_remaining;
+      const isOvertimeEvent = detail.is_overtime || detail.event === 'reservations:stay_overtime';
+
+      if (resStatus === 'active') {
         setLocalStatus('active');
         const entryTime = detail.actual_entry || new Date().toISOString();
         setLocalActualEntry(entryTime);
 
-        if (detail.is_overtime) {
+        if (isOvertimeEvent) {
           setIsOvertime(true);
-          if (detail.new_total_cost) {
-            setDynamicCost(Number(detail.new_total_cost));
+          if (newCost !== undefined && newCost !== null) {
+            setDynamicCost(Number(newCost));
           }
-          setLiveBanner(`Estadía vencida (+${detail.overtime_minutes || 0}m). Monto actual: S/ ${Number(detail.new_total_cost || 0).toFixed(2)}.`);
-        } else if (detail.minutes_remaining !== undefined && detail.minutes_remaining <= 15) {
+          setLiveBanner(`Estadía vencida (+${detail.overtime_minutes || 0}m). Monto actual: S/ ${Number(newCost || 0).toFixed(2)}.`);
+        } else if (minutesLeft !== undefined && minutesLeft <= 15) {
           setIsExpiringSoon(true);
-          setLiveBanner(`Atención: Tu estadía finaliza en ${detail.minutes_remaining} min. Sin periodo de gracia.`);
+          setLiveBanner(`Atención: Tu estadía finaliza en ${minutesLeft} min. Sin periodo de gracia.`);
         } else {
           playSuccessChime();
           try {
@@ -118,10 +123,10 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
           ...reservation,
           status: 'active',
           actual_entry: entryTime,
-          is_overtime: detail.is_overtime,
-          total_cost: detail.new_total_cost || reservation.total_cost
+          is_overtime: isOvertimeEvent,
+          total_cost: newCost || reservation.total_cost
         });
-      } else if (detail.reservation_status === 'completed') {
+      } else if (resStatus === 'completed') {
         setLocalStatus('completed');
         setIsOvertime(false);
         setIsExpiringSoon(false);
@@ -137,11 +142,11 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
           actual_exit: detail.actual_exit || new Date().toISOString(),
           amount_paid: detail.amount_paid
         });
-      } else if (detail.reservation_status === 'cancelled') {
+      } else if (resStatus === 'cancelled' || detail.event === 'reservations:cancelled') {
         setLocalStatus('cancelled');
         setIsOvertime(false);
         setIsExpiringSoon(false);
-        setLiveBanner('Reserva anulada');
+        setLiveBanner(detail.reason === 'tolerancia_vencida' ? 'Reserva anulada por tiempo límite de llegada vencido' : 'Reserva anulada');
         setTimeout(() => setLiveBanner(null), 5000);
         onReservationUpdated?.({
           ...reservation,
@@ -777,7 +782,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                   {passData.isSubscription ? 'Abono Mensual' : isOvertime ? 'Total Acumulado' : 'Total de Reserva'}
                 </span>
                 <p className="font-mono font-bold text-sm mt-0.5 text-slate-900 dark:text-white">
-                  {isCancelled ? 'S/ 0.00' : `S/ ${(isOvertime && dynamicCost ? dynamicCost : passData.cost).toFixed(2)}`}
+                  {isCancelled ? 'S/ 0.00' : `S/ ${(dynamicCost ?? passData.cost ?? 0).toFixed(2)}`}
                 </p>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
                   {isCancelled ? 'Anulada' : passData.isSubscription ? 'Membresía activa' : passData.isPrepaid ? 'Prepagado' : 'Pago en garita'}

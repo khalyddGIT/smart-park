@@ -1832,7 +1832,10 @@ export const EstablishmentProvider = ({ children }) => {
       isOpenStay: !!r.is_open_stay,
       reservationType: r.reservation_type || 'standard',
       isSubscription: !!r.is_subscription,
-      subscriptionMonths: Number(r.subscription_months || 0)
+      subscriptionMonths: Number(r.subscription_months || 0),
+      isOvertime: !!r.is_overtime,
+      overtimeMinutes: Number(r.overtime_minutes || 0),
+      amountPaid: Number(r.amount_paid ?? 0)
     };
   };
 

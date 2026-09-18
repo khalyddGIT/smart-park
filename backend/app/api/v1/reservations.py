@@ -960,7 +960,7 @@ async def check_out_reservation(
 
         if getattr(reservation, "is_open_stay", False) or calculated_cost > (reservation.total_cost or 0):
             reservation.total_cost = calculated_cost
-        if not getattr(reservation, "amount_paid", None):
+        if not getattr(reservation, "amount_paid", None) or reservation.total_cost > (reservation.amount_paid or 0):
             reservation.amount_paid = reservation.total_cost
 
     if checkout_in and checkout_in.payment_method:

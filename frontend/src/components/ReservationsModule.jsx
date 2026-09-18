@@ -54,6 +54,38 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { DigitalAccessPassModal } from './DigitalAccessPassModal';
 
+// Helper de cálculo dinámico del costo acumulado en tiempo real (sobreestadía sin periodo de gracia)
+export const calculateLiveEffectiveCost = (res, now = Date.now()) => {
+  if (!res) return 0;
+  const baseCost = Number(res.cost || res.totalCost || res.total_cost || 0);
+  const status = String(res.status || '').toUpperCase();
+  if (status === 'COMPLETED' || status === 'CANCELLED') {
+    return Number(res.total_cost || res.amount_paid || res.cost || baseCost);
+  }
+  if (status === 'SCHEDULED') {
+    return baseCost;
+  }
+  if (status === 'ACTIVE') {
+    // Si la reserva ya fue enriquecida por el backend en /api/v1/reservations con isOvertime y un total_cost mayor
+    if (res.isOvertime && Number(res.cost) > baseCost) {
+      return Number(res.cost);
+    }
+    const endMs = res.expiresAt 
+      ? parseIsoToDate(res.expiresAt).getTime()
+      : (parseIsoToDate(res.startTime).getTime() + (Number(res.hours) || 1) * 3600000);
+    const diffMs = endMs - now;
+    if (diffMs < 0) {
+      const overtimeSec = Math.abs(Math.floor(diffMs / 1000));
+      const baseHours = Math.max(1, Number(res.hours) || 1);
+      const hourlyRate = Number(res.ratePerHour) || Number(res.rate) || (baseCost / baseHours) || 5.0;
+      const extraHours = Math.max(1, Math.ceil(overtimeSec / 3600));
+      return Number((baseCost + (extraHours * hourlyRate)).toFixed(2));
+    }
+    return baseCost;
+  }
+  return baseCost;
+};
+
 export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations }) => {
   const { user, role } = useAuth();
   const { 
@@ -86,6 +118,13 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
       setPaidIds(ids);
     }).catch(() => {});
   }, [reservations.length]);
+
+  // Reloj en tiempo real para sincronizar estados de sobreestadía y tarifas cada 5 segundos
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Estados de búsqueda y filtrado
   const [searchTerm, setSearchTerm] = useState('');
@@ -322,12 +361,12 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   
   const totalRevenue = reservations
     .filter(r => r.status !== 'CANCELLED')
-    .reduce((acc, r) => acc + (Number(r.cost) || 0), 0);
+    .reduce((acc, r) => acc + calculateLiveEffectiveCost(r, currentTime), 0);
 
   const todayRevenue = reservations
     .filter(r => r.status !== 'CANCELLED')
     .filter(r => new Date(r.startTime).toDateString() === new Date().toDateString())
-    .reduce((acc, r) => acc + (Number(r.cost) || 0), 0);
+    .reduce((acc, r) => acc + calculateLiveEffectiveCost(r, currentTime), 0);
 
   // Reserva activa para el conductor en curso
   const activeUserReservation = reservations.find(r => r.status === 'ACTIVE' || r.status === 'SCHEDULED');
@@ -429,11 +468,9 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   };
 
   // Calcular tiempo restante legible por fases (Llegada vs Estancia)
-  const getRemainingTimeText = (startTime, expiresAt, status, tolMinutes = 15) => {
+  const getRemainingTimeText = (startTime, expiresAt, status, tolMinutes = 15, now = Date.now()) => {
     if (status === 'COMPLETED') return 'Estancia finalizada';
     if (status === 'CANCELLED') return 'Cancelada';
-
-    const now = Date.now();
     if (status === 'SCHEDULED') {
       const start = parseIsoToDate(startTime).getTime();
       const tolMs = (Number(tolMinutes) || 15) * 60 * 1000;
@@ -1524,7 +1561,12 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
 
             const tolMin = Number(res.toleranceMinutes || res.tolerance || res.arrivalWindow || 15);
             const progress = calculateTimeProgress(res.startTime, res.expiresAt);
-            const remainingText = getRemainingTimeText(res.startTime, res.expiresAt, res.status, tolMin);
+            const remainingText = getRemainingTimeText(res.startTime, res.expiresAt, res.status, tolMin, currentTime);
+
+            const liveCost = calculateLiveEffectiveCost(res, currentTime);
+            const baseCost = Number(res.cost || 0);
+            const isOvertimeActive = isActive && liveCost > baseCost;
+            const overtimeSurcharge = Math.max(0, Number((liveCost - baseCost).toFixed(2)));
 
             return (
               <div 
@@ -1566,6 +1608,13 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                         {isActive && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                             En Estancia
+                          </span>
+                        )}
+
+                        {isOvertimeActive && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 animate-pulse">
+                            <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                            <span>Sobreestadía (+S/ {overtimeSurcharge.toFixed(2)})</span>
                           </span>
                         )}
 
@@ -1690,6 +1739,12 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                               style={{ width: `${progress}%` }} 
                             />
                           </div>
+                          {isActive && (
+                            <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 pt-1">
+                              <ShieldCheck className="w-3 h-3 text-emerald-500 shrink-0" />
+                              <span>Vehículo en cochera · Salida se valida con Pase QR en garita</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1701,13 +1756,18 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                     {/* Importe */}
                     <div className="text-left lg:text-right">
                       <span className="text-[10px] text-slate-400 dark:text-slate-400 block font-mono">
-                        {isScheduled ? 'Tarifa' : 'Importe'}
+                        {isScheduled ? 'Tarifa' : isOvertimeActive ? 'Total Acumulado' : 'Importe'}
                       </span>
-                      <span className="text-base font-bold text-slate-900 dark:text-white font-mono">
+                      <span className={`text-base font-bold font-mono ${isOvertimeActive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>
                         {isScheduled 
                           ? `S/ ${Number(res.ratePerHour || 5.0).toFixed(2)} /h`
-                          : `S/ ${Number(res.cost).toFixed(2)}`}
+                          : `S/ ${liveCost.toFixed(2)}`}
                       </span>
+                      {isOvertimeActive && (
+                        <span className="text-[10px] text-amber-700 dark:text-amber-400 font-mono font-semibold block">
+                          (+S/ {overtimeSurcharge.toFixed(2)} sobreestadía)
+                        </span>
+                      )}
                     </div>
 
                     {/* Botones de Acción */}
@@ -1786,14 +1846,18 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                         <span className="hidden sm:inline">{isCancelled ? 'Ticket Anulado' : 'Ticket'}</span>
                       </Button>
 
-                      {/* Cancelar Reserva */}
-                      {(isScheduled || isActive) && (
+                      {/* Cancelar Reserva: ÚNICAMENTE permitido antes de ingresar (programada) */}
+                      {isScheduled && !isActive && (
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={async () => {
                             if (confirm(`¿Deseas cancelar la reserva ${res.code} y liberar la plaza ${res.slot}?`)) {
-                              cancelReservation(res.code);
-                              setFeedbackMessage(`Reserva ${res.code} cancelada. Plaza ${res.slot} disponible.`);
+                              const resp = await cancelReservation(res.code);
+                              if (resp?.ok) {
+                                setFeedbackMessage(resp.message || `Reserva ${res.code} cancelada. Plaza ${res.slot} disponible.`);
+                              } else {
+                                setFeedbackMessage(`✕ ${resp?.message || 'No se pudo cancelar la reserva.'}`);
+                              }
                             }
                           }}
                           className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2 py-1 rounded-md transition-colors cursor-pointer"

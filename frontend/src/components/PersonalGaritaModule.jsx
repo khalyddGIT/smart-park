@@ -338,8 +338,11 @@ export const PersonalGaritaModule = () => {
     const isOvertime = scheduledEnd ? now.getTime() > scheduledEnd.getTime() : false;
     const overtimeMins = isOvertime ? Math.floor((now.getTime() - scheduledEnd.getTime()) / 60000) : 0;
 
-    // Verificar si ya fue pre-pagado en el ingreso
-    const alreadyPaid = raw.amount_paid > 0 || (raw.payment_method && raw.payment_method !== 'pendiente' && raw.payment_method !== null);
+    // Verificar si ya fue pre-pagado en el ingreso y calcular saldo pendiente por sobretiempo
+    const paidAmount = Number(raw.amount_paid || (raw.prepaid || (raw.payment_method && raw.payment_method !== 'pendiente' && raw.payment_method !== null) ? (raw.cost || raw.total_cost || 0) : 0) || 0);
+    const pendingBalance = Math.max(0, Number((calculatedCost - paidAmount).toFixed(2)));
+    const alreadyPaid = pendingBalance <= 0 && paidAmount > 0;
+    const toCollect = pendingBalance > 0 ? pendingBalance : (paidAmount > 0 ? 0 : calculatedCost);
 
     setCheckoutModal({
       vehicle: v,
@@ -354,6 +357,9 @@ export const PersonalGaritaModule = () => {
       nightSurcharge,
       rate: finalRate,
       totalCost: calculatedCost,
+      paidAmount,
+      pendingBalance,
+      toCollect,
       isOvertime,
       overtimeMins,
       alreadyPaid,
@@ -368,7 +374,7 @@ export const PersonalGaritaModule = () => {
   // Confirmar Salida y Cobro
   const handleConfirmSalida = async () => {
     if (!checkoutModal) return;
-    const { vehicle, selectedPaymentMethod, totalCost, alreadyPaid } = checkoutModal;
+    const { vehicle, selectedPaymentMethod, totalCost, alreadyPaid, paidAmount, pendingBalance } = checkoutModal;
 
     const checkoutData = {
       payment_method: alreadyPaid ? checkoutModal.originalMethod : selectedPaymentMethod,
@@ -394,6 +400,8 @@ export const PersonalGaritaModule = () => {
       rate: checkoutModal.rate,
       nightShiftActive: checkoutModal.nightShiftActive,
       totalCost: totalCost,
+      paidAmount: paidAmount,
+      pendingBalance: pendingBalance,
       paymentMethod: checkoutData.payment_method,
       operatorName: user?.full_name || 'Operador de Garita'
     });
@@ -770,110 +778,134 @@ export const PersonalGaritaModule = () => {
               </div>
 
               {/* Total y Medio de Pago */}
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 block">
-                    {checkoutModal.alreadyPaid ? 'Pre-pagado' : 'Total a pagar'}
-                  </span>
-                  <span className="text-2xl font-black font-mono text-emerald-900 dark:text-emerald-200">
-                    S/ {checkoutModal.totalCost.toFixed(2)}
-                  </span>
-                </div>
-                {checkoutModal.alreadyPaid && (
-                  <span className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-black inline-flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Pagado al Ingreso</span>
-                  </span>
-                )}
-              </div>
+              {(() => {
+                const hasPendingOvertime = checkoutModal.pendingBalance > 0 && checkoutModal.paidAmount > 0;
+                const amountToCollect = hasPendingOvertime ? checkoutModal.pendingBalance : checkoutModal.totalCost;
 
-              {/* Si no fue pre-pagado, elegir medio de cobro y vuelto rápido */}
-              {!checkoutModal.alreadyPaid && (
-                <div className="space-y-3">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                    Método de cobro
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['efectivo', 'yape', 'tarjeta'].map(m => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => setCheckoutModal(prev => ({ ...prev, selectedPaymentMethod: m }))}
-                        className={`h-10 rounded-xl text-xs font-bold capitalize border transition-all cursor-pointer ${
-                          checkoutModal.selectedPaymentMethod === m
-                            ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-600 shadow-sm'
-                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
-                        }`}
-                      >
-                        {m === 'tarjeta' ? 'POS' : m}
-                      </button>
-                    ))}
-                  </div>
+                return (
+                  <>
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 block">
+                          {checkoutModal.alreadyPaid 
+                            ? 'Pre-pagado (100%)' 
+                            : hasPendingOvertime 
+                            ? 'Saldo a Cobrar (Sobreestadía)' 
+                            : 'Total a pagar'}
+                        </span>
+                        <span className="text-2xl font-black font-mono text-emerald-900 dark:text-emerald-200">
+                          S/ {(checkoutModal.alreadyPaid ? checkoutModal.totalCost : amountToCollect).toFixed(2)}
+                        </span>
+                        {hasPendingOvertime && (
+                          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 block mt-0.5">
+                            Total: S/ {checkoutModal.totalCost.toFixed(2)} · Abonado al ingreso: S/ {checkoutModal.paidAmount.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                      {checkoutModal.alreadyPaid && (
+                        <span className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-black inline-flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Pagado al Ingreso</span>
+                        </span>
+                      )}
+                      {hasPendingOvertime && (
+                        <span className="px-2.5 py-1 bg-amber-500 text-white rounded-full text-[11px] font-black inline-flex items-center gap-1 shadow-2xs">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          <span>Sobreestadía</span>
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Calculador de Vuelto si es Efectivo */}
-                  {checkoutModal.selectedPaymentMethod === 'efectivo' && (
-                    <div className="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-                      <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="text-slate-600 dark:text-slate-400">Pago rápido:</span>
-                        <div className="flex gap-1.5">
-                          {[10, 20, 50, 100].map(val => (
+                    {/* Si no fue pre-pagado al 100%, elegir medio de cobro y vuelto rápido */}
+                    {!checkoutModal.alreadyPaid && (
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                          {hasPendingOvertime ? 'Método de cobro del sobretiempo' : 'Método de cobro'}
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {['efectivo', 'yape', 'tarjeta'].map(m => (
                             <button
-                              key={val}
+                              key={m}
                               type="button"
-                              onClick={() => {
-                                const given = Number(val);
-                                const ch = Math.max(0, given - checkoutModal.totalCost);
-                                setCheckoutModal(prev => ({ ...prev, cashGiven: String(val), change: ch }));
-                              }}
-                              className="px-2.5 py-1 bg-white dark:bg-slate-700 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer"
+                              onClick={() => setCheckoutModal(prev => ({ ...prev, selectedPaymentMethod: m }))}
+                              className={`h-10 rounded-xl text-xs font-bold capitalize border transition-all cursor-pointer ${
+                                checkoutModal.selectedPaymentMethod === m
+                                  ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-600 shadow-sm'
+                                  : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                              }`}
                             >
-                              S/{val}
+                              {m === 'tarjeta' ? 'POS' : m}
                             </button>
                           ))}
                         </div>
-                      </div>
 
-                      <div className="flex items-center justify-between gap-3 pt-1">
-                        <div className="flex-1">
-                          <Input
-                            placeholder="Recibido"
-                            type="number"
-                            value={checkoutModal.cashGiven}
-                            onChange={e => {
-                              const val = e.target.value;
-                              const given = Number(val) || 0;
-                              const ch = Math.max(0, given - checkoutModal.totalCost);
-                              setCheckoutModal(prev => ({ ...prev, cashGiven: val, change: ch }));
-                            }}
-                            className="h-9 text-xs font-mono font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                          />
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block">Vuelto:</span>
-                          <span className="text-sm font-mono font-black text-emerald-600 dark:text-emerald-400">
-                            S/ {checkoutModal.change.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                        {/* Calculador de Vuelto si es Efectivo */}
+                        {checkoutModal.selectedPaymentMethod === 'efectivo' && (
+                          <div className="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                            <div className="flex items-center justify-between text-xs font-bold">
+                              <span className="text-slate-600 dark:text-slate-400">Pago rápido:</span>
+                              <div className="flex gap-1.5">
+                                {[10, 20, 50, 100].map(val => (
+                                  <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => {
+                                      const given = Number(val);
+                                      const ch = Math.max(0, given - amountToCollect);
+                                      setCheckoutModal(prev => ({ ...prev, cashGiven: String(val), change: ch }));
+                                    }}
+                                    className="px-2.5 py-1 bg-white dark:bg-slate-700 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer"
+                                  >
+                                    S/{val}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
 
-                  {/* QR de Yape si seleccionó Yape */}
-                  {checkoutModal.selectedPaymentMethod === 'yape' && (
-                    <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-800 flex items-center gap-3">
-                      <div className="w-12 h-12 bg-white rounded-lg p-1 border border-purple-200 flex items-center justify-center shrink-0">
-                        <QrCode className="w-8 h-8 text-purple-700" />
+                            <div className="flex items-center justify-between gap-3 pt-1">
+                              <div className="flex-1">
+                                <Input
+                                  placeholder="Recibido"
+                                  type="number"
+                                  value={checkoutModal.cashGiven}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    const given = Number(val) || 0;
+                                    const ch = Math.max(0, given - amountToCollect);
+                                    setCheckoutModal(prev => ({ ...prev, cashGiven: val, change: ch }));
+                                  }}
+                                  className="h-9 text-xs font-mono font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                                />
+                              </div>
+                              <div className="text-right">
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block">Vuelto:</span>
+                                <span className="text-sm font-mono font-black text-emerald-600 dark:text-emerald-400">
+                                  S/ {checkoutModal.change.toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* QR de Yape si seleccionó Yape */}
+                        {checkoutModal.selectedPaymentMethod === 'yape' && (
+                          <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-800 flex items-center gap-3">
+                            <div className="w-12 h-12 bg-white rounded-lg p-1 border border-purple-200 flex items-center justify-center shrink-0">
+                              <QrCode className="w-8 h-8 text-purple-700" />
+                            </div>
+                            <div className="text-xs">
+                              <p className="font-bold text-purple-900 dark:text-purple-200">Cobro Yape</p>
+                              <p className="text-purple-700 dark:text-purple-300 font-mono font-bold">
+                                S/ {amountToCollect.toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs">
-                        <p className="font-bold text-purple-900 dark:text-purple-200">Cobro Yape</p>
-                        <p className="text-purple-700 dark:text-purple-300 font-mono font-bold">
-                          S/ {checkoutModal.totalCost.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             <div className="flex items-center space-x-2 pt-2">
@@ -952,8 +984,20 @@ export const PersonalGaritaModule = () => {
                 <span className="text-slate-500 dark:text-slate-400">Medio de Pago:</span>
                 <span className="font-bold capitalize text-slate-900 dark:text-white">{thermalTicket.paymentMethod}</span>
               </div>
+              {thermalTicket.pendingBalance > 0 && thermalTicket.paidAmount > 0 && (
+                <>
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                    <span>Abono al ingreso:</span>
+                    <span className="font-medium text-slate-900 dark:text-white">S/ {Number(thermalTicket.paidAmount).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-amber-600 dark:text-amber-400 font-bold">
+                    <span>Cobro sobretiempo:</span>
+                    <span>S/ {Number(thermalTicket.pendingBalance).toFixed(2)}</span>
+                  </div>
+                </>
+              )}
               <div className="border-t border-dashed border-slate-300 dark:border-slate-700 pt-2 flex justify-between text-sm font-black text-slate-900 dark:text-white">
-                <span>TOTAL COBRADO:</span>
+                <span>TOTAL ESTADÍA:</span>
                 <span className="text-emerald-600 dark:text-emerald-400">S/ {Number(thermalTicket.totalCost).toFixed(2)}</span>
               </div>
             </div>

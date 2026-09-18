@@ -785,19 +785,30 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                   {isCancelled ? 'S/ 0.00' : `S/ ${(dynamicCost ?? passData.cost ?? 0).toFixed(2)}`}
                 </p>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
-                  {isCancelled ? 'Anulada' : passData.isSubscription ? 'Membresía activa' : passData.isPrepaid ? 'Prepagado' : 'Pago en garita'}
+                  {isCancelled 
+                    ? 'Anulada' 
+                    : passData.isSubscription 
+                    ? 'Membresía activa' 
+                    : isOvertime && passData.isPrepaid
+                    ? `Pendiente: S/ ${Math.max(0, (dynamicCost ?? passData.cost) - passData.cost).toFixed(2)}`
+                    : passData.isPrepaid 
+                    ? 'Prepagado' 
+                    : 'Pago en garita'}
                 </span>
               </div>
             </div>
 
             {/* Aviso Dinámico de Estadía Excedida */}
             {isOvertime && isActive && (
-              <div className="mt-2.5 p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs space-y-0.5">
-                <p className="text-[11px] font-semibold text-amber-900 dark:text-amber-300">
-                  Estadía excedida — Cobro según tiempo adicional
-                </p>
-                <p className="text-[10px] text-amber-700 dark:text-amber-400">
-                  El monto se actualiza en tiempo real hasta que el operador de garita registre tu salida.
+              <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-300 text-[11px]">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>Estadía excedida — Cobro sin periodo de gracia</span>
+                </div>
+                <p className="text-[10px] text-amber-800 dark:text-amber-300 leading-snug">
+                  {passData.isPrepaid 
+                    ? `Tienes un recargo acumulado por tiempo adicional de S/ ${Math.max(0, (dynamicCost ?? passData.cost) - passData.cost).toFixed(2)}. Muestra este código QR al operador en garita para abonar la diferencia en caja y autorizar la apertura de barrera.`
+                    : 'El importe total se acumula en tiempo real y debe ser abonado al operador de garita antes de salir.'}
                 </p>
               </div>
             )}

@@ -158,7 +158,75 @@ async def test_worker_detects_stay_expiring_soon_and_overtime():
         assert r_db.total_cost >= 15.0
         # Limpiar
         await session.delete(r_db)
-        r_soon_db = (await session.execute(select(Reservation).where(Reservation.code == "RSV-SOON-123"))).scalars().first()
+        r_soon_db = (await session.execute(select(Reservation).where(Reservation.code == f"RSV-SOON-{r_uid}"))).scalars().first()
         if r_soon_db:
             await session.delete(r_soon_db)
         await session.commit()
+
+@pytest.mark.asyncio
+async def test_active_stay_cannot_be_cancelled_and_reconciles_checkout_amount():
+    """
+    Verifica los 2 principios de vida real en estacionamientos:
+    1. Un conductor o usuario NO puede cancelar una estadía activa (vehículo dentro).
+    2. Al hacer check-out de una sobreestadía prepagada, amount_paid se reconcilia al total real.
+    """
+    transport = ASGITransport(app=app)
+
+    async with AsyncSessionLocal() as session:
+        # Asegurar usuario conductor
+        res_u = await session.execute(select(User).where(User.email == "overtime_stay_test@smartpark.com"))
+        user = res_u.scalars().first()
+        if not user:
+            user = User(
+                email="overtime_stay_test@smartpark.com",
+                full_name="Usuario Stay Test",
+                role="user",
+                hashed_password="hashed_dummy_password",
+                is_active=True
+            )
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+
+        # Crear reserva activa cuyo ingreso fue hace 115 minutos (1h 55m)
+        now = datetime.utcnow()
+        actual_entry = now - timedelta(minutes=115)
+        import uuid
+        r_uid = uuid.uuid4().hex[:6]
+        res_obj = Reservation(
+            user_id=user.id,
+            parking_id=1,
+            slot_id=1,
+            license_plate="STAY-999",
+            status="active",
+            start_time=actual_entry,
+            end_time=actual_entry + timedelta(hours=1),
+            actual_entry=actual_entry,
+            total_cost=6.0,
+            amount_paid=6.0,  # Inicialmente prepagado solo por 1 hora
+            qr_code=f"TEST-TOKEN-STAY-{r_uid}",
+            code=f"RSV-STAY-{r_uid}"
+        )
+        session.add(res_obj)
+        await session.commit()
+        await session.refresh(res_obj)
+        res_id = res_obj.id
+        user_id = user.id
+
+    token = create_access_token(subject=user_id)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # 1. Intentar cancelar la estadía activa -> DEBE ser rechazado con HTTP 400
+        res_cancel = await ac.put(f"/api/v1/reservations/{res_id}/cancel", headers=headers)
+        assert res_cancel.status_code == 400
+        assert "No es posible cancelar una estadía en curso" in res_cancel.json()["detail"]
+
+        # 2. Realizar check-out: permanencia de 115 min => ceil(115/60) = 2 horas exactas a S/ 6.00 = S/ 12.00
+        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=headers)
+        assert res_checkout.status_code == 200
+        data_out = res_checkout.json()
+        assert data_out["status"] == "completed"
+        assert data_out["total_cost"] == 12.0
+        assert data_out["amount_paid"] == 12.0  # Reconciliado al total real sin dejar saldo huérfano
+

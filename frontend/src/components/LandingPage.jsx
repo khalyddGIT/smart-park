@@ -40,9 +40,7 @@ import {
   Check,
   Smartphone,
   ExternalLink,
-  Crown,
-  Volume2,
-  VolumeX
+  Crown
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { QRCodeSVG } from 'qrcode.react';
@@ -170,15 +168,6 @@ export const LandingPage = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [activeAudienceTab, setActiveAudienceTab] = useState('driver'); // 'driver' | 'owner'
 
-  // Referencia y control de audio para el video de fondo ambiental del Hero
-  const videoRef = useRef(null);
-  const [isVideoMuted, setIsVideoMuted] = useState(true);
-
-  const toggleVideoMute = () => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !videoRef.current.muted;
-    setIsVideoMuted(videoRef.current.muted);
-  };
 
   // Lista garantizada de cocheras: prop establishments o iniciales de Huamanga
   const effectiveList = useMemo(() => {
@@ -427,57 +416,43 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO ISLAND CON VIDEO DE FONDO CINEMÁTICO EN BUCLE
+          2. HERO CINEMÁTICO A PANTALLA COMPLETA (EDGE-TO-EDGE FULL WIDTH)
           ========================================================================= */}
-      <main id="hero" className="pt-24 sm:pt-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <div className="relative rounded-[28px] sm:rounded-[40px] overflow-hidden bg-slate-950 text-white p-5 sm:p-8 md:p-10 lg:p-14 shadow-2xl transition-all border border-slate-800/80 dark:border-emerald-500/30">
-          
-          {/* Video de Fondo Operacional en Bucle Infinito */}
-          <video
-            ref={videoRef}
-            src="/videos/smart-park-demo.mp4"
-            autoPlay
-            loop
-            muted={isVideoMuted}
-            playsInline
-            preload="auto"
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 filter brightness-[0.45] contrast-[1.15]"
-          />
+      <main id="hero" className="relative w-full min-h-[85vh] sm:min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-950 text-white">
+        
+        {/* Video de Fondo Operacional en Bucle Infinito a Ancho Completo */}
+        <video
+          src="/videos/smart-park-demo.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 filter brightness-[0.45] contrast-[1.12]"
+        />
 
-          {/* Gradientes y máscaras de alto contraste para legibilidad absoluta */}
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/80 to-slate-950/40 pointer-events-none z-0" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.22),transparent_55%)] pointer-events-none z-0" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/30 pointer-events-none z-0" />
+        {/* Gradientes y máscaras de alto contraste cinematográfico */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/80 to-slate-950/40 pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.2),transparent_60%)] pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/60 pointer-events-none z-0" />
 
-          {/* Toggle discreto de audio del video de fondo */}
-          <button
-            type="button"
-            onClick={toggleVideoMute}
-            aria-label={isVideoMuted ? 'Activar audio ambiental' : 'Silenciar audio'}
-            className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 z-20 px-2.5 py-1 rounded-full bg-slate-950/70 hover:bg-slate-900 backdrop-blur-md border border-white/10 text-slate-300 hover:text-white text-[10px] font-medium flex items-center gap-1.5 transition cursor-pointer shadow-md"
-          >
-            {isVideoMuted ? <VolumeX className="w-3 h-3 text-slate-400" /> : <Volume2 className="w-3 h-3 text-lime-400" />}
-            <span className="hidden sm:inline">{isVideoMuted ? 'Video de fondo' : 'Audio activo'}</span>
-          </button>
+        {/* Transición inferior elegante hacia la siguiente sección */}
+        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-slate-50 dark:from-slate-950 to-transparent pointer-events-none z-0" />
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center relative z-10">
+        {/* Contenido Centralizado del Hero */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20 sm:pt-36 sm:pb-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
             
-            {/* Columna Izquierda: Copywriting y CTA */}
-            <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
+            {/* Columna Izquierda: Copywriting y CTA (Limpio y directo) */}
+            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               
-              {/* Badge de Operación en Vivo */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/15 text-[11px] font-bold text-lime-400 tracking-wide">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                OPERACIÓN EN TIEMPO REAL · AYACUCHO
-              </div>
-
               {/* Titular Principal de Impacto */}
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-6xl font-black tracking-tight leading-[1.08] text-white">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.05] text-white">
                 Estaciona al instante en la ciudad
               </h1>
 
               {/* Subtítulo Conciso */}
-              <p className="text-xs sm:text-base text-slate-300 max-w-lg leading-relaxed font-medium mx-auto lg:mx-0">
+              <p className="text-sm sm:text-base lg:text-lg text-slate-300 max-w-xl leading-relaxed font-medium mx-auto lg:mx-0">
                 Encuentra plaza en tiempo real, ingresa con lectura automática de placa o código QR, y paga la tarifa exacta al minuto mediante Yape, Plin o tarjetas.
               </p>
 
@@ -485,7 +460,7 @@ export const LandingPage = ({
               <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3.5">
                 <MagneticButton
                   onClick={() => scrollTo('mapa')}
-                  className="bg-lime-400 hover:bg-lime-300 text-slate-950 px-7 py-3 rounded-full text-xs sm:text-sm font-black shadow-xl hover:scale-105 transition cursor-pointer flex items-center gap-2"
+                  className="bg-lime-400 hover:bg-lime-300 text-slate-950 px-7 py-3 sm:px-8 sm:py-3.5 rounded-full text-xs sm:text-sm font-black shadow-xl hover:scale-105 transition cursor-pointer flex items-center gap-2"
                 >
                   <Search className="w-4 h-4 text-slate-950" />
                   Explorar Cocheras

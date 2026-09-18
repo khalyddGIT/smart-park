@@ -289,13 +289,7 @@ export const LandingPage = ({
           </nav>
 
           {/* Acciones de la Cabecera */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Indicador de Ciudad */}
-            <div className="hidden xl:flex items-center gap-1.5 text-xs font-semibold text-slate-200 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 select-none">
-              <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>Ayacucho, PE</span>
-            </div>
-
+          <div className="flex items-center gap-3">
             {/* Toggle de Tema */}
             <button
               type="button"
@@ -391,7 +385,7 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO CINEMÁTICO: DIRECTO, VENDEDOR Y DE ALTO IMPACTO
+          2. HERO CINEMÁTICO: ULTRA LIMPIO, VENDEDOR Y DE ALTO IMPACTO
           ========================================================================= */}
       <main id="hero" className="relative w-full min-h-[85vh] sm:min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
         
@@ -410,48 +404,26 @@ export const LandingPage = ({
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/40 to-transparent pointer-events-none z-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 via-transparent to-slate-950/20 pointer-events-none z-0" />
 
-        {/* Contenido Editorial Vendedor del Hero */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-24 sm:pt-32 sm:pb-28">
-          <div className="max-w-2xl lg:max-w-3xl space-y-5 text-left">
+        {/* Contenido Editorial Limpio del Hero */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24 sm:pt-36 sm:pb-28">
+          <div className="max-w-2xl lg:max-w-3xl space-y-6 text-left">
             
-            {/* Badge de beneficio inmediato */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/35 backdrop-blur-md text-emerald-300 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-950/50">
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
-              <span>Reserva en 1 minuto • Plazas libres en tiempo real</span>
-            </div>
-
-            {/* Titular Principal Vendedor: sin dar vueltas ni hacer filas */}
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
+            {/* Titular Principal Vendedor y Limpio */}
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
               Estaciona al instante, <br />
               <span className="text-emerald-400">sin vueltas ni tickets</span>
             </h1>
 
-            {/* Explicación ultra clara: explica de qué va el sistema y ya */}
-            <p className="text-base sm:text-lg text-slate-100/95 max-w-xl leading-relaxed font-normal sm:font-medium drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
-              Mira cocheras con espacios libres en vivo, reserva tu plaza en segundos y paga solo los minutos exactos que te quedas con Yape, Plin o tarjeta.
+            {/* Explicación directa y comercial del sistema */}
+            <p className="text-lg sm:text-xl text-slate-100/95 max-w-xl leading-relaxed font-normal drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+              Encuentra cocheras con espacios libres en vivo, reserva tu lugar en segundos y paga solo por los minutos que uses con Yape, Plin o tarjeta.
             </p>
 
-            {/* Micro-chips de propuesta de valor rápida */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1 text-xs sm:text-sm text-slate-200 font-medium">
-              <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Plazas libres en vivo</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
-                <Camera className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Ingreso con placa o QR</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
-                <Zap className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Cobro exacto al minuto</span>
-              </div>
-            </div>
-
-            {/* Botones de Acción Estilo SmartParking */}
+            {/* Botones de Acción */}
             <div className="pt-2 flex flex-wrap items-center justify-start gap-4">
               <MagneticButton
                 onClick={() => scrollTo('mapa')}
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-3.5 sm:px-9 sm:py-4 rounded-full text-sm sm:text-base font-black shadow-xl shadow-emerald-500/25 hover:scale-105 transition cursor-pointer flex items-center gap-2.5"
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-3.5 sm:px-10 sm:py-4 rounded-full text-sm sm:text-base font-black shadow-xl shadow-emerald-500/25 hover:scale-105 transition cursor-pointer flex items-center gap-2.5"
               >
                 <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
                 Buscar Cochera Libre
@@ -465,12 +437,6 @@ export const LandingPage = ({
                 Pagar / Consultar Estadía
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-emerald-400" />
               </button>
-            </div>
-
-            {/* Micro-insignia de confianza */}
-            <div className="flex items-center justify-start gap-2 pt-1 text-xs text-slate-300/85 font-medium drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>100% libre de costo para conductores • Sin comisiones ocultas</span>
             </div>
 
           </div>

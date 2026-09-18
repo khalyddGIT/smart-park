@@ -259,78 +259,80 @@ export const LandingPage = ({
       </div>
 
       {/* =========================================================================
-          1. HEADER FLOTANTE EN ISLA DE VIDRIO (EXPANSIVO WIDESCREEN)
+          1. HEADER FULL-WIDTH CRISTAL ULTRA-ELEGANTE (TOP-0 NATIVO)
           ========================================================================= */}
-      <header className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-full px-6 py-3 shadow-md shadow-slate-900/5 dark:shadow-black/20 flex items-center justify-between transition-colors">
-            
-            {/* Logotipo Oficial */}
-            <div className="flex items-center gap-2.5">
-              <BrandLogo dark={isDark} />
+      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-xl border-b border-white/10 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between">
+          
+          {/* Logotipo Oficial */}
+          <div className="flex items-center gap-3">
+            <BrandLogo dark={true} />
+          </div>
+
+          {/* Enlaces de Navegación de Escritorio */}
+          <nav className="hidden md:flex items-center gap-7 lg:gap-8 text-xs sm:text-sm font-semibold text-slate-200 tracking-wide">
+            <button onClick={() => scrollTo('hero')} className="hover:text-emerald-400 transition cursor-pointer">
+              Inicio
+            </button>
+            <button onClick={() => scrollTo('mapa')} className="hover:text-emerald-400 transition cursor-pointer">
+              Mapa en Vivo
+            </button>
+            <button onClick={() => scrollTo('beneficios')} className="hover:text-emerald-400 transition cursor-pointer">
+              Ventajas
+            </button>
+            <button onClick={() => scrollTo('tecnologia')} className="hover:text-emerald-400 transition cursor-pointer">
+              Tecnología
+            </button>
+            <button onClick={() => scrollTo('faq')} className="hover:text-emerald-400 transition cursor-pointer">
+              Preguntas
+            </button>
+          </nav>
+
+          {/* Acciones de la Cabecera */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Indicador de Ciudad */}
+            <div className="hidden xl:flex items-center gap-1.5 text-xs font-semibold text-slate-200 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 select-none">
+              <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>Ayacucho, PE</span>
             </div>
 
-            {/* Enlaces de Navegación de Escritorio */}
-            <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-600 dark:text-slate-300 tracking-wide">
-              <button onClick={() => scrollTo('hero')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer">
-                Inicio
-              </button>
-              <button onClick={() => scrollTo('mapa')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer">
-                Mapa en Vivo
-              </button>
-              <button onClick={() => scrollTo('beneficios')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer">
-                Ventajas
-              </button>
-              <button onClick={() => scrollTo('tecnologia')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer">
-                Tecnología
-              </button>
-              <button onClick={() => scrollTo('faq')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer">
-                Preguntas
-              </button>
-            </nav>
+            {/* Toggle de Tema */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Cambiar tema"
+              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 flex items-center justify-center hover:scale-105 transition cursor-pointer border border-white/10 backdrop-blur-md"
+            >
+              {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-slate-200" />}
+            </button>
 
-            {/* Acciones de la Cabecera */}
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="hidden lg:flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/90 px-3 py-1.5 rounded-full border border-slate-200/80 dark:border-slate-700/70 select-none">
-                <span className="text-xs leading-none">🇵🇪</span>
-                <span>PE</span>
-              </div>
+            {/* Botón Ingresar */}
+            <button
+              type="button"
+              onClick={() => onOpenAuth && onOpenAuth('login')}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold text-slate-200 hover:text-white hover:bg-white/10 transition cursor-pointer"
+            >
+              <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+              Ingresar
+            </button>
 
-              <button
-                type="button"
-                onClick={toggleTheme}
-                aria-label="Cambiar tema"
-                className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:scale-105 transition cursor-pointer border border-transparent dark:border-slate-700/60"
-              >
-                {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
-              </button>
+            {/* Botón CTA Afiliar Cochera */}
+            <MagneticButton
+              onClick={() => onOpenAuth && onOpenAuth('affiliation')}
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-xs sm:text-sm font-black shadow-lg shadow-emerald-500/25 hover:scale-105 transition cursor-pointer whitespace-nowrap"
+            >
+              Afiliar Cochera
+            </MagneticButton>
 
-              <button
-                type="button"
-                onClick={() => onOpenAuth && onOpenAuth('login')}
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                Ingresar
-              </button>
-
-              <MagneticButton
-                onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-                className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-bold shadow-md hover:bg-slate-800 dark:hover:bg-slate-100 transition cursor-pointer whitespace-nowrap"
-              >
-                Afiliar Cochera
-              </MagneticButton>
-
-              {/* Menú Móvil Hamburger */}
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-1.5 text-slate-700 dark:text-slate-200 hover:text-emerald-500"
-                aria-label="Abrir menú"
-              >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-            </div>
+            {/* Menú Móvil Hamburger */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-slate-200 hover:text-white bg-white/10 rounded-full"
+              aria-label="Abrir menú"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
 
@@ -341,35 +343,35 @@ export const LandingPage = ({
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="md:hidden max-w-7xl mx-auto mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-2xl space-y-3"
+              className="md:hidden bg-slate-950/95 backdrop-blur-2xl border-b border-white/10 px-6 py-5 shadow-2xl space-y-4"
             >
-              <div className="flex flex-col gap-2.5 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                <button onClick={() => { setMobileMenuOpen(false); scrollTo('hero'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex flex-col gap-3 text-sm font-semibold text-slate-200">
+                <button onClick={() => { setMobileMenuOpen(false); scrollTo('hero'); }} className="text-left py-1.5 border-b border-white/10">
                   Inicio
                 </button>
-                <button onClick={() => { setMobileMenuOpen(false); scrollTo('mapa'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
+                <button onClick={() => { setMobileMenuOpen(false); scrollTo('mapa'); }} className="text-left py-1.5 border-b border-white/10">
                   Mapa en Vivo
                 </button>
-                <button onClick={() => { setMobileMenuOpen(false); scrollTo('beneficios'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
+                <button onClick={() => { setMobileMenuOpen(false); scrollTo('beneficios'); }} className="text-left py-1.5 border-b border-white/10">
                   Ventajas
                 </button>
-                <button onClick={() => { setMobileMenuOpen(false); scrollTo('tecnologia'); }} className="text-left py-1.5 border-b border-slate-100 dark:border-slate-800">
+                <button onClick={() => { setMobileMenuOpen(false); scrollTo('tecnologia'); }} className="text-left py-1.5 border-b border-white/10">
                   Tecnología
                 </button>
                 <button onClick={() => { setMobileMenuOpen(false); scrollTo('faq'); }} className="text-left py-1.5">
                   Preguntas Frecuentes
                 </button>
               </div>
-              <div className="pt-2 flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="pt-2 flex flex-col gap-2 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     onOpenAuth && onOpenAuth('login');
                   }}
-                  className="w-full py-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-full bg-white/10 text-white text-xs font-bold flex items-center justify-center gap-2"
                 >
-                  <LogIn className="w-3.5 h-3.5" />
+                  <LogIn className="w-3.5 h-3.5 text-emerald-400" />
                   Iniciar Sesión
                 </button>
                 <button
@@ -378,7 +380,7 @@ export const LandingPage = ({
                     setMobileMenuOpen(false);
                     onOpenAuth && onOpenAuth('affiliation');
                   }}
-                  className="w-full py-2.5 rounded-full bg-emerald-600 text-white text-xs font-bold shadow-md hover:bg-emerald-700 transition"
+                  className="w-full py-2.5 rounded-full bg-emerald-500 text-slate-950 text-xs font-black shadow-md hover:bg-emerald-400 transition"
                 >
                   Afiliar mi Cochera
                 </button>
@@ -389,9 +391,9 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO CINEMÁTICO ADAPTATIVO (ESTILO SMARTPARKING.COM)
+          2. HERO CINEMÁTICO: DIRECTO, VENDEDOR Y DE ALTO IMPACTO
           ========================================================================= */}
-      <main id="hero" className="relative w-full min-h-[88vh] sm:min-h-[92vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
+      <main id="hero" className="relative w-full min-h-[85vh] sm:min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
         
         {/* Video de Fondo Operacional full-bleed con nitidez absoluta */}
         <video
@@ -401,36 +403,58 @@ export const LandingPage = ({
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-100 filter brightness-[0.93] dark:brightness-[0.80] contrast-[1.03] transition-all duration-500"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-100 filter brightness-[0.92] dark:brightness-[0.80] contrast-[1.03] transition-all duration-500"
         />
 
         {/* Scrim lateral sutil detrás del texto: garantiza contraste y letras blancas nítidas dejando el video visible y luminoso en el resto */}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/40 to-transparent pointer-events-none z-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 via-transparent to-slate-950/20 pointer-events-none z-0" />
 
-        {/* Contenido Editorial del Hero alineado a SmartParking */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-28 sm:pt-40 sm:pb-32">
-          <div className="max-w-3xl space-y-5 sm:space-y-6 text-left">
+        {/* Contenido Editorial Vendedor del Hero */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-24 sm:pt-32 sm:pb-28">
+          <div className="max-w-2xl lg:max-w-3xl space-y-5 text-left">
             
-            {/* Párrafo editorial superior (Encima del titular, estilo exacto SmartParking) */}
-            <p className="text-sm sm:text-base lg:text-lg text-white/95 max-w-2xl font-normal sm:font-medium leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
-              Con cocheras afiliadas y tecnología de vanguardia en Ayacucho y en expansión a todo el Perú, llevamos reconocimiento automático de matrículas por IA (ANPR), planos 2D en tiempo real y cobro automatizado al segundo a la movilidad urbana.
+            {/* Badge de beneficio inmediato */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/35 backdrop-blur-md text-emerald-300 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-950/50">
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+              <span>Reserva en 1 minuto • Plazas libres en tiempo real</span>
+            </div>
+
+            {/* Titular Principal Vendedor: sin dar vueltas ni hacer filas */}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
+              Estaciona al instante, <br />
+              <span className="text-emerald-400">sin vueltas ni tickets</span>
+            </h1>
+
+            {/* Explicación ultra clara: explica de qué va el sistema y ya */}
+            <p className="text-base sm:text-lg text-slate-100/95 max-w-xl leading-relaxed font-normal sm:font-medium drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+              Mira cocheras con espacios libres en vivo, reserva tu plaza en segundos y paga solo los minutos exactos que te quedas con Yape, Plin o tarjeta.
             </p>
 
-            {/* Titular Principal Gigante de 2 líneas */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight leading-[1.03] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
-              Lideramos el camino en <br className="hidden sm:inline" />
-              <span>estacionamiento inteligente</span>
-            </h1>
+            {/* Micro-chips de propuesta de valor rápida */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1 text-xs sm:text-sm text-slate-200 font-medium">
+              <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Plazas libres en vivo</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                <Camera className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Ingreso con placa o QR</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                <Zap className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Cobro exacto al minuto</span>
+              </div>
+            </div>
 
             {/* Botones de Acción Estilo SmartParking */}
             <div className="pt-2 flex flex-wrap items-center justify-start gap-4">
               <MagneticButton
                 onClick={() => scrollTo('mapa')}
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-3.5 sm:px-10 sm:py-4 rounded-full text-sm sm:text-base font-black shadow-xl shadow-emerald-500/25 hover:scale-105 transition cursor-pointer flex items-center gap-2.5"
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-3.5 sm:px-9 sm:py-4 rounded-full text-sm sm:text-base font-black shadow-xl shadow-emerald-500/25 hover:scale-105 transition cursor-pointer flex items-center gap-2.5"
               >
                 <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
-                Comenzar Ahora
+                Buscar Cochera Libre
               </MagneticButton>
 
               <button
@@ -444,9 +468,9 @@ export const LandingPage = ({
             </div>
 
             {/* Micro-insignia de confianza */}
-            <div className="flex items-center justify-start gap-2 pt-1 text-xs sm:text-sm text-slate-200/90 font-medium drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
+            <div className="flex items-center justify-start gap-2 pt-1 text-xs text-slate-300/85 font-medium drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Sin suscripción obligatoria • Reserva garantizada en segundos</span>
+              <span>100% libre de costo para conductores • Sin comisiones ocultas</span>
             </div>
 
           </div>

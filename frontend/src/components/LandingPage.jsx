@@ -290,7 +290,12 @@ export const LandingPage = ({
             </nav>
 
             {/* Acciones de la Cabecera */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="hidden lg:flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/90 px-3 py-1.5 rounded-full border border-slate-200/80 dark:border-slate-700/70 select-none">
+                <span className="text-xs leading-none">🇵🇪</span>
+                <span>PE</span>
+              </div>
+
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -384,9 +389,9 @@ export const LandingPage = ({
       </header>
 
       {/* =========================================================================
-          2. HERO CINEMÁTICO ADAPTATIVO (CLARO / OSCURO INTEGRADO)
+          2. HERO CINEMÁTICO ADAPTATIVO (ESTILO SMARTPARKING.COM)
           ========================================================================= */}
-      <main id="hero" className="relative w-full min-h-[85vh] sm:min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
+      <main id="hero" className="relative w-full min-h-[88vh] sm:min-h-[92vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
         
         {/* Video de Fondo Operacional full-bleed con nitidez absoluta */}
         <video
@@ -396,53 +401,77 @@ export const LandingPage = ({
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-100 filter brightness-[0.92] dark:brightness-[0.78] contrast-[1.04] transition-all duration-500"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-100 filter brightness-[0.93] dark:brightness-[0.80] contrast-[1.03] transition-all duration-500"
         />
 
-        {/* Scrim lateral sutil detrás del texto: permite que las letras blancas resalten con máxima nitidez sin tapar el video en el resto de la pantalla */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/35 to-transparent pointer-events-none z-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-slate-950/20 pointer-events-none z-0" />
+        {/* Scrim lateral sutil detrás del texto: garantiza contraste y letras blancas nítidas dejando el video visible y luminoso en el resto */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/40 to-transparent pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 via-transparent to-slate-950/20 pointer-events-none z-0" />
 
-        {/* Contenido Editorial del Hero sin cuadros que bloqueen el video */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24 sm:pt-36 sm:pb-28">
-          <div className="max-w-2xl lg:max-w-3xl space-y-6 sm:space-y-8 text-center lg:text-left">
+        {/* Contenido Editorial del Hero alineado a SmartParking */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-28 sm:pt-40 sm:pb-32">
+          <div className="max-w-3xl space-y-5 sm:space-y-6 text-left">
             
-            {/* Titular Principal de Impacto con letras blancas de máxima nitidez */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.06] text-white drop-shadow-[0_3px_16px_rgba(0,0,0,0.8)]">
-              Estaciona al instante en la ciudad
-            </h1>
-
-            {/* Subtítulo Conciso y Nítido */}
-            <p className="text-base sm:text-lg lg:text-xl text-slate-100/95 max-w-2xl leading-relaxed font-medium mx-auto lg:mx-0 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-              Encuentra plaza en tiempo real, ingresa con lectura automática de placa o código QR, y paga la tarifa exacta al minuto mediante Yape, Plin o tarjetas.
+            {/* Párrafo editorial superior (Encima del titular, estilo exacto SmartParking) */}
+            <p className="text-sm sm:text-base lg:text-lg text-white/95 max-w-2xl font-normal sm:font-medium leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+              Con cocheras afiliadas y tecnología de vanguardia en Ayacucho y en expansión a todo el Perú, llevamos reconocimiento automático de matrículas por IA (ANPR), planos 2D en tiempo real y cobro automatizado al segundo a la movilidad urbana.
             </p>
 
-            {/* Botones de Acción Primarios */}
-            <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4">
+            {/* Titular Principal Gigante de 2 líneas */}
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight leading-[1.03] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
+              Lideramos el camino en <br className="hidden sm:inline" />
+              <span>estacionamiento inteligente</span>
+            </h1>
+
+            {/* Botones de Acción Estilo SmartParking */}
+            <div className="pt-2 flex flex-wrap items-center justify-start gap-4">
               <MagneticButton
                 onClick={() => scrollTo('mapa')}
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-3.5 sm:px-9 sm:py-4 rounded-full text-sm sm:text-base font-extrabold shadow-xl shadow-emerald-500/25 hover:scale-105 transition cursor-pointer flex items-center gap-2.5"
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-3.5 sm:px-10 sm:py-4 rounded-full text-sm sm:text-base font-black shadow-xl shadow-emerald-500/25 hover:scale-105 transition cursor-pointer flex items-center gap-2.5"
               >
                 <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
-                Explorar Cocheras
+                Comenzar Ahora
               </MagneticButton>
 
               <button
                 type="button"
-                onClick={() => scrollTo('beneficios')}
-                className="inline-flex items-center gap-2 text-sm sm:text-base font-bold text-white hover:text-emerald-300 cursor-pointer group transition-colors drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]"
+                onClick={() => onOpenAuth && onOpenAuth('login')}
+                className="inline-flex items-center gap-2 text-sm sm:text-base font-bold text-white hover:text-emerald-300 border-2 border-white/80 hover:border-emerald-400 bg-black/30 hover:bg-black/40 backdrop-blur-md px-7 py-3 sm:px-8 sm:py-3.5 rounded-full transition-all cursor-pointer shadow-lg drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]"
               >
-                Ver ventajas del sistema
+                Pagar / Consultar Estadía
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-emerald-400" />
               </button>
             </div>
 
             {/* Micro-insignia de confianza */}
-            <div className="flex items-center justify-center lg:justify-start gap-2 pt-1 text-xs sm:text-sm text-slate-200/90 font-medium drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">
+            <div className="flex items-center justify-start gap-2 pt-1 text-xs sm:text-sm text-slate-200/90 font-medium drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Sin costo de suscripción para conductores • Reserva 100% garantizada</span>
+              <span>Sin suscripción obligatoria • Reserva garantizada en segundos</span>
             </div>
 
+          </div>
+        </div>
+
+        {/* Pestaña curva insignia de bienvenida estilo Smart Parking */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex justify-center pointer-events-none translate-y-[1px]">
+          <div className="relative pointer-events-auto flex flex-col items-center">
+            <div className="relative text-[#F8FAFC] dark:text-[#06090F] flex items-center justify-center">
+              <svg 
+                viewBox="0 0 600 64" 
+                className="w-[300px] sm:w-[460px] md:w-[580px] h-[36px] sm:h-[48px] md:h-[56px] drop-shadow-[0_-4px_16px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_-4px_24px_rgba(0,0,0,0.4)]" 
+                preserveAspectRatio="none"
+              >
+                <path 
+                  d="M 0,64 C 45,64 55,0 110,0 L 490,0 C 545,0 555,64 600,64 Z" 
+                  fill="currentColor" 
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center pt-2 sm:pt-3">
+                <span className="text-[10px] sm:text-xs md:text-sm font-black tracking-[0.25em] text-emerald-600 dark:text-emerald-400 uppercase select-none">
+                  BIENVENIDO A SMART PARK
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -451,12 +480,22 @@ export const LandingPage = ({
           3. SECCIÓN 2: MAPA EN VIVO DE AYACUCHO (COLOCADO COMO SEGUNDO)
           ========================================================================= */}
       <ScrollRevealSection id="mapa" className="pt-10 pb-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full text-left">
+        {/* Encabezado Editorial Integrado estilo Smart Parking */}
+        <div className="text-center max-w-3xl mx-auto mb-8 space-y-2">
+          <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+            Un sistema integral e inteligente para una movilidad sin fricción
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            Visualiza plazas disponibles en tiempo real, reserva tu espacio antes de salir y accede al instante mediante lectura automática de matrículas.
+          </p>
+        </div>
+
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-5 gap-3">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+            <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
               Cocheras Afiliadas en Ayacucho
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 max-w-xl">
               Haz clic en cualquier establecimiento para visualizar su plano CAD 2D y reservar plaza al instante.
             </p>
           </div>

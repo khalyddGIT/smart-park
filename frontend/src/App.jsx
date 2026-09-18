@@ -256,18 +256,24 @@ const AppMain = () => {
     const rawTargetId = bookingData?.parkingId;
     const normTarget = rawTargetId ? normalizeParkingId(rawTargetId) : null;
     const targetParking = establishments.find(e => String(e.id) === String(rawTargetId) || (normTarget && String(e.id) === String(normTarget))) || selectedParking || quickBookingParking || moreReservationsParking;
-    if (!targetParking) return;
+    if (!targetParking) {
+      const msg = 'No se encontró la sede seleccionada.';
+      setBookingFeedback(msg);
+      throw new Error(msg);
+    }
 
     const tStatus = String(targetParking.status || '').toLowerCase();
     if (tStatus === 'mantenimiento' || tStatus === 'maintenance') {
-      setBookingFeedback(`La sede "${targetParking.name}" se encuentra en mantenimiento técnico y no acepta reservas en este momento.`);
+      const msg = `La sede "${targetParking.name}" se encuentra en mantenimiento técnico y no acepta reservas en este momento.`;
+      setBookingFeedback(msg);
       setTimeout(() => setBookingFeedback(null), 5000);
-      return;
+      throw new Error(msg);
     }
     if (tStatus === 'cerrado' || tStatus === 'closed') {
-      setBookingFeedback(`La sede "${targetParking.name}" se encuentra cerrada temporalmente.`);
+      const msg = `La sede "${targetParking.name}" se encuentra cerrada temporalmente.`;
+      setBookingFeedback(msg);
       setTimeout(() => setBookingFeedback(null), 5000);
-      return;
+      throw new Error(msg);
     }
     try {
       const newRes = await createReservation({
@@ -300,7 +306,7 @@ const AppMain = () => {
         const msg = newRes?.error || bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
         setBookingFeedback(msg);
         setTimeout(() => setBookingFeedback(null), 6000);
-        return;
+        throw new Error(msg);
       }
 
       const enriched = {
@@ -335,10 +341,12 @@ const AppMain = () => {
         setShowQRModal(true);
         setSelectedParkingId(null);
       }
+      return enriched;
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';
       setBookingFeedback(msg);
-      setTimeout(() => setBookingFeedback(null), 4000);
+      setTimeout(() => setBookingFeedback(null), 5000);
+      throw (err instanceof Error ? err : new Error(msg));
     }
   };
 

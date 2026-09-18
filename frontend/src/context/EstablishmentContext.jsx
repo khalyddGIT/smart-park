@@ -1861,14 +1861,14 @@ export const EstablishmentProvider = ({ children }) => {
       const msg = 'No se pudo conectar con el servidor para emitir el ticket. Intenta iniciar sesión.';
       console.warn('Reserva bloqueada: ' + msg);
       setBookingError(msg);
-      return null;
+      return { error: msg };
     }
 
     // Validar EST-* explícitamente (nunca persistible)
     if (String(bookingData.parkingId).startsWith('EST-')) {
       const msg = 'No se puede emitir ticket sobre una sede demo (EST-*). Registra la sede en el servidor primero.';
       setBookingError(msg);
-      return null;
+      return { error: msg };
     }
 
     const plate = (bookingData.plate || 'ABC-123').toUpperCase();

@@ -312,9 +312,9 @@ async def test_driver_cancellation_and_antisabotage_window():
         re_cancel = await ac.put(f"/api/v1/reservations/{res1_id}/cancel", headers=d1_headers)
         assert re_cancel.status_code == 400
 
-        # 6. Anti-sabotage (S-02): Alcanzar 5 cancelaciones en 24h activa límite 429
-        # Ya tenemos 1 cancelación. Haremos 4 más.
-        for i in range(4):
+        # 6. Anti-sabotage (S-02): Alcanzar 3 cancelaciones en 24h activa límite 429
+        # Ya tenemos 1 cancelación. Haremos 2 más.
+        for i in range(2):
             loop_plate = f"L{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().hex[:3].upper()}"
             r_loop = await ac.post("/api/v1/reservations", headers=d1_headers, json={
                 "parking_id": parking_id,
@@ -329,7 +329,7 @@ async def test_driver_cancellation_and_antisabotage_window():
             c_loop = await ac.put(f"/api/v1/reservations/{r_id}/cancel", headers=d1_headers)
             assert c_loop.status_code == 200
 
-        # La 6ta reserva debe ser rechazada con 429 (límite anti-sabotaje diario)
+        # La 4ta reserva debe ser rechazada con 429 (límite anti-sabotaje diario)
         blocked_plate = f"B{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().hex[:3].upper()}"
         res_blocked = await ac.post("/api/v1/reservations", headers=d1_headers, json={
             "parking_id": parking_id,

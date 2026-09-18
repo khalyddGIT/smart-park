@@ -417,7 +417,7 @@ async def create_reservation(
                     detail=f"Ya cuentas con un abono mensual activo en esta sede para el vehículo con placa {plate_clean}."
                 )
 
-        # Regla S-02: Límite de cancelaciones diarias (Cooldown 24h a partir de 5 cancelaciones)
+        # Regla S-02: Límite de cancelaciones diarias (Cooldown 24h a partir de 3 cancelaciones)
         since_24h = datetime.utcnow() - timedelta(hours=24)
         cancelled_stmt = await db.execute(
             select(Reservation).where(
@@ -427,10 +427,10 @@ async def create_reservation(
             )
         )
         cancelled_list = cancelled_stmt.scalars().all()
-        if len(cancelled_list) >= 5:
+        if len(cancelled_list) >= 3:
             raise HTTPException(
                 status_code=429,
-                detail="Límite diario de cancelaciones alcanzado (máx. 5 al día). Por seguridad del sistema, tu cuenta tiene un tiempo de espera de 24 horas."
+                detail="Límite diario de cancelaciones alcanzado (máx. 3 al día). Por seguridad del sistema, tu cuenta tiene un tiempo de espera de 24 horas."
             )
 
     # Regla S-05: Unicidad de placa activa (no puede tener 2 reservas concurrentes inmediatas)
@@ -841,7 +841,7 @@ async def update_reservation_stay(
         slot_res = await db.execute(
             select(Slot).where(
                 Slot.parking_id == reservation.parking_id,
-                func.lower(Slot.spot_number) == code_clean.lower()
+                func.lower(Slot.code) == code_clean.lower()
             )
         )
         new_slot = slot_res.scalars().first()

@@ -20,6 +20,7 @@ import { Button } from './ui/button';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
+import { normalizarPlaca, formatearPlacaConGuion } from '../utils/plateOcr';
 
 export const QuickReservationModal = ({ 
   isOpen, 
@@ -29,7 +30,7 @@ export const QuickReservationModal = ({
   onSwitchToDetailedPlan 
 }) => {
   const { user } = useAuth();
-  const { findOptimalSlot } = useEstablishments();
+  const { findOptimalSlot, hydrateFloorPlan, establishments } = useEstablishments();
 
   const [vehicles, setVehicles] = useState([]);
   const [loadingVehicles, setLoadingVehicles] = useState(true);
@@ -38,6 +39,19 @@ export const QuickReservationModal = ({
   const [manualType, setManualType] = useState('auto');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  // Instancia actualizada del establecimiento desde context
+  const currentParking = useMemo(() => {
+    if (!parking) return null;
+    return establishments?.find(e => String(e.id) === String(parking.id)) || parking;
+  }, [establishments, parking]);
+
+  // Hidratar plano para obtener slots reales del backend si aún no están en memoria
+  useEffect(() => {
+    if (isOpen && parking?.id && hydrateFloorPlan) {
+      hydrateFloorPlan(parking.id).catch(() => {});
+    }
+  }, [isOpen, parking?.id, hydrateFloorPlan]);
 
   // Cargar vehículos del conductor
   const loadVehicles = useCallback(async () => {
@@ -90,31 +104,35 @@ export const QuickReservationModal = ({
   }, [vehicles, selectedVehicleId]);
 
   const effectiveVehicleType = currentVehicle?.vehicle_type || manualType || 'auto';
-  const effectivePlate = (currentVehicle?.license_plate || manualPlate || '').toUpperCase().trim();
+  const rawPlate = (currentVehicle?.license_plate || manualPlate || '').toUpperCase().trim();
+  const effectivePlate = useMemo(() => {
+    return formatearPlacaConGuion(rawPlate);
+  }, [rawPlate]);
 
-  // Calcular la plaza óptima asignada
+  // Calcular la plaza óptima asignada con datos hidratados
   const assignedSlot = useMemo(() => {
-    if (!parking) return null;
-    return findOptimalSlot ? findOptimalSlot(parking, effectiveVehicleType) : null;
-  }, [parking, effectiveVehicleType, findOptimalSlot]);
+    if (!currentParking) return null;
+    return findOptimalSlot ? findOptimalSlot(currentParking, effectiveVehicleType) : null;
+  }, [currentParking, effectiveVehicleType, findOptimalSlot]);
 
   // Manejo de entrada de placa con auto-formato ABC-123
   const handlePlateChange = (e) => {
     let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (val.length > 3) {
-      val = val.slice(0, 3) + '-' + val.slice(3, 6);
+      val = val.slice(0, 3) + '-' + val.slice(3, 7);
     }
     setManualPlate(val);
     setErrorMessage(null);
   };
 
-  const isMaintenance = (parking?.status || '').toLowerCase() === 'mantenimiento' || (parking?.status || '').toLowerCase() === 'maintenance';
-  const isClosed = (parking?.status || '').toLowerCase() === 'cerrado' || (parking?.status || '').toLowerCase() === 'closed';
+  const isMaintenance = (currentParking?.status || '').toLowerCase() === 'mantenimiento' || (currentParking?.status || '').toLowerCase() === 'maintenance';
+  const isClosed = (currentParking?.status || '').toLowerCase() === 'cerrado' || (currentParking?.status || '').toLowerCase() === 'closed';
   const isUnavailable = isMaintenance || isClosed;
+  const requiresPrepay = !!(currentParking?.require_reservation_prepay || currentParking?.requireReservationPrepay);
 
   // Confirmar reserva rápida
   const handleConfirm = async () => {
-    if (!parking) return;
+    if (!currentParking) return;
 
     if (isMaintenance) {
       setErrorMessage('Esta sede se encuentra en mantenimiento técnico. Las reservas están pausadas.');
@@ -125,14 +143,14 @@ export const QuickReservationModal = ({
       return;
     }
 
-    if (!effectivePlate || effectivePlate.length < 6) {
-      setErrorMessage('Ingresa una placa válida (ej. ABC-123).');
+    if (!effectivePlate || effectivePlate.replace(/[^A-Z0-9]/g, '').length < 5) {
+      setErrorMessage('Ingresa una placa válida (ej. ABC-123 o 1234-5A).');
       return;
     }
 
-    const plateRegex = /^[A-Z0-9]{2,3}-[A-Z0-9]{3,4}$/;
+    const plateRegex = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i;
     if (!plateRegex.test(effectivePlate)) {
-      setErrorMessage('Formato de placa inválido. Debe ser ej. ABC-123.');
+      setErrorMessage('Formato de placa inválido. Debe incluir un guión (-) con 2 a 4 caracteres a cada lado (ej. ABC-123).');
       return;
     }
 
@@ -140,13 +158,13 @@ export const QuickReservationModal = ({
     setErrorMessage(null);
 
     const now = new Date();
-    const tolerance = Number(parking.tolerance || parking.tolerance_minutes || 15);
+    const tolerance = Number(currentParking.tolerance || currentParking.tolerance_minutes || 15);
     const expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 horas estimadas por defecto
 
     try {
       await onConfirmBooking({
-        parkingId: parking.id,
-        parkingName: parking.name,
+        parkingId: currentParking.id,
+        parkingName: currentParking.name,
         slotId: assignedSlot?.id || null,
         slotCode: assignedSlot?.code || null,
         autoAssign: true,
@@ -158,22 +176,25 @@ export const QuickReservationModal = ({
         expiresAt: expiresAt.toISOString(),
         hours: 2,
         estimatedHours: 2,
-        totalCost: Number(parking.rate || 5.0) * 2,
+        totalCost: Number(currentParking.rate || 5.0) * 2,
         isOpenStay: true,
-        payNow: false,
-        bookingModel: 'postpaid',
-        paymentMethod: 'efectivo'
+        payNow: requiresPrepay,
+        bookingModel: requiresPrepay ? 'prepaid_discount' : 'postpaid',
+        paymentMethod: requiresPrepay ? 'tarjeta' : 'efectivo'
       });
+      onClose();
     } catch (err) {
-      setErrorMessage(err?.response?.data?.detail || err?.message || 'No se pudo completar la reserva rápida.');
+      const msg = err?.response?.data?.detail || err?.message || 'No se pudo completar la reserva rápida.';
+      setErrorMessage(msg);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!isOpen || !parking) return null;
+  if (!isOpen || !currentParking) return null;
 
-  const toleranceMin = parking.tolerance || parking.tolerance_minutes || 15;
-  const hourlyRate = Number(parking.rate || parking.hourly_rate || 5.0).toFixed(2);
+  const toleranceMin = currentParking.tolerance || currentParking.tolerance_minutes || 15;
+  const hourlyRate = Number(currentParking.rate || currentParking.hourly_rate || 5.0).toFixed(2);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
@@ -390,7 +411,7 @@ export const QuickReservationModal = ({
                 <span>Modalidad</span>
               </div>
               <div className="font-bold text-slate-900 dark:text-white mt-1 truncate">
-                Paga en garita al salir
+                {requiresPrepay ? 'Prepago digital exigido' : 'Paga en garita al salir'}
               </div>
             </div>
           </div>
@@ -428,7 +449,7 @@ export const QuickReservationModal = ({
             ) : (
               <>
                 <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
-                <span>Confirmar Reserva Inmediata</span>
+                <span>{requiresPrepay ? 'Apartar y Pagar (Prepago)' : 'Confirmar Reserva Inmediata'}</span>
               </>
             )}
           </Button>

@@ -218,41 +218,9 @@ export const LandingPage = ({
 
   const landingRef = useRef(null);
 
-  // Animaciones GSAP de alto impacto: levitación 3D, parallax y revelado en scroll
+  // Animaciones GSAP de alto impacto: revelado en scroll y Bento Grid
   useGSAP(() => {
-    // 1. Levitación física 3D continua de los mockups de smartphones en el Hero
-    gsap.to('.hero-phone-1', {
-      y: '-=10',
-      rotation: '+=1.8',
-      duration: 3.4,
-      ease: 'sine.inOut',
-      repeat: -1,
-      yoyo: true
-    });
-
-    gsap.to('.hero-phone-2', {
-      y: '+=9',
-      rotation: '-=1.4',
-      duration: 3.8,
-      ease: 'sine.inOut',
-      repeat: -1,
-      yoyo: true,
-      delay: 0.35
-    });
-
-    // 2. Parallax de profundidad con ScrollTrigger en los mockups al hacer scroll
-    gsap.to(['.hero-phone-1', '.hero-phone-2'], {
-      yPercent: -14,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: '#hero',
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 1
-      }
-    });
-
-    // 3. Entrada escalonada de las marcas aliadas en el Trust Bar
+    // 1. Entrada escalonada de las marcas aliadas en el Trust Bar
     gsap.from('.trust-partner-item', {
       scrollTrigger: {
         trigger: '.trust-partners-container',
@@ -420,7 +388,7 @@ export const LandingPage = ({
           ========================================================================= */}
       <main id="hero" className="relative w-full min-h-[85vh] sm:min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
         
-        {/* Video de Fondo Operacional con nitidez total y sin opacidad opaca en modo claro */}
+        {/* Video de Fondo Operacional full-bleed con nitidez absoluta */}
         <video
           src="/videos/smart-park-demo.mp4"
           autoPlay
@@ -428,166 +396,51 @@ export const LandingPage = ({
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-100 dark:opacity-85 filter brightness-100 dark:brightness-[0.78] contrast-[1.02] dark:contrast-[1.08] transition-all duration-500"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-100 filter brightness-[0.92] dark:brightness-[0.78] contrast-[1.04] transition-all duration-500"
         />
 
-        {/* Gradientes ultraligeros: en modo claro sin niebla blanca para apreciar el video con total fidelidad */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/[0.04] via-transparent to-transparent dark:from-slate-950/80 dark:via-slate-950/40 dark:to-transparent pointer-events-none z-0 transition-colors duration-300" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.03),transparent_60%)] dark:bg-[radial-gradient(circle_at_75%_25%,rgba(16,185,129,0.12),transparent_60%)] pointer-events-none z-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-transparent dark:from-slate-950/60 dark:via-transparent dark:to-slate-950/20 pointer-events-none z-0 transition-colors duration-300" />
+        {/* Scrim lateral sutil detrás del texto: permite que las letras blancas resalten con máxima nitidez sin tapar el video en el resto de la pantalla */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/35 to-transparent pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-slate-950/20 pointer-events-none z-0" />
 
-        {/* Transición inferior mínima y limpia */}
-        <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-50/20 dark:from-[#06090F] to-transparent pointer-events-none z-0" />
-
-        {/* Contenido Centralizado del Hero */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20 sm:pt-36 sm:pb-24">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
+        {/* Contenido Editorial del Hero sin cuadros que bloqueen el video */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24 sm:pt-36 sm:pb-28">
+          <div className="max-w-2xl lg:max-w-3xl space-y-6 sm:space-y-8 text-center lg:text-left">
             
-            {/* Columna Izquierda: Copywriting y CTA */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              
-              {/* Titular Principal de Impacto */}
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.05] text-slate-950 dark:text-white drop-shadow-[0_1px_2px_rgba(255,255,255,0.85)] dark:drop-shadow-none transition-colors">
-                Estaciona al instante en la ciudad
-              </h1>
+            {/* Titular Principal de Impacto con letras blancas de máxima nitidez */}
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.06] text-white drop-shadow-[0_3px_16px_rgba(0,0,0,0.8)]">
+              Estaciona al instante en la ciudad
+            </h1>
 
-              {/* Subtítulo Conciso */}
-              <p className="text-sm sm:text-base lg:text-lg text-slate-800 dark:text-slate-300 max-w-xl leading-relaxed font-semibold dark:font-medium mx-auto lg:mx-0 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)] dark:drop-shadow-none transition-colors">
-                Encuentra plaza en tiempo real, ingresa con lectura automática de placa o código QR, y paga la tarifa exacta al minuto mediante Yape, Plin o tarjetas.
-              </p>
+            {/* Subtítulo Conciso y Nítido */}
+            <p className="text-base sm:text-lg lg:text-xl text-slate-100/95 max-w-2xl leading-relaxed font-medium mx-auto lg:mx-0 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              Encuentra plaza en tiempo real, ingresa con lectura automática de placa o código QR, y paga la tarifa exacta al minuto mediante Yape, Plin o tarjetas.
+            </p>
 
-              {/* Botones de Acción Primarios */}
-              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3.5">
-                <MagneticButton
-                  onClick={() => scrollTo('mapa')}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 px-7 py-3 sm:px-8 sm:py-3.5 rounded-full text-xs sm:text-sm font-black shadow-lg shadow-emerald-600/20 dark:shadow-emerald-500/15 hover:scale-105 transition cursor-pointer flex items-center gap-2"
-                >
-                  <Search className="w-4 h-4 text-white dark:text-slate-950" />
-                  Explorar Cocheras
-                </MagneticButton>
+            {/* Botones de Acción Primarios */}
+            <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4">
+              <MagneticButton
+                onClick={() => scrollTo('mapa')}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-3.5 sm:px-9 sm:py-4 rounded-full text-sm sm:text-base font-extrabold shadow-xl shadow-emerald-500/25 hover:scale-105 transition cursor-pointer flex items-center gap-2.5"
+              >
+                <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
+                Explorar Cocheras
+              </MagneticButton>
 
-                <button
-                  type="button"
-                  onClick={() => scrollTo('beneficios')}
-                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:underline cursor-pointer group transition-colors drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] dark:drop-shadow-none"
-                >
-                  Ver ventajas del sistema
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-emerald-600 dark:text-emerald-400" />
-                </button>
-              </div>
-
-              {/* Micro-insignia de confianza en lugar de flecha doodle estridente */}
-              <div className="hidden lg:flex items-center gap-2 pt-1 text-xs text-slate-700 dark:text-slate-400 font-semibold dark:font-medium drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)] dark:drop-shadow-none">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Sin costo de suscripción para conductores • Reserva 100% garantizada</span>
-              </div>
+              <button
+                type="button"
+                onClick={() => scrollTo('beneficios')}
+                className="inline-flex items-center gap-2 text-sm sm:text-base font-bold text-white hover:text-emerald-300 cursor-pointer group transition-colors drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]"
+              >
+                Ver ventajas del sistema
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-emerald-400" />
+              </button>
             </div>
 
-            {/* Columna Derecha: Mockups 3D Superpuestos Expansivos Adaptativos */}
-            <div className="lg:col-span-5 relative flex justify-center lg:justify-end mt-4 lg:mt-0">
-              <div className="relative w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[420px] h-[340px] sm:h-[390px] lg:h-[440px]">
-                
-                {/* Teléfono 1: Plano CAD 2D & LPR Adaptativo */}
-                <motion.div
-                  initial={{ y: 15, opacity: 0, rotate: 5 }}
-                  animate={{ y: 0, opacity: 1, rotate: 5 }}
-                  transition={{ duration: 0.7, ease: FLUID_EASE }}
-                  className="hero-phone-1 absolute right-0 top-3 sm:top-4 w-[195px] sm:w-[230px] lg:w-[260px] bg-white dark:bg-slate-950 rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3 shadow-xl dark:shadow-2xl border-4 border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-white z-10 will-change-transform transition-colors"
-                >
-                  <div className="w-14 sm:w-16 h-2.5 sm:h-3 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-2 sm:mb-2.5" />
-                  
-                  <div className="space-y-2 sm:space-y-2.5 text-left">
-                    <div className="flex items-center justify-between px-1">
-                      <span className="text-[8px] sm:text-[9px] font-bold text-slate-500 dark:text-slate-400">PLANO 2D EN VIVO</span>
-                      <span className="text-[7px] sm:text-[8px] font-bold text-emerald-600 dark:text-emerald-400">15 Libres</span>
-                    </div>
-
-                    {/* Plazas */}
-                    <div className="grid grid-cols-3 gap-1 bg-slate-50 dark:bg-slate-900/90 p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800">
-                      <div className="bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-700 dark:text-emerald-400">A-01</span>
-                      </div>
-                      <div className="bg-rose-50 dark:bg-red-500/20 border border-rose-300 dark:border-red-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-rose-700 dark:text-red-400">A-02</span>
-                      </div>
-                      <div className="bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-700 dark:text-emerald-400">A-03</span>
-                      </div>
-                      <div className="bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-700 dark:text-emerald-400">B-01</span>
-                      </div>
-                      <div className="bg-rose-50 dark:bg-red-500/20 border border-rose-300 dark:border-red-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-rose-700 dark:text-red-400">B-02</span>
-                      </div>
-                      <div className="bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/50 rounded p-1 text-center">
-                        <span className="text-[7px] sm:text-[8px] font-bold text-emerald-700 dark:text-emerald-400">B-03</span>
-                      </div>
-                    </div>
-
-                    {/* LPR */}
-                    <div className="p-1.5 sm:p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-0.5">
-                      <div className="flex items-center gap-1 text-[8px] sm:text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">
-                        <Camera className="w-2.5 h-2.5" />
-                        LPR-IA Detectado
-                      </div>
-                      <div className="text-[9px] sm:text-[10px] font-mono font-black text-slate-800 dark:text-slate-100 bg-slate-200/80 dark:bg-slate-800 px-1.5 py-0.5 rounded text-center">
-                        ABC-123 · Auto
-                      </div>
-                    </div>
-
-                    <div className="text-[7px] sm:text-[8px] text-center text-slate-500 dark:text-slate-400">
-                      Barrera automática desbloqueada
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Teléfono 2: Búsqueda y Pase Digital Adaptativo */}
-                <motion.div
-                  initial={{ y: 30, opacity: 0, rotate: -2 }}
-                  animate={{ y: 0, opacity: 1, rotate: -2 }}
-                  transition={{ duration: 0.7, delay: 0.1, ease: FLUID_EASE }}
-                  className="hero-phone-2 absolute left-0 top-0 w-[205px] sm:w-[245px] lg:w-[275px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-slate-900 dark:text-white rounded-[28px] sm:rounded-[32px] p-2.5 sm:p-3.5 shadow-2xl border-4 border-slate-200/90 dark:border-slate-700/80 z-20 text-left transition-colors will-change-transform"
-                >
-                  <div className="w-20 h-3 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-2.5" />
-                  
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] sm:text-xs font-black text-slate-900 dark:text-white">Ayacucho Parking</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    </div>
-
-                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700/60">
-                      <Search className="w-3 h-3 shrink-0 text-slate-400" />
-                      <span className="truncate">Plaza Mayor, Jr. Callao...</span>
-                    </div>
-
-                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] sm:text-xs font-bold text-slate-900 dark:text-white">Cochera Central</span>
-                        <span className="text-[9px] sm:text-[10px] font-black text-emerald-600 dark:text-emerald-400">S/ 3.50/h</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-[8px] sm:text-[9px] text-slate-500 dark:text-slate-400">
-                        <MapPin className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span className="truncate">Jr. 28 de Julio · 12 libres</span>
-                      </div>
-                      <div className="w-full py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 text-[9px] sm:text-[10px] font-black text-center shadow-sm transition">
-                        Reservar Plaza
-                      </div>
-                    </div>
-
-                    <div className="p-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-2.5">
-                      <div className="w-8 h-8 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-emerald-200 dark:border-emerald-700/60 flex items-center justify-center shrink-0">
-                        <QrCode className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
-                      </div>
-                      <div className="text-[8px] sm:text-[9px] min-w-0">
-                        <p className="font-bold text-emerald-950 dark:text-emerald-300 truncate">Pase QR Activo</p>
-                        <p className="text-emerald-700 dark:text-emerald-400">Tolerancia: 14:20 min</p>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-
-              </div>
+            {/* Micro-insignia de confianza */}
+            <div className="flex items-center justify-center lg:justify-start gap-2 pt-1 text-xs sm:text-sm text-slate-200/90 font-medium drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Sin costo de suscripción para conductores • Reserva 100% garantizada</span>
             </div>
 
           </div>

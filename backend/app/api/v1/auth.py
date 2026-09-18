@@ -50,10 +50,15 @@ def _clear_auth_cookie(response: Response) -> None:
         secure=is_prod
     )
 
-# Rate limit anti fuerza bruta en login: 5 intentos por minuto por IP (fail-open sin Redis)
-LOGIN_RATE_LIMIT = 5
+# Rate limit anti fuerza bruta en login y registro por IP
+is_testing = (os.getenv("TESTING") == "1")
+LOGIN_RATE_LIMIT = 500 if is_testing else 5
 LOGIN_RATE_WINDOW = 60
+
+REGISTER_RATE_LIMIT = 500 if is_testing else 10
+REGISTER_RATE_WINDOW = 60
 _bearer_auto = HTTPBearer(auto_error=False)
+
 
 
 def _client_ip(request: Request) -> str:
@@ -73,10 +78,19 @@ class GoogleLoginRequest(BaseModel):
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register_user(user_in: UserCreate, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    # Rate limit anti-spam por IP
+    allowed, _ = await rate_limit_hit(f"ratelimit:register:{_client_ip(request)}", REGISTER_RATE_LIMIT, REGISTER_RATE_WINDOW)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas solicitudes de registro desde esta dirección IP. Por favor espera un minuto."
+        )
+
     result = await db.execute(select(User).where(User.email == user_in.email))
     existing_user = result.scalars().first()
     if existing_user:
         raise HTTPException(status_code=400, detail="El correo ya se encuentra registrado")
+
     
     db_user = User(
         full_name=user_in.full_name,

@@ -77,13 +77,16 @@ backend/uploads/*
 backups/
 backend/backups/
 
-# --- Environment & Secret Keys ---
+# --- Environment & Secret Keys (Pilar 4: Protección de Variables de Entorno) ---
 .env
-.env.local
-.env.development
-.env.test
-.env.production
-.env.*.local
+.env.*
+*.env
+**/.env
+**/.env.*
+**/backend/.env*
+**/frontend/.env*
+!**/.env.example
+
 
 # --- Operating Systems & Editor Files ---
 .DS_Store

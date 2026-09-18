@@ -18,10 +18,15 @@ from app.core.config import settings
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.models import User, Payment
+from app.core.cache import rate_limit_hit
 
 router = APIRouter(prefix="/payments", tags=["Pagos Culqi & PayPal"])
 
 CULQI_CHARGES_URL = "https://api.culqi.com/v2/charges"
+_is_testing = (os.getenv("TESTING") == "1")
+PAYMENT_RATE_LIMIT = 200 if _is_testing else 10
+PAYMENT_RATE_WINDOW = 60
+
 
 
 # --- Schemas ---
@@ -140,6 +145,13 @@ async def create_charge(
     current_user: User = Depends(get_current_user),
 ):
     """Cobra un token Culqi contra la API real de Culqi y persiste el pago."""
+    allowed, _ = await rate_limit_hit(f"ratelimit:pay:{current_user.id}", PAYMENT_RATE_LIMIT, PAYMENT_RATE_WINDOW)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas transacciones de pago seguidas. Por favor espera un momento.",
+        )
+
     if body.amount_cents <= 0:
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0")
     if not body.token_id or not body.token_id.strip():
@@ -265,6 +277,13 @@ async def create_paypal_order(
     current_user: User = Depends(get_current_user),
 ):
     """Crea una orden de pago en PayPal REST API (v2) con conversión transparente PEN -> USD."""
+    allowed, _ = await rate_limit_hit(f"ratelimit:pay:{current_user.id}", PAYMENT_RATE_LIMIT, PAYMENT_RATE_WINDOW)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas transacciones de pago seguidas. Por favor espera un momento.",
+        )
+
     if body.amount <= 0:
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0")
 

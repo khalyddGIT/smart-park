@@ -1,21 +1,95 @@
+import logging
 import os
-from fastapi import FastAPI
+import traceback
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+
 from app.core.config import settings
 from app.db.session import engine, Base
 from app.models.models import User, Parking, Slot, FloorPlanElement, Vehicle, Incident
 from app.api.v1 import auth, parkings, reservations, anpr, vehicles, staff, users, reviews, incidents, payments, finances
 from app.core.security import get_password_hash, hash_pin
 from app.core.realtime import realtime
-from fastapi import WebSocket, WebSocketDisconnect
+
+security_logger = logging.getLogger("smartpark.security")
+is_prod = (settings.ENVIRONMENT == "production")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    openapi_url=None if is_prod else f"{settings.API_V1_STR}/openapi.json",
+    docs_url=None if is_prod else "/docs",
+    redoc_url=None if is_prod else "/redoc",
 )
+
+# Exception handler para validación de inputs (Pilar 5: validación estricta y logs)
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    from fastapi.encoders import jsonable_encoder
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "unknown")
+    security_logger.warning(f"[VALIDATION_ERROR] {request.method} {request.url.path} from IP={client_ip}: {exc}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": jsonable_encoder(exc.errors())},
+    )
+
+
+# Exception handler global para errores no controlados (Pilar 8: sin información interna en producción)
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "unknown")
+    security_logger.error(f"[UNHANDLED_EXCEPTION] {request.method} {request.url.path} IP={client_ip}: {exc}\n{traceback.format_exc()}")
+    if is_prod:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Ha ocurrido un error interno en el servidor. Por favor intenta de nuevo más tarde."},
+        )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "type": exc.__class__.__name__},
+    )
+
+# Middleware de seguridad y blindaje perimetral (Pilares 1, 7 y 10)
+class SecurityHardeningMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "unknown")
+        path = request.url.path
+
+        # Rate limit global defensivo por IP en API (Pilar 1)
+        if path.startswith("/api/"):
+            from app.core.cache import rate_limit_hit
+            is_testing = (os.getenv("TESTING") == "1")
+            global_limit = 10000 if is_testing else 180
+            allowed, count = await rate_limit_hit(f"ratelimit:global:{client_ip}", limit=global_limit, window=60)
+            if not allowed:
+                security_logger.warning(f"[SECURITY_ALERT] [RATE_LIMIT_EXCEEDED] IP={client_ip} Path={path} Count={count}")
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Demasiadas peticiones desde tu dirección IP. Espera un momento antes de continuar."},
+                )
+
+        response = await call_next(request)
+
+        # Registro de alertas de seguridad (401, 403, 429) para detección temprana de ataques (Pilar 10)
+        if response.status_code in (401, 403, 429):
+            user_agent = request.headers.get("user-agent", "unknown")
+            security_logger.warning(
+                f"[SECURITY_ALERT] Status={response.status_code} Method={request.method} "
+                f"Path={path} IP={client_ip} UserAgent={user_agent[:120]}"
+            )
+
+        # Cabeceras de seguridad HTTP
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+        return response
+
+app.add_middleware(SecurityHardeningMiddleware)
 
 # Configuración CORS por entorno: en producción solo orígenes explícitos.
 # El frontend se sirve same-origin desde esta misma app, por lo que no requiere CORS.
@@ -42,6 +116,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Inicialización de tablas y datos semilla al arrancar el servidor
 @app.on_event("startup")
@@ -334,6 +409,12 @@ def _safe_db_label() -> str:
 
 @app.get("/health")
 def healthcheck():
+    if is_prod:
+        return {
+            "status": "ok",
+            "service": "smart-park",
+            "environment": settings.ENVIRONMENT,
+        }
     from app.services.backup_service import BACKUPS_DIR
     return {
         "status": "ok",
@@ -350,7 +431,11 @@ def root():
         index_path = os.path.join(STATIC_DIR, "index.html")
         if os.path.isfile(index_path):
             return FileResponse(index_path)
-    return {"message": "Bienvenido a la API RESTful de Smart Park", "status": "online", "docs": "/docs"}
+    return {
+        "message": "Bienvenido a la API RESTful de Smart Park",
+        "status": "online",
+        "docs": None if is_prod else "/docs",
+    }
 
 # Servir frontend compilado (deploy unificado en Railway) con fallback SPA
 if STATIC_DIR and os.path.isdir(STATIC_DIR):

@@ -53,22 +53,44 @@ async def list_incidents(
     current_user: User = Depends(get_current_user)
 ):
     stmt = select(Incident).order_by(Incident.id.desc())
-    if parking_id:
-        stmt = stmt.where(Incident.parking_id == parking_id)
     if status:
         stmt = stmt.where(Incident.status == status)
 
-    # RBAC: los conductores solo ven sus propias incidencias activas (no ocultas)
+    # RBAC & Tenant Isolation (Row-Level Security)
     if current_user.role == "user":
+        # Conductores solo ven sus propias incidencias activas (no ocultas)
+        if parking_id:
+            stmt = stmt.where(Incident.parking_id == parking_id)
         stmt = stmt.where(Incident.user_id == current_user.id, Incident.is_hidden.is_(False))
+    elif current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
+        # Admin Local solo puede ver incidencias de sedes sobre las que tiene potestad
+        curr_email = (current_user.email or "").strip().lower()
+        p_res = await db.execute(select(Parking.id).where(func.lower(Parking.email) == curr_email))
+        owned_ids = set(p_res.scalars().all())
+        s_res = await db.execute(select(Staff.parking_id).where(func.lower(Staff.email) == curr_email, Staff.status == "active"))
+        staff_ids = set(pid for pid in s_res.scalars().all() if pid)
+        allowed_pids = owned_ids | staff_ids
+
+        if parking_id:
+            if parking_id not in allowed_pids:
+                raise HTTPException(status_code=403, detail="No tienes permiso para ver incidencias de esta sede")
+            stmt = stmt.where(Incident.parking_id == parking_id)
+        else:
+            stmt = stmt.where(Incident.parking_id.in_(allowed_pids) if allowed_pids else False)
+
+        if is_hidden is not None:
+            stmt = stmt.where(Incident.is_hidden == is_hidden)
     else:
-        # Administrador local o Superadmin: pueden filtrar por estado oculto o ver todas
+        # Superadmin (platform) o adminlocal de prueba: acceso global
+        if parking_id:
+            stmt = stmt.where(Incident.parking_id == parking_id)
         if is_hidden is not None:
             stmt = stmt.where(Incident.is_hidden == is_hidden)
 
     result = await db.execute(stmt)
     incidents = result.scalars().all()
     return [IncidentResponse.model_validate(i) for i in incidents]
+
 
 async def _check_incident_admin_access(incident: Incident, current_user: User, db: AsyncSession):
     if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":

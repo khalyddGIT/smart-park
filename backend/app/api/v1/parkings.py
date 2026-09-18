@@ -16,9 +16,12 @@ from app.schemas.schemas import (
 )
 from app.core.security import require_role, get_password_hash, hash_pin
 from app.core.realtime import realtime
-from app.core.cache import cache_get_json, cache_set_json, cache_delete
+from app.core.cache import cache_get_json, cache_set_json, cache_delete, rate_limit_hit
+import os
 
 PARKINGS_CACHE_KEY = "parkings:all"
+CAMERA_SCAN_RATE_LIMIT = 300 if os.getenv("TESTING") == "1" else 30
+CAMERA_SCAN_RATE_WINDOW = 60
 
 
 async def invalidate_parkings_cache():
@@ -422,6 +425,13 @@ async def scan_camera_monitor(parking_id: int, db: AsyncSession = Depends(get_db
     if not parking:
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
 
+    allowed, _ = await rate_limit_hit(f"ratelimit:cam_scan:{parking_id}", CAMERA_SCAN_RATE_LIMIT, CAMERA_SCAN_RATE_WINDOW)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas peticiones de escaneo de cámara seguidas. Por favor espera un momento.",
+        )
+
     slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
     slots = slots_res.scalars().all()
     if not slots:
@@ -615,6 +625,14 @@ async def scan_camera_device(parking_id: int, cam_id: int, db: AsyncSession = De
     res = await db.execute(select(Parking).where(Parking.id == parking_id))
     if not res.scalars().first():
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+
+    allowed, _ = await rate_limit_hit(f"ratelimit:cam_scan:{parking_id}", CAMERA_SCAN_RATE_LIMIT, CAMERA_SCAN_RATE_WINDOW)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas peticiones de escaneo de cámara seguidas. Por favor espera un momento.",
+        )
+
     cres = await db.execute(select(CameraDevice).where(CameraDevice.id == cam_id, CameraDevice.parking_id == parking_id))
     cam = cres.scalars().first()
     if not cam:

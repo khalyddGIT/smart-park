@@ -11,6 +11,9 @@ import asyncio
 import json
 import logging
 import os
+import threading
+import time
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +23,14 @@ EVENTS_CHANNEL = "smartpark:events"
 _client = None
 _client_failed = False
 _pubsub_task: asyncio.Task = None
+
+# Fallback en memoria thread-safe cuando Redis no está disponible o falla
+_memory_ratelimit = defaultdict(list)
+_memory_ratelimit_lock = threading.Lock()
+
+_memory_blacklist = {}
+_memory_blacklist_lock = threading.Lock()
+
 
 
 def get_client():
@@ -89,52 +100,90 @@ async def cache_delete(*keys: str) -> None:
 
 
 # ------------------------------------------------------------------
-# Rate limiting (anti fuerza bruta) — fail-open: sin Redis siempre permite
+# Rate limiting (anti fuerza bruta) — Redis con fallback en memoria (NUNCA fail-open)
 # ------------------------------------------------------------------
 
 async def rate_limit_hit(key: str, limit: int, window: int = 60):
-    """Incrementa un contador con ventana deslizante simple.
-    Devuelve (permitido: bool, intentos: int). Sin Redis siempre permite."""
+    """Incrementa un contador con ventana deslizante.
+    Usa Redis si está disponible. Si Redis no está disponible o falla,
+    utiliza un mecanismo en memoria (in-memory sliding window) garantizando
+    que el rate limiting SIEMPRE esté activo y nunca falle abierto."""
     client = get_client()
-    if not client:
-        return True, 0
-    try:
-        count = await client.incr(key)
-        if count == 1:
-            await client.expire(key, window)
+    if client:
+        try:
+            count = await client.incr(key)
+            if count == 1:
+                await client.expire(key, window)
+            return count <= limit, count
+        except Exception as exc:
+            logger.warning(f"[ratelimit] Redis {key} falló, usando fallback en memoria: {exc}")
+
+    # Fallback en memoria thread-safe
+    now = time.time()
+    with _memory_ratelimit_lock:
+        timestamps = [ts for ts in _memory_ratelimit[key] if now - ts < window]
+        timestamps.append(now)
+        _memory_ratelimit[key] = timestamps
+        count = len(timestamps)
+
+        # Mantenimiento periódico de memoria si hay demasiadas llaves
+        if len(_memory_ratelimit) > 5000:
+            stale = [k for k, v in _memory_ratelimit.items() if not v or (now - v[-1] > window)]
+            for k in stale:
+                del _memory_ratelimit[k]
+
         return count <= limit, count
-    except Exception as exc:
-        logger.warning(f"[ratelimit] {key} falló (fail-open): {exc}")
-        return True, 0
 
 
 # ------------------------------------------------------------------
-# Blacklist de JWT (logout real) — fail-open: sin Redis los tokens siguen válidos
+# Blacklist de JWT (logout real) — Redis + memoria local
 # ------------------------------------------------------------------
 
 async def blacklist_token(jti: str, ttl_seconds: int) -> bool:
-    """Revoca un token guardando su jti hasta su expiración natural."""
+    """Revoca un token guardando su jti hasta su expiración natural.
+    Persiste en memoria local y en Redis si está disponible."""
+    if not jti:
+        return False
+    now = time.time()
+    with _memory_blacklist_lock:
+        _memory_blacklist[jti] = now + max(1, int(ttl_seconds))
+        if len(_memory_blacklist) > 5000:
+            stale = [k for k, exp in _memory_blacklist.items() if exp <= now]
+            for k in stale:
+                del _memory_blacklist[k]
+
     client = get_client()
-    if not client or not jti:
-        return False
-    try:
-        await client.set(f"bl:{jti}", "1", ex=max(1, int(ttl_seconds)))
-        return True
-    except Exception as exc:
-        logger.warning(f"[blacklist] SET {jti} falló (fail-open): {exc}")
-        return False
+    if client:
+        try:
+            await client.set(f"bl:{jti}", "1", ex=max(1, int(ttl_seconds)))
+            return True
+        except Exception as exc:
+            logger.warning(f"[blacklist] SET {jti} falló en Redis (usando memoria): {exc}")
+    return True
 
 
 async def is_blacklisted(jti: str) -> bool:
-    """True si el jti fue revocado. Sin Redis devuelve False (fail-open)."""
+    """True si el jti fue revocado (en Redis o memoria local)."""
+    if not jti:
+        return False
     client = get_client()
-    if not client or not jti:
-        return False
-    try:
-        return await client.exists(f"bl:{jti}") == 1
-    except Exception as exc:
-        logger.warning(f"[blacklist] EXISTS {jti} falló (fail-open): {exc}")
-        return False
+    if client:
+        try:
+            if await client.exists(f"bl:{jti}") == 1:
+                return True
+        except Exception as exc:
+            logger.warning(f"[blacklist] EXISTS {jti} falló en Redis (consultando memoria): {exc}")
+
+    now = time.time()
+    with _memory_blacklist_lock:
+        exp = _memory_blacklist.get(jti)
+        if exp:
+            if exp > now:
+                return True
+            else:
+                del _memory_blacklist[jti]
+    return False
+
 
 
 # ------------------------------------------------------------------

@@ -430,3 +430,119 @@ async def test_invalid_payloads_rejected_with_validation_errors():
             }, headers=headers)
             assert r_plate.status_code == 422, f"Placa malformada '{plate}' debió ser rechazada con 422, obtuvo {r_plate.status_code}"
 
+
+# ---------------------------------------------------------------
+# 10 Pilares: Rate Limiting & Blacklist en memoria (fail-safe)
+# ---------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_in_memory_rate_limiting_and_blacklist():
+    from app.core.cache import rate_limit_hit, blacklist_token, is_blacklisted
+    import uuid
+
+    # 1. Rate limiting
+    key = f"test_rl_{uuid.uuid4().hex}"
+    # 3 allowed
+    ok1, count1 = await rate_limit_hit(key, limit=3, window=10)
+    ok2, count2 = await rate_limit_hit(key, limit=3, window=10)
+    ok3, count3 = await rate_limit_hit(key, limit=3, window=10)
+    ok4, count4 = await rate_limit_hit(key, limit=3, window=10)
+
+    assert ok1 is True and count1 == 1
+    assert ok2 is True and count2 == 2
+    assert ok3 is True and count3 == 3
+    assert ok4 is False and count4 == 4, "El 4to intento debió ser bloqueado por rate limit"
+
+    # 2. Blacklist
+    jti = f"jti_test_{uuid.uuid4().hex}"
+    assert await is_blacklisted(jti) is False
+    revoked = await blacklist_token(jti, ttl_seconds=60)
+    assert revoked is True
+    assert await is_blacklisted(jti) is True
+
+
+# ---------------------------------------------------------------
+# 10 Pilares: Aislamiento RLS en Incidencias entre Sedes
+# ---------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_incidents_list_tenant_isolation():
+    from app.db.session import AsyncSessionLocal
+    from app.models.models import Parking, User, Incident
+    from app.core.security import get_password_hash, create_access_token
+
+    uid_a = uuid.uuid4().hex[:6]
+    uid_b = uuid.uuid4().hex[:6]
+    email_a = f"admin.inc.a.{uid_a}@smartpark.pe"
+    email_b = f"admin.inc.b.{uid_b}@smartpark.pe"
+
+    async with AsyncSessionLocal() as session:
+        sede_a = Parking(
+            name=f"Sede A Inc {uid_a}", address="Calle A", city="Ayacucho",
+            latitude=-13.16, longitude=-74.22, hourly_rate=5.0,
+            total_capacity=10, email=email_a, owner="Admin A"
+        )
+        session.add(sede_a)
+
+        sede_b = Parking(
+            name=f"Sede B Inc {uid_b}", address="Calle B", city="Ayacucho",
+            latitude=-13.17, longitude=-74.23, hourly_rate=6.0,
+            total_capacity=10, email=email_b, owner="Admin B"
+        )
+        session.add(sede_b)
+        await session.flush()
+
+        user_a = User(
+            full_name="Admin A Inc", email=email_a,
+            hashed_password=get_password_hash("Pass123!"), role="local", is_active=True
+        )
+        session.add(user_a)
+        await session.flush()
+
+        inc_a = Incident(
+            parking_id=sede_a.id, user_id=user_a.id, user_name="Admin A Inc",
+            category="mantenimiento", description="Falla foco Sede A", status="reported"
+        )
+        session.add(inc_a)
+
+        inc_b = Incident(
+            parking_id=sede_b.id, user_id=user_a.id, user_name="Admin B Inc",
+            category="seguridad", description="Portón roto Sede B", status="reported"
+        )
+        session.add(inc_b)
+        await session.commit()
+        await session.refresh(inc_a)
+        await session.refresh(inc_b)
+
+        token_a = create_access_token(subject=user_a.id)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Admin A consulta sin parking_id -> solo debe ver incidencias de Sede A
+        r_list = await ac.get("/api/v1/incidents", headers=_auth_header(token_a))
+        assert r_list.status_code == 200
+        data = r_list.json()
+        pids = [i["parking_id"] for i in data]
+        assert sede_a.id in pids, "Debe contener incidencias de Sede A"
+        assert sede_b.id not in pids, "NUNCA debe contener incidencias de Sede B (fuga de datos multi-tenant)"
+
+        # Admin A intenta ver explícitamente incidencias de Sede B -> 403 Forbidden
+        r_b = await ac.get(f"/api/v1/incidents?parking_id={sede_b.id}", headers=_auth_header(token_a))
+        assert r_b.status_code == 403, "Debe rechazar con 403 al intentar acceder a incidencias de otra sede"
+
+
+# ---------------------------------------------------------------
+# 10 Pilares: Cabeceras de seguridad HTTP
+# ---------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_security_http_headers():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        r = await ac.get("/health")
+        assert r.status_code == 200
+        assert r.headers.get("x-content-type-options") == "nosniff"
+        assert r.headers.get("x-frame-options") == "DENY"
+        assert "referrer-policy" in r.headers
+
+

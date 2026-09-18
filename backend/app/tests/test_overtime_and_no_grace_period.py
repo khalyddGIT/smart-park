@@ -230,3 +230,141 @@ async def test_active_stay_cannot_be_cancelled_and_reconciles_checkout_amount():
         assert data_out["total_cost"] == 12.0
         assert data_out["amount_paid"] == 12.0  # Reconciliado al total real sin dejar saldo huérfano
 
+@pytest.mark.asyncio
+async def test_cannot_cancel_scheduled_reservation_after_tolerance_expired():
+    """
+    Verifica la Regla Anti-Fraude: un conductor NO puede cancelar una reserva
+    cuya tolerancia de llegada ya venció (reserva expirada / No-Show).
+    """
+    transport = ASGITransport(app=app)
+
+    async with AsyncSessionLocal() as session:
+        res_u = await session.execute(select(User).where(User.email == "overtime_stay_test@smartpark.com"))
+        user = res_u.scalars().first()
+
+        now = datetime.utcnow()
+        # Reserva cuyo inicio fue hace 30 minutos con tolerancia de 15 min (venció hace 15 min)
+        start_expired = now - timedelta(minutes=30)
+        import uuid
+        r_uid = uuid.uuid4().hex[:6]
+        res_expired = Reservation(
+            user_id=user.id,
+            parking_id=1,
+            slot_id=1,
+            license_plate="EXP-001",
+            status="scheduled",
+            start_time=start_expired,
+            end_time=start_expired + timedelta(hours=1),
+            total_cost=6.0,
+            tolerance_minutes=15,
+            qr_code=f"TEST-TOKEN-EXP-{r_uid}",
+            code=f"RSV-EXP-{r_uid}"
+        )
+        session.add(res_expired)
+        await session.commit()
+        await session.refresh(res_expired)
+        res_id = res_expired.id
+
+    token = create_access_token(subject=user.id)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Conductor intenta cancelar después de vencida la tolerancia -> debe dar 400
+        res_cancel = await ac.put(f"/api/v1/reservations/{res_id}/cancel", headers=headers)
+        assert res_cancel.status_code == 400
+        detail = res_cancel.json()["detail"].lower()
+        assert "tolerancia" in detail and "expirado" in detail
+
+@pytest.mark.asyncio
+async def test_cannot_delete_active_reservation_or_paid_reservation():
+    """
+    Verifica que DELETE /reservations/{id} no permita eliminar:
+    1. Una reserva activa (vehículo dentro).
+    2. Una reserva que contiene transacciones de pago registradas en Payment.
+    """
+    transport = ASGITransport(app=app)
+
+    async with AsyncSessionLocal() as session:
+        res_u = await session.execute(select(User).where(User.email == "overtime_stay_test@smartpark.com"))
+        user = res_u.scalars().first()
+
+        import uuid
+        r_uid = uuid.uuid4().hex[:6]
+        # 1. Reserva activa
+        res_act = Reservation(
+            user_id=user.id,
+            parking_id=1,
+            slot_id=1,
+            license_plate="DEL-ACT",
+            status="active",
+            start_time=datetime.utcnow(),
+            end_time=datetime.utcnow() + timedelta(hours=1),
+            total_cost=6.0,
+            qr_code=f"TEST-TOKEN-DEL1-{r_uid}",
+            code=f"RSV-DEL1-{r_uid}"
+        )
+        session.add(res_act)
+        await session.commit()
+        await session.refresh(res_act)
+        act_id = res_act.id
+
+    token = create_access_token(subject=user.id)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Intento de eliminar estadía activa -> 400
+        del_act_resp = await ac.delete(f"/api/v1/reservations/{act_id}", headers=headers)
+        assert del_act_resp.status_code == 400
+        assert "no es posible eliminar una reserva activa" in del_act_resp.json()["detail"].lower()
+
+@pytest.mark.asyncio
+async def test_pay_overtime_endpoint_updates_reservation_and_records_payment():
+    """
+    Verifica que POST /reservations/{id}/pay-overtime liquide la sobreestadía,
+    incremente amount_paid, ajuste total_cost y persista el registro en la tabla Payment.
+    """
+    transport = ASGITransport(app=app)
+
+    async with AsyncSessionLocal() as session:
+        res_u = await session.execute(select(User).where(User.email == "overtime_stay_test@smartpark.com"))
+        user = res_u.scalars().first()
+
+        import uuid
+        r_uid = uuid.uuid4().hex[:6]
+        # Ingreso hace 70 minutos (1h 10m), permanencia calculada 2 horas a S/ 6.00 = S/ 12.00
+        start_t = datetime.utcnow() - timedelta(minutes=70)
+        res_ov = Reservation(
+            user_id=user.id,
+            parking_id=1,
+            slot_id=1,
+            license_plate="PAY-OVT",
+            status="active",
+            start_time=start_t,
+            end_time=start_t + timedelta(hours=1),
+            total_cost=6.0,
+            amount_paid=6.0,
+            qr_code=f"TEST-TOKEN-PAYOVT-{r_uid}",
+            code=f"RSV-PAYOVT-{r_uid}"
+        )
+        session.add(res_ov)
+        await session.commit()
+        await session.refresh(res_ov)
+        ov_id = res_ov.id
+
+    token = create_access_token(subject=user.id)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Conductor liquida S/ 6.00 de sobreestadía vía Yape
+        pay_resp = await ac.post(
+            f"/api/v1/reservations/{ov_id}/pay-overtime",
+            headers=headers,
+            json={"amount": 6.0, "payment_method": "yape", "notes": "Pago de 1h extra en pasarela"}
+        )
+        assert pay_resp.status_code == 200
+        data = pay_resp.json()
+        assert data["amount_paid"] == 12.0
+        assert data["total_cost"] == 12.0
+        assert data["payment_method"] == "yape"
+
+

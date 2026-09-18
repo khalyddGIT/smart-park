@@ -14,6 +14,7 @@ from app.schemas.schemas import (
     ReservationStayUpdate,
     ReservationResponse,
     ReservationCheckOut,
+    ReservationOvertimePayment,
     PaginatedReservationResponse,
 )
 from app.core.security import get_current_user, require_role
@@ -177,7 +178,11 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
             if entry_time:
                 entry_naive = entry_time.replace(tzinfo=None) if entry_time.tzinfo else entry_time
                 elapsed_sec = max(0.0, (now - entry_naive).total_seconds())
-                parking = getattr(r, "parking", None)
+                parking = None
+                try:
+                    parking = getattr(r, "parking", None)
+                except Exception:
+                    parking = None
                 vtype = getattr(r, "vehicle_type", "auto")
                 billing_unit = getattr(r, "billing_unit", "hour") or "hour"
                 night_surcharge = float(parking.night_shift_surcharge or 0.0) if parking and getattr(r, "is_night_shift", False) else 0.0
@@ -738,7 +743,20 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
     if reservation.status == "completed":
         raise HTTPException(status_code=400, detail="La estadía ya fue completada y no puede cancelarse")
     if reservation.status == "active":
-        raise HTTPException(status_code=400, detail="No es posible cancelar una estadía en curso con el vehículo dentro de la cochera. La salida debe ser gestionada por el personal de garita.")
+        raise HTTPException(status_code=400, detail="No es posible cancelar una estadía en curso con el vehículo dentro de la cochera. La salida debe ser gestionada por el personal de garita registrando el check-out.")
+
+    # Si es una reserva programada estándar y el tiempo de tolerancia de llegada ya expiró
+    tol_min = int(getattr(reservation, "tolerance_minutes", 15) or 15)
+    start_naive = reservation.start_time.replace(tzinfo=None) if reservation.start_time and reservation.start_time.tzinfo else reservation.start_time
+    if start_naive:
+        from datetime import timedelta
+        deadline = start_naive + timedelta(minutes=tol_min)
+        now_utc = datetime.utcnow()
+        if now_utc > deadline and current_user.role not in ("local", "platform"):
+            raise HTTPException(
+                status_code=400,
+                detail="El tiempo de tolerancia para presentarse en garita ha expirado. La reserva ha vencido por inasistencia (No-Show) y no puede ser cancelada por el conductor."
+            )
 
     reservation.status = "cancelled"
 
@@ -1058,6 +1076,83 @@ async def check_out_reservation(
     await db.refresh(reservation)
     return _format_reservation_response(reservation)
 
+@router.post("/{reservation_id}/pay-overtime", response_model=ReservationResponse)
+async def pay_overtime(
+    reservation_id: int,
+    body: ReservationOvertimePayment,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Permite al conductor liquidar de forma inmediata el recargo acumulado por tiempo excedido (sobreestadía)."""
+    stmt = (
+        select(Reservation)
+        .options(
+            selectinload(Reservation.user),
+            selectinload(Reservation.parking),
+            selectinload(Reservation.slot)
+        )
+        .where(Reservation.id == reservation_id)
+    )
+    result = await db.execute(stmt)
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    await _check_reservation_access(reservation, current_user, db, action_label="pagar sobreestadía en esta reserva")
+
+    if reservation.status not in ("active", "completed"):
+        raise HTTPException(status_code=400, detail="Solo es posible liquidar sobreestadía de una estadía activa o en liquidación final.")
+
+    amount_to_pay = round(float(body.amount), 2)
+    if amount_to_pay <= 0:
+        raise HTTPException(status_code=400, detail="El monto de sobreestadía debe ser mayor a 0.")
+
+    method = (body.payment_method or "card").strip().lower()
+    if method in ("efectivo", "cash"): method = "cash"
+    elif method in ("yape",): method = "yape"
+    elif method in ("plin",): method = "plin"
+    elif method in ("paypal",): method = "paypal"
+    else: method = "card"
+
+    payment = Payment(
+        reservation_id=reservation.id,
+        user_id=current_user.id,
+        amount_cents=int(round(amount_to_pay * 100)),
+        currency="PEN",
+        status="succeeded",
+        method=method,
+        description=f"Pago sobreestadía reserva {reservation.code}" + (f": {body.notes}" if body.notes else "")
+    )
+    db.add(payment)
+
+    reservation.amount_paid = round((reservation.amount_paid or 0.0) + amount_to_pay, 2)
+    if reservation.amount_paid > (reservation.total_cost or 0.0):
+        reservation.total_cost = reservation.amount_paid
+    reservation.payment_method = method
+    reservation.prepaid = True
+
+    await db.commit()
+    refetched = await db.execute(stmt)
+    reservation = refetched.scalars().first()
+
+    try:
+        broadcast_payload = {
+            "parking_id": reservation.parking_id,
+            "slot_id": reservation.slot_id,
+            "reservation_id": reservation.id,
+            "code": reservation.code,
+            "amount_paid": reservation.amount_paid,
+            "total_cost": reservation.total_cost,
+            "status": reservation.status,
+            "payment_method": method,
+            "is_overtime": getattr(reservation, "is_overtime", False),
+            "message": f"Sobreestadía de S/ {amount_to_pay:.2f} liquidada para {reservation.license_plate}."
+        }
+        await realtime.broadcast("reservations:updated", broadcast_payload)
+    except Exception:
+        pass
+
+    return _format_reservation_response(reservation)
+
 @router.delete("/{reservation_id}", status_code=status.HTTP_200_OK)
 async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
@@ -1066,6 +1161,14 @@ async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
     if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
         raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
+
+    if reservation.status == "active":
+        raise HTTPException(status_code=400, detail="No es posible eliminar una reserva activa con el vehículo dentro del estacionamiento.")
+
+    # Verificar si tiene pagos asociados
+    pay_res = await db.execute(select(Payment.id).where(Payment.reservation_id == reservation.id, Payment.status == "succeeded"))
+    if pay_res.scalars().first() is not None:
+        raise HTTPException(status_code=400, detail="No es posible eliminar una reserva que cuenta con transacciones de pago registradas por motivos contables y de auditoría.")
 
     # Si estaba activa o programada, liberar el cajón
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))

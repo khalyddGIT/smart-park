@@ -18,8 +18,9 @@ from sqlalchemy.future import select
 from app.core.config import settings
 from app.core.security import get_current_user
 from app.db.session import get_db
-from app.models.models import User, Payment
+from app.models.models import User, Payment, Reservation
 from app.core.cache import rate_limit_hit, get_idempotency_record, save_idempotency_record
+from app.core.realtime import realtime
 
 router = APIRouter(prefix="/payments", tags=["Pagos Culqi & PayPal"])
 
@@ -249,6 +250,34 @@ async def create_charge(
                 description=desc,
             )
             db.add(payment)
+
+            # Sincronizar pago en la reserva asociada
+            if body.reservation_id:
+                try:
+                    res_query = await db.execute(select(Reservation).where(Reservation.id == body.reservation_id))
+                    res_target = res_query.scalars().first()
+                    if res_target:
+                        paid_pen = round(body.amount_cents / 100.0, 2)
+                        res_target.amount_paid = round((res_target.amount_paid or 0.0) + paid_pen, 2)
+                        if res_target.amount_paid > (res_target.total_cost or 0.0):
+                            res_target.total_cost = res_target.amount_paid
+                        res_target.payment_method = detected_method
+                        res_target.prepaid = True
+                        try:
+                            await realtime.broadcast("reservations:updated", {
+                                "reservation_id": res_target.id,
+                                "code": res_target.code,
+                                "amount_paid": res_target.amount_paid,
+                                "total_cost": res_target.total_cost,
+                                "payment_method": detected_method,
+                                "status": res_target.status,
+                                "is_overtime": getattr(res_target, "is_overtime", False)
+                            })
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
             await db.commit()
             await db.refresh(payment)
             if isinstance(data, dict):
@@ -472,7 +501,6 @@ async def capture_paypal_order(
     payer_name = f"{given_name} {surname}".strip() or current_user.full_name or "Usuario PayPal"
     payer_email = payer.get("email_address") or current_user.email or "conductor@smartpark.com"
 
-    # Persistir en la base de datos
     payment = Payment(
         reservation_id=body.reservation_id,
         user_id=current_user.id,
@@ -484,6 +512,33 @@ async def capture_paypal_order(
         description=(body.description or f"Pago PayPal Orden {body.order_id}")[:200],
     )
     db.add(payment)
+
+    # Sincronizar pago en la reserva asociada
+    if body.reservation_id:
+        try:
+            res_query = await db.execute(select(Reservation).where(Reservation.id == body.reservation_id))
+            res_target = res_query.scalars().first()
+            if res_target:
+                res_target.amount_paid = round((res_target.amount_paid or 0.0) + amount_pen, 2)
+                if res_target.amount_paid > (res_target.total_cost or 0.0):
+                    res_target.total_cost = res_target.amount_paid
+                res_target.payment_method = "paypal"
+                res_target.prepaid = True
+                try:
+                    await realtime.broadcast("reservations:updated", {
+                        "reservation_id": res_target.id,
+                        "code": res_target.code,
+                        "amount_paid": res_target.amount_paid,
+                        "total_cost": res_target.total_cost,
+                        "payment_method": "paypal",
+                        "status": res_target.status,
+                        "is_overtime": getattr(res_target, "is_overtime", False)
+                    })
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
     await db.commit()
     await db.refresh(payment)
 

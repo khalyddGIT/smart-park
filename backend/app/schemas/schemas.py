@@ -573,6 +573,11 @@ class ReservationStayUpdate(BaseModel):
     is_open_stay: Optional[bool] = None
     slot_code: Optional[str] = None
 
+class ReservationOvertimePayment(BaseModel):
+    amount: float = Field(gt=0, description="Monto a pagar por sobreestadía en PEN")
+    payment_method: Optional[str] = "card"
+    notes: Optional[str] = None
+
 class ReservationResponse(BaseModel):
     id: int
     code: str

@@ -24,13 +24,17 @@ import {
   Download,
   Crown,
   Calendar,
-  Zap
+  Zap,
+  CreditCard
 } from 'lucide-react';
 
 import { parseIsoToDate } from '../context/EstablishmentContext';
 import { BrandIcon } from './BrandLogo';
+import { useAuth } from '../context/AuthContext';
+import { CulqiPaymentModal } from './CulqiPaymentModal';
 
 export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReservationUpdated }) => {
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -41,6 +45,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
   const [overtimeSecs, setOvertimeSecs] = useState(0);
   const [dynamicCost, setDynamicCost] = useState(null);
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
+  const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const qrRef = useRef(null);
 
   useEffect(() => {
@@ -200,6 +205,9 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       ))
     );
 
+    const rawPaid = Number(reservation.amount_paid ?? reservation.amountPaid ?? 0);
+    const amountPaid = (rawPaid > 0) ? rawPaid : (isPrepaid ? cost : 0);
+
     const reservationType = String(reservation.reservation_type || reservation.reservationType || 'immediate').toLowerCase();
     const isSubscription = Boolean(reservation.is_subscription || reservation.isSubscription || reservationType === 'subscription');
     const subscriptionMonths = Number(reservation.subscription_months || reservation.subscriptionMonths || 1);
@@ -219,6 +227,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       plate,
       hours,
       cost,
+      amountPaid,
       vehicleCategory,
       toleranceMinutes,
       startTime,
@@ -475,10 +484,14 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgData)}`;
   };
 
-  // Cancelar Reserva (Únicamente permitido si está programada antes de ingresar a la cochera)
+  // Cancelar Reserva (Únicamente permitido si está programada antes de ingresar a la cochera y dentro de la tolerancia)
   const handleCancelReservation = async () => {
     if (localStatus !== 'scheduled') {
       alert('No es posible cancelar una estadía una vez que el vehículo ha ingresado a la cochera.');
+      return;
+    }
+    if (passData.arrivalDeadline && new Date() > passData.arrivalDeadline) {
+      alert('El tiempo de tolerancia para presentarse en garita ha expirado. La reserva ha vencido por inasistencia (No-Show) y no puede ser cancelada por el conductor.');
       return;
     }
     if (!passData.dbId) {
@@ -506,6 +519,15 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
   const isActive = localStatus === 'active';
   const isCompleted = localStatus === 'completed';
   const isCancelled = localStatus === 'cancelled';
+
+  const isToleranceExpired = useMemo(() => {
+    if (!isScheduled || !passData?.arrivalDeadline) return false;
+    return new Date().getTime() > passData.arrivalDeadline.getTime();
+  }, [isScheduled, passData?.arrivalDeadline]);
+
+  const currentTotal = dynamicCost ?? passData?.cost ?? 0;
+  const paidSoFar = Number(passData?.amountPaid ?? (passData?.isPrepaid ? passData?.cost : 0) ?? 0);
+  const pendingOvertimeBalance = Math.max(0, Math.round((currentTotal - paidSoFar) * 100) / 100);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -789,8 +811,8 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                     ? 'Anulada' 
                     : passData.isSubscription 
                     ? 'Membresía activa' 
-                    : isOvertime && passData.isPrepaid
-                    ? `Pendiente: S/ ${Math.max(0, (dynamicCost ?? passData.cost) - passData.cost).toFixed(2)}`
+                    : isOvertime
+                    ? (pendingOvertimeBalance > 0 ? `Pendiente: S/ ${pendingOvertimeBalance.toFixed(2)}` : 'Liquidado')
                     : passData.isPrepaid 
                     ? 'Prepagado' 
                     : 'Pago en garita'}
@@ -800,16 +822,26 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
 
             {/* Aviso Dinámico de Estadía Excedida */}
             {isOvertime && isActive && (
-              <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs space-y-1">
+              <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-300 text-[11px]">
                   <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span>Estadía excedida — Cobro sin periodo de gracia</span>
                 </div>
                 <p className="text-[10px] text-amber-800 dark:text-amber-300 leading-snug">
-                  {passData.isPrepaid 
-                    ? `Tienes un recargo acumulado por tiempo adicional de S/ ${Math.max(0, (dynamicCost ?? passData.cost) - passData.cost).toFixed(2)}. Muestra este código QR al operador en garita para abonar la diferencia en caja y autorizar la apertura de barrera.`
-                    : 'El importe total se acumula en tiempo real y debe ser abonado al operador de garita antes de salir.'}
+                  {pendingOvertimeBalance > 0 
+                    ? `Tienes un recargo acumulado por tiempo adicional de S/ ${pendingOvertimeBalance.toFixed(2)}. Puedes liquidarlo directamente en línea o abonarlo al operador en garita para aperturar la barrera.`
+                    : 'Sobreestadía al día. Si continúas estacionado se seguirá calculando el tiempo proporcional.'}
                 </p>
+                {pendingOvertimeBalance > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowOvertimeModal(true)}
+                    className="w-full mt-1 py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 active:scale-[0.99] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                  >
+                    <CreditCard className="w-3.5 h-3.5 shrink-0" />
+                    <span>Pagar sobreestadía online (S/ {pendingOvertimeBalance.toFixed(2)})</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -859,21 +891,55 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
             </Button>
           </div>
 
-          {/* Cancelar Reserva: ÚNICAMENTE visible cuando está programada (antes de ingresar) */}
+          {/* Cancelar Reserva: ÚNICAMENTE visible cuando está programada antes de vencer la tolerancia */}
           {isScheduled && (
             <div className="text-center pt-0.5 pb-1">
-              <button
-                type="button"
-                onClick={handleCancelReservation}
-                disabled={isUpdating}
-                className="text-[11px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer font-medium"
-              >
-                {isUpdating ? 'Cancelando...' : 'Cancelar reserva'}
-              </button>
+              {isToleranceExpired ? (
+                <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                  Tolerancia de llegada expirada (No-Show). No cancelable.
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleCancelReservation}
+                  disabled={isUpdating}
+                  className="text-[11px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer font-medium"
+                >
+                  {isUpdating ? 'Cancelando...' : 'Cancelar reserva'}
+                </button>
+              )}
             </div>
           )}
 
         </div>
+
+        {/* Modal de Pago de Sobreestadía con Culqi (Tarjeta, Yape, Plin, PayPal) */}
+        {showOvertimeModal && (
+          <CulqiPaymentModal
+            isOpen={showOvertimeModal}
+            onClose={() => setShowOvertimeModal(false)}
+            amount={pendingOvertimeBalance}
+            concept={`Sobreestadía Reserva ${passData.token} - ${passData.plate}`}
+            parkingName={passData.parkingName}
+            slotCode={passData.slotCode}
+            customerEmail={user?.email || 'conductor@smartpark.com'}
+            reservationId={passData.dbId}
+            onPaymentSuccess={(receipt) => {
+              setShowOvertimeModal(false);
+              const newPaid = paidSoFar + pendingOvertimeBalance;
+              passData.amountPaid = newPaid;
+              setDynamicCost(newPaid);
+              if (onReservationUpdated) {
+                onReservationUpdated({
+                  ...reservation,
+                  amount_paid: newPaid,
+                  total_cost: Math.max(reservation.total_cost || 0, newPaid),
+                  prepaid: true
+                });
+              }
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

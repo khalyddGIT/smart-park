@@ -275,7 +275,7 @@ async def test_driver_cancellation_and_antisabotage_window():
         slot_id = slots[0]["id"]
 
         # 2. Driver 1 crea reserva
-        now = datetime.now()
+        now = datetime.utcnow()
         plate = f"C{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().hex[:3].upper()}"
         res1 = await ac.post("/api/v1/reservations", headers=d1_headers, json={
             "parking_id": parking_id,

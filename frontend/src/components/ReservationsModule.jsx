@@ -100,7 +100,8 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     checkInReservation,
     checkOutReservation,
     ensureFloorPlan,
-    fetchParkings
+    fetchParkings,
+    refreshMyReservations
   } = useEstablishments();
 
   // Vista activa: 'list' | 'analytics'
@@ -109,6 +110,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   // Pagos: reservas ya pagadas (según servidor) y reserva en proceso de pago
   const [paidIds, setPaidIds] = useState(new Set());
   const [payTarget, setPayTarget] = useState(null);
+  const [overtimePayModal, setOvertimePayModal] = useState(null);
 
   useEffect(() => {
     if (!getAccessToken()) return;
@@ -1575,6 +1577,9 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
             const isPaid = paidIds.has(Number(res.id));
 
             const tolMin = Number(res.toleranceMinutes || res.tolerance || res.arrivalWindow || 15);
+            const startDt = parseIsoToDate(res.startTime);
+            const arrivalDeadline = new Date(startDt.getTime() + tolMin * 60 * 1000);
+            const isToleranceExpired = isScheduled && (currentTime > arrivalDeadline);
             const progress = calculateTimeProgress(res.startTime, res.expiresAt);
             const remainingText = getRemainingTimeText(res.startTime, res.expiresAt, res.status, tolMin, currentTime);
 
@@ -1582,6 +1587,8 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
             const baseCost = Number(res.cost || 0);
             const isOvertimeActive = isActive && liveCost > baseCost;
             const overtimeSurcharge = Math.max(0, Number((liveCost - baseCost).toFixed(2)));
+            const paidAmount = Number(res.amountPaid ?? res.amount_paid ?? (res.prepaid ? baseCost : 0));
+            const pendingOvertimeBalance = Math.max(0, Number((liveCost - paidAmount).toFixed(2)));
 
             return (
               <div 
@@ -1845,6 +1852,19 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                         </Button>
                       )}
 
+                      {/* Pagar Sobreestadía Pendiente (Conductor en App) */}
+                      {role === 'user' && isActive && isOvertimeActive && pendingOvertimeBalance > 0 && (
+                        <Button
+                          onClick={() => setOvertimePayModal({ res, pendingBalance: pendingOvertimeBalance })}
+                          size="sm"
+                          className="rounded-lg text-xs font-bold gap-1 bg-amber-600 hover:bg-amber-500 text-white h-8 px-2.5 cursor-pointer shadow-xs"
+                          title="Liquidar sobreestadía acumulada"
+                        >
+                          <CreditCard className="w-3.5 h-3.5 shrink-0" />
+                          <span>Pagar S/ {pendingOvertimeBalance.toFixed(2)}</span>
+                        </Button>
+                      )}
+
                       {/* Imprimir Ticket */}
                       <Button
                         onClick={() => handlePrintReceipt(res)}
@@ -1861,24 +1881,33 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                         <span className="hidden sm:inline">{isCancelled ? 'Ticket Anulado' : 'Ticket'}</span>
                       </Button>
 
-                      {/* Cancelar Reserva: ÚNICAMENTE permitido antes de ingresar (programada) */}
+                      {/* Cancelar Reserva: ÚNICAMENTE permitido antes de ingresar y dentro de la tolerancia */}
                       {isScheduled && !isActive && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (confirm(`¿Deseas cancelar la reserva ${res.code} y liberar la plaza ${res.slot}?`)) {
-                              const resp = await cancelReservation(res.code);
-                              if (resp?.ok) {
-                                setFeedbackMessage(resp.message || `Reserva ${res.code} cancelada. Plaza ${res.slot} disponible.`);
-                              } else {
-                                setFeedbackMessage(`✕ ${resp?.message || 'No se pudo cancelar la reserva.'}`);
+                        isToleranceExpired ? (
+                          <span 
+                            className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2 py-1 rounded-md cursor-default"
+                            title="El tiempo de tolerancia expiró. La reserva venció por inasistencia (No-Show) y no puede ser cancelada."
+                          >
+                            Tolerancia Vencida
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (confirm(`¿Deseas cancelar la reserva ${res.code} y liberar la plaza ${res.slot}?`)) {
+                                const resp = await cancelReservation(res.code);
+                                if (resp?.ok) {
+                                  setFeedbackMessage(resp.message || `Reserva ${res.code} cancelada. Plaza ${res.slot} disponible.`);
+                                } else {
+                                  setFeedbackMessage(`✕ ${resp?.message || 'No se pudo cancelar la reserva.'}`);
+                                }
                               }
-                            }
-                          }}
-                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2 py-1 rounded-md transition-colors cursor-pointer"
-                        >
-                          Cancelar
-                        </button>
+                            }}
+                            className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2 py-1 rounded-md transition-colors cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        )
                       )}
                     </div>
                   </div>
@@ -2389,6 +2418,25 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Pago de Sobreestadía con Pasarela Culqi / PayPal */}
+      {overtimePayModal && (
+        <CulqiPaymentModal
+          isOpen={!!overtimePayModal}
+          onClose={() => setOvertimePayModal(null)}
+          amount={overtimePayModal.pendingBalance}
+          concept={`Sobreestadía Reserva ${overtimePayModal.res.code} - ${overtimePayModal.res.plate}`}
+          parkingName={overtimePayModal.res.parking || 'Smart Park'}
+          slotCode={overtimePayModal.res.slot || 'Plaza'}
+          customerEmail={user?.email || 'conductor@smartpark.com'}
+          reservationId={overtimePayModal.res.id}
+          onPaymentSuccess={() => {
+            setFeedbackMessage(`✓ Sobreestadía de S/ ${overtimePayModal.pendingBalance.toFixed(2)} liquidada con éxito.`);
+            setOvertimePayModal(null);
+            if (refreshMyReservations) refreshMyReservations();
+          }}
+        />
+      )}
 
     </div>
   );

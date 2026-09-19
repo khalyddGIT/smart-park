@@ -681,38 +681,82 @@ const AppMain = () => {
                     </div>
                   </Card>
 
-                  {/* Banner de Reserva Activa / Pase Digital del Conductor */}
+                  {/* Cockpit de Conducción: Reserva Activa / Pase Digital */}
                   {realActiveReservation && (
-                    <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
-                          <QrCode className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-md">
-                              {realActiveReservation.status === 'SCHEDULED' ? 'En camino' : 'Estancia activa'}
-                            </span>
-                            <span className="text-xs text-emerald-100 font-mono font-bold">
-                              {realActiveReservation.code}
-                            </span>
+                    <div className="bg-slate-900 text-white p-4 sm:p-5 rounded-2xl border border-emerald-500/40 shadow-lg relative overflow-hidden group animate-in fade-in transition-all">
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/15 transition-all" />
+                      
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                        {/* Información Clave de la Estancia */}
+                        <div className="flex items-start gap-3.5">
+                          <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+                            <QrCode className="w-6 h-6 stroke-[2.2]" />
                           </div>
-                          <p className="text-sm font-semibold mt-0.5">
-                            {realActiveReservation.parking} · Plaza {realActiveReservation.slot} ({realActiveReservation.plate})
-                          </p>
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[11px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                {realActiveReservation.status === 'SCHEDULED' ? 'Por Ingresar · En Ruta' : 'Estancia Activa'}
+                              </span>
+                              <span className="text-xs font-mono font-bold text-slate-400">
+                                {realActiveReservation.code}
+                              </span>
+                            </div>
+
+                            <h3 className="text-base font-bold text-white mt-1 flex items-center gap-1.5">
+                              <span>{realActiveReservation.parking}</span>
+                              <span className="text-slate-500 font-normal">·</span>
+                              <span className="text-emerald-400 font-mono font-black">Cajón {realActiveReservation.slot}</span>
+                            </h3>
+
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 mt-1">
+                              {realActiveReservation.plate && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono font-bold text-slate-200 text-[11px]">
+                                  <Car className="w-3 h-3 text-slate-400" />
+                                  <span>{realActiveReservation.plate}</span>
+                                </span>
+                              )}
+                              <span>•</span>
+                              <span className="text-slate-300 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span className="truncate">{realActiveReservation.parkingAddress || 'Ayacucho - Huamanga'}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Botones de Acción Operativa */}
+                        <div className="flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
+                          {/* Botón GPS Directo */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const dest = (realActiveReservation.latitude && realActiveReservation.longitude)
+                                ? `${realActiveReservation.latitude},${realActiveReservation.longitude}`
+                                : encodeURIComponent(`${realActiveReservation.parking} Ayacucho Peru`);
+                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
+                            }}
+                            className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-[0.98] border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                            title="Abrir ruta directa en Google Maps"
+                          >
+                            <Navigation className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Ruta GPS</span>
+                          </button>
+
+                          {/* Botón Abrir Pase QR */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveReservation(realActiveReservation);
+                              setShowQRModal(true);
+                            }}
+                            className="flex-1 sm:flex-initial px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                          >
+                            <QrCode className="w-4 h-4 stroke-[2.5]" />
+                            <span>Pase QR</span>
+                          </button>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveReservation(realActiveReservation);
-                          setShowQRModal(true);
-                        }}
-                        className="w-full sm:w-auto px-4 py-2 bg-white text-emerald-800 hover:bg-emerald-50 text-xs font-bold rounded-xl transition shadow cursor-pointer flex items-center justify-center gap-2 shrink-0"
-                      >
-                        <QrCode className="w-4 h-4" />
-                        <span>Ver Pase Digital & QR</span>
-                      </button>
                     </div>
                   )}
 

@@ -47,7 +47,8 @@ import {
   ChevronDown,
   Hash,
   AlertTriangle,
-  Crown
+  Crown,
+  Navigation
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -343,7 +344,11 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
       (r.parking && r.parking.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (r.slot && r.slot.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
+    const matchesStatus = statusFilter === 'ALL' 
+      ? true 
+      : statusFilter === 'ACTIVE_SCHEDULED'
+      ? (r.status === 'ACTIVE' || r.status === 'SCHEDULED')
+      : r.status === statusFilter;
     const matchesParking = parkingFilter === 'ALL' || String(r.parkingId) === String(parkingFilter);
 
     let matchesDate = true;
@@ -599,38 +604,176 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
         </div>
       )}
 
-      {/* Banner de Reserva en Curso para Conductor */}
-      {role === 'user' && activeUserReservation && (
-        <div className="p-4 rounded-xl bg-slate-900 dark:bg-slate-900 text-white border border-slate-800 dark:border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center">
-              <QrCode className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-white">{activeUserReservation.parking}</span>
-                <span className="text-xs font-mono text-slate-400">
-                  {activeUserReservation.status === 'ACTIVE' ? 'En estancia' : 'En ruta'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Plaza <span className="font-mono text-white">{activeUserReservation.slot}</span> · Placa <span className="font-mono text-white">{activeUserReservation.plate}</span> · Pase <span className="font-mono text-white">{activeUserReservation.code}</span>
-              </p>
-            </div>
-          </div>
+      {/* Tarjetón de Pase Activo / En Curso (Estilo Boarding Pass de Movilidad) */}
+      {role === 'user' && activeUserReservation && (() => {
+        const isScheduled = activeUserReservation.status === 'SCHEDULED';
+        const isActive = activeUserReservation.status === 'ACTIVE';
+        const tolMin = Number(activeUserReservation.toleranceMinutes || activeUserReservation.tolerance || activeUserReservation.arrivalWindow || 15);
+        const startDt = parseIsoToDate(activeUserReservation.startTime);
+        const arrivalDeadline = new Date(startDt.getTime() + tolMin * 60 * 1000);
+        const isToleranceExpired = isScheduled && (currentTime > arrivalDeadline);
+        const remainingText = getRemainingTimeText(activeUserReservation.startTime, activeUserReservation.expiresAt, activeUserReservation.status, tolMin, currentTime);
+        const liveCost = calculateLiveEffectiveCost(activeUserReservation, currentTime);
+        const baseCost = Number(activeUserReservation.cost || 0);
+        const isOvertimeActive = isActive && liveCost > baseCost;
+        const overtimeSurcharge = Math.max(0, Number((liveCost - baseCost).toFixed(2)));
+        const paidAmount = Number(activeUserReservation.amountPaid ?? activeUserReservation.amount_paid ?? (activeUserReservation.prepaid ? baseCost : 0));
+        const pendingOvertimeBalance = Math.max(0, Number((liveCost - paidAmount).toFixed(2)));
+        const progress = calculateTimeProgress(activeUserReservation.startTime, activeUserReservation.expiresAt);
 
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Button
-              type="button"
-              onClick={() => handleOpenPass(activeUserReservation)}
-              className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-            >
-              <QrCode className="w-4 h-4" />
-              <span>Ver Pase QR</span>
-            </Button>
+        const openGps = () => {
+          const dest = (activeUserReservation.latitude && activeUserReservation.longitude)
+            ? `${activeUserReservation.latitude},${activeUserReservation.longitude}`
+            : encodeURIComponent(`${activeUserReservation.parking} Ayacucho Peru`);
+          window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
+        };
+
+        return (
+          <div className="relative rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white border border-emerald-500/40 p-5 sm:p-6 shadow-xl overflow-hidden animate-in fade-in transition-all">
+            {/* Resplandor ambiental de fondo */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="relative z-10 space-y-4">
+              {/* Encabezado Superior: Tipo de Pase + Estado en Vivo */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shadow-inner">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400 block">
+                      Pase Digital Activo
+                    </span>
+                    <span className="text-xs font-mono font-bold text-slate-300">
+                      TOKEN: {activeUserReservation.code}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wide uppercase ${
+                    isActive 
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
+                      : isScheduled 
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                      : 'bg-slate-800 text-slate-300'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400 animate-ping'}`} />
+                    {isActive ? 'Estancia en Curso' : 'En Camino · Por Ingresar'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Grid Principal: Cochera, Plaza, Placa y Horario */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 items-center">
+                
+                {/* Cochera y Dirección */}
+                <div className="lg:col-span-5 space-y-1">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Establecimiento</span>
+                  <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{activeUserReservation.parking}</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 truncate">
+                    {activeUserReservation.parkingAddress || 'Ayacucho - Huamanga'}
+                  </p>
+                </div>
+
+                {/* Cajón Asignado */}
+                <div className="lg:col-span-2 text-left lg:text-center p-3 rounded-xl bg-slate-800/80 border border-slate-700/70">
+                  <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400 block">Cajón</span>
+                  <span className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
+                    {activeUserReservation.slot}
+                  </span>
+                </div>
+
+                {/* Placa y Vehículo */}
+                <div className="lg:col-span-2 text-left lg:text-center p-3 rounded-xl bg-slate-800/80 border border-slate-700/70">
+                  <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400 block">Placa</span>
+                  <span className="text-base sm:text-lg font-black font-mono text-white">
+                    {activeUserReservation.plate || 'ABC-123'}
+                  </span>
+                </div>
+
+                {/* Tiempo / Cuenta Regresiva */}
+                <div className="lg:col-span-3 text-left lg:text-right space-y-1">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                    {isScheduled ? 'Tiempo para llegar' : isOvertimeActive ? 'Tiempo excedido' : 'Tiempo de estancia'}
+                  </span>
+                  <span className={`text-base sm:text-lg font-black font-mono block ${isOvertimeActive ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    {remainingText}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">
+                    {isScheduled 
+                      ? `Tolerancia hasta ${formatTime12h(arrivalDeadline)}` 
+                      : `Salida prevista: ${formatTime12h(activeUserReservation.expiresAt)}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Barra de Progreso del Tiempo */}
+              <div className="space-y-1 pt-1">
+                <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-1000 ${isOvertimeActive ? 'bg-amber-500' : isActive ? 'bg-emerald-500' : 'bg-cyan-500'}`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Alerta de Sobreestadía si aplica */}
+              {isOvertimeActive && (
+                <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Estadía excedida (+S/ {overtimeSurcharge.toFixed(2)}). Puedes liquidarlo en línea o en garita.</span>
+                  </div>
+                  {pendingOvertimeBalance > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setOvertimePayModal({ res: activeUserReservation, pendingBalance: pendingOvertimeBalance })}
+                      className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs cursor-pointer shadow-xs transition"
+                    >
+                      Pagar sobreestadía online
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Botonera de Acciones Inmediatas del Boarding Pass */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800/80">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Muestra este código al operador o sensor en garita</span>
+                </div>
+
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                  {/* Navegación GPS */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={openGps}
+                    className="flex-1 sm:flex-initial border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs h-9 px-3.5 rounded-xl gap-2 cursor-pointer shadow-xs"
+                  >
+                    <Compass className="w-4 h-4 text-cyan-400" />
+                    <span>Ruta GPS</span>
+                  </Button>
+
+                  {/* Ver Pase QR Principal */}
+                  <Button
+                    type="button"
+                    onClick={() => handleOpenPass(activeUserReservation)}
+                    className="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold text-xs h-9 px-4 rounded-xl gap-2 cursor-pointer shadow-md transition"
+                  >
+                    <QrCode className="w-4 h-4 stroke-[2.5]" />
+                    <span>Mostrar Pase QR</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Barra de Control de Sede & Pestañas de Modo para Admin Local y Plataforma */}
       {role !== 'user' && (
@@ -1389,15 +1532,15 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
           ========================================================================= */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         
-        {/* Card 1: Total Reservas */}
+        {/* Card 1: Total Reservas / Mis Estancias */}
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-24 h-24 bg-slate-400/10 dark:bg-slate-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Reservas
+              {role === 'user' ? 'Mis Estancias' : 'Total Reservas'}
             </span>
             <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
-              <CalendarCheck className="w-4 h-4 stroke-[2.2]" />
+              {role === 'user' ? <ShieldCheck className="w-4 h-4 stroke-[2.2] text-emerald-500" /> : <CalendarCheck className="w-4 h-4 stroke-[2.2]" />}
             </div>
           </div>
           <div className="mt-2.5">
@@ -1405,17 +1548,17 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               {totalReservations}
             </span>
             <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 block">
-              Historial completo
+              {role === 'user' ? `${completedCount} finalizadas` : 'Historial completo'}
             </span>
           </div>
         </div>
 
-        {/* Card 2: En Estancia */}
+        {/* Card 2: En Estancia / En Cochera Ahora */}
         <div className="p-4 sm:p-5 rounded-2xl border border-emerald-200/80 dark:border-emerald-900/60 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/15 dark:bg-emerald-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-              En Estancia
+              {role === 'user' ? 'En Cochera Ahora' : 'En Estancia'}
             </span>
             <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
               <Car className="w-4 h-4 stroke-[2.2]" />
@@ -1426,18 +1569,18 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               {activeCount}
             </span>
             <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              En tiempo real
+              <span className={`w-1.5 h-1.5 rounded-full ${activeCount > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
+              {role === 'user' ? (activeCount > 0 ? 'Vehículo dentro' : 'Sin estancia activa') : 'En tiempo real'}
             </span>
           </div>
         </div>
 
-        {/* Card 3: Programadas */}
+        {/* Card 3: Programadas / Próximas Llegadas */}
         <div className="p-4 sm:p-5 rounded-2xl border border-cyan-200/80 dark:border-cyan-900/60 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md dark:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-24 h-24 bg-cyan-500/15 dark:bg-cyan-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-cyan-700 dark:text-cyan-400">
-              Programadas
+              {role === 'user' ? 'Próximas Llegadas' : 'Programadas'}
             </span>
             <div className="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200/80 dark:border-cyan-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
               <Clock className="w-4 h-4 stroke-[2.2]" />
@@ -1448,7 +1591,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               {scheduledCount}
             </span>
             <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium mt-0.5 block">
-              Por ingresar
+              {role === 'user' ? (scheduledCount > 0 ? 'Con tolerancia activa' : 'Sin pendientes') : 'Por ingresar'}
             </span>
           </div>
         </div>
@@ -1458,7 +1601,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
           <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {role === 'user' ? 'Gasto Total' : 'Recaudación'}
+              {role === 'user' ? 'Gasto Acumulado' : 'Recaudación'}
             </span>
             <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 font-black text-xs font-mono flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
               S/
@@ -1469,7 +1612,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               S/ {totalRevenue.toFixed(2)}
             </span>
             <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono font-medium mt-0.5 block">
-              Total acumulado
+              {role === 'user' ? 'Estancias & reservas' : 'Total acumulado'}
             </span>
           </div>
         </div>
@@ -1526,15 +1669,20 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
           </div>
         </div>
 
-        {/* Pestañas de Estado */}
+        {/* Pestañas de Estado: Segmentadas para Conductor o Personal Operativo */}
         <div className="flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-800 pt-2.5 overflow-x-auto scrollbar-none">
-          {[
+          {(role === 'user' ? [
+            { id: 'ACTIVE_SCHEDULED', label: 'En Curso & Próximas', count: activeCount + scheduledCount },
+            { id: 'COMPLETED', label: 'Historial / Finalizadas', count: completedCount },
+            { id: 'CANCELLED', label: 'Canceladas', count: cancelledCount },
+            { id: 'ALL', label: 'Todas', count: totalReservations }
+          ] : [
             { id: 'ALL', label: 'Todas', count: totalReservations },
             { id: 'ACTIVE', label: 'En Curso', count: activeCount },
             { id: 'SCHEDULED', label: 'Programadas', count: scheduledCount },
             { id: 'COMPLETED', label: 'Finalizadas', count: completedCount },
             { id: 'CANCELLED', label: 'Canceladas', count: cancelledCount }
-          ].map(tab => {
+          ]).map(tab => {
             const isSelected = statusFilter === tab.id;
             return (
               <button
@@ -1561,13 +1709,55 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
           ========================================================================= */}
       <div className="space-y-3">
         {filteredReservations.length === 0 ? (
-          <div className="p-12 text-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-2">
-            <CalendarCheck className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
-            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">No se encontraron reservas</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-              Intenta buscar por otro término o restablece los filtros.
-            </p>
-          </div>
+          role === 'user' && reservations.length === 0 ? (
+            <div className="p-10 sm:p-14 text-center rounded-2xl border border-dashed border-emerald-500/30 bg-gradient-to-b from-white to-emerald-50/30 dark:from-slate-900 dark:to-emerald-950/20 shadow-xs space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center mx-auto shadow-sm">
+                <Car className="w-8 h-8 stroke-[2]" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
+                  ¡Aún no tienes reservas registradas!
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Explora las cocheras afiliadas en Ayacucho en el mapa en vivo, reserva tu cajón con anticipación y accede sin colas escaneando tu Pase Digital QR.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Button
+                  onClick={() => {
+                    if (onNavigateToBooking) onNavigateToBooking();
+                    else window.dispatchEvent(new CustomEvent('smart_park_navigate_tab', { detail: 'dashboard' }));
+                  }}
+                  className="rounded-xl text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-500 text-white h-10 px-5 shadow-md shadow-emerald-600/20 cursor-pointer"
+                >
+                  <Compass className="w-4 h-4" />
+                  <span>Explorar Cocheras en Ayacucho</span>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-12 text-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-3">
+              <CalendarCheck className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+              <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">No se encontraron reservas</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                No hay resultados con los filtros actuales. Intenta cambiar de pestaña o restablecer los términos de búsqueda.
+              </p>
+              {(searchTerm || statusFilter !== 'ALL' || parkingFilter !== 'ALL' || dateFilter !== 'ALL') && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('ALL');
+                    setParkingFilter('ALL');
+                    setDateFilter('ALL');
+                  }}
+                  className="text-xs font-bold text-emerald-600 hover:text-emerald-500 underline cursor-pointer inline-flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Limpiar todos los filtros</span>
+                </button>
+              )}
+            </div>
+          )
         ) : (
           paginatedReservations.map((res) => {
             const isScheduled = res.status === 'SCHEDULED';
@@ -1672,11 +1862,23 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                           </span>
                         )}
 
-                        {/* Placa Vehicular como Tag/Placa Real */}
+                        {/* Placa Vehicular Estilo Peruano */}
                         {res.plate && (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-mono font-black tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shadow-2xs">
-                            <Car className="w-3 h-3 text-slate-400 dark:text-slate-400 shrink-0" />
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-mono font-black tracking-wider bg-amber-50 dark:bg-amber-950/40 text-slate-900 dark:text-amber-200 border border-amber-300/80 dark:border-amber-700/60 shadow-2xs">
+                            <span className="text-[8px] font-sans font-black text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950 px-1 py-0.2 rounded">PE</span>
                             <span>{res.plate}</span>
+                          </span>
+                        )}
+
+                        {/* Estado del Pago */}
+                        {(res.payNow || isPaid || res.prepaid) ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                            <span>Pago Confirmado</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            <span>Pago en garita</span>
                           </span>
                         )}
                       </div>
@@ -1826,6 +2028,50 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                         >
                           <LogOut className="w-3.5 h-3.5 shrink-0" />
                           <span>Salida</span>
+                        </Button>
+                      )}
+
+                      {/* Cómo llegar (Navegación GPS Google Maps para reservas activas o programadas) */}
+                      {(isActive || isScheduled) && (
+                        <Button
+                          onClick={() => {
+                            const dest = (res.latitude && res.longitude)
+                              ? `${res.latitude},${res.longitude}`
+                              : encodeURIComponent(`${res.parking || 'Cochera'} Ayacucho Peru`);
+                            window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank', 'noopener,noreferrer');
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="rounded-lg text-xs font-semibold gap-1.5 bg-blue-50/60 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60 h-8 px-2.5 cursor-pointer"
+                          title="Abrir ruta hacia la cochera en Google Maps"
+                        >
+                          <Navigation className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                          <span className="hidden sm:inline">Cómo llegar</span>
+                        </Button>
+                      )}
+
+                      {/* Volver a reservar (1-Clic Express para reservas finalizadas) */}
+                      {isCompleted && role === 'user' && (
+                        <Button
+                          onClick={() => {
+                            const targetP = establishments.find(e => 
+                              String(e.id) === String(res.parkingId || res.parking_id) || 
+                              (e.name && res.parking && e.name.toLowerCase() === res.parking.toLowerCase())
+                            ) || establishments[0];
+                            if (onOpenMoreReservations && targetP) {
+                              onOpenMoreReservations(targetP);
+                            } else if (onNavigateToBooking) {
+                              onNavigateToBooking();
+                            } else {
+                              window.dispatchEvent(new CustomEvent('smart_park_navigate_tab', { detail: 'dashboard' }));
+                            }
+                          }}
+                          size="sm"
+                          className="rounded-lg text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-8 px-2.5 cursor-pointer shadow-xs"
+                          title="Volver a reservar en esta cochera"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                          <span>Volver a reservar</span>
                         </Button>
                       )}
 

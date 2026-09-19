@@ -666,7 +666,34 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                   ? 'Vehículo registrado en garita'
                   : 'Muestra este código al ingresar en garita'}
               </p>
+
+              {!isCancelled && !isCompleted && (
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                  <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+                  <span>Sube el brillo de tu pantalla al ingresar a garita</span>
+                </div>
+              )}
             </div>
+
+            {/* Guía Operativa de 3 Pasos para Garita */}
+            {!isCancelled && (
+              <div className="my-2.5 p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
+                <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
+                  <div className="p-1 rounded-lg bg-white dark:bg-slate-850 shadow-2xs">
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 block">1. Entrada</span>
+                    <span className="text-slate-500 dark:text-slate-400">Escanea en barrera</span>
+                  </div>
+                  <div className="p-1 rounded-lg bg-white dark:bg-slate-850 shadow-2xs">
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 block">2. Cajón</span>
+                    <span className="text-slate-500 dark:text-slate-400">Plaza {passData.slotCode}</span>
+                  </div>
+                  <div className="p-1 rounded-lg bg-white dark:bg-slate-850 shadow-2xs">
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 block">3. Salida</span>
+                    <span className="text-slate-500 dark:text-slate-400">Valida y sal</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Bloque Informativo de Fase / Tolerancia */}
             {passData.isSubscription ? (

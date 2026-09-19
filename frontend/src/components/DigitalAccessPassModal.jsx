@@ -46,6 +46,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
   const [dynamicCost, setDynamicCost] = useState(null);
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
+  const [secondsRemaining, setSecondsRemaining] = useState(null);
   const qrRef = useRef(null);
 
   useEffect(() => {
@@ -244,8 +245,6 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     };
   }, [reservation, localActualEntry]);
 
-  const [secondsRemaining, setSecondsRemaining] = useState(null);
-
   // Temporizador dinámico según la fase (Fase 1: Llegada / Fase 2: Estadía)
   useEffect(() => {
     if (!passData) return;
@@ -347,8 +346,6 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, [passData, localStatus]);
-
-  if (!passData) return null;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(passData.token);
@@ -528,6 +525,8 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
   const currentTotal = dynamicCost ?? passData?.cost ?? 0;
   const paidSoFar = Number(passData?.amountPaid ?? (passData?.isPrepaid ? passData?.cost : 0) ?? 0);
   const pendingOvertimeBalance = Math.max(0, Math.round((currentTotal - paidSoFar) * 100) / 100);
+
+  if (!isOpen || !passData) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

@@ -408,7 +408,7 @@ export const VehiclesModule = () => {
   const [cameraError, setCameraError] = useState(false);
 
   // Contexto de Reservas para validar reservas y estadías activas
-  const establishmentContext = useEstablishments ? useEstablishments() : null;
+  const establishmentContext = useEstablishments();
   const reservations = establishmentContext?.reservations || [];
   const refreshMyReservations = establishmentContext?.refreshMyReservations;
 

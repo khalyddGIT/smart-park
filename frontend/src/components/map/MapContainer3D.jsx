@@ -59,6 +59,7 @@ export const MapContainer3D = ({
   const markersRef = useRef({});
   const routesManagerRef = useRef(null);
   const mapEngineRef = useRef('mapbox'); // 'mapbox' | 'leaflet'
+  const [mapEngine, setMapEngine] = useState('mapbox'); // 'mapbox' | 'leaflet'
 
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(null);
@@ -75,13 +76,81 @@ export const MapContainer3D = ({
   const [filterType, setFilterType] = useState('all');
   const [filterPrice, setFilterPrice] = useState('all');
 
-  // Inicializar Motor de Mapa (Mapbox GL JS 3D con fallback instantáneo a Leaflet 2D)
+  // Fallback instantáneo a Leaflet 2D (OpenStreetMap / ArcGIS)
+  const fallbackToLeaflet = () => {
+    if (!mapContainerRef.current) return;
+    if (mapRef.current) {
+      try { mapRef.current.remove(); } catch (e) {}
+      mapRef.current = null;
+    }
+    try {
+      mapContainerRef.current.innerHTML = '';
+      const map = L.map(mapContainerRef.current, {
+        center: [AYACUCHO_CENTER.lat, AYACUCHO_CENTER.lng],
+        zoom: 16,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      const tileUrl = mapLayer === 'satellite'
+        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+      L.tileLayer(tileUrl, {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      mapRef.current = map;
+      mapEngineRef.current = 'leaflet';
+      setMapEngine('leaflet');
+      setMapReady(true);
+    } catch (e) {
+      console.error('[MapContainer3D] Error al iniciar Leaflet:', e);
+      setMapError('Error al inicializar el mapa.');
+    }
+  };
+
+  // Cambio manual a Mapbox 3D
+  const switchToMapbox = () => {
+    if (mapRef.current) {
+      try { mapRef.current.remove(); } catch (e) {}
+      mapRef.current = null;
+    }
+    if (!mapContainerRef.current) return;
+    mapContainerRef.current.innerHTML = '';
+    try {
+      mapboxgl.accessToken = MAPBOX_TOKEN;
+      const map = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: MAPBOX_STYLES[mapLayer] || MAPBOX_STYLES.streets,
+        center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
+        zoom: 15.8,
+        pitch: 0,
+        bearing: 0,
+        antialias: true
+      });
+      mapRef.current = map;
+      mapEngineRef.current = 'mapbox';
+      setMapEngine('mapbox');
+      map.on('style.load', () => {
+        try {
+          routesManagerRef.current = new MapRoutesManager(map);
+        } catch (err) {}
+        setMapReady(true);
+      });
+    } catch (e) {
+      console.error('Error Mapbox:', e);
+      fallbackToLeaflet();
+    }
+  };
+
+  // Inicializar Motor de Mapa con detección activa de teselas
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     let isCancelled = false;
 
     const initMap = () => {
-      // 1. Intentar Mapbox GL si WebGL está disponible en el dispositivo
       const isMapboxSupported = typeof mapboxgl.supported === 'function' ? mapboxgl.supported() : true;
 
       if (isMapboxSupported) {
@@ -103,14 +172,27 @@ export const MapContainer3D = ({
             antialias: true
           });
 
+          let tilesEverLoaded = false;
+
+          map.on('sourcedata', (e) => {
+            if (e.isSourceLoaded) {
+              tilesEverLoaded = true;
+            }
+          });
+
+          // Detectar si las teselas de Mapbox son bloqueadas por adblockers o red
           map.on('error', (e) => {
-            if (!e || e?.error?.message?.includes('events.mapbox.com') || e?.status === 0) {
-              return;
+            const msg = (e?.error?.message || e?.message || '').toLowerCase();
+            if (msg.includes('events.mapbox.com')) return;
+            if (!tilesEverLoaded && (e?.sourceId === 'composite' || msg.includes('tile') || msg.includes('source') || e?.status === 0 || e?.error?.status === 401 || e?.error?.status === 403)) {
+              console.warn('[MapContainer3D] Teselas Mapbox bloqueadas o inaccesibles. Activando Leaflet 2D con OpenStreetMap.');
+              if (!isCancelled) fallbackToLeaflet();
             }
           });
 
           mapRef.current = map;
           mapEngineRef.current = 'mapbox';
+          setMapEngine('mapbox');
 
           map.once('load', () => {
             if (!isCancelled) setMapReady(true);
@@ -123,43 +205,27 @@ export const MapContainer3D = ({
             if (!isCancelled) setMapReady(true);
           });
 
-          // Si el mapa tarda más de 2.5s en emitir evento, desbloquear skeleton
+          // Guardia de contingencia: si en 2.2s las teselas no cargaron (canvas beige), activar Leaflet
           setTimeout(() => {
+            if (!isCancelled && !tilesEverLoaded && mapEngineRef.current === 'mapbox') {
+              try {
+                if (typeof map.areTilesLoaded === 'function' && !map.areTilesLoaded()) {
+                  console.warn('[MapContainer3D] Timeout de teselas Mapbox. Fallback a Leaflet 2D.');
+                  fallbackToLeaflet();
+                  return;
+                }
+              } catch (err) {}
+            }
             if (!isCancelled) setMapReady(true);
-          }, 2500);
+          }, 2200);
 
           return;
         } catch (err) {
-          console.warn('[MapContainer3D] Mapbox GL no pudo inicializarse, usando Leaflet 2D:', err);
+          console.warn('[MapContainer3D] Excepción Mapbox GL, usando Leaflet 2D:', err);
         }
       }
 
-      // 2. Fallback de alta confiabilidad: Leaflet 2D (OpenStreetMap / CartoDB Voyager)
-      try {
-        if (!mapContainerRef.current) return;
-        mapContainerRef.current.innerHTML = '';
-        const map = L.map(mapContainerRef.current, {
-          center: [AYACUCHO_CENTER.lat, AYACUCHO_CENTER.lng],
-          zoom: 16,
-          zoomControl: false
-        });
-
-        const tileUrl = mapLayer === 'satellite'
-          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-          : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-
-        L.tileLayer(tileUrl, {
-          attribution: '&copy; OpenStreetMap &copy; CARTO',
-          maxZoom: 19
-        }).addTo(map);
-
-        mapRef.current = map;
-        mapEngineRef.current = 'leaflet';
-        if (!isCancelled) setMapReady(true);
-      } catch (e) {
-        console.error('[MapContainer3D] Error fatal al inicializar mapa:', e);
-        if (!isCancelled) setMapError('No se pudo inicializar el mapa.');
-      }
+      fallbackToLeaflet();
     };
 
     initMap();
@@ -179,35 +245,35 @@ export const MapContainer3D = ({
   const handleChangeLayer = (layerKey) => {
     setMapLayer(layerKey);
     if (!mapRef.current) return;
-    if (mapEngineRef.current === 'mapbox') {
+    if (mapEngine === 'mapbox') {
       const styleUrl = MAPBOX_STYLES[layerKey] || MAPBOX_STYLES.streets;
       mapRef.current.setStyle(styleUrl);
-    } else if (mapEngineRef.current === 'leaflet') {
+    } else if (mapEngine === 'leaflet') {
       mapRef.current.eachLayer((layer) => {
         if (layer._url) mapRef.current.removeLayer(layer);
       });
       const tileUrl = layerKey === 'satellite'
         ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
       L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(mapRef.current);
     }
   };
 
   const handleZoomIn = () => {
     if (!mapRef.current) return;
-    if (mapEngineRef.current === 'mapbox') mapRef.current.zoomIn({ duration: 300 });
-    else if (mapEngineRef.current === 'leaflet') mapRef.current.zoomIn();
+    if (mapEngine === 'mapbox') mapRef.current.zoomIn({ duration: 300 });
+    else if (mapEngine === 'leaflet') mapRef.current.zoomIn();
   };
 
   const handleZoomOut = () => {
     if (!mapRef.current) return;
-    if (mapEngineRef.current === 'mapbox') mapRef.current.zoomOut({ duration: 300 });
-    else if (mapEngineRef.current === 'leaflet') mapRef.current.zoomOut();
+    if (mapEngine === 'mapbox') mapRef.current.zoomOut({ duration: 300 });
+    else if (mapEngine === 'leaflet') mapRef.current.zoomOut();
   };
 
   const handleRecenter = () => {
     if (!mapRef.current) return;
-    if (mapEngineRef.current === 'mapbox') {
+    if (mapEngine === 'mapbox') {
       mapRef.current.flyTo({
         center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
         zoom: 15.8,
@@ -215,7 +281,7 @@ export const MapContainer3D = ({
         bearing: 0,
         duration: 600
       });
-    } else if (mapEngineRef.current === 'leaflet') {
+    } else if (mapEngine === 'leaflet') {
       mapRef.current.flyTo([AYACUCHO_CENTER.lat, AYACUCHO_CENTER.lng], 16, { duration: 0.6 });
     }
   };
@@ -588,7 +654,7 @@ export const MapContainer3D = ({
         markersRef.current[p.id] = marker;
       }
     });
-  }, [filteredParkings, selectedParkingId, onSelectParking, activeRoute, targetDest]);
+  }, [filteredParkings, selectedParkingId, onSelectParking, activeRoute, targetDest, mapEngine]);
 
   const targetCoords = activeRoute?.destCoords || targetDest?.coords;
   const targetParking = parkings.find(p => {
@@ -639,7 +705,7 @@ export const MapContainer3D = ({
 
         {/* Controles de Mapa Flotantes Minimalistas (Cápsula Unificada) */}
         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-auto flex items-center bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-lg shadow-slate-900/5 text-xs">
-          {/* Selector de Capas (Calles / Satélite) */}
+          {/* Selector de Capas (Calles / Satélite / Motor) */}
           <div className="flex items-center p-0.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-xl">
             <button
               type="button"
@@ -665,6 +731,22 @@ export const MapContainer3D = ({
             >
               <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Satélite</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (mapEngine === 'mapbox') {
+                  fallbackToLeaflet();
+                } else {
+                  switchToMapbox();
+                }
+              }}
+              className="px-2 sm:px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+              title={mapEngine === 'mapbox' ? 'Cambiar a mapa 2D (OpenStreetMap)' : 'Cambiar a mapa 3D (Mapbox)'}
+            >
+              <Compass className="w-3.5 h-3.5 text-blue-500" />
+              <span>{mapEngine === 'mapbox' ? '3D' : '2D'}</span>
             </button>
           </div>
 

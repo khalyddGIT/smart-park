@@ -119,22 +119,16 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
 
     const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || atob('cGsuZXlKMUlqb2lhMmhoYkhsa1pDSXNJbUVpT2lKamJYUm5kMkk0Y21Zd01EbHNNbmh4TlhKcmJ6Qm9PREkzSW4wLjI5dUl0MGZJR2lnYmN6WlpPWmlGMFE=');
     
-    // Capa Calles (Mapbox Streets v12)
-    const streetLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
-      tileSize: 512,
-      zoomOffset: -1,
-      maxZoom: 20,
-      maxNativeZoom: 20,
-      attribution: '&copy; Mapbox &copy; OpenStreetMap'
+    // Capa Calles (OpenStreetMap 100% libre y confiable)
+    const streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
     });
 
-    // Capa Satélite (Mapbox Satellite Streets)
-    const satLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
-      tileSize: 512,
-      zoomOffset: -1,
-      maxZoom: 20,
-      maxNativeZoom: 20,
-      attribution: '&copy; Mapbox'
+    // Capa Satélite (ArcGIS World Imagery HD)
+    const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: '&copy; Esri &copy; ArcGIS'
     });
 
     streetLayer.addTo(map);

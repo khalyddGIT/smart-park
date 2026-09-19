@@ -24,7 +24,7 @@
     "@react-oauth/google": "^0.13.5",
     "@tanstack/react-table": "^9.1.2",
     "@types/fabric": "^5.3.11",
-    "autoprefixer": "^10.5.4",
+    "autoprefixer": "^10.5.5",
     "axios": "^1.19.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

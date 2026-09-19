@@ -172,20 +172,36 @@ export const MapContainer3D = ({
             antialias: true
           });
 
-          let tilesEverLoaded = false;
+          let hasRenderedFeatures = false;
 
-          map.on('sourcedata', (e) => {
-            if (e.isSourceLoaded) {
-              tilesEverLoaded = true;
+          map.on('render', () => {
+            if (!hasRenderedFeatures) {
+              try {
+                const feats = map.queryRenderedFeatures();
+                if (feats && feats.length > 0) {
+                  hasRenderedFeatures = true;
+                }
+              } catch (e) {}
             }
           });
 
-          // Detectar si las teselas de Mapbox son bloqueadas por adblockers o red
+          // Detectar si las teselas o workers de Mapbox son bloqueados por CSP, adblockers o red
           map.on('error', (e) => {
             const msg = (e?.error?.message || e?.message || '').toLowerCase();
             if (msg.includes('events.mapbox.com')) return;
-            if (!tilesEverLoaded && (e?.sourceId === 'composite' || msg.includes('tile') || msg.includes('source') || e?.status === 0 || e?.error?.status === 401 || e?.error?.status === 403)) {
-              console.warn('[MapContainer3D] Teselas Mapbox bloqueadas o inaccesibles. Activando Leaflet 2D con OpenStreetMap.');
+            if (
+              !hasRenderedFeatures && (
+                e?.status === 0 || 
+                e?.error?.status === 401 || 
+                e?.error?.status === 403 || 
+                e?.sourceId === 'composite' || 
+                msg.includes('tile') || 
+                msg.includes('source') ||
+                msg.includes('worker') ||
+                msg.includes('security')
+              )
+            ) {
+              console.warn('[MapContainer3D] Fallo de teselas/worker en Mapbox. Activando Leaflet 2D con OpenStreetMap:', e);
               if (!isCancelled) fallbackToLeaflet();
             }
           });
@@ -205,16 +221,21 @@ export const MapContainer3D = ({
             if (!isCancelled) setMapReady(true);
           });
 
-          // Guardia de contingencia: si en 2.2s las teselas no cargaron (canvas beige), activar Leaflet
+          // Guardia de contingencia infalible: si tras 2.2s no hay rasgos de calles dibujados (canvas beige), activar Leaflet 2D
           setTimeout(() => {
-            if (!isCancelled && !tilesEverLoaded && mapEngineRef.current === 'mapbox') {
+            if (!isCancelled && mapEngineRef.current === 'mapbox') {
               try {
-                if (typeof map.areTilesLoaded === 'function' && !map.areTilesLoaded()) {
-                  console.warn('[MapContainer3D] Timeout de teselas Mapbox. Fallback a Leaflet 2D.');
+                const rendered = typeof map.queryRenderedFeatures === 'function' ? map.queryRenderedFeatures() : [];
+                if (!rendered || rendered.length === 0) {
+                  console.warn('[MapContainer3D] Canvas vacío o bloqueado (0 features). Fallback automático a Leaflet 2D.');
                   fallbackToLeaflet();
                   return;
                 }
-              } catch (err) {}
+              } catch (err) {
+                console.warn('[MapContainer3D] Error al verificar features renderizados:', err);
+                fallbackToLeaflet();
+                return;
+              }
             }
             if (!isCancelled) setMapReady(true);
           }, 2200);

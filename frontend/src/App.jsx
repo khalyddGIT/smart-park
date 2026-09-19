@@ -693,12 +693,13 @@ const AppMain = () => {
                             <QrCode className="w-6 h-6 stroke-[2.2]" />
                           </div>
                           <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-[11px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="flex items-center gap-1.5 font-bold text-emerald-400">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                {realActiveReservation.status === 'SCHEDULED' ? 'Por Ingresar · En Ruta' : 'Estancia Activa'}
+                                {realActiveReservation.status === 'SCHEDULED' ? 'Por Ingresar' : 'Estancia Activa'}
                               </span>
-                              <span className="text-xs font-mono font-bold text-slate-400">
+                              <span className="text-slate-600">·</span>
+                              <span className="font-mono text-slate-400">
                                 {realActiveReservation.code}
                               </span>
                             </div>
@@ -711,12 +712,11 @@ const AppMain = () => {
 
                             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 mt-1">
                               {realActiveReservation.plate && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono font-bold text-slate-200 text-[11px]">
-                                  <Car className="w-3 h-3 text-slate-400" />
-                                  <span>{realActiveReservation.plate}</span>
+                                <span className="font-mono font-bold text-slate-200">
+                                  {realActiveReservation.plate}
                                 </span>
                               )}
-                              <span>•</span>
+                              {realActiveReservation.plate && <span>•</span>}
                               <span className="text-slate-300 flex items-center gap-1">
                                 <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                                 <span className="truncate">{realActiveReservation.parkingAddress || 'Ayacucho - Huamanga'}</span>

@@ -650,15 +650,11 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wide uppercase ${
-                    isActive 
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
-                      : isScheduled 
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                      : 'bg-slate-800 text-slate-300'
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <span className={`flex items-center gap-1.5 ${
+                    isActive ? 'text-emerald-400' : isScheduled ? 'text-cyan-400' : 'text-slate-400'
                   }`}>
-                    <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400 animate-ping'}`} />
+                    <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400'}`} />
                     {isActive ? 'Estancia en Curso' : 'En Camino · Por Ingresar'}
                   </span>
                 </div>
@@ -680,17 +676,17 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                 </div>
 
                 {/* Cajón Asignado */}
-                <div className="lg:col-span-2 text-left lg:text-center p-3 rounded-xl bg-slate-800/80 border border-slate-700/70">
-                  <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400 block">Cajón</span>
-                  <span className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
+                <div className="lg:col-span-2 text-left lg:text-center">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block">Cajón</span>
+                  <span className="text-xl sm:text-2xl font-black font-mono text-emerald-400 block mt-0.5">
                     {activeUserReservation.slot}
                   </span>
                 </div>
 
                 {/* Placa y Vehículo */}
-                <div className="lg:col-span-2 text-left lg:text-center p-3 rounded-xl bg-slate-800/80 border border-slate-700/70">
-                  <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400 block">Placa</span>
-                  <span className="text-base sm:text-lg font-black font-mono text-white">
+                <div className="lg:col-span-2 text-left lg:text-center">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block">Placa</span>
+                  <span className="text-base sm:text-lg font-bold font-mono text-white block mt-0.5">
                     {activeUserReservation.plate || 'ABC-123'}
                   </span>
                 </div>
@@ -1812,75 +1808,33 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
 
                     {/* Contenido Central */}
                     <div className="space-y-1.5">
-                      {/* Fila 1: Código, Badge de Estado y Placa Vehicular Estilizada */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono font-bold text-xs text-slate-400 dark:text-slate-400">{res.code}</span>
-                        
-                        {/* Estado en Pill/Badge */}
-                        {isActive && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                            En Estancia
-                          </span>
-                        )}
-
-                        {isOvertimeActive && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 animate-pulse">
-                            <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
-                            <span>Sobreestadía (+S/ {overtimeSurcharge.toFixed(2)})</span>
-                          </span>
-                        )}
-
-                        {isScheduled && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
-                            Programada
-                          </span>
-                        )}
-
-                        {isCompleted && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30">
-                            Finalizada
-                          </span>
-                        )}
-
-                        {isCancelled && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
-                            Cancelada
-                          </span>
-                        )}
-
-                        {(res.isSubscription || res.is_subscription) && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                            <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                            <span>Abonado 30d</span>
-                          </span>
-                        )}
-
-                        {(!res.isSubscription && !res.is_subscription && (res.reservationType === 'advance' || res.reservation_type === 'advance')) && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30">
-                            <Calendar className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                            <span>Programada</span>
-                          </span>
-                        )}
-
-                        {/* Placa Vehicular Estilo Peruano */}
+                      {/* Fila 1: Código, Placa y Estado Limpio (Sin badges recargados) */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="font-mono font-semibold text-slate-400 dark:text-slate-500">{res.code}</span>
                         {res.plate && (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-mono font-black tracking-wider bg-amber-50 dark:bg-amber-950/40 text-slate-900 dark:text-amber-200 border border-amber-300/80 dark:border-amber-700/60 shadow-2xs">
-                            <span className="text-[8px] font-sans font-black text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950 px-1 py-0.2 rounded">PE</span>
-                            <span>{res.plate}</span>
-                          </span>
+                          <>
+                            <span className="text-slate-300 dark:text-slate-700">·</span>
+                            <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{res.plate}</span>
+                          </>
                         )}
-
-                        {/* Estado del Pago */}
-                        {(res.payNow || isPaid || res.prepaid) ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                            <span>Pago Confirmado</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                            <span>Pago en garita</span>
-                          </span>
-                        )}
+                        <span className="text-slate-300 dark:text-slate-700">·</span>
+                        <span className={`font-semibold inline-flex items-center gap-1.5 ${
+                          isActive ? 'text-emerald-600 dark:text-emerald-400' :
+                          isScheduled ? 'text-cyan-600 dark:text-cyan-400' :
+                          isCompleted ? 'text-slate-500 dark:text-slate-400' :
+                          'text-rose-600 dark:text-rose-400'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            isActive ? 'bg-emerald-500 animate-pulse' :
+                            isScheduled ? 'bg-cyan-500' :
+                            isCompleted ? 'bg-slate-400' :
+                            'bg-rose-500'
+                          }`} />
+                          {isActive ? (isOvertimeActive ? `En Estancia (+S/ ${overtimeSurcharge.toFixed(2)})` : 'En Estancia') :
+                           isScheduled ? 'Programada' :
+                           isCompleted ? 'Finalizada' :
+                           'Cancelada'}
+                        </span>
                       </div>
 
                       {/* Fila 2: Nombre del Establecimiento */}

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from './AuthContext';
 import api, { getAccessToken } from '../services/api';
@@ -49,6 +49,7 @@ const setReadCache = (map) => {
 
 export const NotificationProvider = ({ children }) => {
   const { role, user } = useAuth();
+  const lastToastTimeRef = useRef({});
 
   // Fuente de verdad: derivada de APIs reales. Vacía hasta que el polling responda (vacío honesto).
   const [notifications, setNotifications] = useState([]);
@@ -254,8 +255,14 @@ export const NotificationProvider = ({ children }) => {
       const detail = e.detail;
       if (!detail) return;
 
-      // Si somos conductor y el evento especifica user_id, asegurar que sea nuestro
-      if (role === 'user' && detail.user_id && user?.id && String(detail.user_id) !== String(user.id)) {
+      // 1. Las alertas de reservas personales son EXCLUSIVAMENTE para conductores autenticados
+      if (role !== 'user' || !user || !user.id) {
+        return;
+      }
+
+      // 2. Verificar estrictamente que la reserva pertenezca al usuario actualmente conectado
+      const eventUserId = detail.user_id ?? detail.userId;
+      if (!eventUserId || String(eventUserId) !== String(user.id)) {
         return;
       }
 
@@ -270,54 +277,91 @@ export const NotificationProvider = ({ children }) => {
       const isExpiringArrival = eventType === 'reservations:expiring_soon' || (minutesLeft !== undefined && minutesLeft <= 10 && rStatus === 'scheduled');
       const isCancelled = eventType === 'reservations:cancelled' || rStatus === 'cancelled';
 
+      const now = Date.now();
+
       if (isOvertime) {
         const overtimeMin = detail.overtime_minutes || 1;
         const formattedCost = Number(totalCost || 0).toFixed(2);
-        addNotification({
+        
+        // Actualizar o insertar sin duplicar en la lista del usuario
+        addOrUpdateNotification({
+          id: `live-overtime-${rId}`,
           role: 'user',
           title: `Estadía Excedida (+${overtimeMin} min)`,
           message: detail.message || `Estadía vencida para reserva ${code} (+${overtimeMin}m). Monto actual acumulado: S/ ${formattedCost}. Sin tiempo de gracia.`,
-          type: 'alert'
+          type: 'alert',
+          targetTab: 'reservations',
         });
-        toast.error(`⚠️ Estadía Excedida (+${overtimeMin}m): Reserva ${code}. Monto actual: S/ ${formattedCost}`, {
-          id: `overtime-${rId}`,
-          duration: 8000,
-        });
+
+        // Limitar frecuencia de toast a 1 vez cada 10 minutos por reserva para no saturar al usuario
+        const toastKey = `overtime-${rId}`;
+        const lastShown = lastToastTimeRef.current[toastKey] || 0;
+        if (now - lastShown >= 10 * 60 * 1000) {
+          lastToastTimeRef.current[toastKey] = now;
+          toast.error(`⚠️ Estadía Excedida (+${overtimeMin}m): Reserva ${code}. Monto actual: S/ ${formattedCost}`, {
+            id: toastKey,
+            duration: 8000,
+          });
+        }
       } else if (isExpiringStay) {
-        addNotification({
+        addOrUpdateNotification({
+          id: `live-stay-exp-${rId}`,
           role: 'user',
           title: `Estadía por vencer (${minutesLeft} min)`,
           message: detail.message || `Tu estadía para la reserva ${code} finaliza en ${minutesLeft} minutos. Sin tiempo de gracia.`,
-          type: 'alert'
+          type: 'alert',
+          targetTab: 'reservations',
         });
-        toast(`⏳ Tu estadía (${code}) finaliza en ${minutesLeft} min. Recuerda registrar tu salida a tiempo.`, {
-          id: `stay-expiring-${rId}`,
-          icon: '⏳',
-          duration: 8000,
-        });
+
+        const toastKey = `stay-expiring-${rId}`;
+        const lastShown = lastToastTimeRef.current[toastKey] || 0;
+        if (now - lastShown >= 10 * 60 * 1000) {
+          lastToastTimeRef.current[toastKey] = now;
+          toast(`⏳ Tu estadía (${code}) finaliza en ${minutesLeft} min. Recuerda registrar tu salida a tiempo.`, {
+            id: toastKey,
+            icon: '⏳',
+            duration: 8000,
+          });
+        }
       } else if (isExpiringArrival) {
-        addNotification({
+        addOrUpdateNotification({
+          id: `live-arrival-exp-${rId}`,
           role: 'user',
           title: `Llegada urgente (${minutesLeft} min)`,
           message: detail.message || `Tu reserva ${code} vencerá en ${minutesLeft} min. Preséntate en garita antes del límite.`,
-          type: 'alert'
+          type: 'alert',
+          targetTab: 'reservations',
         });
-        toast(`⚠️ Llegada urgente: Tienes ${minutesLeft} min para ingresar con tu reserva ${code} o será cancelada.`, {
-          id: `arrival-expiring-${rId}`,
-          icon: '⚠️',
-          duration: 8000,
-        });
+
+        const toastKey = `arrival-expiring-${rId}`;
+        const lastShown = lastToastTimeRef.current[toastKey] || 0;
+        if (now - lastShown >= 10 * 60 * 1000) {
+          lastToastTimeRef.current[toastKey] = now;
+          toast(`⚠️ Llegada urgente: Tienes ${minutesLeft} min para ingresar con tu reserva ${code} o será cancelada.`, {
+            id: toastKey,
+            icon: '⚠️',
+            duration: 8000,
+          });
+        }
       } else if (isCancelled && (detail.reason === 'tolerancia_vencida' || eventType === 'reservations:cancelled')) {
-        addNotification({
+        addOrUpdateNotification({
+          id: `live-cancelled-${rId}`,
           role: 'user',
           title: `Reserva ${code} cancelada`,
           message: detail.message || `Tu reserva ${code} fue cancelada automáticamente por tolerancia de llegada vencida.`,
-          type: 'warning'
+          type: 'warning',
+          targetTab: 'reservations',
         });
-        toast.error(`Reserva ${code} cancelada por tolerancia de llegada vencida.`, {
-          id: `cancelled-${rId}`,
-          duration: 6000,
-        });
+
+        const toastKey = `cancelled-${rId}`;
+        const lastShown = lastToastTimeRef.current[toastKey] || 0;
+        if (now - lastShown >= 10 * 60 * 1000) {
+          lastToastTimeRef.current[toastKey] = now;
+          toast.error(`Reserva ${code} cancelada por tolerancia de llegada vencida.`, {
+            id: toastKey,
+            duration: 6000,
+          });
+        }
       }
     };
 
@@ -356,10 +400,11 @@ export const NotificationProvider = ({ children }) => {
     setNotifications((prev) => prev.filter((n) => n.role !== role));
   };
 
-  // Agregar nueva notificación dinámica (compatibilidad; se marca no leída)
-  const addNotification = (notif) => {
+  // Agregar o actualizar notificación sin duplicar IDs existentes
+  const addOrUpdateNotification = (notif) => {
+    const notifId = notif.id || `NOTIF-${Date.now()}`;
     const newNotif = {
-      id: `NOTIF-${Date.now()}`,
+      id: notifId,
       role: notif.role || role,
       title: notif.title,
       message: notif.message,
@@ -369,7 +414,15 @@ export const NotificationProvider = ({ children }) => {
       type: notif.type || 'info',
       targetTab: notif.targetTab || 'dashboard',
     };
-    setNotifications((prev) => [newNotif, ...prev]);
+    setNotifications((prev) => {
+      const filtered = prev.filter((n) => n.id !== notifId);
+      return [newNotif, ...filtered];
+    });
+  };
+
+  // Agregar nueva notificación dinámica (compatibilidad retrocompatible)
+  const addNotification = (notif) => {
+    addOrUpdateNotification(notif);
   };
 
   return (

@@ -1,5 +1,6 @@
 // Módulo Profesional de Navegación GPS, Trazado Real y Turn-by-Turn en Mapbox GL JS
 
+import mapboxgl from 'mapbox-gl';
 import { MAPBOX_TOKEN } from './mapConfig';
 
 export class MapRoutesManager {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import L from 'leaflet';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -99,8 +100,7 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
 
   // 1. Efecto de montaje inicial ÚNICO: crea el mapa Leaflet una sola vez
   useEffect(() => {
-    if (!window.L || !mapContainerRef.current) return;
-    const L = window.L;
+    if (!mapContainerRef.current) return;
 
     const initialLat = Number(latitude) || -13.1604;
     const initialLng = Number(longitude) || -74.2259;

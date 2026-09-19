@@ -1,4 +1,8 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { 
   MAPBOX_TOKEN, 
   AYACUCHO_CENTER, 
@@ -71,84 +75,68 @@ export const MapContainer3D = ({
   const [filterType, setFilterType] = useState('all');
   const [filterPrice, setFilterPrice] = useState('all');
 
-  // Inicializar Motor de Mapa (Mapbox GL JS 3D con fallback resiliente a Leaflet 2D)
+  // Inicializar Motor de Mapa (Mapbox GL JS 3D con fallback instantáneo a Leaflet 2D)
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     let isCancelled = false;
-    let pollTimer = null;
 
-    const tryInitMapbox = () => {
-      if (isCancelled || mapRef.current) return true;
-      const mapboxgl = window.mapboxgl;
-      if (!mapboxgl) return false;
+    const initMap = () => {
+      // 1. Intentar Mapbox GL si WebGL está disponible en el dispositivo
+      const isMapboxSupported = typeof mapboxgl.supported === 'function' ? mapboxgl.supported() : true;
 
-      // Verificar soporte de WebGL en el navegador
-      if (typeof mapboxgl.supported === 'function' && !mapboxgl.supported()) {
-        console.warn('[MapContainer3D] WebGL no disponible. Activando fallback a Leaflet.');
-        initLeaflet();
-        return true;
-      }
-
-      try {
-        mapboxgl.accessToken = MAPBOX_TOKEN;
+      if (isMapboxSupported) {
         try {
-          if (typeof mapboxgl.setTelemetryEnabled === 'function') {
-            mapboxgl.setTelemetryEnabled(false);
-          }
-        } catch (e) {}
-
-        const map = new mapboxgl.Map({
-          container: mapContainerRef.current,
-          style: MAPBOX_STYLES[mapLayer] || MAPBOX_STYLES.streets,
-          center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
-          zoom: 15.8,
-          pitch: 0,
-          bearing: 0,
-          antialias: true
-        });
-
-        map.on('error', (e) => {
-          if (!e || e?.error?.message?.includes('events.mapbox.com') || e?.status === 0) {
-            return;
-          }
-        });
-
-        mapRef.current = map;
-        mapEngineRef.current = 'mapbox';
-
-        map.once('load', () => {
-          if (!isCancelled) setMapReady(true);
-        });
-
-        map.on('style.load', () => {
+          mapboxgl.accessToken = MAPBOX_TOKEN;
           try {
-            routesManagerRef.current = new MapRoutesManager(map);
-          } catch (err) {}
-          if (!isCancelled) setMapReady(true);
-        });
+            if (typeof mapboxgl.setTelemetryEnabled === 'function') {
+              mapboxgl.setTelemetryEnabled(false);
+            }
+          } catch (e) {}
 
-        // Garantía de render: Si el evento tarda en responder, desbloquear loading
-        setTimeout(() => {
-          if (!isCancelled) setMapReady(true);
-        }, 3000);
+          const map = new mapboxgl.Map({
+            container: mapContainerRef.current,
+            style: MAPBOX_STYLES[mapLayer] || MAPBOX_STYLES.streets,
+            center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
+            zoom: 15.8,
+            pitch: 0,
+            bearing: 0,
+            antialias: true
+          });
 
-        return true;
-      } catch (err) {
-        console.warn('[MapContainer3D] Excepción Mapbox GL, recurriendo a Leaflet:', err);
-        initLeaflet();
-        return true;
+          map.on('error', (e) => {
+            if (!e || e?.error?.message?.includes('events.mapbox.com') || e?.status === 0) {
+              return;
+            }
+          });
+
+          mapRef.current = map;
+          mapEngineRef.current = 'mapbox';
+
+          map.once('load', () => {
+            if (!isCancelled) setMapReady(true);
+          });
+
+          map.on('style.load', () => {
+            try {
+              routesManagerRef.current = new MapRoutesManager(map);
+            } catch (err) {}
+            if (!isCancelled) setMapReady(true);
+          });
+
+          // Si el mapa tarda más de 2.5s en emitir evento, desbloquear skeleton
+          setTimeout(() => {
+            if (!isCancelled) setMapReady(true);
+          }, 2500);
+
+          return;
+        } catch (err) {
+          console.warn('[MapContainer3D] Mapbox GL no pudo inicializarse, usando Leaflet 2D:', err);
+        }
       }
-    };
 
-    const initLeaflet = () => {
-      if (isCancelled || mapRef.current) return;
-      const L = window.L;
-      if (!L || !mapContainerRef.current) {
-        setMapError('No se pudo inicializar el mapa.');
-        return;
-      }
-
+      // 2. Fallback de alta confiabilidad: Leaflet 2D (OpenStreetMap / CartoDB Voyager)
       try {
+        if (!mapContainerRef.current) return;
         mapContainerRef.current.innerHTML = '';
         const map = L.map(mapContainerRef.current, {
           center: [AYACUCHO_CENTER.lat, AYACUCHO_CENTER.lng],
@@ -169,29 +157,15 @@ export const MapContainer3D = ({
         mapEngineRef.current = 'leaflet';
         if (!isCancelled) setMapReady(true);
       } catch (e) {
-        console.error('[MapContainer3D] Error Leaflet:', e);
-        setMapError('Error al renderizar el mapa.');
+        console.error('[MapContainer3D] Error fatal al inicializar mapa:', e);
+        if (!isCancelled) setMapError('No se pudo inicializar el mapa.');
       }
     };
 
-    // 1. Intentar inicio inmediato con Mapbox
-    const ok = tryInitMapbox();
-    if (!ok) {
-      // 2. Si el script de Mapbox aún no terminaba de cargar, reintentar cada 80ms hasta 3s
-      const startTime = Date.now();
-      pollTimer = setInterval(() => {
-        if (tryInitMapbox() || Date.now() - startTime > 3000) {
-          clearInterval(pollTimer);
-          if (!mapRef.current) {
-            initLeaflet();
-          }
-        }
-      }, 80);
-    }
+    initMap();
 
     return () => {
       isCancelled = true;
-      if (pollTimer) clearInterval(pollTimer);
       if (mapRef.current) {
         try {
           mapRef.current.remove();
@@ -208,14 +182,14 @@ export const MapContainer3D = ({
     if (mapEngineRef.current === 'mapbox') {
       const styleUrl = MAPBOX_STYLES[layerKey] || MAPBOX_STYLES.streets;
       mapRef.current.setStyle(styleUrl);
-    } else if (mapEngineRef.current === 'leaflet' && window.L) {
+    } else if (mapEngineRef.current === 'leaflet') {
       mapRef.current.eachLayer((layer) => {
         if (layer._url) mapRef.current.removeLayer(layer);
       });
       const tileUrl = layerKey === 'satellite'
         ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
         : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-      window.L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(mapRef.current);
+      L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(mapRef.current);
     }
   };
 
@@ -399,19 +373,19 @@ export const MapContainer3D = ({
             if (onSelectParking) onSelectParking(p);
           });
 
-          if (mapEngineRef.current === 'mapbox' && window.mapboxgl) {
-            const dotMarker = new window.mapboxgl.Marker({ element: dotEl })
+          if (mapEngineRef.current === 'mapbox') {
+            const dotMarker = new mapboxgl.Marker({ element: dotEl })
               .setLngLat(coords)
               .addTo(map);
             markersRef.current[p.id] = dotMarker;
-          } else if (mapEngineRef.current === 'leaflet' && window.L) {
-            const dotIcon = window.L.divIcon({
+          } else if (mapEngineRef.current === 'leaflet') {
+            const dotIcon = L.divIcon({
               html: dotEl.outerHTML,
               className: '',
               iconSize: [10, 10],
               iconAnchor: [5, 5]
             });
-            const dotMarker = window.L.marker([coords[1], coords[0]], { icon: dotIcon }).addTo(map);
+            const dotMarker = L.marker([coords[1], coords[0]], { icon: dotIcon }).addTo(map);
             dotMarker.on('click', () => {
               if (onSelectParking) onSelectParking(p);
             });
@@ -551,12 +525,12 @@ export const MapContainer3D = ({
         }
       };
 
-      if (mapEngineRef.current === 'mapbox' && window.mapboxgl) {
-        const marker = new window.mapboxgl.Marker({ element: el })
+      if (mapEngineRef.current === 'mapbox') {
+        const marker = new mapboxgl.Marker({ element: el })
           .setLngLat(coords)
           .addTo(map);
 
-        const popup = new window.mapboxgl.Popup({
+        const popup = new mapboxgl.Popup({
           offset: {
             'top': [0, 12],
             'top-left': [0, 12],
@@ -590,15 +564,15 @@ export const MapContainer3D = ({
         });
 
         markersRef.current[p.id] = marker;
-      } else if (mapEngineRef.current === 'leaflet' && window.L) {
-        const customIcon = window.L.divIcon({
+      } else if (mapEngineRef.current === 'leaflet') {
+        const customIcon = L.divIcon({
           html: el.outerHTML,
           className: 'leaflet-smartpark-marker',
           iconSize: [110, 32],
           iconAnchor: [55, 16]
         });
 
-        const marker = window.L.marker([coords[1], coords[0]], { icon: customIcon }).addTo(map);
+        const marker = L.marker([coords[1], coords[0]], { icon: customIcon }).addTo(map);
         marker.bindPopup(popupContent.innerHTML, { maxWidth: 290, className: 'leaflet-smartpark-popup' });
 
         marker.on('click', () => {

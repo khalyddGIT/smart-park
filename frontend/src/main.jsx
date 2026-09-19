@@ -35,6 +35,7 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator && (window.loc
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((reg) => {
+        try { reg.update(); } catch (e) {}
         console.log('[PWA] Service Worker activo con alcance:', reg.scope);
       })
       .catch((err) => {

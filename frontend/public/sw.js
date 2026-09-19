@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smartpark-pwa-v2';
+const CACHE_NAME = 'smartpark-pwa-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -10,12 +10,13 @@ const STATIC_ASSETS = [
   '/logo-icon-512.png'
 ];
 
-// 1. Instalación del Service Worker: precacheo de recursos estáticos iniciales
+// 1. Instalación del Service Worker: precacheo y activación inmediata sin esperar cierre de pestañas
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 

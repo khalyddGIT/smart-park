@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smartpark-pwa-v1';
+const CACHE_NAME = 'smartpark-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -39,8 +39,14 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Ignorar peticiones que no sean GET o esquemas no soportados (chrome-extension, etc.)
+  // Ignorar peticiones que no sean GET o esquemas no soportados
   if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // CRÍTICO: No interceptar peticiones externas/cross-origin (Mapbox tiles, fuentes externas, CDNs, pasarelas de pago)
+  // Las peticiones a api.mapbox.com, unpkg.com, openstreetmap, etc. deben ir directo a la red sin pasar por el Cache API
+  if (url.origin !== self.location.origin) {
     return;
   }
 

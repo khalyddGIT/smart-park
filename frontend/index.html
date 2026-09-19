@@ -43,7 +43,7 @@
             if (url && url.includes('events.mapbox.com')) {
               return Promise.resolve(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }));
             }
-            return origFetch.apply(this, arguments);
+            return origFetch.apply(window, arguments);
           };
         }
         const origOpen = XMLHttpRequest.prototype.open;

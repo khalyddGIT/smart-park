@@ -54,6 +54,10 @@ export const MapContainer3D = ({
   const mapRef = useRef(null);
   const markersRef = useRef({});
   const routesManagerRef = useRef(null);
+  const mapEngineRef = useRef('mapbox'); // 'mapbox' | 'leaflet'
+
+  const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState(null);
 
   // Modo de mapa normal (calles por defecto)
   const [mapLayer, setMapLayer] = useState('streets');
@@ -67,69 +71,169 @@ export const MapContainer3D = ({
   const [filterType, setFilterType] = useState('all');
   const [filterPrice, setFilterPrice] = useState('all');
 
-  // Inicializar Mapbox GL JS 3D Engine Nativo (Vista 2D por defecto)
+  // Inicializar Motor de Mapa (Mapbox GL JS 3D con fallback resiliente a Leaflet 2D)
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
-    const mapboxgl = window.mapboxgl;
-    if (!mapboxgl) return;
+    let isCancelled = false;
+    let pollTimer = null;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    try {
-      // Desactivar telemetría para prevenir peticiones a events.mapbox.com bloqueadas por adblockers
-      if (typeof mapboxgl.setTelemetryEnabled === 'function') {
-        mapboxgl.setTelemetryEnabled(false);
+    const tryInitMapbox = () => {
+      if (isCancelled || mapRef.current) return true;
+      const mapboxgl = window.mapboxgl;
+      if (!mapboxgl) return false;
+
+      // Verificar soporte de WebGL en el navegador
+      if (typeof mapboxgl.supported === 'function' && !mapboxgl.supported()) {
+        console.warn('[MapContainer3D] WebGL no disponible. Activando fallback a Leaflet.');
+        initLeaflet();
+        return true;
       }
-    } catch (e) {}
 
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: MAPBOX_STYLES[mapLayer] || MAPBOX_STYLES.streets,
-      center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
-      zoom: 15.8,
-      pitch: 0,
-      bearing: 0,
-      antialias: true
-    });
+      try {
+        mapboxgl.accessToken = MAPBOX_TOKEN;
+        try {
+          if (typeof mapboxgl.setTelemetryEnabled === 'function') {
+            mapboxgl.setTelemetryEnabled(false);
+          }
+        } catch (e) {}
 
-    // Capturar errores no críticos de eventos bloqueados
-    map.on('error', (e) => {
-      // Ignorar bloqueos de red por extensiones de privacidad/adblock
-      if (!e || e?.error?.message?.includes('events.mapbox.com') || e?.status === 0) {
+        const map = new mapboxgl.Map({
+          container: mapContainerRef.current,
+          style: MAPBOX_STYLES[mapLayer] || MAPBOX_STYLES.streets,
+          center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
+          zoom: 15.8,
+          pitch: 0,
+          bearing: 0,
+          antialias: true
+        });
+
+        map.on('error', (e) => {
+          if (!e || e?.error?.message?.includes('events.mapbox.com') || e?.status === 0) {
+            return;
+          }
+        });
+
+        mapRef.current = map;
+        mapEngineRef.current = 'mapbox';
+
+        map.once('load', () => {
+          if (!isCancelled) setMapReady(true);
+        });
+
+        map.on('style.load', () => {
+          try {
+            routesManagerRef.current = new MapRoutesManager(map);
+          } catch (err) {}
+          if (!isCancelled) setMapReady(true);
+        });
+
+        // Garantía de render: Si el evento tarda en responder, desbloquear loading
+        setTimeout(() => {
+          if (!isCancelled) setMapReady(true);
+        }, 3000);
+
+        return true;
+      } catch (err) {
+        console.warn('[MapContainer3D] Excepción Mapbox GL, recurriendo a Leaflet:', err);
+        initLeaflet();
+        return true;
+      }
+    };
+
+    const initLeaflet = () => {
+      if (isCancelled || mapRef.current) return;
+      const L = window.L;
+      if (!L || !mapContainerRef.current) {
+        setMapError('No se pudo inicializar el mapa.');
         return;
       }
-    });
 
-    mapRef.current = map;
+      try {
+        mapContainerRef.current.innerHTML = '';
+        const map = L.map(mapContainerRef.current, {
+          center: [AYACUCHO_CENTER.lat, AYACUCHO_CENTER.lng],
+          zoom: 16,
+          zoomControl: false
+        });
 
-    // Inicializar mapa estándar
-    map.on('style.load', () => {
-      routesManagerRef.current = new MapRoutesManager(map);
-    });
+        const tileUrl = mapLayer === 'satellite'
+          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+        L.tileLayer(tileUrl, {
+          attribution: '&copy; OpenStreetMap &copy; CARTO',
+          maxZoom: 19
+        }).addTo(map);
+
+        mapRef.current = map;
+        mapEngineRef.current = 'leaflet';
+        if (!isCancelled) setMapReady(true);
+      } catch (e) {
+        console.error('[MapContainer3D] Error Leaflet:', e);
+        setMapError('Error al renderizar el mapa.');
+      }
+    };
+
+    // 1. Intentar inicio inmediato con Mapbox
+    const ok = tryInitMapbox();
+    if (!ok) {
+      // 2. Si el script de Mapbox aún no terminaba de cargar, reintentar cada 80ms hasta 3s
+      const startTime = Date.now();
+      pollTimer = setInterval(() => {
+        if (tryInitMapbox() || Date.now() - startTime > 3000) {
+          clearInterval(pollTimer);
+          if (!mapRef.current) {
+            initLeaflet();
+          }
+        }
+      }, 80);
+    }
 
     return () => {
-      map.remove();
-      mapRef.current = null;
+      isCancelled = true;
+      if (pollTimer) clearInterval(pollTimer);
+      if (mapRef.current) {
+        try {
+          mapRef.current.remove();
+        } catch (e) {}
+        mapRef.current = null;
+      }
     };
   }, []);
 
   // Cambiar Estilo de Mapa (Calles / Satélite)
   const handleChangeLayer = (layerKey) => {
-    if (!mapRef.current) return;
     setMapLayer(layerKey);
-    const styleUrl = MAPBOX_STYLES[layerKey] || MAPBOX_STYLES.streets;
-    mapRef.current.setStyle(styleUrl);
+    if (!mapRef.current) return;
+    if (mapEngineRef.current === 'mapbox') {
+      const styleUrl = MAPBOX_STYLES[layerKey] || MAPBOX_STYLES.streets;
+      mapRef.current.setStyle(styleUrl);
+    } else if (mapEngineRef.current === 'leaflet' && window.L) {
+      mapRef.current.eachLayer((layer) => {
+        if (layer._url) mapRef.current.removeLayer(layer);
+      });
+      const tileUrl = layerKey === 'satellite'
+        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      window.L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(mapRef.current);
+    }
   };
 
   const handleZoomIn = () => {
-    if (mapRef.current) mapRef.current.zoomIn({ duration: 300 });
+    if (!mapRef.current) return;
+    if (mapEngineRef.current === 'mapbox') mapRef.current.zoomIn({ duration: 300 });
+    else if (mapEngineRef.current === 'leaflet') mapRef.current.zoomIn();
   };
 
   const handleZoomOut = () => {
-    if (mapRef.current) mapRef.current.zoomOut({ duration: 300 });
+    if (!mapRef.current) return;
+    if (mapEngineRef.current === 'mapbox') mapRef.current.zoomOut({ duration: 300 });
+    else if (mapEngineRef.current === 'leaflet') mapRef.current.zoomOut();
   };
 
   const handleRecenter = () => {
-    if (mapRef.current) {
+    if (!mapRef.current) return;
+    if (mapEngineRef.current === 'mapbox') {
       mapRef.current.flyTo({
         center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
         zoom: 15.8,
@@ -137,6 +241,8 @@ export const MapContainer3D = ({
         bearing: 0,
         duration: 600
       });
+    } else if (mapEngineRef.current === 'leaflet') {
+      mapRef.current.flyTo([AYACUCHO_CENTER.lat, AYACUCHO_CENTER.lng], 16, { duration: 0.6 });
     }
   };
 
@@ -258,17 +364,18 @@ export const MapContainer3D = ({
     });
   }, [parkings, filterType, filterPrice]);
 
-  // Actualizar marcadores 3D interactivos en el mapa
+  // Actualizar marcadores interactivos en el mapa (Compatible con Mapbox 3D y Leaflet 2D)
   useEffect(() => {
-    if (!mapRef.current || !window.mapboxgl) return;
-    const mapboxgl = window.mapboxgl;
+    if (!mapRef.current) return;
     const map = mapRef.current;
 
     // Limpiar marcadores anteriores
-    Object.values(markersRef.current).forEach(m => m.remove());
+    Object.values(markersRef.current).forEach(m => {
+      if (m && typeof m.remove === 'function') m.remove();
+    });
     markersRef.current = {};
 
-    filteredParkings.forEach((p, idx) => {
+    filteredParkings.forEach((p) => {
       const lat = Number(p.latitude);
       const lng = Number(p.longitude);
       const isAyacuchoCoords = !isNaN(lat) && !isNaN(lng) && lat <= -13.0 && lat >= -13.35 && lng <= -74.0 && lng >= -74.4;
@@ -278,8 +385,6 @@ export const MapContainer3D = ({
         : (DEFAULT_PARKING_COORDS[p.id] || [-74.2257, -13.1606]);
 
       // Modo Enfoque de Ruta (Route Focus Mode):
-      // Si hay una ruta activa hacia un destino, se ocultan los badges anchos de otras cocheras
-      // para evitar colisiones visuales y dejar el trazado completamente limpio.
       if (activeRoute) {
         const isThisDest = activeRoute.destinationName && p.name && (
           p.name.trim().toLowerCase() === activeRoute.destinationName.trim().toLowerCase() ||
@@ -287,21 +392,33 @@ export const MapContainer3D = ({
         );
 
         if (!isThisDest) {
-          // Marcador atenuado minimalista (pequeño punto limpio que no interfiere)
           const dotEl = document.createElement('div');
           dotEl.className = 'w-2.5 h-2.5 rounded-full bg-slate-400/50 hover:bg-slate-700 border border-white shadow-xs cursor-pointer transition-all hover:scale-125';
           dotEl.title = p.name;
           dotEl.addEventListener('click', () => {
             if (onSelectParking) onSelectParking(p);
           });
-          const dotMarker = new mapboxgl.Marker({ element: dotEl })
-            .setLngLat(coords)
-            .addTo(map);
-          markersRef.current[p.id] = dotMarker;
+
+          if (mapEngineRef.current === 'mapbox' && window.mapboxgl) {
+            const dotMarker = new window.mapboxgl.Marker({ element: dotEl })
+              .setLngLat(coords)
+              .addTo(map);
+            markersRef.current[p.id] = dotMarker;
+          } else if (mapEngineRef.current === 'leaflet' && window.L) {
+            const dotIcon = window.L.divIcon({
+              html: dotEl.outerHTML,
+              className: '',
+              iconSize: [10, 10],
+              iconAnchor: [5, 5]
+            });
+            const dotMarker = window.L.marker([coords[1], coords[0]], { icon: dotIcon }).addTo(map);
+            dotMarker.on('click', () => {
+              if (onSelectParking) onSelectParking(p);
+            });
+            markersRef.current[p.id] = dotMarker;
+          }
           return;
         }
-
-        // Si es el destino de la ruta, MapRoutesManager ya coloca el pin destacado destPinMarker
         return;
       }
 
@@ -328,10 +445,6 @@ export const MapContainer3D = ({
           <span class="text-[10px] font-semibold ${isMaint ? 'text-amber-600' : isClosed ? 'text-rose-600' : 'text-slate-500'} border-l border-slate-200 pl-1.5">${isMaint ? 'manten' : isClosed ? 'cerrado' : `${freeSlots} lib`}</span>
         </div>
       `;
-
-      const marker = new mapboxgl.Marker({ element: el })
-        .setLngLat(coords)
-        .addTo(map);
 
       // Card Popup con diseño editorial, elegante y sin choque visual
       const popupContent = document.createElement('div');
@@ -410,64 +523,96 @@ export const MapContainer3D = ({
         </div>
       `;
 
-      const popup = new mapboxgl.Popup({
-        offset: {
-          'top': [0, 12],
-          'top-left': [0, 12],
-          'top-right': [0, 12],
-          'bottom': [0, -20],
-          'bottom-left': [0, -20],
-          'bottom-right': [0, -20],
-          'left': [16, 0],
-          'right': [-16, 0]
-        },
-        closeButton: false,
-        closeOnClick: true,
-        maxWidth: '290px'
-      }).setDOMContent(popupContent);
-      marker.setPopup(popup);
-
-      el.addEventListener('click', () => {
-        if (mapRef.current) {
-          mapRef.current.flyTo({
-            center: coords,
-            zoom: 16.8,
-            pitch: 0,
-            bearing: 0,
-            duration: 600
-          });
-        }
-      });
-
-      marker.getPopup().on('open', () => {
+      const wirePopupEvents = (closeFn) => {
         const btnClose = document.getElementById(`btn-close-${p.id}`);
         if (btnClose) {
-          btnClose.onclick = () => { popup.remove(); };
+          btnClose.onclick = () => { closeFn(); };
         }
         const btnQuick = document.getElementById(`btn-quick-${p.id}`);
         if (btnQuick && !isUnavailable) {
           btnQuick.onclick = () => {
-            popup.remove();
+            closeFn();
             if (onQuickReservation) onQuickReservation(p);
           };
         }
         const btnSelect = document.getElementById(`btn-select-${p.id}`);
         if (btnSelect) {
           btnSelect.onclick = () => {
-            popup.remove();
+            closeFn();
             if (onSelectParking) onSelectParking(p);
           };
         }
         const btnRoute = document.getElementById(`btn-route-${p.id}`);
         if (btnRoute) {
           btnRoute.onclick = () => {
-            popup.remove();
+            closeFn();
             handleCalculateRoute(coords, p.name);
           };
         }
-      });
+      };
 
-      markersRef.current[p.id] = marker;
+      if (mapEngineRef.current === 'mapbox' && window.mapboxgl) {
+        const marker = new window.mapboxgl.Marker({ element: el })
+          .setLngLat(coords)
+          .addTo(map);
+
+        const popup = new window.mapboxgl.Popup({
+          offset: {
+            'top': [0, 12],
+            'top-left': [0, 12],
+            'top-right': [0, 12],
+            'bottom': [0, -20],
+            'bottom-left': [0, -20],
+            'bottom-right': [0, -20],
+            'left': [16, 0],
+            'right': [-16, 0]
+          },
+          closeButton: false,
+          closeOnClick: true,
+          maxWidth: '290px'
+        }).setDOMContent(popupContent);
+        marker.setPopup(popup);
+
+        el.addEventListener('click', () => {
+          if (mapRef.current) {
+            mapRef.current.flyTo({
+              center: coords,
+              zoom: 16.8,
+              pitch: 0,
+              bearing: 0,
+              duration: 600
+            });
+          }
+        });
+
+        marker.getPopup().on('open', () => {
+          wirePopupEvents(() => popup.remove());
+        });
+
+        markersRef.current[p.id] = marker;
+      } else if (mapEngineRef.current === 'leaflet' && window.L) {
+        const customIcon = window.L.divIcon({
+          html: el.outerHTML,
+          className: 'leaflet-smartpark-marker',
+          iconSize: [110, 32],
+          iconAnchor: [55, 16]
+        });
+
+        const marker = window.L.marker([coords[1], coords[0]], { icon: customIcon }).addTo(map);
+        marker.bindPopup(popupContent.innerHTML, { maxWidth: 290, className: 'leaflet-smartpark-popup' });
+
+        marker.on('click', () => {
+          if (mapRef.current) {
+            mapRef.current.flyTo([coords[1], coords[0]], 17, { duration: 0.6 });
+          }
+        });
+
+        marker.on('popupopen', () => {
+          wirePopupEvents(() => marker.closePopup());
+        });
+
+        markersRef.current[p.id] = marker;
+      }
     });
   }, [filteredParkings, selectedParkingId, onSelectParking, activeRoute, targetDest]);
 
@@ -487,8 +632,36 @@ export const MapContainer3D = ({
       {/* Contenedor del Mapa (100% Despejado, sin modales bloqueando la vista en móvil) */}
       <div className="relative isolate z-0 w-full h-[380px] sm:h-[460px] md:h-[540px] lg:h-[600px] bg-slate-100 dark:bg-slate-950 overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm">
         
-        {/* Lienzo Normal Mapbox */}
+        {/* Lienzo Normal Mapbox / Leaflet */}
         <div ref={mapContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+
+        {/* Overlay de Carga Elegante */}
+        {!mapReady && !mapError && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-100/80 dark:bg-slate-950/85 backdrop-blur-[2px] transition-opacity duration-300 pointer-events-none">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
+              <Loader2 className="w-5 h-5 text-emerald-500 animate-spin shrink-0" />
+              <div className="text-left">
+                <p className="text-xs font-black text-slate-800 dark:text-slate-200">Cargando mapa interactivo...</p>
+                <p className="text-[10px] text-slate-500 font-medium">Sincronizando cocheras de Ayacucho</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mensaje de Error con botón de recarga */}
+        {mapError && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-sm p-6 text-center text-white">
+            <p className="text-sm font-bold text-rose-400 mb-1">Aviso del mapa</p>
+            <p className="text-xs text-slate-300 mb-4">{mapError}</p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-md cursor-pointer"
+            >
+              Reintentar carga
+            </button>
+          </div>
+        )}
 
         {/* Controles de Mapa Flotantes Minimalistas (Cápsula Unificada) */}
         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-auto flex items-center bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-lg shadow-slate-900/5 text-xs">

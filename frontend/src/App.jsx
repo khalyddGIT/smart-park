@@ -301,7 +301,9 @@ const AppMain = () => {
         paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'tarjeta' : 'efectivo'),
         reservationType: bookingData.reservationType || 'immediate',
         isSubscription: !!bookingData.isSubscription,
-        subscriptionMonths: bookingData.subscriptionMonths || 1
+        subscriptionMonths: bookingData.subscriptionMonths || 1,
+        subscription_days: bookingData.subscription_days ?? bookingData.subscriptionDays ?? null,
+        subscription_type: bookingData.subscription_type || bookingData.subscriptionType || null
       });
       if (!newRes || newRes.error) {
         const msg = newRes?.error || bookingError || 'No se pudo crear la reserva. Verifica que el cajón esté libre y tu sesión activa.';

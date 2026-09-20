@@ -308,6 +308,8 @@ class ParkingBase(BaseModel):
     min_stay_hours: Optional[int] = Field(default=1, ge=1, le=24)
     max_stay_hours: Optional[int] = Field(default=24, ge=1, le=168)
     allow_open_stay: Optional[bool] = True
+    subscription_enabled: Optional[bool] = True
+    custom_rates: Optional[str] = None
 
 
 class ParkingCreate(ParkingBase):
@@ -363,6 +365,8 @@ class ParkingUpdate(BaseModel):
     min_stay_hours: Optional[int] = None
     max_stay_hours: Optional[int] = None
     allow_open_stay: Optional[bool] = None
+    subscription_enabled: Optional[bool] = None
+    custom_rates: Optional[str] = None
 
 class ParkingResponse(ParkingBase):
     id: int
@@ -537,6 +541,8 @@ class ReservationCreate(BaseModel):
     reservation_type: Optional[str] = "standard"
     subscription_months: Optional[int] = Field(default=1, ge=1, le=12)
     is_subscription: Optional[bool] = False
+    subscription_days: Optional[int] = Field(default=None, ge=1, le=365)
+    subscription_type: Optional[str] = None
 
     @field_validator('license_plate')
     @classmethod
@@ -612,6 +618,8 @@ class ReservationResponse(BaseModel):
     reservation_type: Optional[str] = "standard"
     subscription_months: Optional[int] = 1
     is_subscription: Optional[bool] = False
+    subscription_days: Optional[int] = None
+    subscription_type: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -47,11 +47,12 @@ export const MoreReservationsModal = ({
   const [useCustomPlate, setUseCustomPlate] = useState(false);
   const [vehicleCategory, setVehicleCategory] = useState('auto');
 
-  // Configuración de Abonado Mensual
+  // Configuración de Abonado Flexible (3 semanas, 1 mes, fraccionado)
   const [subscriptionStartDate, setSubscriptionStartDate] = useState(() => {
     return new Date().toISOString().split('T')[0];
   });
-  const [subscriptionMonths, setSubscriptionMonths] = useState(1);
+  const [subscriptionPlanType, setSubscriptionPlanType] = useState('3_weeks'); // '3_weeks' | '1_month' | '2_weeks' | '1_week' | 'custom_fractional'
+  const [customDays, setCustomDays] = useState(10);
 
   // Configuración de Reserva Programada (Fecha Adelantada)
   const [advanceDate, setAdvanceDate] = useState(() => {
@@ -110,8 +111,11 @@ export const MoreReservationsModal = ({
       loadVehicles();
       setErrorMessage(null);
       setIsSubmitting(false);
+      if (parking?.subscription_enabled === false) {
+        setActiveTab('advance');
+      }
     }
-  }, [isOpen, loadVehicles]);
+  }, [isOpen, loadVehicles, parking?.subscription_enabled]);
 
   // Selección de vehículo actual
   const currentVehicle = useMemo(() => {
@@ -167,17 +171,34 @@ export const MoreReservationsModal = ({
   const currentMonthlyRate = rates[vehicleCategory]?.monthly || 180.0;
   const currentHourlyRate = rates[vehicleCategory]?.hourly || 5.0;
 
-  // Cálculo de fin de suscripción (30 días por mes)
+  // Días totales de suscripción según plan seleccionado (3 semanas, 1 mes, fraccionado, etc.)
+  const subDays = useMemo(() => {
+    switch (subscriptionPlanType) {
+      case '1_week': return 7;
+      case '2_weeks': return 14;
+      case '3_weeks': return 21;
+      case '1_month': return 30;
+      case '2_months': return 60;
+      case 'custom_fractional': return Math.max(1, Math.min(365, parseInt(customDays, 10) || 1));
+      default: return 30;
+    }
+  }, [subscriptionPlanType, customDays]);
+
+  // Cálculo de fin de suscripción
   const subscriptionEndDate = useMemo(() => {
     const [y, m, d] = (subscriptionStartDate || '').split('-').map(Number);
     if (!y || !m || !d) return new Date();
     const date = new Date(y, m - 1, d);
-    date.setDate(date.getDate() + (30 * subscriptionMonths));
+    date.setDate(date.getDate() + subDays);
     return date;
-  }, [subscriptionStartDate, subscriptionMonths]);
+  }, [subscriptionStartDate, subDays]);
 
-  // Costos totales
-  const totalSubscriptionCost = currentMonthlyRate * subscriptionMonths;
+  // Costo diario base y costo total del abono
+  const dailyRate = currentMonthlyRate / 30.0;
+  const totalSubscriptionCost = useMemo(() => {
+    return Number((dailyRate * subDays).toFixed(2));
+  }, [dailyRate, subDays]);
+
   const totalAdvanceCost = currentHourlyRate * advanceHours;
 
   // Asignación de plaza compatible
@@ -222,10 +243,16 @@ export const MoreReservationsModal = ({
 
     try {
       if (activeTab === 'subscription') {
+        if (parking?.subscription_enabled === false) {
+          setErrorMessage('Los abonos mensuales y fraccionados están temporalmente deshabilitados en esta sede.');
+          setIsSubmitting(false);
+          return;
+        }
+
         const [sy, sm, sd] = subscriptionStartDate.split('-').map(Number);
         const startDt = new Date(sy, sm - 1, sd, 0, 0, 0);
         const endDt = new Date(startDt);
-        endDt.setDate(endDt.getDate() + (30 * subscriptionMonths));
+        endDt.setDate(endDt.getDate() + subDays);
 
         await onConfirmBooking({
           parkingId: parking.id,
@@ -237,14 +264,16 @@ export const MoreReservationsModal = ({
           vehicleType: vehicleCategory,
           reservationType: 'subscription',
           isSubscription: true,
-          subscriptionMonths: subscriptionMonths,
+          subscriptionMonths: Number((subDays / 30).toFixed(2)),
+          subscription_days: subDays,
+          subscription_type: subscriptionPlanType,
           startTime: startDt.toISOString(),
           expiresAt: endDt.toISOString(),
-          hours: 24 * 30 * subscriptionMonths,
+          hours: 24 * subDays,
           totalCost: totalSubscriptionCost,
           toleranceMinutes: tolerance,
           payNow: true,
-          bookingModel: 'subscription_monthly',
+          bookingModel: 'subscription_flexible',
           paymentMethod: 'tarjeta'
         });
       } else {
@@ -324,14 +353,17 @@ export const MoreReservationsModal = ({
             <button
               type="button"
               onClick={() => { setActiveTab('subscription'); setErrorMessage(null); }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'subscription'
                   ? 'bg-amber-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Crown className="w-4 h-4 text-amber-300" />
-              <span>Abonado Mensual (30d)</span>
+              <Crown className="w-4 h-4 text-amber-300 shrink-0" />
+              <span>Abono Flexible</span>
+              {parking?.subscription_enabled === false && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono">Inactivo</span>
+              )}
             </button>
 
             <button
@@ -380,15 +412,27 @@ export const MoreReservationsModal = ({
 
           {/* Banner Explicativo de la Modalidad Seleccionada */}
           {activeTab === 'subscription' ? (
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-3.5 text-xs space-y-1.5">
-              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold">
-                <Crown className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                <span>Membresía VIP de Abonado Continuo</span>
+            parking?.subscription_enabled === false ? (
+              <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-2xl p-3.5 text-xs space-y-1.5 text-rose-800 dark:text-rose-200">
+                <div className="flex items-center gap-2 font-bold">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+                  <span>Abonos Deshabilitados en esta Sede</span>
+                </div>
+                <p className="text-[11px] text-rose-700 dark:text-rose-300 leading-relaxed">
+                  La administración de esta sede ha desactivado temporalmente los abonos. Puedes realizar tu reserva con antelación utilizando la pestaña de <strong>Fecha Adelantada</strong>.
+                </p>
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                Ingresa y sal cuantas veces desees durante 30 días continuos con tu código QR único. Plaza asegurada sin cancelaciones por tolerancia de llegada.
-              </p>
-            </div>
+            ) : (
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-3.5 text-xs space-y-1.5">
+                <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold">
+                  <Crown className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>Membresía VIP de Abonado Flexible</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Contrata planes de <strong>3 semanas (21 días)</strong>, <strong>1 mes (30 días)</strong> o <strong>días fraccionados personalizados</strong>. Entra y sal ilimitadamente con QR asegurado.
+                </p>
+              </div>
+            )
           ) : (
             <div className="bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/50 rounded-2xl p-3.5 text-xs space-y-1.5">
               <div className="flex items-center gap-2 text-sky-800 dark:text-sky-300 font-bold">
@@ -494,39 +538,124 @@ export const MoreReservationsModal = ({
             )}
           </div>
 
-          {/* Formulario Específico: Abonado Mensual */}
+          {/* Formulario Específico: Abonado Flexible */}
           {activeTab === 'subscription' && (
-            <div className="p-3.5 bg-slate-50 dark:bg-slate-950/70 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
-                    Inicio de membresía
-                  </label>
-                  <input
-                    type="date"
-                    min={new Date().toISOString().split('T')[0]}
-                    value={subscriptionStartDate}
-                    onChange={(e) => setSubscriptionStartDate(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-950/70 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+                  Fecha de Inicio del Abono
+                </label>
+                <input
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={subscriptionStartDate}
+                  onChange={(e) => setSubscriptionStartDate(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
 
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
-                    Duración
-                  </label>
-                  <select
-                    value={subscriptionMonths}
-                    onChange={(e) => setSubscriptionMonths(Number(e.target.value))}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 cursor-pointer"
-                  >
-                    <option value={1}>1 Mes (30 días)</option>
-                    <option value={2}>2 Meses (60 días)</option>
-                    <option value={3}>3 Meses (90 días)</option>
-                  </select>
+              {/* Selector de Plan de Abono */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block">
+                  Modalidad de Abono
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { id: '3_weeks', label: '3 Semanas', days: 21, tag: 'Recomendado' },
+                    { id: '1_month', label: '1 Mes', days: 30, tag: 'Estándar' },
+                    { id: '2_weeks', label: '2 Semanas', days: 14, tag: null },
+                    { id: '1_week', label: '1 Semana', days: 7, tag: null },
+                    { id: 'custom_fractional', label: 'Fraccionado', days: null, tag: 'Por días' }
+                  ].map((plan) => {
+                    const isSelected = subscriptionPlanType === plan.id;
+                    return (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => setSubscriptionPlanType(plan.id)}
+                        className={`p-2.5 rounded-xl text-left transition border cursor-pointer relative ${
+                          isSelected
+                            ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-500 text-amber-900 dark:text-amber-100 ring-1 ring-amber-400/30'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        {plan.tag && (
+                          <span className={`absolute top-1.5 right-1.5 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                            isSelected 
+                              ? 'bg-amber-500 text-white' 
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                          }`}>
+                            {plan.tag}
+                          </span>
+                        )}
+                        <div className="text-xs font-bold">{plan.label}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
+                          {plan.days ? `${plan.days} días` : 'Días a medida'}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
+              {/* Días Personalizados para Tarifario Fraccionado */}
+              {subscriptionPlanType === 'custom_fractional' && (
+                <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-amber-300 dark:border-amber-700/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Cantidad de días fraccionados
+                    </label>
+                    <span className="text-[11px] font-mono font-bold text-amber-700 dark:text-amber-400">
+                      {subDays} {subDays === 1 ? 'día' : 'días'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCustomDays(prev => Math.max(1, (parseInt(prev, 10) || 1) - 1))}
+                      className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center transition cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={365}
+                      value={customDays}
+                      onChange={(e) => setCustomDays(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      className="flex-1 h-8 text-center text-xs font-mono font-bold bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCustomDays(prev => Math.min(365, (parseInt(prev, 10) || 1) + 1))}
+                      className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center transition cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <span className="text-[10px] text-slate-400 font-medium">Sugerencias:</span>
+                    {[5, 10, 15, 25, 45].map((dVal) => (
+                      <button
+                        key={dVal}
+                        type="button"
+                        onClick={() => setCustomDays(dVal)}
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition cursor-pointer ${
+                          Number(customDays) === dVal
+                            ? 'bg-amber-500 text-white border-amber-500'
+                            : 'bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {dVal}d
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Detalle y Cobertura */}
               <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs space-y-1">
                 <div className="flex items-center justify-between text-amber-900 dark:text-amber-200 font-bold">
                   <span>Periodo de Cobertura:</span>
@@ -534,8 +663,12 @@ export const MoreReservationsModal = ({
                     {subscriptionStartDate} al {subscriptionEndDate.toISOString().split('T')[0]}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Total de {30 * subscriptionMonths} días de estacionamiento continuo e irrestricto.
+                <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400">
+                  <span>Duración total:</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-200">{subDays} días de acceso continuo</span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-0.5 border-t border-amber-500/15">
+                  Tarifario proporcional: S/ {dailyRate.toFixed(2)}/día x {subDays} días = S/ {totalSubscriptionCost.toFixed(2)}
                 </p>
               </div>
             </div>
@@ -657,11 +790,13 @@ export const MoreReservationsModal = ({
         <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
           <Button
             type="button"
-            disabled={isUnavailable || isSubmitting || !effectivePlate}
+            disabled={isUnavailable || isSubmitting || !effectivePlate || (activeTab === 'subscription' && parking?.subscription_enabled === false)}
             onClick={handleConfirm}
             className={`w-full py-3 text-xs font-bold gap-2 rounded-xl transition cursor-pointer ${
               activeTab === 'subscription'
-                ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-sm shadow-amber-950/20'
+                ? parking?.subscription_enabled === false
+                  ? 'bg-slate-400 text-white cursor-not-allowed'
+                  : 'bg-amber-600 hover:bg-amber-500 text-white shadow-sm shadow-amber-950/20'
                 : 'bg-sky-600 hover:bg-sky-500 text-white shadow-sm shadow-sky-950/20'
             }`}
           >
@@ -671,11 +806,15 @@ export const MoreReservationsModal = ({
                 <span>Procesando solicitud...</span>
               </>
             ) : activeTab === 'subscription' ? (
-              <>
-                <Crown className="w-4 h-4 text-white" />
-                <span>Adquirir Abono Mensual (S/ {totalSubscriptionCost.toFixed(2)})</span>
-                <ArrowRight className="w-4 h-4 text-white" />
-              </>
+              parking?.subscription_enabled === false ? (
+                <span>Abonos Deshabilitados en esta Sede</span>
+              ) : (
+                <>
+                  <Crown className="w-4 h-4 text-white" />
+                  <span>Adquirir Abono ({subDays} días · S/ {totalSubscriptionCost.toFixed(2)})</span>
+                  <ArrowRight className="w-4 h-4 text-white" />
+                </>
+              )
             ) : (
               <>
                 <Calendar className="w-4 h-4 text-white" />

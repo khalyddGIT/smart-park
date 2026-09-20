@@ -49,9 +49,92 @@ import {
   Sliders,
   Crown
 } from 'lucide-react';
+import { MototaxiIcon } from './icons/MototaxiIcon';
 import { InteractiveFloorPlanDrawingStudio } from './InteractiveFloorPlanDrawingStudio';
 import { useEstablishments, isMyEstablishment, getEstablishmentHierarchy } from '../context/EstablishmentContext';
 import { useAuth } from '../context/AuthContext';
+
+// Generador y parseador de Tarifarios Dinámicos
+export const buildDefaultCustomRates = (source = {}) => {
+  const autoH = Number(source.rate_auto ?? source.rate ?? 5.00);
+  const autoM = Number(source.rate_monthly_auto ?? 180.00);
+  const suvH = Number(source.rate_suv ?? 7.00);
+  const suvM = Number(source.rate_monthly_suv ?? 240.00);
+  const mototaxiH = Number(source.rate_mototaxi ?? 3.50);
+  const mototaxiM = Number(source.rate_monthly_mototaxi ?? 120.00);
+  const motoH = Number(source.rate_moto ?? 2.50);
+  const motoM = Number(source.rate_monthly_moto ?? 90.00);
+
+  return [
+    {
+      id: 'rate-auto',
+      name: 'Auto / Sedán',
+      vehicle_type: 'auto',
+      rate_hourly: autoH,
+      rate_minute: Number(source.rate_minute_auto ?? (autoH / 60).toFixed(2)),
+      rate_monthly: autoM,
+      rate_3_weeks: Number(((autoM / 30) * 21).toFixed(2)),
+      description: 'Vehículos particulares convencionales, hatchbacks y compactos',
+      is_base: true
+    },
+    {
+      id: 'rate-suv',
+      name: 'Camioneta / SUV',
+      vehicle_type: 'suv',
+      rate_hourly: suvH,
+      rate_minute: Number(source.rate_minute_suv ?? (suvH / 60).toFixed(2)),
+      rate_monthly: suvM,
+      rate_3_weeks: Number(((suvM / 30) * 21).toFixed(2)),
+      description: 'Camionetas 4x4, pick-ups, SUVs y minivanes familiares',
+      is_base: true
+    },
+    {
+      id: 'rate-mototaxi',
+      name: 'Mototaxi / Torito',
+      vehicle_type: 'mototaxi',
+      rate_hourly: mototaxiH,
+      rate_minute: Number(source.rate_minute_mototaxi ?? (mototaxiH / 60).toFixed(2)),
+      rate_monthly: mototaxiM,
+      rate_3_weeks: Number(((mototaxiM / 30) * 21).toFixed(2)),
+      description: 'Trimóviles autorizados y transporte liviano urbano',
+      is_base: true
+    },
+    {
+      id: 'rate-moto',
+      name: 'Moto Lineal',
+      vehicle_type: 'moto',
+      rate_hourly: motoH,
+      rate_minute: Number(source.rate_minute_moto ?? (motoH / 60).toFixed(2)),
+      rate_monthly: motoM,
+      rate_3_weeks: Number(((motoM / 30) * 21).toFixed(2)),
+      description: 'Motocicletas de dos ruedas, scooters y bicimotos',
+      is_base: true
+    }
+  ];
+};
+
+export const parseCustomRates = (raw, fallbackSource = {}) => {
+  if (Array.isArray(raw) && raw.length > 0) return raw;
+  if (typeof raw === 'string' && raw.trim().startsWith('[')) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {}
+  }
+  return buildDefaultCustomRates(fallbackSource);
+};
+
+export const getVehicleTypeIcon = (vtype) => {
+  switch (vtype) {
+    case 'moto': return Bike;
+    case 'suv':
+    case 'camion': return Truck;
+    case 'mototaxi': return MototaxiIcon;
+    case 'bicicleta': return Bike;
+    case 'auto':
+    default: return Car;
+  }
+};
 
 // Imagen de respaldo SVG ultra confiable para cuando la red no tenga acceso a Unsplash
 export const FALLBACK_PARKING_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500' width='800' height='500'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230f172a'/%3E%3Cstop offset='100%25' stop-color='%231e293b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3Ccircle cx='400' cy='210' r='85' fill='%2310b981' fill-opacity='0.15'/%3E%3Cpath d='M345 250 L455 250 L430 175 L370 175 Z' fill='%2310b981' fill-opacity='0.6'/%3E%3Crect x='330' y='250' width='140' height='40' rx='10' fill='%2310b981'/%3E%3Ccircle cx='365' cy='290' r='14' fill='%230f172a'/%3E%3Ccircle cx='435' cy='290' r='14' fill='%230f172a'/%3E%3Ctext x='400' y='370' font-family='system-ui, sans-serif' font-size='22' font-weight='bold' fill='%23f8fafc' text-anchor='middle'%3ESmart Park Huamanga%3C/text%3E%3Ctext x='400' y='402' font-family='system-ui, sans-serif' font-size='14' fill='%2394a3b8' text-anchor='middle'%3EEstacionamiento Seguro y Conectado%3C/text%3E%3C/svg%3E";
@@ -463,6 +546,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     rate_minute_moto: 0.04,
     min_stay_minutes: 15,
     max_stay_minutes: 1440,
+    subscription_enabled: true,
+    custom_rates: buildDefaultCustomRates(),
     night_shift_enabled: false,
     night_shift_start: '20:00',
     night_shift_end: '06:00',
@@ -491,6 +576,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       tiktok: '',
       website: ''
     }
+  });
+
+  // Modal de Agregar / Editar Tarifario
+  const [isRateModalOpen, setIsRateModalOpen] = useState(false);
+  const [editingRateId, setEditingRateId] = useState(null); // null = nuevo tarifario
+  const [rateModalData, setRateModalData] = useState({
+    name: '',
+    vehicle_type: 'auto',
+    rate_hourly: 5.00,
+    rate_minute: 0.08,
+    rate_monthly: 180.00,
+    rate_3_weeks: 126.00,
+    description: '',
+    is_base: false
   });
 
   const [notification, setNotification] = useState(null);
@@ -656,6 +755,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       rate_minute_moto: 0.04,
       min_stay_minutes: 15,
       max_stay_minutes: 1440,
+      subscription_enabled: true,
+      custom_rates: buildDefaultCustomRates(),
       night_shift_enabled: false,
       night_shift_start: '20:00',
       night_shift_end: '06:00',
@@ -694,6 +795,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     setIsEditingNew(false);
     setSelectedEstablishment(est);
     const initialRate = Number(est.rate_auto ?? est.rate ?? est.hourly_rate ?? 5.00);
+    const resolvedCustomRates = parseCustomRates(est.custom_rates, est);
+
     setFormData({
       name: est.name || '',
       address: est.address || '',
@@ -716,6 +819,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       rate_minute_moto: Number(est.rate_minute_moto ?? ((est.rate_moto ?? 2.50) / 60).toFixed(2)),
       min_stay_minutes: Number(est.min_stay_minutes || 15),
       max_stay_minutes: Number(est.max_stay_minutes || 1440),
+      subscription_enabled: est.subscription_enabled !== undefined ? !!est.subscription_enabled : true,
+      custom_rates: resolvedCustomRates,
       night_shift_enabled: !!est.night_shift_enabled,
       night_shift_start: est.night_shift_start || '20:00',
       night_shift_end: est.night_shift_end || '06:00',
@@ -742,6 +847,195 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     });
     setActiveTabSection(initialTab);
     setActiveViewMode('edit_form');
+  };
+
+  // Handlers para Padrón de Tarifarios (CRUD)
+  const handleOpenAddRate = () => {
+    setEditingRateId(null);
+    setRateModalData({
+      name: '',
+      vehicle_type: 'auto',
+      rate_hourly: 5.00,
+      rate_minute: 0.08,
+      rate_monthly: 180.00,
+      rate_3_weeks: 126.00,
+      description: '',
+      is_base: false
+    });
+    setIsRateModalOpen(true);
+  };
+
+  const handleOpenEditRate = (rate) => {
+    setEditingRateId(rate.id);
+    const hourly = Number(rate.rate_hourly || 0);
+    const monthly = Number(rate.rate_monthly || 0);
+    setRateModalData({
+      name: rate.name || '',
+      vehicle_type: rate.vehicle_type || 'auto',
+      rate_hourly: hourly,
+      rate_minute: Number(rate.rate_minute || (hourly / 60).toFixed(2)),
+      rate_monthly: monthly,
+      rate_3_weeks: Number(rate.rate_3_weeks || ((monthly / 30) * 21).toFixed(2)),
+      description: rate.description || '',
+      is_base: !!rate.is_base
+    });
+    setIsRateModalOpen(true);
+  };
+
+  const handleSaveRateModal = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!rateModalData.name.trim()) {
+      alert('Ingresa el nombre del tarifario.');
+      return;
+    }
+
+    const currentRates = Array.isArray(formData.custom_rates) ? [...formData.custom_rates] : buildDefaultCustomRates(formData);
+    const hourly = Math.max(0, Number(rateModalData.rate_hourly) || 0);
+    const minute = Math.max(0, Number(rateModalData.rate_minute) || Number((hourly / 60).toFixed(2)));
+    const monthly = Math.max(0, Number(rateModalData.rate_monthly) || 0);
+    const threeWeeks = Math.max(0, Number(rateModalData.rate_3_weeks) || Number(((monthly / 30) * 21).toFixed(2)));
+
+    let updatedRates = [];
+    if (editingRateId) {
+      updatedRates = currentRates.map(r => {
+        if (r.id === editingRateId) {
+          return {
+            ...r,
+            name: rateModalData.name.trim(),
+            vehicle_type: rateModalData.vehicle_type,
+            rate_hourly: hourly,
+            rate_minute: minute,
+            rate_monthly: monthly,
+            rate_3_weeks: threeWeeks,
+            description: rateModalData.description.trim()
+          };
+        }
+        return r;
+      });
+      showToast(`Tarifario "${rateModalData.name}" actualizado.`);
+    } else {
+      const newRate = {
+        id: `rate-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        name: rateModalData.name.trim(),
+        vehicle_type: rateModalData.vehicle_type,
+        rate_hourly: hourly,
+        rate_minute: minute,
+        rate_monthly: monthly,
+        rate_3_weeks: threeWeeks,
+        description: rateModalData.description.trim(),
+        is_base: false
+      };
+      updatedRates = [...currentRates, newRate];
+      showToast(`Nuevo tarifario "${newRate.name}" agregado con éxito.`);
+    }
+
+    const newFormPatch = {
+      custom_rates: updatedRates
+    };
+
+    if (rateModalData.vehicle_type === 'auto') {
+      newFormPatch.rate_auto = hourly;
+      newFormPatch.rate = hourly;
+      newFormPatch.rate_minute_auto = minute;
+      newFormPatch.rate_monthly_auto = monthly;
+    } else if (rateModalData.vehicle_type === 'suv') {
+      newFormPatch.rate_suv = hourly;
+      newFormPatch.rate_minute_suv = minute;
+      newFormPatch.rate_monthly_suv = monthly;
+    } else if (rateModalData.vehicle_type === 'mototaxi') {
+      newFormPatch.rate_mototaxi = hourly;
+      newFormPatch.rate_minute_mototaxi = minute;
+      newFormPatch.rate_monthly_mototaxi = monthly;
+    } else if (rateModalData.vehicle_type === 'moto') {
+      newFormPatch.rate_moto = hourly;
+      newFormPatch.rate_minute_moto = minute;
+      newFormPatch.rate_monthly_moto = monthly;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      ...newFormPatch
+    }));
+
+    setIsRateModalOpen(false);
+  };
+
+  const handleDeleteRate = (rateId, rateName) => {
+    if (!window.confirm(`¿Estás seguro de eliminar el tarifario "${rateName}"?`)) return;
+    const currentRates = Array.isArray(formData.custom_rates) ? formData.custom_rates : buildDefaultCustomRates(formData);
+    const filtered = currentRates.filter(r => r.id !== rateId);
+    setFormData(prev => ({
+      ...prev,
+      custom_rates: filtered
+    }));
+    showToast(`Tarifario "${rateName}" eliminado.`);
+  };
+
+  const handleUpdateRateInline = (rateId, field, value) => {
+    const currentRates = Array.isArray(formData.custom_rates) ? [...formData.custom_rates] : buildDefaultCustomRates(formData);
+    const numVal = parseFloat(value) || 0;
+
+    const updatedRates = currentRates.map(r => {
+      if (r.id === rateId) {
+        const updatedItem = { ...r, [field]: numVal };
+        if (field === 'rate_hourly') {
+          updatedItem.rate_minute = Number((numVal / 60).toFixed(2));
+        } else if (field === 'rate_monthly') {
+          updatedItem.rate_3_weeks = Number(((numVal / 30) * 21).toFixed(2));
+        }
+        return updatedItem;
+      }
+      return r;
+    });
+
+    const targetRate = updatedRates.find(r => r.id === rateId);
+    const syncPatch = { custom_rates: updatedRates };
+
+    if (targetRate) {
+      if (targetRate.vehicle_type === 'auto') {
+        if (field === 'rate_hourly') {
+          syncPatch.rate_auto = numVal;
+          syncPatch.rate = numVal;
+          syncPatch.rate_minute_auto = Number((numVal / 60).toFixed(2));
+        } else if (field === 'rate_monthly') {
+          syncPatch.rate_monthly_auto = numVal;
+        } else if (field === 'rate_minute') {
+          syncPatch.rate_minute_auto = numVal;
+        }
+      } else if (targetRate.vehicle_type === 'suv') {
+        if (field === 'rate_hourly') {
+          syncPatch.rate_suv = numVal;
+          syncPatch.rate_minute_suv = Number((numVal / 60).toFixed(2));
+        } else if (field === 'rate_monthly') {
+          syncPatch.rate_monthly_suv = numVal;
+        } else if (field === 'rate_minute') {
+          syncPatch.rate_minute_suv = numVal;
+        }
+      } else if (targetRate.vehicle_type === 'mototaxi') {
+        if (field === 'rate_hourly') {
+          syncPatch.rate_mototaxi = numVal;
+          syncPatch.rate_minute_mototaxi = Number((numVal / 60).toFixed(2));
+        } else if (field === 'rate_monthly') {
+          syncPatch.rate_monthly_mototaxi = numVal;
+        } else if (field === 'rate_minute') {
+          syncPatch.rate_minute_mototaxi = numVal;
+        }
+      } else if (targetRate.vehicle_type === 'moto') {
+        if (field === 'rate_hourly') {
+          syncPatch.rate_moto = numVal;
+          syncPatch.rate_minute_moto = Number((numVal / 60).toFixed(2));
+        } else if (field === 'rate_monthly') {
+          syncPatch.rate_monthly_moto = numVal;
+        } else if (field === 'rate_minute') {
+          syncPatch.rate_minute_moto = numVal;
+        }
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      ...syncPatch
+    }));
   };
 
   // Guardar formulario
@@ -805,6 +1099,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           night_shift_start: formData.night_shift_start || '20:00',
           night_shift_end: formData.night_shift_end || '06:00',
           night_shift_surcharge: Number(formData.night_shift_surcharge) || 0.0,
+          subscription_enabled: !!formData.subscription_enabled,
+          custom_rates: JSON.stringify(formData.custom_rates || []),
           require_reservation_prepay: !!formData.require_reservation_prepay,
           reservation_fee: Number(formData.reservation_fee) || 0.0,
           min_stay_hours: Number(formData.min_stay_hours) || 1,
@@ -858,6 +1154,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
           rate_minute_moto: Number(formData.rate_minute_moto) || 0.04,
           min_stay_minutes: Number(formData.min_stay_minutes) || 15,
           max_stay_minutes: Number(formData.max_stay_minutes) || 1440,
+          subscription_enabled: !!formData.subscription_enabled,
+          custom_rates: JSON.stringify(formData.custom_rates || []),
           night_shift_enabled: !!formData.night_shift_enabled,
           night_shift_start: formData.night_shift_start || '20:00',
           night_shift_end: formData.night_shift_end || '06:00',
@@ -1872,226 +2170,232 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                     </div>
                   </div>
 
-                  {/* 4 Tarjetas de Vehículos */}
+                  {/* Master Switch de Abonos */}
+                  <div className={`p-4 rounded-xl border transition-all ${
+                    formData.subscription_enabled !== false 
+                      ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60' 
+                      : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'
+                  }`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          formData.subscription_enabled !== false
+                            ? 'bg-amber-500 text-white shadow-sm'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+                        }`}>
+                          <Crown className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                              Abonos Mensuales y Fraccionados (3 semanas / 1 mes / días a medida)
+                            </h4>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              formData.subscription_enabled !== false
+                                ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700'
+                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                            }`}>
+                              {formData.subscription_enabled !== false ? 'Activo para Conductores' : 'Desactivado'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Permite a los usuarios contratar membresías de estadía prolongada (3 semanas, 1 mes de 30 días o días personalizados).
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={formData.subscription_enabled !== false}
+                            onChange={(e) => setFormData(prev => ({ ...prev, subscription_enabled: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {formData.subscription_enabled !== false ? (
+                      <div className="mt-3 pt-3 border-t border-amber-200/60 dark:border-amber-800/40 flex items-center justify-between flex-wrap gap-2 text-[11px]">
+                        <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                          <span>Modalidades habilitadas en app de conductores:</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 font-semibold font-mono text-[10px]">
+                            ✓ 3 Semanas (21d)
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 font-semibold font-mono text-[10px]">
+                            ✓ 1 Mes (30d)
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 font-semibold font-mono text-[10px]">
+                            ✓ Tarifario Fraccionado
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <span>Los abonos están pausados en esta sede. Los clientes solo podrán reservar estadías normales por hora o minuto.</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Padrón Dinámico de Tarifarios */}
                   <div className="space-y-3">
-                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block font-mono">
-                      Tarifas por Categoría de Vehículo
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      
-                      {/* Auto / Sedán */}
-                      <div className={`p-3.5 rounded-xl border bg-white dark:bg-[#151D2F] shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-400/20' : 'border-slate-200 dark:border-slate-800'}`}>
-                        <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-bold text-xs">
-                          <Car className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          <span>Auto / Sedán</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider font-mono">
+                            Padrón de Tarifarios ({Array.isArray(formData.custom_rates) ? formData.custom_rates.length : 4})
+                          </span>
                         </div>
-                        <div className="space-y-2">
-                          <div>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por hora (S/)</span>
-                            <Input
-                              type="number"
-                              step="0.50"
-                              min="0.50"
-                              value={formData.rate_auto}
-                              onChange={(e) => {
-                                const h = parseFloat(e.target.value) || 0;
-                                setFormData(prev => ({
-                                  ...prev,
-                                  rate: h,
-                                  rate_auto: h,
-                                  rate_minute_auto: Number((h / 60).toFixed(2))
-                                }));
-                              }}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por minuto (S/)</span>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0.01"
-                              value={formData.rate_minute_auto}
-                              onChange={(e) => setFormData({ ...formData, rate_minute_auto: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block mb-0.5 flex items-center gap-1">
-                              <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                              <span>Abonado 30 días (S/)</span>
-                            </span>
-                            <Input
-                              type="number"
-                              step="5.00"
-                              min="10.00"
-                              value={formData.rate_monthly_auto}
-                              onChange={(e) => setFormData({ ...formData, rate_monthly_auto: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200"
-                            />
-                          </div>
-                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Personaliza tarifas por hora, minuto y abonos para cada tipo vehicular o agrega nuevas categorías especiales.
+                        </p>
                       </div>
 
-                      {/* Camioneta / SUV */}
-                      <div className={`p-3.5 rounded-xl border bg-white dark:bg-[#151D2F] shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-400/20' : 'border-slate-200 dark:border-slate-800'}`}>
-                        <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-bold text-xs">
-                          <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          <span>Camioneta / SUV</span>
-                        </div>
-                        <div className="space-y-2">
-                          <div>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por hora (S/)</span>
-                            <Input
-                              type="number"
-                              step="0.50"
-                              min="0.50"
-                              value={formData.rate_suv}
-                              onChange={(e) => {
-                                const h = parseFloat(e.target.value) || 0;
-                                setFormData({
-                                  ...formData,
-                                  rate_suv: h,
-                                  rate_minute_suv: Number((h / 60).toFixed(2))
-                                });
-                              }}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por minuto (S/)</span>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0.01"
-                              value={formData.rate_minute_suv}
-                              onChange={(e) => setFormData({ ...formData, rate_minute_suv: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block mb-0.5 flex items-center gap-1">
-                              <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                              <span>Abonado 30 días (S/)</span>
-                            </span>
-                            <Input
-                              type="number"
-                              step="5.00"
-                              min="10.00"
-                              value={formData.rate_monthly_suv}
-                              onChange={(e) => setFormData({ ...formData, rate_monthly_suv: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleOpenAddRate}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-8.5 px-3.5 rounded-xl gap-1.5 shadow-sm shadow-emerald-600/20 cursor-pointer self-start sm:self-auto"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Agregar Tarifario</span>
+                      </Button>
+                    </div>
 
-                      {/* Mototaxi / Torito */}
-                      <div className={`p-3.5 rounded-xl border bg-white dark:bg-[#151D2F] shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-400/20' : 'border-slate-200 dark:border-slate-800'}`}>
-                        <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-bold text-xs">
-                          <Car className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          <span>Mototaxi / Torito</span>
-                        </div>
-                        <div className="space-y-2">
-                          <div>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por hora (S/)</span>
-                            <Input
-                              type="number"
-                              step="0.50"
-                              min="0.50"
-                              value={formData.rate_mototaxi}
-                              onChange={(e) => {
-                                const h = parseFloat(e.target.value) || 0;
-                                setFormData({
-                                  ...formData,
-                                  rate_mototaxi: h,
-                                  rate_minute_mototaxi: Number((h / 60).toFixed(2))
-                                });
-                              }}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por minuto (S/)</span>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0.01"
-                              value={formData.rate_minute_mototaxi}
-                              onChange={(e) => setFormData({ ...formData, rate_minute_mototaxi: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block mb-0.5 flex items-center gap-1">
-                              <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                              <span>Abonado 30 días (S/)</span>
-                            </span>
-                            <Input
-                              type="number"
-                              step="5.00"
-                              min="10.00"
-                              value={formData.rate_monthly_mototaxi}
-                              onChange={(e) => setFormData({ ...formData, rate_monthly_mototaxi: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                    {/* Grid de Tarifarios Dinámicos */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-3">
+                      {(Array.isArray(formData.custom_rates) ? formData.custom_rates : buildDefaultCustomRates(formData)).map((rate) => {
+                        const Icon = getVehicleTypeIcon(rate.vehicle_type);
+                        const isAutoOrBase = rate.is_base;
 
-                      {/* Moto Lineal */}
-                      <div className={`p-3.5 rounded-xl border bg-white dark:bg-[#151D2F] shadow-2xs space-y-2.5 ${formData.billing_unit === 'minute' ? 'border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-400/20' : 'border-slate-200 dark:border-slate-800'}`}>
-                        <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-bold text-xs">
-                          <Bike className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          <span>Moto Lineal</span>
-                        </div>
-                        <div className="space-y-2">
-                          <div>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por hora (S/)</span>
-                            <Input
-                              type="number"
-                              step="0.50"
-                              min="0.50"
-                              value={formData.rate_moto}
-                              onChange={(e) => {
-                                const h = parseFloat(e.target.value) || 0;
-                                setFormData({
-                                  ...formData,
-                                  rate_moto: h,
-                                  rate_minute_moto: Number((h / 60).toFixed(2))
-                                });
-                              }}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">Por minuto (S/)</span>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0.01"
-                              value={formData.rate_minute_moto}
-                              onChange={(e) => setFormData({ ...formData, rate_minute_moto: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block mb-0.5 flex items-center gap-1">
-                              <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                              <span>Abonado 30 días (S/)</span>
-                            </span>
-                            <Input
-                              type="number"
-                              step="5.00"
-                              min="10.00"
-                              value={formData.rate_monthly_moto}
-                              onChange={(e) => setFormData({ ...formData, rate_monthly_moto: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-xs font-mono font-bold bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                        return (
+                          <div 
+                            key={rate.id}
+                            className={`p-3.5 rounded-xl border bg-white dark:bg-[#151D2F] shadow-2xs space-y-3 flex flex-col justify-between ${
+                              formData.billing_unit === 'minute' 
+                                ? 'border-emerald-300 dark:border-emerald-600 ring-1 ring-emerald-400/20' 
+                                : 'border-slate-200 dark:border-slate-800'
+                            }`}
+                          >
+                            <div>
+                              {/* Header de la tarjeta con acciones */}
+                              <div className="flex items-start justify-between gap-1.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                                    <Icon className="w-4 h-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                      {rate.name}
+                                    </h4>
+                                    <span className="text-[10px] text-slate-400 uppercase font-mono block">
+                                      {rate.vehicle_type} {isAutoOrBase ? '· Base' : '· Especial'}
+                                    </span>
+                                  </div>
+                                </div>
 
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditRate(rate)}
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                                    title="Editar detalles del tarifario"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteRate(rate.id, rate.name)}
+                                    className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition cursor-pointer"
+                                    title="Eliminar este tarifario"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Inputs de Precios Rápidos */}
+                              <div className="space-y-2 pt-2.5">
+                                <div>
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">
+                                    Por hora (S/)
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    step="0.50"
+                                    min="0.50"
+                                    value={rate.rate_hourly}
+                                    onChange={(e) => handleUpdateRateInline(rate.id, 'rate_hourly', e.target.value)}
+                                    className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                                  />
+                                </div>
+
+                                <div>
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">
+                                    Por minuto (S/)
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    value={rate.rate_minute}
+                                    onChange={(e) => handleUpdateRateInline(rate.id, 'rate_minute', e.target.value)}
+                                    className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                                  />
+                                </div>
+
+                                <div>
+                                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block mb-0.5 flex items-center justify-between">
+                                    <span className="flex items-center gap-1">
+                                      <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                                      <span>Abono 30 días (S/)</span>
+                                    </span>
+                                    <span className="font-mono text-[9px] text-amber-600/80">
+                                      ~S/ {((rate.rate_monthly || 0) / 30).toFixed(1)}/d
+                                    </span>
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    step="5.00"
+                                    min="10.00"
+                                    value={rate.rate_monthly}
+                                    onChange={(e) => handleUpdateRateInline(rate.id, 'rate_monthly', e.target.value)}
+                                    className="h-8 text-xs font-mono font-bold bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200"
+                                  />
+                                </div>
+
+                                <div>
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-0.5 flex items-center justify-between">
+                                    <span>Abono 3 semanas / 21d (S/)</span>
+                                    <span className="font-mono text-[9px] text-slate-400">
+                                      {rate.rate_3_weeks ? `S/ ${rate.rate_3_weeks}` : `S/ ${(((rate.rate_monthly || 0) / 30) * 21).toFixed(2)}`}
+                                    </span>
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    step="5.00"
+                                    min="10.00"
+                                    value={rate.rate_3_weeks || Number((((rate.rate_monthly || 0) / 30) * 21).toFixed(2))}
+                                    onChange={(e) => handleUpdateRateInline(rate.id, 'rate_3_weeks', e.target.value)}
+                                    className="h-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {rate.description && (
+                              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic truncate pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                                {rate.description}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -2155,6 +2459,175 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">Tarifa diurna regular aplicada uniformemente las 24 horas del día.</p>
                     )}
                   </div>
+
+                  {/* Modal Overlay para Agregar / Editar Tarifario */}
+                  {isRateModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150">
+                      <div className="w-full max-w-md bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 space-y-4">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                              <Sliders className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                {editingRateId ? 'Actualizar Tarifario' : 'Agregar Nuevo Tarifario'}
+                              </h3>
+                              <p className="text-[11px] text-slate-500">
+                                {editingRateId ? 'Modifica los valores y reglas de cobro' : 'Define un nuevo esquema tarifario para tu sede'}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsRateModalOpen(false)}
+                            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg transition cursor-pointer"
+                          >
+                            <XCircle className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                              Nombre del Tarifario *
+                            </label>
+                            <Input
+                              placeholder="Ej. Bicicleta Eléctrica, Camión Pesado, Van Ejecutiva"
+                              value={rateModalData.name}
+                              onChange={(e) => setRateModalData({ ...rateModalData, name: e.target.value })}
+                              className="text-xs h-9 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                              Categoría Vehicular
+                            </label>
+                            <select
+                              value={rateModalData.vehicle_type}
+                              onChange={(e) => setRateModalData({ ...rateModalData, vehicle_type: e.target.value })}
+                              className="w-full h-9 rounded-xl text-xs font-semibold px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white cursor-pointer focus:outline-none focus:border-emerald-500"
+                            >
+                              <option value="auto">Auto / Sedán / Hatchback</option>
+                              <option value="suv">Camioneta / SUV / Pick-up</option>
+                              <option value="mototaxi">Mototaxi / Trimóvil</option>
+                              <option value="moto">Moto Lineal / Scooter</option>
+                              <option value="camion">Camión / Transporte Pesado</option>
+                              <option value="bicicleta">Bicicleta / Ciclo</option>
+                              <option value="otro">Otro / Especial</option>
+                            </select>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                                Tarifa por Hora (S/) *
+                              </label>
+                              <Input
+                                type="number"
+                                step="0.50"
+                                min="0.00"
+                                value={rateModalData.rate_hourly}
+                                onChange={(e) => {
+                                  const h = parseFloat(e.target.value) || 0;
+                                  setRateModalData({
+                                    ...rateModalData,
+                                    rate_hourly: h,
+                                    rate_minute: Number((h / 60).toFixed(2))
+                                  });
+                                }}
+                                className="text-xs font-mono font-bold h-9 bg-slate-50 dark:bg-slate-900 dark:text-white"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                                Tarifa por Minuto (S/)
+                              </label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0.00"
+                                value={rateModalData.rate_minute}
+                                onChange={(e) => setRateModalData({ ...rateModalData, rate_minute: parseFloat(e.target.value) || 0 })}
+                                className="text-xs font-mono font-bold h-9 bg-slate-50 dark:bg-slate-900 dark:text-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1">
+                                <Crown className="w-3 h-3 text-amber-500" />
+                                <span>Abono 30 días (S/)</span>
+                              </label>
+                              <Input
+                                type="number"
+                                step="5.00"
+                                min="0.00"
+                                value={rateModalData.rate_monthly}
+                                onChange={(e) => {
+                                  const m = parseFloat(e.target.value) || 0;
+                                  setRateModalData({
+                                    ...rateModalData,
+                                    rate_monthly: m,
+                                    rate_3_weeks: Number(((m / 30) * 21).toFixed(2))
+                                  });
+                                }}
+                                className="text-xs font-mono font-bold h-9 bg-amber-50/50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 dark:text-amber-200"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                                Abono 3 semanas / 21d (S/)
+                              </label>
+                              <Input
+                                type="number"
+                                step="5.00"
+                                min="0.00"
+                                value={rateModalData.rate_3_weeks}
+                                onChange={(e) => setRateModalData({ ...rateModalData, rate_3_weeks: parseFloat(e.target.value) || 0 })}
+                                className="text-xs font-mono font-bold h-9 bg-slate-50 dark:bg-slate-900 dark:text-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                              Descripción / Restricciones
+                            </label>
+                            <Input
+                              placeholder="Ej. Dimensiones máximas, turnos o requisitos especiales"
+                              value={rateModalData.description}
+                              onChange={(e) => setRateModalData({ ...rateModalData, description: e.target.value })}
+                              className="text-xs h-9 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsRateModalOpen(false)}
+                            className="text-xs h-8.5 rounded-xl cursor-pointer"
+                          >
+                            Cancelar
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleSaveRateModal}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-8.5 px-4 rounded-xl gap-1.5 cursor-pointer shadow-sm shadow-emerald-600/20"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{editingRateId ? 'Guardar Cambios' : 'Registrar Tarifario'}</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               )}

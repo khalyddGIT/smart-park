@@ -186,6 +186,8 @@ async def startup_db():
                 ("estacionamientos", "min_stay_minutes", "INTEGER DEFAULT 15"),
                 ("estacionamientos", "max_stay_minutes", "INTEGER DEFAULT 1440"),
                 ("estacionamientos", "allow_open_stay", "BOOLEAN DEFAULT TRUE"),
+                ("estacionamientos", "subscription_enabled", "BOOLEAN DEFAULT TRUE"),
+                ("estacionamientos", "custom_rates", "TEXT"),
                 ("usuarios", "avatar_url", "TEXT"),
                 ("vehiculos", "image_url", "TEXT"),
                 ("vehiculos", "year", "VARCHAR(10) DEFAULT '2023'"),
@@ -204,6 +206,8 @@ async def startup_db():
                 ("reservas", "reservation_type", "VARCHAR(30) DEFAULT 'standard'"),
                 ("reservas", "subscription_months", "INTEGER DEFAULT 1"),
                 ("reservas", "is_subscription", "BOOLEAN DEFAULT FALSE"),
+                ("reservas", "subscription_days", "INTEGER"),
+                ("reservas", "subscription_type", "VARCHAR(50)"),
                 ("resenas", "is_hidden", "BOOLEAN DEFAULT FALSE"),
                 ("incidencias", "is_hidden", "BOOLEAN DEFAULT FALSE"),
             ]

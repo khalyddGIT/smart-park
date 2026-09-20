@@ -165,6 +165,8 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
     resp.reservation_type = getattr(r, "reservation_type", "standard") or "standard"
     resp.subscription_months = getattr(r, "subscription_months", 1) or 1
     resp.is_subscription = bool(getattr(r, "is_subscription", False))
+    resp.subscription_days = getattr(r, "subscription_days", None)
+    resp.subscription_type = getattr(r, "subscription_type", None)
 
     # Cálculo en vivo de exceso de estadía y monto acumulado incremental (sin tiempo de gracia)
     # Los abonos mensuales pagan tarifa plana por mes, no exceso por hora
@@ -431,13 +433,17 @@ async def create_reservation(
     if is_sub:
         res_type = "subscription"
     sub_months = max(1, min(12, int(getattr(res_in, "subscription_months", 1) or 1)))
+    sub_days = int(getattr(res_in, "subscription_days", 0) or (30 * sub_months))
+    if sub_days < 1:
+        sub_days = 30 * sub_months
+    sub_type = getattr(res_in, "subscription_type", None) or ("monthly" if sub_days == 30 else ("3_weeks" if sub_days == 21 else "fractional"))
 
     _start = _naive_utc(res_in.start_time) if res_in.start_time else datetime.utcnow()
     _end = _naive_utc(res_in.end_time) if res_in.end_time else None
 
-    # En abonos mensuales, la fecha de fin se auto-calcula para cubrir 30 días por mes
+    # En abonos mensuales y flexibles, la fecha de fin se auto-calcula para cubrir la cantidad de días del abono
     if is_sub:
-        _end = _start + timedelta(days=30 * sub_months)
+        _end = _start + timedelta(days=sub_days)
     elif _end is None:
         _end = _start + timedelta(hours=res_in.estimated_hours or 1)
     elif _end <= _start:
@@ -574,6 +580,13 @@ async def create_reservation(
             detail="El establecimiento no se encuentra operativo para reservas en este momento."
         )
 
+    # Validar si el establecimiento permite abonos / suscripciones
+    if is_sub and getattr(parking, "subscription_enabled", True) is False:
+        raise HTTPException(
+            status_code=400,
+            detail="Este establecimiento tiene desactivada la modalidad de abonos y suscripciones."
+        )
+
     # Verificar política de prepago obligatorio
     if getattr(parking, "require_reservation_prepay", False) and not getattr(res_in, "pay_now", False):
         raise HTTPException(
@@ -615,9 +628,10 @@ async def create_reservation(
 
     if is_sub:
         monthly_rate = get_parking_monthly_rate(parking, vtype)
-        total_cost = round(monthly_rate * sub_months, 2)
-        billing_unit = "month"
-        estimated_hours = 24 * 30 * sub_months
+        daily_rate = monthly_rate / 30.0
+        total_cost = round(daily_rate * sub_days, 2)
+        billing_unit = "month" if sub_days == 30 else "subscription"
+        estimated_hours = 24 * sub_days
         estimated_minutes = estimated_hours * 60
     elif billing_unit == "minute":
         min_stay_min = int(getattr(parking, "min_stay_minutes", 15) or 15)
@@ -664,7 +678,9 @@ async def create_reservation(
         is_open_stay=bool(getattr(res_in, "is_open_stay", False)),
         reservation_type=res_type,
         subscription_months=sub_months if is_sub else 1,
-        is_subscription=is_sub
+        is_subscription=is_sub,
+        subscription_days=sub_days if is_sub else None,
+        subscription_type=sub_type if is_sub else None
     )
 
     slot.status = "reserved"
@@ -687,7 +703,9 @@ async def create_reservation(
             "tolerance_minutes": getattr(db_res, "tolerance_minutes", 15),
             "reservation_type": db_res.reservation_type,
             "subscription_months": db_res.subscription_months,
-            "is_subscription": db_res.is_subscription
+            "is_subscription": db_res.is_subscription,
+            "subscription_days": getattr(db_res, "subscription_days", None),
+            "subscription_type": getattr(db_res, "subscription_type", None)
         }
         await realtime.broadcast("reservations:updated", broadcast_payload)
         await realtime.broadcast("spaces:update", broadcast_payload)

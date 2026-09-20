@@ -127,6 +127,8 @@ class Parking(Base):
     min_stay_minutes = Column(Integer, default=15)
     max_stay_minutes = Column(Integer, default=1440)
     allow_open_stay = Column(Boolean, default=True)
+    subscription_enabled = Column(Boolean, default=True)
+    custom_rates = Column(Text, nullable=True)
 
     slots = relationship("Slot", back_populates="parking", cascade="all, delete-orphan")
     elements = relationship("FloorPlanElement", back_populates="parking", cascade="all, delete-orphan")
@@ -221,6 +223,8 @@ class Reservation(Base):
     reservation_type = Column(String(30), default="standard", nullable=True)
     subscription_months = Column(Integer, default=1, nullable=True)
     is_subscription = Column(Boolean, default=False, nullable=True)
+    subscription_days = Column(Integer, nullable=True)
+    subscription_type = Column(String(50), nullable=True)
 
     user = relationship("User", back_populates="reservations")
     parking = relationship("Parking")

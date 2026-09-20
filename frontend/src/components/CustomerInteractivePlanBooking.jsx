@@ -1669,7 +1669,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 className="w-full mt-2.5 py-2 px-3 rounded-xl text-xs font-semibold text-slate-400 hover:text-amber-400 hover:bg-slate-800/60 border border-dashed border-slate-800 transition flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Crown className="w-3.5 h-3.5 text-amber-400" />
-                <span>¿Buscas abono mensual o fecha adelantada? <span className="underline text-slate-300 hover:text-white">Más opciones</span></span>
+                <span>
+                  {parking?.subscription_enabled !== false 
+                    ? "¿Buscas abono (3 semanas / 1 mes) o fecha adelantada? " 
+                    : "¿Buscas reservar con fecha adelantada? "}
+                  <span className="underline text-slate-300 hover:text-white">Más opciones</span>
+                </span>
               </button>
             )}
           </div>

@@ -64,6 +64,8 @@ def _ensure_schema():
                 ("estacionamientos", "min_stay_minutes", "INTEGER DEFAULT 15"),
                 ("estacionamientos", "max_stay_minutes", "INTEGER DEFAULT 1440"),
                 ("estacionamientos", "allow_open_stay", "BOOLEAN DEFAULT TRUE"),
+                ("estacionamientos", "subscription_enabled", "BOOLEAN DEFAULT TRUE"),
+                ("estacionamientos", "custom_rates", "TEXT"),
                 ("vehiculos", "image_url", "TEXT"),
                 ("vehiculos", "year", "VARCHAR(10) DEFAULT '2023'"),
                 ("vehiculos", "soat_expiry", "VARCHAR(20)"),
@@ -81,6 +83,8 @@ def _ensure_schema():
                 ("reservas", "reservation_type", "VARCHAR(30) DEFAULT 'immediate'"),
                 ("reservas", "subscription_months", "INTEGER DEFAULT 0"),
                 ("reservas", "is_subscription", "BOOLEAN DEFAULT FALSE"),
+                ("reservas", "subscription_days", "INTEGER"),
+                ("reservas", "subscription_type", "VARCHAR(50)"),
                 ("resenas", "is_hidden", "BOOLEAN DEFAULT FALSE"),
                 ("incidencias", "is_hidden", "BOOLEAN DEFAULT FALSE"),
             ]

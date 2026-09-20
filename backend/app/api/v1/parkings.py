@@ -706,7 +706,9 @@ async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(g
         reservation_fee=float(parking_in.reservation_fee or 0.0),
         min_stay_hours=int(parking_in.min_stay_hours or 1),
         max_stay_hours=int(parking_in.max_stay_hours or 24),
-        allow_open_stay=parking_in.allow_open_stay if parking_in.allow_open_stay is not None else True
+        allow_open_stay=parking_in.allow_open_stay if parking_in.allow_open_stay is not None else True,
+        subscription_enabled=parking_in.subscription_enabled if parking_in.subscription_enabled is not None else True,
+        custom_rates=parking_in.custom_rates
     )
     db.add(db_parking)
     await db.commit()

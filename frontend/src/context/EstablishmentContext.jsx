@@ -840,6 +840,8 @@ export const EstablishmentProvider = ({ children }) => {
             min_stay_hours: p.min_stay_hours != null ? Number(p.min_stay_hours) : undefined,
             max_stay_hours: p.max_stay_hours != null ? Number(p.max_stay_hours) : undefined,
             allow_open_stay: p.allow_open_stay !== undefined ? !!p.allow_open_stay : true,
+            subscription_enabled: p.subscription_enabled !== undefined ? !!p.subscription_enabled : true,
+            custom_rates: p.custom_rates || null,
             elements: null, 
             _needsFloorPlan: true
           }, idx));
@@ -1419,7 +1421,9 @@ export const EstablishmentProvider = ({ children }) => {
           reservation_fee: Number(newEst.reservation_fee || 0.0),
           min_stay_hours: Number(newEst.min_stay_hours || 1),
           max_stay_hours: Number(newEst.max_stay_hours || 24),
-          allow_open_stay: newEst.allow_open_stay !== undefined ? !!newEst.allow_open_stay : true
+          allow_open_stay: newEst.allow_open_stay !== undefined ? !!newEst.allow_open_stay : true,
+          subscription_enabled: newEst.subscription_enabled !== undefined ? !!newEst.subscription_enabled : true,
+          custom_rates: typeof newEst.custom_rates === 'object' ? JSON.stringify(newEst.custom_rates) : (newEst.custom_rates || null)
         };
         const hierarchy = getEstablishmentHierarchy(newEst);
         const effectiveCompany = newEst.company_name || newEst.companyName || hierarchy.companyName;
@@ -1483,6 +1487,9 @@ export const EstablishmentProvider = ({ children }) => {
             reservation_fee: res.data.reservation_fee,
             min_stay_hours: res.data.min_stay_hours,
             max_stay_hours: res.data.max_stay_hours,
+            allow_open_stay: res.data.allow_open_stay !== undefined ? !!res.data.allow_open_stay : true,
+            subscription_enabled: res.data.subscription_enabled !== undefined ? !!res.data.subscription_enabled : true,
+            custom_rates: res.data.custom_rates || null,
             image: res.data.image_url, 
             status: res.data.status === 'active' ? 'Operativo' : res.data.status 
           });
@@ -1587,6 +1594,10 @@ export const EstablishmentProvider = ({ children }) => {
         if (updatedFields.min_stay_hours !== undefined) payload.min_stay_hours = Number(updatedFields.min_stay_hours);
         if (updatedFields.max_stay_hours !== undefined) payload.max_stay_hours = Number(updatedFields.max_stay_hours);
         if (updatedFields.allow_open_stay !== undefined) payload.allow_open_stay = !!updatedFields.allow_open_stay;
+        if (updatedFields.subscription_enabled !== undefined) payload.subscription_enabled = !!updatedFields.subscription_enabled;
+        if (updatedFields.custom_rates !== undefined) {
+          payload.custom_rates = typeof updatedFields.custom_rates === 'object' ? JSON.stringify(updatedFields.custom_rates) : String(updatedFields.custom_rates);
+        }
         
         if (Object.keys(payload).length) {
           const res = await api.put(`/parkings/${numId}`, payload);
@@ -1833,6 +1844,8 @@ export const EstablishmentProvider = ({ children }) => {
       reservationType: r.reservation_type || 'standard',
       isSubscription: !!r.is_subscription,
       subscriptionMonths: Number(r.subscription_months || 0),
+      subscriptionDays: r.subscription_days != null ? Number(r.subscription_days) : null,
+      subscriptionType: r.subscription_type || null,
       isOvertime: !!r.is_overtime,
       overtimeMinutes: Number(r.overtime_minutes || 0),
       amountPaid: Number(r.amount_paid ?? 0)
@@ -1991,7 +2004,9 @@ export const EstablishmentProvider = ({ children }) => {
         auto_assign: !!isAutoAssign,
         reservation_type: bookingData.reservationType || bookingData.reservation_type || 'standard',
         is_subscription: !!(bookingData.isSubscription || bookingData.is_subscription),
-        subscription_months: Number(bookingData.subscriptionMonths || bookingData.subscription_months || 1)
+        subscription_months: Number(bookingData.subscriptionMonths || bookingData.subscription_months || 1),
+        subscription_days: bookingData.subscriptionDays ?? bookingData.subscription_days ?? null,
+        subscription_type: bookingData.subscriptionType || bookingData.subscription_type || null
       });
       setBookingError(null);
       const mapped = mapServerReservation(serverRes);

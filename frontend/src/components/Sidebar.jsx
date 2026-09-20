@@ -90,9 +90,7 @@ const SECTIONS_BY_ROLE = {
         { id: 'dashboard', label: 'Panel Global', shortLabel: 'Panel', icon: LayoutDashboard },
         { id: 'finances', label: 'Finanzas & Pagos', shortLabel: 'Finanzas', icon: CreditCard },
         { id: 'affiliates', label: 'Sedes & Afiliación', shortLabel: 'Sedes', icon: Building2 },
-        { id: 'cameras', label: 'Monitoreo Cámara', shortLabel: 'Cámara', icon: Video },
         { id: 'settings', label: 'Ajustes Maestros', shortLabel: 'Ajustes', icon: Settings },
-        { id: 'reservations', label: 'Padrón Reservas', shortLabel: 'Reservas', icon: CalendarCheck },
         { id: 'analytics', label: 'Analítica Global', shortLabel: 'Métricas', icon: BarChart3 },
         { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
         { id: 'users', label: 'Usuarios & RBAC', shortLabel: 'Usuarios', icon: Shield },
@@ -175,7 +173,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
         left1: allItems.find(i => i.id === 'dashboard') || allItems[0],
         left2: allItems.find(i => i.id === 'finances') || allItems[1],
         center: allItems.find(i => i.id === 'affiliates') || allItems[2],
-        right1: allItems.find(i => i.id === 'reservations') || allItems[4],
+        right1: allItems.find(i => i.id === 'analytics') || allItems[3],
       };
     }
     return {

@@ -41,8 +41,6 @@ export const VALID_TABS_BY_ROLE = {
     'finances',
     'settings',
     'affiliates',
-    'cameras',
-    'reservations',
     'analytics',
     'incidents',
     'audit',

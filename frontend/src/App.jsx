@@ -1410,12 +1410,10 @@ const AppMain = () => {
                 <PlatformGlobalDashboard onNavigateTab={(tab) => setActiveTab(tab)} />
               )}
 
-              {activeTab === 'cameras' && <CameraMonitorModule />}
               {activeTab === 'profile' && <UserProfileModule />}
               {activeTab === 'finances' && <PlatformFinancesModule />}
               {activeTab === 'settings' && <PlatformSettingsModule />}
               {activeTab === 'affiliates' && <AffiliatedParkingsModule />}
-              {activeTab === 'reservations' && <ReservationsModule />}
               {activeTab === 'analytics' && <AnalyticsGlobalModule />}
               {activeTab === 'incidents' && <IncidentsModule />}
               {activeTab === 'audit' && <AuditLogsModule />}

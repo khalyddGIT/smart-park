@@ -14,7 +14,7 @@ test.describe('Rules of Hooks and Digital Access Pass Verification', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Comprobar que no hay Error Boundary en pantalla ("Minified React error #310" u "Ocurrió un error inesperado")
     const errorBoundary = page.locator('text=Minified React error #310');

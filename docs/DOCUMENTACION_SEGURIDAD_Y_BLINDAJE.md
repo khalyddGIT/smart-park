@@ -127,6 +127,23 @@ El presente documento certifica la auditoría exhaustiva y el blindaje perimetra
 
 ---
 
+### 3.4 Blindaje Anti-Sabotaje de Reservas y Gestión de Sobreestadía
+
+Se incorporaron cuatro escudos transaccionales en el núcleo del motor de reservas ([`reservations.py`](file:///d:/Escritorio/smart%20park/smart-park/backend/app/api/v1/reservations.py)):
+
+1. **Bloqueo de Cancelación con Vehículo en Cochera**:
+   - Si la reserva se encuentra en estado `active` (el vehículo ya realizó su Check-In y está físicamente dentro del establecimiento), el sistema rechaza la solicitud de cancelación arrojando `HTTP 400 Bad Request` (`"No se puede cancelar una estancia en curso"`). La salida debe procesarse forzosamente a través de garita.
+2. **Control Estricto de Tolerancia (No-Show)**:
+   - Tras expirar el tiempo de tolerancia de llegada programado (`now > start_time + tolerance_minutes`), el conductor pierde el derecho de anulación en línea. Solo el operador de garita puede gestionar excepciones operativas.
+3. **Escudo de Eliminación contra Borrado Accidental o Malicioso**:
+   - Se blindó el endpoint `DELETE /api/v1/reservations/{id}` impidiendo la eliminación física de registros si la estancia está activa o si cuenta con transacciones de pago registradas en contabilidad.
+4. **Liquidación de Sobreestadía Sin Período de Gracia Fraudulento (`/pay-overtime`)**:
+   - Endpoint `POST /api/v1/reservations/{reservation_id}/pay-overtime` que calcula la diferencia exacta entre la salida real y la programada, cobrando la fracción exacta en Soles mediante Culqi/PayPal o en ventanilla de garita antes de liberar la plaza.
+5. **Switch Maestro de Abonos (`subscription_enabled`)**:
+   - Si un administrador local desactiva las suscripciones en su sede, el backend intercepta cualquier intento de creación de abono devolviendo `HTTP 400 Bad Request`, protegiendo la disponibilidad de plazas rotativas.
+
+---
+
 ## 4. Evidencia de Verificación
 
 ### 4.1 Pruebas Unitarias y de Integración (Backend Pytest)
@@ -136,12 +153,13 @@ pytest -q
 ```
 Resultado:
 ```text
-121 passed, 2 skipped, 598 warnings in 127.90s (0:02:07)
+132 passed, 2 skipped in 136.11s (100% pass rate)
 ```
-Se incluyeron tests específicos en `app/tests/test_security.py`:
-- `test_in_memory_rate_limiting_and_blacklist`: Valida el bloqueo al 4to intento y la revocación por JTI.
-- `test_incidents_list_tenant_isolation`: Valida que el Admin de Sede A no ve incidentes de Sede B y recibe `403` si intenta forzar el parámetro.
-- `test_security_http_headers`: Valida las cabeceras `nosniff` y `DENY`.
+Se incluyeron tests especializados:
+- `test_security.py`: Valida rate limiting en memoria y revocación JWT.
+- `test_incidents_list_tenant_isolation`: Valida aislamiento multi-tenant en incidencias.
+- `test_overtime_and_no_grace_period.py`: Valida escudos de sobreestadía, No-Show y anti-borrado.
+- `test_subscription_and_advance.py`: Valida el switch de abonos y tarificación prorrateada.
 
 ### 4.2 Compilación del Frontend (Vite)
 Comando ejecutado:
@@ -150,7 +168,7 @@ npm run build
 ```
 Resultado:
 ```text
-✓ built in 7.56s (0 errores, 2952 módulos procesados)
+✓ built in 4.99s (0 errores, 2957 módulos procesados)
 ```
 
 ### 4.3 Verificación en Producción (Railway Live)
@@ -165,11 +183,9 @@ x-frame-options: DENY
 
 {"status":"ok","service":"smart-park","environment":"production"}
 ```
-Prueba de acceso a Swagger (`/docs` y `/api/v1/openapi.json`):
-- Los endpoints de documentación ya **no exponen esquemas ni rutas en producción**, respondiendo con la página SPA estándar protegida.
 
 ---
 
 ## 5. Conclusión
 
-El sistema **Smart Park** cumple de forma íntegra y comprobada con los 10 pilares de seguridad establecidos, garantizando la confidencialidad de los datos, la integridad entre sedes comerciales, el blindaje contra abusos automatizados y la protección total de las credenciales de plataforma.
+El sistema **Smart Park** cumple de forma íntegra y comprobada con los pilares de seguridad y blindaje técnico establecidos, garantizando la confidencialidad de los datos, la integridad entre sedes comerciales, el blindaje contra abusos automatizados y la protección total de las operaciones financieras y vehiculares.

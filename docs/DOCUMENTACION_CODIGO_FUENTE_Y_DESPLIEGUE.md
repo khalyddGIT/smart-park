@@ -63,23 +63,25 @@ Los endpoints viven en `app/api/v1/` y están divididos por dominio de negocio, 
 
 | Archivo | Dominio | Operaciones principales |
 | :--- | :--- | :--- |
-| `auth.py` | Autenticación | Registro, login, login con Google, verificación de PIN |
-| `users.py` | Usuarios | Padrón de cuentas y asignación de roles |
-| `vehicles.py` | Vehículos | CRUD de placas asociadas a cada conductor |
-| `parkings.py` | Estacionamientos | CRUD de sedes, plazas (`/slots`) y plano CAD (`/floor-plan`, `/sync`) |
-| `reservations.py` | Reservas | Crear reserva, listar propias, verificar pase QR `/verify/{code}` |
+| `auth.py` | Autenticación | Registro, login, login con Google, verificación de PIN numérico |
+| `users.py` | Usuarios | Padrón de cuentas y asignación de roles RBAC |
+| `vehicles.py` | Vehículos | CRUD de matrículas peruanas (estándar y alfanuméricas) asociadas a cada conductor |
+| `parkings.py` | Estacionamientos | CRUD de sedes, tarifas por categoría/minuto/noche, switch maestro de abonos (`subscription_enabled`), custom rates, plazas (`/slots`) y plano CAD (`/floor-plan`, `/sync`) |
+| `reservations.py` | Reservas & Abonos | Crear reserva regular o abono flexible (3 semanas, mensual, fraccionado), listar propias, verificar pase QR `/verify/{code}`, liquidación de sobreestadía (`POST /{id}/pay-overtime`), y escudos de cancelación/borrado |
 | `staff.py` | Personal | Nómina de operadores de garita, asignación de turnos, alta de cuentas de usuario y reseteo de claves |
-| `reviews.py` | Reseñas | Calificaciones y réplicas oficiales |
-| `incidents.py` | Incidencias | Reporte, seguimiento y resolución |
-| `payments.py` | Pagos | Estado de pasarelas y cobros simulados |
-| `finances.py` | Finanzas | Resumen contable para liquidaciones payout |
-| `anpr.py` | Garita LPR | Simulador OCR (`POST /simulate-scan`) |
+| `reviews.py` | Reseñas | Calificaciones y réplicas oficiales de administración |
+| `incidents.py` | Incidencias | Reporte, seguimiento y resolución de anomalías |
+| `payments.py` | Pagos | Estado de pasarelas Culqi/PayPal y cobros de sobreestadía |
+| `finances.py` | Finanzas | Padrón bancario de sedes, dispersión payout y vouchers contables |
+| `anpr.py` | Garita LPR | Inferencia OCR y simulador de escaneo (`POST /simulate-scan`) |
+| `affiliations.py` | Afiliaciones | Registro y aprobación de nuevas cocheras en 1 clic |
+| `audit.py` | Auditoría | Consulta de eventos forenses inmutables |
 
-Un detalle técnico relevante descubierto durante las pruebas de esta sesión: el endpoint de login (`POST /api/v1/auth/login`) valida el cuerpo de la petición con el esquema `UserCreate`, que exige también el campo `full_name` además de `email` y `password`. Cualquier cliente que invoque el login sin ese campo recibirá un `422 Unprocessable Entity`. Es un comportamiento intencional del esquema actual, pero conviene tenerlo presente al escribir integraciones o tests.
+Un detalle técnico relevante: el endpoint de login (`POST /api/v1/auth/login`) valida el cuerpo con el esquema `UserCreate`, requiriendo `email` y `password`. La autenticación emite un token JWT con tiempo de expiración y claims de rol.
 
 ### 3.3 Proceso de arranque de la aplicación
 
-El archivo `main.py` orquesta el arranque en varios pasos encadenados. Primero ejecuta validaciones críticas de entorno: cuando `ENVIRONMENT=production`, la aplicación aplica la política *fail-fast*, es decir, **se niega a arrancar** si faltan `DATABASE_URL` o `SECRET_KEY`; esto evita que una configuración incompleta genere un despliegue inseguro o disfuncional. Segundo, configura CORS según el entorno, restringiendo los orígenes permitidos en producción mediante `CORS_ORIGINS`. Tercero, ejecuta los **seeds idempotentes**: crea los usuarios demo y las cocheras iniciales únicamente si aún no existen, garantizando que reinicios repetidos no dupliquen datos. Cuarto, sirve los archivos estáticos compilados del frontend desde la carpeta `static/` con un fallback SPA (cualquier ruta desconocida devuelve el HTML principal), y finalmente expone `/health` para healthchecks y `/docs` para Swagger.
+El archivo `main.py` orquesta el arranque en varios pasos encadenados. Primero ejecuta validaciones críticas de entorno: cuando `ENVIRONMENT=production`, la aplicación aplica la política *fail-fast*, es decir, **se niega a arrancar** si faltan `DATABASE_URL` o `SECRET_KEY`; esto evita que una configuración incompleta genere un despliegue inseguro o disfuncional. Segundo, ejecuta las **auto-migraciones DDL idempotentes**, garantizando la existencia de todas las columnas requeridas (`subscription_enabled`, `custom_rates`, `subscription_days`, `subscription_type`, etc.) tanto en SQLite como en PostgreSQL 15 sin interrumpir el servicio. Tercero, configura CORS según el entorno. Cuarto, ejecuta los **seeds idempotentes**: crea los usuarios demo de los 4 perfiles y las cocheras iniciales únicamente si aún no existen. Quinto, inicializa el servicio de **WebSockets en tiempo real** (`core/realtime.py`) para propagar cambios de plazas instantáneamente. Finalmente, sirve los archivos estáticos compilados del frontend desde la carpeta `static/` con fallback SPA.
 
 ### 3.4 Modelo de datos
 
@@ -87,27 +89,32 @@ Las tablas de base de datos están nombradas en español, manteniendo coherencia
 
 | Tabla BD | Modelo ORM | Contenido |
 | :--- | :--- | :--- |
-| `usuarios` | `Usuario` | Cuentas, roles RBAC, PINs |
-| `vehiculos` | `Vehiculo` | Placas asociadas por usuario |
-| `estacionamientos` | `Estacionamiento` | Sedes, coordenadas GPS, tarifas, aforo |
-| `plazas` | `Plaza` | Cajones del plano (libre / ocupado / reservado) |
-| `elementos_plano` | `ElementoPlano` | Muros, accesos y garitas del lienzo CAD |
-| `reservas` | `Reserva` | Pases QR/ANPR activos e históricos con costos |
-| `personal` | `Personal` | Operadores y turnos por sede |
-| `resenas` | `Resena` | Calificaciones y respuestas oficiales |
+| `usuarios` | `User` | Cuentas, roles RBAC (`user`, `local`, `platform`), PINs hasheados |
+| `vehiculos` | `Vehicle` | Placas asociadas por conductor con formato peruano |
+| `estacionamientos` | `Parking` | Sedes, coordenadas GPS, tarifas por vehículo, abonos, switch de abonos y aforo |
+| `plazas` | `Slot` | Cajones del plano interactivo (`free`, `occupied`, `reserved`, `disabled`) |
+| `elementos_plano` | `FloorPlanElement` | Muros, accesos, cebras y garitas del lienzo CAD |
+| `reservas` | `Reservation` | Pases QR/ANPR, abonos (3 semanas, mensual, fraccionado), montos y sobreestadía |
+| `personal` | `Staff` | Operadores y turnos por sede con PIN de garita |
+| `resenas` | `Review` | Calificaciones (1-5 estrellas) y réplicas de la cochera |
+| `incidencias` | `Incident` | Reportes de anomalías de conductores y operadores |
+| `pagos` | `Payment` | Transacciones contables vinculadas a reservas y pasarelas |
+| `solicitudes_afiliacion`| `AffiliationRequest` | Postulaciones de nuevas cocheras para aprobación |
+| `audit_logs` | `AuditLog` | Trazabilidad forense inmutable de operaciones críticas |
 
 ## 4. Frontend — React 19 + Vite 8
 
 ### 4.1 Stack tecnológico
 
-La interfaz es una **Single Page Application** construida con React 19 y Vite 8, estilizada con TailwindCSS v4 siguiendo una paleta slate/emerald con toques de glassmorphism. Tres librerías especializadas dan vida a las funciones distintivas del producto: **Leaflet 1.9** alimenta el mapa interactivo de Ayacucho con capas conmutables de calles y satélite; **Fabric.js 7** potencia el estudio CAD donde los admins dibujan sus planos a escala 1:1; y **Recharts 3** renderiza los gráficos ejecutivos del panel global. Las comunicaciones con el backend usan Axios a través de `services/`.
+La interfaz es una **Single Page Application** construida con React 19 y Vite 8, estilizada con TailwindCSS v4 siguiendo una paleta clara y profesional, sin saturación de badges decorativos (*anti-slop*). **Mapbox GL JS** y **Leaflet 1.9** están empaquetados nativamente a través de dependencias NPM (erradicando cualquier dependencia de CDNs externos); **Fabric.js 7** potencia el estudio CAD arquitectónico a escala 1:1; y **Recharts 3** renderiza los gráficos de Inteligencia de Negocios en el panel global. Las comunicaciones REST utilizan Axios con interceptores JWT y los eventos en vivo se reciben mediante WebSockets nativos.
 
 ### 4.2 Componentes principales
 
-El directorio `components/` contiene 33 componentes agrupables por actor:
+El directorio `components/` contiene módulos altamente especializados agrupables por actor:
 
-- **Portal del conductor:** `AyacuchoMap.jsx` (mapa con marcadores y cinta continua infinita), `CustomerInteractivePlanBooking.jsx` (selección táctil del cajón sobre el plano), `DigitalAccessPassModal.jsx` (pase QR dinámico con countdown), `LoyaltyClubModule.jsx` (acumulación y canje de puntos).
-- **Admin de cochera:** `LocalEstablishmentManager.jsx` y `InteractiveFloorPlanDrawingStudio.jsx` (edición de sede y estudio CAD), `ANPRMonitor.jsx` (terminal operativo de garita LPR con control de barrera, emisión de tickets y bitácora; rediseñado en los commits más recientes), `ReservationsModule.jsx` (check-in/check-out y escáner QR), `StaffModule.jsx`.
+- **Portal del conductor:** `AyacuchoMap.jsx` (mapa interactivo nativo con cinta continua infinita), `CustomerInteractivePlanBooking.jsx` (reserva visual y táctil sin saturación visual), `MoreReservationsModal.jsx` (abonos de 3 semanas, 1 mes, fraccionado por días y fecha adelantada), `DigitalAccessPassModal.jsx` (pase QR dinámico con countdown y pago de sobreestadía en línea), `VehiclesModule.jsx` (padrón con auto-formato de placas) y `VerifyReservationPage.jsx` (validación pública de pases).
+- **Admin de cochera:** `LocalEstablishmentManager.jsx` (gestión de sede en 4 pestañas: datos, **switch de abonos y CRUD dinámico de tarifarios**, aforo y cámaras), `InteractiveFloorPlanDrawingStudio.jsx` (estudio CAD 1:1 con geometrías de lote en L, U o 45°), `ANPRMonitor.jsx` & `PersonalGaritaModule.jsx` (terminal de garita LPR, barrera y liquidación de estancia), `ReservationsModule.jsx` (check-in/check-out táctico) y `StaffModule.jsx` (personal y credenciales).
+- **Superadmin de plataforma:** `PlatformGlobalDashboard.jsx` (KPIs consolidados de la red), `AnalyticsGlobalModule.jsx` (analítica predictiva y patrones de demanda), `PlatformFinancesModule.jsx` (dispersión bancaria de liquidaciones y vouchers oficiales), `AffiliatedParkingsModule.jsx` (aprobación de sedes en 1 clic), `UserRolesModule.jsx` (directorio de usuarios y roles), `PlatformSettingsModule.jsx` (parámetros maestros y comunicados push), `AuditLogsModule.jsx` (auditoría forense) y `ResiliencySimModule.jsx` (simulador de contingencia de red).
 - **Super Admin:** `PlatformGlobalDashboard.jsx` (KPIs de red, comisiones y ocupación en vivo), `PlatformFinancesModule.jsx` (liquidaciones bancarias con voucher descargable), `PlatformSettingsModule.jsx` (comisiones, pasarelas, modo mantenimiento y comunicados push), `AffiliatedParkingsModule.jsx` (bandeja de aprobación de afiliaciones).
 - **Transversales:** `PaymentsModule.jsx`, `ReviewsModule.jsx`, `IncidentsModule.jsx` y `VehiclesModule.jsx`.
 

@@ -198,40 +198,48 @@ El sistema opera bajo un esquema de **Control de Acceso Basado en Roles (RBAC)**
 
 ---
 
+### 3.11. Modal de Abonos Flexibles y Fecha Adelantada (`MoreReservationsModal.jsx`)
+* **Propósito:** Permite al conductor contratar abonos periódicos o programar reservas anticipadas.
+* **Planes de Abono Disponibles:**
+  - **3 Semanas (21 días):** Plan destacado con prorrateo exacto al 70% del mes.
+  - **1 Mes (30 días):** Abono mensual estándar completo.
+  - **2 Semanas (14 días)** y **1 Semana (7 días):** Opciones intermedias proporcionales.
+  - **Tarifario Fraccionado por Días:** Selector numérico de días personalizados con chips rápidos (5d, 10d, 15d, 25d, 45d) y tarificación prorrateada diaria:
+    $$\text{Tarifa Diaria} = \frac{\text{Abono Mensual}}{30} \quad\longrightarrow\quad \text{Costo Total} = \text{Tarifa Diaria} \times \text{Días}$$
+* **Reserva por Fecha Adelantada:** Selección de fecha y hora futura con cálculo anticipado de costos y tolerancia.
+* **Protección contra Sedes Inactivas:** Si la cochera tiene el switch maestro desactivado (`subscription_enabled = false`), el modal bloquea automáticamente la pestaña de abonos y muestra una advertencia informativa guiando al conductor hacia la fecha adelantada.
+
+---
+
 ## 4. Vistas del Rol Administrador de Cochera (Garita / Local)
 
-### 4.1. Panel de Espacios & Edición de Sede (`LocalEstablishmentManager.jsx`)
-Permite al propietario gestionar de forma integral su establecimiento mediante 4 pestañas estructuradas:
+### 4.1. Panel de Gestión Integral de Sede (`LocalEstablishmentManager.jsx`)
+Permite al propietario gestionar de forma completa su establecimiento mediante 4 pestañas operativas:
 
-1. **1. Datos Generales & Tarifas:**
-   - Nombre comercial de la cochera.
-   - Nivel / Estructura (Nivel 1 Superficie, Sótano -1, Sótano -2, Playa Abierta).
-   - Tarifa por hora con sugerencias rápidas (`S/ 3.00`, `S/ 5.00`, `S/ 8.00`, `S/ 10.00`).
+1. **Pestaña 1: Datos de Sede & Ubicación:**
+   - Nombre comercial de la cochera, RUC fiscal y titularidad.
    - Estado de operación: *Operativo (Abierto)*, *En Mantenimiento*, *Cerrado Temporalmente*.
    - Dirección física, referencia urbana y horario de atención (atajos: `24/7`, `06:00 AM - 10:00 PM`).
-   - Titular, Razón Social y RUC.
+   - Selector GPS interactivo con mapa **Leaflet** nativo (marcador arrastrable y buscador de calles en Ayacucho).
+   - Teléfono fijo, línea de atención WhatsApp con prueba de enlace y galería fotográfica.
 
-2. **2. Ubicación & Mapa Interactivo (`LocationPickerMap`):**
-   - Mini-mapa integrado con alternador de capas (*Calles* y *Satélite ESRI*).
-   - Marcador pin arrastrable para fijar latitud y longitud exactas.
-   - Buscador de calles en Ayacucho y presets rápidos (*Plaza Mayor, Jr. 28 de Julio, Mercado Cáceres, Terminal Libertadores, Jr. Bellido, San Juan Bautista*).
-   - Conversor automático de enlaces compartidos de Google Maps a coordenadas GPS.
+2. **Pestaña 2: Tarifas, Abonos & Turno Noche:**
+   - **Switch Maestro de Abonos (`subscription_enabled`):** Activa o desactiva con un solo clic la disponibilidad de suscripciones recurrentes y abonos flexibles en la sede.
+   - **Padrón Dinámico de Tarifarios (CRUD Completo):**
+     - Botón `+ Agregar Tarifario`: modal interactivo para crear tarifas por tipo de vehículo (Auto, Camioneta, Mototaxi, Moto, Personalizado) con cálculo automático del costo por minuto y abono de 3 semanas.
+     - **Edición Rápida Inline:** Modificación directa de importes dentro de las tarjetas de tarifa en la cuadrícula.
+     - **Edición Completa en Modal:** Ajuste exhaustivo de categorías, condiciones y notas.
+     - **Eliminación con Confirmación:** Borrado seguro de tarifas personalizadas.
+     - **Sincronización Bidireccional:** Todo cambio se refleja inmediatamente en las columnas nativas de la base de datos (`rate_auto`, `rate_suv`, `rate_moto`, `rate_mototaxi`, `rate_monthly_*`) para garantizar compatibilidad con Garita y ANPR.
+   - **Turno Noche:** Conmutador de horario nocturno, definición de hora de inicio (`20:00`), hora de fin (`06:00`) y recargo por hora nocturna.
 
-3. **3. Fotografía de la Sede:**
-   - Vista previa con encuadre panorámico 16:9.
-   - Subida directa de imágenes desde el dispositivo (hasta 6MB).
-   - Galería de presets arquitectónicos de alta calidad.
+3. **Pestaña 3: Aforo & Distribución:**
+   - Capacidad total de plazas de estacionamiento y niveles de lote (Superficie, Sótanos).
+   - Configuración de minutos de tolerancia para la llegada de conductores (10, 15 o 20 minutos).
 
-4. **4. Contacto & Redes Sociales:**
-   - Teléfono de atención, número de WhatsApp para reservas, correo electrónico y enlace de Google Maps.
-   - Botones interactivos `[ Probar enlace ]` que abren chats reales de WhatsApp o páginas web en nuevas pestañas.
-
-#### 📸 Capturas de Edición de Sede y Selector GPS:
-**Pestañas de Edición de Sede:**
-![Pestañas de Edición de Sede](screenshots/editar_sede_tabs.png)
-
-**Selector de Coordenadas GPS en Mapa Satelital:**
-![Selector de Ubicación en Mapa](screenshots/location_picker_map.png)
+4. **Pestaña 4: Cámaras & Garita:**
+   - URL del flujo de video IP/RTSP para reconocimiento automático de placas.
+   - Calibración interactiva del cuadro OCR para el encuadre de la matrícula vehicular.
 
 ---
 
@@ -254,7 +262,7 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
 
 ---
 
-### 4.3. Control de Garita & Lector LPR Inteligente (`ANPRMonitor.jsx`)
+### 4.3. Control de Garita & Lector LPR Inteligente (`ANPRMonitor.jsx` & `PersonalGaritaModule.jsx`)
 * **Propósito:** Consola operativa para el guardia u operador de garita con hardware de cámara y control de acceso.
 * **Funcionalidades:**
   - **Visor de Cámara CCTV / WebCam:** Transmisión de video con encuadre de captura de placa.
@@ -262,58 +270,64 @@ Permite al propietario gestionar de forma integral su establecimiento mediante 4
   - **Mando de Barrera Manual:** Botón directo integrado en el encabezado `[ Abrir Barrera ]` / `[ Barrera Abierta ]`.
   - **Emisión Rápida de Tickets Presenciales:** Emite ticket con plaza asignada en 1 clic para clientes sin reserva previa.
   - **Monitor de Vehículos en Cochera:** Lista en tiempo real de los autos estacionados con su tiempo de estancia y botón de `Salida`.
+  - **Liquidación Estricta de Sobreestadía:** Cobro del tiempo excedido en caja antes de autorizar la apertura de barrera.
   - **Bitácora de Accesos:** Registro cronológico de ingresos, salidas, placas y montos recaudados con exportación a CSV.
 
-#### 📸 Captura de la Consola de Garita LPR:
-![Consola Garita y Reconocimiento LPR](screenshots/garita_lpr_cctv.png)
+---
+
+### 4.4. Padrón Operativo de Reservas de Garita (`ReservationsModule.jsx`)
+* **Propósito:** Gestión táctica de llegadas, validación de pases QR y control de tolerancia.
+* **Operaciones Clave:**
+  - Marcación de **Check-In** y **Check-Out** por lectura de código QR o matrícula.
+  - Detección visual de **Tolerancia Vencida (No-Show)** con liberación automática de cajón.
+  - Registro de cobro presencial en efectivo o POS.
 
 ---
 
-### 4.4. Directorio de Personal & Credenciales de Acceso (`StaffModule.jsx`)
+### 4.5. Directorio de Personal & Credenciales de Acceso (`StaffModule.jsx`)
 * **Propósito:** Administración integral de la nómina de colaboradores, operadores de garita, guardias de seguridad y supervisores del establecimiento.
 * **Capacidades Principales:**
-  - **Asignación de Credenciales de Acceso:** Configuración directa de correo electrónico y contraseña segura (con visor de clave `Eye`/`EyeOff` y generador de claves de alta entropía) para que los trabajadores inicien sesión directamente con rol operativo local.
+  - **Asignación de Credenciales de Acceso:** Configuración directa de correo electrónico y contraseña segura para que los trabajadores inicien sesión directamente con rol operativo local.
   - **Control de Turnos & PIN de Garita:** Gestión de turnos (*Mañana, Tarde, Noche, Rotativo 24/7*), cargos operativos y PIN numérico de 4 dígitos para validación rápida en garita/ANPR.
-  - **Gestión Rápida de Claves & Estados:** Modales simplificados para restablecer contraseñas de trabajadores al instante y suspender o reactivar accesos con un clic (sin campos de rol confusos o redundantes).
-  - **Exportación de Nómina:** Descarga de reportes en formato CSV con el estado de credenciales activas.
-
----
-
-### 4.5. Reportes de Ocupación & Rendimiento (`AnalyticsGlobalModule.jsx`)
-* **Propósito:** Gráficos analíticos de afluencia vehicular por horas pico, tasa de rotación de cajones e ingresos acumulados en Nuevos Soles.
-
----
-
-### 4.6. Diagnóstico y Resiliencia de Servicios (`ResiliencySimModule.jsx`)
-* **Propósito:** Monitoreo del estado de salud de la base de datos, servidores de OCR y tolerancia a cortes de red en garita.
+  - **Gestión Rápida de Claves & Estados:** Modales para restablecer contraseñas de trabajadores y suspender o reactivar accesos al instante.
 
 ---
 
 ## 5. Vistas del Rol Super Administrador de Plataforma (Platform)
 
+> **Nota Arquitectónica:** Para garantizar una separación estricta de responsabilidades, el rol de Superadministrador no interviene en la operación directa de garita de sedes individuales (el monitoreo de cámara local y el padrón operativo de reservas son exclusivos del Administrador Local y Operadores de Garita). El Superadministrador se enfoca en la gobernanza, finanzas, analítica y seguridad global de la red.
+
 ### 5.1. Dashboard Global de la Red (`PlatformGlobalDashboard.jsx`)
 * **Propósito:** Centro de comando consolidado para la supervisión de toda la red de estacionamientos afiliados en Ayacucho.
-* **Métricas Principales:** Total de cocheras activas, plazas totales de la red, plazas ocupadas en tiempo real y facturación consolidada.
+* **Métricas Principales:** Recaudación bruta consolidada, comisión neta retenida (10%-12%), volumen de estancias atendidas, ocupación en tiempo real de toda la red y live feed de eventos.
 
----
+### 5.2. Analítica Global de Red (`AnalyticsGlobalModule.jsx`)
+* **Propósito:** Inteligencia de negocios para el dueño de la plataforma con gráficos interactivos Recharts:
+  - Curvas de demanda por franja horaria y días de mayor saturación vehicular en el centro urbano.
+  - Comparativa de rendimiento comercial y facturación entre sedes afiliadas.
+  - Proyección de ingresos y métricas de retención de clientes.
 
-### 5.2. Finanzas & Liquidaciones por Sede (`PlatformFinancesModule.jsx`)
-* **Propósito:** Control de transferencias bancarias, retención de comisiones de plataforma y pagos liquidados a cada propietario de cochera.
+### 5.3. Finanzas & Liquidaciones Bancarias Payout (`PlatformFinancesModule.jsx`)
+* **Propósito:** Gestión de transferencias y dispersión de fondos a propietarios de cochera.
+* **Funcionalidades:**
+  - Padrón bancario de sedes con RUC, Razón Social, Banco (BCP, BBVA, Interbank), Número de Cuenta y CCI.
+  - Ejecución de liquidaciones con generación de **Voucher Oficial descargable e imprimible**.
+  - Conciliación contable y exportación a formato CSV / Excel para declaraciones tributarias (SUNAT).
 
----
+### 5.4. Gestión de Sedes & Solicitudes de Afiliación (`AffiliatedParkingsModule.jsx`)
+* **Propósito:** Bandeja de entrada para revisar solicitudes de afiliación enviadas por nuevos estacionamientos desde el portal público, con aprobación en 1 clic y alta automática de credenciales.
 
-### 5.3. Afiliación & Auditoría de Sedes (`AffiliatedParkingsModule.jsx`)
-* **Propósito:** Aprobación de nuevas playas de estacionamiento, supervisión de licencias municipales y estado de afiliación en Ayacucho.
+### 5.5. Directorio Global de Usuarios & Roles (`UserRolesModule.jsx`)
+* **Propósito:** Administración centralizada de cuentas de usuario, asignación dinámica de roles (`user`, `local`, `platform`) y gestión de PINs de seguridad.
 
----
+### 5.6. Ajustes Maestros de Plataforma (`PlatformSettingsModule.jsx`)
+* **Propósito:** Parámetros globales del servicio (comisión estándar, ventana de gracia en garita), conmutador de pasarelas de pago (Producción/Sandbox), interruptor de modo mantenimiento y centro de comunicados masivos push.
 
-### 5.4. Gestión de Usuarios & Permisos RBAC (`UserRolesModule.jsx`)
-* **Propósito:** Administración de accesos, bloqueo preventivo y asignación de privilegios para administradores y cajeros.
+### 5.7. Auditoría Forense Inmutable (`AuditLogsModule.jsx`)
+* **Propósito:** Registro detallado de eventos de seguridad (creación de cuentas, cambio de tarifas, IPs y fallos de autenticación) con visor JSON y exportación.
 
----
-
-### 5.5. Ajustes Globales de Plataforma (`PlatformSettingsModule.jsx`)
-* **Propósito:** Configuración de parámetros globales del sistema, pasarelas de pago, tarifas base y políticas del servicio.
+### 5.8. Diagnóstico & Resiliencia de Servicios (`ResiliencySimModule.jsx`)
+* **Propósito:** Monitoreo del estado de salud de la infraestructura en Railway, latencia de base de datos PostgreSQL, servicio WebSocket y simulaciones de contingencia de red.
 
 ---
 

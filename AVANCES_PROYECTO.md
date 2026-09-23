@@ -266,6 +266,79 @@ Todos los cambios han sido compilados y subidos satisfactoriamente a la rama `ma
 | [`0474946`](https://github.com/khalyddGIT/smart-park/commit/0474946) | `fix(reservas): corregir flujo de pase y ticket en reservas canceladas, detener contador y deshabilitar QR` |
 | [`807dda3`](https://github.com/khalyddGIT/smart-park/commit/807dda3) | `fix(reservas): corregir formato de tiempo, fechas y tolerancia en vista de reservas del usuario` |
 | [`2619d1e`](https://github.com/khalyddGIT/smart-park/commit/2619d1e) | `fix(core): corregir inconsistencias en validaciones de login, reserva, cooldown y vehiculos` |
+| [`ef2def2`](https://github.com/khalyddGIT/smart-park/commit/ef2def2) | `fix(maps): empaquetar mapbox-gl y leaflet nativamente con npm, eliminar cdns externos y actualizar pwa v3` |
+| [`398f5bc`](https://github.com/khalyddGIT/smart-park/commit/398f5bc) | `feat(driver-ux): rediseno limpio anti-slop sin badges y correccion de hooks oxlint` |
+| [`67511a7`](https://github.com/khalyddGIT/smart-park/commit/67511a7) | `feat(superadmin): remove cameras and reservations views from platform role` |
+| [`7ad1f7f`](https://github.com/khalyddGIT/smart-park/commit/7ad1f7f) | `feat(rates): CRUD de tarifarios admin local, switch activar/desactivar abonos y planes flexibles (3 semanas, 1 mes, fraccionado)` |
+| [`64a3849`](https://github.com/khalyddGIT/smart-park/commit/64a3849) | `docs: documentar capitulos 4.1 Pruebas y 4.2 Validacion para el cierre del proyecto` |
+
+---
+
+## 14. 🗺️ Erradicación de CDNs Externos de Mapas (Mapbox & Leaflet) y Actualización PWA v3
+
+- **Diagnóstico del Fallo:** Bloqueadores de publicidad y caídas de CDN impedían la carga de Leaflet y Mapbox GL desde etiquetas `<script>` en `index.html`, arrojando `"No se pudo inicializar el mapa"`.
+- **Solución Arquitectónica:**
+  - Se instalaron `mapbox-gl` y `leaflet` como dependencias de producción en `package.json`.
+  - Importación directa en el bundle compilado de Vite/Rolldown en `MapContainer3D.jsx`, `MapRoutes.js` y `LocalEstablishmentManager.jsx`.
+  - Eliminación total de scripts de CDNs externos en `index.html`.
+  - Actualización del Service Worker a `smartpark-pwa-v3` con `skipWaiting()` y `clients.claim()` inmediatos.
+
+---
+
+## 15. 🎨 Rediseño Editorial Limpio del Portal del Conductor (Anti-Slop, Zero Badges)
+
+- **Limpieza Visual**: Se eliminó la saturación de badges, píldoras y etiquetas de colores decorativas en la vista del conductor (`role === 'user'`).
+- **Jerarquía Tipográfica**: Enfoque en tipografía sobria, visualización clara del tiempo contratado y contraste accesible.
+- **Auditoría de Hooks**: Eliminación de violaciones a las *Rules of Hooks* (`oxlint -D rules-of-hooks` pasando con 0 errores en 81 archivos).
+
+---
+
+## 16. 🛡️ Depuración de Vistas del Superadministrador (`platform`)
+
+- **Separación de Responsabilidades**: Se eliminaron del menú y del enrutamiento de Superadmin (`roleRoutes.js`, `Sidebar.jsx`, `App.jsx`) las vistas operativas de sede:
+  - **Monitoreo de Cámara de Garita** (`cameras`).
+  - **Padrón Operativo de Reservas** (`reservations`).
+- **Enfoque Ejecutivo**: El Superadmin se concentra exclusivamente en el Panel Global de la Red, Finanzas & Payouts Bancarios, Sedes & Afiliación, Directorio de Usuarios/Roles, Auditoría Forense y Analítica Global.
+
+---
+
+## 17. 💵 Padrón Dinámico de Tarifarios (CRUD) y Switch Maestro de Abonos en Admin Local
+
+- **1. Switch Maestro de Abonos (`subscription_enabled`)**:
+  - Control de activación/desactivación en la Pestaña 2 ("Tarifas & Turno Noche") de `LocalEstablishmentManager.jsx`.
+  - Si una sede desactiva los abonos, el backend bloquea reservas con código `HTTP 400` y el frontend deshabilita la pestaña con banner informativo.
+- **2. CRUD Completo de Tarifarios**:
+  - Modal para agregar nuevos tarifarios por tipo de vehículo (Auto, Camioneta, Mototaxi, Moto, Personalizado) con cálculo en vivo de minuto y abono de 3 semanas.
+  - Edición inline directa sobre las tarjetas de tarifas y edición completa modal.
+  - Eliminación de tarifas con diálogo de confirmación.
+- **3. Sincronización Bidireccional**:
+  - Toda modificación se sincroniza automáticamente con los campos nativos de la base de datos (`rate_auto`, `rate_suv`, `rate_moto`, `rate_mototaxi`, `rate_monthly_*`), preservando 100% de retrocompatibilidad con garita y facturación.
+
+---
+
+## 18. 📅 Sistema Flexible de Abonos: 3 Semanas, 1 Mes y Tarifario Fraccionado
+
+- **Nuevas Modalidades de Abono en `MoreReservationsModal.jsx`**:
+  - **3 Semanas (21 días)**: Prorrateado exacto al 70% del valor mensual.
+  - **1 Mes (30 días)**: Abono mensual estándar.
+  - **2 Semanas (14 días)** y **1 Semana (7 días)**.
+  - **Tarifario Fraccionado**: Selector numérico de días con botones `+`/`-`, chips rápidos (5d, 10d, 15d, 25d, 45d) y tarificación prorrateada diaria:
+    $$\text{Costo Total} = \left(\frac{\text{Tarifa Mensual}}{30}\right) \times \text{Días}$$
+- **Persistencia en Base de Datos**:
+  - Campos `subscription_days` y `subscription_type` en la tabla `reservas`, asegurando cálculo dinámico exacto de fecha y hora de expiración.
+
+---
+
+## 19. 🔒 Reglas Enterprise de Cancelación, No-Show y Liquidación de Sobreestadía
+
+- **Bloqueo de Cancelación con Vehículo en Cochera**: Rechaza cancelaciones si `status == 'active'` (salida obligatoria por garita).
+- **Control de Tolerancia (No-Show)**: Rechaza cancelaciones del conductor si expiró la ventana de tolerancia de llegada.
+- **Liquidación de Sobreestadía (`/pay-overtime`)**: Cobro exacto del exceso de estancia sin períodos de gracia fraudulentos, liquidable en línea (Culqi/PayPal) o presencialmente en garita.
+- **Escudo de Eliminación de Reservas**: Bloqueo de borrado físico de reservas activas o con pagos fiscales registrados.
+
+---
+
+*Documento sincronizado y actualizado con la versión en producción del sistema Smart Park.*
 
 ---
 

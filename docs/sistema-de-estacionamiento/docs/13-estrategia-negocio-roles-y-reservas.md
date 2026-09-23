@@ -1,4 +1,4 @@
-﻿# Estrategia de Negocio: Roles Empresariales, Modelos de Reserva y Protección Financiera
+# Estrategia de Negocio: Roles Empresariales, Modelos de Reserva y Protección Financiera
 
 Este documento formaliza las definiciones de negocio, arquitectura de roles comerciales y políticas de monetización y resiliencia financiera para la plataforma **Smart-Park**.
 
@@ -112,8 +112,26 @@ Para evitar que las cocheras pierdan dinero por cajones bloqueados que luego son
 
 ---
 
-## 4. Hoja de Ruta para su Implementación
+## 4. Abonos Flexibles y Tarifarios Fraccionados como Estrategia de Retención
+
+Para capturar usuarios de alta frecuencia (trabajadores bancarios, comerciantes, funcionarios y residentes del centro urbano), Smart-Park implementa modalidades flexibles de contratación periódica:
+
+1. **Planes de Abono Escalonados:**
+   - **3 Semanas (21 días):** Plan de alta demanda para contratos temporales, prorrateado exactamente al 70% del costo mensual:
+     $$\text{Tarifa 3 Semanas} = \left(\frac{\text{Abono 30 días}}{30}\right) \times 21$$
+   - **1 Mes (30 días):** Abono tradicional completo.
+   - **2 Semanas (14 días)** y **1 Semana (7 días):** Opciones intermedias para eventos o comisiones de servicio.
+   - **Tarifario Fraccionado por Días Personalizados:** Selección libre de $N$ días con cálculo proporcional diario exacto.
+2. **Switch Maestro de Activación/Desactivación por Sede (`subscription_enabled`):**
+   - Cada dueño de cochera decide si acepta abonos según su nivel de ocupación rotativa. Si una sede desactiva el switch, el sistema bloquea reservas de abono a nivel de API (`HTTP 400`) y avisa al cliente en la app.
+3. **Escudo Anti-Sabotaje de Estancias:**
+   - **Vehículo en Recinto:** Si una estancia ya realizó Check-In en garita (`status == 'active'`), la cancelación está bloqueada. La salida debe registrarse obligatoriamente en garita.
+   - **Sobreestadía Estricta:** El tiempo excedido tras la hora de fin programada se liquida al segundo sin períodos de gracia fraudulentos mediante la pasarela online o en la caja física de garita.
+
+---
+
+## 5. Hoja de Ruta para su Implementación
 
 1. **Fase 1 (Incentivo y Expansión):** Mantener el modelo gratuito con tolerancia de 15 minutos para maximizar la base de usuarios en Ayacucho.
-2. **Fase 2 (Activación de Garantías):** Incorporar la validación de métodos de pago y el sistema de puntaje de reputación del conductor.
+2. **Fase 2 (Activación de Garantías & Abonos Flexibles):** Despliegue del switch de abonos por sede y contratación de 3 semanas, mensual y días fraccionados.
 3. **Fase 3 (Línea B2B & Flotas):** Habilitar el portal corporativo para empresas con facturación mensual consolidada y auditoría contable SIRE/SUNAT.

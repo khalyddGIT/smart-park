@@ -69,18 +69,24 @@
 | **Mapa Interactivo & Cinta Continua** | ✅ Consulta & Navegación | ✅ Vista General | ✅ Vista General |
 | **Reserva Visual en Plano CAD** | ✅ Selección & Checkout | ❌ | ❌ |
 | **Pase Digital QR / Token ANPR** | ✅ Generación & Descarga | ❌ | ❌ |
-| **Estudio CAD 2D & Editor de Plazas** | ❌ | ✅ Control Total de su Sede | ✅ Supervisión Global |
-| **Garita ANPR / Reconocimiento LPR** | ❌ | ✅ Operación de Barrera | ✅ Telemetría de Red |
-| **Check-In / Check-Out de Vehículos** | ❌ | ✅ Registro & Cobro | ✅ Auditoría Global |
-| **Gestión de Personal & Turnos** | ❌ | ✅ Operadores de su Sede | ✅ Directorio Completo |
-| **Finanzas & Liquidaciones Bancarias** | ❌ | ❌ (Solo ve su caja) | ✅ Dispersión de Fondos & Comprobantes |
+| **Abonos Flexibles (3 sem, 1 mes, fraccionado)** | ✅ Contratación en Línea | ❌ | ❌ |
+| **Estudio CAD 2D & Editor de Plazas** | ❌ | ✅ Control Total de su Sede | ❌ (Solo admins de sede) |
+| **Padrón Dinámico de Tarifarios (CRUD)** | ❌ | ✅ Añadir, Editar & Eliminar | ❌ (Gestionado por sede) |
+| **Switch Maestro de Abonos (`subscription_enabled`)**| ❌ | ✅ Activar / Desactivar | ❌ (Configuración por sede) |
+| **Garita ANPR / Reconocimiento LPR** | ❌ | ✅ Operación de Barrera & Cámara | ❌ (Operación local de sede) |
+| **Check-In / Check-Out & Padrón de Reservas** | ❌ | ✅ Registro & Cobro en Garita | ❌ (Operación local de sede) |
+| **Gestión de Personal & Turnos** | ❌ | ✅ Operadores de su Sede | ❌ (Administración local) |
+| **Panel Global & KPIs de Red** | ❌ | ❌ (Solo métricas de sede) | ✅ Consolidado Ejecutivo |
+| **Finanzas & Liquidaciones Payout** | ❌ | ❌ (Solo ve su caja) | ✅ Dispersión de Fondos & Vouchers |
 | **Ajustes Maestros & Comunicados Push** | ❌ | ❌ | ✅ Configuración Global |
 | **Aprobación de Nuevas Cocheras** | ❌ (Solo solicita) | ❌ | ✅ Bandeja de Afiliaciones |
+| **Padrón Global de Usuarios & Roles** | ❌ | ❌ | ✅ Asignación de Roles & PIN |
+| **Auditoría Forense & Logs del Sistema** | ❌ | ❌ | ✅ Trazabilidad Inmutable |
+| **Simulador de Resiliencia de Red** | ❌ | ❌ | ✅ Pruebas de Contingencia |
 | **Escribir Reseñas** | ✅ Exclusivo Conductores | ❌ | ❌ |
 | **Responder a Reseñas** | ❌ | ✅ Réplica Oficial | ✅ Moderación / Eliminación |
 | **Reportar Incidencias** | ✅ Reporte de Usuario | ✅ Registro de Infracción | ✅ Registro & Supervisión |
 | **Resolver Incidencias** | ❌ (Solo informativo) | ✅ Resolución Local | ✅ Resolución Global |
-| **Padrón de Usuarios & Roles** | ❌ | ❌ | ✅ Asignación de Roles & PIN |
 
 ---
 
@@ -88,54 +94,73 @@
 
 ### 1. Centro de Control del Super Admin (Dueño de la Plataforma)
 * **`PlatformGlobalDashboard.jsx` (Panel Global Ejecutivo)**:
-  - KPIs en tiempo real: Recaudación bruta de la red, comisión líquida retenida (12%), volumen de estancias y ocupación en vivo.
-  - Gráficos de Inteligencia de Negocios con **Recharts** (curva semanal de ingresos vs comisiones y donut chart de métodos de pago).
-  - Monitor en vivo de cocheras con estado de cámaras de garita (*LPR Online 🟢*) y barra de capacidad.
-  - Live Feed de eventos de la red (entradas por garita, cobros Yape/Plin y alertas).
+  - KPIs consolidados en tiempo real: Recaudación bruta de la red, comisión líquida retenida (10%-12%), volumen de estancias y ocupación en vivo de todas las sedes.
+  - Gráficos ejecutivos con **Recharts** (curva semanal de ingresos vs comisiones y distribución de métodos de pago).
+  - Monitor en vivo de estado operativo de cocheras y live feed de eventos de la red.
 * **`PlatformFinancesModule.jsx` (Finanzas & Liquidaciones Payout)**:
-  - Registro de cocheras con RUC, Razón Social, Banco (BCP, BBVA, Interbank), Número de Cuenta y CCI.
+  - Padrón bancario de cocheras con RUC, Razón Social, Banco (BCP, BBVA, Interbank), Número de Cuenta y CCI.
   - Botón **"Liquidar Fondos"** que dispersa el saldo neto a la cochera y genera un **Voucher / Comprobante Oficial descargable e imprimible**.
   - Exportación contable completa a **CSV / Excel** para declaraciones SUNAT.
-* **`PlatformSettingsModule.jsx` (Ajustes Maestros & Broadcast)**:
-  - Configuración del % de comisión estándar y tiempo de gracia en garita (tolerancia de 15 min).
-  - Conmutador de pasarelas de pago (Yape, Plin, Tarjetas Visa/MC, Smart Wallet) y selector Producción / Sandbox.
-  - Interruptor de **Modo Mantenimiento** con mensaje de contingencia.
-  - **Centro de Comunicados Masivos**: Disparo de notificaciones push a Conductores, Cocheras o toda la red.
 * **`AffiliatedParkingsModule.jsx` (Gestión de Sedes & Solicitudes de Afiliación)**:
   - Bandeja de revisión de solicitudes de afiliación enviadas por dueños de cocheras desde el login.
-  - Aprobación con 1 clic: crea la cochera en el mapa y genera la cuenta de Admin Local.
+  - Aprobación con 1 clic: crea automáticamente el estacionamiento y genera las credenciales del Administrador Local.
+* **`UserRolesModule.jsx` (Directorio de Usuarios & Permisos RBAC)**:
+  - Directorio global de cuentas con cambio dinámico de rol (`user`, `local`, `platform`) y gestión de PIN de seguridad.
+* **`PlatformSettingsModule.jsx` (Ajustes Maestros & Broadcast)**:
+  - Configuración del % de comisión estándar y tiempo de gracia en garita (tolerancia de 15 min).
+  - Conmutador de pasarelas de pago (Culqi, PayPal, Tarjetas, Yape/Plin) y selector Producción / Sandbox.
+  - Interruptor de **Modo Mantenimiento** con mensaje de contingencia y Centro de Comunicados Masivos Push.
+* **`AuditLogsModule.jsx` & `ResiliencySimModule.jsx`**:
+  - Bitácora inmutable de auditoría forense y simulador de degradación y resiliencia ante contingencias de red.
+* **`AnalyticsGlobalModule.jsx`**:
+  - Analítica avanzada de ocupación histórica, demanda por franja horaria y rendimiento comercial de la red.
 
 ---
 
 ### 2. Software de Gestión para el Admin de Cochera (Afiliado)
-* **`LocalEstablishmentManager.jsx` & `InteractiveFloorPlanDrawingStudio.jsx` (Estudio CAD)**:
-  - Herramienta de dibujo arquitectónico 1:1 en lienzo interactivo (muros, plazas para autos, motos, techadas, garitas y accesos peatonales).
+* **`LocalEstablishmentManager.jsx` (Gestión de Sede en 4 Pestañas)**:
+  - **Pestaña 1 (Datos de Sede)**: Nombre comercial, RUC, dirección, georreferenciación GPS en mapa interactivo Leaflet y galería fotográfica.
+  - **Pestaña 2 (Tarifas & Turno Noche)**:
+    - **Switch Maestro de Abonos (`subscription_enabled`)**: Activa o desactiva la disponibilidad de abonos mensuales y fraccionados.
+    - **Padrón Dinámico de Tarifarios (CRUD)**: Agregar nuevas tarifas con cálculo automático por minuto y abono de 3 semanas, edición rápida inline o modal y eliminación con confirmación.
+    - Tarifas nocturnas con recargo configurable y horario de turno noche.
+  - **Pestaña 3 (Aforo & Distribución)**: Capacidad total de plazas, niveles de cochera y tolerancias de llegada.
+  - **Pestaña 4 (Cámaras & Garita)**: Calibración y configuración del flujo de cámara IP para ANPR.
+* **`InteractiveFloorPlanDrawingStudio.jsx` (Estudio CAD 1:1)**:
+  - Herramienta de dibujo arquitectónico en lienzo interactivo (muros, plazas para autos, motos, techadas, garitas y accesos peatonales).
+  - Soporte de geometrías de lote: Rectangular, en 'L', en 'U', diagonal 45° y lienzo libre.
   - Conmutador de estado de plazas en vivo (*Libre / Ocupado / Reservado*).
-  - Configuración de tarifa horaria y aforo.
-* **`ANPRMonitor.jsx` (Control de Garita LPR & Barrera)**:
-  - Video en vivo / simulador de cámara OCR para lectura automática de matrículas vehiculares.
-  - Apertura y cierre remoto de barrera con verificación de confianza OCR.
+* **`ANPRMonitor.jsx` & `PersonalGaritaModule.jsx` (Control de Garita LPR & Barrera)**:
+  - Video en vivo y procesamiento OCR para lectura automática de matrículas vehiculares peruanas.
+  - Apertura y cierre remoto de barrera vehicular con verificación de reserva y doble token.
 * **`ReservationsModule.jsx` (Operaciones de Garita)**:
   - Escáner y validador de códigos QR de conductores.
-  - Registro de Check-In (Entrada) y Check-Out (Salida) con liquidación de tiempo excedido.
-* **`StaffModule.jsx`**: Control de turnos (mañana, tarde, noche) y operadores de caja.
-* **`ReviewsModule.jsx`**: Recepción y respuesta formal a comentarios de clientes.
+  - Registro de Check-In (Entrada) y Check-Out (Salida) con liquidación estricta de tiempo excedido (*overtime*).
+* **`StaffModule.jsx`**: Control de nómina de operadores de garita, asignación de turnos y generación de credenciales/PIN.
+* **`ReviewsModule.jsx`**: Recepción y réplica oficial a calificaciones de clientes.
 
 ---
 
 ### 3. Portal del Conductor (Cliente Final)
 * **`AyacuchoMap.jsx` (Mapa Interactivo & Marquee)**:
-  - Mapa interactivo con **Leaflet**, capas conmutables (*Calles de Alta Resolución / Satélite HD*) y geolocalización GPS.
-  - **Cinta Continua Infinita (*Infinite Marquee*)**: Desplazamiento continuo de sedes fuera del mapa con radar animado en vivo y pausa automática al posar el cursor (*hover*).
-  - Marcadores interactivos con popup directo para ver plano y reservar.
-* **`CustomerInteractivePlanBooking.jsx` (Reserva Visual en Plano)**:
-  - Selección táctil/clic del cajón deseado sobre el plano de la cochera.
-  - Checkout integrado con Yape, Plin, Tarjeta o Monedero Virtual.
-* **`DigitalAccessPassModal.jsx` (Pase QR)**:
-  - Generación instantánea de Pase Digital dinámico con código QR, token ANPR y countdown de vigencia.
-* **`LoyaltyClubModule.jsx` (Smart Club)**:
-  - Acumulación de 10 puntos por Sol gastado y canje de horas de estacionamiento gratis.
-* **`VehiclesModule.jsx` & `PaymentsModule.jsx`**: Gestión de placas vehiculares y tarjetas/billeteras.
+  - Mapa interactivo empaquetado nativamente con **Leaflet** y **Mapbox GL JS** (cero dependencias de CDNs externos).
+  - **Cinta Continua Infinita (*Infinite Marquee*)**: Desplazamiento horizontal continuo de sedes con radar animado en vivo y pausa en hover.
+* **`CustomerInteractivePlanBooking.jsx` (Reserva Visual en Plano CAD)**:
+  - Selección táctil/clic del cajón deseado sobre el gemelo digital de la cochera ($1100 \times 700\text{px}$).
+  - Interfaz limpia (*anti-slop, zero badges*), con foco en la legibilidad y rapidez de reserva.
+  - Checkout integrado con Culqi (Visa, Mastercard, Yape, Plin) o PayPal.
+* **`MoreReservationsModal.jsx` (Abonos Flexibles & Fecha Adelantada)**:
+  - Selección ergonómica de planes de abono:
+    - **3 Semanas (21 días)**: Prorrateado exacto al 70% del valor mensual.
+    - **1 Mes (30 días)**: Abono estándar completo.
+    - **2 Semanas (14 días)** y **1 Semana (7 días)**.
+    - **Tarifario Fraccionado**: Selector de días personalizados con chips rápidos (5d, 10d, 15d, 25d, 45d) y tarificación prorrateada diaria `(monthly / 30) * días`.
+  - Reserva por fecha adelantada para conductores que programan viajes futuros.
+  - Bloqueo y aviso inmediato si la sede tiene los abonos deshabilitados.
+* **`DigitalAccessPassModal.jsx` (Pase QR Dinámico)**:
+  - Pase Digital con código QR, token ANPR y countdown de vigencia.
+  - Botón de **"Pagar Sobreestadía Online"** en caso de exceder el tiempo contratado, liquidando el saldo exacto en línea o en garita.
+* **`VehiclesModule.jsx` & `PaymentsModule.jsx`**: Gestión de vehículos (placas peruanas estándar y alfanuméricas modernas) y métodos de pago.
 * **`ReviewsModule.jsx` & `IncidentsModule.jsx`**: Calificación de cocheras y reporte de incidencias con fotografías.
 
 ---
@@ -145,7 +170,7 @@
 1. **Comisión por Transacción (10% - 12%)**: Retención automática sobre cada reserva o estancia pagada por la aplicación.
 2. **Suscripción Mensual SaaS para Cocheras**: Planes Básico (S/ 49/mes), Pro con LPR (S/ 149/mes) y Enterprise (S/ 299/mes).
 3. **Tarifa de Servicio / Conveniencia (S/ 0.80 por reserva)**: Pequeño recargo pagado por el conductor por garantizar su plaza en zonas de alta congestión.
-4. **Pases Mensuales B2C (S/ 180 - S/ 250 / mes)**: Abonos para trabajadores del centro histórico de Huamanga.
+4. **Pases Mensuales B2C y Abonos Flexibles (3 semanas / 1 mes / fraccionado)**: Diseñados para trabajadores recurrentes del centro histórico de Huamanga.
 5. **Venta de Hardware IoT (Kits LPR)**: Venta e instalación de cámaras IP de garita y controladoras de barrera.
 6. **Publicidad Geolocalizada B2B**: Comercios cercanos (restaurantes, hoteles, lavaderos) que se promocionan en el mapa.
 7. **Convenios Corporativos**: Facturación consolidada mensual para flotas de empresas e instituciones.
@@ -157,13 +182,14 @@
 | Capa | Tecnología | Propósito |
 | :--- | :--- | :--- |
 | **Frontend Framework** | React 19 + Vite 8 | Renderizado reactivo ultrarrápido y modular |
-| **Estilos & Diseño** | TailwindCSS v4 + Glassmorphism | Sistema de diseño claro (`#F8FAFC`, slate, emerald) |
-| **Mapas & Geolocalización** | Leaflet 1.9 + CartoDB / Esri Satellite | Motor de mapas interactivo sin costos de API |
+| **Estilos & Diseño** | TailwindCSS v4 + Glassmorphism | Sistema de diseño claro (`#F8FAFC`, slate, emerald), anti-slop y sin saturación de badges |
+| **Mapas & Geolocalización** | Leaflet 1.9 + Mapbox GL JS (Empaquetados vía NPM) | Motor de mapas de alta resolución, independiente de CDNs y sin bloqueos de red |
 | **Estudio CAD** | Fabric.js 7 | Renderizado y manipulación de planos topográficos en 2D |
 | **Business Intelligence** | Recharts 3 | Gráficos ejecutivos interactivos de recaudación y aforo |
-| **Backend RESTful** | FastAPI (Python 3.11+) + Uvicorn | API REST asíncrona de alto rendimiento |
-| **Tiempo Real** | Simulación en cliente (WebSocket en Roadmap) | Estados de garita, notificaciones y telemetría |
-| **Base de Datos** | PostgreSQL 16 (única BD en local y Railway) | Persistencia relacional de usuarios, sedes y reservas |
+| **Backend RESTful** | FastAPI (Python 3.11/3.13) + Uvicorn | API REST asíncrona de alto rendimiento con Pydantic v2 |
+| **Tiempo Real (WebSockets)** | FastAPI WebSockets + Realtime Service (`core/realtime.py`) | Estados de plazas en vivo, alertas de garita y broadcast masivo |
+| **Base de Datos** | PostgreSQL 15/16 (Única BD en local y Railway) | Persistencia relacional, migraciones automáticas DDL y bloqueos pesimistas para concurrencia |
+| **Pruebas Automatizadas** | Pytest + Playwright + Oxlint | Pruebas unitarias, de integración, E2E y auditoría estricta de React Hooks |
 
 ---
 

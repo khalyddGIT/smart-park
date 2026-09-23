@@ -67,12 +67,14 @@
 ### Módulo 10: Mi Local - Datos del Establecimiento
 - **RF90 - Perfil Comercial:** Edición de nombre, dirección, coordenadas y teléfono.
 - **RF91 - Horarios de Atención:** Días y rango horario o modo 24 Horas.
-- **RF92 - Tarifas y Tolerancia:** Precios por tipo de vehículo, tolerancia gratuita (minutos) y tarifa plana nocturna.
+- **RF92 - Padrón Dinámico de Tarifas (CRUD):** Creación, actualización rápida inline/modal y eliminación de tarifas por categoría vehicular (Auto, SUV, Moto, Mototaxi, Personalizado), con cálculo automático de tarifa por minuto y abono de 3 semanas.
+- **RF92.1 - Switch Maestro de Abonos (`subscription_enabled`):** Interruptor para habilitar o suspender temporalmente suscripciones en la sede.
+- **RF92.2 - Abonos Flexibles:** Planes de 3 semanas (21 días al 70%), 1 mes (30 días), 2 semanas, 1 semana y días personalizados fraccionados.
 - **RF93 - Galería de Fotos:** Carga y administración de imágenes del local.
 
 ### Módulo 11: Editor Gráfico de Planos y Espacios
 - **RF100 - CRUD de Plazas:** Código (ej. A-01), piso, tipo y estado (`libre`, `ocupado`, `reservado`, `inhabilitado`).
-- **RF101 - Editor Canva 2D Interactivo:** Herramienta visual con arrastrar/soltar, rotación, redimensionado y elementos geométricos.
+- **RF101 - Editor Canva 2D Interactivo:** Herramienta visual con arrastrar/soltar, rotación, redimensionado y elementos geométricos (lotes en L, U o 45°).
 - **RF101.1 - Pasos Peatonales (*Crosswalks*):** Renderizado de zonas peatonales grises con franjas blancas perpendiculares.
 - **RF102 - Edición Masiva:** Selección múltiple para cambio de atributos en bloque.
 - **RF104 - Sincronización en Vivo:** Actualización inmediata para la vista del cliente.
@@ -81,22 +83,23 @@
 - **RF110 - Control Manual en Puerta:** Registro directo de ingreso y salida por placa.
 - **RF111 - Búsqueda Rápida:** Búsqueda instantánea por matrícula o documento.
 - **RF112 - Emisión de Ticket:** Impresión/generación de ticket con sello de tiempo.
-- **RF113 - Precobro en Garita:** Liquidación en efectivo o POS al momento de salir.
+- **RF113 - Precobro en Garita & Sobreestadía:** Liquidación en efectivo o POS al momento de salir con cobro exacto de sobreestadía (*overtime*).
 
 ### Módulo 13: Reconocimiento ANPR/LPR
-- **RF120 - Lectura de Placas ANPR:** Simulación de lectura mediante cámaras de garita.
+- **RF120 - Lectura de Placas ANPR:** Procesamiento OCR mediante cámaras de garita para placas peruanas.
 - **RF121 - Validación de Reservas:** Cotejo automático de la placa detectada contra reservas vigentes.
 - **RF122 - Control de Barrera:** Apertura automática de talanquera si la validación es positiva.
-- **RF123 - Bitácora ANPR:** Log de lecturas con foto simulada, placa, nivel de confianza y hora.
+- **RF123 - Bitácora ANPR:** Log de lecturas con foto, placa, nivel de confianza y hora.
 
-### Módulo 14: Monitoreo en Tiempo Real y Vigilancia
-- **RF130 - Cuadrícula de Cámaras:** Visualización simulada de streams de video de seguridad.
+### Módulo 14: Monitoreo en Tiempo Real y Vigilancia (Exclusivo Local)
+- **RF130 - Cuadrícula de Cámaras:** Visualización de streams de video de seguridad de la sede asignada.
 - **RF131 - Mapa de Ocupación Dinámico:** Matriz gráfica codificada por colores por estado de cajón.
 - **RF132 - Métricas de Capacidad:** Porcentaje de ocupación y plazas disponibles en tiempo real.
 
-### Módulo 15: Motor de Cobro Automático
-- **RF140 - Algoritmo de Liquidación:** `Monto = (Tiempo Total - Tolerancia) × Tarifa + Costos Extra - Descuento`.
-- **RF141 - Débito Directo al Salir:** Cobro automático a la tarjeta guardada al cruzar la barrera de salida.
+### Módulo 15: Motor de Cobro Automático y Sobreestadía
+- **RF140 - Algoritmo de Liquidación:** Tarificación exacta por minuto o por hora, cálculo de sobreestadía sin gracia fraudulenta y prorrateo diario de abonos:
+  $$\text{Costo Abono} = \left(\frac{\text{Tarifa Mensual}}{30}\right) \times \text{Días}$$
+- **RF141 - Autoliquidación Online de Sobreestadía:** Pago de tiempo excedido directamente desde el Pase Digital QR vía Culqi o PayPal.
 
 ### Módulo 16: Visión Artificial
 - **RF150 - Detección de Objetos:** Simulación de IA para clasificación de Autos, Motos, Camiones y Peatones.

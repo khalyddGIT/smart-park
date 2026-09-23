@@ -58,12 +58,24 @@ erDiagram
 |---|---|---|---|
 | `id` | INT | PRIMARY KEY, AUTO_INC | ID del establecimiento |
 | `name` | VARCHAR(150) | NOT NULL | Nombre del local |
-| `address` | VARCHAR(255) | NOT NULL | Dirección |
+| `owner` | VARCHAR(150) | NULLABLE | Titular o administrador |
+| `ruc` | VARCHAR(20) | NULLABLE | RUC tributario |
+| `address` | VARCHAR(255) | NOT NULL | Dirección física |
 | `city` | VARCHAR(100) | NOT NULL | Ciudad / Distrito |
 | `latitude` | FLOAT | NOT NULL | Latitud GPS |
 | `longitude` | FLOAT | NOT NULL | Longitud GPS |
 | `hourly_rate` | DECIMAL(10,2) | NOT NULL | Tarifa base por hora |
-| `tolerance_minutes` | INT | DEFAULT 15 | Minutos de gracia sin cobro |
+| `tolerance_minutes` | INT | DEFAULT 15 | Minutos de gracia de llegada (No-Show) |
+| `rate_auto` | FLOAT | DEFAULT 5.0 | Tarifa hora autos |
+| `rate_suv` | FLOAT | DEFAULT 7.0 | Tarifa hora camionetas SUV |
+| `rate_mototaxi` | FLOAT | DEFAULT 3.5 | Tarifa hora mototaxis |
+| `rate_moto` | FLOAT | DEFAULT 2.5 | Tarifa hora motos |
+| `billing_unit` | VARCHAR(20) | DEFAULT 'hour' | Modalidad (`hour`, `minute`) |
+| `rate_minute_auto` | FLOAT | DEFAULT 0.08 | Tarifa minuto autos |
+| `rate_monthly_auto`| FLOAT | DEFAULT 150.0 | Abono 30 días autos |
+| `night_shift_enabled`| BOOLEAN | DEFAULT FALSE | Habilitador de turno noche |
+| `subscription_enabled`| BOOLEAN | DEFAULT TRUE | **Switch maestro de abonos de sede** |
+| `custom_rates` | TEXT | NULLABLE | Padrón dinámico JSON de tarifas |
 | `status` | VARCHAR(20) | DEFAULT 'active' | Estado (`active`, `maintenance`, `suspended`) |
 | `total_capacity` | INT | DEFAULT 0 | Número total de cajones |
 
@@ -107,16 +119,21 @@ erDiagram
 |---|---|---|---|
 | `id` | INT | PRIMARY KEY, AUTO_INC | ID de reserva |
 | `code` | VARCHAR(50) | UNIQUE, NOT NULL | Código único (ej. RSV-8912) |
-| `user_id` | INT | FOREIGN KEY (users.id) | Usuario |
-| `parking_id` | INT | FOREIGN KEY (parkings.id) | Local |
+| `user_id` | INT | FOREIGN KEY (users.id) | Usuario conductor |
+| `parking_id` | INT | FOREIGN KEY (parkings.id) | Local de estacionamiento |
 | `slot_id` | INT | FOREIGN KEY (slots.id) | Cajón asignado |
-| `license_plate` | VARCHAR(20) | NOT NULL | Placa del vehículo |
+| `license_plate` | VARCHAR(20) | NOT NULL | Placa del vehículo normalizada |
 | `start_time` | TIMESTAMP | NOT NULL | Hora de inicio programada |
-| `end_time` | TIMESTAMP | NOT NULL | Hora de fin programada |
+| `end_time` | TIMESTAMP | NOT NULL | Hora de fin calculada |
 | `actual_entry` | TIMESTAMP | NULLABLE | Hora de ingreso real ANPR/Garita |
 | `actual_exit` | TIMESTAMP | NULLABLE | Hora de salida real ANPR/Garita |
-| `total_cost` | DECIMAL(10,2) | NOT NULL | Monto liquidado |
+| `total_cost` | DECIMAL(10,2) | NOT NULL | Monto total liquidado |
+| `amount_paid` | DECIMAL(10,2) | DEFAULT 0.00 | Monto pagado efectivamente |
+| `overtime_amount` | DECIMAL(10,2) | DEFAULT 0.00 | Monto liquidado por sobreestadía |
+| `prepaid` | BOOLEAN | DEFAULT FALSE | Si cuenta con pago previo en pasarela |
 | `status` | VARCHAR(20) | DEFAULT 'scheduled' | Estado (`scheduled`, `active`, `completed`, `cancelled`) |
+| `subscription_days`| INT | NULLABLE | Días de abono (21 para 3 sem, 30 para 1 mes, o fraccionado) |
+| `subscription_type`| VARCHAR(50) | NULLABLE | Tipo de suscripción (`3_weeks`, `1_month`, `fractional`) |
 | `qr_code` | VARCHAR(255) | NOT NULL | Token / Cadena QR |
 
 ---

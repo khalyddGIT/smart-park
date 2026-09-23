@@ -138,12 +138,14 @@ El sistema viene preconfigurado con cuatro cuentas demo que cubren la totalidad 
 
 ## 🧪 6. Guía Rápida de Pruebas de Flujos E2E
 
-### Flujo 1: Conductor — Reserva Interactiva en Plano CAD 2D
+### Flujo 1: Conductor — Reserva Interactiva en Plano CAD 2D & Abonos Flexibles
 1. Ingresa a `http://localhost:5173` con rol **Conductor**.
 2. Selecciona la sede **"Smart Park Plaza Mayor - Planta Baja"**.
-3. Pulsa el botón **"Reservar Plaza"**.
-4. En el modal interactivo, haz clic sobre una plaza libre (verde, ej. `A-03`), escoge tu vehículo o escribe una placa, selecciona el tiempo estimado y pulsa **"Confirmar Reserva"**.
-5. Se abrirá de inmediato el **Pase Digital con QR Dinámico**, mostrando el código de acceso, cuenta regresiva de tolerancia (15 minutos) y botones de navegación GPS hacia Waze / Google Maps.
+3. Pulsa el botón **"Reservar Plaza"** (o *"Más Opciones"* para abonos):
+   - En el modal de reserva en plano, haz clic sobre una plaza libre (verde, ej. `A-03`), escoge tu vehículo o escribe una placa, selecciona el tiempo estimado y pulsa **"Confirmar Reserva"**.
+   - En el modal de abonos avanzados, contrata un **abono de 3 semanas (21 días con prorrateo exacto al 70%)**, **1 mes (30 días)** o **fraccionado por días personalizados** con cálculo diario exacto.
+4. Se abrirá de inmediato el **Pase Digital con QR Dinámico**, mostrando el código de acceso, cuenta regresiva de tolerancia (15 minutos) y botones de navegación GPS hacia Waze / Google Maps.
+5. En caso de sobreestadía, el pase habilita el botón **"Pagar Sobreestadía Online"** para cancelar la fracción excedida vía pasarela digital o en garita.
 
 ### Flujo 2: Garita — Registro Rápido & Cobro Express
 1. Cambia de rol a **Personal de Garita** (o inicia sesión con PIN `2580`).
@@ -151,11 +153,12 @@ El sistema viene preconfigurado con cuatro cuentas demo que cubren la totalidad 
 3. Verás que el aforo se descuenta en vivo y el vehículo aparece en la lista de estancias activas.
 4. Para dar salida, haz clic en **"Cobrar / Salida"**: se calculará el tiempo de estadía, el monto exacto según la tarifa y se desplegará el **Ticket Térmico Digital**.
 
-### Flujo 3: Admin Local — Tarifas Dinámicas & Plano CAD
+### Flujo 3: Admin Local — Tarifas Dinámicas, Switch de Abonos & Plano CAD
 1. Cambia de rol a **Administrador Local**.
 2. Ve al módulo **"Mi Establecimiento"**:
-   - Ajusta las tarifas por minuto (ej. S/ 0.08 auto) o el recargo del turno noche.
-   - Accede a la pestaña **"Plano 2D"** para arrastrar cajones, rotar plazas o agregar zonas de tránsito.
+   - En la pestaña **"Tarifas & Turno Noche"**, utiliza el **Switch Maestro de Abonos** para activar o desactivar suscripciones periódicas en la sede.
+   - En el **Padrón Dinámico de Tarifarios**, haz clic en `+ Agregar Tarifario` para dar de alta una nueva categoría vehicular, edita precios inline o elimina tarifas con confirmación.
+   - Accede a la pestaña **"Plano 2D"** para arrastrar cajones, rotar plazas o agregar zonas de tránsito en el lienzo CAD.
    - Guarda los cambios y verifica la notificación de éxito.
 
 ### Flujo 4: SuperAdmin — Liquidaciones & Auditoría

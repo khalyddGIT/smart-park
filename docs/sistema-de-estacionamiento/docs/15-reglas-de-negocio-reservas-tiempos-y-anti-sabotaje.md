@@ -1,4 +1,4 @@
-﻿# Reglas de Negocio: Ciclo de Vida de Reservas, Gestión de Tiempos y Políticas Anti-Sabotaje
+# Reglas de Negocio: Ciclo de Vida de Reservas, Gestión de Tiempos y Políticas Anti-Sabotaje
 
 **Código de Documento:** RN-SPK-015  
 **Versión:** 1.0.0  
@@ -108,20 +108,33 @@ Para evitar que usuarios maliciosos, bots o competidores desleales aparten cajon
 ### Regla S-06: Detección de Patrones Fraudulentos / Blacklist
 * Cuentas que generen reservas reiteradas con placas ficticias correlativas (`AAA-001`, `AAA-002`) o desde direcciones IP anómalas serán suspendidas de forma automática por el módulo de auditoría y seguridad.
 
+### Regla S-07: Bloqueo Estricto de Cancelación con Vehículo en Cochera
+* Si una reserva ya se encuentra en estado `ACTIVE` (el vehículo realizó su Check-in y está físicamente dentro de las instalaciones), el sistema **bloquea y rechaza cualquier solicitud de cancelación** (`HTTP 400 Bad Request`).
+* La única vía permitida para finalizar la estancia es el **Check-Out presencial o por cámara en garita**, evitando que un conductor intente eludir el cobro de su estancia mientras su vehículo sigue dentro del local.
+
+### Regla S-08: Liquidación Estricta de Sobreestadía Sin Período de Gracia Fraudulento
+* El tiempo de permanencia que exceda la hora de fin programada se factura de manera estricta de acuerdo a la tarifa horaria o por minuto de la sede.
+* El conductor puede autoliquidar su saldo de sobreestadía desde el banner interactivo de su Pase Digital QR (`POST /api/v1/reservations/{id}/pay-overtime`) o cancelar el monto en efectivo/POS en la ventanilla de garita antes de salir.
+
+### Regla S-09: Escudo Contra Borrado Físico de Registros Contables
+* Queda terminantemente prohibida la eliminación física (`DELETE`) de reservas que se encuentren activas o que cuenten con transacciones de pago registradas en la contabilidad del sistema.
+* Garantiza la trazabilidad forense y el cumplimiento de las normativas tributarias (SUNAT) para la liquidación quincenal a cocheras.
+
 ---
 
 ## 5. Matriz de Estados de la Reserva
 
 | Estado Inicial | Evento Desencadenante | Estado Final | Acción en el Cajón | Responsable |
 | :--- | :--- | :--- | :--- | :--- |
-| *Ninguno* | Usuario confirma reserva | `SCHEDULED` | Pasa a `RESERVED` | Conductor |
+| *Ninguno* | Usuario confirma reserva o abono | `SCHEDULED` | Pasa a `RESERVED` | Conductor |
 | `SCHEDULED` | Llega a tiempo y pasa garita | `ACTIVE` | Pasa a `OCCUPIED` | Cámara ANPR / Garita |
 | `SCHEDULED` | Vence tiempo de llegada (ETA + Tol.) | `CANCELLED` | Pasa a `FREE` | Worker Automático |
-| `SCHEDULED` | Usuario cancela voluntariamente | `CANCELLED` | Pasa a `FREE` | Conductor (aplica S-02) |
-| `ACTIVE` | Vehículo sale de la cochera | `COMPLETED` | Pasa a `FREE` | Cámara ANPR / Garita |
+| `SCHEDULED` | Usuario cancela antes de tolerancia | `CANCELLED` | Pasa a `FREE` | Conductor (aplica S-02) |
+| `ACTIVE` | Intento de cancelación por conductor | **DENEGADO (400)** | Se mantiene `OCCUPIED` | Escudo S-07 |
+| `ACTIVE` | Vehículo sale tras liquidar sobreestadía| `COMPLETED` | Pasa a `FREE` | Cámara ANPR / Garita |
 
 ---
 
 ## 6. Conclusión y Beneficio del Negocio
 
-Este modelo equilibra la **mejor experiencia para el usuario** (reserva rápida, pago al salir y tiempo completo de estacionamiento) con la **máxima protección para el dueño del estacionamiento** (liberación rápida de espacios desatendidos y prevención activa de sabotajes).
+Este modelo equilibra la **mejor experiencia para el usuario** (reserva rápida, pago al salir, abonos de 3 semanas, mensual o fraccionado, y tiempo completo de estacionamiento) con la **máxima protección para el dueño del estacionamiento** (liberación rápida de espacios desatendidos, cobro estricto de sobreestadía y blindaje contra fraudes o cancelaciones maliciosas).

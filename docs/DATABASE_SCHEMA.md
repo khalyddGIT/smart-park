@@ -67,29 +67,55 @@ erDiagram
 | `color` | `VARCHAR(30)` | `NULLABLE` | Color. |
 
 ### 3. `estacionamientos` — Sedes (`Parking` `models.py:60`)
-> **¿Para qué sirve?** Representa cada sede física o cochera registrada en el sistema. Contiene información comercial, ubicación georreferenciada (latitud/longitud), tarifas horarias, capacidad total de aforo, tolerancias de tiempo y la configuración del flujo de cámara LPR/ANPR.
+> **¿Para qué sirve?** Representa cada sede física o cochera registrada en el sistema. Contiene información comercial, ubicación georreferenciada (latitud/longitud), tarifas horarias por categoría, tarifas por minuto, turno noche, abonos mensuales y fraccionados, switch maestro de abonos, capacidad total de aforo, tolerancias de tiempo y configuración ANPR.
 
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PK` | ID sede. |
 | `name` | `VARCHAR(150)` | `NOT NULL` | Nombre comercial. |
-| `address` | `VARCHAR(255)` | `NOT NULL` | Dirección. |
+| `owner` | `VARCHAR(150)` | `NULLABLE` | Propietario o administrador legal. |
+| `ruc` | `VARCHAR(20)` | `NULLABLE` | RUC fiscal de la cochera. |
+| `address` | `VARCHAR(255)` | `NOT NULL` | Dirección física. |
 | `city` | `VARCHAR(100)` | `NOT NULL INDEX DEFAULT 'Ayacucho - Huamanga'` | Ciudad. |
-| `latitude` | `DOUBLE` | `NOT NULL` | GPS lat. |
-| `longitude` | `DOUBLE` | `NOT NULL` | GPS lng. |
-| `hourly_rate` | `DOUBLE` | `NOT NULL DEFAULT 8.50` | Tarifa S/ hora. |
-| `tolerance_minutes` | `INTEGER` | `DEFAULT 15` | Ventana llegada (gracia). |
-| `status` | `VARCHAR(20)` | `DEFAULT 'active'` `CHECK active/inactive/maintenance` | Estado. |
-| `total_capacity` | `INTEGER` | `DEFAULT 30` | Aforo. |
-| `image_url` | `TEXT` | `NULLABLE` | Foto. |
-| `description` | `TEXT` | `NULLABLE` `main.py:55` | Descripción. |
-| `phone` | `VARCHAR(30)` | `NULLABLE` `main.py:56` | Teléfono sede. |
-| `email` | `VARCHAR(150)` | `NULLABLE` `main.py:57` | Email sede. |
-| `reference` | `VARCHAR(255)` | `NULLABLE` `main.py:58` | Referencia. |
-| `level` | `VARCHAR(100)` | `NULLABLE` `main.py:59` | Nivel. |
-| `camera_url` | `TEXT` | `NULLABLE` `main.py:60` | URL MJPEG/IP. |
-| `camera_enabled` | `BOOLEAN` | `DEFAULT FALSE` `main.py:61` | Habilitada. |
-| `camera_calibration` | `TEXT` | `NULLABLE` `main.py:62` | JSON `{x,y,w,h}` `0..1`. |
+| `latitude` | `DOUBLE` | `NOT NULL` | GPS latitud. |
+| `longitude` | `DOUBLE` | `NOT NULL` | GPS longitud. |
+| `hourly_rate` | `DOUBLE` | `NOT NULL DEFAULT 5.00` | Tarifa base general por hora. |
+| `tolerance_minutes` | `INTEGER` | `DEFAULT 15` | Ventana de llegada (tolerancia No-Show). |
+| `status` | `VARCHAR(20)` | `DEFAULT 'active'` `CHECK active/inactive/maintenance` | Estado operativo. |
+| `total_capacity` | `INTEGER` | `DEFAULT 30` | Capacidad máxima de aforo. |
+| `image_url` | `TEXT` | `NULLABLE` | URL de fotografía de fachada. |
+| `description` | `TEXT` | `NULLABLE` | Reseña o descripción comercial. |
+| `phone` | `VARCHAR(30)` | `NULLABLE` | Teléfono fijo de contacto. |
+| `whatsapp` | `VARCHAR(30)` | `NULLABLE` | Línea de atención WhatsApp. |
+| `email` | `VARCHAR(150)` | `NULLABLE` | Email corporativo de la sede. |
+| `reference` | `VARCHAR(255)` | `NULLABLE` | Referencia urbana. |
+| `schedule` | `VARCHAR(120)` | `NULLABLE` | Horario de atención (ej. 24 Horas o 06:00-23:00). |
+| `socials` | `TEXT` | `NULLABLE` | Enlaces a redes sociales de la cochera. |
+| `maps_url` | `TEXT` | `NULLABLE` | Enlace a Google Maps para navegación GPS. |
+| `rate_auto` | `FLOAT` | `DEFAULT 5.0` | Tarifa horaria para automóviles sedán/hatchback. |
+| `rate_suv` | `FLOAT` | `DEFAULT 7.0` | Tarifa horaria para camionetas y SUVs. |
+| `rate_mototaxi` | `FLOAT` | `DEFAULT 3.5` | Tarifa horaria para mototaxis. |
+| `rate_moto` | `FLOAT` | `DEFAULT 2.5` | Tarifa horaria para motocicletas. |
+| `billing_unit` | `VARCHAR(20)` | `DEFAULT 'hour'` | Unidad de facturación activa (`hour` / `minute`). |
+| `rate_minute_auto` | `FLOAT` | `DEFAULT 0.08` | Tarifa por minuto para automóviles. |
+| `rate_minute_suv` | `FLOAT` | `DEFAULT 0.12` | Tarifa por minuto para camionetas SUV. |
+| `rate_minute_mototaxi`| `FLOAT` | `DEFAULT 0.06` | Tarifa por minuto para mototaxis. |
+| `rate_minute_moto` | `FLOAT` | `DEFAULT 0.04` | Tarifa por minuto para motocicletas. |
+| `rate_monthly_auto`| `FLOAT` | `DEFAULT 150.0` | Abono de 30 días para automóviles. |
+| `rate_monthly_suv` | `FLOAT` | `DEFAULT 200.0` | Abono de 30 días para camionetas SUV. |
+| `rate_monthly_mototaxi`| `FLOAT` | `DEFAULT 100.0` | Abono de 30 días para mototaxis. |
+| `rate_monthly_moto`| `FLOAT` | `DEFAULT 70.0` | Abono de 30 días para motocicletas. |
+| `rate_monthly` | `FLOAT` | `DEFAULT 150.0` | Abono mensual genérico de referencia. |
+| `night_shift_enabled`| `BOOLEAN` | `DEFAULT FALSE` | Interruptor de tarificación nocturna. |
+| `night_shift_start`| `VARCHAR(10)` | `DEFAULT '20:00'` | Inicio del turno nocturno. |
+| `night_shift_end` | `VARCHAR(10)` | `DEFAULT '06:00'` | Fin del turno nocturno. |
+| `night_shift_surcharge`| `FLOAT` | `DEFAULT 0.0` | Recargo adicional por hora nocturna. |
+| `require_reservation_prepay`| `BOOLEAN` | `DEFAULT FALSE` | Exige prepago en línea obligatorio. |
+| `subscription_enabled`| `BOOLEAN` | `DEFAULT TRUE` | **Switch Maestro de Abonos**: habilita/deshabilita suscripciones en la sede. |
+| `custom_rates` | `TEXT` | `NULLABLE` | Padrón dinámico en JSON con tarifas personalizadas creadas por el Admin Local. |
+| `camera_url` | `TEXT` | `NULLABLE` | Flujo de video IP/RTSP para reconocimiento ANPR. |
+| `camera_enabled` | `BOOLEAN` | `DEFAULT FALSE` | Indicador de cámara de garita activa. |
+| `camera_calibration` | `TEXT` | `NULLABLE` | Polígono de calibración del cuadro OCR en JSON `{x,y,w,h}`. |
 | **Índices** | | `idx_estacionamientos_city/status` | |
 
 ### 4. `plazas` — Cajones (`Slot` `models.py:106`)
@@ -102,7 +128,7 @@ erDiagram
 | `code` | `VARCHAR(20)` | `NOT NULL` | `A-01` `B-02`. |
 | `floor_level` | `VARCHAR(20)` | `DEFAULT 'Piso 1'` | Piso. |
 | `slot_type` | `VARCHAR(20)` | `DEFAULT 'auto'` `CHECK` | `auto/moto/suv/truck/bike`. |
-| `status` | `VARCHAR(20)` | `DEFAULT 'free'` `CHECK free/occupied/reserved/disabled` | Estado. |
+| `status` | `VARCHAR(20)` | `DEFAULT 'free'` `CHECK free/occupied/reserved/disabled` | Estado en tiempo real. |
 | `pos_x` | `INTEGER` | `DEFAULT 0` | X lienzo CAD `1100x700`. |
 | `pos_y` | `INTEGER` | `DEFAULT 0` | Y. |
 | `width` | `INTEGER` | `DEFAULT 60` | Ancho px. |
@@ -127,23 +153,29 @@ erDiagram
 | `properties_json` | `TEXT` | `NULLABLE` | JSON extra. |
 
 ### 6. `reservas` — Pases (`Reservation` `models.py:139`)
-> **¿Para qué sirve?** Gestiona el ciclo de vida completo de cada ticket o reserva de parqueo. Almacena el código único con QR generado, horario reservado, hora real de entrada/salida (*check-in/check-out*), costo total calculado y estado operativo (`scheduled`, `active`, `completed`, `cancelled`).
+> **¿Para qué sirve?** Gestiona el ciclo de vida completo de cada ticket, reserva regular o abono flexible (3 semanas, mensual, fraccionado). Almacena el código QR dinámico, horarios de inicio/fin, tolerancias No-Show, sobreestadía (*overtime*), montos pagados y estado operativo (`scheduled`, `active`, `completed`, `cancelled`).
 
 | Campo | Tipo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PK` | ID. |
-| `code` | `VARCHAR(50)` | `NOT NULL UNIQUE INDEX` `RSV-XXXXXX` | Ticket QR. |
-| `user_id` | `INTEGER` | `FK usuarios.id CASCADE` | Conductor. |
-| `parking_id` | `INTEGER` | `FK estacionamientos.id CASCADE` | Sede. |
-| `slot_id` | `INTEGER` | `FK plazas.id CASCADE` | Cajón. |
-| `license_plate` | `VARCHAR(20)` | `NOT NULL` | Placa. |
-| `start_time` | `TIMESTAMP` | `NOT NULL` | Inicio `start = now + ETA`. |
-| `end_time` | `TIMESTAMP` | `NOT NULL` | Fin `start + hours`. |
-| `actual_entry` | `TIMESTAMP` | `NULLABLE` | Check-in garita. |
-| `actual_exit` | `TIMESTAMP` | `NULLABLE` | Check-out. |
-| `total_cost` | `DOUBLE` | `NOT NULL` | `hours * hourly_rate`. |
-| `status` | `VARCHAR(20)` | `DEFAULT 'scheduled'` `CHECK scheduled/active/completed/cancelled` | Estado. |
-| `qr_code` | `VARCHAR(255)` | `NOT NULL` | `SMARTPARK-RSV-...` para `QR`. |
+| `id` | `INTEGER` | `PK` | ID reserva. |
+| `code` | `VARCHAR(50)` | `NOT NULL UNIQUE INDEX` `RSV-XXXXXX` | Ticket QR único. |
+| `user_id` | `INTEGER` | `FK usuarios.id CASCADE` | Conductor titular. |
+| `parking_id` | `INTEGER` | `FK estacionamientos.id CASCADE` | Sede del aparcamiento. |
+| `slot_id` | `INTEGER` | `FK plazas.id CASCADE` | Cajón asignado en plano CAD. |
+| `license_plate` | `VARCHAR(20)` | `NOT NULL` | Placa vehicular normalizada. |
+| `start_time` | `TIMESTAMP` | `NOT NULL` | Hora inicio programada (o actual). |
+| `end_time` | `TIMESTAMP` | `NOT NULL` | Hora fin calculada según estancia o abono. |
+| `actual_entry` | `TIMESTAMP` | `NULLABLE` | Marca de Check-In real en garita. |
+| `actual_exit` | `TIMESTAMP` | `NULLABLE` | Marca de Check-Out real en garita. |
+| `total_cost` | `DOUBLE` | `NOT NULL` | Importe total liquidado en Soles. |
+| `amount_paid` | `DOUBLE` | `DEFAULT 0.0` | Monto pagado efectivamente (prepago o saldo). |
+| `overtime_amount` | `DOUBLE` | `DEFAULT 0.0` | Importe acumulado por tiempo excedido (*overtime*). |
+| `prepaid` | `BOOLEAN` | `DEFAULT FALSE` | Indicador de reserva prepagada en pasarela. |
+| `origin` | `VARCHAR(30)` | `DEFAULT 'web'` | Origen de reserva (`web`, `garita`, `anpr`). |
+| `status` | `VARCHAR(20)` | `DEFAULT 'scheduled'` `CHECK scheduled/active/completed/cancelled` | Estado operativo. |
+| `subscription_days` | `INTEGER` | `NULLABLE` | Días contratados en abono (ej. 21, 30, o fraccionado). |
+| `subscription_type` | `VARCHAR(50)` | `NULLABLE` | Tipo de abono (`"3_weeks"`, `"1_month"`, `"fractional"`). |
+| `qr_code` | `VARCHAR(255)` | `NOT NULL` | Cadena serializada para renderizado QR. |
 | **Índices** | | `idx_reservas_code/user_id/parking_id` | |
 
 > **Flujo:** `scheduled --check-in--> active --check-out--> completed` o `cancelled` por `reservation_worker.py:50` `deadline = start + tolerance` sin `check-in`.

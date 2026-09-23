@@ -44,32 +44,38 @@ Bienvenido a la especificación completa del sistema **Smart Park**. Este docume
 - **RF24 - Asignación de Vehículo:** Selección del vehículo registrado para la reserva.
 - **RF25 - Generación de Comprobante y Código QR:** Pase de reserva con código QR dinámico único y token ANPR.
 
-### Módulo 4: Gestión de Reservas y Pases de Ingreso
-- **RF30 - Panel de Mis Reservas:** Reservas Activas, Programadas y Pasadas.
-- **RF31 - Cancelación de Reservas:** Anulación con políticas de devolución y liberación inmediata de plaza.
+### Módulo 4: Gestión de Reservas, Abonos y Pases de Ingreso
+- **RF30 - Panel de Mis Reservas:** Reservas Activas, Programadas y Pasadas con diseño limpio sin saturación de badges (*anti-slop*).
+- **RF31 - Cancelación y Reglas de Negocio:** Anulación permitida solo antes de la llegada y dentro de la ventana de tolerancia. Bloqueo estricto de cancelación si el vehículo ya está dentro (`status == 'active'`) o si la tolerancia ha expirado (No-Show).
 - **RF32 - Extensión de Tiempo:** Ampliación del tiempo contratado en plazas libres.
-- **RF33 - Validaciones en Garita:** Marcación de Check-In (Entrada) y Check-Out (Salida) por el operador de garita.
+- **RF33 - Validaciones en Garita & Liquidación de Sobreestadía:** Marcación de Check-In (Entrada) y Check-Out (Salida) por el operador de garita. Liquidación estricta de sobreestadía (*overtime*) mediante pasarela en línea o en ventanilla de garita.
+- **RF34 - Sistema Flexible de Abonos:** Contratación de abonos por 3 semanas (21 días prorrateado al 70%), 1 mes (30 días), 2 semanas, 1 semana y tarifario fraccionado por días personalizados `(monthly_rate / 30) * días`.
+- **RF35 - Reservas por Fecha Adelantada:** Programación de estancias para días u horas futuras.
 
 ### Módulo 5: Estudio CAD y Gemelo Digital de Cocheras
-- **RF40 - Estudio CAD 1:1:** Lienzo interactivo para diseñar la distribución de la cochera (muros, plazas auto/moto, garita, pasos peatonales).
+- **RF40 - Estudio CAD 1:1:** Lienzo interactivo para diseñar la distribución de la cochera (muros, plazas auto/moto, garita, pasos peatonales, lotes en L, U o 45°).
 - **RF41 - Estado en Vivo de Plazas:** Conmutador manual y automático del estado (*Libre / Ocupado / Reservado*).
-- **RF42 - Tarifario y Aforo:** Parámetros de costo por hora y capacidad máxima del local.
+- **RF42 - Padrón Dinámico de Tarifarios (CRUD Local):** El Administrador Local puede agregar, editar (inline y modal) y eliminar tarifas por tipo de vehículo (Auto, SUV, Moto, Mototaxi, Personalizado) con cálculo recíproco de tarifa por minuto y abono de 3 semanas.
+- **RF43 - Switch Maestro de Abonos (`subscription_enabled`):** Conmutador por sede para activar o desactivar la disponibilidad de abonos y suscripciones recurrentes.
 
 ### Módulo 6: Control de Garita LPR / ANPR
-- **RF50 - Reconocimiento Automático de Matrículas:** Flujo de cámara en vivo y procesamiento OCR de matrículas vehiculares.
-- **RF51 - Accionamiento de Barrera:** Apertura y cierre remoto de la barrera vehicular con verificación de acceso activo.
+- **RF50 - Reconocimiento Automático de Matrículas:** Flujo de cámara en vivo y procesamiento OCR de matrículas vehiculares peruanas (estándar y alfanuméricas modernas).
+- **RF51 - Accionamiento de Barrera:** Apertura y cierre remoto de la barrera vehicular con verificación de acceso activo y doble token.
 
 ### Módulo 7: Finanzas, Comisiones & Liquidaciones (Super Admin)
 - **RF60 - Tablero de KPIs Financieros:** Recaudación bruta de la red, comisión líquida retenida (10%-12%), saldo por transferir a cocheras y fondos liquidados.
 - **RF61 - Padrón de Liquidaciones por Sede:** Registro bancario con RUC, Razón Social, Banco (BCP, BBVA, Interbank), Número de Cuenta y CCI.
-- **RF62 - Dispersión Bancaria:** Ejecución de liquidaciones quincenales con generación de comprobante / voucher oficial descargable.
+- **RF62 - Dispersión Bancaria:** Ejecución de liquidaciones periódicas con generación de comprobante / voucher oficial descargable e imprimible.
 - **RF63 - Exportación Contable:** Descarga de reportes financieros consolidados en formato CSV / Excel para SUNAT.
 
-### Módulo 8: Ajustes Maestros de Plataforma & Comunicados Push
+### Módulo 8: Ajustes Maestros de Plataforma, Auditoría & Resiliencia
 - **RF70 - Parámetros Globales:** Configuración del % de comisión por defecto, tiempo de gracia en garita (15 min) y aranceles mínimo/máximo.
-- **RF71 - Pasarelas de Pago:** Activación de Yape, Plin, Tarjetas y Smart Wallet en modo Producción o Sandbox.
+- **RF71 - Pasarelas de Pago:** Activación de Culqi, PayPal, Tarjetas y billeteras digitales (Yape, Plin) en modo Producción o Sandbox.
 - **RF72 - Modo Mantenimiento:** Interruptor global para contingencias con mensaje personalizado.
 - **RF73 - Broadcast Masivo:** Disparo de notificaciones push a Conductores, Cocheras o toda la red simultáneamente.
+- **RF74 - Auditoría Forense Inmutable:** Registro detallado de eventos de seguridad (creación de cuentas, cambio de tarifas, IPs y fallos de autenticación).
+- **RF75 - Simulador de Resiliencia de Red:** Monitoreo y prueba de caídas simuladas para verificar tolerancia a fallos.
+- **RF76 - Analítica Global de Red:** Métricas consolidadas de demanda por hora, aforos promedio y proyección de ingresos.
 
 ### Módulo 9: Embudo de Afiliaciones de Cocheras
 - **RF80 - Solicitud desde el Login:** Formulario modal para que dueños de cocheras soliciten unirse a la plataforma.
@@ -92,20 +98,26 @@ Bienvenido a la especificación completa del sistema **Smart Park**. Este docume
 | Capacidad | Conductor (`user`) | Admin Cochera (`local`) | Super Admin (`platform`) |
 | :--- | :---: | :---: | :---: |
 | Búsqueda y Reserva en Plano | ✅ | ❌ | ❌ |
+| Abonos Flexibles (3 sem, 1 mes, fraccionado) | ✅ | ❌ | ❌ |
 | Gestión de Vehículos y Tarjetas | ✅ | ❌ | ❌ |
 | Publicar Calificaciones / Reseñas | ✅ | ❌ | ❌ |
 | Responder a Reseñas | ❌ | ✅ | ✅ |
 | Moderar / Eliminar Reseñas | ❌ | ❌ | ✅ |
 | Reportar Incidencias | ✅ | ✅ | ✅ |
 | Marcar Incidencias como Resueltas | ❌ | ✅ | ✅ |
-| Estudio CAD & Editor de Plazas | ❌ | ✅ (Su sede) | ✅ (Toda la red) |
-| Garita LPR & Apertura de Barrera | ❌ | ✅ (Su sede) | ✅ (Telemetría) |
-| Check-In / Check-Out en Garita | ❌ | ✅ | ✅ |
-| Personal & Turnos | ❌ | ✅ (Su personal) | ✅ (Directorio) |
-| Finanzas & Liquidaciones a Cocheras | ❌ | ❌ (Solo ve su caja) | ✅ (Dispersión & Pagos) |
+| Estudio CAD & Editor de Plazas | ❌ | ✅ (Su sede) | ❌ |
+| CRUD Dinámico de Tarifarios | ❌ | ✅ (Su sede) | ❌ |
+| Switch Maestro de Abonos | ❌ | ✅ (Su sede) | ❌ |
+| Garita LPR & Apertura de Barrera | ❌ | ✅ (Su sede) | ❌ |
+| Check-In / Check-Out en Garita | ❌ | ✅ (Su sede) | ❌ |
+| Personal & Turnos | ❌ | ✅ (Su personal) | ❌ |
+| Finanzas & Liquidaciones Payout | ❌ | ❌ (Solo ve su caja) | ✅ (Dispersión & Pagos) |
 | Ajustes Maestros & Broadcast | ❌ | ❌ | ✅ |
 | Aprobación de Afiliaciones | ❌ | ❌ | ✅ |
 | Padrón Maestro de Usuarios & PIN | ❌ | ❌ | ✅ |
+| Auditoría Forense Inmutable | ❌ | ❌ | ✅ |
+| Analítica Global de Red | ❌ | ❌ | ✅ |
+| Simulador de Resiliencia | ❌ | ❌ | ✅ |
 
 ---
 

@@ -124,6 +124,7 @@ class UserPinUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: int
+    email: str
     is_active: bool
     created_at: datetime
     parking_id: Optional[int] = None

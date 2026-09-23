@@ -40,39 +40,29 @@ async def _verify_staff_parking_access(parking_id: int, current_user: User, db: 
     if parking.owner and curr_name and parking.owner.strip().lower() == curr_name:
         return
 
-    # Coincidencia por grupo empresarial / prefijo de sede
+    # Coincidencia por grupo empresarial multi-sucursal ("Empresa - Sede X")
     p_name = parking.name or ""
-    company_prefix = p_name.split(" - ")[0].strip().lower() if " - " in p_name else p_name.strip().lower()
-    if company_prefix and len(company_prefix) >= 2:
-        owner_res = await db.execute(
-            select(Parking.id).where(
-                (func.lower(Parking.email) == curr_email) | (func.lower(Parking.owner) == curr_name),
-                func.lower(Parking.name).like(f"{company_prefix}%")
+    if " - " in p_name:
+        company_prefix = p_name.split(" - ")[0].strip().lower()
+        if company_prefix and len(company_prefix) >= 3:
+            owner_res = await db.execute(
+                select(Parking.id).where(
+                    (func.lower(Parking.email) == curr_email) | (func.lower(Parking.owner) == curr_name),
+                    func.lower(Parking.name).like(f"{company_prefix} - %")
+                )
             )
-        )
-        if owner_res.scalars().first():
-            return
+            if owner_res.scalars().first():
+                return
 
     # Coincidencia en personal activo de la sede
     s_res = await db.execute(
         select(Staff).where(
-            func.lower(Staff.email) == curr_email,
+            (func.lower(Staff.email) == curr_email) | (Staff.dni == current_user.phone),
             Staff.parking_id == parking_id,
             func.lower(Staff.status).in_(["active", "activo", "habilitado"])
         )
     )
     if s_res.scalars().first():
-        return
-
-    # Si el usuario tiene rol 'local' y es dueño de alguna sede en el sistema, permitir gestionar su nómina
-    if current_user.role == "local":
-        any_owned = await db.execute(
-            select(Parking.id).where(
-                (func.lower(Parking.email) == curr_email) | (func.lower(Parking.owner) == curr_name)
-            )
-        )
-        if any_owned.scalars().first():
-            return
         return
 
     raise HTTPException(status_code=403, detail="No tienes permiso para gestionar personal de esta sede")

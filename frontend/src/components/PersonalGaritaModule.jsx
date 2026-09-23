@@ -159,7 +159,6 @@ export const PersonalGaritaModule = () => {
           isOpenStay: !!(x.is_open_stay ?? x.isOpenStay)
         })));
       }
-      ensureFloorPlan(currentEst.id, true);
     } catch {}
   };
 
@@ -178,29 +177,16 @@ export const PersonalGaritaModule = () => {
       const pid = String(detail.parking_id || detail.parkingId || '');
       if (!pid || pid === String(currentEst?.id)) {
         fetchGaritaReservations();
-        if (currentEst?.id) {
-          ensureFloorPlan(currentEst.id, true);
-        }
-      }
-    };
-    const handleFloorPlanUpdated = (e) => {
-      const pid = e?.detail?.parkingId;
-      if (!pid || String(pid) === String(currentEst?.id)) {
-        if (currentEst?.id) {
-          ensureFloorPlan(currentEst.id, true);
-        }
       }
     };
     window.addEventListener('smart_park_reservation_live', handleLiveSync);
     window.addEventListener('smart_park_spaces_live', handleLiveSync);
-    window.addEventListener('smart_park_floorplan_updated', handleFloorPlanUpdated);
 
     return () => { 
       clearInterval(iv); 
       document.removeEventListener('visibilitychange', onVis); 
       window.removeEventListener('smart_park_reservation_live', handleLiveSync);
       window.removeEventListener('smart_park_spaces_live', handleLiveSync);
-      window.removeEventListener('smart_park_floorplan_updated', handleFloorPlanUpdated);
     };
   }, [currentEst?.id]);
 

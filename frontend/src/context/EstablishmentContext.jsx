@@ -806,6 +806,8 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Evita re-hidratar en cada ciclo de polling las cocheras cuyo plano es legítimamente vacío
   const hydratedPlansRef = useRef(new Set());
+  const floorPlanInFlightRef = useRef(new Map());
+  const floorPlanLastFetchRef = useRef(new Map());
 
   // Carga el plano real (plazas + muros) desde GET /parkings/{id}/floor-plan y lo fusiona en el estado
   const hydrateFloorPlan = async (id, force = false) => {
@@ -817,38 +819,59 @@ export const EstablishmentProvider = ({ children }) => {
       if (match) numId = Number(match[0]);
     }
     if (isNaN(numId)) return;
-    if (!force && hydratedPlansRef.current.has(String(numId))) return;
-    hydratedPlansRef.current.add(String(numId));
-    hydratedPlansRef.current.add(key);
+    const strNumId = String(numId);
 
-    try {
-      const res = await api.get(`/parkings/${numId}/floor-plan`);
-      const slots = (Array.isArray(res.data?.slots) ? res.data.slots : []).map(mapServerSlot);
-      const elements = (Array.isArray(res.data?.elements) ? res.data.elements : []).map(mapServerElement);
-      const fullElements = [...elements, ...slots];
-      setEstablishments(prev => {
-        const next = prev.map(est => {
-          const matchExact = String(est.id) === key;
-          const matchNum = String(est.id) === String(numId);
-          const matchNorm = normalizeParkingId(String(est.id)) === String(numId);
-          if (matchExact || matchNum || matchNorm) {
-            return { ...est, elements: fullElements, _needsFloorPlan: false };
-          }
-          return est;
-        });
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
-        return next;
-      });
-      try {
-        window.dispatchEvent(new CustomEvent('smart_park_floorplan_updated', {
-          detail: { parkingId: String(numId), elements: fullElements, slots }
-        }));
-      } catch {}
-      return fullElements;
-    } catch {
-      hydratedPlansRef.current.delete(key);
-      hydratedPlansRef.current.delete(String(numId));
+    // Si ya hay una petición en curso para este parking, reutilizar la misma promesa
+    if (floorPlanInFlightRef.current.has(strNumId)) {
+      return floorPlanInFlightRef.current.get(strNumId);
     }
+
+    // Cooldown de 5 segundos entre peticiones para proteger contra bucles y rate limiting
+    const now = Date.now();
+    const lastFetch = floorPlanLastFetchRef.current.get(strNumId) || 0;
+    if (now - lastFetch < 5000 && !force) {
+      return;
+    }
+    if (!force && hydratedPlansRef.current.has(strNumId)) return;
+    hydratedPlansRef.current.add(strNumId);
+    hydratedPlansRef.current.add(key);
+    floorPlanLastFetchRef.current.set(strNumId, now);
+
+    const task = (async () => {
+      try {
+        const res = await api.get(`/parkings/${numId}/floor-plan`);
+        const slots = (Array.isArray(res.data?.slots) ? res.data.slots : []).map(mapServerSlot);
+        const elements = (Array.isArray(res.data?.elements) ? res.data.elements : []).map(mapServerElement);
+        const fullElements = [...elements, ...slots];
+        setEstablishments(prev => {
+          const next = prev.map(est => {
+            const matchExact = String(est.id) === key;
+            const matchNum = String(est.id) === String(numId);
+            const matchNorm = normalizeParkingId(String(est.id)) === String(numId);
+            if (matchExact || matchNum || matchNorm) {
+              return { ...est, elements: fullElements, _needsFloorPlan: false };
+            }
+            return est;
+          });
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+          return next;
+        });
+        try {
+          window.dispatchEvent(new CustomEvent('smart_park_floorplan_updated', {
+            detail: { parkingId: String(numId), elements: fullElements, slots }
+          }));
+        } catch {}
+        return fullElements;
+      } catch {
+        hydratedPlansRef.current.delete(key);
+        hydratedPlansRef.current.delete(strNumId);
+      } finally {
+        floorPlanInFlightRef.current.delete(strNumId);
+      }
+    })();
+
+    floorPlanInFlightRef.current.set(strNumId, task);
+    return task;
   };
 
   // Garantiza que un establecimiento tenga su plano cargado antes de abrirlo (uso desde UI)

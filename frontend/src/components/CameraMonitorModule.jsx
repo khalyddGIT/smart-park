@@ -30,7 +30,7 @@ import {
 import { Button } from './ui/button';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { useAuth } from '../context/AuthContext';
-import { useEstablishments, isDemoEstablishment } from '../context/EstablishmentContext';
+import { useEstablishments, isDemoEstablishment, isStaffOperatorUser } from '../context/EstablishmentContext';
 import api from '../services/api';
 
 const CAMERA_EST_STORAGE_KEY = 'smart_park_active_cctv_est';
@@ -523,20 +523,26 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap shrink-0">
-            <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-xl px-2 py-1">
+            <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-xl px-2.5 py-1">
               <Building2 className="w-3.5 h-3.5 text-slate-400" />
-              <select 
-                value={selectedEstId} 
-                onChange={(e) => {
-                  setSelectedEstId(e.target.value);
-                  try {
-                    localStorage.setItem(CAMERA_EST_STORAGE_KEY, e.target.value);
-                  } catch {}
-                }} 
-                className="bg-transparent text-xs font-bold text-white outline-none min-w-[180px]"
-              >
-                {availableEstablishments.map((est) => (<option key={est.id} value={est.id} className="text-slate-900">{est.name}</option>))}
-              </select>
+              {availableEstablishments.length > 1 && !isStaffOperatorUser(user) ? (
+                <select 
+                  value={selectedEstId} 
+                  onChange={(e) => {
+                    setSelectedEstId(e.target.value);
+                    try {
+                      localStorage.setItem(CAMERA_EST_STORAGE_KEY, e.target.value);
+                    } catch {}
+                  }} 
+                  className="bg-transparent text-xs font-bold text-white outline-none min-w-[180px]"
+                >
+                  {availableEstablishments.map((est) => (<option key={est.id} value={est.id} className="text-slate-900">{est.name}</option>))}
+                </select>
+              ) : (
+                <span className="text-xs font-bold text-white">
+                  {currentEst?.name || 'Mi Sede'}
+                </span>
+              )}
             </div>
             {!readOnly && (mode === 'monitor' ? (
               <Button type="button" onClick={() => setMode('edit')} className="h-9 rounded-xl bg-white text-slate-900 font-black text-xs gap-1.5 hover:bg-slate-100"><Pencil className="w-3.5 h-3.5" /> Editar zonas</Button>

@@ -64,13 +64,18 @@ export const PersonalGaritaModule = () => {
   }, [user?.email]);
 
   const currentEst = useMemo(() => {
-    const list = Array.isArray(myEstablishments) && myEstablishments.length > 0 ? myEstablishments : establishments;
-    if (assignedParkingId) {
-      const found = list.find(e => String(e.id) === String(assignedParkingId) || String(e.id).replace(/\D/g, '') === String(assignedParkingId).replace(/\D/g, ''));
+    const targetId = assignedParkingId || user?.parking_id || user?.parkingId || user?.establishmentId;
+    if (targetId) {
+      const pool = [...(Array.isArray(myEstablishments) ? myEstablishments : []), ...(Array.isArray(establishments) ? establishments : [])];
+      const found = pool.find(e => 
+        String(e.id) === String(targetId) || 
+        String(e.id).replace(/\D/g, '') === String(targetId).replace(/\D/g, '')
+      );
       if (found) return found;
     }
-    return list[0];
-  }, [establishments, myEstablishments, assignedParkingId]);
+    if (Array.isArray(myEstablishments) && myEstablishments.length > 0) return myEstablishments[0];
+    return establishments[0] || null;
+  }, [establishments, myEstablishments, assignedParkingId, user]);
 
   // Asegura que el plano del parking asignado esté hidratado desde el backend
   useEffect(() => {
@@ -451,23 +456,7 @@ export const PersonalGaritaModule = () => {
       <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-base font-black text-slate-900 dark:text-white leading-snug">{currentEst?.name || 'Mi Cochera'}</h2>
-            {((Array.isArray(myEstablishments) && myEstablishments.length > 1) || (Array.isArray(establishments) && establishments.length > 1)) && (
-              <select
-                value={currentEst?.id || ''}
-                onChange={(e) => {
-                  setAssignedParkingId(String(e.target.value));
-                  ensureFloorPlan(e.target.value, true);
-                }}
-                className="h-7 px-2 py-0.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-xs"
-              >
-                {(Array.isArray(myEstablishments) && myEstablishments.length > 1 ? myEstablishments : establishments).map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} (#{p.id})
-                  </option>
-                ))}
-              </select>
-            )}
+            <h2 className="text-base font-black text-slate-900 dark:text-white leading-snug">{currentEst?.name || 'Mi Sede Asignada'}</h2>
             <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium ml-1">
               <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
               <span>{wsConnected ? 'En vivo' : 'Reconectando'}</span>

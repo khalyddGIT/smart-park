@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useAuth } from '../context/AuthContext';
+import { isStaffOperatorUser, normalizeParkingId } from '../context/EstablishmentContext';
 import api from '../services/api';
 
 const CATEGORY_LABELS = {
@@ -218,11 +219,22 @@ export const IncidentsModule = () => {
       ]);
       const incs = Array.isArray(incRes.data) ? incRes.data : [];
       const parks = Array.isArray(parkRes.data) ? parkRes.data : [];
+      const isStaff = isStaffOperatorUser(user);
+      const myPid = user?.parking_id || user?.parkingId || user?.establishmentId;
       const pmap = {};
-      parks.forEach(p => { pmap[p.id] = p.name; });
+      parks.forEach(p => {
+        if (isStaff && myPid) {
+          if (String(p.id) === String(myPid) || normalizeParkingId(String(p.id)) === normalizeParkingId(String(myPid))) {
+            pmap[p.id] = p.name;
+          }
+        } else {
+          pmap[p.id] = p.name;
+        }
+      });
       setParkingsMap(pmap);
       setIncidents(incs);
-      setFormData(prev => ({ ...prev, parkingId: prev.parkingId || String(parks[0]?.id || '') }));
+      const defaultPid = isStaff && myPid ? String(myPid) : String(Object.keys(pmap)[0] || parks[0]?.id || '');
+      setFormData(prev => ({ ...prev, parkingId: defaultPid }));
     } catch (e) {
       showToast('No se pudieron cargar las incidencias. Intenta de nuevo.');
     } finally {
@@ -235,7 +247,10 @@ export const IncidentsModule = () => {
   const parkingNameOf = (inc) => parkingsMap[inc.parking_id] || `Cochera #${inc.parking_id}`;
 
   const resetForm = () => {
-    setFormData({ category: 'cajon_bloqueado', parkingId: String(Object.keys(parkingsMap)[0] || ''), description: '' });
+    const isStaff = isStaffOperatorUser(user);
+    const myPid = user?.parking_id || user?.parkingId || user?.establishmentId;
+    const defaultPid = isStaff && myPid ? String(myPid) : String(Object.keys(parkingsMap)[0] || '');
+    setFormData({ category: 'cajon_bloqueado', parkingId: defaultPid, description: '' });
     setPhotoPreview(null);
     setPhotoMode('upload');
   };
@@ -476,7 +491,7 @@ export const IncidentsModule = () => {
           )}
         </div>
 
-        {isAdmin && (
+        {isAdmin && Object.keys(parkingsMap).length > 1 && !isStaffOperatorUser(user) && (
           <select
             value={filterParking}
             onChange={(e) => setFilterParking(e.target.value)}
@@ -717,19 +732,25 @@ export const IncidentsModule = () => {
 
             <div className="flex flex-col gap-2">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Establecimiento *</label>
-              <select
-                value={formData.parkingId}
-                onChange={(e) => setFormData({ ...formData, parkingId: e.target.value })}
-                className="h-10 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
-                required
-              >
-                {Object.keys(parkingsMap).length === 0 && (
-                  <option value="">Cargando cocheras...</option>
-                )}
-                {Object.entries(parkingsMap).map(([pid, pname]) => (
-                  <option key={pid} value={pid}>{pname}</option>
-                ))}
-              </select>
+              {isStaffOperatorUser(user) || Object.keys(parkingsMap).length <= 1 ? (
+                <div className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center">
+                  {Object.values(parkingsMap)[0] || 'Mi Sede Asignada'}
+                </div>
+              ) : (
+                <select
+                  value={formData.parkingId}
+                  onChange={(e) => setFormData({ ...formData, parkingId: e.target.value })}
+                  className="h-10 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
+                  required
+                >
+                  {Object.keys(parkingsMap).length === 0 && (
+                    <option value="">Cargando cocheras...</option>
+                  )}
+                  {Object.entries(parkingsMap).map(([pid, pname]) => (
+                    <option key={pid} value={pid}>{pname}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="flex flex-col gap-2">

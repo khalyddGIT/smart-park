@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useEstablishments, parseIsoToDate, isMyEstablishment, isDemoEstablishment } from '../context/EstablishmentContext';
+import { useEstablishments, parseIsoToDate, isMyEstablishment, isDemoEstablishment, isStaffOperatorUser } from '../context/EstablishmentContext';
 import api, { getAccessToken } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
@@ -778,7 +778,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
               <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              {myEstablishments.length > 1 ? (
+              {myEstablishments.length > 1 && !isStaffOperatorUser(user) ? (
                 <select
                   value={currentParkingId}
                   onChange={e => setCurrentParkingId(e.target.value)}
@@ -1638,6 +1638,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
 
           {/* Selectores de Sede y Fecha */}
           <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end">
+            {displayEstablishments.length > 1 && !isStaffOperatorUser(user) && (
               <select
                 value={parkingFilter}
                 onChange={(e) => setParkingFilter(e.target.value)}
@@ -1648,6 +1649,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                   <option key={e.id} value={e.id}>{e.name}</option>
                 ))}
               </select>
+            )}
 
             <select
               value={dateFilter}
@@ -2188,23 +2190,32 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
 
             <form onSubmit={handleCreateSubmit} className="gap-4">
               {/* Selector de Sede */}
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Sede de Estacionamiento</label>
-                <select
-                  value={selectedParkingId}
-                  onChange={(e) => {
-                    setSelectedParkingId(e.target.value);
-                    setSelectedSlotCode('');
-                  }}
-                  className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none"
-                >
-                  {displayEstablishments.map(est => (
-                    <option key={est.id} value={est.id}>
-                      {est.name} (S/ {Number(est.rate).toFixed(2)}/h)
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {displayEstablishments.length > 1 && !isStaffOperatorUser(user) ? (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Sede de Estacionamiento</label>
+                  <select
+                    value={selectedParkingId}
+                    onChange={(e) => {
+                      setSelectedParkingId(e.target.value);
+                      setSelectedSlotCode('');
+                    }}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none"
+                  >
+                    {displayEstablishments.map(est => (
+                      <option key={est.id} value={est.id}>
+                        {est.name} (S/ {Number(est.rate).toFixed(2)}/h)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Sede Asignada</label>
+                  <div className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center">
+                    {activeEstablishment?.name || 'Mi Sede Asignada'}
+                  </div>
+                </div>
+              )}
 
               {/* Selector de Cajón Libre */}
               <div>

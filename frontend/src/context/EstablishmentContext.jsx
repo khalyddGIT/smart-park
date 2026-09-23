@@ -157,9 +157,55 @@ export const isDemoEstablishment = (e) => {
   return false;
 };
 
+// Helper universal para detectar si el usuario es un operador o personal asignado a garita
+export const isStaffOperatorUser = (user) => {
+  if (!user) return false;
+  const adminEmails = ['adminlocal@smartpark.com', 'superadmin@smartpark.com'];
+  const email = (user.email || '').toLowerCase().trim();
+  if (adminEmails.includes(email)) return false;
+
+  // 1. Flags explícitos de sesión / API
+  if (user.is_staff_operator !== undefined && user.is_staff_operator !== null) {
+    if (Boolean(user.is_staff_operator)) return true;
+  }
+  if (user.isStaffOperator !== undefined && user.isStaffOperator !== null) {
+    if (Boolean(user.isStaffOperator)) return true;
+  }
+  if (user.is_staff !== undefined && user.is_staff !== null) {
+    if (Boolean(user.is_staff)) return true;
+  }
+
+  // 2. Cargo / Posición de trabajador de garita o seguridad
+  const pos = (user.position || user.cargo || user.staffPosition || '').toLowerCase().trim();
+  if (pos) {
+    const isStaffPos = ['operador', 'garita', 'seguridad', 'vigilante', 'cajero', 'trabajador', 'asistente', 'tecnico', 'técnico'].some(k => pos.includes(k));
+    if (isStaffPos) return true;
+  }
+
+  // 3. Credenciales locales almacenadas
+  try {
+    const raw = localStorage.getItem(LOCAL_USER_CREDENTIALS_KEY);
+    if (raw && email) {
+      const creds = JSON.parse(raw);
+      const myCred = creds[email];
+      if (myCred?.isStaffOperator || myCred?.is_staff) return true;
+      const cPos = (myCred?.position || '').toLowerCase();
+      if (cPos && ['operador', 'garita', 'seguridad', 'vigilante', 'cajero', 'trabajador'].some(k => cPos.includes(k))) {
+        return true;
+      }
+    }
+  } catch {}
+
+  return false;
+};
+
 // Helper universal para extraer la empresa autorizada para un usuario local (Admin Local / Garita)
 export const getUserAuthorizedCompanyNames = (user, establishments = []) => {
   if (!user) return new Set();
+  // Los trabajadores de garita nunca se autorizan a nivel de empresa multi-sede
+  if (isStaffOperatorUser(user)) {
+    return new Set();
+  }
   const userEmail = (user.email || '').trim().toLowerCase();
   const authorizedCompanies = new Set();
 
@@ -273,7 +319,7 @@ export const getUserAuthorizedCompanyNames = (user, establishments = []) => {
   return authorizedCompanies;
 };
 
-// Helper estricto para validar si un establecimiento/sucursal le pertenece al usuario actual (Admin Local)
+// Helper estricto para validar si un establecimiento/sucursal le pertenece al usuario actual (Admin Local o Garita)
 export const isMyEstablishment = (est, user, role, allEstablishments = null) => {
   if (!est) return false;
   if (isDemoEstablishment(est)) return false; // Las sedes demo nunca le pertenecen a nadie
@@ -281,6 +327,21 @@ export const isMyEstablishment = (est, user, role, allEstablishments = null) => 
   if (role !== 'local') return true;   // Conductor ve todas las legítimas activas en su módulo
   if (!user) return false;
 
+  // 1. REGLA ESTRICTA PARA TRABAJADORES / OPERADORES DE GARITA:
+  // Un colaborador sólo tiene permiso y visibilidad sobre la sede/sucursal exacta donde fue designado.
+  // No debe heredar otras sucursales de la empresa ni sedes hermanas.
+  if (isStaffOperatorUser(user)) {
+    const assignedId = user.parking_id || user.parkingId || user.establishmentId;
+    if (!assignedId) return false;
+    const estIdStr = String(est.id || '').trim();
+    const assignedStr = String(assignedId).trim();
+    return estIdStr === assignedStr || 
+           normalizeParkingId(estIdStr) === normalizeParkingId(assignedStr) ||
+           estIdStr.replace(/\D/g, '') === assignedStr.replace(/\D/g, '');
+  }
+
+  // 2. REGLA PARA ADMINISTRADOR LOCAL / DUEÑO DE EMPRESA:
+  // El dueño de la empresa gestiona todas las sucursales que pertenecen a su marca registrada.
   const estHierarchy = getEstablishmentHierarchy(est);
   const estCompany = (estHierarchy.companyName || '').trim().toLowerCase();
   if (!estCompany) return false;

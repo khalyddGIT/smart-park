@@ -177,8 +177,8 @@ const AppMain = () => {
 
     if (isOpUser) {
       setIsPersonalStaff(true);
-      if (user.parking_id) {
-        const pid = String(user.parking_id);
+      if (user.parking_id || user.parkingId || user.establishmentId) {
+        const pid = String(user.parking_id || user.parkingId || user.establishmentId);
         setPersonalParkingId(pid);
         setSelectedParkingId(pid);
       }
@@ -1455,15 +1455,6 @@ const AppMain = () => {
                               {est.name} · S/ {Number(est.rate).toFixed(2)}/h · <span className="text-emerald-600 dark:text-emerald-400 font-medium">{free} libres</span>, {occupied} ocupados
                             </p>
                           </div>
-                          {localEsts.length > 1 && (
-                            <select 
-                              value={est.id} 
-                              onChange={e => setSelectedParkingId(e.target.value)} 
-                              className="h-8 px-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 outline-none"
-                            >
-                              {localEsts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                            </select>
-                          )}
                         </div>
                         <AutoFitFloorPlan elements={elements} name={est.name} />
                       </div>

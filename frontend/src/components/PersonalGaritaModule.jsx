@@ -621,7 +621,7 @@ export const PersonalGaritaModule = () => {
               </div>
 
               {/* Si es Por Horas: Stepper + Input Libre de Horas + Accesos Rápidos */}
-              {!isOpenStay ? (
+              {!isOpenStay && (
                 <div className="space-y-2">
                   <div className="flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2 h-10 focus-within:border-emerald-500 transition-colors">
                     <button
@@ -690,11 +690,6 @@ export const PersonalGaritaModule = () => {
                       </button>
                     ))}
                   </div>
-                </div>
-              ) : (
-                <div className="p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                  <span>Estancia abierta: el cliente puede retirarse a cualquier hora y pagará el tiempo exacto transcurrido al salir.</span>
                 </div>
               )}
             </div>

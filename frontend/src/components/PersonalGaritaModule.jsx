@@ -20,7 +20,8 @@ import {
   ArrowRight, 
   UserCheck,
   Calendar,
-  Sparkles
+  Sparkles,
+  Building2
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -93,6 +94,7 @@ export const PersonalGaritaModule = () => {
   const [feedback, setFeedback] = useState('');
   const [garitaReservations, setGaritaReservations] = useState([]);
   const [exitSearchTerm, setExitSearchTerm] = useState('');
+  const [mobileView, setMobileView] = useState('operacion'); // 'operacion' | 'plano'
 
   // Estados de Modales: Salida/Cobro, Ticket Térmico, Cierre de Turno e Incidencias
   const [checkoutModal, setCheckoutModal] = useState(null);
@@ -482,17 +484,64 @@ export const PersonalGaritaModule = () => {
         </div>
       )}
 
+      {/* Selector de Pestañas Móvil (< lg) */}
+      <div className="flex lg:hidden bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 gap-1">
+        <button
+          type="button"
+          onClick={() => setMobileView('operacion')}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            mobileView === 'operacion'
+              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-black'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Car className="w-3.5 h-3.5 text-emerald-500" />
+          <span>Entrada & Salidas</span>
+          {vehiclesInside.length > 0 && (
+            <span className="px-1.5 py-0.2 text-[10px] rounded-full bg-emerald-500 text-white font-mono">
+              {vehiclesInside.length}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileView('plano')}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            mobileView === 'plano'
+              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-black'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Building2 className="w-3.5 h-3.5 text-cyan-500" />
+          <span>Plano de Plazas</span>
+          <span className="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono">
+            {freeSlots.length} libres
+          </span>
+        </button>
+      </div>
+
       {/* Grid Principal: Plano CAD vs Panel de Registro y Vehículos dentro */}
       <div className="grid lg:grid-cols-12 gap-5 items-stretch">
         
         {/* Columna Izquierda: Plano 2D CAD Interactivo */}
-        <div className="lg:col-span-7 bg-[#1c253b] rounded-2xl border border-slate-700 p-3.5 flex flex-col justify-between shadow-xl">
-          <div className="flex items-center justify-between mb-2 px-1">
+        <div className={`lg:col-span-7 bg-[#1c253b] rounded-2xl border border-slate-700 p-3.5 flex flex-col justify-between shadow-xl ${
+          mobileView === 'plano' ? 'flex' : 'hidden lg:flex'
+        }`}>
+          <div className="flex items-center justify-between mb-2 px-1 gap-2">
             <p className="text-xs font-black text-slate-200 tracking-wide uppercase">Plano interactivo — Toca un cajón libre</p>
-            {slot && <span className="text-xs font-bold text-emerald-400">Seleccionado: {slot}</span>}
+            <div className="flex items-center gap-2">
+              {slot && <span className="text-xs font-bold text-emerald-400">Seleccionado: {slot}</span>}
+              <button
+                type="button"
+                onClick={() => setMobileView('operacion')}
+                className="lg:hidden text-xs text-slate-300 hover:text-white underline cursor-pointer"
+              >
+                Volver a Registro
+              </button>
+            </div>
           </div>
           {currentEst?.elements === null ? (
-            <div className="h-[520px] flex items-center justify-center text-xs font-semibold text-slate-400">Cargando plano del parking...</div>
+            <div className="h-[380px] sm:h-[460px] lg:h-[560px] flex items-center justify-center text-xs font-semibold text-slate-400">Cargando plano del parking...</div>
           ) : (
             <div className="flex-1 flex flex-col justify-center">
               <AutoFitFloorPlan 
@@ -501,17 +550,38 @@ export const PersonalGaritaModule = () => {
                 selectable={true} 
                 selectedSlot={slot} 
                 onSelectSlot={setSlot} 
-                containerHeightClass="h-[460px] sm:h-[520px] lg:h-[560px]" 
+                containerHeightClass="h-[380px] sm:h-[460px] lg:h-[560px]" 
               />
               <p className="text-[11px] font-medium text-slate-400 mt-2 text-center">
-                {slot ? `Cajón verde [${slot}] listo para registrar` : 'Verde = Disponible • Rojo = Ocupado • Amarillo = Reservado'}
+                {slot ? `Cajón verde [${slot}] listo para registrar` : 'Verde = Libre • Rojo = Ocupado'}
               </p>
+              {slot && (
+                <div className="mt-2.5 p-3 bg-slate-900/90 dark:bg-slate-950/90 rounded-xl border border-emerald-500/50 flex items-center justify-between gap-2 shadow-lg animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="text-xs text-white font-medium">
+                      Cajón <strong className="font-mono text-emerald-400 font-black">{slot}</strong> seleccionado
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setMobileView('operacion')}
+                    className="lg:hidden h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1 shadow-sm cursor-pointer"
+                  >
+                    <span>Usar en Entrada</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Columna Derecha: Formulario de Ingreso Presencial y Lista de Salidas */}
-        <div className="lg:col-span-5 space-y-4 flex flex-col justify-between">
+        <div className={`lg:col-span-5 space-y-4 flex flex-col justify-between ${
+          mobileView === 'operacion' ? 'flex' : 'hidden lg:flex'
+        }`}>
           
           {/* Formulario de Ingreso Rápido */}
           <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm flex-1">
@@ -542,15 +612,35 @@ export const PersonalGaritaModule = () => {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Cajón asignado</label>
-              <div className={`mt-1 h-10 flex items-center px-3 border rounded-xl text-xs font-mono font-semibold transition-all ${
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Cajón asignado</label>
+                <button
+                  type="button"
+                  onClick={() => setMobileView('plano')}
+                  className="lg:hidden text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Ver en plano</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+              <div className={`mt-1 h-10 flex items-center justify-between px-3 border rounded-xl text-xs font-mono font-semibold transition-all ${
                 slot 
-                  ? 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white' 
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200' 
                   : freeSlots.length > 0 
                   ? 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300' 
                   : 'bg-rose-50/50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400'
               }`}>
-                {slot ? `Cajón: ${slot}` : freeSlots.length > 0 ? `Auto: ${freeSlots[0]?.code} (toca en plano para cambiar)` : 'Sin cajones libres'}
+                <span>{slot ? `Cajón: ${slot}` : freeSlots.length > 0 ? `Auto: ${freeSlots[0]?.code} (toca en plano para cambiar)` : 'Sin cajones libres'}</span>
+                {slot && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setSlot(''); }}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded cursor-pointer"
+                    title="Desmarcar cajón"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -648,7 +738,7 @@ export const PersonalGaritaModule = () => {
                   </div>
 
                   {/* Accesos rápidos a horas frecuentes */}
-                  <div className="flex items-center gap-1 flex-wrap">
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
                     {[1, 2, 3, 4, 6, 8, 12, 24].map(h => (
                       <button
                         key={h}
@@ -657,7 +747,7 @@ export const PersonalGaritaModule = () => {
                           setHours(h);
                           if (payMethod === 'pendiente') setPayMethod('efectivo');
                         }}
-                        className={`flex-1 min-w-[34px] h-7 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                        className={`h-8 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center ${
                           Number(hours) === h
                             ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow-xs'
                             : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -808,7 +898,7 @@ export const PersonalGaritaModule = () => {
           ========================================================================= */}
       {checkoutModal && (
         <Dialog open={!!checkoutModal} onOpenChange={() => setCheckoutModal(null)}>
-          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 shadow-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[92vh] overflow-y-auto rounded-3xl p-5 sm:p-6 bg-white dark:bg-[#111827] text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 shadow-2xl">
             <DialogHeader>
               <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mx-auto mb-2 border border-emerald-200 dark:border-emerald-800">
                 <Car className="w-6 h-6" />
@@ -1053,7 +1143,7 @@ export const PersonalGaritaModule = () => {
           ========================================================================= */}
       {thermalTicket && (
         <Dialog open={!!thermalTicket} onOpenChange={() => setThermalTicket(null)}>
-          <DialogContent className="max-w-sm rounded-3xl p-6 bg-white dark:bg-[#111827] text-slate-900 dark:text-white shadow-2xl border border-slate-200 dark:border-slate-800 font-mono">
+          <DialogContent className="w-[95vw] sm:max-w-sm max-h-[92vh] overflow-y-auto rounded-3xl p-5 sm:p-6 bg-white dark:bg-[#111827] text-slate-900 dark:text-white shadow-2xl border border-slate-200 dark:border-slate-800 font-mono">
             <DialogHeader className="text-center">
               <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-1">
                 <Printer className="w-5 h-5 text-slate-700 dark:text-slate-300" />
@@ -1155,7 +1245,7 @@ export const PersonalGaritaModule = () => {
           ========================================================================= */}
       {shiftModal && (
         <Dialog open={shiftModal} onOpenChange={() => setShiftModal(false)}>
-          <DialogContent className="max-w-lg rounded-3xl p-6 bg-white dark:bg-[#111827] text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 shadow-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl p-5 sm:p-6 bg-white dark:bg-[#111827] text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 shadow-2xl">
             <DialogHeader>
               <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center mx-auto mb-2 border border-slate-200 dark:border-slate-700">
                 <Receipt className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
@@ -1272,7 +1362,7 @@ export const PersonalGaritaModule = () => {
           ========================================================================= */}
       {incidentModal && (
         <Dialog open={incidentModal} onOpenChange={() => setIncidentModal(false)}>
-          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 shadow-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[92vh] overflow-y-auto rounded-3xl p-5 sm:p-6 bg-white dark:bg-[#111827] text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 shadow-2xl">
             <DialogHeader>
               <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 flex items-center justify-center mx-auto mb-2 border border-amber-200 dark:border-amber-800">
                 <AlertTriangle className="w-6 h-6" />

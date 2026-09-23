@@ -445,7 +445,9 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     setSelectedReservationForPass(newRes);
     setShowPassModal(true);
 
-    setFeedbackMessage(`✓ ¡Reserva ${newRes.code} emitida! Cajón ${newRes.slot} asignado para ${newRes.plate}.`);
+    setFeedbackMessage(isStaffOperatorUser(user) 
+      ? `✓ ¡Ticket ${newRes.code} emitido! Cajón ${newRes.slot} asignado para ${newRes.plate}.`
+      : `✓ ¡Reserva ${newRes.code} emitida! Cajón ${newRes.slot} asignado para ${newRes.plate}.`);
     setTimeout(() => setFeedbackMessage(''), 4000);
   };
 
@@ -537,15 +539,21 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                {role === 'user' ? 'Mis Reservas & Pases Digitales' : 'Centro de Reservas & Garita'}
+                {role === 'user' 
+                  ? 'Mis Reservas & Pases Digitales' 
+                  : isStaffOperatorUser(user) 
+                  ? 'Control de Tickets & Estancias' 
+                  : 'Centro de Reservas & Garita'}
               </h1>
               <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-                ({filteredReservations.length} {filteredReservations.length === 1 ? 'reserva' : 'reservas'})
+                ({filteredReservations.length} {filteredReservations.length === 1 ? (role === 'user' ? 'reserva' : isStaffOperatorUser(user) ? 'ticket' : 'reserva') : (role === 'user' ? 'reservas' : isStaffOperatorUser(user) ? 'tickets' : 'reservas')})
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-normal mt-0.5">
               {role === 'user' 
                 ? 'Monitorea tus estancias en tiempo real, descarga tus pases QR y gestiona tus horarios.' 
+                : isStaffOperatorUser(user)
+                ? 'Control operativo de tickets emitidos, ingresos, salidas y liquidación en tiempo real.'
                 : 'Control operativo de entradas, salidas y emisión de tickets en tiempo real.'}
             </p>
           </div>
@@ -858,7 +866,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               }`}
             >
               <FileText className="w-3.5 h-3.5 text-slate-400" />
-              <span>Historial</span>
+              <span>{isStaffOperatorUser(user) ? 'Historial de Tickets' : 'Historial'}</span>
             </button>
           </div>
         </div>
@@ -876,7 +884,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                   <span>Control de Garita</span>
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Valida reservas o registra ingresos directos.
+                  {isStaffOperatorUser(user) ? 'Valida tickets de acceso o registra ingresos directos.' : 'Valida reservas o registra ingresos directos.'}
                 </p>
               </div>
               <span className="text-[11px] font-mono text-slate-400 self-start sm:self-auto">
@@ -889,7 +897,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Buscar código, placa o token..."
+                placeholder={isStaffOperatorUser(user) ? "Buscar ticket, placa o código..." : "Buscar código, placa o token..."}
                 value={entrySearchQuery}
                 onChange={(e) => setEntrySearchQuery(e.target.value.toUpperCase())}
                 onKeyDown={(e) => {
@@ -1231,8 +1239,14 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               {scheduledInEst.length === 0 ? (
                 <div className="p-8 text-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 space-y-2">
                   <Clock className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No hay reservas programadas pendientes</p>
-                  <p className="text-[11px] text-slate-400">Las reservas realizadas por conductores para hoy se listarán aquí para darles ingreso rápido.</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {isStaffOperatorUser(user) ? 'No hay vehículos pendientes de ingreso' : 'No hay reservas programadas pendientes'}
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    {isStaffOperatorUser(user) 
+                      ? 'Los tickets y pases emitidos para hoy aparecerán aquí para darles ingreso rápido.' 
+                      : 'Las reservas realizadas por conductores para hoy se listarán aquí para darles ingreso rápido.'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
@@ -1407,7 +1421,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                           : 'text-rose-600 dark:text-rose-400'
                       }`}>
                         <span className={`w-2 h-2 rounded-full ${isFree ? 'bg-emerald-500' : isReserved ? 'bg-amber-500' : 'bg-rose-500'}`} />
-                        <span>{isFree ? 'Libre' : isReserved ? 'Reservada' : 'Ocupada'}</span>
+                        <span>{isFree ? 'Libre' : isReserved ? (isStaffOperatorUser(user) ? 'Separada' : 'Reservada') : 'Ocupada'}</span>
                       </span>
                     </div>
 
@@ -1454,7 +1468,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                     {isReserved && (
                       <div className="space-y-3 p-3.5 bg-amber-50/60 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-900/60 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-amber-800 dark:text-amber-300">Código de Reserva:</span>
+                          <span className="text-amber-800 dark:text-amber-300">{isStaffOperatorUser(user) ? 'Código de Ticket / Pase:' : 'Código de Reserva:'}</span>
                           <strong className="font-mono font-black text-amber-950 dark:text-amber-200">{slotRes?.code || 'RSV-PENDIENTE'}</strong>
                         </div>
                         <div className="flex justify-between">
@@ -1751,7 +1765,9 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
           ) : (
             <div className="p-12 text-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-3">
               <CalendarCheck className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
-              <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">No se encontraron reservas</h3>
+              <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                {isStaffOperatorUser(user) ? 'No se encontraron tickets' : 'No se encontraron reservas'}
+              </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                 No hay resultados con los filtros actuales. Intenta cambiar de pestaña o restablecer los términos de búsqueda.
               </p>

@@ -112,7 +112,7 @@ export const AutoFitFloorPlan = ({
                     <span className="text-xs font-black">{el.code}</span>
                     {!isSel && (
                       <span className="text-[8px] font-bold mt-0.5 tracking-tight">
-                        {isFree ? 'LIBRE' : isReserved ? 'RESERV.' : isOut ? 'FUERA' : 'OCUPADO'}
+                        {isFree ? 'LIBRE' : isReserved ? 'SEPARADO' : isOut ? 'FUERA' : 'OCUPADO'}
                       </span>
                     )}
                     {isSel && (

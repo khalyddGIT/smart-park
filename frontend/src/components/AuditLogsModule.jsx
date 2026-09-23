@@ -195,25 +195,25 @@ export const AuditLogsModule = () => {
     switch (severity) {
       case 'Crítico':
         return (
-          <Badge variant="destructive" className="gap-1.5 shadow-xs text-[10px] font-black tracking-wide">
-            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
             Crítico
-          </Badge>
+          </span>
         );
       case 'Advertencia':
         return (
-          <Badge variant="warning" className="gap-1.5 shadow-xs text-[10px] font-extrabold tracking-wide">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
             Advertencia
-          </Badge>
+          </span>
         );
       case 'Info':
       default:
         return (
-          <Badge variant="success" className="gap-1.5 text-[10px] font-bold tracking-wide">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
             Info
-          </Badge>
+          </span>
         );
     }
   };

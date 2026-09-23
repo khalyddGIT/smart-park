@@ -468,16 +468,9 @@ export const PersonalGaritaModule = () => {
                 ))}
               </select>
             )}
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700">
-              Garita Activa
-            </span>
-            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 transition-colors ${
-              wsConnected 
-                ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800' 
-                : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-              <span>{wsConnected ? 'En Vivo (WebSocket)' : 'Reconectando...'}</span>
+            <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium ml-1">
+              <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span>{wsConnected ? 'En vivo' : 'Reconectando'}</span>
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
@@ -499,30 +492,31 @@ export const PersonalGaritaModule = () => {
             size="sm"
             onClick={handleToggleMute}
             title={audioMuted ? "Activar sonido de garita" : "Silenciar sonido de garita"}
-            className="h-9 px-3 rounded-xl border-slate-200 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800 text-xs font-bold gap-1.5"
+            className="h-9 px-3 rounded-xl border-slate-200 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800 text-xs font-medium gap-1.5"
           >
             {audioMuted ? <VolumeX className="w-4 h-4 text-slate-400" /> : <Volume2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
-            <span className="hidden sm:inline">{audioMuted ? 'Mudo' : 'Audio ON'}</span>
+            <span className="hidden sm:inline">{audioMuted ? 'Mudo' : 'Sonido'}</span>
           </Button>
 
           <Button
             type="button"
+            variant="outline"
             size="sm"
             onClick={() => setIncidentModal(true)}
-            className="h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black gap-1.5 shadow-sm cursor-pointer"
+            className="h-9 px-3.5 rounded-xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold gap-1.5 cursor-pointer"
           >
-            <AlertTriangle className="w-4 h-4 text-slate-950" />
-            <span>Reportar Incidencia</span>
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <span>Incidencia</span>
           </Button>
 
           <Button
             type="button"
             size="sm"
             onClick={() => setShiftModal(true)}
-            className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 shadow-sm"
+            className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5"
           >
-            <Receipt className="w-4 h-4 text-emerald-400 dark:text-white" />
-            <span>Arqueo / Cierre de Turno</span>
+            <Receipt className="w-4 h-4" />
+            <span>Cierre de Turno</span>
           </Button>
         </div>
       </div>
@@ -568,15 +562,11 @@ export const PersonalGaritaModule = () => {
           {/* Formulario de Ingreso Rápido */}
           <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm flex-1">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">Entrada Rápida</h3>
-              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">Express</span>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Entrada de Vehículo</h3>
             </div>
 
             <div>
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Placa del vehículo</label>
-                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">[Enter] Guardar</span>
-              </div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Placa del vehículo</label>
               <Input 
                 placeholder="ABC-123" 
                 value={plate} 
@@ -593,46 +583,45 @@ export const PersonalGaritaModule = () => {
                     handleIngreso();
                   }
                 }}
-                className="h-11 font-mono font-black uppercase mt-1 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 dark:bg-slate-900 focus:border-emerald-500 text-base tracking-wider"
+                className="h-11 font-mono font-bold uppercase mt-1 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700 dark:bg-slate-900 focus:border-emerald-500 text-base tracking-widest"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Cajón asignado</label>
-              <div className={`mt-1 h-11 flex items-center px-3.5 border rounded-xl text-xs font-mono font-bold transition-all ${
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Cajón asignado</label>
+              <div className={`mt-1 h-10 flex items-center px-3 border rounded-xl text-xs font-mono font-semibold transition-all ${
                 slot 
-                  ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-300' 
+                  ? 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white' 
                   : freeSlots.length > 0 
                   ? 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300' 
-                  : 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400'
+                  : 'bg-rose-50/50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400'
               }`}>
-                {slot ? `Cajón: ${slot}` : freeSlots.length > 0 ? `Auto: ${freeSlots[0]?.code} (toca para cambiar)` : 'Sin cajones libres'}
+                {slot ? `Cajón: ${slot}` : freeSlots.length > 0 ? `Auto: ${freeSlots[0]?.code} (toca en plano para cambiar)` : 'Sin cajones libres'}
               </div>
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tiempo de estadía</label>
-                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                  {isOpenStay ? 'Estadía libre (al salir)' : `${hours}h contratadas`}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tiempo de estadía</label>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {isOpenStay ? 'Estadía libre' : `${hours}h estimadas`}
                 </span>
               </div>
-              <div className="grid grid-cols-5 gap-1.5 mt-1">
+              <div className="grid grid-cols-5 gap-1 p-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl">
                 <button 
                   type="button" 
                   onClick={() => {
                     setIsOpenStay(true);
                     setPayMethod('pendiente');
                   }} 
-                  className={`h-10 rounded-xl font-black text-xs border transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  className={`h-9 rounded-lg font-bold text-xs transition-colors cursor-pointer flex items-center justify-center ${
                     isOpenStay 
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-500/20' 
-                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
+                      ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs' 
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
-                  title="Estancia abierta: el cliente ingresa y paga al salir según el tiempo exacto transcurrido"
+                  title="Estancia abierta: paga al salir según tiempo transcurrido"
                 >
-                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                  <span>Libre</span>
+                  Libre
                 </button>
                 {[1, 2, 4, 8].map(h => (
                   <button 
@@ -643,10 +632,10 @@ export const PersonalGaritaModule = () => {
                       setHours(h);
                       if (payMethod === 'pendiente') setPayMethod('efectivo');
                     }} 
-                    className={`h-10 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
+                    className={`h-9 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
                       !isOpenStay && hours === h 
-                        ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-600 shadow-sm' 
-                        : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' 
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     {h}h
@@ -656,15 +645,15 @@ export const PersonalGaritaModule = () => {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Método de cobro</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Método de cobro</label>
               <select 
                 value={payMethod} 
                 onChange={e => setPayMethod(e.target.value)} 
-                className="mt-1 w-full h-10 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-500 cursor-pointer"
+                className="mt-1 w-full h-10 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-500 cursor-pointer"
               >
                 {isOpenStay ? (
                   <>
-                    <option value="pendiente" className="dark:bg-slate-900">Cobro al salir (Recomendado)</option>
+                    <option value="pendiente" className="dark:bg-slate-900">Cobro al salir</option>
                     <option value="efectivo" className="dark:bg-slate-900">Anticipo en Efectivo</option>
                     <option value="yape" className="dark:bg-slate-900">Anticipo por Yape</option>
                     <option value="plin" className="dark:bg-slate-900">Anticipo por Plin</option>
@@ -682,18 +671,18 @@ export const PersonalGaritaModule = () => {
               </select>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 flex items-center justify-between">
+            <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-3 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 block">
-                  {isOpenStay ? 'Liquidación al salir' : 'Total a cobrar'}
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block">
+                  {isOpenStay ? 'Liquidación al salir' : 'Total estimado'}
                 </span>
                 {isOpenStay && (
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block mt-0.5">
+                  <span className="text-[11px] text-slate-400 font-normal block mt-0.5">
                     Tarifa: S/ {Number(currentEst?.rate || 5).toFixed(2)}/h
                   </span>
                 )}
               </div>
-              <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
+              <span className="text-xl font-bold font-mono text-slate-900 dark:text-white">
                 {isOpenStay ? 'S/ 0.00' : `S/ ${(Number(currentEst?.rate || 5) * hours).toFixed(2)}`}
               </span>
             </div>
@@ -701,9 +690,9 @@ export const PersonalGaritaModule = () => {
             <Button 
               onClick={handleIngreso} 
               disabled={!plate.trim() || (!slot && freeSlots.length === 0)} 
-              className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md disabled:opacity-40 transition-all cursor-pointer"
+              className="w-full h-11 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs shadow-xs disabled:opacity-40 transition-all cursor-pointer"
             >
-              + Registrar Ingreso {isOpenStay ? 'Libre' : ''} ({slot || freeSlots[0]?.code || 'Sin cupo'})
+              Registrar Ingreso {isOpenStay ? 'Libre' : ''} ({slot || freeSlots[0]?.code || 'Sin cupo'})
             </Button>
           </div>
 
@@ -711,8 +700,8 @@ export const PersonalGaritaModule = () => {
           <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
               <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Car className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-                <span>Dentro • {vehiclesInside.length}</span>
+                <Car className="w-4 h-4 text-slate-500" />
+                <span>Dentro ({vehiclesInside.length})</span>
               </span>
 
               {/* Filtro rápido por placa */}
@@ -747,23 +736,22 @@ export const PersonalGaritaModule = () => {
                   return (
                     <div key={v.code} className="p-3 flex items-center justify-between hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <span className="bg-slate-900 dark:bg-slate-800 text-white font-mono font-bold text-xs px-2.5 py-1 rounded-lg shrink-0">
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold text-xs px-2 py-1 rounded-md shrink-0">
                           {v.slot}
                         </span>
                         <div>
-                          <p className="font-mono font-black text-sm text-slate-900 dark:text-white leading-tight">{v.plate}</p>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 font-medium">
-                            <Clock className="w-3 h-3 text-slate-400" />
-                            <span>{h}h {m}m de estancia</span>
+                          <p className="font-mono font-bold text-sm text-slate-900 dark:text-white leading-tight">{v.plate}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{h}h {m}m</span>
                             {isLibre && (
-                              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                                ⏱️ Libre
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                · Libre
                               </span>
                             )}
                             {isExceeded && (
-                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-300 px-1.5 py-0.2 rounded flex items-center gap-0.5">
-                                <AlertTriangle className="w-2.5 h-2.5 text-amber-600" />
-                                +{excessMins}m
+                              <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                · +{excessMins}m
                               </span>
                             )}
                           </p>
@@ -772,10 +760,11 @@ export const PersonalGaritaModule = () => {
 
                       <Button 
                         size="sm" 
+                        variant="outline"
                         onClick={() => handleOpenSalidaModal(v)}
-                        className="h-8 px-3.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-emerald-600 dark:bg-slate-800 dark:hover:bg-emerald-600 text-white shadow-xs transition-all cursor-pointer"
+                        className="h-8 px-3 rounded-lg text-xs font-semibold border-slate-200 dark:border-slate-700 hover:bg-slate-900 hover:text-white dark:hover:bg-slate-800 cursor-pointer"
                       >
-                        Salida & Cobro
+                        Cobrar
                       </Button>
                     </div>
                   );
@@ -851,34 +840,32 @@ export const PersonalGaritaModule = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Tarifa:</span>
-                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
                     S/ {checkoutModal.rate.toFixed(2)}/h
                     {checkoutModal.nightShiftActive && (
-                      <span className="ml-1.5 text-[10px] font-extrabold text-amber-600 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-                        Noche +S/{checkoutModal.nightSurcharge.toFixed(2)}
+                      <span className="ml-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                        (Noche +S/{checkoutModal.nightSurcharge.toFixed(2)})
                       </span>
                     )}
                   </span>
                 </div>
                 {checkoutModal.isOpenStay ? (
-                  <div className="flex justify-between text-emerald-700 dark:text-emerald-300 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                    <span className="flex items-center gap-1">
-                      ⏱️ Modalidad:
-                    </span>
-                    <span>Tiempo Libre (Liquidación al salir)</span>
+                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300">
+                    <span className="text-slate-500 dark:text-slate-400">Modalidad:</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">Tiempo Libre</span>
                   </div>
                 ) : checkoutModal.isOvertime ? (
-                  <div className="flex justify-between text-amber-600 dark:text-amber-400 text-[11px] font-bold bg-amber-50 dark:bg-amber-950/50 p-2 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <div className="flex justify-between text-xs text-amber-600 dark:text-amber-400">
                     <span className="flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                      Tiempo Excedido:
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Sobretiempo:
                     </span>
-                    <span className="font-mono">+{checkoutModal.overtimeMins} min extras</span>
+                    <span className="font-mono font-semibold">+{checkoutModal.overtimeMins} min</span>
                   </div>
                 ) : (
-                  <div className="flex justify-between text-slate-500 dark:text-slate-400 text-[11px]">
-                    <span>Cobro:</span>
-                    <span className="font-medium text-slate-700 dark:text-slate-300">Tiempo exacto transcurrido</span>
+                  <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span>Cálculo:</span>
+                    <span>Por hora</span>
                   </div>
                 )}
               </div>
@@ -890,34 +877,34 @@ export const PersonalGaritaModule = () => {
 
                 return (
                   <>
-                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                       <div>
-                        <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 block">
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block">
                           {checkoutModal.alreadyPaid 
-                            ? 'Pre-pagado (100%)' 
+                            ? 'Pre-pagado' 
                             : hasPendingOvertime 
                             ? 'Saldo a Cobrar (Sobreestadía)' 
                             : 'Total a pagar'}
                         </span>
-                        <span className="text-2xl font-black font-mono text-emerald-900 dark:text-emerald-200">
+                        <span className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
                           S/ {(checkoutModal.alreadyPaid ? checkoutModal.totalCost : amountToCollect).toFixed(2)}
                         </span>
                         {hasPendingOvertime && (
-                          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 block mt-0.5">
-                            Total: S/ {checkoutModal.totalCost.toFixed(2)} · Abonado al ingreso: S/ {checkoutModal.paidAmount.toFixed(2)}
+                          <span className="text-xs font-mono text-slate-500 dark:text-slate-400 block mt-0.5">
+                            Total: S/ {checkoutModal.totalCost.toFixed(2)} · Pagado: S/ {checkoutModal.paidAmount.toFixed(2)}
                           </span>
                         )}
                       </div>
                       {checkoutModal.alreadyPaid && (
-                        <span className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-black inline-flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Pagado al Ingreso</span>
+                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                          <Check className="w-4 h-4" />
+                          <span>Pagado al ingreso</span>
                         </span>
                       )}
                       {hasPendingOvertime && (
-                        <span className="px-2.5 py-1 bg-amber-500 text-white rounded-full text-[11px] font-black inline-flex items-center gap-1 shadow-2xs">
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                          <span>Sobreestadía</span>
+                        <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+                          <AlertTriangle className="w-4 h-4" />
+                          <span>Sobretiempo</span>
                         </span>
                       )}
                     </div>

@@ -945,37 +945,38 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                           {entryMatch.code}
                         </span>
                         {entryMatch.status === 'SCHEDULED' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                            <Check className="w-3 h-3" />
-                            Listo para Ingresar
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Programada
                           </span>
                         )}
                         {entryMatch.status === 'ACTIVE' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-cyan-100 dark:bg-cyan-900/60 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700">
-                            <Car className="w-3 h-3" />
-                            Actualmente en Estancia
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-600 dark:text-cyan-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+                            En curso
                           </span>
                         )}
                         {entryMatch.status === 'COMPLETED' && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                             Finalizada
                           </span>
                         )}
                         {entryMatch.status === 'CANCELLED' && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-500 dark:text-rose-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                             Cancelada
                           </span>
                         )}
 
-                        {/* Badge de prepagado */}
+                        {/* Indicador de pago */}
                         {(paidIds.has(Number(entryMatch.id)) || entryMatch.prepaid) ? (
-                          <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 inline-flex items-center gap-1">
-                            <Check className="w-3 h-3 text-emerald-600 shrink-0" />
-                            <span>Prepagado en línea</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            · Pagado online
                           </span>
                         ) : (
-                          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
-                            Cobro al salir
+                          <span className="text-xs text-slate-400">
+                            · Por liquidar
                           </span>
                         )}
                       </div>
@@ -1106,11 +1107,8 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                 <div className="flex items-center gap-2">
                   <Car className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                    Vehículos en Estancia Actual
+                    Vehículos en Estancia ({activeVehiclesInEst.length})
                   </h3>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                    {activeVehiclesInEst.length} dentro
-                  </span>
                 </div>
                 <span className="text-xs font-semibold text-slate-400">
                   {activeLocalEst?.name}
@@ -1205,12 +1203,9 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                   <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                    Próximas Llegadas Programadas
+                    Próximas Llegadas ({scheduledInEst.length})
                   </h3>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800">
-                  {scheduledInEst.length}
-                </span>
               </div>
 
               {scheduledInEst.length === 0 ? (
@@ -1382,17 +1377,17 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                     </div>
 
                     {/* Estado de la plaza */}
-                    <div className="p-3 rounded-xl border flex items-center justify-between text-xs font-bold">
+                    <div className="p-3 rounded-xl border flex items-center justify-between text-xs">
                       <span className="text-slate-500">Estado actual:</span>
-                      <span className={`px-2.5 py-0.5 rounded-full font-extrabold inline-flex items-center gap-1.5 ${
+                      <span className={`font-semibold inline-flex items-center gap-1.5 ${
                         isFree 
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' 
+                          ? 'text-emerald-600 dark:text-emerald-400' 
                           : isReserved 
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' 
-                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                          ? 'text-amber-600 dark:text-amber-400' 
+                          : 'text-rose-600 dark:text-rose-400'
                       }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${isFree ? 'bg-emerald-500' : isReserved ? 'bg-amber-500' : 'bg-rose-500'}`} />
-                        <span>{isFree ? 'LIBRE' : isReserved ? 'RESERVADA' : 'OCUPADA'}</span>
+                        <span className={`w-2 h-2 rounded-full ${isFree ? 'bg-emerald-500' : isReserved ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                        <span>{isFree ? 'Libre' : isReserved ? 'Reservada' : 'Ocupada'}</span>
                       </span>
                     </div>
 

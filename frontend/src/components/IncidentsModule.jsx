@@ -552,19 +552,19 @@ export const IncidentsModule = () => {
                 <div className="flex flex-col gap-4 flex-1">
                   <div className="flex justify-between items-start gap-2">
                     <span className="font-mono text-xs font-black text-slate-400 dark:text-slate-500">INC-{String(inc.id).padStart(3, '0')}</span>
-                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                    <div className="flex items-center gap-2 flex-wrap justify-end text-xs">
                       {inc.is_hidden && (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg border bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/80 flex items-center gap-1">
-                          <EyeOff className="w-3 h-3" />
+                        <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                          <EyeOff className="w-3.5 h-3.5" />
                           <span>Oculta</span>
                         </span>
                       )}
-                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border inline-flex items-center gap-1.5 ${
+                      <span className={`font-semibold inline-flex items-center gap-1.5 ${
                         inc.status === 'resolved'
-                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/80'
-                          : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/80'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-amber-600 dark:text-amber-400'
                       }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${inc.status === 'resolved' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        <span className={`w-2 h-2 rounded-full ${inc.status === 'resolved' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                         <span>{inc.status === 'resolved' ? 'Resuelta' : 'Pendiente'}</span>
                       </span>
                     </div>

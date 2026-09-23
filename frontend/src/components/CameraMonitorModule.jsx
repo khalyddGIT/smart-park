@@ -516,8 +516,8 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm font-black tracking-tight">Monitoreo de Cámaras</h2>
-                <span className="bg-sky-500/20 border border-sky-500/30 text-sky-300 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1"><Layers className="w-3 h-3" /> Visión IA</span>
+                <h2 className="text-sm font-bold tracking-tight">Monitoreo de Cámaras</h2>
+                <span className="text-xs text-sky-400 font-medium">· Visión IA</span>
               </div>
               <p className="text-xs text-slate-400 font-medium">Detección óptica de ocupación en tiempo real por cámara.</p>
             </div>
@@ -544,7 +544,7 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
               <Button type="button" onClick={handleSaveZones} className="h-9 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs gap-1.5 hover:bg-emerald-400"><Save className="w-3.5 h-3.5" /> Guardar zonas</Button>
             ))}
             {!readOnly && <Button type="button" variant="outline" onClick={() => setShowConfig((v) => !v)} className={`h-9 rounded-xl text-xs font-black gap-1.5 ${showConfig ? 'bg-white text-slate-900' : 'bg-slate-800 border-slate-700 text-white'}`}><Settings2 className="w-3.5 h-3.5" /> Cámara IP</Button>}
-            {readOnly && <span className="text-[10px] font-black tracking-widest text-slate-300 border border-white/20 rounded-full px-2 py-1">SOLO LECTURA</span>}
+            {readOnly && <span className="text-xs font-medium text-slate-400">Solo lectura</span>}
           </div>
         </div>
         {!readOnly && showConfig && (

@@ -126,6 +126,11 @@ class UserResponse(UserBase):
     id: int
     is_active: bool
     created_at: datetime
+    parking_id: Optional[int] = None
+    position: Optional[str] = None
+    shift: Optional[str] = None
+    is_staff: Optional[bool] = None
+    is_staff_operator: Optional[bool] = None
     class Config:
         from_attributes = True
 

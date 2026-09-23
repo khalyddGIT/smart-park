@@ -53,14 +53,23 @@ export const saveLocalUserCredential = (cred) => {
     const existing = existingRaw ? JSON.parse(existingRaw) : {};
 
     const prevEntry = existing[emailKey] || (prevEmailKey ? existing[prevEmailKey] : null) || (cred.parkingId ? Object.values(existing).find(c => String(c.parkingId) === String(cred.parkingId)) : null);
-    const finalPassword = cred.password || cred.temporary_password || prevEntry?.password || '';
+    const finalPin = cred.security_pin || cred.pin || prevEntry?.pin || '';
+    const phoneVal = cred.phone || cred.dni || prevEntry?.phone || '';
+
+    const positionVal = cred.position || prevEntry?.position || 'Operador de Garita';
+    const shiftVal = cred.shift || prevEntry?.shift || '';
 
     existing[emailKey] = {
       email: emailKey,
       password: finalPassword,
+      pin: finalPin,
       full_name: cred.full_name || cred.name || cred.fullName || prevEntry?.full_name || 'Administrador',
-      phone: cred.phone || prevEntry?.phone || '',
+      phone: phoneVal,
       role: cred.role || prevEntry?.role || 'local',
+      position: positionVal,
+      shift: shiftVal,
+      isStaffOperator: true,
+      is_staff: true,
       parkingId: cred.parkingId || cred.establishmentId || prevEntry?.parkingId || null,
       updatedAt: new Date().toISOString()
     };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useEstablishments, isMyEstablishment } from '../context/EstablishmentContext';
+import { useEstablishments, isMyEstablishment, saveLocalUserCredential } from '../context/EstablishmentContext';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -239,6 +239,17 @@ export const StaffModule = () => {
     try {
       const idem = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `idem-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
       await api.post('/staff', payload, { headers: { 'Idempotency-Key': idem } });
+      if (payload.email) {
+        saveLocalUserCredential({
+          email: payload.email,
+          password: payload.password || undefined,
+          security_pin: pin || undefined,
+          full_name: payload.full_name,
+          phone: payload.dni,
+          role: payload.system_role || 'local',
+          parkingId: payload.parking_id
+        });
+      }
       setShowAddModal(false);
       notify(`Colaborador "${payload.full_name}" registrado exitosamente ${payload.email ? 'con credenciales de acceso activas.' : '.'}`);
       await loadStaff();
@@ -255,86 +266,125 @@ export const StaffModule = () => {
 
   const handleEdit = async (e) => {
     e.preventDefault();
-    if (!selectedMember) return;
+    if (!selectedMember || isSubmitting) return;
 
+    if (!formData.full_name || !formData.dni) {
+      notify('Por favor completa el nombre y DNI del colaborador.');
+      return;
+    }
+
+    if (formData.password && formData.password.trim() && formData.password.trim().length < 8) {
+      notify('La contraseña de acceso debe tener al menos 8 caracteres.');
+      return;
+    }
+
+    const pin = (formData.security_pin || '').trim();
+    if (pin && !/^\d{4}$/.test(pin)) {
+      notify('El PIN de garita debe tener exactamente 4 dígitos numéricos.');
+      return;
+    }
+
+    setIsSubmitting(true);
     const payload = {
       full_name: formData.full_name.trim(),
       dni: formData.dni.trim(),
       position: formData.position,
       shift: formData.shift,
       status: formData.status,
+      parking_id: formData.parking_id ? Number(formData.parking_id) : undefined,
       system_role: formData.system_role || 'local'
     };
 
     if (formData.email !== undefined) {
-      payload.email = formData.email.trim();
+      payload.email = formData.email ? formData.email.trim().toLowerCase() : '';
     }
 
     if (formData.password && formData.password.trim()) {
-      if (formData.password.trim().length < 8) {
-        notify('La contraseña de acceso debe tener al menos 8 caracteres.');
-        return;
-      }
       payload.password = formData.password.trim();
     }
 
-    const pin = (formData.security_pin || '').trim();
     if (pin) {
-      if (!/^\d{4}$/.test(pin)) {
-        notify('El PIN de garita debe tener exactamente 4 dígitos numéricos.');
-        return;
-      }
       payload.security_pin = pin;
     }
 
     try {
       await api.put(`/staff/${selectedMember.id}`, payload);
+      if (payload.email) {
+        saveLocalUserCredential({
+          email: payload.email,
+          previousEmail: selectedMember.email,
+          password: payload.password || undefined,
+          security_pin: pin || undefined,
+          full_name: payload.full_name,
+          phone: payload.dni,
+          role: payload.system_role || 'local',
+          parkingId: payload.parking_id || selectedMember.parking_id
+        });
+      }
       setShowEditModal(false);
       notify(`Colaborador "${formData.full_name}" y sus credenciales fueron actualizados.`);
       await loadStaff();
     } catch (err) {
       describeError(err, 'actualizar al colaborador');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleSaveCreds = async (e) => {
     e.preventDefault();
-    if (!selectedMember) return;
+    if (!selectedMember || isSubmitting) return;
 
     if (!credsData.email.trim()) {
       notify('El correo de acceso es requerido para habilitar el inicio de sesión.');
       return;
     }
 
+    if (credsData.password && credsData.password.trim() && credsData.password.trim().length < 8) {
+      notify('La nueva contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+
+    const pin = (credsData.security_pin || '').trim();
+    if (pin && !/^\d{4}$/.test(pin)) {
+      notify('El PIN de garita debe tener exactamente 4 dígitos numéricos.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const cleanEmail = credsData.email.trim().toLowerCase();
     const payload = {
-      email: credsData.email.trim(),
+      email: cleanEmail,
       system_role: credsData.system_role || 'local'
     };
 
     if (credsData.password && credsData.password.trim()) {
-      if (credsData.password.trim().length < 8) {
-        notify('La nueva contraseña debe tener al menos 8 caracteres.');
-        return;
-      }
       payload.password = credsData.password.trim();
     }
 
-    const pin = (credsData.security_pin || '').trim();
     if (pin) {
-      if (!/^\d{4}$/.test(pin)) {
-        notify('El PIN de garita debe tener exactamente 4 dígitos numéricos.');
-        return;
-      }
       payload.security_pin = pin;
     }
 
     try {
       await api.put(`/staff/${selectedMember.id}`, payload);
+      saveLocalUserCredential({
+        email: cleanEmail,
+        previousEmail: selectedMember.email,
+        password: credsData.password ? credsData.password.trim() : undefined,
+        security_pin: pin || undefined,
+        full_name: selectedMember.full_name,
+        phone: selectedMember.dni,
+        role: credsData.system_role || 'local',
+        parkingId: selectedMember.parking_id
+      });
       setShowCredsModal(false);
       notify(`Credenciales actualizadas para "${selectedMember.full_name}". Ya puede iniciar sesión con sus nuevas claves.`);
       await loadStaff();
     } catch (err) {
       describeError(err, 'actualizar credenciales');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -946,6 +996,25 @@ export const StaffModule = () => {
               </div>
             </div>
 
+            {validEstablishments.length > 1 && (
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Sede Asignada
+                </label>
+                <select 
+                  value={formData.parking_id} 
+                  onChange={(e) => setFormData({ ...formData, parking_id: Number(e.target.value) })} 
+                  className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200"
+                >
+                  {validEstablishments.map(est => (
+                    <option key={est.id} value={est.id}>
+                      {est.name} {est.branchName ? `(${est.branchName})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Credenciales en Edición */}
             <div className="p-4 bg-slate-900 dark:bg-slate-950 text-white rounded-2xl border border-slate-800 space-y-3">
               <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5">
@@ -1011,9 +1080,11 @@ export const StaffModule = () => {
 
             <Button 
               type="submit" 
-              className="w-full h-11 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
+              disabled={isSubmitting}
+              className="w-full h-11 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Guardar Cambios
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>{isSubmitting ? 'Guardando Cambios...' : 'Guardar Cambios'}</span>
             </Button>
           </form>
         </DialogContent>
@@ -1113,9 +1184,11 @@ export const StaffModule = () => {
             <div className="pt-2">
               <Button 
                 type="submit" 
-                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Guardar y Activar Credenciales
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>{isSubmitting ? 'Guardando y Activando...' : 'Guardar y Activar Credenciales'}</span>
               </Button>
             </div>
           </form>

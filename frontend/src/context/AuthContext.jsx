@@ -33,6 +33,28 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
+const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
+  if (!serverUser && !fallbackUser) return false;
+  const adminEmails = ['adminlocal@smartpark.com', 'superadmin@smartpark.com'];
+  const email = (serverUser?.email || fallbackUser?.email || '').toLowerCase();
+  if (adminEmails.includes(email)) return false;
+  
+  if (serverUser?.is_staff_operator !== undefined && serverUser?.is_staff_operator !== null) {
+    return Boolean(serverUser.is_staff_operator);
+  }
+  if (serverUser?.isStaffOperator !== undefined && serverUser?.isStaffOperator !== null) {
+    return Boolean(serverUser.isStaffOperator);
+  }
+  if (fallbackUser?.isStaffOperator !== undefined && fallbackUser?.isStaffOperator !== null) {
+    return Boolean(fallbackUser.isStaffOperator);
+  }
+  const pos = (serverUser?.position || fallbackUser?.position || '').toLowerCase();
+  if (pos) {
+    return pos.includes('operador') || pos.includes('garita') || pos.includes('seguridad') || pos.includes('supervisor') || pos.includes('vigilante') || !pos.includes('administrador');
+  }
+  return Boolean(serverUser?.is_staff || fallbackUser?.is_staff);
+};
+
   // Validar sesión contra servidor (fuente de verdad para rol y usuario vía cookies o token)
   useEffect(() => {
     api.get('/auth/me')
@@ -44,6 +66,7 @@ export const AuthProvider = ({ children }) => {
           logout();
           return;
         }
+        const isOperator = computeIsStaffOperator(serverUser, user);
         const corrected = {
           id: serverUser.id,
           name: serverUser.full_name || serverUser.email.split('@')[0],
@@ -51,11 +74,15 @@ export const AuthProvider = ({ children }) => {
           phone: serverUser.phone || '',
           avatar: serverUser.avatar_url || null,
           role: serverRole,
-          dni: serverUser.dni || '',
+          dni: serverUser.dni || serverUser.phone || '',
           address: serverUser.address || '',
+          position: serverUser.position || user?.position || (isOperator ? 'Operador de Garita' : null),
+          shift: serverUser.shift || user?.shift || null,
+          is_staff: Boolean(serverUser.is_staff ?? user?.is_staff ?? isOperator),
+          isStaffOperator: isOperator,
           parking_id: serverUser.parking_id || user?.parking_id || null,
           parkingId: serverUser.parking_id || user?.parkingId || null,
-          establishmentId: serverUser.establishment_id || user?.establishmentId || null,
+          establishmentId: serverUser.establishment_id || serverUser.parking_id || user?.establishmentId || null,
           establishmentName: serverUser.establishment_name || user?.establishmentName || '',
           companyName: serverUser.company_name || user?.companyName || '',
           isGoogleAuth: user?.isGoogleAuth || false
@@ -140,16 +167,22 @@ export const AuthProvider = ({ children }) => {
       setAccessToken(serverData.access_token);
       window.dispatchEvent(new Event('focus'));
       const serverUser = serverData.user;
+      const isOperator = computeIsStaffOperator(serverUser);
+      const pos = serverUser.position || (isOperator ? 'Operador de Garita' : null);
       const u = {
         id: serverUser.id,
         name: serverUser.full_name,
         email: serverUser.email,
         phone: serverUser.phone,
         avatar: serverUser.avatar_url || null,
-        role: serverUser.role || explicitRole || 'user',
+        role: serverUser.role || explicitRole || 'local',
+        position: pos,
+        shift: serverUser.shift || null,
+        is_staff: Boolean(serverUser.is_staff || isOperator),
+        isStaffOperator: isOperator,
         parking_id: serverUser.parking_id || null,
         parkingId: serverUser.parking_id || null,
-        establishmentId: serverUser.establishment_id || serverUser.establishmentId || null,
+        establishmentId: serverUser.establishment_id || serverUser.parking_id || serverUser.establishmentId || null,
         establishmentName: serverUser.establishment_name || serverUser.establishmentName || '',
         companyName: serverUser.company_name || serverUser.companyName || '',
         isGoogleAuth: false
@@ -159,6 +192,9 @@ export const AuthProvider = ({ children }) => {
       if (u.role === 'local' || u.role === 'platform') {
         setPinVerified(true);
       }
+      try {
+        localStorage.setItem('smart_park_user_session', JSON.stringify(u));
+      } catch {}
       return u;
     }
 
@@ -209,6 +245,8 @@ export const AuthProvider = ({ children }) => {
           throw new Error('Credenciales incorrectas');
         }
 
+        const isOperator = computeIsStaffOperator(candidate);
+        const pos = candidate.position || (isOperator ? 'Operador de Garita' : null);
         const localUser = {
           id: candidate.id || Date.now(),
           name: candidate.full_name || candidate.name || candidate.owner || cleanEmail.split('@')[0],
@@ -216,6 +254,10 @@ export const AuthProvider = ({ children }) => {
           phone: candidate.phone || '',
           avatar: null,
           role: candidate.role || 'local',
+          position: pos,
+          shift: candidate.shift || null,
+          is_staff: Boolean(candidate.is_staff || isOperator),
+          isStaffOperator: isOperator,
           parking_id: candidate.parking_id || candidate.parkingId || candidate.establishmentId || null,
           parkingId: candidate.parkingId || candidate.parking_id || candidate.establishmentId || null,
           establishmentId: candidate.establishmentId || candidate.parkingId || candidate.parking_id || null,
@@ -335,6 +377,8 @@ export const AuthProvider = ({ children }) => {
     if (data?.access_token && data?.user) {
       setAccessToken(data.access_token);
       const serverUser = data.user;
+      const isOperator = computeIsStaffOperator(serverUser);
+      const pos = serverUser.position || (isOperator ? 'Operador de Garita' : null);
       const u = {
         id: serverUser.id,
         name: serverUser.full_name,
@@ -342,12 +386,23 @@ export const AuthProvider = ({ children }) => {
         phone: serverUser.phone,
         avatar: serverUser.avatar_url || null,
         role: serverUser.role || 'local',
+        position: pos,
+        shift: serverUser.shift || null,
+        is_staff: Boolean(serverUser.is_staff || isOperator),
+        isStaffOperator: isOperator,
         parking_id: serverUser.parking_id || null,
+        parkingId: serverUser.parking_id || null,
+        establishmentId: serverUser.establishment_id || serverUser.parking_id || null,
+        establishmentName: serverUser.establishment_name || '',
+        companyName: serverUser.company_name || '',
         isGoogleAuth: false
       };
       setUser(u);
       setRole(u.role);
       setPinVerified(true);
+      try {
+        localStorage.setItem('smart_park_user_session', JSON.stringify(u));
+      } catch {}
       return u;
     }
     throw new Error('Respuesta inválida del servidor al validar PIN');

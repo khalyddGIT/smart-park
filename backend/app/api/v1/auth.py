@@ -14,7 +14,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import User, Staff
+from app.models.models import User, Staff, Parking
 from app.schemas.schemas import UserCreate, UserLogin, UserResponse, Token, PinVerify, PinLoginRequest
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user, verify_pin_hash, is_pin_hashed, hash_pin
@@ -147,7 +147,20 @@ async def login_user(user_in: UserLogin, request: Request, response: Response, d
     result = await db.execute(select(User).where(func.lower(User.email) == clean_ident))
     user = result.scalars().first()
 
-    # 2. Si no coincide por email, buscar por nombre completo
+    # 1b. Búsqueda por teléfono o DNI directo en User
+    if not user:
+        result = await db.execute(select(User).where(User.phone == identifier))
+        user = result.scalars().first()
+
+    # 1c. Búsqueda por DNI a través de Staff vinculado
+    if not user:
+        staff_res = await db.execute(select(Staff).where(Staff.dni == identifier))
+        staff_cand = staff_res.scalars().first()
+        if staff_cand and staff_cand.email:
+            res_linked = await db.execute(select(User).where(func.lower(User.email) == staff_cand.email.strip().lower()))
+            user = res_linked.scalars().first()
+
+    # 2. Si no coincide por email o DNI, buscar por nombre completo
     if not user:
         result = await db.execute(select(User).where(func.lower(User.full_name) == clean_ident))
         candidates = result.scalars().all()
@@ -194,6 +207,29 @@ async def login_user(user_in: UserLogin, request: Request, response: Response, d
         )
         raise HTTPException(status_code=401, detail="Cuenta desactivada")
     
+    # Enlazar parking_id y datos de staff si el usuario está en nómina de Staff o es dueño de una sede
+    st = await db.execute(select(Staff).where(
+        (func.lower(Staff.email) == user.email.lower()) | (Staff.dni == user.phone),
+        func.lower(Staff.status).in_(["active", "activo", "habilitado"])
+    ))
+    staff_rec = st.scalars().first()
+    if staff_rec:
+        setattr(user, "parking_id", staff_rec.parking_id)
+        setattr(user, "position", staff_rec.position)
+        setattr(user, "shift", staff_rec.shift)
+        setattr(user, "is_staff", True)
+        pos_lower = (staff_rec.position or "").lower()
+        is_op = bool(not pos_lower or "operador" in pos_lower or "garita" in pos_lower or "seguridad" in pos_lower or "supervisor" in pos_lower or "vigilante" in pos_lower or "administrador" not in pos_lower)
+        setattr(user, "is_staff_operator", is_op)
+    else:
+        if not getattr(user, "parking_id", None) and user.email:
+            pk = await db.execute(select(Parking.id).where(func.lower(Parking.email) == user.email.lower()))
+            p_id = pk.scalars().first()
+            if p_id:
+                setattr(user, "parking_id", p_id)
+        setattr(user, "is_staff", False)
+        setattr(user, "is_staff_operator", False)
+
     access_token = create_access_token(subject=user.id)
     _set_auth_cookie(response, access_token)
     await record_audit_event(
@@ -254,32 +290,74 @@ async def login_pin(
     )
     user = res_user.scalars().first()
 
-    # Si no se encontró por coincidencia exacta de teléfono y hay 9 dígitos (celular Perú)
-    if not user and clean_digits and len(clean_digits) >= 9:
+    # Si no se encontró por coincidencia exacta de teléfono y hay 8 o 9 dígitos (DNI o celular Perú)
+    if not user and clean_digits and len(clean_digits) >= 8:
         res_phone_user = await db.execute(
             select(User).where(
                 (User.phone != None) & 
-                (func.replace(func.replace(func.replace(User.phone, ' ', ''), '+51', ''), '-', '') == clean_digits)
+                (
+                    (User.phone == clean_digits) |
+                    (func.replace(func.replace(func.replace(User.phone, ' ', ''), '+51', ''), '-', '') == clean_digits)
+                )
             )
         )
         user = res_phone_user.scalars().first()
 
-    # 2. Si no se encontró directo en User, buscar en Staff por DNI, email o nombre
+    # 2. Buscar en Staff por DNI, email o nombre
     staff_member = None
-    if not user:
-        staff_res = await db.execute(
-            select(Staff).where(
-                (Staff.dni == clean_ident) |
-                (func.lower(Staff.email) == clean_ident.lower()) |
-                (func.lower(Staff.full_name) == clean_ident.lower())
-            )
+    staff_res = await db.execute(
+        select(Staff).where(
+            (Staff.dni == clean_ident) |
+            (func.lower(Staff.email) == clean_ident.lower()) |
+            (func.lower(Staff.full_name) == clean_ident.lower())
         )
-        staff_member = staff_res.scalars().first()
-        if staff_member and staff_member.email:
-            res_linked_user = await db.execute(select(User).where(func.lower(User.email) == staff_member.email.lower()))
+    )
+    staff_member = staff_res.scalars().first()
+
+    if not staff_member and clean_digits:
+        staff_res2 = await db.execute(select(Staff).where(Staff.dni == clean_digits))
+        staff_member = staff_res2.scalars().first()
+
+    # Si encontramos staff_member pero no user directo, enlazar User
+    if not user and staff_member:
+        if staff_member.email:
+            res_linked_user = await db.execute(select(User).where(func.lower(User.email) == staff_member.email.strip().lower()))
             user = res_linked_user.scalars().first()
-            if user and not user.security_pin and staff_member.security_pin:
-                user.security_pin = staff_member.security_pin
+        if not user and staff_member.dni:
+            res_linked_user = await db.execute(select(User).where(User.phone == staff_member.dni.strip()))
+            user = res_linked_user.scalars().first()
+
+    # 3. Si no existe User pero existe Staff activo: auto-provisionar si el PIN es correcto
+    if not user and staff_member:
+        is_active_staff = (staff_member.status or "active").lower() in ("active", "activo", "habilitado")
+        if not is_active_staff:
+            raise HTTPException(status_code=400, detail="Colaborador inactivo o suspendido en el sistema")
+
+        stored_staff_pin = staff_member.security_pin
+        if not stored_staff_pin or not verify_pin_hash(clean_pin, stored_staff_pin):
+            await record_audit_event(
+                db=db,
+                action="Intento Fallido de Login PIN Garita",
+                target=f"Colaborador #{staff_member.id} ({staff_member.full_name})",
+                severity="Advertencia",
+                request=request,
+                details={"motivo": "PIN de seguridad incorrecto"},
+            )
+            raise HTTPException(status_code=401, detail="PIN de seguridad incorrecto")
+
+        auto_email = (staff_member.email or f"operador.{staff_member.dni}@smartpark.pe").strip().lower()
+        user = User(
+            full_name=staff_member.full_name or f"Operador {staff_member.dni}",
+            email=auto_email,
+            phone=staff_member.dni.strip() if staff_member.dni else None,
+            hashed_password=get_password_hash(f"Garita{staff_member.dni[-4:]}!" if staff_member.dni and len(staff_member.dni)>=4 else "SmartPark2026!"),
+            security_pin=staff_member.security_pin if is_pin_hashed(staff_member.security_pin) else hash_pin(clean_pin),
+            role="local",
+            is_active=True
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
     if not user:
         await record_audit_event(
@@ -295,12 +373,21 @@ async def login_pin(
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Usuario inactivo o suspendido")
 
-    # 3. Validar PIN de seguridad (soporta hash y migración perezosa, y fallback a staff_member)
-    stored_pin = user.security_pin
-    if not stored_pin and staff_member and staff_member.security_pin:
-        stored_pin = staff_member.security_pin
-
-    pin_valid = verify_pin_hash(clean_pin, stored_pin) if stored_pin else False
+    # 4. Validar PIN de seguridad (con fallback bidireccional y auto-sincronización)
+    pin_valid = False
+    if user.security_pin and verify_pin_hash(clean_pin, user.security_pin):
+        pin_valid = True
+    elif staff_member and staff_member.security_pin and verify_pin_hash(clean_pin, staff_member.security_pin):
+        pin_valid = True
+        user.security_pin = staff_member.security_pin
+        await db.commit()
+    elif not staff_member and user.email:
+        fallback_staff = await db.execute(select(Staff).where(func.lower(Staff.email) == user.email.lower()))
+        s_cand = fallback_staff.scalars().first()
+        if s_cand and s_cand.security_pin and verify_pin_hash(clean_pin, s_cand.security_pin):
+            pin_valid = True
+            user.security_pin = s_cand.security_pin
+            await db.commit()
 
     if not pin_valid:
         await record_audit_event(
@@ -314,9 +401,30 @@ async def login_pin(
         raise HTTPException(status_code=401, detail="PIN de seguridad incorrecto")
 
     # Migrar a hash si estaba en texto plano
-    if stored_pin and not is_pin_hashed(stored_pin):
+    if user.security_pin and not is_pin_hashed(user.security_pin):
         user.security_pin = hash_pin(clean_pin)
         await db.commit()
+
+    # Enlazar parking_id y datos de staff si está disponible
+    active_staff = staff_member
+    if not active_staff:
+        st_res = await db.execute(select(Staff).where(
+            (func.lower(Staff.email) == user.email.lower()) | (Staff.dni == user.phone),
+            func.lower(Staff.status).in_(["active", "activo", "habilitado"])
+        ))
+        active_staff = st_res.scalars().first()
+
+    if active_staff:
+        setattr(user, "parking_id", active_staff.parking_id)
+        setattr(user, "position", active_staff.position)
+        setattr(user, "shift", active_staff.shift)
+        setattr(user, "is_staff", True)
+        pos_lower = (active_staff.position or "").lower()
+        is_op = bool(not pos_lower or "operador" in pos_lower or "garita" in pos_lower or "seguridad" in pos_lower or "supervisor" in pos_lower or "vigilante" in pos_lower or "administrador" not in pos_lower)
+        setattr(user, "is_staff_operator", is_op)
+    else:
+        setattr(user, "is_staff", False)
+        setattr(user, "is_staff_operator", False)
 
     access_token = create_access_token(subject=user.id)
     _set_auth_cookie(response, access_token)
@@ -370,8 +478,31 @@ async def logout(
     return {"status": "success", "message": "Sesión cerrada"}
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: User = Depends(get_current_user)):
-    """Retorna el usuario autenticado según JWT (fuente de verdad para rol)."""
+async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Retorna el usuario autenticado según JWT enriquecido con datos de staff y sede."""
+    curr_email = (current_user.email or "").strip().lower()
+    st_res = await db.execute(select(Staff).where(
+        (func.lower(Staff.email) == curr_email) | (Staff.dni == current_user.phone),
+        func.lower(Staff.status).in_(["active", "activo", "habilitado"])
+    ))
+    staff_rec = st_res.scalars().first()
+    if staff_rec:
+        setattr(current_user, "parking_id", staff_rec.parking_id)
+        setattr(current_user, "position", staff_rec.position)
+        setattr(current_user, "shift", staff_rec.shift)
+        setattr(current_user, "is_staff", True)
+        pos_lower = (staff_rec.position or "").lower()
+        is_op = bool(not pos_lower or "operador" in pos_lower or "garita" in pos_lower or "seguridad" in pos_lower or "supervisor" in pos_lower or "vigilante" in pos_lower or "administrador" not in pos_lower)
+        setattr(current_user, "is_staff_operator", is_op)
+    else:
+        if curr_email:
+            pk = await db.execute(select(Parking.id).where(func.lower(Parking.email) == curr_email))
+            p_id = pk.scalars().first()
+            if p_id:
+                setattr(current_user, "parking_id", p_id)
+        setattr(current_user, "is_staff", False)
+        setattr(current_user, "is_staff_operator", False)
+
     return UserResponse.model_validate(current_user)
 
 @router.post("/google", response_model=Token)

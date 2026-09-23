@@ -30,12 +30,12 @@ import {
 
 const isPersonalAccount = (user) => {
   if (!user) return false;
-  const pos = (user.position || user.staffPosition || '').toLowerCase();
-  if (pos.includes('operador') || pos.includes('seguridad') || pos.includes('supervisor')) return true;
-  // Fallback: todo Staff con role local que no sea el admin semilla es personal
   const adminEmails = ['adminlocal@smartpark.com', 'superadmin@smartpark.com'];
   if (adminEmails.includes((user.email || '').toLowerCase())) return false;
-  // Si el usuario fue creado via StaffModule, su session guardará staffPosition; si no hay dato, asumimos dueño
+  if (user.isStaffOperator) return true;
+  if (user.is_staff && (!user.position || !user.position.toLowerCase().includes('administrador'))) return true;
+  const pos = (user.position || user.staffPosition || '').toLowerCase();
+  if (pos && (pos.includes('operador') || pos.includes('garita') || pos.includes('seguridad') || pos.includes('supervisor') || pos.includes('vigilante') || !pos.includes('administrador'))) return true;
   return !!user.isStaffOperator;
 };
 
@@ -43,9 +43,9 @@ const PERSONAL_SECTIONS = [
   {
     section: 'GARITA PERSONAL',
     items: [
-      { id: 'dashboard', label: 'Mapa & Sedes', shortLabel: 'Mapa', icon: Building2 },
       { id: 'anpr', label: 'Garita - Entrada/Salida', shortLabel: 'Garita', icon: Camera },
       { id: 'reservations', label: 'Tickets & Reservas', shortLabel: 'Tickets', icon: CalendarCheck },
+      { id: 'dashboard', label: 'Mapa & Ocupación en Vivo', shortLabel: 'Mapa', icon: Building2 },
       { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
       { id: 'audit', label: 'Mi Auditoría', shortLabel: 'Auditoría', icon: ShieldCheck },
     ]

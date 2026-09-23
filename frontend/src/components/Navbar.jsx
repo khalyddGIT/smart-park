@@ -64,9 +64,9 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
   const [filterUnreadOnly, setFilterUnreadOnly] = useState(false);
   const notifRef = useRef(null);
 
-  const isPersonal = user?.position || user?.staffPosition || user?.isStaffOperator;
+  const isPersonal = !!(user?.position || user?.staffPosition || user?.isStaffOperator || user?.is_staff);
   const staffRoleLabel = isPersonal 
-    ? 'Trabajador' 
+    ? (user?.position || user?.staffPosition || 'Operador de Garita') 
     : role === 'local' 
     ? 'Admin Local' 
     : role === 'platform' 

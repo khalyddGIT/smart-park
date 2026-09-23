@@ -121,5 +121,65 @@ def test_create_and_login_worker():
                 "pin": "0000"
             })
             assert bad_pin_res.status_code == 401
+
+            # 10. Iniciar sesión usando DNI y contraseña en /auth/login
+            dni_pass_res = await ac.post("/api/v1/auth/login", json={
+                "email": worker_dni,
+                "password": new_password
+            })
+            assert dni_pass_res.status_code == 200
+            assert "access_token" in dni_pass_res.json()
+
+            # 11. Modificar correo y PIN del colaborador
+            new_worker_email = f"nuevo.{worker_email}"
+            new_pin = "9988"
+            update_creds_res = await ac.put(f"/api/v1/staff/{staff_id}", json={
+                "email": new_worker_email,
+                "security_pin": new_pin
+            }, headers=headers)
+            assert update_creds_res.status_code == 200
+            updated_staff_data = update_creds_res.json()
+            assert updated_staff_data["email"] == new_worker_email
+
+            # 12. Iniciar sesión con nuevo correo
+            new_email_login_res = await ac.post("/api/v1/auth/login", json={
+                "email": new_worker_email,
+                "password": new_password
+            })
+            assert new_email_login_res.status_code == 200
+
+            # 13. Iniciar sesión con correo antiguo debe fallar
+            old_email_login_res = await ac.post("/api/v1/auth/login", json={
+                "email": worker_email,
+                "password": new_password
+            })
+            assert old_email_login_res.status_code == 401
+
+            # 14. Iniciar sesión con nuevo PIN
+            new_pin_res = await ac.post("/api/v1/auth/login-pin", json={
+                "identifier": worker_dni,
+                "pin": new_pin
+            })
+            assert new_pin_res.status_code == 200
+
+            # 15. Crear colaborador con DNI y PIN solamente (sin password previo) y validar login PIN
+            bare_dni = f"78{uuid.uuid4().int % 1000000:06d}"
+            bare_staff_res = await ac.post("/api/v1/staff", json={
+                "parking_id": 1,
+                "full_name": "Operador Solo DNI",
+                "dni": bare_dni,
+                "position": "Operador de Garita",
+                "shift": "Tarde (15:00 - 23:00)",
+                "status": "Activo",
+                "security_pin": "4321"
+            }, headers=headers)
+            assert bare_staff_res.status_code == 201
+
+            bare_pin_login = await ac.post("/api/v1/auth/login-pin", json={
+                "identifier": bare_dni,
+                "pin": "4321"
+            })
+            assert bare_pin_login.status_code == 200
+            assert "access_token" in bare_pin_login.json()
     
     asyncio.run(_run())

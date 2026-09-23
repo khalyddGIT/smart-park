@@ -108,29 +108,110 @@ const AppMain = () => {
       typeof window !== 'undefined' ? window.location.pathname : '/',
       typeof window !== 'undefined' ? window.location.search : ''
     );
-    return parsed.matched ? canonicalizeTab(parsed.tab) : 'dashboard';
+    if (parsed.matched) return canonicalizeTab(parsed.tab);
+    try {
+      const savedUser = JSON.parse(localStorage.getItem('smart_park_user_session') || '{}');
+      const adminEmails = ['adminlocal@smartpark.com', 'superadmin@smartpark.com'];
+      const email = (savedUser?.email || '').toLowerCase();
+      if (!adminEmails.includes(email)) {
+        const isOp = savedUser?.isStaffOperator || 
+          (savedUser?.is_staff && (!savedUser?.position || !savedUser?.position?.toLowerCase().includes('administrador'))) || 
+          (savedUser?.position && (savedUser?.position?.toLowerCase().includes('operador') || savedUser?.position?.toLowerCase().includes('garita') || savedUser?.position?.toLowerCase().includes('seguridad') || savedUser?.position?.toLowerCase().includes('supervisor') || savedUser?.position?.toLowerCase().includes('vigilante') || !savedUser?.position?.toLowerCase().includes('administrador')));
+        if (isOp) return 'anpr';
+      }
+    } catch {}
+    return 'dashboard';
   });
   const [bookingFeedback, setBookingFeedback] = useState(null);
-  const [isPersonalStaff, setIsPersonalStaff] = useState(false);
-  const [personalParkingId, setPersonalParkingId] = useState(null);
-  const [selectedParkingId, setSelectedParkingId] = useState(() => readInitialParkingId());
+  const [isPersonalStaff, setIsPersonalStaff] = useState(() => {
+    try {
+      const savedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('smart_park_user_session') || '{}') : null;
+      if (!savedUser) return false;
+      const adminEmails = ['adminlocal@smartpark.com', 'superadmin@smartpark.com'];
+      if (adminEmails.includes((savedUser.email || '').toLowerCase())) return false;
+      if (savedUser.isStaffOperator) return true;
+      if (savedUser.is_staff && (!savedUser.position || !savedUser.position.toLowerCase().includes('administrador'))) return true;
+      const pos = (savedUser.position || savedUser.staffPosition || '').toLowerCase();
+      if (pos && (pos.includes('operador') || pos.includes('garita') || pos.includes('seguridad') || pos.includes('supervisor') || pos.includes('vigilante') || !pos.includes('administrador'))) return true;
+    } catch {}
+    return false;
+  });
+  const [personalParkingId, setPersonalParkingId] = useState(() => {
+    try {
+      const savedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('smart_park_user_session') || '{}') : null;
+      return savedUser?.parking_id ? String(savedUser.parking_id) : (savedUser?.parkingId ? String(savedUser.parkingId) : null);
+    } catch {
+      return null;
+    }
+  });
+  const [selectedParkingId, setSelectedParkingId] = useState(() => {
+    const fromUrl = readInitialParkingId();
+    if (fromUrl) return fromUrl;
+    try {
+      const savedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('smart_park_user_session') || '{}') : null;
+      if (savedUser?.parking_id) return String(savedUser.parking_id);
+    } catch {}
+    return null;
+  });
   const skipNextUrlPushRef = React.useRef(false);
   const didHydrateUrlRef = React.useRef(false);
+
   useEffect(() => {
-    if (role !== 'local' || !user?.email) { setIsPersonalStaff(false); setPersonalParkingId(null); return; }
-    if (['adminlocal@smartpark.com','superadmin@smartpark.com'].includes(user.email.toLowerCase())) { setIsPersonalStaff(false); setPersonalParkingId(null); return; }
-    api.get('/staff').then(r=>{
-      const list = Array.isArray(r.data)? r.data : [];
-      const match = list.find(s=> (s.email||'').toLowerCase()===user.email.toLowerCase());
+    if (role !== 'local' || !user?.email) { 
+      setIsPersonalStaff(false); 
+      setPersonalParkingId(null); 
+      return; 
+    }
+    const adminEmails = ['adminlocal@smartpark.com', 'superadmin@smartpark.com'];
+    if (adminEmails.includes(user.email.toLowerCase())) { 
+      setIsPersonalStaff(false); 
+      setPersonalParkingId(null); 
+      return; 
+    }
+
+    const isOpUser = !!(
+      user.isStaffOperator || 
+      (user.is_staff && (!user.position || !user.position.toLowerCase().includes('administrador'))) ||
+      (user.position && (user.position.toLowerCase().includes('operador') || user.position.toLowerCase().includes('garita') || user.position.toLowerCase().includes('seguridad') || user.position.toLowerCase().includes('supervisor') || user.position.toLowerCase().includes('vigilante') || !user.position.toLowerCase().includes('administrador')))
+    );
+
+    if (isOpUser) {
+      setIsPersonalStaff(true);
+      if (user.parking_id) {
+        const pid = String(user.parking_id);
+        setPersonalParkingId(pid);
+        setSelectedParkingId(pid);
+      }
+    }
+
+    api.get('/staff').then(r => {
+      const list = Array.isArray(r.data) ? r.data : [];
+      const match = list.find(s => (s.email || '').toLowerCase() === user.email.toLowerCase());
       if (match) {
-        const pos=(match.position||'').toLowerCase();
-        if (pos.includes('operador') || pos.includes('seguridad') || pos.includes('supervisor') || pos.includes('vigilante')) {
+        const pos = (match.position || '').toLowerCase();
+        const isOp = pos.includes('operador') || pos.includes('garita') || pos.includes('seguridad') || pos.includes('supervisor') || pos.includes('vigilante') || !pos.includes('administrador');
+        if (isOp) {
           setIsPersonalStaff(true);
-          if(match.parking_id) setPersonalParkingId(String(match.parking_id));
+          if (match.parking_id) {
+            const pid = String(match.parking_id);
+            setPersonalParkingId(pid);
+            setSelectedParkingId(pid);
+          }
         }
       }
-    }).catch(()=>{});
-  }, [role, user?.email]);
+    }).catch(() => {});
+  }, [role, user]);
+
+  // Si es personal staff y está en 'dashboard' o sin subruta específica, redirigir automáticamente a Garita ('anpr')
+  useEffect(() => {
+    if (isPersonalStaff && (activeTab === 'dashboard' || !activeTab)) {
+      const parsed = parseRoleLocation(window.location.pathname, window.location.search);
+      if (!parsed.matched || parsed.tab === 'dashboard') {
+        skipNextUrlPushRef.current = true;
+        setActiveTab('anpr');
+      }
+    }
+  }, [isPersonalStaff, activeTab]);
 
   // Si el rol autenticado no admite la vista actual, volver a dashboard
   useEffect(() => {

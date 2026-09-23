@@ -966,7 +966,7 @@ async def update_reservation_stay(
     if stay_in.hours_stay is not None and stay_in.hours_stay > 0:
         stay_hours = float(stay_in.hours_stay)
         reservation.end_time = entry_ref + timedelta(hours=stay_hours)
-        reservation.estimated_hours = stay_hours
+        reservation.estimated_hours = max(1, int(round(stay_hours)))
         night_surcharge = float(parking.night_shift_surcharge or 0.0) if getattr(reservation, "is_night_shift", False) else 0.0
         reservation.total_cost = round((vehicle_rate + night_surcharge) * stay_hours, 2)
     elif getattr(reservation, "is_open_stay", False):

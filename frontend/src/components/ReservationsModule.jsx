@@ -1008,16 +1008,16 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                   <div className="flex flex-wrap items-center gap-2 self-end lg:self-center">
                     {entryMatch.status === 'SCHEDULED' && (
                       <>
-                        <div className="flex items-center gap-1 mr-1">
+                        <div className="flex items-center gap-1.5 mr-1">
                           <span className="text-xs text-slate-500 font-semibold">Estadía:</span>
                           <div className="flex items-center gap-1">
-                            {[1, 2, 4, 8].map(h => (
+                            {[1, 2, 3, 4, 8].map(h => (
                               <button
                                 key={h}
                                 type="button"
                                 onClick={() => setEntryStayHours(h)}
                                 className={`px-2 py-1 rounded-lg text-xs font-bold font-mono transition-colors cursor-pointer ${
-                                  entryStayHours === h
+                                  Number(entryStayHours) === h
                                     ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
                                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                                 }`}
@@ -1025,6 +1025,26 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                                 {h}h
                               </button>
                             ))}
+                          </div>
+                          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-2 py-1 border border-slate-200 dark:border-slate-700">
+                            <input
+                              type="number"
+                              min="0.5"
+                              max="168"
+                              step="0.5"
+                              value={entryStayHours}
+                              onChange={e => {
+                                const val = e.target.value;
+                                if (val === '') setEntryStayHours('');
+                                else setEntryStayHours(parseFloat(val) || '');
+                              }}
+                              onBlur={() => {
+                                if (!entryStayHours || Number(entryStayHours) < 0.5) setEntryStayHours(2);
+                              }}
+                              className="w-10 text-center font-mono font-bold text-xs bg-transparent outline-none text-slate-900 dark:text-white"
+                              title="Ingresar cualquier número de horas"
+                            />
+                            <span className="text-[10px] font-mono text-slate-400">h</span>
                           </div>
                         </div>
 
@@ -1035,7 +1055,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                           className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs h-10 px-4 rounded-xl gap-2 shadow-sm cursor-pointer"
                         >
                           <LogIn className="w-4 h-4" />
-                          <span>Registrar Ingreso ({entryStayHours}h)</span>
+                          <span>Registrar Ingreso ({entryStayHours || 1}h)</span>
                         </Button>
                       </>
                     )}

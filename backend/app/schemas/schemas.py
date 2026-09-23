@@ -539,7 +539,7 @@ class ReservationCreate(BaseModel):
     pay_now: Optional[bool] = False
     tolerance_minutes: Optional[int] = Field(default=15, ge=5, le=120, description="Tolerancia entre 5 y 120 minutos")
     vehicle_type: Optional[str] = "auto"
-    estimated_hours: Optional[int] = Field(default=1, ge=1, le=168)
+    estimated_hours: Optional[float] = Field(default=1.0, ge=0.25, le=168.0)
     billing_unit: Optional[str] = "hour"
     estimated_minutes: Optional[int] = Field(default=60, ge=1, le=10080)
     is_open_stay: Optional[bool] = False
@@ -611,7 +611,7 @@ class ReservationResponse(BaseModel):
     slot_code: Optional[str] = None
     tolerance_minutes: Optional[int] = 15
     vehicle_type: Optional[str] = "auto"
-    estimated_hours: Optional[int] = 1
+    estimated_hours: Optional[float] = 1.0
     billing_unit: Optional[str] = "hour"
     estimated_minutes: Optional[int] = 60
     is_night_shift: Optional[bool] = False

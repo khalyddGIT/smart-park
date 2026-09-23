@@ -461,36 +461,13 @@ export const PersonalGaritaModule = () => {
           </p>
         </div>
 
-        {/* Acciones de Cabecera: Silenciar Audio & Cierre de Turno */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleToggleMute}
-            title={audioMuted ? "Activar sonido de garita" : "Silenciar sonido de garita"}
-            className="h-9 px-3 rounded-xl border-slate-200 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800 text-xs font-medium gap-1.5"
-          >
-            {audioMuted ? <VolumeX className="w-4 h-4 text-slate-400" /> : <Volume2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
-            <span className="hidden sm:inline">{audioMuted ? 'Mudo' : 'Sonido'}</span>
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setIncidentModal(true)}
-            className="h-9 px-3.5 rounded-xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold gap-1.5 cursor-pointer"
-          >
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <span>Incidencia</span>
-          </Button>
-
+        {/* Acciones de Cabecera: Cierre de Turno */}
+        <div className="flex items-center gap-2">
           <Button
             type="button"
             size="sm"
             onClick={() => setShiftModal(true)}
-            className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5"
+            className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 cursor-pointer shadow-xs"
           >
             <Receipt className="w-4 h-4" />
             <span>Cierre de Turno</span>

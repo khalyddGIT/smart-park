@@ -234,18 +234,23 @@ async def startup_db():
         async with AsyncSessionLocal() as session:
             # Purga preventiva definitiva de sedes demo iniciales residuales ('Plaza Mayor', 'Bellido Colonial', 'Mercado Mariscal')
             # para garantizar que únicamente existan las sedes reales registradas por los usuarios.
-            from sqlalchemy import text
-            await session.execute(text("""
-                DELETE FROM pagos WHERE reservation_id IN (SELECT id FROM reservas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe')));
-                DELETE FROM reservas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
-                DELETE FROM personal WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
-                DELETE FROM incidencias WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
-                DELETE FROM resenas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
-                DELETE FROM cameras_dispositivos WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
-                DELETE FROM elementos_plano WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
-                DELETE FROM plazas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'));
-                DELETE FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe');
-            """))
+            from sqlalchemy import text, select
+            purge_statements = [
+                "DELETE FROM pagos WHERE reservation_id IN (SELECT id FROM reservas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe')))",
+                "DELETE FROM reservas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'))",
+                "DELETE FROM personal WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'))",
+                "DELETE FROM incidencias WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'))",
+                "DELETE FROM resenas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'))",
+                "DELETE FROM cameras_dispositivos WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'))",
+                "DELETE FROM elementos_plano WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'))",
+                "DELETE FROM plazas WHERE parking_id IN (SELECT id FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe'))",
+                "DELETE FROM estacionamientos WHERE name ILIKE '%Plaza Mayor%' OR name ILIKE '%Bellido Colonial%' OR name ILIKE '%Mercado Mariscal%' OR email IN ('contacto@plazamayorpark.pe', 'bellido@smartpark.pe', 'mercado@smartpark.pe')"
+            ]
+            for stmt in purge_statements:
+                try:
+                    await session.execute(text(stmt))
+                except Exception:
+                    pass
             await session.commit()
 
             try:

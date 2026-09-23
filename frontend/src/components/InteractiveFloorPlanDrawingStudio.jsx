@@ -614,9 +614,9 @@ export const InteractiveFloorPlanDrawingStudio = ({
   }, []);
 
   // Elementos en el plano
-  const [elements, setElements] = useState(initialElements || RECTANGULAR_PRESET);
+  const [elements, setElements] = useState(() => (initialElements && initialElements.length > 0 ? initialElements : (readOnly ? [] : RECTANGULAR_PRESET)));
   const [selectedId, setSelectedId] = useState(null);
-  const [history, setHistory] = useState([initialElements || RECTANGULAR_PRESET]);
+  const [history, setHistory] = useState(() => [initialElements && initialElements.length > 0 ? initialElements : (readOnly ? [] : RECTANGULAR_PRESET)]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [message, setMessage] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -629,26 +629,32 @@ export const InteractiveFloorPlanDrawingStudio = ({
   const historyIndexRef = useRef(historyIndex);
   historyIndexRef.current = historyIndex;
 
-  // Sincronizar SOLO en la carga inicial o si cambia la sede
+  // Sincronizar en la carga inicial, si cambia la sede, o cuando el servidor responde con el plano real
   const hasInitializedRef = useRef(false);
   const lastParkingNameRef = useRef(parkingName);
 
   useEffect(() => {
     if (initialElements && Array.isArray(initialElements)) {
-      if (!hasInitializedRef.current || lastParkingNameRef.current !== parkingName) {
+      const isDifferentParking = lastParkingNameRef.current !== parkingName;
+      const justLoadedFromServer = elementsRef.current.length === 0 && initialElements.length > 0;
+      const elementCountChanged = !hasUnsavedChanges && initialElements.length !== elementsRef.current.length;
+      const shouldSync = !hasInitializedRef.current || isDifferentParking || (!hasUnsavedChanges && (justLoadedFromServer || elementCountChanged));
+
+      if (shouldSync) {
         hasInitializedRef.current = true;
         lastParkingNameRef.current = parkingName;
-        setElements(initialElements);
-        elementsRef.current = initialElements;
-        setHistory([initialElements]);
-        historyRef.current = [initialElements];
+        const toLoad = (initialElements.length === 0 && !readOnly) ? RECTANGULAR_PRESET : initialElements;
+        setElements(toLoad);
+        elementsRef.current = toLoad;
+        setHistory([toLoad]);
+        historyRef.current = [toLoad];
         setHistoryIndex(0);
         historyIndexRef.current = 0;
         setSelectedId(null);
         setHasUnsavedChanges(false);
       }
     }
-  }, [initialElements, parkingName]);
+  }, [initialElements, parkingName, hasUnsavedChanges, readOnly]);
 
   // Estados de dibujo y manipulación
   const [isDrawing, setIsDrawing] = useState(false);

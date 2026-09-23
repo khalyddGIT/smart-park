@@ -33,7 +33,9 @@ import api from '../services/api';
 export const PersonalGaritaModule = () => {
   const { establishments, myEstablishments, reservations, createReservation, checkInReservation, checkOutReservation, ensureFloorPlan, fetchParkings, wsConnected } = useEstablishments();
   const { user } = useAuth();
-  const [assignedParkingId, setAssignedParkingId] = useState(null);
+  const [assignedParkingId, setAssignedParkingId] = useState(
+    user?.parking_id ? String(user.parking_id) : (user?.parkingId ? String(user.parkingId) : null)
+  );
   const [audioMuted, setAudioMutedState] = useState(isAudioMuted());
 
   useEffect(() => {
@@ -48,6 +50,12 @@ export const PersonalGaritaModule = () => {
   };
 
   useEffect(() => {
+    if (user?.parking_id || user?.parkingId) {
+      setAssignedParkingId(String(user.parking_id || user.parkingId));
+    }
+  }, [user?.parking_id, user?.parkingId]);
+
+  useEffect(() => {
     if (!user?.email) return;
     api.get('/staff').then(r => {
       const me = (Array.isArray(r.data) ? r.data : []).find(s => (s.email || '').toLowerCase() === user.email.toLowerCase());
@@ -57,20 +65,24 @@ export const PersonalGaritaModule = () => {
 
   const currentEst = useMemo(() => {
     const list = Array.isArray(myEstablishments) && myEstablishments.length > 0 ? myEstablishments : establishments;
-    if (assignedParkingId) return list.find(e => String(e.id) === String(assignedParkingId)) || list[0];
+    if (assignedParkingId) {
+      const found = list.find(e => String(e.id) === String(assignedParkingId) || String(e.id).replace(/\D/g, '') === String(assignedParkingId).replace(/\D/g, ''));
+      if (found) return found;
+    }
     return list[0];
   }, [establishments, myEstablishments, assignedParkingId]);
 
-  // Asegura que el plano del parking asignado esté hidratado
+  // Asegura que el plano del parking asignado esté hidratado desde el backend
   useEffect(() => {
-    if (currentEst && currentEst.elements === null && currentEst.id && !String(currentEst.id).startsWith('EST-')) {
-      ensureFloorPlan(currentEst.id);
+    if (currentEst?.id && !String(currentEst.id).startsWith('EST-')) {
+      ensureFloorPlan(currentEst.id, true);
     }
-  }, [currentEst?.id, currentEst?.elements]);
+  }, [currentEst?.id]);
 
   const [plate, setPlate] = useState('');
   const [slot, setSlot] = useState('');
   const [hours, setHours] = useState(2);
+  const [isOpenStay, setIsOpenStay] = useState(false);
   const [payMethod, setPayMethod] = useState('efectivo');
   const [feedback, setFeedback] = useState('');
   const [garitaReservations, setGaritaReservations] = useState([]);
@@ -124,6 +136,7 @@ export const PersonalGaritaModule = () => {
       const r = await api.get('/reservations', { params: { parking_id: Number(currentEst.id) } });
       if (Array.isArray(r.data)) {
         setGaritaReservations(r.data.map(x => ({
+          ...x,
           id: x.id, 
           code: x.code, 
           plate: x.license_plate, 
@@ -136,7 +149,9 @@ export const PersonalGaritaModule = () => {
           actualExit: x.actual_exit,
           total_cost: x.total_cost,
           payment_method: x.payment_method || 'efectivo',
-          amount_paid: x.amount_paid || 0.0
+          amount_paid: x.amount_paid || 0.0,
+          is_open_stay: !!(x.is_open_stay ?? x.isOpenStay),
+          isOpenStay: !!(x.is_open_stay ?? x.isOpenStay)
         })));
       }
       ensureFloorPlan(currentEst.id, true);
@@ -151,7 +166,7 @@ export const PersonalGaritaModule = () => {
     const onVis = () => { if (document.visibilityState === 'visible') fetchGaritaReservations(); };
     document.addEventListener('visibilitychange', onVis);
 
-    // Sincronización reactiva instantánea vía WebSocket
+    // Sincronización reactiva instantánea vía WebSocket o edición del plano CAD
     const handleLiveSync = (e) => {
       const detail = e?.detail;
       if (!detail) return;
@@ -163,14 +178,24 @@ export const PersonalGaritaModule = () => {
         }
       }
     };
+    const handleFloorPlanUpdated = (e) => {
+      const pid = e?.detail?.parkingId;
+      if (!pid || String(pid) === String(currentEst?.id)) {
+        if (currentEst?.id) {
+          ensureFloorPlan(currentEst.id, true);
+        }
+      }
+    };
     window.addEventListener('smart_park_reservation_live', handleLiveSync);
     window.addEventListener('smart_park_spaces_live', handleLiveSync);
+    window.addEventListener('smart_park_floorplan_updated', handleFloorPlanUpdated);
 
     return () => { 
       clearInterval(iv); 
       document.removeEventListener('visibilitychange', onVis); 
       window.removeEventListener('smart_park_reservation_live', handleLiveSync);
       window.removeEventListener('smart_park_spaces_live', handleLiveSync);
+      window.removeEventListener('smart_park_floorplan_updated', handleFloorPlanUpdated);
     };
   }, [currentEst?.id]);
 
@@ -254,14 +279,17 @@ export const PersonalGaritaModule = () => {
       return;
     }
     const now = new Date();
-    const isPendiente = payMethod === 'pendiente';
+    const isPendiente = isOpenStay || payMethod === 'pendiente';
+    const effectiveHours = isOpenStay ? 24 : hours;
     const res = await createReservation({
       parkingId: currentEst.id,
       slotCode: targetSlot,
       plate: cleanPlate,
-      hours,
+      hours: isOpenStay ? 1 : hours,
+      isOpenStay: isOpenStay,
+      is_open_stay: isOpenStay,
       startTime: now.toISOString(),
-      expiresAt: new Date(now.getTime() + hours * 3600000).toISOString(),
+      expiresAt: new Date(now.getTime() + effectiveHours * 3600000).toISOString(),
       paymentMethod: isPendiente ? null : payMethod,
       payNow: !isPendiente
     });
@@ -270,9 +298,9 @@ export const PersonalGaritaModule = () => {
       setTimeout(() => setFeedback(''), 3000);
       return;
     }
-    await checkInReservation(res.code);
+    await checkInReservation(res.code, isOpenStay ? null : hours);
     playTone('success');
-    setFeedback(`${targetSlot} • ${cleanPlate} registrado exitosamente ${isPendiente ? '(pago al salir)' : `(${payMethod})`}`);
+    setFeedback(`${targetSlot} • ${cleanPlate} registrado exitosamente ${isOpenStay ? '(Tiempo Libre — cobro al salir)' : isPendiente ? '(Pago al salir)' : `(${payMethod})`}`);
     setSlot('');
     setPlate('');
     setTimeout(() => setFeedback(''), 3000);
@@ -334,15 +362,16 @@ export const PersonalGaritaModule = () => {
 
     // Verificar si la reserva tenía una hora de fin programada y excedió el tiempo
     const raw = v.rawReservation || {};
+    const isOpen = !!(raw.is_open_stay ?? raw.isOpenStay);
     const scheduledEnd = (raw.end_time || raw.endTime) ? new Date(raw.end_time || raw.endTime) : null;
-    const isOvertime = scheduledEnd ? now.getTime() > scheduledEnd.getTime() : false;
+    const isOvertime = !isOpen && scheduledEnd ? now.getTime() > scheduledEnd.getTime() : false;
     const overtimeMins = isOvertime ? Math.floor((now.getTime() - scheduledEnd.getTime()) / 60000) : 0;
 
     // Verificar si ya fue pre-pagado en el ingreso y calcular saldo pendiente por sobretiempo
     const paidAmount = Number(raw.amount_paid || (raw.prepaid || (raw.payment_method && raw.payment_method !== 'pendiente' && raw.payment_method !== null) ? (raw.cost || raw.total_cost || 0) : 0) || 0);
     const pendingBalance = Math.max(0, Number((calculatedCost - paidAmount).toFixed(2)));
-    const alreadyPaid = pendingBalance <= 0 && paidAmount > 0;
-    const toCollect = pendingBalance > 0 ? pendingBalance : (paidAmount > 0 ? 0 : calculatedCost);
+    const alreadyPaid = !isOpen && pendingBalance <= 0 && paidAmount > 0;
+    const toCollect = alreadyPaid ? 0 : (pendingBalance > 0 ? pendingBalance : calculatedCost);
 
     setCheckoutModal({
       vehicle: v,
@@ -360,6 +389,7 @@ export const PersonalGaritaModule = () => {
       paidAmount,
       pendingBalance,
       toCollect,
+      isOpenStay: isOpen,
       isOvertime,
       overtimeMins,
       alreadyPaid,
@@ -403,7 +433,8 @@ export const PersonalGaritaModule = () => {
       paidAmount: paidAmount,
       pendingBalance: pendingBalance,
       paymentMethod: checkoutData.payment_method,
-      operatorName: user?.full_name || 'Operador de Garita'
+      operatorName: user?.full_name || 'Operador de Garita',
+      isOpenStay: !!checkoutModal.isOpenStay
     });
 
     setCheckoutModal(null);
@@ -421,6 +452,22 @@ export const PersonalGaritaModule = () => {
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-base font-black text-slate-900 dark:text-white leading-snug">{currentEst?.name || 'Mi Cochera'}</h2>
+            {((Array.isArray(myEstablishments) && myEstablishments.length > 1) || (Array.isArray(establishments) && establishments.length > 1)) && (
+              <select
+                value={currentEst?.id || ''}
+                onChange={(e) => {
+                  setAssignedParkingId(String(e.target.value));
+                  ensureFloorPlan(e.target.value, true);
+                }}
+                className="h-7 px-2 py-0.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-xs"
+              >
+                {(Array.isArray(myEstablishments) && myEstablishments.length > 1 ? myEstablishments : establishments).map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} (#{p.id})
+                  </option>
+                ))}
+              </select>
+            )}
             <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700">
               Garita Activa
             </span>
@@ -564,15 +611,40 @@ export const PersonalGaritaModule = () => {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tiempo contratado</label>
-              <div className="grid grid-cols-4 gap-2 mt-1">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tiempo de estadía</label>
+                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  {isOpenStay ? 'Estadía libre (al salir)' : `${hours}h contratadas`}
+                </span>
+              </div>
+              <div className="grid grid-cols-5 gap-1.5 mt-1">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsOpenStay(true);
+                    setPayMethod('pendiente');
+                  }} 
+                  className={`h-10 rounded-xl font-black text-xs border transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                    isOpenStay 
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-500/20' 
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
+                  }`}
+                  title="Estancia abierta: el cliente ingresa y paga al salir según el tiempo exacto transcurrido"
+                >
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                  <span>Libre</span>
+                </button>
                 {[1, 2, 4, 8].map(h => (
                   <button 
                     key={h} 
                     type="button" 
-                    onClick={() => setHours(h)} 
-                    className={`h-10 rounded-xl font-bold border transition-all cursor-pointer ${
-                      hours === h 
+                    onClick={() => {
+                      setIsOpenStay(false);
+                      setHours(h);
+                      if (payMethod === 'pendiente') setPayMethod('efectivo');
+                    }} 
+                    className={`h-10 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
+                      !isOpenStay && hours === h 
                         ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-600 shadow-sm' 
                         : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                     }`}
@@ -590,18 +662,39 @@ export const PersonalGaritaModule = () => {
                 onChange={e => setPayMethod(e.target.value)} 
                 className="mt-1 w-full h-10 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-500 cursor-pointer"
               >
-                <option value="efectivo" className="dark:bg-slate-900">Efectivo</option>
-                <option value="yape" className="dark:bg-slate-900">Yape</option>
-                <option value="plin" className="dark:bg-slate-900">Plin</option>
-                <option value="tarjeta" className="dark:bg-slate-900">Tarjeta POS</option>
-                <option value="pendiente" className="dark:bg-slate-900">Cobro al salir</option>
+                {isOpenStay ? (
+                  <>
+                    <option value="pendiente" className="dark:bg-slate-900">Cobro al salir (Recomendado)</option>
+                    <option value="efectivo" className="dark:bg-slate-900">Anticipo en Efectivo</option>
+                    <option value="yape" className="dark:bg-slate-900">Anticipo por Yape</option>
+                    <option value="plin" className="dark:bg-slate-900">Anticipo por Plin</option>
+                    <option value="tarjeta" className="dark:bg-slate-900">Anticipo Tarjeta POS</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="efectivo" className="dark:bg-slate-900">Efectivo</option>
+                    <option value="yape" className="dark:bg-slate-900">Yape</option>
+                    <option value="plin" className="dark:bg-slate-900">Plin</option>
+                    <option value="tarjeta" className="dark:bg-slate-900">Tarjeta POS</option>
+                    <option value="pendiente" className="dark:bg-slate-900">Cobro al salir</option>
+                  </>
+                )}
               </select>
             </div>
 
             <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Total a cobrar</span>
+              <div>
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 block">
+                  {isOpenStay ? 'Liquidación al salir' : 'Total a cobrar'}
+                </span>
+                {isOpenStay && (
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block mt-0.5">
+                    Tarifa: S/ {Number(currentEst?.rate || 5).toFixed(2)}/h
+                  </span>
+                )}
+              </div>
               <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
-                S/ {(Number(currentEst?.rate || 5) * hours).toFixed(2)}
+                {isOpenStay ? 'S/ 0.00' : `S/ ${(Number(currentEst?.rate || 5) * hours).toFixed(2)}`}
               </span>
             </div>
 
@@ -610,7 +703,7 @@ export const PersonalGaritaModule = () => {
               disabled={!plate.trim() || (!slot && freeSlots.length === 0)} 
               className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md disabled:opacity-40 transition-all cursor-pointer"
             >
-              + Registrar Ingreso ({slot || freeSlots[0]?.code || 'Sin cupo'})
+              + Registrar Ingreso {isOpenStay ? 'Libre' : ''} ({slot || freeSlots[0]?.code || 'Sin cupo'})
             </Button>
           </div>
 
@@ -646,8 +739,9 @@ export const PersonalGaritaModule = () => {
                   const h = Math.floor(mins / 60);
                   const m = mins % 60;
                   const rawRes = v.rawReservation || {};
+                  const isLibre = !!(rawRes.is_open_stay ?? rawRes.isOpenStay);
                   const schedEnd = (rawRes.end_time || rawRes.endTime) ? new Date(rawRes.end_time || rawRes.endTime) : null;
-                  const isExceeded = schedEnd ? Date.now() > schedEnd.getTime() : false;
+                  const isExceeded = !isLibre && schedEnd ? Date.now() > schedEnd.getTime() : false;
                   const excessMins = isExceeded ? Math.floor((Date.now() - schedEnd.getTime()) / 60000) : 0;
 
                   return (
@@ -661,6 +755,11 @@ export const PersonalGaritaModule = () => {
                           <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 font-medium">
                             <Clock className="w-3 h-3 text-slate-400" />
                             <span>{h}h {m}m de estancia</span>
+                            {isLibre && (
+                              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                ⏱️ Libre
+                              </span>
+                            )}
                             {isExceeded && (
                               <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-300 px-1.5 py-0.2 rounded flex items-center gap-0.5">
                                 <AlertTriangle className="w-2.5 h-2.5 text-amber-600" />
@@ -761,7 +860,14 @@ export const PersonalGaritaModule = () => {
                     )}
                   </span>
                 </div>
-                {checkoutModal.isOvertime ? (
+                {checkoutModal.isOpenStay ? (
+                  <div className="flex justify-between text-emerald-700 dark:text-emerald-300 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                    <span className="flex items-center gap-1">
+                      ⏱️ Modalidad:
+                    </span>
+                    <span>Tiempo Libre (Liquidación al salir)</span>
+                  </div>
+                ) : checkoutModal.isOvertime ? (
                   <div className="flex justify-between text-amber-600 dark:text-amber-400 text-[11px] font-bold bg-amber-50 dark:bg-amber-950/50 p-2 rounded-lg border border-amber-200 dark:border-amber-800">
                     <span className="flex items-center gap-1">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
@@ -979,6 +1085,10 @@ export const PersonalGaritaModule = () => {
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Permanencia:</span>
                 <span className="font-bold text-slate-900 dark:text-white">{thermalTicket.duration}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Modalidad:</span>
+                <span className="font-bold text-slate-900 dark:text-white">{thermalTicket.isOpenStay ? 'Tiempo Libre' : 'Por Hora'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Medio de Pago:</span>

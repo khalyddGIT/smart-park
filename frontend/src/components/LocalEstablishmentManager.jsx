@@ -1212,12 +1212,20 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
   }, [establishments, selectedEstablishment, activeViewMode]);
 
   // Abrir plano
-  const handleOpenPlan = (est, mode) => {
+  const handleOpenPlan = async (est, mode) => {
     setSelectedEstablishment(est);
-    setCurrentPlanElements(est.elements || []);
-    // Red de seguridad: si el plano aún no llegó del servidor, hidratarlo ahora
-    if (est.elements === null) ensureFloorPlan(est.id);
+    if (Array.isArray(est.elements) && est.elements.length > 0) {
+      setCurrentPlanElements(est.elements);
+    } else {
+      setCurrentPlanElements([]);
+    }
     setActiveViewMode(mode);
+    try {
+      const full = await ensureFloorPlan(est.id, true);
+      if (Array.isArray(full) && full.length > 0) {
+        setCurrentPlanElements(full);
+      }
+    } catch {}
   };
 
   // Detección de ocupación por cámara (YOLO + OpenCV) — actualiza cajones en el servidor

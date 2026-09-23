@@ -861,7 +861,48 @@ async def get_floor_plan(parking_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
 
     slots_res = await db.execute(select(Slot).where(Slot.parking_id == parking_id))
-    slots = slots_res.scalars().all()
+    slots = list(slots_res.scalars().all())
+
+    # Si la sede no tiene plazas en BD, generar distribución base automática
+    if len(slots) == 0:
+        target_slots = max(6, min(int(parking.total_capacity or 12), 24))
+        half = (target_slots + 1) // 2
+        new_slots = []
+        for i in range(half):
+            new_slots.append(Slot(
+                parking_id=parking_id, code=f"A-{i+1:02d}", floor_level="Piso 1",
+                slot_type="auto", status="free",
+                pos_x=120 + i * 85, pos_y=80, width=65, height=110, rotation=0
+            ))
+        for i in range(target_slots - half):
+            new_slots.append(Slot(
+                parking_id=parking_id, code=f"B-{i+1:02d}", floor_level="Piso 1",
+                slot_type="auto", status="free",
+                pos_x=120 + i * 85, pos_y=420, width=65, height=110, rotation=0
+            ))
+        db.add_all(new_slots)
+
+        lane_w = max(400, half * 85 + 60)
+        default_elems = [
+            FloorPlanElement(
+                parking_id=parking_id, element_type="entry_gate",
+                pos_x=30, pos_y=260, width=50, height=90, rotation=0, z_index=2,
+                properties_json='{"label":"Entrada Principal"}'
+            ),
+            FloorPlanElement(
+                parking_id=parking_id, element_type="circulation",
+                pos_x=100, pos_y=240, width=lane_w, height=130, rotation=0, z_index=1,
+                properties_json='{"label":"Carril Central"}'
+            )
+        ]
+        db.add_all(default_elems)
+        try:
+            parking.total_capacity = len(new_slots)
+            await db.flush()
+            await db.commit()
+            slots = new_slots
+        except Exception:
+            await db.rollback()
 
     # Reconciliar estado de cajones con reservas activas/programadas en tiempo real
     res_query = await db.execute(
@@ -981,6 +1022,15 @@ async def sync_floor_plan(parking_id: int, sync_in: FloorPlanSyncRequest, db: As
         await occ_set(parking_id, free_c, occ_c, total)
     except Exception:
         pass
+
+    if total > 0:
+        try:
+            p_obj = await db.get(Parking, parking_id)
+            if p_obj:
+                p_obj.total_capacity = total
+                await db.commit()
+        except Exception:
+            pass
     return {
         "status": "success",
         "message": f"Plano CAD del estacionamiento {parking_id} sincronizado exitosamente",

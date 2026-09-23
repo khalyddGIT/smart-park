@@ -152,12 +152,8 @@ export const getEstablishmentHierarchy = (est) => {
 export const isDemoEstablishment = (e) => {
   if (!e) return false;
   const sid = String(e.id || '');
-  const name = (e.name || '').toLowerCase();
-  const email = (e.email || '').toLowerCase();
   if (sid.startsWith('EST-')) return true;
-  if (['1', '2', '3', '4', '16'].includes(sid)) return true;
-  if (name.includes('plaza mayor') || name.includes('bellido colonial') || name.includes('mercado mariscal')) return true;
-  if (email.includes('plazamayorpark.pe') || email.includes('smartpark.pe')) return true;
+  if (e.isDemo === true) return true;
   return false;
 };
 
@@ -753,36 +749,55 @@ export const EstablishmentProvider = ({ children }) => {
   // Carga el plano real (plazas + muros) desde GET /parkings/{id}/floor-plan y lo fusiona en el estado
   const hydrateFloorPlan = async (id, force = false) => {
     const key = String(id);
-    const numId = Number(key);
+    const normKey = normalizeParkingId(key);
+    let numId = Number(normKey);
+    if (isNaN(numId)) {
+      const match = String(id).match(/\d+/);
+      if (match) numId = Number(match[0]);
+    }
     if (isNaN(numId)) return;
-    if (!force && hydratedPlansRef.current.has(key)) return;
+    if (!force && hydratedPlansRef.current.has(String(numId))) return;
+    hydratedPlansRef.current.add(String(numId));
     hydratedPlansRef.current.add(key);
+
     try {
       const res = await api.get(`/parkings/${numId}/floor-plan`);
       const slots = (Array.isArray(res.data?.slots) ? res.data.slots : []).map(mapServerSlot);
       const elements = (Array.isArray(res.data?.elements) ? res.data.elements : []).map(mapServerElement);
       const fullElements = [...elements, ...slots];
-      setEstablishments(prev => prev.map(est => String(est.id) === key
-        ? { ...est, elements: fullElements, _needsFloorPlan: false }
-        : est
-      ));
+      setEstablishments(prev => {
+        const next = prev.map(est => {
+          const matchExact = String(est.id) === key;
+          const matchNum = String(est.id) === String(numId);
+          const matchNorm = normalizeParkingId(String(est.id)) === String(numId);
+          if (matchExact || matchNum || matchNorm) {
+            return { ...est, elements: fullElements, _needsFloorPlan: false };
+          }
+          return est;
+        });
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+        return next;
+      });
       try {
         window.dispatchEvent(new CustomEvent('smart_park_floorplan_updated', {
-          detail: { parkingId: key, elements: fullElements, slots }
+          detail: { parkingId: String(numId), elements: fullElements, slots }
         }));
       } catch {}
       return fullElements;
     } catch {
       hydratedPlansRef.current.delete(key);
+      hydratedPlansRef.current.delete(String(numId));
     }
   };
 
   // Garantiza que un establecimiento tenga su plano cargado antes de abrirlo (uso desde UI)
   const ensureFloorPlan = (id, force = false) => {
-    const est = establishments.find(e => String(e.id) === String(id));
-    if (force || !est || est.elements === null || est._needsFloorPlan) {
+    const norm = normalizeParkingId(String(id));
+    const est = establishments.find(e => String(e.id) === String(id) || String(e.id) === norm || normalizeParkingId(String(e.id)) === norm);
+    if (force || !est || est.elements === null || est.elements === undefined || est._needsFloorPlan || (Array.isArray(est.elements) && est.elements.length === 0)) {
       return hydrateFloorPlan(id, force);
     }
+    return Promise.resolve(est.elements);
   };
 
   const fetchParkings = async () => {
@@ -873,11 +888,12 @@ export const EstablishmentProvider = ({ children }) => {
           const getBefore = (sid) => prevMap.get(String(sid));
 
           const merged = mappedParkings.map(m => {
-            const before = getBefore(String(m.id));
+            const before = getBefore(String(m.id)) || getBefore(normalizeParkingId(String(m.id)));
+            const hasElements = Array.isArray(before?.elements) && before.elements.length > 0;
             return {
               ...m,
               ...(before?.password ? { password: before.password } : {}),
-              ...(before?.elements ? { elements: before.elements } : {})
+              ...(hasElements ? { elements: before.elements, _needsFloorPlan: false } : {})
             };
           });
           const next = [...merged, ...preservedLocal]
@@ -1676,41 +1692,58 @@ export const EstablishmentProvider = ({ children }) => {
     }) : [];
 
     setEstablishments(prev => {
-      const next = prev.map(est => String(est.id) === String(id) ? { ...est, elements: cleanElements } : est);
+      const next = prev.map(est => {
+        const matchExact = String(est.id) === String(id);
+        const matchNum = String(est.id) === String(numId);
+        const matchNorm = normalizeParkingId(String(est.id)) === String(numId);
+        if (matchExact || matchNum || matchNorm) {
+          return { ...est, elements: cleanElements, _needsFloorPlan: false };
+        }
+        return est;
+      });
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
 
-    if (!isNaN(numId) && cleanElements.length > 0) {
+    if (!isNaN(numId)) {
       try {
         const slots = cleanElements.filter(e => e && e.type === 'slot').map(s => ({
           code: s.code,
           floor_level: s.level || s.floor_level || 'Piso 1',
           slot_type: s.slotType || s.slot_type || 'auto',
           status: s.status || 'free',
-          pos_x: s.x,
-          pos_y: s.y,
-          width: s.w,
-          height: s.h,
-          rotation: s.rot
+          pos_x: Math.round(Number(s.x) || 0),
+          pos_y: Math.round(Number(s.y) || 0),
+          width: Math.max(15, Math.round(Number(s.w) || 60)),
+          height: Math.max(15, Math.round(Number(s.h) || 100)),
+          rotation: Math.round(Number(s.rot) || 0) % 360
         }));
         const elems = cleanElements.filter(e => e && e.type !== 'slot').map(e => ({
           element_type: e.type || e.element_type || 'wall',
-          pos_x: e.x,
-          pos_y: e.y,
-          width: e.w,
-          height: e.h,
-          rotation: e.rot,
+          pos_x: Math.round(Number(e.x) || 0),
+          pos_y: Math.round(Number(e.y) || 0),
+          width: Math.max(15, Math.round(Number(e.w) || 100)),
+          height: Math.max(15, Math.round(Number(e.h) || 20)),
+          rotation: Math.round(Number(e.rot) || 0) % 360,
           z_index: e.z_index || 1,
           properties_json: (e.label || e.gateType) ? JSON.stringify({ label: e.label || '', gateType: e.gateType || '' }) : null
         }));
-        await api.post(`/parkings/${numId}/floor-plan/sync`, { parking_id: numId, slots, elements: elems });
-        hydratedPlansRef.current.delete(String(id));
-        if (!isNaN(numId)) hydratedPlansRef.current.delete(String(numId));
+        const syncRes = await api.post(`/parkings/${numId}/floor-plan/sync`, { parking_id: numId, slots, elements: elems });
+        hydratedPlansRef.current.add(String(numId));
+        hydratedPlansRef.current.add(String(id));
+        try {
+          window.dispatchEvent(new CustomEvent('smart_park_floorplan_updated', {
+            detail: { parkingId: String(numId), elements: cleanElements, slots }
+          }));
+        } catch {}
+        return { ok: true, data: syncRes.data };
       } catch (e) {
         console.warn('sync floor-plan fail', e.response?.data);
+        const detail = e.response?.data?.detail || 'Error al sincronizar plano con el servidor';
+        throw new Error(detail);
       }
     }
+    return { ok: true };
   };
 
   // Eliminar establecimiento - persistente tanto en BD como en almacenamiento local

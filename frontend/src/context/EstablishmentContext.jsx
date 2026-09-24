@@ -623,6 +623,11 @@ export const EstablishmentProvider = ({ children }) => {
     return [];
   });
 
+  const reservationsRef = React.useRef(reservations);
+  React.useEffect(() => {
+    reservationsRef.current = reservations;
+  }, [reservations]);
+
   // Último error de reserva devuelto por el servidor (para feedback honesto en la UI)
   const [bookingError, setBookingError] = useState(null);
 
@@ -2112,6 +2117,22 @@ export const EstablishmentProvider = ({ children }) => {
 
     const tolMinutes = Number(bookingData.toleranceMinutes || bookingData.arrivalWindow || bookingData.etaMinutes || 15);
 
+    // Inferencia inteligente de tipo de vehículo desde el cajón seleccionado si no fue provisto
+    let resolvedVehicleType = bookingData.vehicleType || bookingData.vehicle_type;
+    if (!resolvedVehicleType) {
+      const est = establishments.find(e => Number(e.id) === Number(parkingIdNum));
+      const slotEl = (est?.elements || []).find(el => el.type === 'slot' && (String(el.code) === String(bookingData.slotCode) || Number(el.id) === Number(slotIdNum)));
+      if (slotEl?.slotType) {
+        resolvedVehicleType = slotEl.slotType;
+      } else if (bookingData.slotCode) {
+        const sc = String(bookingData.slotCode).toUpperCase();
+        if (sc.startsWith('M-')) resolvedVehicleType = 'moto';
+        else if (sc.startsWith('T-')) resolvedVehicleType = 'mototaxi';
+        else if (sc.startsWith('C-')) resolvedVehicleType = 'camioneta';
+      }
+    }
+    if (!resolvedVehicleType) resolvedVehicleType = 'auto';
+
     try {
       const serverRes = await createReservationApi({
         parking_id: parkingIdNum,
@@ -2122,7 +2143,7 @@ export const EstablishmentProvider = ({ children }) => {
         tolerance_minutes: tolMinutes,
         payment_method: bookingData.paymentMethod || bookingData.payment_method || null,
         pay_now: !!bookingData.payNow,
-        vehicle_type: bookingData.vehicleType || bookingData.vehicle_type || 'auto',
+        vehicle_type: resolvedVehicleType,
         estimated_hours: Number(bookingData.estimatedHours || bookingData.hours || 1),
         billing_unit: bookingData.billingUnit || bookingData.billing_unit || 'hour',
         estimated_minutes: Number(bookingData.estimatedMinutes || bookingData.estimated_minutes || (bookingData.hours ? bookingData.hours * 60 : 60)),
@@ -2136,7 +2157,10 @@ export const EstablishmentProvider = ({ children }) => {
       });
       setBookingError(null);
       const mapped = mapServerReservation(serverRes);
-      // Refrescar lista completa y plano (para que cajón pase a reservado en vivo)
+      // Sincronizar referencia inmediata y estado local antes de retornar
+      reservationsRef.current = [mapped, ...reservationsRef.current.filter(r => r.id !== mapped.id && r.code !== mapped.code)];
+      setReservations([...reservationsRef.current]);
+      // Refrescar lista completa y plano en el servidor
       await refreshMyReservations();
       try { await fetchParkings(); await hydrateFloorPlan(String(parkingIdNum), true); } catch {}
       return mapped;
@@ -2151,15 +2175,17 @@ export const EstablishmentProvider = ({ children }) => {
 
   // Cancelar reserva: PUT /reservations/{id}/cancel cuando existe en el servidor
   const cancelReservation = async (code) => {
-    const target = reservations.find(r => r.code === code || String(r.id) === String(code));
+    let target = reservationsRef.current.find(r => r.code === code || String(r.id) === String(code))
+      || reservations.find(r => r.code === code || String(r.id) === String(code));
     if (!target) return { ok: false, message: 'Reserva no encontrada.' };
 
     if (isBackendReservation(target)) {
       try {
         await cancelReservationApi(target.id);
         freeSlot(target.parkingId, target.slot);
+        reservationsRef.current = reservationsRef.current.map(r => r.id === target.id ? { ...r, status: 'CANCELLED' } : r);
+        setReservations([...reservationsRef.current]);
         await refreshMyReservations();
-        // Refrescar plano real del servidor para que el cajón aparezca libre
         try {
           if (target.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
         } catch {}
@@ -2183,18 +2209,40 @@ export const EstablishmentProvider = ({ children }) => {
   };
 
   // Check-In de garita: PUT /reservations/{id}/check-in → status active (con horas de estadía opcional)
-  const checkInReservation = async (code, hoursStay = null) => {
-    const target = reservations.find(r => r.code === code || String(r.id) === String(code));
-    if (!target) return { ok: false, message: 'Reserva no encontrada.' };
-    if (!isBackendReservation(target)) {
-      return { ok: false, message: 'Esta reserva aún no está registrada en el servidor; no se puede registrar el ingreso.' };
+  const checkInReservation = async (codeOrId, hoursStay = null) => {
+    let target = reservationsRef.current.find(r => r.code === codeOrId || String(r.id) === String(codeOrId))
+      || reservations.find(r => r.code === codeOrId || String(r.id) === String(codeOrId));
+    let targetId = target?.id;
+    if (!targetId && !isNaN(Number(codeOrId)) && Number(codeOrId) > 0) {
+      targetId = Number(codeOrId);
     }
+    if (!targetId && typeof codeOrId === 'string' && (codeOrId.startsWith('RSV-') || codeOrId.length >= 6)) {
+      try {
+        const verifyRes = await api.get(`/reservations/verify/${codeOrId}`);
+        if (verifyRes.data?.id) {
+          targetId = verifyRes.data.id;
+          if (!target) {
+            target = { ...verifyRes.data, parkingId: String(verifyRes.data.parking_id), slot: verifyRes.data.slot_code, plate: verifyRes.data.license_plate };
+          }
+        }
+      } catch {}
+    }
+    if (!targetId) return { ok: false, message: 'Reserva no encontrada.' };
+
     try {
       const params = hoursStay ? { hours_stay: hoursStay } : {};
-      await api.put(`/reservations/${target.id}/check-in`, null, { params });
+      const res = await api.put(`/reservations/${targetId}/check-in`, null, { params });
+      if (res.data) {
+        const updated = mapServerReservation(res.data);
+        reservationsRef.current = reservationsRef.current.map(r => (r.id === targetId || r.code === updated.code) ? updated : r);
+        if (!reservationsRef.current.some(r => r.id === targetId)) {
+          reservationsRef.current = [updated, ...reservationsRef.current];
+        }
+        setReservations([...reservationsRef.current]);
+      }
       await refreshMyReservations();
-      if (target.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
-      return { ok: true, message: `Entrada registrada: vehículo ${target.plate} ingresó a la plaza ${target.slot}.` };
+      if (target?.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
+      return { ok: true, message: `Entrada registrada: vehículo ${target?.plate || ''} ingresó a la plaza ${target?.slot || ''}.` };
     } catch (e) {
       const s = e?.response?.status;
       return {
@@ -2209,24 +2257,43 @@ export const EstablishmentProvider = ({ children }) => {
   };
 
   // Check-Out de garita: PUT /reservations/{id}/check-out → status completed
-  const checkOutReservation = async (code, checkoutData = {}) => {
-    const target = reservations.find(r => r.code === code || String(r.id) === String(code));
-    if (!target) return { ok: false, message: 'Reserva no encontrada.' };
-    if (!isBackendReservation(target)) {
-      return { ok: false, message: 'Esta reserva aún no está registrada en el servidor; no se puede registrar la salida.' };
+  const checkOutReservation = async (codeOrId, checkoutData = {}) => {
+    let target = reservationsRef.current.find(r => r.code === codeOrId || String(r.id) === String(codeOrId))
+      || reservations.find(r => r.code === codeOrId || String(r.id) === String(codeOrId));
+    let targetId = target?.id;
+    if (!targetId && !isNaN(Number(codeOrId)) && Number(codeOrId) > 0) {
+      targetId = Number(codeOrId);
     }
+    if (!targetId && typeof codeOrId === 'string' && (codeOrId.startsWith('RSV-') || codeOrId.length >= 6)) {
+      try {
+        const verifyRes = await api.get(`/reservations/verify/${codeOrId}`);
+        if (verifyRes.data?.id) {
+          targetId = verifyRes.data.id;
+          if (!target) {
+            target = { ...verifyRes.data, parkingId: String(verifyRes.data.parking_id), slot: verifyRes.data.slot_code, plate: verifyRes.data.license_plate };
+          }
+        }
+      } catch {}
+    }
+    if (!targetId) return { ok: false, message: 'Reserva no encontrada.' };
+
     try {
       const payload = {};
       if (checkoutData.payment_method) payload.payment_method = checkoutData.payment_method;
       if (checkoutData.amount_paid !== undefined && checkoutData.amount_paid !== null) {
         payload.amount_paid = Number(checkoutData.amount_paid);
       }
-      const res = await api.put(`/reservations/${target.id}/check-out`, payload);
+      const res = await api.put(`/reservations/${targetId}/check-out`, payload);
+      if (res.data) {
+        const updated = mapServerReservation(res.data);
+        reservationsRef.current = reservationsRef.current.map(r => (r.id === targetId || r.code === updated.code) ? updated : r);
+        setReservations([...reservationsRef.current]);
+      }
       await refreshMyReservations();
-      if (target.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
+      if (target?.parkingId) await hydrateFloorPlan(String(target.parkingId), true);
       return { 
         ok: true, 
-        message: `Salida registrada para ${target.plate}. Cajón ${target.slot} liberado.`,
+        message: `Salida registrada para ${target?.plate || ''}. Cajón ${target?.slot || ''} liberado.`,
         data: res.data
       };
     } catch (e) {

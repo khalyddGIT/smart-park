@@ -17,6 +17,7 @@ import {
   FileText, 
   Check, 
   AlertTriangle, 
+  AlertCircle, 
   ArrowRight, 
   UserCheck,
   Calendar,
@@ -142,8 +143,9 @@ export const PersonalGaritaModule = () => {
     if (!currentEst?.id || String(currentEst.id).startsWith('EST-')) return;
     try {
       const r = await api.get('/reservations', { params: { parking_id: Number(currentEst.id) } });
-      if (Array.isArray(r.data)) {
-        setGaritaReservations(r.data.map(x => ({
+      const rawList = Array.isArray(r.data) ? r.data : (r.data?.items && Array.isArray(r.data.items) ? r.data.items : []);
+      if (rawList.length >= 0) {
+        setGaritaReservations(rawList.map(x => ({
           ...x,
           id: x.id, 
           code: x.code, 
@@ -162,7 +164,9 @@ export const PersonalGaritaModule = () => {
           isOpenStay: !!(x.is_open_stay ?? x.isOpenStay)
         })));
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Error al sincronizar garita:', err?.response?.data?.detail || err?.message);
+    }
   };
 
   useEffect(() => {
@@ -258,18 +262,47 @@ export const PersonalGaritaModule = () => {
     };
   }, [garitaReservations, reservations, currentEst, vehiclesInside]);
 
+  // Detección reactiva de categoría de vehículo y tarifa según el cajón seleccionado
+  const currentSlotCategory = useMemo(() => {
+    const targetCode = slot || freeSlots[0]?.code || '';
+    const slotEl = (currentEst?.elements || []).find(e => e.type === 'slot' && (e.code === targetCode || String(e.id) === String(targetCode)));
+    let inferred = slotEl?.slotType || '';
+    if (!inferred && targetCode) {
+      if (targetCode.startsWith('M-')) inferred = 'moto';
+      else if (targetCode.startsWith('T-')) inferred = 'mototaxi';
+      else if (targetCode.startsWith('C-')) inferred = 'camioneta';
+      else inferred = 'auto';
+    }
+    if (!inferred) inferred = 'auto';
+
+    let rate = Number(currentEst?.rate_auto ?? currentEst?.rate ?? 5.0);
+    let label = 'Auto';
+    if (inferred === 'moto') {
+      rate = Number(currentEst?.rate_moto ?? 2.5);
+      label = 'Moto Lineal';
+    } else if (inferred === 'mototaxi') {
+      rate = Number(currentEst?.rate_mototaxi ?? 3.5);
+      label = 'Moto Taxi';
+    } else if (inferred === 'camioneta' || inferred === 'suv') {
+      rate = Number(currentEst?.rate_suv ?? 7.0);
+      label = 'Camioneta / SUV';
+    }
+
+    return { type: inferred, rate, label, slotCode: targetCode };
+  }, [slot, freeSlots, currentEst]);
+
   // Registro de Ingreso
   const handleIngreso = async () => {
     const targetSlot = slot || freeSlots[0]?.code;
     const cleanPlate = plate.trim().toUpperCase();
     if (!cleanPlate) {
-      setFeedback('Ingresa la placa del vehículo');
-      setTimeout(() => setFeedback(''), 2500);
+      setFeedback('Error: Ingresa la placa del vehículo');
+      setTimeout(() => setFeedback(''), 3500);
       return;
     }
     if (!targetSlot) {
-      setFeedback('No hay cajones libres disponibles en esta cochera');
-      setTimeout(() => setFeedback(''), 3000);
+      setFeedback('Error: No hay cajones libres disponibles en esta cochera');
+      setTimeout(() => setFeedback(''), 4000);
       return;
     }
     const now = new Date();
@@ -280,6 +313,8 @@ export const PersonalGaritaModule = () => {
       parkingId: currentEst.id,
       slotCode: targetSlot,
       plate: cleanPlate,
+      vehicleType: currentSlotCategory.type,
+      vehicle_type: currentSlotCategory.type,
       hours: isOpenStay ? 1 : numHours,
       isOpenStay: isOpenStay,
       is_open_stay: isOpenStay,
@@ -290,15 +325,18 @@ export const PersonalGaritaModule = () => {
     });
     if (!res || res.error || !res.code) {
       setFeedback(`Error: ${res?.error || 'Cajón no disponible'}`);
-      setTimeout(() => setFeedback(''), 3000);
+      setTimeout(() => setFeedback(''), 8000);
       return;
     }
-    await checkInReservation(res.code, isOpenStay ? null : numHours);
+    const checkInRes = await checkInReservation(res.id || res.code, isOpenStay ? null : numHours);
+    if (checkInRes && !checkInRes.ok) {
+      console.warn('Check-in garita info:', checkInRes.message);
+    }
     playTone('success');
-    setFeedback(`${targetSlot} • ${cleanPlate} registrado exitosamente ${isOpenStay ? '(Tiempo Libre — cobro al salir)' : isPendiente ? `(${numHours}h — Pago al salir)` : `(${numHours}h — ${payMethod})`}`);
+    setFeedback(`${targetSlot} (${currentSlotCategory.label}) • ${cleanPlate} registrado exitosamente ${isOpenStay ? '(Tiempo Libre — cobro al salir)' : isPendiente ? `(${numHours}h — Pago al salir)` : `(${numHours}h — ${payMethod})`}`);
     setSlot('');
     setPlate('');
-    setTimeout(() => setFeedback(''), 3000);
+    setTimeout(() => setFeedback(''), 4500);
     fetchGaritaReservations();
     try { await fetchParkings(); await ensureFloorPlan(String(currentEst.id), true); } catch {}
   };
@@ -478,9 +516,27 @@ export const PersonalGaritaModule = () => {
       </div>
 
       {feedback && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-          {feedback}
+        <div className={`p-3.5 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-sm animate-in fade-in ${
+          feedback.toLowerCase().includes('error') || feedback.toLowerCase().includes('rechaz')
+            ? 'bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-200'
+            : 'bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200'
+        }`}>
+          <div className="flex items-center gap-2">
+            {feedback.toLowerCase().includes('error') || feedback.toLowerCase().includes('rechaz') ? (
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            )}
+            <span>{feedback}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedback('')}
+            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded cursor-pointer"
+            title="Cerrar aviso"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
@@ -793,14 +849,12 @@ export const PersonalGaritaModule = () => {
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block">
                   {isOpenStay ? 'Liquidación al salir' : 'Total estimado'}
                 </span>
-                {isOpenStay && (
-                  <span className="text-[11px] text-slate-400 font-normal block mt-0.5">
-                    Tarifa: S/ {Number(currentEst?.rate || 5).toFixed(2)}/h
-                  </span>
-                )}
+                <span className="text-[11px] text-slate-400 font-normal block mt-0.5">
+                  Tarifa {currentSlotCategory.label}: S/ {currentSlotCategory.rate.toFixed(2)}/h
+                </span>
               </div>
               <span className="text-xl font-bold font-mono text-slate-900 dark:text-white">
-                {isOpenStay ? 'S/ 0.00' : `S/ ${(Number(currentEst?.rate || 5) * (Number(hours) || 0)).toFixed(2)}`}
+                {isOpenStay ? 'S/ 0.00' : `S/ ${(currentSlotCategory.rate * (Number(hours) || 0)).toFixed(2)}`}
               </span>
             </div>
 

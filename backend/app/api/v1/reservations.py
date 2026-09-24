@@ -3,7 +3,7 @@ import uuid
 import math
 from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
@@ -201,24 +201,79 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
 
     return resp
 
+async def _get_allowed_parking_ids(current_user: User, db: AsyncSession) -> Optional[set]:
+    """
+    Retorna el conjunto de IDs de sedes a las que tiene acceso el usuario local/operador.
+    Retorna None si tiene acceso irrestricto (Superadmin / platform / adminlocal).
+    """
+    if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":
+        return None
+
+    curr_email = (current_user.email or "").strip().lower()
+    curr_name = (current_user.full_name or "").strip().lower()
+    allowed_ids = set()
+
+    # 1. Sedes donde es dueño directo por email o por nombre de propietario
+    conds = []
+    if curr_email:
+        conds.append(func.lower(Parking.email) == curr_email)
+    if curr_name:
+        conds.append(func.lower(Parking.owner) == curr_name)
+    if conds:
+        p_res = await db.execute(select(Parking).where(or_(*conds)))
+        owned_parkings = p_res.scalars().all()
+        for p in owned_parkings:
+            allowed_ids.add(p.id)
+            # Multi-sucursal: si es dueño de "Smart Park - Miraflores", permitir sedes hermanas
+            p_name = p.name or ""
+            prefix = p_name.split(" - ")[0].strip().lower() if " - " in p_name else p_name.strip().lower()
+            if prefix and len(prefix) >= 3:
+                b_res = await db.execute(select(Parking.id).where(func.lower(Parking.name).like(f"{prefix}%")))
+                allowed_ids.update(b_res.scalars().all())
+
+    # 2. Staff activo por email, DNI/teléfono o nombre (con estados flexibles y case-insensitive)
+    staff_conds = []
+    if curr_email:
+        staff_conds.append(func.lower(Staff.email) == curr_email)
+    if current_user.phone:
+        staff_conds.append(Staff.dni == current_user.phone.strip())
+    if curr_name:
+        staff_conds.append(func.lower(Staff.full_name) == curr_name)
+
+    if staff_conds:
+        s_res = await db.execute(select(Staff.parking_id).where(
+            or_(*staff_conds),
+            func.lower(Staff.status).in_(["active", "activo", "habilitado"])
+        ))
+        for pid in s_res.scalars().all():
+            if pid:
+                allowed_ids.add(pid)
+
+    # 3. parking_id enlazado en la instancia de usuario si existe
+    user_pid = getattr(current_user, "parking_id", None)
+    if user_pid:
+        try:
+            allowed_ids.add(int(user_pid))
+        except (ValueError, TypeError):
+            pass
+
+    return allowed_ids
+
 async def _check_reservation_access(reservation: Reservation, current_user: User, db: AsyncSession, action_label: str = "esta reserva"):
     if reservation.user_id == current_user.id:
         return
     if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":
         return
     if current_user.role == "local":
-        curr_email = (current_user.email or "").strip().lower()
+        allowed_pids = await _get_allowed_parking_ids(current_user, db)
+        if allowed_pids is None or reservation.parking_id in allowed_pids:
+            return
+        # Si la sede no tiene email configurado, permitir acceso al admin local
         p_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
         parking = p_res.scalars().first()
-        if parking and parking.email and parking.email.strip():
-            is_owner = bool(parking.email.strip().lower() == curr_email)
-        else:
-            is_owner = True
-        s_res = await db.execute(select(Staff.id).where(func.lower(Staff.email) == curr_email, Staff.parking_id == reservation.parking_id, Staff.status == "active"))
-        is_staff = s_res.scalars().first() is not None
-        if not is_owner and not is_staff:
-            raise HTTPException(status_code=403, detail=f"No autorizado para {action_label} en otra sede")
-        return
+        if parking and (not parking.email or not parking.email.strip()):
+            return
+        raise HTTPException(status_code=403, detail=f"No autorizado para {action_label} en otra sede")
     raise HTTPException(status_code=403, detail=f"No autorizado para {action_label}")
 
 @router.get("", response_model=Union[PaginatedReservationResponse, List[ReservationResponse]])
@@ -240,19 +295,16 @@ async def list_reservations(
     if current_user.role in ("local", "platform"):
         base_filters = []
         if current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
-            curr_email = (current_user.email or "").strip().lower()
-            p_res = await db.execute(select(Parking.id).where(func.lower(Parking.email) == curr_email))
-            owned_ids = set(p_res.scalars().all())
-            s_res = await db.execute(select(Staff.parking_id).where(func.lower(Staff.email) == curr_email, Staff.status == "active"))
-            staff_ids = set(pid for pid in s_res.scalars().all() if pid)
-            allowed_pids = owned_ids | staff_ids
-
-            if parking_id:
-                if parking_id not in allowed_pids:
-                    raise HTTPException(status_code=403, detail="No tienes permiso para ver reservas de esta sede")
+            allowed_pids = await _get_allowed_parking_ids(current_user, db)
+            if allowed_pids is not None:
+                if parking_id:
+                    if allowed_pids and parking_id not in allowed_pids:
+                        raise HTTPException(status_code=403, detail="No tienes permiso para ver reservas de esta sede")
+                    base_filters.append(Reservation.parking_id == parking_id)
+                else:
+                    base_filters.append(Reservation.parking_id.in_(allowed_pids) if allowed_pids else False)
+            elif parking_id:
                 base_filters.append(Reservation.parking_id == parking_id)
-            else:
-                base_filters.append(Reservation.parking_id.in_(allowed_pids) if allowed_pids else False)
         elif parking_id:
             base_filters.append(Reservation.parking_id == parking_id)
 
@@ -608,6 +660,13 @@ async def create_reservation(
 
     vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
     slot_kind = getattr(slot, "slot_type", None) or "auto"
+
+    # Si se asignó un cajón explícito y el tipo vino por defecto como 'auto' o el usuario es operador/local/platform:
+    # Auto-adaptar el tipo de vehículo al tipo de plaza asignada para evitar rechazos 400 y garantizar tarifa correcta
+    if slot and slot.slot_type:
+        if current_user.role in ("local", "platform") or vtype == "auto":
+            vtype = slot_kind
+
     if res_in.slot_id and res_in.slot_id > 0 and vehicle_slot_family(slot_kind) != vehicle_slot_family(vtype):
         raise HTTPException(
             status_code=400,

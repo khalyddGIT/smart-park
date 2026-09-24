@@ -346,3 +346,100 @@ async def test_driver_sees_local_admin_business_rules_and_rates():
         assert res_data["tolerance_minutes"] == 25
 
 
+@pytest.mark.asyncio
+async def test_garita_operator_moto_slot_and_access_persistence():
+    # 1. Admin local crea sede con tarifa moto diferenciada
+    admin_token, admin_email, _ = await _register_and_get_token(role="local")
+    transport = ASGITransport(app=app)
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        p_resp = await ac.post("/api/v1/parkings", headers=admin_headers, json={
+            "name": f"Cochera Garita Test {uuid.uuid4().hex[:4]}",
+            "address": "Jr. Garita 123",
+            "city": "Ayacucho",
+            "hourly_rate": 5.0,
+            "rate_auto": 5.0,
+            "rate_moto": 2.50,
+            "total_capacity": 20
+        })
+        assert p_resp.status_code == 201
+        pid = p_resp.json()["id"]
+
+        # 2. Admin crea colaborador en personal con status 'Activo' (español) y rol 'local'
+        operator_dni = f"{uuid.uuid4().int % 90000000 + 10000000}"
+        operator_email = f"juanito_{uuid.uuid4().hex[:6]}@smartpark.com"
+        staff_resp = await ac.post("/api/v1/staff", headers=admin_headers, json={
+            "parking_id": pid,
+            "full_name": "Juanito Operador Garita",
+            "dni": operator_dni,
+            "position": "Operador de Garita",
+            "shift": "Mañana",
+            "status": "Activo",
+            "email": operator_email,
+            "password": "Password123!",
+            "system_role": "local",
+            "security_pin": "1234"
+        })
+        assert staff_resp.status_code == 201, staff_resp.text
+
+        # 3. Crear plaza de moto M-03 en el plano CAD
+        slot_resp = await ac.post(f"/api/v1/parkings/{pid}/slots", headers=admin_headers, json={
+            "code": "M-03",
+            "floor_level": "Piso 1",
+            "slot_type": "moto",
+            "pos_x": 100,
+            "pos_y": 100,
+            "width": 60,
+            "height": 100
+        })
+        assert slot_resp.status_code == 201, slot_resp.text
+        slot_id = slot_resp.json()["id"]
+
+        # 4. Operador inicia sesión
+        login_resp = await ac.post("/api/v1/auth/login", json={
+            "email": operator_email,
+            "password": "Password123!"
+        })
+        assert login_resp.status_code == 200, login_resp.text
+        op_token = login_resp.json()["access_token"]
+        op_headers = {"Authorization": f"Bearer {op_token}"}
+
+        # 5. Operador consulta reservas de su sede -> NO DEBE DAR 403
+        list_resp = await ac.get(f"/api/v1/reservations?parking_id={pid}", headers=op_headers)
+        assert list_resp.status_code == 200, f"Expected 200, got {list_resp.status_code}: {list_resp.text}"
+
+        # 6. Operador registra ingreso en M-03 (cajón moto) sin mandar tipo o con auto default
+        plate_in = f"F{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().hex[:3].upper()}"
+        now = datetime.now(timezone.utc)
+        res_resp = await ac.post("/api/v1/reservations", headers=op_headers, json={
+            "parking_id": pid,
+            "slot_id": slot_id,
+            "license_plate": plate_in,
+            "start_time": now.isoformat(),
+            "end_time": (now + timedelta(hours=2)).isoformat(),
+            "estimated_hours": 2,
+            "vehicle_type": "auto" # default de UI que debe ser auto-adaptado a moto
+        })
+        assert res_resp.status_code == 201, f"Expected 201, got {res_resp.status_code}: {res_resp.text}"
+        res_data = res_resp.json()
+        assert res_data["vehicle_type"] == "moto"
+        # Tarifa moto 2.50 * 2h = 5.00
+        assert res_data["total_cost"] == 5.00
+        r_id = res_data["id"]
+
+        # 7. Operador realiza check-in del vehículo
+        checkin_resp = await ac.put(f"/api/v1/reservations/{r_id}/check-in", headers=op_headers)
+        assert checkin_resp.status_code == 200, checkin_resp.text
+        assert checkin_resp.json()["status"] == "active"
+
+        # 8. Operador realiza check-out
+        checkout_resp = await ac.put(f"/api/v1/reservations/{r_id}/check-out", headers=op_headers, json={
+            "payment_method": "efectivo",
+            "amount_paid": 5.00
+        })
+        assert checkout_resp.status_code == 200, checkout_resp.text
+        assert checkout_resp.json()["status"] == "completed"
+
+
+

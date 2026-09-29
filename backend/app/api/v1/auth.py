@@ -182,9 +182,16 @@ async def login_user(user_in: UserLogin, request: Request, response: Response, d
     if not user:
         staff_res = await db.execute(select(Staff).where(Staff.dni == identifier))
         staff_cand = staff_res.scalars().first()
-        if staff_cand and staff_cand.email:
-            res_linked = await db.execute(select(User).where(func.lower(User.email) == staff_cand.email.strip().lower()))
-            user = res_linked.scalars().first()
+        if staff_cand:
+            if staff_cand.email:
+                res_linked = await db.execute(select(User).where(func.lower(User.email) == staff_cand.email.strip().lower()))
+                user = res_linked.scalars().first()
+            if not user and staff_cand.dni:
+                res_linked = await db.execute(select(User).where(User.phone == staff_cand.dni.strip()))
+                user = res_linked.scalars().first()
+            if not user and staff_cand.dni:
+                res_linked = await db.execute(select(User).where(func.lower(User.email) == f"operador.{staff_cand.dni.strip()}@smartpark.pe"))
+                user = res_linked.scalars().first()
 
     # 2. Si no coincide por email o DNI, buscar por nombre completo
     if not user:

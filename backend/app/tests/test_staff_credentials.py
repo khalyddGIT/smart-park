@@ -174,6 +174,11 @@ def test_create_and_login_worker():
                 "security_pin": "4321"
             }, headers=headers)
             assert bare_staff_res.status_code == 201
+            bare_staff_data = bare_staff_res.json()
+            assert bare_staff_data["has_account"] is True
+            assert bare_staff_data["has_pin"] is True
+            assert "operador." in bare_staff_data["email"]
+            bare_staff_id = bare_staff_data["id"]
 
             bare_pin_login = await ac.post("/api/v1/auth/login-pin", json={
                 "identifier": bare_dni,
@@ -181,5 +186,42 @@ def test_create_and_login_worker():
             })
             assert bare_pin_login.status_code == 200
             assert "access_token" in bare_pin_login.json()
+
+            # 16. Actualizar credenciales del colaborador bare (cambiar PIN a 7799 y asignar correo)
+            updated_email = f"operador.promovido.{uid}@smartpark.pe"
+            update_bare_res = await ac.put(f"/api/v1/staff/{bare_staff_id}", json={
+                "email": updated_email,
+                "security_pin": "7799",
+                "password": "PasswordActualizado123!"
+            }, headers=headers)
+            assert update_bare_res.status_code == 200
+            updated_bare_data = update_bare_res.json()
+            assert updated_bare_data["has_pin"] is True
+            assert updated_bare_data["email"] == updated_email
+
+            # Verificar login con el nuevo PIN
+            updated_pin_login = await ac.post("/api/v1/auth/login-pin", json={
+                "identifier": bare_dni,
+                "pin": "7799"
+            })
+            assert updated_pin_login.status_code == 200
+
+            # Verificar login con correo y contraseña asignados
+            updated_email_login = await ac.post("/api/v1/auth/login", json={
+                "email": updated_email,
+                "password": "PasswordActualizado123!"
+            })
+            assert updated_email_login.status_code == 200
+
+            # 17. Eliminar colaborador y comprobar que el acceso se revoca
+            del_res = await ac.delete(f"/api/v1/staff/{bare_staff_id}", headers=headers)
+            assert del_res.status_code == 200
+
+            # Intento de login posterior debe ser rechazado
+            revoked_login = await ac.post("/api/v1/auth/login", json={
+                "email": updated_email,
+                "password": "PasswordActualizado123!"
+            })
+            assert revoked_login.status_code in (400, 401)
     
     asyncio.run(_run())

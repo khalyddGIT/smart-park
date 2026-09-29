@@ -176,7 +176,7 @@ export const StaffModule = () => {
   const handleOpenCreds = (m) => {
     setSelectedMember(m);
     setCredsData({
-      email: m.email || '',
+      email: m.email || (m.dni ? `operador.${m.dni}@smartpark.pe` : ''),
       password: '',
       security_pin: '',
       system_role: m.system_role || 'local'
@@ -225,7 +225,7 @@ export const StaffModule = () => {
     };
 
     if (formData.email && formData.email.trim()) {
-      payload.email = formData.email.trim();
+      payload.email = formData.email.trim().toLowerCase();
     }
 
     if (formData.password && formData.password.trim()) {
@@ -239,9 +239,10 @@ export const StaffModule = () => {
     try {
       const idem = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `idem-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
       await api.post('/staff', payload, { headers: { 'Idempotency-Key': idem } });
-      if (payload.email) {
+      const effectiveEmail = payload.email || (payload.dni ? `operador.${payload.dni}@smartpark.pe` : '');
+      if (effectiveEmail) {
         saveLocalUserCredential({
-          email: payload.email,
+          email: effectiveEmail,
           password: payload.password || undefined,
           security_pin: pin || undefined,
           full_name: payload.full_name,
@@ -251,7 +252,7 @@ export const StaffModule = () => {
         });
       }
       setShowAddModal(false);
-      notify(`Colaborador "${payload.full_name}" registrado exitosamente ${payload.email ? 'con credenciales de acceso activas.' : '.'}`);
+      notify(`Colaborador "${payload.full_name}" registrado exitosamente con credenciales de acceso activas.`);
       await loadStaff();
     } catch (err) {
       if (err?.response?.status === 409) {
@@ -295,8 +296,8 @@ export const StaffModule = () => {
       system_role: formData.system_role || 'local'
     };
 
-    if (formData.email !== undefined) {
-      payload.email = formData.email ? formData.email.trim().toLowerCase() : '';
+    if (formData.email !== undefined && formData.email.trim()) {
+      payload.email = formData.email.trim().toLowerCase();
     }
 
     if (formData.password && formData.password.trim()) {
@@ -309,9 +310,10 @@ export const StaffModule = () => {
 
     try {
       await api.put(`/staff/${selectedMember.id}`, payload);
-      if (payload.email) {
+      const effectiveEmail = payload.email || selectedMember.email || (selectedMember.dni ? `operador.${selectedMember.dni}@smartpark.pe` : '');
+      if (effectiveEmail) {
         saveLocalUserCredential({
-          email: payload.email,
+          email: effectiveEmail,
           previousEmail: selectedMember.email,
           password: payload.password || undefined,
           security_pin: pin || undefined,
@@ -335,10 +337,7 @@ export const StaffModule = () => {
     e.preventDefault();
     if (!selectedMember || isSubmitting) return;
 
-    if (!credsData.email.trim()) {
-      notify('El correo de acceso es requerido para habilitar el inicio de sesión.');
-      return;
-    }
+    const emailToUse = (credsData.email || '').trim().toLowerCase() || (selectedMember.dni ? `operador.${selectedMember.dni}@smartpark.pe` : '');
 
     if (credsData.password && credsData.password.trim() && credsData.password.trim().length < 8) {
       notify('La nueva contraseña debe tener al menos 8 caracteres.');
@@ -352,9 +351,8 @@ export const StaffModule = () => {
     }
 
     setIsSubmitting(true);
-    const cleanEmail = credsData.email.trim().toLowerCase();
     const payload = {
-      email: cleanEmail,
+      email: emailToUse,
       system_role: credsData.system_role || 'local'
     };
 
@@ -369,7 +367,7 @@ export const StaffModule = () => {
     try {
       await api.put(`/staff/${selectedMember.id}`, payload);
       saveLocalUserCredential({
-        email: cleanEmail,
+        email: emailToUse,
         previousEmail: selectedMember.email,
         password: credsData.password ? credsData.password.trim() : undefined,
         security_pin: pin || undefined,
@@ -379,7 +377,7 @@ export const StaffModule = () => {
         parkingId: selectedMember.parking_id
       });
       setShowCredsModal(false);
-      notify(`Credenciales actualizadas para "${selectedMember.full_name}". Ya puede iniciar sesión con sus nuevas claves.`);
+      notify(`Credenciales actualizadas para "${selectedMember.full_name}". Acceso habilitado con ${emailToUse} y PIN.`);
       await loadStaff();
     } catch (err) {
       describeError(err, 'actualizar credenciales');
@@ -583,7 +581,8 @@ export const StaffModule = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((s) => {
             const isActive = (s.status || '').toLowerCase() === 'activo' || (s.status || '').toLowerCase() === 'active';
-            const hasCredentials = !!s.email;
+            const hasCredentials = Boolean(s.has_account || s.has_pin || s.email);
+            const displayEmail = s.email || (s.dni ? `operador.${s.dni}@smartpark.pe` : 'Acceso por DNI/PIN');
 
             return (
               <Card 
@@ -655,13 +654,19 @@ export const StaffModule = () => {
                       <div className="space-y-1 text-[11px] text-slate-300">
                         <div className="flex items-center gap-1.5 truncate">
                           <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="font-mono text-white truncate">{s.email}</span>
+                          <span className="font-mono text-white truncate">{displayEmail}</span>
                         </div>
                         <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
                           <span>Rol: <strong className="text-emerald-400 uppercase">{s.system_role || 'local'}</strong></span>
                           <span className="flex items-center gap-1">
                             <span>PIN Express:</span>
-                            <strong className="text-emerald-300 font-mono bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-800/60">Activo (4 dígitos)</strong>
+                            <strong className={`font-mono px-1.5 py-0.5 rounded border ${
+                              s.has_pin 
+                                ? 'text-emerald-300 bg-emerald-950/70 border-emerald-800/60' 
+                                : 'text-slate-400 bg-slate-800 border-slate-700'
+                            }`}>
+                              {s.has_pin ? 'Activo (4 dígitos)' : 'No asignado'}
+                            </strong>
                           </span>
                         </div>
                       </div>
@@ -837,7 +842,7 @@ export const StaffModule = () => {
 
               <div>
                 <label className="text-[11px] font-bold text-slate-300 block mb-1">
-                  Correo de acceso *
+                  Correo de acceso (opcional)
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -854,7 +859,7 @@ export const StaffModule = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[11px] font-bold text-slate-300">
-                    Contraseña * (mín. 8 caracteres)
+                    Contraseña (opcional, mín. 8 caracteres)
                   </label>
                   <button
                     type="button"
@@ -1110,19 +1115,21 @@ export const StaffModule = () => {
           <form onSubmit={handleSaveCreds} className="space-y-4 pt-3">
             <div>
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                Correo de acceso *
+                Correo de acceso / Usuario
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <Input 
                   type="email" 
-                  required
                   placeholder="operador@smartpark.pe" 
                   value={credsData.email} 
                   onChange={(e) => setCredsData({ ...credsData, email: e.target.value })} 
                   className="pl-9 text-xs h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                Si se omite, se utilizará automáticamente <code>operador.{selectedMember?.dni || 'dni'}@smartpark.pe</code>.
+              </span>
             </div>
 
             <div>
@@ -1174,11 +1181,14 @@ export const StaffModule = () => {
               <Input 
                 type="password" 
                 maxLength={4} 
-                placeholder="••••" 
+                placeholder={selectedMember?.has_pin ? "•••• (mantener PIN actual)" : "Ej. 1234"} 
                 value={credsData.security_pin} 
                 onChange={(e) => setCredsData({ ...credsData, security_pin: e.target.value.replace(/\D/g, '') })} 
                 className="font-mono font-bold text-xs h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                Permite al colaborador iniciar turno en garita ingresando su DNI y este PIN de 4 dígitos.
+              </span>
             </div>
 
             <div className="pt-2">

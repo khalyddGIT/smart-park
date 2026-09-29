@@ -78,10 +78,16 @@ async def _build_staff_response(member: Staff, db: AsyncSession) -> StaffRespons
     if not user and member.dni:
         res_dni = await db.execute(select(User).where(User.phone == member.dni.strip()))
         user = res_dni.scalars().first()
+    if not user and member.dni:
+        res_dni_email = await db.execute(select(User).where(func.lower(User.email) == f"operador.{member.dni.strip()}@smartpark.pe"))
+        user = res_dni_email.scalars().first()
 
     if user:
         has_account = True
         system_role = user.role or "local"
+    
+    has_pin = bool(member.security_pin or (user and user.security_pin))
+    display_email = member.email or (user.email if user else None)
     
     resp_data = {
         "id": member.id,
@@ -91,10 +97,11 @@ async def _build_staff_response(member: Staff, db: AsyncSession) -> StaffRespons
         "position": member.position,
         "shift": member.shift,
         "status": member.status,
-        "email": member.email,
+        "email": display_email,
         "created_at": member.created_at,
         "has_account": has_account,
-        "system_role": system_role
+        "system_role": system_role,
+        "has_pin": has_pin
     }
     return StaffResponse.model_validate(resp_data)
 
@@ -238,23 +245,27 @@ async def create_staff(
             raise HTTPException(status_code=400, detail="DNI o correo ya existe (violación de unicidad)")
         raise
 
-    # Si se proporcionó un email, registrar o actualizar la cuenta de usuario para que el personal pueda ingresar
+    # Registrar o actualizar la cuenta de usuario vinculada para que el personal pueda ingresar de inmediato
     target_role = staff_in.system_role or "local"
     is_active_account = (db_staff.status or "active").lower() in ("activo", "active", "habilitado")
+    effective_email = clean_email or (f"operador.{clean_dni}@smartpark.pe" if clean_dni else None)
     
-    if clean_email:
-        res = await db.execute(select(User).where(func.lower(User.email) == clean_email))
+    if effective_email:
+        from sqlalchemy import or_
+        user_conds = [func.lower(User.email) == effective_email]
+        if clean_dni:
+            user_conds.append(User.phone == clean_dni)
+            user_conds.append(func.lower(User.email) == f"operador.{clean_dni}@smartpark.pe")
+        
+        res = await db.execute(select(User).where(or_(*user_conds)))
         user_account = res.scalars().first()
-        if not user_account and clean_dni:
-            res_dni = await db.execute(select(User).where(User.phone == clean_dni))
-            user_account = res_dni.scalars().first()
         
         pwd = staff_in.password.strip() if staff_in.password and len(staff_in.password.strip()) >= 8 else (f"Garita{clean_dni[-4:]}!" if clean_dni and len(clean_dni)>=4 else "SmartPark2026!")
         
         if not user_account:
             user_account = User(
                 full_name=db_staff.full_name,
-                email=clean_email,
+                email=effective_email,
                 phone=clean_dni,
                 hashed_password=get_password_hash(pwd),
                 security_pin=hash_pin(pin),
@@ -265,7 +276,7 @@ async def create_staff(
         else:
             user_account.full_name = db_staff.full_name
             user_account.phone = clean_dni
-            user_account.email = clean_email
+            user_account.email = effective_email
             user_account.role = target_role
             user_account.is_active = is_active_account
             if staff_in.password and len(staff_in.password.strip()) >= 8:
@@ -278,7 +289,7 @@ async def create_staff(
             await db.rollback()
             msg = str(e).lower()
             if "unique" in msg or "duplicate" in msg:
-                raise HTTPException(status_code=400, detail=f"El correo '{clean_email}' ya pertenece a otro usuario")
+                raise HTTPException(status_code=400, detail=f"El correo '{effective_email}' ya pertenece a otro usuario")
             raise
 
     return await _build_staff_response(db_staff, db)
@@ -308,6 +319,11 @@ async def update_staff(
     if new_password:
         new_password = new_password.strip()
     new_system_role = update_data.pop("system_role", None)
+
+    # Validar acceso a la nueva sede si se traslada al colaborador
+    if "parking_id" in update_data and update_data["parking_id"]:
+        new_pid = update_data["parking_id"]
+        await _verify_staff_parking_access(new_pid, current_user, db)
 
     # Normalizar email si se proporcionó
     clean_new_email = None
@@ -339,7 +355,7 @@ async def update_staff(
         setattr(member, key, value)
     
     # Sincronizar cuenta de usuario vinculada
-    target_email = member.email or old_email
+    target_email = member.email or old_email or (f"operador.{member.dni}@smartpark.pe" if member.dni else None)
     is_active_account = (member.status or "active").lower() in ("activo", "active", "habilitado")
     target_role = new_system_role or "local"
 
@@ -351,6 +367,7 @@ async def update_staff(
             user_conds.append(func.lower(User.email) == old_email)
         if member.dni:
             user_conds.append(User.phone == member.dni.strip())
+            user_conds.append(func.lower(User.email) == f"operador.{member.dni.strip()}@smartpark.pe")
 
         res = await db.execute(select(User).where(or_(*user_conds)))
         user_account = res.scalars().first()
@@ -415,9 +432,17 @@ async def delete_staff(
         await _verify_staff_parking_access(member.parking_id, current_user, db)
     
     # Si tenía cuenta de usuario vinculada, desactivar la cuenta para revocar accesos
-    if member.email:
-        clean_email = member.email.strip().lower()
-        res = await db.execute(select(User).where(func.lower(User.email) == clean_email))
+    clean_email = (member.email or "").strip().lower() if member.email else None
+    user_conds = []
+    if clean_email:
+        user_conds.append(func.lower(User.email) == clean_email)
+    if member.dni:
+        user_conds.append(User.phone == member.dni.strip())
+        user_conds.append(func.lower(User.email) == f"operador.{member.dni.strip()}@smartpark.pe")
+    
+    if user_conds:
+        from sqlalchemy import or_
+        res = await db.execute(select(User).where(or_(*user_conds)))
         user_account = res.scalars().first()
         if user_account:
             user_account.is_active = False

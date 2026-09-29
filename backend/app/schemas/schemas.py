@@ -564,6 +564,7 @@ class StaffUpdate(BaseModel):
     security_pin: Optional[str] = None
     password: Optional[str] = None
     system_role: Optional[str] = None
+    parking_id: Optional[int] = None
 
 class StaffResponse(BaseModel):
     # Sin security_pin: el PIN nunca debe salir de la API (se almacena hasheado)
@@ -578,6 +579,7 @@ class StaffResponse(BaseModel):
     created_at: datetime
     has_account: Optional[bool] = False
     system_role: Optional[str] = "local"
+    has_pin: Optional[bool] = False
     class Config:
         from_attributes = True
 

@@ -88,6 +88,8 @@ async def _get_local_user_parking_ids(db: AsyncSession, current_user: User) -> l
     return list(parking_ids)
 
 
+@router.get("")
+@router.get("/")
 @router.get("/logs")
 async def audit_logs(
     parking_id: Optional[int] = None,
@@ -106,9 +108,10 @@ async def audit_logs(
     - Conductor: Solo visualiza sus propias interacciones.
     """
     logs = []
-    is_platform = current_user.role == "platform"
-    is_local = current_user.role == "local"
-    is_user = current_user.role == "user"
+    user_role = str(current_user.role or "").lower().strip()
+    is_platform = user_role in ("platform", "superadmin", "admin") or (current_user.email and current_user.email.lower() == "superadmin@smartpark.com")
+    is_local = user_role == "local" and not is_platform
+    is_user = not is_platform and not is_local
 
     target_parking_ids: Optional[list[int]] = None
 

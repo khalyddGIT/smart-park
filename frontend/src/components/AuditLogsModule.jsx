@@ -63,7 +63,7 @@ export const AuditLogsModule = () => {
     if (isSilent) {
       setIsRefreshing(true);
     } else {
-      setInitialLoading(prev => rawData.length === 0);
+      setInitialLoading(true);
       setIsRefreshing(true);
     }
     try {
@@ -78,15 +78,16 @@ export const AuditLogsModule = () => {
         }
       }
       if (severityFilter !== 'ALL') params.severity = severityFilter;
+      const res = await api.get('/audit/logs', { params });
       const list = Array.isArray(res.data) ? res.data : (res.data?.items || []);
       setRawData(list);
-    } catch {
-      // Fail-safe: mantener estado sin mock si hay error de red o permisos
+    } catch (err) {
+      console.error('Error cargando bitácora de auditoría:', err);
     } finally {
       setInitialLoading(false);
       setIsRefreshing(false);
     }
-  }, [parkingFilter, severityFilter, rawData.length]);
+  }, [parkingFilter, severityFilter]);
 
   useEffect(() => {
     fetchLogs(false);

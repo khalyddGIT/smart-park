@@ -1952,9 +1952,10 @@ export const EstablishmentProvider = ({ children }) => {
   // Mapea la respuesta del backend al formato interno que consume la UI
   const mapServerReservation = (r) => {
     const startDate = parseIsoToDate(r.start_time);
-    const endDate = parseIsoToDate(r.end_time);
-    const startMs = startDate.getTime();
-    const endMs = endDate.getTime();
+    const endDate = r.end_time ? parseIsoToDate(r.end_time) : null;
+    const measuredMinutes = r.actual_entry && r.actual_exit
+      ? Math.max(1, Math.round((parseIsoToDate(r.actual_exit) - parseIsoToDate(r.actual_entry)) / 60000))
+      : null;
     const tolMinutes = Number(r.tolerance_minutes ?? 15);
     return {
       id: r.id,
@@ -1969,11 +1970,11 @@ export const EstablishmentProvider = ({ children }) => {
       customerPhone: r.customer_phone || '+51 966 000 000',
       customerEmail: r.customer_email || '',
       cost: Number(r.total_cost ?? 0),
-      hours: Math.max(1, Math.round((endMs - startMs) / 3600000)) || 1,
-      ratePerHour: Number((Number(r.total_cost ?? 0) / Math.max(1, (endMs - startMs) / 3600000)).toFixed(2)),
+      hours: measuredMinutes == null ? null : Number((measuredMinutes / 60).toFixed(2)),
+      ratePerHour: null,
       status: (r.status || 'scheduled').toUpperCase(),
       startTime: startDate.toISOString(),
-      expiresAt: endDate.toISOString(),
+      expiresAt: endDate?.toISOString() || null,
       createdAt: r.actual_entry ? parseIsoToDate(r.actual_entry).toISOString() : startDate.toISOString(),
       actualEntry: r.actual_entry ? parseIsoToDate(r.actual_entry).toISOString() : null,
       actualExit: r.actual_exit ? parseIsoToDate(r.actual_exit).toISOString() : null,
@@ -1981,9 +1982,9 @@ export const EstablishmentProvider = ({ children }) => {
       arrivalWindow: tolMinutes,
       toleranceMinutes: tolMinutes,
       vehicleType: r.vehicle_type || 'auto',
-      estimatedHours: r.estimated_hours || Math.max(1, Math.round((endMs - startMs) / 3600000)) || 1,
+      estimatedHours: r.estimated_hours ?? null,
       billingUnit: r.billing_unit || 'hour',
-      estimatedMinutes: r.estimated_minutes || Math.max(1, Math.round((endMs - startMs) / 60000)) || 60,
+      estimatedMinutes: r.estimated_minutes ?? null,
       isNightShift: !!r.is_night_shift,
       prepaid: !!r.prepaid,
       isOpenStay: !!r.is_open_stay,
@@ -2115,17 +2116,10 @@ export const EstablishmentProvider = ({ children }) => {
 
     const plate = (bookingData.plate || 'ABC-123').toUpperCase();
     const startISO = bookingData.startTime instanceof Date ? bookingData.startTime.toISOString() : (bookingData.startTime || new Date().toISOString());
-    const explicitHours = Number(bookingData.hours ?? bookingData.estimatedHours);
+    const isSubscription = !!(bookingData.isSubscription || bookingData.is_subscription);
     const endISO = bookingData.expiresAt instanceof Date
       ? bookingData.expiresAt.toISOString()
-      : bookingData.expiresAt || (Number.isFinite(explicitHours) && explicitHours > 0
-        ? new Date(new Date(startISO).getTime() + explicitHours * 60 * 60 * 1000).toISOString()
-        : null);
-    if (!endISO) {
-      throw new Error('Debes seleccionar explícitamente el tiempo estimado de estadía.');
-    }
-
-    const tolMinutes = Number(bookingData.toleranceMinutes || bookingData.arrivalWindow || bookingData.etaMinutes || 15);
+      : (isSubscription ? bookingData.expiresAt || null : null);
 
     // Inferencia inteligente de tipo de vehículo desde el cajón seleccionado si no fue provisto
     let resolvedVehicleType = bookingData.vehicleType || bookingData.vehicle_type;
@@ -2150,14 +2144,13 @@ export const EstablishmentProvider = ({ children }) => {
         license_plate: plate,
         start_time: startISO,
         end_time: endISO,
-        tolerance_minutes: tolMinutes,
         payment_method: bookingData.paymentMethod || bookingData.payment_method || null,
         pay_now: !!bookingData.payNow,
         vehicle_type: resolvedVehicleType,
-        estimated_hours: Number(bookingData.estimatedHours ?? bookingData.hours) || null,
+        estimated_hours: isSubscription ? (Number(bookingData.estimatedHours ?? bookingData.hours) || null) : null,
         billing_unit: bookingData.billingUnit || bookingData.billing_unit || 'hour',
-        estimated_minutes: Number(bookingData.estimatedMinutes ?? bookingData.estimated_minutes ?? (bookingData.hours ? bookingData.hours * 60 : 0)) || null,
-        is_open_stay: !!(bookingData.isOpenStay ?? bookingData.is_open_stay ?? false),
+        estimated_minutes: isSubscription ? (Number(bookingData.estimatedMinutes ?? bookingData.estimated_minutes ?? 0) || null) : null,
+        is_open_stay: !isSubscription,
         auto_assign: !!isAutoAssign,
         reservation_type: bookingData.reservationType || bookingData.reservation_type || 'standard',
         is_subscription: !!(bookingData.isSubscription || bookingData.is_subscription),
@@ -2218,7 +2211,7 @@ export const EstablishmentProvider = ({ children }) => {
     return { ok: true, message: `Reserva ${code} cancelada localmente (sin registro en servidor).` };
   };
 
-  // Check-In de garita: PUT /reservations/{id}/check-in → status active (con horas de estadía opcional)
+  // Check-In de garita: inicia el reloj real de permanencia.
   const checkInReservation = async (codeOrId, hoursStay = null) => {
     let target = reservationsRef.current.find(r => r.code === codeOrId || String(r.id) === String(codeOrId))
       || reservations.find(r => r.code === codeOrId || String(r.id) === String(codeOrId));
@@ -2240,8 +2233,8 @@ export const EstablishmentProvider = ({ children }) => {
     if (!targetId) return { ok: false, message: 'Reserva no encontrada.' };
 
     try {
-      const params = hoursStay ? { hours_stay: hoursStay } : {};
-      const res = await api.put(`/reservations/${targetId}/check-in`, null, { params });
+      const payload = hoursStay == null ? {} : { hours_stay: Number(hoursStay) };
+      const res = await api.put(`/reservations/${targetId}/check-in`, payload);
       if (res.data) {
         const updated = mapServerReservation(res.data);
         reservationsRef.current = reservationsRef.current.map(r => (r.id === targetId || r.code === updated.code) ? updated : r);
@@ -2319,15 +2312,15 @@ export const EstablishmentProvider = ({ children }) => {
     }
   };
 
-  // Actualizar hora, cajón o duración de estadía: PUT /reservations/{id}/stay
+  // Corregir hora real de ingreso o cajón; la duración no se edita manualmente.
   const updateStayReservation = async (codeOrId, stayData = {}) => {
     const target = reservations.find(r => r.code === codeOrId || String(r.id) === String(codeOrId));
     if (!target) return { ok: false, message: 'Reserva no encontrada.' };
 
     const payload = {};
     if (stayData.actual_entry) payload.actual_entry = stayData.actual_entry;
-    if (stayData.hours_stay !== undefined && stayData.hours_stay !== null) payload.hours_stay = Number(stayData.hours_stay);
-    if (stayData.is_open_stay !== undefined) payload.is_open_stay = !!stayData.is_open_stay;
+    if (stayData.hours_stay != null) payload.hours_stay = Number(stayData.hours_stay);
+    payload.is_open_stay = stayData.hours_stay == null;
     if (stayData.slot_code) payload.slot_code = stayData.slot_code;
 
     if (isBackendReservation(target)) {
@@ -2350,8 +2343,8 @@ export const EstablishmentProvider = ({ children }) => {
             startTime: entryTime,
             actual_entry: entryTime,
             slot: stayData.slot_code || r.slot,
-            hours: stayData.hours_stay || r.hours,
-            isOpenStay: stayData.is_open_stay !== undefined ? stayData.is_open_stay : r.isOpenStay
+            hours: stayData.hours_stay == null ? null : Number(stayData.hours_stay),
+            isOpenStay: stayData.hours_stay == null
           };
         }
         return r;

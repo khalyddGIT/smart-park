@@ -117,8 +117,7 @@ async def test_reservation_pricing_by_vehicle_and_night_shift():
         })
         slot_suv_id = s2_resp.json()["id"]
 
-        # 1. Reserva Diurna para MOTO (2 horas a las 10:00 AM)
-        # Tarifa moto: S/ 2.50 * 2h = S/ 5.00
+        # 1. El cliente reserva la plaza, pero no define la duración ni el costo de estadía.
         start_day = datetime.utcnow().replace(hour=10, minute=0, second=0, microsecond=0)
         end_day = start_day + timedelta(hours=2)
         plate_moto = f"M{uuid.uuid4().hex[:3].upper()}-{uuid.uuid4().hex[3:7].upper()}"
@@ -134,11 +133,13 @@ async def test_reservation_pricing_by_vehicle_and_night_shift():
         assert res1.status_code == 201, res1.text
         data1 = res1.json()
         assert data1["vehicle_type"] == "moto"
-        assert data1["total_cost"] == 5.0
-        assert data1["is_night_shift"] is False
+        assert data1["total_cost"] == 0
+        assert data1["end_time"] is None
+        assert data1["estimated_hours"] is None
+        assert data1["estimated_minutes"] is None
+        assert data1["tolerance_minutes"] == 15
 
-        # 2. Reserva Nocturna para SUV (2 horas a las 22:00 PM)
-        # Turno noche: 20:00 a 06:00 (+S/ 2.00) -> Tarifa SUV: (8.0 + 2.0) * 2h = S/ 20.00
+        # 2. Los datos de salida enviados por clientes antiguos también se ignoran.
         driver2_token, _ = await _register_and_get_token(role="user")
         driver2_headers = {"Authorization": f"Bearer {driver2_token}"}
         start_night = datetime.utcnow().replace(hour=22, minute=0, second=0, microsecond=0)
@@ -156,8 +157,10 @@ async def test_reservation_pricing_by_vehicle_and_night_shift():
         assert res2.status_code == 201, res2.text
         data2 = res2.json()
         assert data2["vehicle_type"] == "suv"
-        assert data2["total_cost"] == 20.0
-        assert data2["is_night_shift"] is True
+        assert data2["total_cost"] == 0
+        assert data2["end_time"] is None
+        assert data2["estimated_hours"] is None
+        assert data2["estimated_minutes"] is None
 
 @pytest.mark.asyncio
 async def test_reservation_rejects_vehicle_type_slot_mismatch():
@@ -302,7 +305,7 @@ async def test_reservation_pricing_by_minute_billing_unit():
         })
         slot_id = slot_resp.json()["id"]
 
-        # 2. Intento menor al tiempo mínimo (10 minutos < 15 minutos) -> 422
+        # 2. El cliente no elige duración: los 10 minutos enviados se ignoran.
         start_time = datetime.utcnow() + timedelta(minutes=10)
         end_too_short = start_time + timedelta(minutes=10)
         plate1 = f"M{uuid.uuid4().hex[:3].upper()}-{uuid.uuid4().hex[3:7].upper()}"
@@ -316,12 +319,17 @@ async def test_reservation_pricing_by_minute_billing_unit():
             "billing_unit": "minute",
             "estimated_minutes": 10
         })
-        assert res_fail.status_code == 422, res_fail.text
-        detail = res_fail.json()["detail"]
-        detail_str = str(detail).lower()
-        assert "mínima" in detail_str, res_fail.text
+        assert res_fail.status_code == 201, res_fail.text
+        first_data = res_fail.json()
+        assert first_data["end_time"] is None
+        assert first_data["estimated_minutes"] is None
+        assert first_data["total_cost"] == 0
+        assert first_data["billing_unit"] == "minute"
 
-        # 3. Reserva válida por 30 minutos (30 min * 0.10 = S/ 3.00)
+        cancel_first = await ac.put(f"/api/v1/reservations/{first_data['id']}/cancel", headers=driver_headers)
+        assert cancel_first.status_code == 200, cancel_first.text
+
+        # 3. Otra duración proyectada tampoco cambia el contrato abierto.
         end_valid = start_time + timedelta(minutes=30)
         plate2 = f"M{uuid.uuid4().hex[:3].upper()}-{uuid.uuid4().hex[3:7].upper()}"
         res_ok = await ac.post("/api/v1/reservations", headers=driver_headers, json={
@@ -337,8 +345,9 @@ async def test_reservation_pricing_by_minute_billing_unit():
         assert res_ok.status_code == 201, res_ok.text
         res_data = res_ok.json()
         assert res_data["billing_unit"] == "minute"
-        assert res_data["total_cost"] == 3.00
-        assert res_data["estimated_minutes"] == 30
+        assert res_data["total_cost"] == 0
+        assert res_data["end_time"] is None
+        assert res_data["estimated_minutes"] is None
 
 
 @pytest.mark.asyncio

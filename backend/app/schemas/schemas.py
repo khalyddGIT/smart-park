@@ -585,6 +585,10 @@ class ReservationStayUpdate(BaseModel):
     is_open_stay: Optional[bool] = None
     slot_code: Optional[str] = None
 
+class ReservationCheckIn(BaseModel):
+    hours_stay: Optional[float] = Field(default=None, gt=0, le=168)
+    minutes_stay: Optional[int] = Field(default=None, gt=0, le=10080)
+
 class ReservationOvertimePayment(BaseModel):
     amount: float = Field(gt=0, description="Monto a pagar por sobreestadía en PEN")
     payment_method: Optional[str] = "card"
@@ -598,7 +602,7 @@ class ReservationResponse(BaseModel):
     slot_id: int
     license_plate: str
     start_time: datetime
-    end_time: datetime
+    end_time: Optional[datetime] = None
     actual_entry: Optional[datetime] = None
     actual_exit: Optional[datetime] = None
     total_cost: float
@@ -611,9 +615,9 @@ class ReservationResponse(BaseModel):
     slot_code: Optional[str] = None
     tolerance_minutes: Optional[int] = 15
     vehicle_type: Optional[str] = "auto"
-    estimated_hours: Optional[float] = 1.0
+    estimated_hours: Optional[float] = None
     billing_unit: Optional[str] = "hour"
-    estimated_minutes: Optional[int] = 60
+    estimated_minutes: Optional[int] = None
     is_night_shift: Optional[bool] = False
     prepaid: Optional[bool] = False
     is_open_stay: Optional[bool] = False

@@ -156,7 +156,9 @@ async def test_driver_reservation_lifecycle_and_verification():
         assert res_code is not None
         assert res_data["qr_code"] is not None
         assert res_data["status"] == "scheduled"
-        assert res_data["total_cost"] > 0
+        assert res_data["total_cost"] == 0
+        assert res_data["end_time"] is None
+        assert res_data["estimated_hours"] is None
 
         # Public / Operator QR verification endpoint
         verify_resp = await ac.get(f"/api/v1/reservations/verify/{res_code}")
@@ -177,7 +179,7 @@ async def test_driver_reservation_lifecycle_and_verification():
         # Check-out at barrier (operator action)
         checkout_resp = await ac.put(f"/api/v1/reservations/{reservation_id}/check-out", headers=admin_headers, json={
             "payment_method": "efectivo",
-            "amount_paid": 12.0
+            "amount_paid": 5.0
         })
         assert checkout_resp.status_code == 200
         assert checkout_resp.json()["status"] == "completed"
@@ -398,8 +400,7 @@ async def test_driver_interactive_2d_cad_pricing_and_open_stay():
         assert incompat_resp.status_code == 400
         assert "no para auto" in incompat_resp.json()["detail"].lower()
 
-        # 2. Reserva diurna en plano 2D para Auto: 2 horas
-        # Costo = 2h * 5.0 (rate_auto) + 1.5 (reservation_fee) = 11.50
+        # 2. Reserva diurna: el usuario aparta la plaza, sin elegir duración.
         res_day = await ac.post("/api/v1/reservations", headers=driver_headers, json={
             "parking_id": parking_id,
             "slot_id": slot_auto["id"],
@@ -411,17 +412,18 @@ async def test_driver_interactive_2d_cad_pricing_and_open_stay():
         })
         assert res_day.status_code == 201
         data_day = res_day.json()
-        assert data_day["total_cost"] == 11.50
-        assert data_day["is_night_shift"] is False
-        assert data_day["is_open_stay"] is False
+        assert data_day["total_cost"] == 1.50
+        assert data_day["end_time"] is None
+        assert data_day["estimated_hours"] is None
+        assert data_day["is_open_stay"] is True
 
         # Check-in y check-out para liberar el cajón
         res_day_id = data_day["id"]
         await ac.put(f"/api/v1/reservations/{res_day_id}/check-in", headers=admin_headers)
-        await ac.put(f"/api/v1/reservations/{res_day_id}/check-out", headers=admin_headers, json={"payment_method": "cash", "amount_paid": 11.50})
+        checkout_day = await ac.put(f"/api/v1/reservations/{res_day_id}/check-out", headers=admin_headers, json={"payment_method": "cash", "amount_paid": 6.50})
+        assert checkout_day.status_code == 200, checkout_day.text
 
-        # 3. Reserva nocturna con modalidad de estadía libre (is_open_stay=True)
-        # Turno noche activo: 21:00 a 23:00 (2 horas)
+        # 3. Una hora futura enviada como reserva inmediata no altera el inicio real.
         night_time = now.replace(hour=21, minute=0)
         plate_open = f"S{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().hex[:3].upper()}"
         res_night = await ac.post("/api/v1/reservations", headers=driver_headers, json={
@@ -435,9 +437,9 @@ async def test_driver_interactive_2d_cad_pricing_and_open_stay():
         })
         assert res_night.status_code == 201
         data_night = res_night.json()
-        # Costo = 2h * (5.0 + 2.0 recargo noche) + 1.5 fee = 2 * 7.0 + 1.5 = 15.50
-        assert data_night["total_cost"] == 15.50
-        assert data_night["is_night_shift"] is True
+        assert data_night["total_cost"] == 1.50
+        assert data_night["end_time"] is None
+        assert data_night["estimated_hours"] is None
         assert data_night["is_open_stay"] is True
 
 @pytest.mark.asyncio
@@ -536,7 +538,7 @@ async def test_driver_cannot_delete_vehicle_with_active_reservation_or_stay():
         # 7. Se realiza check-out del vehículo -> estadía finalizada (status='completed')
         checkout_resp = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=admin_headers, json={
             "payment_method": "cash",
-            "amount_paid": 8.0
+            "amount_paid": 5.0
         })
         assert checkout_resp.status_code == 200
         assert checkout_resp.json()["status"] == "completed"

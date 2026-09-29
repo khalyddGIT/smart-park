@@ -39,8 +39,6 @@ export const QuickReservationModal = ({
   const [manualType, setManualType] = useState('auto');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
-  const [arrivalMinutes, setArrivalMinutes] = useState(null);
-  const [stayDuration, setStayDuration] = useState(null);
 
   // Instancia actualizada del establecimiento desde context
   const currentParking = useMemo(() => {
@@ -94,8 +92,6 @@ export const QuickReservationModal = ({
       loadVehicles();
       setErrorMessage(null);
       setIsSubmitting(false);
-      setArrivalMinutes(null);
-      setStayDuration(null);
     }
   }, [isOpen, loadVehicles]);
 
@@ -134,10 +130,6 @@ export const QuickReservationModal = ({
   const isUnavailable = isMaintenance || isClosed;
   const requiresPrepay = !!(currentParking?.require_reservation_prepay || currentParking?.requireReservationPrepay);
   const isMinuteBilling = (currentParking?.billing_unit || 'hour') === 'minute';
-  const minStayMinutes = Number(currentParking?.min_stay_minutes || 15);
-  const maxStayMinutes = Number(currentParking?.max_stay_minutes || 1440);
-  const minStayHours = Number(currentParking?.min_stay_hours || 1);
-  const maxStayHours = Number(currentParking?.max_stay_hours || 24);
   const vehicleFamily = ['suv', 'camioneta', 'truck', 'pickup'].includes(effectiveVehicleType)
     ? 'suv'
     : ['moto', 'motorcycle', 'scooter', 'bike'].includes(effectiveVehicleType)
@@ -170,28 +162,15 @@ export const QuickReservationModal = ({
       return;
     }
 
-    if (arrivalMinutes === null) {
-      setErrorMessage('Selecciona primero cuándo llegarás.');
-      return;
-    }
-    if (!stayDuration) {
-      setErrorMessage('Selecciona el tiempo estimado de estadía.');
-      return;
-    }
-
     setIsSubmitting(true);
     setErrorMessage(null);
 
     const now = new Date();
     const tolerance = Number(currentParking.tolerance || currentParking.tolerance_minutes || 15);
-    const durationMinutes = isMinuteBilling ? Number(stayDuration) : Number(stayDuration) * 60;
-    const arrivalAt = new Date(now.getTime() + Number(arrivalMinutes) * 60 * 1000);
-    const expiresAt = new Date(arrivalAt.getTime() + durationMinutes * 60 * 1000);
     const minuteRate = Number(currentParking[`rate_minute_${vehicleFamily}`] || 0.08);
     const hourlyVehicleRate = Number(currentParking[`rate_${vehicleFamily}`] || currentParking.rate || currentParking.hourly_rate || 5.0);
-    const estimatedCost = isMinuteBilling
-      ? minuteRate * durationMinutes
-      : hourlyVehicleRate * Number(stayDuration);
+    const reservationFee = Number(currentParking.reservation_fee || 0);
+    const reservationGuarantee = reservationFee > 0 ? reservationFee : (isMinuteBilling ? minuteRate : hourlyVehicleRate);
 
     try {
       await onConfirmBooking({
@@ -204,14 +183,14 @@ export const QuickReservationModal = ({
         plate: effectivePlate,
         vehicleType: effectiveVehicleType,
         toleranceMinutes: tolerance,
-        startTime: arrivalAt.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        etaMinutes: Number(arrivalMinutes),
-        hours: Number((durationMinutes / 60).toFixed(2)),
-        estimatedHours: Number((durationMinutes / 60).toFixed(2)),
-        estimatedMinutes: durationMinutes,
+        startTime: now.toISOString(),
+        expiresAt: null,
+        etaMinutes: 0,
+        hours: null,
+        estimatedHours: null,
+        estimatedMinutes: null,
         billingUnit: isMinuteBilling ? 'minute' : 'hour',
-        totalCost: Number(estimatedCost.toFixed(2)),
+        totalCost: requiresPrepay ? Number(reservationGuarantee.toFixed(2)) : reservationFee,
         isOpenStay: true,
         payNow: requiresPrepay,
         bookingModel: requiresPrepay ? 'prepaid_discount' : 'postpaid',
@@ -433,50 +412,26 @@ export const QuickReservationModal = ({
             </div>
           </div>
 
-          {/* 3. Llegada y estadía: nunca se infieren de forma silenciosa. */}
+          {/* 3. Reglas operativas definidas por el establecimiento. */}
           <div className="space-y-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 text-xs">
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Navigation className="w-3.5 h-3.5 text-sky-500" /> ¿Cuándo llegarás?
+                  <Navigation className="w-3.5 h-3.5 text-sky-500" /> Ventana de llegada
                 </span>
-                <span className="font-mono font-bold text-sky-600 dark:text-sky-400">
-                  {arrivalMinutes === null ? 'Selecciona' : arrivalMinutes === 0 ? 'Ahora' : `En ${arrivalMinutes} min`}
-                </span>
+                <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{toleranceMin} min</span>
               </div>
-              <div className="grid grid-cols-6 gap-1">
-                {[0, 5, 10, 15, 30, 45].map((minutes) => (
-                  <button key={minutes} type="button" onClick={() => setArrivalMinutes(minutes)}
-                    className={`py-1.5 rounded-lg font-mono font-bold border transition ${arrivalMinutes === minutes ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}>
-                    {minutes === 0 ? 'Ahora' : `+${minutes}`}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-1.5 text-[10px] text-slate-500">Luego tendrás {toleranceMin} min de tolerancia para presentarte.</p>
+              <p className="mt-1.5 text-[10px] text-slate-500">La plaza se aparta desde ahora durante la tolerancia configurada por el administrador.</p>
             </div>
 
             <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-emerald-500" /> Tiempo estimado de estadía
+                  <Clock className="w-3.5 h-3.5 text-emerald-500" /> Tiempo de estadía
                 </span>
-                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                  {stayDuration ? `${stayDuration}${isMinuteBilling ? ' min' : 'h'}` : 'Selecciona'}
-                </span>
+                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">Registro en garita</span>
               </div>
-              <div className="grid grid-cols-6 gap-1">
-                {(isMinuteBilling ? [15, 30, 45, 60, 90, 120] : [1, 2, 3, 4, 6, 8])
-                  .filter(value => isMinuteBilling
-                    ? value >= minStayMinutes && value <= maxStayMinutes
-                    : value >= minStayHours && value <= maxStayHours)
-                  .map((value) => (
-                  <button key={value} type="button" onClick={() => setStayDuration(value)}
-                    className={`py-1.5 rounded-lg font-mono font-bold border transition ${stayDuration === value ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}>
-                    {value}{isMinuteBilling ? 'm' : 'h'}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-1.5 text-[10px] text-slate-500">Si pagas al salir, el monto final se calcula con el tiempo realmente utilizado.</p>
+              <p className="mt-1.5 text-[10px] text-slate-500">El trabajador marca ingreso y salida; el cobro usa únicamente ese tiempo real.</p>
             </div>
           </div>
 
@@ -498,7 +453,7 @@ export const QuickReservationModal = ({
           <Button
             type="button"
             onClick={handleConfirm}
-            disabled={isUnavailable || isSubmitting || (!effectivePlate && vehicles.length === 0) || arrivalMinutes === null || !stayDuration}
+            disabled={isUnavailable || isSubmitting || (!effectivePlate && vehicles.length === 0)}
             className={`w-full py-3.5 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 cursor-pointer transition active:scale-[0.99] disabled:opacity-50 ${
               isMaintenance
                 ? 'bg-amber-800 dark:bg-amber-900 cursor-not-allowed'

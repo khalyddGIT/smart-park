@@ -65,8 +65,8 @@ async def test_quick_reservation_auto_assignment_and_vehicle_matching():
         start_iso = (now + timedelta(minutes=5)).isoformat()
         end_iso = (now + timedelta(hours=2)).isoformat()
 
-        # La API no debe inventar una hora de estadía si el conductor no la eligió.
-        missing_duration = await ac.post("/api/v1/reservations", headers=d1_headers, json={
+        # La reserva no solicita duración: queda abierta hasta el check-out de garita.
+        res1 = await ac.post("/api/v1/reservations", headers=d1_headers, json={
             "parking_id": parking_id,
             "slot_id": None,
             "license_plate": plate_moto,
@@ -74,20 +74,11 @@ async def test_quick_reservation_auto_assignment_and_vehicle_matching():
             "start_time": start_iso,
             "is_open_stay": True
         })
-        assert missing_duration.status_code == 422, missing_duration.text
-        assert "duración estimada" in missing_duration.json()["detail"]
-
-        res1 = await ac.post("/api/v1/reservations", headers=d1_headers, json={
-            "parking_id": parking_id,
-            "slot_id": None,  # Auto-asignación express
-            "license_plate": plate_moto,
-            "vehicle_type": "moto",
-            "start_time": start_iso,
-            "end_time": end_iso,
-            "is_open_stay": True
-        })
         assert res1.status_code == 201, res1.text
         data1 = res1.json()
+        assert data1["end_time"] is None
+        assert data1["estimated_hours"] is None
+        assert data1["tolerance_minutes"] == 20
         assert data1["slot_code"] == "MOT-01"
         assert data1["vehicle_type"] == "moto"
         assert data1["status"] == "scheduled"
@@ -274,4 +265,90 @@ async def test_reservation_rejected_when_parking_in_maintenance_or_closed():
         })
         assert r2.status_code == 400
         assert "cerrad" in r2.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_worker_controls_arrival_clock_and_checkout_payment():
+    """El conductor solo reserva; garita abre/cierra el reloj y confirma el cobro exacto."""
+    admin_token, _, _ = await _register_and_get_token(role="local")
+    driver_token, _, _ = await _register_and_get_token(role="user")
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    driver_headers = {"Authorization": f"Bearer {driver_token}"}
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        parking_resp = await ac.post("/api/v1/parkings", headers=admin_headers, json={
+            "name": f"Reloj Garita {uuid.uuid4().hex[:6]}",
+            "address": "Av. Prueba 321",
+            "city": "Ayacucho",
+            "hourly_rate": 5.0,
+            "rate_auto": 5.0,
+            "reservation_fee": 1.0,
+            "total_capacity": 1,
+            "tolerance_minutes": 25,
+        })
+        assert parking_resp.status_code == 201, parking_resp.text
+        parking_id = parking_resp.json()["id"]
+
+        slot_resp = await ac.post(f"/api/v1/parkings/{parking_id}/slots", headers=admin_headers, json={
+            "code": "CLK-01",
+            "slot_type": "auto",
+        })
+        assert slot_resp.status_code == 201, slot_resp.text
+
+        reserve_resp = await ac.post("/api/v1/reservations", headers=driver_headers, json={
+            "parking_id": parking_id,
+            "slot_id": slot_resp.json()["id"],
+            "license_plate": f"T{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().hex[:3].upper()}",
+            "vehicle_type": "auto",
+            "start_time": (datetime.utcnow() + timedelta(hours=3)).isoformat(),
+            "end_time": (datetime.utcnow() + timedelta(hours=8)).isoformat(),
+            "estimated_hours": 5,
+            "tolerance_minutes": 120,
+        })
+        assert reserve_resp.status_code == 201, reserve_resp.text
+        reservation = reserve_resp.json()
+        reservation_id = reservation["id"]
+        assert reservation["end_time"] is None
+        assert reservation["estimated_hours"] is None
+        assert reservation["tolerance_minutes"] == 25
+        assert reservation["total_cost"] == 1.0
+
+        forbidden_checkin = await ac.put(f"/api/v1/reservations/{reservation_id}/check-in", headers=driver_headers)
+        assert forbidden_checkin.status_code == 403
+
+        checkin = await ac.put(
+            f"/api/v1/reservations/{reservation_id}/check-in",
+            headers=admin_headers,
+            json={"hours_stay": 2},
+        )
+        assert checkin.status_code == 200, checkin.text
+        assert checkin.json()["status"] == "active"
+        assert checkin.json()["actual_entry"] is not None
+        assert checkin.json()["end_time"] is not None
+        assert checkin.json()["estimated_hours"] == 2
+        assert checkin.json()["estimated_minutes"] == 120
+        assert checkin.json()["total_cost"] == 11.0
+
+        wrong_payment = await ac.put(f"/api/v1/reservations/{reservation_id}/check-out", headers=admin_headers, json={
+            "payment_method": "efectivo",
+            "amount_paid": 5.0,
+        })
+        assert wrong_payment.status_code == 422, wrong_payment.text
+        assert "S/ 11.00" in wrong_payment.json()["detail"]
+
+        still_active = await ac.get(f"/api/v1/reservations/{reservation_id}", headers=admin_headers)
+        assert still_active.status_code == 200
+        assert still_active.json()["status"] == "active"
+
+        checkout = await ac.put(f"/api/v1/reservations/{reservation_id}/check-out", headers=admin_headers, json={
+            "payment_method": "efectivo",
+            "amount_paid": 11.0,
+        })
+        assert checkout.status_code == 200, checkout.text
+        checkout_data = checkout.json()
+        assert checkout_data["status"] == "completed"
+        assert checkout_data["total_cost"] == 11.0
+        assert checkout_data["amount_paid"] == 11.0
+        assert checkout_data["payment_status"] == "paid"
+        assert checkout_data["actual_exit"] is not None
 

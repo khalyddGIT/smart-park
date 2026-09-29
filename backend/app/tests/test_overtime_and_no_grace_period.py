@@ -33,6 +33,9 @@ async def test_check_out_calculates_exact_hours_without_grace_period():
             session.add(user)
             await session.commit()
             await session.refresh(user)
+        operator = (await session.execute(select(User).where(User.role == "platform"))).scalars().first()
+        assert operator is not None
+        operator_id = operator.id
 
         # Asegurar parking con tarifa fija S/ 6.00/h
         res_p = await session.execute(select(Parking).where(Parking.id == 1))
@@ -85,6 +88,7 @@ async def test_check_out_calculates_exact_hours_without_grace_period():
 
     token = create_access_token(subject=user_id)
     headers = {"Authorization": f"Bearer {token}"}
+    operator_headers = {"Authorization": f"Bearer {create_access_token(subject=operator_id)}"}
 
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         # 1. Comprobar que en GET /api/v1/reservations/{id} se detecta overtime dinámico
@@ -97,13 +101,18 @@ async def test_check_out_calculates_exact_hours_without_grace_period():
         assert data_get["total_cost"] == 12.0
 
         # 2. Realizar check-out: sin restar 15 minutos de gracia
-        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=headers)
+        forbidden_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=headers)
+        assert forbidden_checkout.status_code == 403
+
+        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers)
         assert res_checkout.status_code == 200
         data_out = res_checkout.json()
         assert data_out["status"] == "completed"
         assert data_out["actual_exit"] is not None
         # Cobro final debe ser exactamente 2 horas (S/ 12.00), NO 1 hora como antes con gracia
         assert data_out["total_cost"] == 12.0
+        assert data_out["amount_paid"] == 0
+        assert data_out["payment_status"] == "pending"
 
 @pytest.mark.asyncio
 async def test_worker_detects_stay_expiring_soon_and_overtime():
@@ -187,6 +196,9 @@ async def test_active_stay_cannot_be_cancelled_and_reconciles_checkout_amount():
             session.add(user)
             await session.commit()
             await session.refresh(user)
+        operator = (await session.execute(select(User).where(User.role == "platform"))).scalars().first()
+        assert operator is not None
+        operator_id = operator.id
 
         # Crear reserva activa cuyo ingreso fue hace 115 minutos (1h 55m)
         now = datetime.utcnow()
@@ -215,6 +227,7 @@ async def test_active_stay_cannot_be_cancelled_and_reconciles_checkout_amount():
 
     token = create_access_token(subject=user_id)
     headers = {"Authorization": f"Bearer {token}"}
+    operator_headers = {"Authorization": f"Bearer {create_access_token(subject=operator_id)}"}
 
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         # 1. Intentar cancelar la estadía activa -> DEBE ser rechazado con HTTP 400
@@ -223,12 +236,16 @@ async def test_active_stay_cannot_be_cancelled_and_reconciles_checkout_amount():
         assert "No es posible cancelar una estadía en curso" in res_cancel.json()["detail"]
 
         # 2. Realizar check-out: permanencia de 115 min => ceil(115/60) = 2 horas exactas a S/ 6.00 = S/ 12.00
-        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=headers)
+        forbidden_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=headers)
+        assert forbidden_checkout.status_code == 403
+
+        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers)
         assert res_checkout.status_code == 200
         data_out = res_checkout.json()
         assert data_out["status"] == "completed"
         assert data_out["total_cost"] == 12.0
-        assert data_out["amount_paid"] == 12.0  # Reconciliado al total real sin dejar saldo huérfano
+        assert data_out["amount_paid"] == 6.0
+        assert data_out["payment_status"] == "pending"
 
 @pytest.mark.asyncio
 async def test_cannot_cancel_scheduled_reservation_after_tolerance_expired():

@@ -56,7 +56,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { DigitalAccessPassModal } from './DigitalAccessPassModal';
 
-// Helper de cálculo dinámico del costo acumulado en tiempo real (sobreestadía sin periodo de gracia)
+// Estimación visual del costo acumulado a partir del ingreso real.
 export const calculateLiveEffectiveCost = (res, now = Date.now()) => {
   if (!res) return 0;
   const baseCost = Number(res.cost || res.totalCost || res.total_cost || 0);
@@ -68,22 +68,12 @@ export const calculateLiveEffectiveCost = (res, now = Date.now()) => {
     return baseCost;
   }
   if (status === 'ACTIVE') {
-    // Si la reserva ya fue enriquecida por el backend en /api/v1/reservations con isOvertime y un total_cost mayor
-    if (res.isOvertime && Number(res.cost) > baseCost) {
-      return Number(res.cost);
-    }
-    const endMs = res.expiresAt 
-      ? parseIsoToDate(res.expiresAt).getTime()
-      : (parseIsoToDate(res.startTime).getTime() + (Number(res.hours) || 1) * 3600000);
-    const diffMs = endMs - now;
-    if (diffMs < 0) {
-      const overtimeSec = Math.abs(Math.floor(diffMs / 1000));
-      const baseHours = Math.max(1, Number(res.hours) || 1);
-      const hourlyRate = Number(res.ratePerHour) || Number(res.rate) || (baseCost / baseHours) || 5.0;
-      const extraHours = Math.max(1, Math.ceil(overtimeSec / 3600));
-      return Number((baseCost + (extraHours * hourlyRate)).toFixed(2));
-    }
-    return baseCost;
+    const entryMs = parseIsoToDate(res.actualEntry || res.actual_entry || res.startTime).getTime();
+    if (!Number.isFinite(entryMs)) return baseCost;
+    const billedHours = Math.max(1, Math.ceil(Math.max(0, now - entryMs) / 3600000));
+    const hourlyRate = Number(res.ratePerHour) || Number(res.rate) || 5.0;
+    const reservationFee = Number(res.reservationFee || res.reservation_fee || 0);
+    return Number((billedHours * hourlyRate + reservationFee).toFixed(2));
   }
   return baseCost;
 };
@@ -123,7 +113,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     }).catch(() => {});
   }, [reservations.length]);
 
-  // Reloj en tiempo real para sincronizar estados de sobreestadía y tarifas cada 5 segundos
+  // Reloj en tiempo real para mostrar la permanencia y el costo acumulado.
   const [currentTime, setCurrentTime] = useState(Date.now());
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(Date.now()), 5000);
@@ -147,10 +137,9 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   const [showCheckoutPayment, setShowCheckoutPayment] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
   const [plate, setPlate] = useState('');
-  const [hours, setHours] = useState(2);
   const [feedbackMessage, setFeedbackMessage] = useState('');
 
-  // Modal de Check-in para Garita (Personal define horas de estadía)
+  // Modal de Check-in para Garita: confirma el ingreso e inicia el reloj real.
   const [checkInTarget, setCheckInTarget] = useState(null);
   const [checkInHours, setCheckInHours] = useState(2);
   const [isProcessingCheckIn, setIsProcessingCheckIn] = useState(false);
@@ -211,7 +200,6 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   const [operatorViewMode, setOperatorViewMode] = useState('stay');
   const [inspectedSlotCode, setInspectedSlotCode] = useState(null);
   const [entrySearchQuery, setEntrySearchQuery] = useState('');
-  const [entryStayHours, setEntryStayHours] = useState(2);
 
   // Elementos y cajones del plano de la sede activa
   const localElements = Array.isArray(activeLocalEst?.elements) ? activeLocalEst.elements : [];
@@ -264,11 +252,10 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   }, [reservations, cleanEntryQuery, activeLocalEst]);
 
   // Acción rápida de Check-in (Ingreso)
-  const handleQuickCheckIn = async (resTarget, customHours = null) => {
+  const handleQuickCheckIn = async (resTarget) => {
     if (!resTarget) return;
     setIsProcessingCheckIn(true);
-    const hrs = customHours || resTarget.hours || 2;
-    const resp = await checkInReservation(resTarget.code, hrs);
+    const resp = await checkInReservation(resTarget.code);
     setIsProcessingCheckIn(false);
     if (resp?.ok) {
       setFeedbackMessage(`✓ ¡Ingreso registrado! Vehículo ${resTarget.plate} en plaza ${resTarget.slot}.`);
@@ -306,7 +293,6 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
       setTimeout(() => setFeedbackMessage(''), 3000);
       return;
     }
-    const rate = Number(activeLocalEst?.rate || 5.0);
     const now = new Date();
     const newRes = await createReservation({
       parkingId: activeLocalEst.id,
@@ -315,18 +301,18 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
       customerName: 'Conductor en Garita',
       customerPhone: '+51 966 000 000',
       plate: plateToUse,
-      hours: entryStayHours,
-      rate: rate,
-      totalCost: rate * entryStayHours,
+      hours: null,
+      totalCost: Number(activeLocalEst?.reservation_fee || 0),
       startTime: now.toISOString(),
-      expiresAt: new Date(now.getTime() + entryStayHours * 3600000).toISOString()
+      expiresAt: null,
+      isOpenStay: true
     });
     if (!newRes || newRes.error || !newRes.code) {
       setFeedbackMessage(`✕ No se pudo emitir el ingreso: ${newRes?.error || bookingError || 'Error de servidor'}`);
       setTimeout(() => setFeedbackMessage(''), 4000);
       return;
     }
-    await checkInReservation(newRes.code, entryStayHours);
+    await checkInReservation(newRes.code);
     setFeedbackMessage(`✓ ¡Ingreso directo registrado! Plaza ${slotCode} ocupada por ${plateToUse}.`);
     setEntrySearchQuery('');
     setInspectedSlotCode(null);
@@ -410,8 +396,6 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
       return;
     }
 
-    const rate = Number(activeEstablishment?.rate || 5.0);
-    const totalCost = rate * Number(hours);
     const now = new Date();
 
     const newRes = await createReservation({
@@ -421,11 +405,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
       customerName: customerName.trim() || 'Conductor en Ventanilla',
       customerPhone: customerPhone.trim() || '+51 966 000 000',
       plate: plate.trim().toUpperCase(),
-      hours: Number(hours),
-      rate: rate,
-      totalCost: totalCost,
-      startTime: now.toISOString(),
-      expiresAt: new Date(now.getTime() + Number(hours) * 60 * 60 * 1000).toISOString()
+      startTime: now.toISOString()
     });
 
     if (!newRes) {
@@ -479,6 +459,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
 
   // Calcular progreso de tiempo transcurrido
   const calculateTimeProgress = (startTime, expiresAt) => {
+    if (!expiresAt) return 100;
     const start = parseIsoToDate(startTime).getTime();
     const end = parseIsoToDate(expiresAt).getTime();
     const now = Date.now();
@@ -503,6 +484,12 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
       if (diffMs <= 0) return 'Tolerancia de llegada vencida';
       const mins = Math.max(1, Math.floor(diffMs / 60000));
       return `Llegada: ${mins} min para presentarse`;
+    }
+
+    if (!expiresAt) {
+      const entry = parseIsoToDate(startTime).getTime();
+      const elapsedMins = Math.max(0, Math.floor((now - entry) / 60000));
+      return `En curso: ${Math.floor(elapsedMins / 60)}h ${String(elapsedMins % 60).padStart(2, '0')}m`;
     }
 
     const end = parseIsoToDate(expiresAt).getTime();
@@ -620,10 +607,10 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
         const startDt = parseIsoToDate(activeUserReservation.startTime);
         const arrivalDeadline = new Date(startDt.getTime() + tolMin * 60 * 1000);
         const isToleranceExpired = isScheduled && (currentTime > arrivalDeadline);
-        const remainingText = getRemainingTimeText(activeUserReservation.startTime, activeUserReservation.expiresAt, activeUserReservation.status, tolMin, currentTime);
+        const remainingText = getRemainingTimeText(activeUserReservation.actualEntry || activeUserReservation.startTime, activeUserReservation.expiresAt, activeUserReservation.status, tolMin, currentTime);
         const liveCost = calculateLiveEffectiveCost(activeUserReservation, currentTime);
         const baseCost = Number(activeUserReservation.cost || 0);
-        const isOvertimeActive = isActive && liveCost > baseCost;
+        const isOvertimeActive = isActive && !!activeUserReservation.expiresAt && liveCost > baseCost;
         const overtimeSurcharge = Math.max(0, Number((liveCost - baseCost).toFixed(2)));
         const paidAmount = Number(activeUserReservation.amountPaid ?? activeUserReservation.amount_paid ?? (activeUserReservation.prepaid ? baseCost : 0));
         const pendingOvertimeBalance = Math.max(0, Number((liveCost - paidAmount).toFixed(2)));
@@ -702,15 +689,15 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                 {/* Tiempo / Cuenta Regresiva */}
                 <div className="lg:col-span-3 text-left lg:text-right space-y-1">
                   <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                    {isScheduled ? 'Tiempo para llegar' : isOvertimeActive ? 'Tiempo excedido' : 'Tiempo de estancia'}
+                    {isScheduled ? 'Tiempo para llegar' : 'Tiempo transcurrido'}
                   </span>
                   <span className={`text-base sm:text-lg font-black font-mono block ${isOvertimeActive ? 'text-amber-400' : 'text-emerald-400'}`}>
                     {remainingText}
                   </span>
                   <span className="text-[10px] text-slate-400 block">
-                    {isScheduled 
-                      ? `Tolerancia hasta ${formatTime12h(arrivalDeadline)}` 
-                      : `Salida prevista: ${formatTime12h(activeUserReservation.expiresAt)}`}
+                    {isScheduled
+                      ? `Tolerancia hasta ${formatTime12h(arrivalDeadline)}`
+                      : `Ingreso: ${formatTime12h(activeUserReservation.actualEntry || activeUserReservation.startTime)}`}
                   </span>
                 </div>
               </div>
@@ -903,7 +890,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     if (entryMatch && entryMatch.status === 'SCHEDULED') {
-                      handleQuickCheckIn(entryMatch, entryStayHours);
+                      handleQuickCheckIn(entryMatch);
                     } else if (!entryMatch && cleanEntryQuery.length >= 4) {
                       handleQuickWalkIn(cleanEntryQuery);
                     }
@@ -1007,7 +994,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                         )}
                         <span className="text-slate-400">·</span>
                         <span>Sede: <strong>{entryMatch.parking}</strong></span>
-                        <span>· Horas acordadas: <strong>{entryMatch.hours || 2}h</strong></span>
+                        <span>· Duración: <strong>se mide desde el ingreso</strong></span>
                       </div>
                     </div>
                   </div>
@@ -1016,54 +1003,14 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                   <div className="flex flex-wrap items-center gap-2 self-end lg:self-center">
                     {entryMatch.status === 'SCHEDULED' && (
                       <>
-                        <div className="flex items-center gap-1.5 mr-1">
-                          <span className="text-xs text-slate-500 font-semibold">Estadía:</span>
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 8].map(h => (
-                              <button
-                                key={h}
-                                type="button"
-                                onClick={() => setEntryStayHours(h)}
-                                className={`px-2 py-1 rounded-lg text-xs font-bold font-mono transition-colors cursor-pointer ${
-                                  Number(entryStayHours) === h
-                                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-                                }`}
-                              >
-                                {h}h
-                              </button>
-                            ))}
-                          </div>
-                          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-2 py-1 border border-slate-200 dark:border-slate-700">
-                            <input
-                              type="number"
-                              min="0.5"
-                              max="168"
-                              step="0.5"
-                              value={entryStayHours}
-                              onChange={e => {
-                                const val = e.target.value;
-                                if (val === '') setEntryStayHours('');
-                                else setEntryStayHours(parseFloat(val) || '');
-                              }}
-                              onBlur={() => {
-                                if (!entryStayHours || Number(entryStayHours) < 0.5) setEntryStayHours(2);
-                              }}
-                              className="w-10 text-center font-mono font-bold text-xs bg-transparent outline-none text-slate-900 dark:text-white"
-                              title="Ingresar cualquier número de horas"
-                            />
-                            <span className="text-[10px] font-mono text-slate-400">h</span>
-                          </div>
-                        </div>
-
                         <Button
                           type="button"
                           disabled={isProcessingCheckIn}
-                          onClick={() => handleQuickCheckIn(entryMatch, entryStayHours)}
+                          onClick={() => handleQuickCheckIn(entryMatch)}
                           className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs h-10 px-4 rounded-xl gap-2 shadow-sm cursor-pointer"
                         >
                           <LogIn className="w-4 h-4" />
-                          <span>Registrar Ingreso ({entryStayHours || 1}h)</span>
+                          <span>Registrar Ingreso e Iniciar Reloj</span>
                         </Button>
                       </>
                     )}
@@ -1156,17 +1103,11 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                     const mins = Math.max(0, Math.round((Date.now() - startDt.getTime()) / 60000));
                     const hoursElapsed = Math.floor(mins / 60);
                     const minsRemainder = mins % 60;
-                    const bookedHours = Number(v.hours) || 2;
-                    const isOverdue = mins > (bookedHours * 60);
 
                     return (
                       <div
                         key={v.code}
-                        className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                          isOverdue 
-                            ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50' 
-                            : 'bg-slate-50/70 dark:bg-slate-800/50 border-slate-200/80 dark:border-slate-700/80'
-                        }`}
+                        className="p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-800/50 border-slate-200/80 dark:border-slate-700/80"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-slate-900 dark:bg-slate-800 text-white font-mono font-black flex flex-col items-center justify-center shrink-0 border border-slate-700">
@@ -1179,11 +1120,9 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                               <span className="font-mono font-black text-sm text-slate-900 dark:text-white">
                                 {v.plate}
                               </span>
-                              {isOverdue && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/80 px-1.5 py-0.5 rounded">
-                                  <AlertTriangle className="w-3 h-3" /> Exceso de tiempo
-                                </span>
-                              )}
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded">
+                                <Timer className="w-3 h-3" /> En curso
+                              </span>
                             </div>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
                               <span>Ingresó: {formatTime12h(v.startTime)}</span>
@@ -1446,12 +1385,10 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                             <span className="font-mono text-slate-700 dark:text-slate-300">{formatTime12h(slotRes.startTime)}</span>
                           </div>
                         )}
-                        {slotRes?.expiresAt && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Salida estimada:</span>
-                            <span className="font-mono text-slate-700 dark:text-slate-300">{formatTime12h(slotRes.expiresAt)}</span>
-                          </div>
-                        )}
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Permanencia:</span>
+                          <span className="font-mono text-emerald-700 dark:text-emerald-300">Reloj activo</span>
+                        </div>
 
                         <Button
                           type="button"
@@ -1800,11 +1737,11 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
             const arrivalDeadline = new Date(startDt.getTime() + tolMin * 60 * 1000);
             const isToleranceExpired = isScheduled && (currentTime > arrivalDeadline);
             const progress = calculateTimeProgress(res.startTime, res.expiresAt);
-            const remainingText = getRemainingTimeText(res.startTime, res.expiresAt, res.status, tolMin, currentTime);
+            const remainingText = getRemainingTimeText(res.actualEntry || res.startTime, res.expiresAt, res.status, tolMin, currentTime);
 
             const liveCost = calculateLiveEffectiveCost(res, currentTime);
             const baseCost = Number(res.cost || 0);
-            const isOvertimeActive = isActive && liveCost > baseCost;
+            const isOvertimeActive = isActive && !!res.expiresAt && liveCost > baseCost;
             const overtimeSurcharge = Math.max(0, Number((liveCost - baseCost).toFixed(2)));
             const paidAmount = Number(res.amountPaid ?? res.amount_paid ?? (res.prepaid ? baseCost : 0));
             const pendingOvertimeBalance = Math.max(0, Number((liveCost - paidAmount).toFixed(2)));
@@ -1899,7 +1836,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                               <Clock className="w-3.5 h-3.5 shrink-0" />
                               <span>Llegada máx: {formatTime12h(new Date(parseIsoToDate(res.startTime).getTime() + tolMin * 60 * 1000))}</span>
                               <span className="text-[11px] text-slate-400 font-sans font-normal">
-                                ({tolMin} min tol · Estancia: {res.hours || 2}h)
+                                ({tolMin} min de tolerancia configurada)
                               </span>
                             </span>
                           )}
@@ -1908,16 +1845,14 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                             <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium font-mono">
                               <Clock className="w-3.5 h-3.5 shrink-0" />
                               <span>Ingresó: {res.actualEntry ? formatTime12h(res.actualEntry) : formatTime12h(res.startTime)}</span>
-                              <span className="text-slate-400 font-sans font-normal">
-                                · Salida prevista: {formatTime12h(res.expiresAt)} ({res.hours || 2}h)
-                              </span>
+                              <span className="text-slate-400 font-sans font-normal">· Reloj de permanencia activo</span>
                             </span>
                           )}
 
                           {isCancelled && (
                             <span className="inline-flex items-center gap-1 text-rose-500 dark:text-rose-400 font-medium font-mono">
                               <Clock className="w-3.5 h-3.5 shrink-0" />
-                              <span>Programada: {formatTime12h(res.startTime)} ({res.hours || 2}h)</span>
+                              <span>Programada: {formatTime12h(res.startTime)}</span>
                               <span className="text-[11px] text-rose-500/80 font-sans font-normal">
                                 · Cancelada: tolerancia de {tolMin} min venció a las {formatTime12h(new Date(parseIsoToDate(res.startTime).getTime() + tolMin * 60 * 1000))}
                               </span>
@@ -1927,7 +1862,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                           {isCompleted && (
                             <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-400 font-medium font-mono">
                               <Clock className="w-3.5 h-3.5 shrink-0" />
-                              <span>{res.actualEntry ? formatTime12h(res.actualEntry) : formatTime12h(res.startTime)} a {res.actualExit ? formatTime12h(res.actualExit) : formatTime12h(res.expiresAt)} ({res.hours || 2}h)</span>
+                              <span>{res.actualEntry ? formatTime12h(res.actualEntry) : formatTime12h(res.startTime)} a {res.actualExit ? formatTime12h(res.actualExit) : 'salida no registrada'}{res.hours ? ` (${res.hours}h reales)` : ''}</span>
                             </span>
                           )}
                         </div>
@@ -1989,7 +1924,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                         <Button
                           onClick={() => {
                             setCheckInTarget(res);
-                            setCheckInHours(Number(res.hours) || 2);
+                            setCheckInHours(Number(res.estimatedHours) || 2);
                           }}
                           size="sm"
                           className="rounded-lg text-xs font-bold gap-1 bg-emerald-600 hover:bg-emerald-500 text-white h-8 px-2.5 cursor-pointer shadow-xs"
@@ -2286,7 +2221,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                 )}
               </div>
 
-              {/* Placa y Horas */}
+              {/* Placa y regla de permanencia */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Placa del Vehículo *</label>
@@ -2300,21 +2235,9 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                   />
                 </div>
 
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Tiempo de Permanencia</label>
-                  <select
-                    value={hours}
-                    onChange={(e) => setHours(Number(e.target.value))}
-                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
-                  >
-                    <option value={1}>1 Hora</option>
-                    <option value={2}>2 Horas</option>
-                    <option value={3}>3 Horas</option>
-                    <option value={4}>4 Horas</option>
-                    <option value={8}>8 Horas (Turno)</option>
-                    <option value={12}>12 Horas</option>
-                    <option value={24}>24 Horas (Día completo)</option>
-                  </select>
+                <div className="rounded-xl border border-cyan-200 dark:border-cyan-900/60 bg-cyan-50 dark:bg-cyan-950/20 px-3 py-2">
+                  <span className="text-xs font-bold text-cyan-900 dark:text-cyan-200 block">Permanencia abierta</span>
+                  <span className="text-[11px] text-cyan-700 dark:text-cyan-300">El reloj inicia cuando garita registra el ingreso y termina al registrar la salida.</span>
                 </div>
               </div>
 
@@ -2343,12 +2266,10 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                 </div>
               </div>
 
-              {/* Total a Cobrar */}
+              {/* Cobro al finalizar */}
               <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between text-xs font-bold text-emerald-950">
-                <span>Total a Cobrar:</span>
-                <span className="text-lg font-black text-emerald-700 font-mono">
-                  S/ {(Number(activeEstablishment?.rate || 5) * hours).toFixed(2)}
-                </span>
+                <span>Importe:</span>
+                <span className="text-sm font-black text-emerald-700">Se calcula con el tiempo real al salir</span>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -2437,12 +2358,8 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                   <span className="text-slate-800">{formatTime12h(selectedReceipt.startTime)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Salida estimada:</span>
-                  <span className="text-slate-800">{formatTime12h(selectedReceipt.expiresAt)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Horas:</span>
-                  <span className="text-slate-800">{selectedReceipt.hours} hora(s)</span>
+                  <span className="text-slate-500">Salida real:</span>
+                  <span className="text-slate-800">{selectedReceipt.actualExit ? formatTime12h(selectedReceipt.actualExit) : 'Aún en curso'}</span>
                 </div>
                 <div className="h-px bg-slate-200 my-1" />
                 <div className="flex justify-between text-sm font-black text-slate-900">
@@ -2564,7 +2481,7 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
         }}
       />
 
-      {/* Diálogo de Registro de Ingreso en Garita (Horas de Estadía) */}
+      {/* Diálogo de Registro de Ingreso en Garita */}
       <Dialog open={!!checkInTarget} onOpenChange={(open) => !open && setCheckInTarget(null)}>
         <DialogContent className="sm:max-w-md bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl text-slate-900 dark:text-white">
           <DialogHeader>
@@ -2573,7 +2490,7 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
               <span>Confirmar Ingreso</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Registra el ingreso del vehículo y define las horas de estadía.
+              Registra la hora real de ingreso y la permanencia indicada por el conductor en garita.
             </DialogDescription>
           </DialogHeader>
 
@@ -2591,39 +2508,33 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                  Horas de estadía:
-                </label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Tiempo de estadía registrado por garita</label>
                 <div className="grid grid-cols-4 gap-2 mb-2">
                   {[1, 2, 3, 4].map(h => (
                     <button
                       key={h}
                       type="button"
                       onClick={() => setCheckInHours(h)}
-                      className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                        checkInHours === h
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                      }`}
+                      className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${checkInHours === h
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                     >
-                      {h} {h === 1 ? 'hora' : 'horas'}
+                      {h}h
                     </button>
                   ))}
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Personalizado:</span>
-                  <div className="flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2 h-9">
-                    <input
-                      type="number"
-                      min="1"
-                      max="48"
-                      value={checkInHours}
-                      onChange={(e) => setCheckInHours(Math.max(1, Number(e.target.value) || 1))}
-                      className="w-16 bg-transparent text-xs font-mono font-bold text-slate-800 dark:text-white outline-none text-center"
-                    />
-                    <span className="text-xs text-slate-500 dark:text-slate-400">horas</span>
-                  </div>
+                <div className="flex items-center gap-2 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50 dark:bg-emerald-950/20 p-3 text-xs text-emerald-800 dark:text-emerald-200">
+                  <span>Personalizado:</span>
+                  <input
+                    type="number"
+                    min="0.5"
+                    max="168"
+                    step="0.5"
+                    value={checkInHours}
+                    onChange={(e) => setCheckInHours(Math.max(0.5, Number(e.target.value) || 0.5))}
+                    className="w-20 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-slate-900 px-2 py-1 font-mono font-bold outline-none"
+                  />
+                  <span>horas</span>
                 </div>
               </div>
 
@@ -2653,7 +2564,7 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
                   className="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl gap-1.5 cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5" />
-                  <span>Ingreso ({checkInHours}h)</span>
+                  <span>Confirmar ingreso ({checkInHours}h)</span>
                 </Button>
               </div>
             </div>

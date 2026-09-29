@@ -211,7 +211,9 @@ class Reservation(Base):
     slot_id = Column(Integer, ForeignKey("plazas.id"), nullable=False)
     license_plate = Column(String(20), nullable=False)
     start_time = Column(DateTime, nullable=False)
-    end_time = Column(DateTime, nullable=False)
+    # Las reservas normales no tienen una salida prevista: la permanencia se
+    # mide entre actual_entry y actual_exit. Solo abonos/legado pueden traer fin.
+    end_time = Column(DateTime, nullable=True)
     actual_entry = Column(DateTime, nullable=True)
     actual_exit = Column(DateTime, nullable=True)
     total_cost = Column(Float, nullable=False)
@@ -219,8 +221,8 @@ class Reservation(Base):
     qr_code = Column(String(255), nullable=False)
     tolerance_minutes = Column(Integer, default=15, nullable=True)
     vehicle_type = Column(String(20), default="auto", nullable=True)
-    estimated_hours = Column(Integer, default=1, nullable=True)
-    estimated_minutes = Column(Integer, default=60, nullable=True)
+    estimated_hours = Column(Float, default=None, nullable=True)
+    estimated_minutes = Column(Integer, default=None, nullable=True)
     billing_unit = Column(String(20), default="hour", nullable=True)
     is_night_shift = Column(Boolean, default=False, nullable=True)
     prepaid = Column(Boolean, default=False, nullable=True)

@@ -107,17 +107,14 @@ export const ANPRMonitor = () => {
   const [entryPlate, setEntryPlate] = useState('');
   const [entryName, setEntryName] = useState('');
   const [entrySlot, setEntrySlot] = useState('');
-  const [entryMode, setEntryMode] = useState('free'); // 'free' | 'hours'
-  const [entryPresetHours, setEntryPresetHours] = useState(2);
-  const [entryCustomHours, setEntryCustomHours] = useState(3);
   const [entryTime, setEntryTime] = useState(() => getCurrentTimeStr());
+  const [entryHours, setEntryHours] = useState(2);
 
   // Modal de edición de estadía en cochera
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [editTime, setEditTime] = useState('');
-  const [editStayMode, setEditStayMode] = useState('free');
-  const [editHours, setEditHours] = useState(2);
   const [editSlot, setEditSlot] = useState('');
+  const [editHours, setEditHours] = useState(2);
 
   // Salida manual
   const [exitPlate, setExitPlate] = useState('');
@@ -209,7 +206,7 @@ export const ANPRMonitor = () => {
       rate: r.ratePerHour || currentEst?.rate || 5.0, 
       token: r.token,
       isOpenStay: !!(r.isOpenStay ?? r.is_open_stay),
-      hours: r.hours || r.estimated_hours || (r.is_open_stay ? 0 : 2)
+      hours: Number(r.hours || r.estimatedHours || r.estimated_hours || 0) || null
     }));
     const activeWalkIns = walkInTickets.filter(t => String(t.estId) === String(selectedEstId) && t.status === 'ACTIVE').map(t => ({ 
       source: 'WALK_IN', 
@@ -223,7 +220,7 @@ export const ANPRMonitor = () => {
       rate: t.rate || currentEst?.rate || 5.0, 
       token: t.ticketNumber,
       isOpenStay: !!t.isOpenStay,
-      hours: t.hours || (t.isOpenStay ? 0 : 2)
+      hours: Number(t.hours || 0) || null
     }));
     return [...activeRes, ...activeWalkIns];
   }, [reservations, walkInTickets, selectedEstId, currentEst]);
@@ -262,55 +259,45 @@ export const ANPRMonitor = () => {
         }
       }
 
-      // 2. Determinar si es Tiempo Libre o cantidad de horas
-      const isOpenStay = entryMode === 'free';
-      const effectiveHours = isOpenStay
-        ? 24 // ventana de reserva abierta para la sede
-        : (entryPresetHours === 'custom' ? Math.max(0.5, Number(entryCustomHours) || 1) : Number(entryPresetHours || 2));
-
       const normalized = normalizarPlaca(plate);
       const matched = reservations.find(r => String(r.parkingId) === String(selectedEstId) && normalizarPlaca(r.plate) === normalized && (r.status === 'SCHEDULED' || r.status === 'ACTIVE' || !r.status));
       
       if (matched) {
         const targetSlot = matched.slot || entrySlot;
-        await checkInReservation(matched.code, isOpenStay ? null : effectiveHours);
+        await checkInReservation(matched.code, entryHours);
         if (entryTime) {
           await updateStayReservation(matched.id || matched.code, {
             actual_entry: targetEntryDate.toISOString(),
-            hours_stay: isOpenStay ? 0 : effectiveHours,
-            is_open_stay: isOpenStay,
+            hours_stay: entryHours,
             slot_code: targetSlot
           });
         }
         occupySlot(selectedEstId, targetSlot, plate);
-        const stayDesc = isOpenStay ? 'Tiempo libre' : `${effectiveHours}h`;
         const timeStr = targetEntryDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-        setFormResult({ matched: true, message: `Ingreso registrado. Reserva ${matched.code} en cajón ${targetSlot} (${stayDesc}, Entrada: ${timeStr}).` });
-        addAuditLog({ type: 'GARITA', action: 'INGRESO_RESERVA', plate, slot: targetSlot, status: 'ACTIVO', detail: `Reserva ${matched.code} con check-in manual (${stayDesc}).` });
+        setFormResult({ matched: true, message: `Ingreso registrado. Reserva ${matched.code} en cajón ${targetSlot}. El reloj inició a las ${timeStr}.` });
+        addAuditLog({ type: 'GARITA', action: 'INGRESO_RESERVA', plate, slot: targetSlot, status: 'ACTIVO', detail: `Reserva ${matched.code} con ingreso a las ${timeStr}.` });
       } else {
         const res = await createReservation({
           parkingId: currentEst.id,
           slotCode: entrySlot,
           plate,
-          hours: effectiveHours,
-          isOpenStay,
-          is_open_stay: isOpenStay,
+          hours: null,
+          isOpenStay: true,
+          is_open_stay: true,
           startTime: targetEntryDate.toISOString(),
-          expiresAt: new Date(targetEntryDate.getTime() + effectiveHours * 3600000).toISOString()
+          expiresAt: null
         });
         if (res && !res.error && res.code) {
-          await checkInReservation(res.code, isOpenStay ? null : effectiveHours);
+          await checkInReservation(res.code, entryHours);
           if (entryTime) {
             await updateStayReservation(res.id || res.code, {
               actual_entry: targetEntryDate.toISOString(),
-              hours_stay: isOpenStay ? 0 : effectiveHours,
-              is_open_stay: isOpenStay
+              hours_stay: entryHours
             });
           }
-          const stayDesc = isOpenStay ? 'Tiempo libre' : `${effectiveHours}h`;
           const timeStr = targetEntryDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-          setFormResult({ matched: true, message: `Ingreso registrado. Ticket ${res.code} en cajón ${entrySlot} (${stayDesc}, Entrada: ${timeStr}).` });
-          addAuditLog({ type: 'GARITA', action: 'INGRESO_MANUAL', plate, slot: entrySlot, status: 'ACTIVO', detail: `Ticket ${res.code} creado en garita (${stayDesc}, Entrada: ${timeStr}).` });
+          setFormResult({ matched: true, message: `Ingreso registrado. Ticket ${res.code} en cajón ${entrySlot}. El reloj inició a las ${timeStr}.` });
+          addAuditLog({ type: 'GARITA', action: 'INGRESO_MANUAL', plate, slot: entrySlot, status: 'ACTIVO', detail: `Ticket ${res.code} creado con ingreso a las ${timeStr}.` });
         } else {
           setFormResult({ matched: false, message: `No se pudo registrar el ingreso: ${res?.error || 'Cajón no disponible.'}` });
         }
@@ -329,15 +316,7 @@ export const ANPRMonitor = () => {
     const entryD = new Date(vehicle.entryTime);
     setEditTime(`${String(entryD.getHours()).padStart(2, '0')}:${String(entryD.getMinutes()).padStart(2, '0')}`);
     setEditSlot(vehicle.slot);
-    if (vehicle.isOpenStay || !vehicle.hours || vehicle.hours === 0) {
-      setEditStayMode('free');
-      setEditHours(2);
-    } else {
-      const h = Number(vehicle.hours);
-      const isPreset = [1, 2, 3, 4, 6, 8, 12, 24].includes(h);
-      setEditStayMode(isPreset ? String(h) : 'custom');
-      setEditHours(h);
-    }
+    setEditHours(Number(vehicle.hours) || 2);
   };
 
   const handleSaveEditStay = async () => {
@@ -353,14 +332,10 @@ export const ANPRMonitor = () => {
         }
       }
 
-      const isOpenStay = editStayMode === 'free';
-      const effectiveHours = isOpenStay ? 0 : Number(editHours || 2);
-
       if (editingVehicle.source === 'RESERVATION') {
         const res = await updateStayReservation(editingVehicle.id, {
           actual_entry: newEntryDate.toISOString(),
-          hours_stay: effectiveHours,
-          is_open_stay: isOpenStay,
+          hours_stay: editHours,
           slot_code: editSlot
         });
         if (!res.ok) {
@@ -376,8 +351,8 @@ export const ANPRMonitor = () => {
               ...t,
               entryTime: newEntryDate.toISOString(),
               slot: editSlot,
-              hours: effectiveHours,
-              isOpenStay
+              hours: editHours,
+              isOpenStay: false
             };
           }
           return t;
@@ -390,15 +365,14 @@ export const ANPRMonitor = () => {
       }
 
       const timeFormatted = newEntryDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-      const stayDesc = isOpenStay ? 'Tiempo libre' : `${effectiveHours}h`;
-      setFormResult({ matched: true, message: `Estadía de ${editingVehicle.plate} actualizada: Entrada ${timeFormatted}, ${stayDesc}, Cajón ${editSlot}.` });
+      setFormResult({ matched: true, message: `Ingreso de ${editingVehicle.plate} actualizado: ${timeFormatted}, cajón ${editSlot}.` });
       addAuditLog({
         type: 'GARITA',
         action: 'EDICION_ESTADIA',
         plate: editingVehicle.plate,
         slot: editSlot,
         status: 'ACTIVO',
-        detail: `Hora de entrada corregida a ${timeFormatted}, ${stayDesc}.`
+        detail: `Hora de entrada corregida a ${timeFormatted}.`
       });
 
       setEditingVehicle(null);
@@ -667,74 +641,34 @@ export const ANPRMonitor = () => {
             )}
           </div>
 
-          {/* Fila 3: Modalidad de Estadía & Hora de Ingreso */}
+          {/* Fila 3: Permanencia registrada por garita & Hora de Ingreso */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start pt-2 border-t border-slate-100 dark:border-slate-800">
-            {/* Modalidad de Estadía */}
             <div className="md:col-span-8 space-y-2.5">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block">
-                Modalidad de estadía
+                Tiempo de estadía indicado en garita
               </label>
-              
-              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#0B0F19] rounded-xl border border-slate-200 dark:border-slate-800 max-w-sm">
-                <button
-                  type="button"
-                  onClick={() => setEntryMode('free')}
-                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all ${entryMode === 'free' ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 shadow-sm border border-slate-200/60 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
-                >
-                  Tiempo Libre
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEntryMode('hours')}
-                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all ${entryMode === 'hours' ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 shadow-sm border border-slate-200/60 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
-                >
-                  Por Horas
-                </button>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 3, 4, 8].map(h => (
+                  <button
+                    key={h}
+                    type="button"
+                    onClick={() => setEntryHours(h)}
+                    className={`h-10 min-w-12 rounded-xl border px-3 text-xs font-mono font-bold transition-colors ${entryHours === h ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 dark:bg-[#0B0F19] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                  >
+                    {h}h
+                  </button>
+                ))}
+                <Input
+                  type="number"
+                  min="0.5"
+                  max="168"
+                  step="0.5"
+                  value={entryHours}
+                  onChange={e => setEntryHours(Math.max(0.5, Number(e.target.value) || 0.5))}
+                  className="h-10 w-24 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border-slate-200 dark:border-slate-700 dark:text-slate-100 font-mono font-bold text-center"
+                  aria-label="Horas de estadía"
+                />
               </div>
-
-              {entryMode === 'free' ? (
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Estadía abierta. El importe se calcula al registrar la salida según el tiempo transcurrido.
-                </p>
-              ) : (
-                <div className="space-y-2 pt-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {[1, 2, 3, 4, 6, 8, 12, 24].map(h => (
-                      <button
-                        key={h}
-                        type="button"
-                        onClick={() => setEntryPresetHours(h)}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors ${entryPresetHours === h ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-[#0B0F19] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
-                      >
-                        {h}h
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => setEntryPresetHours('custom')}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors ${entryPresetHours === 'custom' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-[#0B0F19] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
-                    >
-                      Personalizado
-                    </button>
-                  </div>
-
-                  {entryPresetHours === 'custom' && (
-                    <div className="flex items-center gap-2 pt-1">
-                      <Input
-                        type="number"
-                        step="0.5"
-                        min="0.5"
-                        max="720"
-                        value={entryCustomHours}
-                        onChange={e => setEntryCustomHours(e.target.value)}
-                        placeholder="Ej. 1.5, 3"
-                        className="h-10 w-28 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border-slate-200 dark:border-slate-700 dark:text-slate-100 font-bold text-center"
-                      />
-                      <span className="text-xs text-slate-500 font-medium">horas estimadas</span>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Hora de Ingreso */}
@@ -879,8 +813,8 @@ export const ANPRMonitor = () => {
                       </td>
                       <td className="px-3 py-2 font-mono text-slate-600 dark:text-slate-400">
                         <div>{entry.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</div>
-                        <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5 ${v.isOpenStay ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-                          {v.isOpenStay ? 'Libre' : `${v.hours || 1}h est.`}
+                        <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
+                          Reloj activo
                         </span>
                       </td>
                       <td className="px-3 py-2 font-mono font-black text-slate-900 dark:text-slate-100">{elapsedLabel(v.entryTime)}</td>
@@ -946,7 +880,7 @@ export const ANPRMonitor = () => {
               Editar Estadía • {editingVehicle?.plate}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Modifica la hora de ingreso real, el cajón o el régimen de tiempo para este vehículo.
+              Corrige la hora de ingreso real o el cajón asignado. La duración se obtiene al registrar la salida.
             </DialogDescription>
           </DialogHeader>
 
@@ -971,27 +905,23 @@ export const ANPRMonitor = () => {
               <p className="text-[10px] text-slate-400 mt-1">Si el auto ingresó antes de registrarlo, ajusta aquí su hora de llegada real.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Régimen</label>
-                <select
-                  value={editStayMode}
-                  onChange={e => setEditStayMode(e.target.value)}
-                  className="h-10 w-full px-3 bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100"
-                >
-                  <option value="free">Tiempo Libre (al salir)</option>
-                  <option value="1">1 hora</option>
-                  <option value="2">2 horas</option>
-                  <option value="3">3 horas</option>
-                  <option value="4">4 horas</option>
-                  <option value="6">6 horas</option>
-                  <option value="8">8 horas</option>
-                  <option value="12">12 horas</option>
-                  <option value="24">24 horas</option>
-                  <option value="custom">Personalizado...</option>
-                </select>
+            <div>
+              <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Tiempo de estadía registrado</label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="0.5"
+                  max="168"
+                  step="0.5"
+                  value={editHours}
+                  onChange={e => setEditHours(Math.max(0.5, Number(e.target.value) || 0.5))}
+                  className="h-10 w-28 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100 font-mono font-bold text-center"
+                />
+                <span className="text-xs text-slate-500 dark:text-slate-400">horas</span>
               </div>
+            </div>
 
+            <div>
               <div>
                 <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Cajón</label>
                 <select
@@ -1006,22 +936,6 @@ export const ANPRMonitor = () => {
                 </select>
               </div>
             </div>
-
-            {editStayMode === 'custom' && (
-              <div>
-                <label className="text-xs font-black text-slate-700 dark:text-slate-200 block mb-1">Horas estimadas</label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0.5"
-                  max="720"
-                  value={editHours}
-                  onChange={e => setEditHours(e.target.value)}
-                  placeholder="Ej. 1.5, 3"
-                  className="h-10 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100 font-bold text-sm"
-                />
-              </div>
-            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">

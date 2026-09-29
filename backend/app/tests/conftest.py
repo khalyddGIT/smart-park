@@ -95,6 +95,12 @@ def _ensure_schema():
                     await conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col} {decl}"))
                 except Exception:
                     pass
+            # Las reservas normales no conocen la hora de salida hasta que el
+            # trabajador registra el check-out.
+            await conn.execute(text("ALTER TABLE reservas ALTER COLUMN end_time DROP NOT NULL"))
+            await conn.execute(text("ALTER TABLE reservas ALTER COLUMN estimated_hours TYPE DOUBLE PRECISION USING estimated_hours::double precision"))
+            await conn.execute(text("ALTER TABLE reservas ALTER COLUMN estimated_hours DROP DEFAULT"))
+            await conn.execute(text("ALTER TABLE reservas ALTER COLUMN estimated_minutes DROP DEFAULT"))
 
         # Seed parkings y usuarios iniciales para pruebas
         from app.db.session import AsyncSessionLocal

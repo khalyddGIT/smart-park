@@ -61,7 +61,6 @@ export const MoreReservationsModal = ({
     return d.toISOString().split('T')[0];
   });
   const [advanceTime, setAdvanceTime] = useState('09:00');
-  const [advanceHours, setAdvanceHours] = useState(2);
 
   // Estado de envío y error
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -199,7 +198,8 @@ export const MoreReservationsModal = ({
     return Number((dailyRate * subDays).toFixed(2));
   }, [dailyRate, subDays]);
 
-  const totalAdvanceCost = currentHourlyRate * advanceHours;
+  const reservationFee = Number(parking?.reservation_fee || 0);
+  const advanceGuarantee = reservationFee > 0 ? reservationFee : currentHourlyRate;
 
   // Asignación de plaza compatible
   const assignedSlot = useMemo(() => {
@@ -281,7 +281,6 @@ export const MoreReservationsModal = ({
         const [ay, am, ad] = advanceDate.split('-').map(Number);
         const [ah, amnt] = advanceTime.split(':').map(Number);
         const scheduledStart = new Date(ay, am - 1, ad, ah, amnt, 0);
-        const scheduledEnd = new Date(scheduledStart.getTime() + (advanceHours * 60 * 60 * 1000));
 
         await onConfirmBooking({
           parkingId: parking.id,
@@ -294,10 +293,10 @@ export const MoreReservationsModal = ({
           reservationType: 'advance',
           isSubscription: false,
           startTime: scheduledStart.toISOString(),
-          expiresAt: scheduledEnd.toISOString(),
-          hours: advanceHours,
-          estimatedHours: advanceHours,
-          totalCost: totalAdvanceCost,
+          expiresAt: null,
+          hours: null,
+          estimatedHours: null,
+          totalCost: parking.require_reservation_prepay ? advanceGuarantee : reservationFee,
           toleranceMinutes: tolerance,
           payNow: !!parking.require_reservation_prepay,
           bookingModel: 'advance_booking',
@@ -708,28 +707,9 @@ export const MoreReservationsModal = ({
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Estadía planificada:</span>
-                  <span className="text-xs font-mono font-bold text-sky-600 dark:text-sky-400">{advanceHours} horas</span>
-                </div>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-1">
-                  {[1, 2, 3, 4, 6, 8, 12, 24].map((h) => (
-                    <button
-                      key={h}
-                      type="button"
-                      onClick={() => setAdvanceHours(h)}
-                      className={`py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer border ${
-                        advanceHours === h
-                          ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-slate-800'
-                      }`}
-                    >
-                      {h}h
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                La duración no se programa. El personal iniciará el reloj al registrar el ingreso y lo cerrará al registrar la salida.
+              </p>
             </div>
           )}
 
@@ -777,12 +757,9 @@ export const MoreReservationsModal = ({
                     {advanceDate} {advanceTime}
                   </span>
                 </div>
-                <div className="h-px bg-slate-200 dark:bg-slate-800 my-1" />
-                <div className="flex items-center justify-between text-sm font-bold text-slate-900 dark:text-white">
-                  <span>Total Estimado:</span>
-                  <span className="font-mono text-sky-600 dark:text-sky-400 text-base">
-                    S/ {totalAdvanceCost.toFixed(2)}
-                  </span>
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                  <span>Cobro de estadía:</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">Según tiempo real al salir</span>
                 </div>
               </>
             )}

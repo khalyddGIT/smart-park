@@ -277,15 +277,6 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const [collisionAlert, setCollisionAlert] = useState(null);
 
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [hours, setHours] = useState(null);
-  const [stayMinutes, setStayMinutes] = useState(null);
-  const [etaMinutes, setEtaMinutes] = useState(null);
-
-  useEffect(() => {
-    setEtaMinutes(null);
-    setHours(null);
-    setStayMinutes(null);
-  }, [parking?.id]);
 
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
@@ -294,7 +285,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const [customPlateInput, setCustomPlateInput] = useState('');
 
   // Modalidad comercial
-  const [bookingModel, setBookingModel] = useState('postpaid');
+  const bookingModel = 'postpaid';
   const [vehicleCategory, setVehicleCategory] = useState('auto');
   
   // Modalidad de Reserva para el plano CAD (inmediata)
@@ -826,57 +817,23 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const nightMinuteSurcharge = nightSurcharge / 60.0;
   const reservationFee = Number(parking?.reservation_fee || 0);
 
-  const effectiveHourlyRate = categoryHourlyRate + nightSurcharge;
-  const effectiveMinuteRate = categoryMinuteRate + nightMinuteSurcharge;
-
-  const minStayMin = Number(parking?.min_stay_minutes || 15);
-  const maxStayMin = Number(parking?.max_stay_minutes || 1440);
-
-  const minStay = Number(parking?.min_stay_hours || 1);
-  const maxStay = Number(parking?.max_stay_hours || 24);
-
-  const hasSelectedDuration = isMinuteBilling
-    ? Number(stayMinutes) >= minStayMin && Number(stayMinutes) <= maxStayMin
-    : Number(hours) >= minStay && Number(hours) <= maxStay;
-
-  const actualStayMinutes = hasSelectedDuration
-    ? (isMinuteBilling ? Number(stayMinutes) : Number(hours) * 60)
-    : 0;
-
-  const stayHours = isMinuteBilling
-    ? Number((actualStayMinutes / 60).toFixed(2))
-    : (hasSelectedDuration ? Number(hours) : 0);
-
-  const rawCost = isMinuteBilling
-    ? (effectiveMinuteRate * actualStayMinutes) + reservationFee
-    : (effectiveHourlyRate * stayHours) + reservationFee;
-
-  const discountRate = bookingModel === 'prepaid_discount' ? 0.10 : 0.0;
-  const discountAmount = rawCost * discountRate;
-  const finalTotalCost = Math.max(0, rawCost - discountAmount);
-  
-  const subtotalBase = finalTotalCost / 1.18;
-  const igvAmount = finalTotalCost - subtotalBase;
+  const reservationGuarantee = reservationFee > 0
+    ? reservationFee
+    : (isMinuteBilling ? categoryMinuteRate : categoryHourlyRate);
 
   const isMaintenance = (parking?.status || '').toLowerCase() === 'mantenimiento' || (parking?.status || '').toLowerCase() === 'maintenance';
   const isClosed = (parking?.status || '').toLowerCase() === 'cerrado' || (parking?.status || '').toLowerCase() === 'closed';
   const isUnavailable = isMaintenance || isClosed;
 
   const officialTolerance = Number(parking?.tolerance ?? parking?.tolerance_minutes ?? 15);
-  const isOpenStayMode = parking?.allow_open_stay !== false;
-
-  const hasSelectedArrival = Number.isFinite(Number(etaMinutes)) && etaMinutes !== null;
-  const canReserve = !isUnavailable && planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && slotMatchesVehicle(selectedSlot.slotType, vehicleCategory) && isPlateValid && hasSelectedArrival && hasSelectedDuration;
+  const canReserve = !isUnavailable && planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && slotMatchesVehicle(selectedSlot.slotType, vehicleCategory) && isPlateValid;
 
   const handleExecuteBooking = () => {
     if (!canReserve) return;
     const now = new Date();
     const chosenTolerance = officialTolerance;
-    const chosenEta = Number(etaMinutes);
-    
-    const start = new Date(now.getTime() + chosenEta * 60 * 1000);
-    const end = new Date(start.getTime() + actualStayMinutes * 60 * 1000);
-    const calculatedCost = Number(finalTotalCost.toFixed(2));
+    const start = now;
+    const calculatedCost = parking?.require_reservation_prepay ? Number(reservationGuarantee.toFixed(2)) : reservationFee;
     const paymentMethodVal = parking?.require_reservation_prepay ? 'tarjeta' : 'efectivo';
 
     const bookingPayload = {
@@ -887,18 +844,18 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       vehicleType: vehicleCategory,
       parkingId: numericParkingId,
       parkingName: parking?.name || 'Smart Park Central',
-      hours: stayHours,
-      estimatedHours: stayHours,
-      isOpenStay: isOpenStayMode,
-      is_open_stay: isOpenStayMode,
+      hours: null,
+      estimatedHours: null,
+      isOpenStay: true,
+      is_open_stay: true,
       billingUnit: isMinuteBilling ? 'minute' : 'hour',
-      estimatedMinutes: actualStayMinutes,
+      estimatedMinutes: null,
       isNightShift: isNightShiftActive,
       nightSurcharge: isMinuteBilling ? nightMinuteSurcharge : nightSurcharge,
       reservationFee,
       prepaid: false,
-      etaMinutes: chosenEta,
-      arrivalWindow: chosenEta,
+      etaMinutes: 0,
+      arrivalWindow: chosenTolerance,
       toleranceMinutes: chosenTolerance,
       plate: effectivePlate.split(' ')[0],
       rawCost: calculatedCost,
@@ -909,7 +866,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
       code: `RSV-${Date.now().toString().slice(-6)}`,
       token: `SPK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
       startTime: start,
-      expiresAt: end,
+      expiresAt: null,
       payNow: !!parking?.require_reservation_prepay,
       paymentMethod: paymentMethodVal,
       reservationType: 'immediate',
@@ -1521,36 +1478,18 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               )}
             </div>
 
-            {/* La llegada y la estadía son decisiones independientes. */}
+            {/* La llegada la gobierna la regla configurada por el administrador. */}
             {reservationType === 'immediate' && (
               <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                     <Navigation className="w-3.5 h-3.5 text-sky-400" />
-                    ¿Cuándo llegarás?
+                    Ventana de llegada
                   </span>
-                  <span className="text-xs font-mono font-bold text-sky-400">
-                    {etaMinutes === null ? 'Selecciona' : etaMinutes === 0 ? 'Ahora' : `En ${etaMinutes} min`}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[0, 5, 10, 15, 30, 45].map((minutes) => (
-                    <button
-                      key={minutes}
-                      type="button"
-                      onClick={() => setEtaMinutes(minutes)}
-                      className={`py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-                        etaMinutes === minutes
-                          ? 'bg-sky-600 text-white shadow-xs'
-                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
-                    >
-                      {minutes === 0 ? 'Ahora' : `+${minutes}m`}
-                    </button>
-                  ))}
+                  <span className="text-xs font-mono font-bold text-sky-400">{officialTolerance} min</span>
                 </div>
                 <p className="text-[10px] leading-snug text-slate-500">
-                  La tolerancia de {officialTolerance} min empieza desde la hora de llegada elegida.
+                  Al confirmar, la plaza queda apartada desde ahora durante el tiempo autorizado por el establecimiento.
                 </p>
               </div>
             )}
@@ -1560,41 +1499,13 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                    {isOpenStayMode ? 'Tiempo estimado de estadía' : 'Tiempo de estadía'}
+                    Tiempo de estadía
                   </span>
-                  <span className="text-xs font-mono font-bold text-emerald-400">
-                    {!hasSelectedDuration
-                      ? 'Selecciona'
-                      : isMinuteBilling
-                        ? `${actualStayMinutes} min`
-                        : `${hours} ${hours === 1 ? 'hora' : 'horas'}`}
-                  </span>
+                  <span className="text-xs font-mono font-bold text-emerald-400">Se mide en garita</span>
                 </div>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {(isMinuteBilling ? [15, 30, 45, 60, 90, 120] : [1, 2, 3, 4, 6, 8, 12, 24])
-                    .filter(value => isMinuteBilling
-                      ? value >= minStayMin && value <= maxStayMin
-                      : value >= minStay && value <= maxStay)
-                    .map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => isMinuteBilling ? setStayMinutes(value) : setHours(value)}
-                      className={`py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-                        (isMinuteBilling ? stayMinutes === value : hours === value)
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
-                    >
-                      {isMinuteBilling ? `${value}m` : `${value}h`}
-                    </button>
-                  ))}
-                </div>
-                {isOpenStayMode && (
-                  <p className="text-[10px] leading-snug text-slate-500">
-                    Es una estimación para apartar la plaza; al salir se cobrará el tiempo real utilizado.
-                  </p>
-                )}
+                <p className="text-[10px] leading-snug text-slate-500">
+                  El personal registra tu ingreso y tu salida. El cobro se calcula con ese tiempo real.
+                </p>
               </div>
             )}
 
@@ -1620,20 +1531,12 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
 
               <div className="flex items-center justify-between text-slate-300">
                 <span className="text-slate-400">Modalidad</span>
-                <span className="text-slate-200 font-medium">
-                  {!hasSelectedDuration
-                    ? 'Pendiente de elegir'
-                    : isOpenStayMode
-                      ? `Estimada: ${isMinuteBilling ? `${actualStayMinutes} min` : `${hours}h`}`
-                      : `${isMinuteBilling ? `${actualStayMinutes} min` : `${hours}h`} reservadas`}
-                </span>
+                <span className="text-slate-200 font-medium">Tiempo real en garita</span>
               </div>
 
               <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Llegada / tolerancia</span>
-                <span className="text-emerald-400 font-mono font-semibold">
-                  {etaMinutes === null ? 'Pendiente' : `${etaMinutes === 0 ? 'Ahora' : `+${etaMinutes}m`} / ${officialTolerance}m`}
-                </span>
+                <span className="text-slate-400">Tolerancia de llegada</span>
+                <span className="text-emerald-400 font-mono font-semibold">{officialTolerance} min</span>
               </div>
 
               <div className="h-px bg-slate-800/80 my-1" />
@@ -1642,7 +1545,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 <span className="text-slate-400">Cobro</span>
                 {parking?.require_reservation_prepay ? (
                   <span className="font-mono font-bold text-amber-300">
-                    Por confirmar S/ {finalTotalCost.toFixed(2)}
+                    Garantía por confirmar S/ {reservationGuarantee.toFixed(2)}
                   </span>
                 ) : (
                   <span className="font-medium text-emerald-400">
@@ -1708,10 +1611,6 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                 <span>Ingresa tu Placa para Continuar</span>
               ) : !isPlateValid ? (
                 <span>Placa Inválida (ej: ABC-123)</span>
-              ) : !hasSelectedArrival ? (
-                <span>Selecciona tu hora de llegada</span>
-              ) : !hasSelectedDuration ? (
-                <span>Selecciona el tiempo de estadía</span>
               ) : compatibleFreeSlots.length === 0 ? (
                 <span>Sin plazas para este vehículo</span>
               ) : (

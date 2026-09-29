@@ -48,9 +48,13 @@ async def test_reservation_full_lifecycle_and_antisabotage():
 
         slot_id = slot.id
         user_id = user.id
+        operator = (await session.execute(select(User).where(User.role == "platform"))).scalars().first()
+        assert operator is not None
+        operator_id = operator.id
 
     token = create_access_token(subject=user_id)
     headers = {"Authorization": f"Bearer {token}"}
+    operator_headers = {"Authorization": f"Bearer {create_access_token(subject=operator_id)}"}
 
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         now = datetime.utcnow()
@@ -73,6 +77,7 @@ async def test_reservation_full_lifecycle_and_antisabotage():
         res_id = data1["id"]
         assert data1["status"] == "scheduled"
         assert data1["license_plate"] == "ABC-999"
+        assert data1["end_time"] is None
 
         # TEST 2: Regla S-01 (Sabotaje): Intentar segunda reserva concurrente con el mismo usuario
         payload_dup_user = {
@@ -100,19 +105,28 @@ async def test_reservation_full_lifecycle_and_antisabotage():
         assert res_dup_plate.status_code == 400
         assert "ya cuenta con una reserva activa" in res_dup_plate.json()["detail"]
 
-        # TEST 4: Fase 2 - Check-in (Ingreso real a la cochera)
-        res_checkin = await ac.put(f"/api/v1/reservations/{res_id}/check-in", headers=headers)
+        # TEST 4: el conductor no opera la garita; el trabajador registra ingreso y permanencia.
+        forbidden_checkin = await ac.put(f"/api/v1/reservations/{res_id}/check-in", headers=headers, json={"hours_stay": 2})
+        assert forbidden_checkin.status_code == 403
+
+        res_checkin = await ac.put(
+            f"/api/v1/reservations/{res_id}/check-in",
+            headers=operator_headers,
+            json={"hours_stay": 2},
+        )
         assert res_checkin.status_code == 200
         data_in = res_checkin.json()
         assert data_in["status"] == "active"
         assert data_in["actual_entry"] is not None
+        assert data_in["estimated_hours"] == 2
 
-        # TEST 5: Check-out (Salida de la cochera y liberación)
-        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=headers)
+        # TEST 5: Check-out (solo garita; salida sin cobro queda pendiente)
+        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers)
         assert res_checkout.status_code == 200
         data_out = res_checkout.json()
         assert data_out["status"] == "completed"
         assert data_out["actual_exit"] is not None
+        assert data_out["payment_status"] == "pending"
 
         # Verificar en base de datos que la plaza quedó LIBRE
         async with AsyncSessionLocal() as session:

@@ -174,7 +174,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     const parkingName = reservation.parking || reservation.parkingName || 'Smart Park Central';
     const slotCode = reservation.slot || reservation.slotCode || 'A-01';
     const plate = reservation.plate || reservation.license_plate || 'ABC-123';
-    const hours = Number(reservation.hours || 2);
+    const hours = reservation.hours == null ? null : Number(reservation.hours);
     const cost = Number(reservation.cost || reservation.totalCost || reservation.total_cost || 10.0);
     const vehicleCategory = reservation.vehicleCategory || reservation.slotType || 'Auto';
     const toleranceMinutes = Number(reservation.arrivalWindow || reservation.tolerance || reservation.toleranceMinutes || reservation.tolerance_minutes || 15);
@@ -190,7 +190,6 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     
     // Estadía real (Fase 2: arranca al momento de la entrada real)
     const entryTime = localActualEntry ? parseIsoToDate(localActualEntry) : startTime;
-    const stayExpiresAt = new Date(entryTime.getTime() + hours * 60 * 60 * 1000);
 
     const verifyUrl = `${window.location.origin}/verify/${encodeURIComponent(id)}`;
     const qrPayload = verifyUrl;
@@ -213,7 +212,8 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     const isSubscription = Boolean(reservation.is_subscription || reservation.isSubscription || reservationType === 'subscription');
     const subscriptionMonths = Number(reservation.subscription_months || reservation.subscriptionMonths || 1);
     const isAdvance = reservationType === 'advance';
-    const expiresAt = parseIsoToDate(reservation.expiresAt || reservation.end_time || reservation.expires_at);
+    const rawExpiresAt = reservation.expiresAt || reservation.end_time || reservation.expires_at;
+    const expiresAt = rawExpiresAt ? parseIsoToDate(rawExpiresAt) : null;
 
     return {
       dbId,
@@ -234,7 +234,6 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       startTime,
       arrivalDeadline,
       entryTime,
-      stayExpiresAt,
       expiresAt,
       qrPayload,
       isPrepaid,
@@ -292,7 +291,18 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
       }
 
       const isScheduled = localStatus === 'scheduled';
-      const targetDeadline = isScheduled ? passData.arrivalDeadline.getTime() : passData.stayExpiresAt.getTime();
+      if (!isScheduled && localStatus === 'active') {
+        const elapsedSec = Math.max(0, Math.floor((now - passData.entryTime.getTime()) / 1000));
+        const eH = Math.floor(elapsedSec / 3600);
+        const eM = Math.floor((elapsedSec % 3600) / 60);
+        const eS = elapsedSec % 60;
+        setTimeLeft(`${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}:${String(eS).padStart(2, '0')}`);
+        setSecondsRemaining(elapsedSec);
+        setIsOvertime(false);
+        setIsExpiringSoon(false);
+        return;
+      }
+      const targetDeadline = passData.arrivalDeadline.getTime();
       const difference = targetDeadline - now;
 
       if (difference <= 0) {
@@ -821,7 +831,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                     ? 'Sin periodo de gracia'
                     : isScheduled
                     ? `Llegada hasta ${passData.arrivalDeadline ? passData.arrivalDeadline.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}`
-                    : `Estadía: ${passData.hours}h`}
+                    : 'La salida cerrará el tiempo real' }
                 </span>
               </div>
 

@@ -424,14 +424,21 @@ async def test_garita_operator_moto_slot_and_access_persistence():
         assert res_resp.status_code == 201, f"Expected 201, got {res_resp.status_code}: {res_resp.text}"
         res_data = res_resp.json()
         assert res_data["vehicle_type"] == "moto"
-        # Tarifa moto 2.50 * 2h = 5.00
-        assert res_data["total_cost"] == 5.00
+        # La reserva todavía no incluye duración; garita la registra al ingreso.
+        assert res_data["total_cost"] == 0
+        assert res_data["end_time"] is None
         r_id = res_data["id"]
 
-        # 7. Operador realiza check-in del vehículo
-        checkin_resp = await ac.put(f"/api/v1/reservations/{r_id}/check-in", headers=op_headers)
+        # 7. Operador realiza check-in y registra 2 horas de permanencia.
+        checkin_resp = await ac.put(
+            f"/api/v1/reservations/{r_id}/check-in",
+            headers=op_headers,
+            json={"hours_stay": 2},
+        )
         assert checkin_resp.status_code == 200, checkin_resp.text
         assert checkin_resp.json()["status"] == "active"
+        assert checkin_resp.json()["estimated_hours"] == 2
+        assert checkin_resp.json()["total_cost"] == 5.00
 
         # 8. Operador realiza check-out
         checkout_resp = await ac.put(f"/api/v1/reservations/{r_id}/check-out", headers=op_headers, json={

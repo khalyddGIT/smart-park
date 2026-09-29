@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
 import math
 from typing import List, Optional, Union
@@ -12,6 +12,7 @@ from app.schemas.schemas import (
     ReservationCreate,
     ReservationUpdate,
     ReservationStayUpdate,
+    ReservationCheckIn,
     ReservationResponse,
     ReservationCheckOut,
     ReservationOvertimePayment,
@@ -167,9 +168,9 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
         resp.tolerance_minutes = 15
 
     resp.vehicle_type = getattr(r, "vehicle_type", "auto") or "auto"
-    resp.estimated_hours = getattr(r, "estimated_hours", 1) or 1
+    resp.estimated_hours = getattr(r, "estimated_hours", None)
     resp.billing_unit = getattr(r, "billing_unit", "hour") or "hour"
-    resp.estimated_minutes = getattr(r, "estimated_minutes", 60) or 60
+    resp.estimated_minutes = getattr(r, "estimated_minutes", None)
     resp.is_night_shift = bool(getattr(r, "is_night_shift", False))
     resp.prepaid = bool(getattr(r, "prepaid", False))
     resp.is_open_stay = bool(getattr(r, "is_open_stay", False))
@@ -458,7 +459,8 @@ async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
         "customer_phone": user.phone if user else None,
         "customer_email": user.email if user else None,
         "billing_unit": getattr(reservation, "billing_unit", "hour") or "hour",
-        "estimated_minutes": getattr(reservation, "estimated_minutes", 60) or 60,
+        "estimated_hours": getattr(reservation, "estimated_hours", None),
+        "estimated_minutes": getattr(reservation, "estimated_minutes", None),
         "payment_method": getattr(reservation, "payment_method", "efectivo") or "efectivo",
         "amount_paid": float(getattr(reservation, "amount_paid", 0.0) or 0.0),
         "reservation_type": getattr(reservation, "reservation_type", "standard") or "standard",
@@ -492,6 +494,8 @@ async def create_reservation(
     # Validación de fechas y modalidad
     from datetime import timedelta
     res_type = (getattr(res_in, "reservation_type", None) or "standard").strip().lower()
+    if res_type in ("immediate", "inmediata"):
+        res_type = "standard"
     is_sub = bool(getattr(res_in, "is_subscription", False) or res_type == "subscription")
     if is_sub:
         res_type = "subscription"
@@ -501,24 +505,19 @@ async def create_reservation(
         sub_days = 30 * sub_months
     sub_type = getattr(res_in, "subscription_type", None) or ("monthly" if sub_days == 30 else ("3_weeks" if sub_days == 21 else "fractional"))
 
-    _start = _naive_utc(res_in.start_time) if res_in.start_time else datetime.utcnow()
+    requested_start = _naive_utc(res_in.start_time) if res_in.start_time else datetime.utcnow()
+    # Una reserva inmediata empieza a consumir su ventana de llegada al crearse.
+    # Una programada conserva la llegada elegida. Ninguna fija la salida del cliente.
+    _start = requested_start if res_type == "advance" or is_sub else datetime.utcnow()
     _end = _naive_utc(res_in.end_time) if res_in.end_time else None
 
     # En abonos mensuales y flexibles, la fecha de fin se auto-calcula para cubrir la cantidad de días del abono
     if is_sub:
         _end = _start + timedelta(days=sub_days)
-    elif _end is None:
-        if res_in.estimated_minutes is not None:
-            _end = _start + timedelta(minutes=res_in.estimated_minutes)
-        elif res_in.estimated_hours is not None:
-            _end = _start + timedelta(hours=res_in.estimated_hours)
-        else:
-            raise HTTPException(
-                status_code=422,
-                detail="Debes indicar explícitamente la duración estimada de la estadía."
-            )
-    elif _end <= _start:
-        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior al inicio")
+    else:
+        # La estadía real se abre en check-in y se cierra en check-out. Los datos
+        # de duración enviados por clientes antiguos se ignoran deliberadamente.
+        _end = None
 
     plate_clean = res_in.license_plate.strip().upper()
 
@@ -678,17 +677,9 @@ async def create_reservation(
             detail="Este establecimiento exige el pago anticipado para confirmar la reserva de plaza."
         )
 
-    billing_unit = (res_in.billing_unit or getattr(parking, "billing_unit", "hour") or "hour").strip().lower()
-    total_seconds = (_end - _start).total_seconds()
-    duration_minutes = max(1, int(round(total_seconds / 60.0)))
-
-    if billing_unit == "minute":
-        min_stay_min = int(getattr(parking, "min_stay_minutes", 15) or 15)
-        if duration_minutes < min_stay_min:
-            raise HTTPException(status_code=422, detail=f"Duración mínima permitida para este local: {min_stay_min} minutos")
-    else:
-        if total_seconds < 1800:
-            raise HTTPException(status_code=422, detail="Duración mínima 30 minutos")
+    # La unidad y las tarifas siempre provienen del establecimiento. El conductor
+    # no decide la duración ni puede alterar las reglas configuradas por el admin.
+    billing_unit = (getattr(parking, "billing_unit", "hour") or "hour").strip().lower()
 
     vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
     slot_kind = getattr(slot, "slot_type", None) or "auto"
@@ -710,8 +701,7 @@ async def create_reservation(
     night_surcharge = 0.0
     if getattr(parking, "night_shift_enabled", False):
         start_is_night = _is_time_in_night_shift(_start, parking.night_shift_start or "20:00", parking.night_shift_end or "06:00")
-        end_is_night = _is_time_in_night_shift(_end, parking.night_shift_start or "20:00", parking.night_shift_end or "06:00")
-        if start_is_night or end_is_night:
+        if start_is_night:
             is_night = True
             night_surcharge = float(parking.night_shift_surcharge or 0.0)
 
@@ -724,29 +714,25 @@ async def create_reservation(
         billing_unit = "month" if sub_days == 30 else "subscription"
         estimated_hours = 24 * sub_days
         estimated_minutes = estimated_hours * 60
-    elif billing_unit == "minute":
-        min_stay_min = int(getattr(parking, "min_stay_minutes", 15) or 15)
-        if duration_minutes < min_stay_min:
-            raise HTTPException(status_code=422, detail=f"Duración mínima permitida para este local: {min_stay_min} minutos")
-        base_minute_rate = get_parking_minute_rate(parking, vtype)
-        night_minute_surcharge = (night_surcharge / 60.0) if night_surcharge else 0.0
-        effective_rate = base_minute_rate + night_minute_surcharge
-        total_cost = round((duration_minutes * effective_rate) + reservation_fee, 2)
-        estimated_hours = max(1, int(round(total_seconds / 3600.0)))
-        estimated_minutes = int(res_in.estimated_minutes or duration_minutes)
     else:
-        if total_seconds < 1800:
-            raise HTTPException(status_code=422, detail="Duración mínima 30 minutos")
-        base_vehicle_rate = get_parking_vehicle_rate(parking, vtype)
-        effective_rate = base_vehicle_rate + night_surcharge
-        duration_for_calc = max(1.0, total_seconds / 3600.0)
-        total_cost = round((duration_for_calc * effective_rate) + reservation_fee, 2)
-        estimated_hours = max(1, int(round(total_seconds / 3600.0)))
-        estimated_minutes = int(res_in.estimated_minutes or duration_minutes)
+        # Antes del ingreso solo existe, si fue configurada, la tarifa de reserva.
+        # El costo de estacionamiento se conoce al registrar la salida real.
+        total_cost = round(reservation_fee, 2)
+        estimated_hours = None
+        estimated_minutes = None
 
     reservation_code = f"RSV-{uuid.uuid4().hex[:6].upper()}"
-    tol_min = int(res_in.tolerance_minutes or (parking.tolerance_minutes if parking and parking.tolerance_minutes else 15))
+    tol_min = int(parking.tolerance_minutes if parking and parking.tolerance_minutes else 15)
     requires_prepay = bool(getattr(parking, "require_reservation_prepay", False) or is_sub)
+    if requires_prepay and not is_sub and total_cost <= 0:
+        # Si el admin exige prepago pero no configuró tarifa de reserva, se usa
+        # una unidad mínima como garantía; se descuenta del total al salir.
+        total_cost = round(
+            get_parking_minute_rate(parking, vtype)
+            if billing_unit == "minute"
+            else get_parking_vehicle_rate(parking, vtype),
+            2,
+        )
     payment_status = "pending" if requires_prepay else "not_required"
     payment_deadline = datetime.utcnow() + timedelta(minutes=10) if requires_prepay else None
 
@@ -768,7 +754,7 @@ async def create_reservation(
         estimated_minutes=estimated_minutes,
         is_night_shift=is_night,
         prepaid=False,
-        is_open_stay=bool(getattr(res_in, "is_open_stay", False)),
+        is_open_stay=not is_sub,
         payment_method=None,
         amount_paid=0.0,
         payment_status=payment_status,
@@ -885,11 +871,19 @@ async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncS
     if reservation.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="No autorizado para esta reserva")
 
+    if not bool(getattr(reservation, "is_subscription", False)):
+        raise HTTPException(
+            status_code=409,
+            detail="La estadía no tiene una duración prefijada. El personal registra el ingreso y la salida reales.",
+        )
+
     parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
     parking = parking_res.scalars().first()
     rate = parking.hourly_rate if parking else 8.50
 
     from datetime import timedelta
+    if reservation.end_time is None:
+        raise HTTPException(status_code=409, detail="El abono no tiene una fecha de finalización válida")
     reservation.end_time = reservation.end_time + timedelta(hours=hours)
     reservation.total_cost = round(reservation.total_cost + (hours * rate), 2)
 
@@ -903,10 +897,10 @@ async def extend_reservation(reservation_id: int, hours: float = 1.0, db: AsyncS
 
 @router.put("/{reservation_id}/check-in", response_model=ReservationResponse)
 async def check_in_reservation(
-    reservation_id: int, 
-    hours_stay: Optional[float] = None,
+    reservation_id: int,
+    checkin_in: Optional[ReservationCheckIn] = None,
     db: AsyncSession = Depends(get_db), 
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(gate_operator_required)
 ):
     # Check-in: marca el ingreso real del vehículo a la cochera
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
@@ -926,35 +920,52 @@ async def check_in_reservation(
         )
 
     now = datetime.utcnow()
-    from datetime import timedelta
-
-    # Determinar duración de la estadía: asignada por personal o duración calculada
-    if hours_stay is not None and hours_stay > 0:
-        stay_hours = max(0.5, float(hours_stay))
-    elif reservation.end_time and reservation.start_time:
-        stay_hours = max(0.5, (reservation.end_time - reservation.start_time).total_seconds() / 3600.0)
-    else:
-        stay_hours = 1.0
-
-    # Recalcular costo estimado con la tarifa diferenciada de la sede
-    parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
-    parking = parking_res.scalars().first()
-
     reservation.status = "active"
     reservation.actual_entry = now
-    # FASE 2: La estadía corre desde el momento exacto del ingreso real
-    reservation.end_time = now + timedelta(hours=stay_hours)
-    
-    # Si el operador especificó una duración diferente a la reserva original, recalcular con tarifa diferenciada
-    if hours_stay is not None and hours_stay > 0 and parking:
-        vtype = getattr(reservation, "vehicle_type", "auto")
-        vehicle_rate = get_parking_vehicle_rate(parking, vtype)
-        night_surcharge = float(parking.night_shift_surcharge or 0.0) if getattr(reservation, "is_night_shift", False) else 0.0
-        reservation.total_cost = round((vehicle_rate + night_surcharge) * stay_hours, 2)
-    elif not reservation.total_cost and parking:
-        vtype = getattr(reservation, "vehicle_type", "auto")
-        vehicle_rate = get_parking_vehicle_rate(parking, vtype)
-        reservation.total_cost = round(vehicle_rate * stay_hours, 2)
+
+    parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
+    parking = parking_res.scalars().first()
+    billing_unit = (getattr(reservation, "billing_unit", None) or (parking.billing_unit if parking else "hour") or "hour").strip().lower()
+    requested_minutes = None
+    if checkin_in:
+        if checkin_in.minutes_stay is not None:
+            requested_minutes = int(checkin_in.minutes_stay)
+        elif checkin_in.hours_stay is not None:
+            requested_minutes = max(1, int(round(float(checkin_in.hours_stay) * 60)))
+
+    if requested_minutes is not None:
+        min_minutes = int(getattr(parking, "min_stay_minutes", 15) or 15) if billing_unit == "minute" else int(float(getattr(parking, "min_stay_hours", 1) or 1) * 60)
+        max_minutes = int(getattr(parking, "max_stay_minutes", 1440) or 1440) if billing_unit == "minute" else int(float(getattr(parking, "max_stay_hours", 24) or 24) * 60)
+        if requested_minutes < min_minutes or requested_minutes > max_minutes:
+            raise HTTPException(
+                status_code=422,
+                detail=f"La permanencia registrada por garita debe estar entre {min_minutes} y {max_minutes} minutos según la configuración del establecimiento.",
+            )
+        reservation.end_time = now + timedelta(minutes=requested_minutes)
+        reservation.estimated_minutes = requested_minutes
+        reservation.estimated_hours = round(requested_minutes / 60.0, 2)
+        reservation.is_open_stay = False
+
+        reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0) if parking else 0.0
+        night_surcharge = float(getattr(parking, "night_shift_surcharge", 0.0) or 0.0) if parking and reservation.is_night_shift else 0.0
+        if billing_unit == "minute":
+            rate = get_parking_minute_rate(parking, reservation.vehicle_type) if parking else 0.10
+            reservation.total_cost = round(requested_minutes * (rate + (night_surcharge / 60.0)) + reservation_fee, 2)
+        else:
+            billed_hours = max(1, math.ceil(requested_minutes / 60.0))
+            rate = get_parking_vehicle_rate(parking, reservation.vehicle_type) if parking else 5.0
+            reservation.total_cost = round(billed_hours * (rate + night_surcharge) + reservation_fee, 2)
+    else:
+        if parking and getattr(parking, "allow_open_stay", True) is False:
+            raise HTTPException(
+                status_code=422,
+                detail="El administrador desactivó la estadía libre. Garita debe registrar el tiempo de permanencia al ingreso.",
+            )
+        # La estadía libre solo se admite si el administrador la habilitó.
+        reservation.end_time = None
+        reservation.estimated_hours = None
+        reservation.estimated_minutes = None
+        reservation.is_open_stay = True
 
     # El cajón pasa a ocupado mientras dure la estancia
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))
@@ -996,7 +1007,7 @@ async def update_reservation_stay(
     reservation_id: int,
     stay_in: ReservationStayUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(gate_operator_required)
 ):
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
     reservation = result.scalars().first()
@@ -1004,7 +1015,26 @@ async def update_reservation_stay(
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
     await _check_reservation_access(reservation, current_user, db, action_label="editar la estadía de esta reserva")
 
-    from datetime import timedelta
+    planned_minutes = int(getattr(reservation, "estimated_minutes", 0) or 0)
+    if stay_in.hours_stay is not None:
+        planned_minutes = max(1, int(round(float(stay_in.hours_stay) * 60)))
+        parking = await db.get(Parking, reservation.parking_id)
+        billing_unit = (getattr(reservation, "billing_unit", None) or (parking.billing_unit if parking else "hour") or "hour").strip().lower()
+        min_minutes = int(getattr(parking, "min_stay_minutes", 15) or 15) if billing_unit == "minute" else int(float(getattr(parking, "min_stay_hours", 1) or 1) * 60)
+        max_minutes = int(getattr(parking, "max_stay_minutes", 1440) or 1440) if billing_unit == "minute" else int(float(getattr(parking, "max_stay_hours", 24) or 24) * 60)
+        if planned_minutes < min_minutes or planned_minutes > max_minutes:
+            raise HTTPException(status_code=422, detail=f"La permanencia debe estar entre {min_minutes} y {max_minutes} minutos")
+        reservation.estimated_minutes = planned_minutes
+        reservation.estimated_hours = round(planned_minutes / 60.0, 2)
+        reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0) if parking else 0.0
+        night_surcharge = float(getattr(parking, "night_shift_surcharge", 0.0) or 0.0) if parking and reservation.is_night_shift else 0.0
+        if billing_unit == "minute":
+            rate = get_parking_minute_rate(parking, reservation.vehicle_type) if parking else 0.10
+            reservation.total_cost = round(planned_minutes * (rate + (night_surcharge / 60.0)) + reservation_fee, 2)
+        else:
+            billed_hours = max(1, math.ceil(planned_minutes / 60.0))
+            rate = get_parking_vehicle_rate(parking, reservation.vehicle_type) if parking else 5.0
+            reservation.total_cost = round(billed_hours * (rate + night_surcharge) + reservation_fee, 2)
 
     # 1. Modificar hora de entrada real si fue provista
     if stay_in.actual_entry is not None:
@@ -1032,26 +1062,16 @@ async def update_reservation_stay(
             new_slot.status = "occupied" if reservation.status == "active" else "reserved"
             reservation.slot_id = new_slot.id
 
-    # 3. Modificar horas o régimen de estadía
-    parking_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
-    parking = parking_res.scalars().first()
-    vtype = getattr(reservation, "vehicle_type", "auto")
-    vehicle_rate = get_parking_vehicle_rate(parking, vtype) if parking else 5.0
-
-    entry_ref = reservation.actual_entry or reservation.start_time or datetime.utcnow()
-
-    if stay_in.is_open_stay is not None:
-        reservation.is_open_stay = stay_in.is_open_stay
-
-    if stay_in.hours_stay is not None and stay_in.hours_stay > 0:
-        stay_hours = float(stay_in.hours_stay)
-        reservation.end_time = entry_ref + timedelta(hours=stay_hours)
-        reservation.estimated_hours = max(1, int(round(stay_hours)))
-        night_surcharge = float(parking.night_shift_surcharge or 0.0) if getattr(reservation, "is_night_shift", False) else 0.0
-        reservation.total_cost = round((vehicle_rate + night_surcharge) * stay_hours, 2)
-    elif getattr(reservation, "is_open_stay", False):
-        # En estadía abierta, el end_time proyectado se extiende 24h desde la entrada
-        reservation.end_time = entry_ref + timedelta(hours=24)
+    # 3. Si garita registró una permanencia, conservarla al corregir la entrada.
+    # En estadía libre no se inventa una salida.
+    if planned_minutes > 0 and reservation.actual_entry:
+        reservation.end_time = reservation.actual_entry + timedelta(minutes=planned_minutes)
+        reservation.is_open_stay = False
+    else:
+        reservation.end_time = None
+        reservation.estimated_hours = None
+        reservation.estimated_minutes = None
+        reservation.is_open_stay = True
 
     await db.commit()
     try:
@@ -1081,7 +1101,7 @@ async def check_out_reservation(
     reservation_id: int, 
     checkout_in: Optional[ReservationCheckOut] = None,
     db: AsyncSession = Depends(get_db), 
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(gate_operator_required)
 ):
     # Check-out: registra la salida física y cierra la estancia
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
@@ -1097,47 +1117,72 @@ async def check_out_reservation(
     now = datetime.utcnow()
     reservation.status = "completed"
     reservation.actual_exit = now
+    reservation.end_time = now
 
-    # Reconciliación de costo de estadía si no se especificó monto fijo
-    if checkout_in and checkout_in.amount_paid is not None:
-        reservation.total_cost = float(checkout_in.amount_paid)
-        reservation.amount_paid = float(checkout_in.amount_paid)
+    # Calcular siempre el total a partir del tiempo real; el monto que envía la
+    # garita confirma un cobro, nunca define el precio de la estadía.
+    p_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
+    parking = p_res.scalars().first()
+    vtype = getattr(reservation, "vehicle_type", "auto")
+    billing_unit = (getattr(reservation, "billing_unit", None) or (parking.billing_unit if parking else "hour") or "hour").strip().lower()
+    night_surcharge = 0.0
+    if parking and getattr(parking, "night_shift_enabled", False):
+        if getattr(reservation, "is_night_shift", False) or _is_time_in_night_shift(now, parking.night_shift_start or "20:00", parking.night_shift_end or "06:00"):
+            night_surcharge = float(parking.night_shift_surcharge or 0.0)
+
+    entry_time = reservation.actual_entry or now
+    diff_seconds = max(0.0, (now - entry_time).total_seconds())
+    planned_minutes = int(getattr(reservation, "estimated_minutes", 0) or 0)
+    if planned_minutes > 0:
+        # La permanencia registrada por garita es el mínimo facturable; si el
+        # vehículo se excede, prevalece el tiempo real.
+        diff_seconds = max(diff_seconds, planned_minutes * 60.0)
+    reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0) if parking else 0.0
+    if billing_unit == "minute":
+        diff_minutes = max(1, math.ceil(diff_seconds / 60.0))
+        minute_rate = get_parking_minute_rate(parking, vtype) if parking else 0.10
+        calculated_cost = round(
+            (diff_minutes * (minute_rate + (night_surcharge / 60.0 if night_surcharge else 0.0)))
+            + reservation_fee,
+            2,
+        )
     else:
-        # Calcular según tiempo real y tarifa del parking SIN tiempo de gracia
-        p_res = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
-        parking = p_res.scalars().first()
-        vtype = getattr(reservation, "vehicle_type", "auto")
-        billing_unit = (getattr(reservation, "billing_unit", None) or (parking.billing_unit if parking else "hour") or "hour").strip().lower()
+        billed_hours = max(1, math.ceil(diff_seconds / 3600.0))
+        vehicle_rate = get_parking_vehicle_rate(parking, vtype) if parking else 5.0
+        calculated_cost = round((billed_hours * (vehicle_rate + night_surcharge)) + reservation_fee, 2)
 
-        # Comprobar si aplica recargo nocturno
-        night_surcharge = 0.0
-        if parking and getattr(parking, "night_shift_enabled", False):
-            if getattr(reservation, "is_night_shift", False) or _is_time_in_night_shift(now, parking.night_shift_start or "20:00", parking.night_shift_end or "06:00"):
-                night_surcharge = float(parking.night_shift_surcharge or 0.0)
+    reservation.total_cost = calculated_cost
+    already_paid = round(float(reservation.amount_paid or 0.0), 2)
+    outstanding = max(0.0, round(calculated_cost - already_paid, 2))
 
-        entry_time = reservation.actual_entry or reservation.start_time or now
-        diff_seconds = max(0.0, (now - entry_time).total_seconds())
-
-        if billing_unit == "minute":
-            diff_minutes = max(1, math.ceil(diff_seconds / 60.0))
-            minute_rate = get_parking_minute_rate(parking, vtype) if parking else 0.10
-            effective_minute_rate = minute_rate + (night_surcharge / 60.0 if night_surcharge else 0.0)
-            reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0) if parking else 0.0
-            calculated_cost = round((diff_minutes * effective_minute_rate) + reservation_fee, 2)
-        else:
-            billed_hours = max(1, math.ceil(diff_seconds / 3600.0))
-            vehicle_rate = get_parking_vehicle_rate(parking, vtype) if parking else 5.0
-            effective_rate = vehicle_rate + night_surcharge
-            reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0) if parking else 0.0
-            calculated_cost = round((billed_hours * effective_rate) + reservation_fee, 2)
-
-        if getattr(reservation, "is_open_stay", False) or calculated_cost > (reservation.total_cost or 0):
-            reservation.total_cost = calculated_cost
-        if not getattr(reservation, "amount_paid", None) or reservation.total_cost > (reservation.amount_paid or 0):
-            reservation.amount_paid = reservation.total_cost
-
-    if checkout_in and checkout_in.payment_method:
-        reservation.payment_method = checkout_in.payment_method
+    if checkout_in and checkout_in.amount_paid is not None:
+        confirmed_total = round(float(checkout_in.amount_paid), 2)
+        if abs(confirmed_total - calculated_cost) > 0.02:
+            raise HTTPException(
+                status_code=422,
+                detail=f"El pago confirmado debe coincidir con el total calculado: S/ {calculated_cost:.2f}",
+            )
+        method = (checkout_in.payment_method or "efectivo").strip().lower()
+        collected_now = max(0.0, round(confirmed_total - already_paid, 2))
+        if collected_now > 0:
+            db.add(Payment(
+                reservation_id=reservation.id,
+                user_id=reservation.user_id,
+                amount_cents=int(round(collected_now * 100)),
+                currency="PEN",
+                status="succeeded",
+                method=method,
+                description=f"Cobro en salida de la reserva {reservation.code}",
+            ))
+        reservation.amount_paid = confirmed_total
+        reservation.payment_method = method
+        reservation.payment_status = "paid"
+        reservation.prepaid = already_paid > 0
+    elif outstanding > 0:
+        # La salida puede registrarse para liberar físicamente la plaza, pero no
+        # se inventa un pago que el trabajador todavía no confirmó.
+        reservation.payment_status = "pending"
+        reservation.payment_method = None
 
     # Liberar el cajón al terminar la estancia
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))

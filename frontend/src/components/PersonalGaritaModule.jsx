@@ -96,6 +96,11 @@ export const PersonalGaritaModule = () => {
   const [garitaReservations, setGaritaReservations] = useState([]);
   const [exitSearchTerm, setExitSearchTerm] = useState('');
   const [mobileView, setMobileView] = useState('operacion'); // 'operacion' | 'plano'
+  const openStayAllowed = currentEst?.allow_open_stay !== false && currentEst?.allowOpenStay !== false;
+
+  useEffect(() => {
+    if (!openStayAllowed && isOpenStay) setIsOpenStay(false);
+  }, [openStayAllowed, isOpenStay]);
 
   // Estados de Modales: Salida/Cobro, Ticket Térmico, Cierre de Turno e Incidencias
   const [checkoutModal, setCheckoutModal] = useState(null);
@@ -712,18 +717,20 @@ export const PersonalGaritaModule = () => {
               <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl mb-2.5">
                 <button 
                   type="button" 
+                  disabled={!openStayAllowed}
                   onClick={() => {
+                    if (!openStayAllowed) return;
                     setIsOpenStay(true);
                     setPayMethod('pendiente');
                   }} 
                   className={`h-8 rounded-lg font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     isOpenStay 
                       ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      : openStayAllowed ? 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' : 'text-slate-400 dark:text-slate-600 opacity-60 cursor-not-allowed'
                   }`}
                   title="Estancia abierta: paga al salir según tiempo transcurrido"
                 >
-                  <span>Libre (al salir)</span>
+                  <span>{openStayAllowed ? 'Libre (al salir)' : 'Libre desactivada'}</span>
                 </button>
                 <button 
                   type="button" 

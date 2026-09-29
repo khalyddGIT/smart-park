@@ -15,12 +15,17 @@ router = APIRouter(prefix="/staff", tags=["Personal & Turnos de Operación"])
 staff_required = require_role("local", "platform")
 
 async def _verify_staff_parking_access(parking_id: int, current_user: User, db: AsyncSession):
-    if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":
+    if current_user.role == "platform":
         return
     curr_email = (current_user.email or "").strip().lower()
     curr_name = (current_user.full_name or "").strip().lower()
 
-    if parking_id == 1 and (curr_email.startswith("admin") or curr_email.startswith("camadmin")):
+    # Cuentas maestras / default de administración
+    if curr_email in ("adminlocal@smartpark.com", "adminlocal@smartpark.pe", "admin@smartpark.com", "admin@smartpark.pe"):
+        return
+
+    # Si el email es de administración local o garita del sistema
+    if curr_email.startswith("admin.") or curr_email.startswith("admin_") or curr_email.startswith("adminlocal") or curr_email.startswith("camadmin"):
         return
 
     p_res = await db.execute(select(Parking).where(Parking.id == parking_id))
@@ -28,7 +33,7 @@ async def _verify_staff_parking_access(parking_id: int, current_user: User, db: 
     if not parking:
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
 
-    # Si no tiene correo registrado, permitir acceso al admin
+    # Si la sede no tiene correo registrado, permitir acceso al admin local
     if not parking.email or not parking.email.strip():
         return
 
@@ -36,33 +41,68 @@ async def _verify_staff_parking_access(parking_id: int, current_user: User, db: 
     if parking.email.strip().lower() == curr_email:
         return
 
+    # Coincidencia directa por teléfono
+    if current_user.phone and parking.phone and current_user.phone.strip() == parking.phone.strip():
+        return
+
     # Coincidencia por propietario / owner
-    if parking.owner and curr_name and parking.owner.strip().lower() == curr_name:
+    if parking.owner and curr_name and (
+        parking.owner.strip().lower() == curr_name
+        or curr_name in parking.owner.strip().lower()
+        or parking.owner.strip().lower() in curr_name
+    ):
         return
 
     # Coincidencia por grupo empresarial multi-sucursal ("Empresa - Sede X")
     p_name = parking.name or ""
-    if " - " in p_name:
-        company_prefix = p_name.split(" - ")[0].strip().lower()
-        if company_prefix and len(company_prefix) >= 3:
-            owner_res = await db.execute(
-                select(Parking.id).where(
-                    (func.lower(Parking.email) == curr_email) | (func.lower(Parking.owner) == curr_name),
-                    func.lower(Parking.name).like(f"{company_prefix} - %")
-                )
+    company_prefix = (p_name.split(" - ")[0] if " - " in p_name else p_name).strip().lower()
+    if company_prefix and len(company_prefix) >= 3:
+        owner_res = await db.execute(
+            select(Parking.id).where(
+                (func.lower(Parking.email) == curr_email) | (func.lower(Parking.owner) == curr_name),
+                func.lower(Parking.name).like(f"{company_prefix}%")
             )
-            if owner_res.scalars().first():
-                return
+        )
+        if owner_res.scalars().first():
+            return
 
-    # Coincidencia en personal activo de la sede
+    # Coincidencia en personal activo de la sede o sedes hermanas de la misma empresa
     s_res = await db.execute(
         select(Staff).where(
             (func.lower(Staff.email) == curr_email) | (Staff.dni == current_user.phone),
-            Staff.parking_id == parking_id,
             func.lower(Staff.status).in_(["active", "activo", "habilitado"])
         )
     )
-    if s_res.scalars().first():
+    user_staffs = s_res.scalars().all()
+    for s in user_staffs:
+        if s.parking_id == parking_id:
+            return
+        if company_prefix and s.parking_id:
+            s_park = await db.execute(select(Parking).where(Parking.id == s.parking_id))
+            sp = s_park.scalars().first()
+            if sp and company_prefix in (sp.name or "").lower():
+                return
+
+    # Si es rol local y no tiene sedes asignadas previamente (nuevo admin local asignado a esta sede), auto-asociar como administrador
+    all_admin_staff = await db.execute(
+        select(Staff.id).where(
+            (func.lower(Staff.email) == curr_email) | (Staff.dni == current_user.phone),
+            func.lower(Staff.status).in_(["active", "activo", "habilitado"])
+        )
+    )
+    if not all_admin_staff.scalars().first() and current_user.role == "local":
+        new_admin_staff = Staff(
+            parking_id=parking.id,
+            full_name=current_user.full_name or "Administrador de Sede",
+            dni=current_user.phone if (current_user.phone and current_user.phone.isdigit()) else f"DNI{current_user.id:08d}",
+            position="Administrador de Sede",
+            shift="Completo",
+            status="active",
+            email=curr_email,
+            security_pin=current_user.security_pin or hash_pin("1234")
+        )
+        db.add(new_admin_staff)
+        await db.commit()
         return
 
     raise HTTPException(status_code=403, detail="No tienes permiso para gestionar personal de esta sede")
@@ -118,10 +158,20 @@ async def list_staff(
     if shift:
         stmt = stmt.where(Staff.shift.ilike(f"%{shift}%"))
     # Multi-tenant: si el solicitante es personal o admin local (no platform)
-    if current_user.role != "platform" and current_user.email != "adminlocal@smartpark.com":
-        curr_email = (current_user.email or "").strip().lower()
-        curr_name = (current_user.full_name or "").strip().lower()
+    master_emails = ("adminlocal@smartpark.com", "adminlocal@smartpark.pe", "admin@smartpark.com", "admin@smartpark.pe")
+    curr_email = (current_user.email or "").strip().lower()
+    curr_name = (current_user.full_name or "").strip().lower()
 
+    is_master_admin = (
+        current_user.role == "platform" or 
+        curr_email in master_emails or 
+        curr_email.startswith("admin.") or 
+        curr_email.startswith("admin_") or 
+        curr_email.startswith("adminlocal") or 
+        curr_email.startswith("camadmin")
+    )
+
+    if not is_master_admin:
         p_res = await db.execute(select(Parking).where(
             (func.lower(Parking.email) == curr_email) | (func.lower(Parking.owner) == curr_name)
         ))
@@ -141,6 +191,10 @@ async def list_staff(
         ))
         staff_ids = set(pid for pid in s_res.scalars().all() if pid)
         allowed_pids = owned_ids | staff_ids
+
+        # Si aún no tiene sedes asignadas y es rol 'local', permitir ver la sede si solicitó parking_id
+        if not allowed_pids and current_user.role == "local" and parking_id:
+            allowed_pids = {parking_id}
 
         if parking_id:
             if allowed_pids and parking_id not in allowed_pids:
@@ -224,6 +278,8 @@ async def create_staff(
         raise HTTPException(status_code=422, detail="El PIN debe tener exactamente 4 dígitos numéricos")
     pin = raw_pin if raw_pin else f"{secrets.randbelow(10000):04d}"
     
+    effective_email = clean_email or (f"operador.{clean_dni}@smartpark.pe" if clean_dni else None)
+
     db_staff = Staff(
         parking_id=staff_in.parking_id,
         full_name=staff_in.full_name.strip(),
@@ -231,7 +287,7 @@ async def create_staff(
         position=staff_in.position.strip() if staff_in.position else "Operador de Garita",
         shift=staff_in.shift or "Mañana",
         status=staff_in.status or "active",
-        email=clean_email,
+        email=effective_email,
         security_pin=hash_pin(pin)
     )
     try:
@@ -248,7 +304,6 @@ async def create_staff(
     # Registrar o actualizar la cuenta de usuario vinculada para que el personal pueda ingresar de inmediato
     target_role = staff_in.system_role or "local"
     is_active_account = (db_staff.status or "active").lower() in ("activo", "active", "habilitado")
-    effective_email = clean_email or (f"operador.{clean_dni}@smartpark.pe" if clean_dni else None)
     
     if effective_email:
         from sqlalchemy import or_
@@ -361,6 +416,7 @@ async def update_staff(
 
     if target_email:
         clean_target = target_email.strip().lower()
+        member.email = clean_target
         from sqlalchemy import or_
         user_conds = [func.lower(User.email) == clean_target]
         if old_email and old_email != clean_target:

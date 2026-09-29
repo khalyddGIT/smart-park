@@ -24,21 +24,52 @@ const api = axios.create({
   withXSRFToken: true,
 });
 
-// Compatibilidad temporal con consumidores que usan estas funciones como
-// indicador de sesión. El JWT ya no se persiste ni queda expuesto a JavaScript.
-export const setAccessToken = () => {
+let memoryToken = null;
+
+export const setAccessToken = (token) => {
   try {
-    localStorage.removeItem('smart_park_access_token');
+    memoryToken = token || null;
+    if (token) {
+      localStorage.setItem('smart_park_access_token', token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      localStorage.removeItem('smart_park_access_token');
+      delete api.defaults.headers.common['Authorization'];
+    }
   } catch {}
 };
 
 export const getAccessToken = () => {
+  if (memoryToken) return memoryToken;
   try {
+    const saved = localStorage.getItem('smart_park_access_token');
+    if (saved) {
+      memoryToken = saved;
+      return saved;
+    }
     return localStorage.getItem('smart_park_user_session') ? 'cookie_session' : null;
   } catch { 
     return null; 
   }
 };
+
+// Interceptor para garantizar que el token Bearer siempre acompañe a la solicitud si existe
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token && token !== 'cookie_session' && !config.headers['Authorization']) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => Promise.reject(error));
+
+// Inicializar cabecera con token persistido si existe
+try {
+  const bootToken = localStorage.getItem('smart_park_access_token');
+  if (bootToken) {
+    memoryToken = bootToken;
+    api.defaults.headers.common['Authorization'] = `Bearer ${bootToken}`;
+  }
+} catch {}
 
 // Auth
 export const register = (data) => api.post('/auth/register', data).then(r => r.data);

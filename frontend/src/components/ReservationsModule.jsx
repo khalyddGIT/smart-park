@@ -1131,7 +1131,11 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                                 {hoursElapsed > 0 ? `${hoursElapsed}h ${minsRemainder}m` : `${mins} min`} dentro
                               </span>
                               <span>·</span>
-                              <span>Contratado: {bookedHours}h</span>
+                              <span>
+                                {v.hours || v.estimatedHours || v.estimated_hours
+                                  ? `Contratado: ${v.hours || v.estimatedHours || v.estimated_hours}h`
+                                  : 'Estadía libre'}
+                              </span>
                             </p>
                           </div>
                         </div>

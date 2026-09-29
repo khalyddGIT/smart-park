@@ -528,19 +528,15 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                 {role === 'user' 
                   ? 'Mis Reservas & Pases Digitales' 
-                  : isStaffOperatorUser(user) 
-                  ? 'Control de Tickets & Estancias' 
                   : 'Centro de Reservas & Garita'}
               </h1>
               <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-                ({filteredReservations.length} {filteredReservations.length === 1 ? (role === 'user' ? 'reserva' : isStaffOperatorUser(user) ? 'ticket' : 'reserva') : (role === 'user' ? 'reservas' : isStaffOperatorUser(user) ? 'tickets' : 'reservas')})
+                ({filteredReservations.length} {filteredReservations.length === 1 ? (role === 'user' ? 'reserva' : 'reserva') : (role === 'user' ? 'reservas' : 'reservas')})
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-normal mt-0.5">
               {role === 'user' 
                 ? 'Monitorea tus estancias en tiempo real, descarga tus pases QR y gestiona tus horarios.' 
-                : isStaffOperatorUser(user)
-                ? 'Control operativo de tickets emitidos, ingresos, salidas y liquidación en tiempo real.'
                 : 'Control operativo de entradas, salidas y emisión de tickets en tiempo real.'}
             </p>
           </div>

@@ -34,7 +34,7 @@ import {
   formatearPlacaConGuion
 } from '../utils/plateOcr';
 import { useAuth } from '../context/AuthContext';
-import { useEstablishments, isDemoEstablishment } from '../context/EstablishmentContext';
+import { useEstablishments, isDemoEstablishment, isStaffOperatorUser } from '../context/EstablishmentContext';
 import { CarParkZoneEditor } from './CarParkZoneEditor';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
 
@@ -50,6 +50,7 @@ const getCurrentTimeStr = () => {
 
 export const ANPRMonitor = () => {
   const { role, user } = useAuth();
+  const isOperator = isStaffOperatorUser(user);
   const {
     establishments,
     myEstablishments,
@@ -73,6 +74,11 @@ export const ANPRMonitor = () => {
   }, [establishments, myEstablishments, isMyEstablishment, user, role]);
 
   const [selectedEstId, setSelectedEstId] = useState(() => {
+    if (isOperator) {
+      const assigned = user?.parking_id || user?.parkingId || user?.establishmentId;
+      if (assigned) return String(assigned);
+      if (availableEstablishments[0]?.id) return String(availableEstablishments[0].id);
+    }
     const saved = localStorage.getItem('smart_park_active_garita_est');
     if (saved && establishments.some(e => String(e.id) === String(saved))) return saved;
     return availableEstablishments[0]?.id || establishments[0]?.id || 'EST-01';
@@ -80,6 +86,14 @@ export const ANPRMonitor = () => {
 
   // Asegurar que selectedEstId siempre pertenezca a availableEstablishments de la empresa
   useEffect(() => {
+    if (isOperator) {
+      const assigned = user?.parking_id || user?.parkingId || user?.establishmentId;
+      const targetId = assigned ? String(assigned) : String(availableEstablishments[0]?.id || '');
+      if (targetId && String(selectedEstId) !== targetId) {
+        setSelectedEstId(targetId);
+      }
+      return;
+    }
     if (availableEstablishments.length > 0) {
       const exists = availableEstablishments.some(e => String(e.id) === String(selectedEstId));
       if (!exists) {
@@ -90,7 +104,7 @@ export const ANPRMonitor = () => {
         } catch {}
       }
     }
-  }, [availableEstablishments, selectedEstId]);
+  }, [availableEstablishments, selectedEstId, isOperator, user]);
 
   const currentEst = useMemo(
     () => availableEstablishments.find(e => String(e.id) === String(selectedEstId)) || availableEstablishments[0] || establishments[0],
@@ -470,7 +484,7 @@ export const ANPRMonitor = () => {
               <ShieldCheck className="w-5.5 h-5.5 text-emerald-400 dark:text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight leading-none">Control de Estadías</h1>
+              <h1 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight leading-none">Control de Garita</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 truncate">
                 Registro manual de entradas, salidas y cobro en garita
               </p>
@@ -480,27 +494,35 @@ export const ANPRMonitor = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-2 transition-colors">
               <Building2 className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
-              <select 
-                value={selectedEstId} 
-                onChange={(e) => {
-                  setSelectedEstId(e.target.value);
-                  try {
-                    localStorage.setItem('smart_park_active_garita_est', e.target.value);
-                  } catch {}
-                }} 
-                className="bg-transparent text-xs font-bold text-slate-900 dark:text-slate-100 outline-none cursor-pointer max-w-[200px] truncate"
-              >
-                {availableEstablishments.map(est => <option key={est.id} value={est.id}>{est.name}</option>)}
-              </select>
+              {availableEstablishments.length > 1 && !isOperator ? (
+                <select 
+                  value={selectedEstId} 
+                  onChange={(e) => {
+                    setSelectedEstId(e.target.value);
+                    try {
+                      localStorage.setItem('smart_park_active_garita_est', e.target.value);
+                    } catch {}
+                  }} 
+                  className="bg-transparent text-xs font-bold text-slate-900 dark:text-slate-100 outline-none cursor-pointer max-w-[200px] truncate"
+                >
+                  {availableEstablishments.map(est => <option key={est.id} value={est.id}>{est.name}</option>)}
+                </select>
+              ) : (
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate max-w-[200px]">
+                  {currentEst?.name || 'Sede Garita'}
+                </span>
+              )}
             </div>
 
-            <Button
-              type="button"
-              onClick={() => setShowZoneEditor(true)}
-              className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs h-10 px-4 rounded-2xl gap-1.5 shadow transition-colors"
-            >
-              <Pencil className="w-4 h-4 text-emerald-400 dark:text-white" /> Calibrar Plazas CAD
-            </Button>
+            {!isOperator && (
+              <Button
+                type="button"
+                onClick={() => setShowZoneEditor(true)}
+                className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs h-10 px-4 rounded-2xl gap-1.5 shadow transition-colors"
+              >
+                <Pencil className="w-4 h-4 text-emerald-400 dark:text-white" /> Calibrar Plazas CAD
+              </Button>
+            )}
           </div>
         </div>
 

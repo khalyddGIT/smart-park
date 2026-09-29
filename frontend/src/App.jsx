@@ -29,7 +29,6 @@ const ResiliencySimModule = lazy(() => import('./components/ResiliencySimModule'
 const AuditLogsModule = lazy(() => import('./components/AuditLogsModule').then(m => ({ default: m.AuditLogsModule })));
 const StaffModule = lazy(() => import('./components/StaffModule').then(m => ({ default: m.StaffModule })));
 const AffiliatedParkingsModule = lazy(() => import('./components/AffiliatedParkingsModule').then(m => ({ default: m.AffiliatedParkingsModule })));
-const PersonalGaritaModule = lazy(() => import('./components/PersonalGaritaModule').then(m => ({ default: m.PersonalGaritaModule })));
 const PaymentsModule = lazy(() => import('./components/PaymentsModule').then(m => ({ default: m.PaymentsModule })));
 const VehiclesModule = lazy(() => import('./components/VehiclesModule').then(m => ({ default: m.VehiclesModule })));
 const HistoryModule = lazy(() => import('./components/HistoryModule').then(m => ({ default: m.HistoryModule })));
@@ -202,14 +201,11 @@ const AppMain = () => {
     }).catch(() => {});
   }, [role, user]);
 
-  // Si es personal staff y está en 'dashboard' o sin subruta específica, redirigir automáticamente a Garita ('anpr')
+  // Si es personal staff y está fuera de las vistas autorizadas (solo 'anpr' y 'reservations'), redirigir automáticamente a Garita ('anpr')
   useEffect(() => {
-    if (isPersonalStaff && (activeTab === 'dashboard' || !activeTab)) {
-      const parsed = parseRoleLocation(window.location.pathname, window.location.search);
-      if (!parsed.matched || parsed.tab === 'dashboard') {
-        skipNextUrlPushRef.current = true;
-        setActiveTab('anpr');
-      }
+    if (isPersonalStaff && activeTab !== 'anpr' && activeTab !== 'reservations') {
+      skipNextUrlPushRef.current = true;
+      setActiveTab('anpr');
     }
   }, [isPersonalStaff, activeTab]);
 
@@ -1432,50 +1428,14 @@ const AppMain = () => {
               {(activeTab === 'dashboard' || activeTab === 'editor') && !isPersonalStaff && (
                 <LocalEstablishmentManager />
               )}
-              {isPersonalStaff && (activeTab === 'dashboard' || activeTab === 'editor') && (
-                <div className="space-y-4">
-                  {(() => {
-                    const localEsts = (establishments || []).filter(e => isMyEstablishment(e, user, role));
-                    const est = localEsts.find(e => String(e.id) === String(selectedParkingId)) || localEsts[0] || establishments[0];
-                    if (!est) return <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">Sin sede asignada</div>;
-                    
-                    if (est && est.elements === null && ensureFloorPlan) {
-                      ensureFloorPlan(est.id);
-                    }
-
-                    const elements = Array.isArray(est.elements) ? est.elements : [];
-                    const free = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
-                    const total = elements.filter(e => e.type === 'slot').length || est.totalSlots || 0;
-                    const occupied = total - free;
-
-                    return (
-                      <div className="space-y-3">
-                        <div className="bg-white dark:bg-[#111827] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div>
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                              <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400"/>
-                              <span>Mapa y Ocupación en Vivo</span>
-                            </h2>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                              {est.name} · S/ {Number(est.rate).toFixed(2)}/h · <span className="text-emerald-600 dark:text-emerald-400 font-medium">{free} libres</span>, {occupied} ocupados
-                            </p>
-                          </div>
-                        </div>
-                        <AutoFitFloorPlan elements={elements} name={est.name} />
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
               {activeTab === 'reservations' && <ReservationsModule />}
-              {activeTab === 'profile' && <UserProfileModule />}
-              {(activeTab === 'anpr' || activeTab === 'garita') && (isPersonalStaff ? <PersonalGaritaModule /> : <ANPRMonitor />)}
-              {activeTab === 'cameras' && (isPersonalStaff ? <CameraMonitorModule readOnly /> : <CameraMonitorModule />)}
-              {activeTab === 'incidents' && <IncidentsModule />}
+              {activeTab === 'profile' && !isPersonalStaff && <UserProfileModule />}
+              {(activeTab === 'anpr' || activeTab === 'garita') && <ANPRMonitor />}
+              {activeTab === 'cameras' && !isPersonalStaff && <CameraMonitorModule />}
+              {activeTab === 'incidents' && !isPersonalStaff && <IncidentsModule />}
               {activeTab === 'staff' && !isPersonalStaff && <StaffModule />}
-              {activeTab === 'staff' && isPersonalStaff && <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center text-xs text-slate-500 dark:text-slate-400">Solo el Admin Local gestiona el personal.</div>}
-              {activeTab === 'audit' && <AuditLogsModule />}
-              {activeTab === 'reviews' && <ReviewsModule />}
+              {activeTab === 'audit' && !isPersonalStaff && <AuditLogsModule />}
+              {activeTab === 'reviews' && !isPersonalStaff && <ReviewsModule />}
               {activeTab === 'resiliency' && !isPersonalStaff && <ResiliencySimModule />}
               {activeTab === 'reports' && !isPersonalStaff && <AnalyticsGlobalModule />}
             </div>

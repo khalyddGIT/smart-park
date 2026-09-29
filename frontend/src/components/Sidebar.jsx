@@ -42,13 +42,10 @@ const isPersonalAccount = (user) => {
 
 const PERSONAL_SECTIONS = [
   {
-    section: 'GARITA PERSONAL',
+    section: 'OPERACIÓN DE GARITA',
     items: [
-      { id: 'anpr', label: 'Garita - Entrada/Salida', shortLabel: 'Garita', icon: Camera },
-      { id: 'reservations', label: 'Control de Tickets', shortLabel: 'Tickets', icon: Receipt },
-      { id: 'dashboard', label: 'Mapa & Ocupación en Vivo', shortLabel: 'Mapa', icon: Building2 },
-      { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
-      { id: 'audit', label: 'Mi Auditoría', shortLabel: 'Auditoría', icon: ShieldCheck },
+      { id: 'anpr', label: 'Control de Garita', shortLabel: 'Garita', icon: Camera },
+      { id: 'reservations', label: 'Reservas & Garita', shortLabel: 'Reservas', icon: CalendarCheck },
     ]
   }
 ];
@@ -74,7 +71,7 @@ const SECTIONS_BY_ROLE = {
       items: [
         { id: 'dashboard', label: 'Mi Sede & Plano CAD', shortLabel: 'Sede', icon: Building2 },
         { id: 'anpr', label: 'Control de Garita', shortLabel: 'Garita', icon: Camera },
-        { id: 'reservations', label: 'Reservas & Tickets', shortLabel: 'Tickets', icon: CalendarCheck },
+        { id: 'reservations', label: 'Reservas & Garita', shortLabel: 'Reservas', icon: CalendarCheck },
         { id: 'cameras', label: 'Monitoreo CCTV', shortLabel: 'Cámaras', icon: Video },
         { id: 'staff', label: 'Personal & Turnos', shortLabel: 'Personal', icon: Users },
         { id: 'reports', label: 'Reportes & Cierres', shortLabel: 'Reportes', icon: BarChart3 },
@@ -159,35 +156,51 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
   const currentSections = isPersonal ? PERSONAL_SECTIONS : (SECTIONS_BY_ROLE[role] || SECTIONS_BY_ROLE.user);
   const allItems = currentSections.flatMap(sec => sec.items);
 
-  // Configuración de los 4 botones principales por rol en navegación móvil
+  // Configuración de los botones principales por rol en navegación móvil
   const getMobileNavConfig = () => {
+    if (isPersonal) {
+      return {
+        buttons: allItems,
+        showMore: false,
+      };
+    }
     if (role === 'local') {
       return {
-        left1: allItems.find(i => i.id === 'dashboard') || allItems[0],
-        left2: allItems.find(i => i.id === 'reservations') || allItems[1],
-        center: allItems.find(i => i.id === 'anpr') || allItems[2],
-        right1: allItems.find(i => i.id === 'incidents') || allItems[3],
+        buttons: [
+          allItems.find(i => i.id === 'dashboard') || allItems[0],
+          allItems.find(i => i.id === 'anpr') || allItems[1],
+          allItems.find(i => i.id === 'reservations') || allItems[2],
+          allItems.find(i => i.id === 'incidents') || allItems[3],
+        ].filter(Boolean),
+        showMore: true,
       };
     }
     if (role === 'platform') {
       return {
-        left1: allItems.find(i => i.id === 'dashboard') || allItems[0],
-        left2: allItems.find(i => i.id === 'finances') || allItems[1],
-        center: allItems.find(i => i.id === 'affiliates') || allItems[2],
-        right1: allItems.find(i => i.id === 'analytics') || allItems[3],
+        buttons: [
+          allItems.find(i => i.id === 'dashboard') || allItems[0],
+          allItems.find(i => i.id === 'finances') || allItems[1],
+          allItems.find(i => i.id === 'affiliates') || allItems[2],
+          allItems.find(i => i.id === 'analytics') || allItems[3],
+        ].filter(Boolean),
+        showMore: true,
       };
     }
     return {
-      left1: allItems.find(i => i.id === 'dashboard') || allItems[0],
-      left2: allItems.find(i => i.id === 'reservations') || allItems[1],
-      center: allItems.find(i => i.id === 'vehicles') || allItems[2],
-      right1: allItems.find(i => i.id === 'payments') || allItems[3],
+      buttons: [
+        allItems.find(i => i.id === 'dashboard') || allItems[0],
+        allItems.find(i => i.id === 'reservations') || allItems[1],
+        allItems.find(i => i.id === 'vehicles') || allItems[2],
+        allItems.find(i => i.id === 'payments') || allItems[3],
+      ].filter(Boolean),
+      showMore: true,
     };
   };
 
   const navConfig = getMobileNavConfig();
-  const mobileNavButtons = [navConfig.left1, navConfig.left2, navConfig.center, navConfig.right1].filter(Boolean);
-  const isDrawerActive = !mobileNavButtons.some(i => i.id === activeTab);
+  const mobileNavButtons = navConfig.buttons;
+  const showMoreButton = navConfig.showMore;
+  const isDrawerActive = showMoreButton && !mobileNavButtons.some(i => i.id === activeTab);
 
   const handleSelectTab = (tabId) => {
     setActiveTab(tabId);
@@ -324,32 +337,34 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           );
         })}
 
-        {/* Botón "+ Más" */}
-        <button
-          type="button"
-          onClick={() => setMobileDrawerOpen(true)}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all duration-150 cursor-pointer relative min-h-[46px] active:scale-95 ${
-            mobileDrawerOpen || isDrawerActive
-              ? 'text-emerald-600 dark:text-emerald-400 font-bold'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
-        >
-          <div className={`p-1.5 rounded-xl transition-colors duration-150 ${
-            mobileDrawerOpen || isDrawerActive
-              ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-              : 'text-slate-400 dark:text-slate-500'
-          }`}>
-            <Menu className="w-5 h-5 shrink-0 stroke-[2.2]" />
-          </div>
-          <span className={`text-[10px] tracking-tight leading-none mt-0.5 truncate max-w-[64px] ${
-            mobileDrawerOpen || isDrawerActive ? 'font-black' : 'font-semibold'
-          }`}>
-            Más
-          </span>
-          {(mobileDrawerOpen || isDrawerActive) && (
-            <span className="w-1 h-1 rounded-full bg-emerald-500 dark:bg-emerald-400 mt-0.5" />
-          )}
-        </button>
+        {/* Botón "+ Más" (solo cuando hay más módulos en el drawer) */}
+        {showMoreButton && (
+          <button
+            type="button"
+            onClick={() => setMobileDrawerOpen(true)}
+            className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all duration-150 cursor-pointer relative min-h-[46px] active:scale-95 ${
+              mobileDrawerOpen || isDrawerActive
+                ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <div className={`p-1.5 rounded-xl transition-colors duration-150 ${
+              mobileDrawerOpen || isDrawerActive
+                ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                : 'text-slate-400 dark:text-slate-500'
+            }`}>
+              <Menu className="w-5 h-5 shrink-0 stroke-[2.2]" />
+            </div>
+            <span className={`text-[10px] tracking-tight leading-none mt-0.5 truncate max-w-[64px] ${
+              mobileDrawerOpen || isDrawerActive ? 'font-black' : 'font-semibold'
+            }`}>
+              Más
+            </span>
+            {(mobileDrawerOpen || isDrawerActive) && (
+              <span className="w-1 h-1 rounded-full bg-emerald-500 dark:bg-emerald-400 mt-0.5" />
+            )}
+          </button>
+        )}
       </nav>
 
       {/* =========================================================================
@@ -371,7 +386,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 <h3 className="font-black text-slate-900 dark:text-white text-sm">
-                  {role === 'user' ? 'Menú Principal' : `Menú • ${isPersonal ? 'Trabajador' : role === 'local' ? 'Admin Local' : 'Super Admin'}`}
+                  {role === 'user' ? 'Menú Principal' : `Menú • ${isPersonal ? 'Operador de Garita' : role === 'local' ? 'Admin Local' : 'Super Admin'}`}
                 </h3>
               </div>
               <button 

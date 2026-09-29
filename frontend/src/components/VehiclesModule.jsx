@@ -1016,36 +1016,64 @@ export const VehiclesModule = () => {
         </div>
         <Input
           type="text"
-          placeholder={formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto' ? 'AB-1234 o 1234-5A' : 'ABC-123'}
-          maxLength={9}
+          placeholder={formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto' ? '1234-5A o AB-1234' : 'ABC-123'}
+          maxLength={7}
           value={formData.license_plate}
           onChange={(e) => {
-            let val = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
-            if (!val.includes('-')) {
-              if (formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto') {
-                if (/^[A-Z]{2}[0-9]/.test(val) && val.length > 2) {
-                  val = val.slice(0, 2) + '-' + val.slice(2);
-                } else if (/^[0-9]{4}/.test(val) && val.length > 4) {
-                  val = val.slice(0, 4) + '-' + val.slice(4);
-                } else if (val.length > 3) {
-                  val = val.slice(0, 3) + '-' + val.slice(3);
-                }
-              } else {
-                if (val.length > 3) {
-                  val = val.slice(0, 3) + '-' + val.slice(3);
-                }
+            let raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            let formatted = raw;
+            const isMinor = formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto';
+
+            if (isMinor) {
+              if (/^[0-9]{4}/.test(raw)) {
+                formatted = raw.length > 4 ? raw.slice(0, 4) + '-' + raw.slice(4, 6) : raw;
+              } else if (/^[A-Z]{2}[0-9]/.test(raw)) {
+                formatted = raw.length > 2 ? raw.slice(0, 2) + '-' + raw.slice(2, 6) : raw;
+              } else if (raw.length > 3) {
+                formatted = raw.slice(0, 3) + '-' + raw.slice(3, 6);
+              }
+            } else {
+              if (raw.length > 3) {
+                formatted = raw.slice(0, 3) + '-' + raw.slice(3, 6);
               }
             }
-            setFormData({ ...formData, license_plate: val.slice(0, 9) });
+            setFormData({ ...formData, license_plate: formatted.slice(0, 7) });
           }}
           className="font-mono tracking-widest font-black text-center text-sm uppercase h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
           required
         />
-        {formData.license_plate && !/^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/.test(formData.license_plate.trim()) && (
-          <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-1 text-center">
-            Incluye un guión obligatorio (-) (ej: {formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto' ? 'AB-1234 o 1234-5A' : 'ABC-123'})
-          </p>
-        )}
+        {formData.license_plate && (() => {
+          const plate = formData.license_plate.trim();
+          const isMinor = formData.vehicle_type === 'mototaxi' || formData.vehicle_type === 'moto';
+          const autoRegex = /^[A-Z0-9]{3}-[A-Z0-9]{3}$/;
+          const motoRegex = /^([A-Z0-9]{4}-[A-Z0-9]{2}|[A-Z0-9]{2}-[A-Z0-9]{4}|[A-Z0-9]{3}-[A-Z0-9]{3})$/;
+
+          if (!plate.includes('-')) {
+            return (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-1 text-center">
+                Incluye el guión (-) separador (ej: {isMinor ? '1234-5A o AB-1234' : 'ABC-123'})
+              </p>
+            );
+          }
+          if (plate.replace('-', '').length < 6) {
+            return (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1 text-center">
+                Completa los 6 caracteres de la placa ({plate.replace('-', '').length}/6)
+              </p>
+            );
+          }
+          const isValid = isMinor ? motoRegex.test(plate) : autoRegex.test(plate);
+          if (!isValid) {
+            return (
+              <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium mt-1 text-center">
+                {isMinor
+                  ? 'Formato inválido para vehículo menor (usa 1234-5A, AB-1234 o ABC-123)'
+                  : 'Formato inválido para vehículo mayor (usa 3 caracteres y 3 dígitos, ej: ABC-123)'}
+              </p>
+            );
+          }
+          return null;
+        })()}
       </div>
 
       {/* Selector Visual de Categorías */}

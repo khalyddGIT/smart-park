@@ -4,6 +4,7 @@ from pydantic import ValidationError
 
 from app.schemas.schemas import (
     validate_license_plate_format,
+    validate_license_plate_for_vehicle_type,
     ReservationCreate,
     ReservationUpdate,
     VehicleCreate,
@@ -203,10 +204,174 @@ def test_vehicle_create_valid():
     assert v.license_plate == "XYZ-789"
     assert v.vehicle_type == "auto"
 
-    # Tipos adicionales soportados: suv, mototaxi, bike
-    for vtype in ["suv", "mototaxi", "bike", "camioneta", "moto"]:
+    # Tipos adicionales soportados con formato 3-3 (válido universal MTC)
+    for vtype in ["suv", "mototaxi", "bike", "camioneta", "moto", "camion"]:
         v_test = VehicleCreate(license_plate="XYZ-789", vehicle_type=vtype)
         assert v_test.vehicle_type == vtype
+
+
+def test_validate_plate_auto_sedan():
+    """Pruebas de validación de placas para Auto / Sedán / Hatchback (Cat. M1)."""
+    # Placas válidas MTC: 3 caracteres alfanuméricos + guión + 3 dígitos/alfanuméricos
+    valid_auto_plates = ["ABC-123", "abc-123", "A1B-234", "XYZ-999", "B0A-111", "  F4G-567  "]
+    for plate in valid_auto_plates:
+        cleaned = validate_license_plate_for_vehicle_type(plate, "auto")
+        assert cleaned == plate.strip().upper()
+        assert len(cleaned) == 7
+        assert cleaned[3] == '-'
+
+    # Placas inválidas para Auto:
+    # 1. Caso de la captura del usuario: GGG-GGGGG (3 letras y 5 letras, total 8 letras)
+    with pytest.raises(ValueError) as exc:
+        validate_license_plate_for_vehicle_type("GGG-GGGGG", "auto")
+    assert "demasiados caracteres" in str(exc.value) or "6 caracteres" in str(exc.value)
+
+    # 2. Placa de moto en auto (1234-5A o AB-1234) debe ser rechazada
+    with pytest.raises(ValueError, match="inválido para AUTO"):
+        validate_license_plate_for_vehicle_type("1234-5A", "auto")
+
+    with pytest.raises(ValueError, match="inválido para AUTO"):
+        validate_license_plate_for_vehicle_type("AB-1234", "auto")
+
+    # 3. Sin guión o longitudes incorrectas
+    with pytest.raises(ValueError, match="obligatoriamente un guión"):
+        validate_license_plate_for_vehicle_type("ABC123", "auto")
+
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("ABCDE-123", "auto")
+
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("ABC-1234", "auto")
+
+
+def test_validate_plate_camioneta_suv():
+    """Pruebas de validación de placas para Camioneta / SUV / 4x4 (Cat. M1 / N1)."""
+    valid_suv_plates = ["AFB-789", "A7C-456", "T3C-012", "SU1-234"]
+    for plate in valid_suv_plates:
+        assert validate_license_plate_for_vehicle_type(plate, "camioneta") == plate
+        assert validate_license_plate_for_vehicle_type(plate, "suv") == plate
+
+    # Rechaza placas menores o con longitud incorrecta
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("1234-5A", "camioneta")
+
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("GGG-GGGGG", "suv")
+
+
+def test_validate_plate_moto_lineal():
+    """Pruebas de validación de placas para Moto Lineal / Scooter (Cat. L1 / L3)."""
+    # Formatos oficiales MTC: 4-2 (1234-5A, 1234-AB), 2-4 (AB-1234) o 3-3 (ABC-123)
+    valid_moto_plates = [
+        "1234-5A",
+        "1234-ab",
+        "AB-1234",
+        "1234-5B",
+        "A1-2345",
+        "ABC-123",
+        "6789-0X"
+    ]
+    for plate in valid_moto_plates:
+        res = validate_license_plate_for_vehicle_type(plate, "moto")
+        assert res == plate.strip().upper()
+
+    # Inválidas para moto
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("GGG-GGGGG", "moto")
+
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("123456", "moto")
+
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("12-12", "moto")
+
+
+def test_validate_plate_mototaxi_torito():
+    """Pruebas de validación de placas para Mototaxi / Trimóvil / Torito (Cat. L5)."""
+    valid_mototaxi_plates = [
+        "1234-5A",
+        "5678-9C",
+        "AB-1234",
+        "1234-AB",
+        "ABC-123"
+    ]
+    for plate in valid_mototaxi_plates:
+        assert validate_license_plate_for_vehicle_type(plate, "mototaxi") == plate.upper()
+        assert validate_license_plate_for_vehicle_type(plate, "torito") == plate.upper()
+        assert validate_license_plate_for_vehicle_type(plate, "trimovil") == plate.upper()
+
+    # Inválidas para mototaxi
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("GGG-GGGGG", "mototaxi")
+
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("1234-5678", "mototaxi")
+
+
+def test_validate_plate_camion_pesado():
+    """Pruebas de validación de placas para Camión / Furgón / Utilitario / Pesado (Cat. N)."""
+    valid_truck_plates = ["ABC-123", "T7B-890", "W1A-456"]
+    for plate in valid_truck_plates:
+        assert validate_license_plate_for_vehicle_type(plate, "camion") == plate
+        assert validate_license_plate_for_vehicle_type(plate, "truck") == plate
+
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("1234-5A", "camion")
+
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("GGG-GGGGG", "truck")
+
+
+def test_validate_plate_taxi():
+    """Pruebas de validación de placas para Servicio de Taxi (Cat. M1 Público)."""
+    valid_taxi_plates = ["A1A-123", "BC1-234", "BCA-123"]
+    for plate in valid_taxi_plates:
+        assert validate_license_plate_for_vehicle_type(plate, "taxi") == plate
+
+    with pytest.raises(ValueError):
+        validate_license_plate_for_vehicle_type("1234-5A", "taxi")
+
+
+def test_vehicle_create_each_category_schema():
+    """VehicleCreate valida estrictamente la combinación de placa y tipo de vehículo."""
+    # 1. Creación exitosa para cada tipo con su placa correspondiente
+    v_auto = VehicleCreate(license_plate="ABC-123", vehicle_type="auto")
+    assert v_auto.license_plate == "ABC-123"
+
+    v_suv = VehicleCreate(license_plate="B4C-789", vehicle_type="suv")
+    assert v_suv.license_plate == "B4C-789"
+
+    v_camioneta = VehicleCreate(license_plate="T3C-012", vehicle_type="camioneta")
+    assert v_camioneta.license_plate == "T3C-012"
+
+    v_moto = VehicleCreate(license_plate="1234-5A", vehicle_type="moto")
+    assert v_moto.license_plate == "1234-5A"
+
+    v_mototaxi = VehicleCreate(license_plate="AB-1234", vehicle_type="mototaxi")
+    assert v_mototaxi.license_plate == "AB-1234"
+
+    v_truck = VehicleCreate(license_plate="T7B-890", vehicle_type="truck")
+    assert v_truck.license_plate == "T7B-890"
+
+    # 2. Rechazo de placa de moto asignada a un auto
+    with pytest.raises(ValidationError) as exc1:
+        VehicleCreate(license_plate="1234-5A", vehicle_type="auto")
+    assert "inválido para AUTO" in str(exc1.value)
+
+    # 3. Rechazo de placa de moto asignada a una camioneta
+    with pytest.raises(ValidationError) as exc2:
+        VehicleCreate(license_plate="AB-1234", vehicle_type="camioneta")
+    assert "inválido para CAMIONETA" in str(exc2.value)
+
+    # 4. Rechazo de placa deformada GGG-GGGGG en cualquier tipo
+    with pytest.raises(ValidationError):
+        VehicleCreate(license_plate="GGG-GGGGG", vehicle_type="auto")
+
+    with pytest.raises(ValidationError):
+        VehicleCreate(license_plate="GGG-GGGGG", vehicle_type="moto")
+
+    with pytest.raises(ValidationError):
+        VehicleCreate(license_plate="GGG-GGGGG", vehicle_type="mototaxi")
 
 
 def test_vehicle_create_rejects_plate_without_hyphen():
@@ -229,10 +394,18 @@ def test_vehicle_create_invalid_vehicle_type():
 
 
 def test_vehicle_update_valid_and_invalid():
-    """VehicleUpdate valida la placa solo si se envía."""
-    # Válido con nueva placa con guión
-    vu = VehicleUpdate(license_plate="abc-999")
+    """VehicleUpdate valida la placa según el tipo si se envía."""
+    # Válido con nueva placa con guión para auto
+    vu = VehicleUpdate(license_plate="abc-999", vehicle_type="auto")
     assert vu.license_plate == "ABC-999"
+
+    # Válido con placa de moto al actualizar moto
+    vu_moto = VehicleUpdate(license_plate="1234-5A", vehicle_type="moto")
+    assert vu_moto.license_plate == "1234-5A"
+
+    # Inválido: asignar placa de moto a auto en update
+    with pytest.raises(ValidationError):
+        VehicleUpdate(license_plate="1234-5A", vehicle_type="auto")
 
     # Inválido si la placa no tiene guión
     with pytest.raises(ValidationError):

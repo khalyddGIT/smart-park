@@ -420,7 +420,7 @@ async def test_driver_interactive_2d_cad_pricing_and_open_stay():
         # Check-in y check-out para liberar el cajón
         res_day_id = data_day["id"]
         await ac.put(f"/api/v1/reservations/{res_day_id}/check-in", headers=admin_headers)
-        checkout_day = await ac.put(f"/api/v1/reservations/{res_day_id}/check-out", headers=admin_headers, json={"payment_method": "cash", "amount_paid": 6.50})
+        checkout_day = await ac.put(f"/api/v1/reservations/{res_day_id}/check-out", headers=admin_headers, json={"payment_method": "cash"})
         assert checkout_day.status_code == 200, checkout_day.text
 
         # 3. Una hora futura enviada como reserva inmediata no altera el inicio real.

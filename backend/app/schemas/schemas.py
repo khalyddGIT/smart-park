@@ -8,6 +8,13 @@ DNI_RE = re.compile(r'^[0-9]{8}$')
 PHONE_RE = re.compile(r'^(\+51\s?)?9[0-9]{8}$')
 PLATE_RE = re.compile(r'^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$', re.IGNORECASE)
 
+# Reglas oficiales MTC de Perú por tipo de vehículo (Placa Única Nacional de Rodaje):
+# Vehículos mayores (Auto, SUV, Camioneta, Camión, Taxi): exactamente 3 alfanuméricos + '-' + 3 alfanuméricos (ej: ABC-123, A1B-234)
+AUTO_PLATE_RE = re.compile(r'^[A-Z0-9]{3}-[A-Z0-9]{3}$', re.IGNORECASE)
+
+# Vehículos menores (Moto Lineal, Scooter, Trimóvil / Mototaxi): 4-2 (1234-5A, 1234-AB), 2-4 (AB-1234), o 3-3 (ABC-123)
+MOTO_PLATE_RE = re.compile(r'^([A-Z0-9]{4}-[A-Z0-9]{2}|[A-Z0-9]{2}-[A-Z0-9]{4}|[A-Z0-9]{3}-[A-Z0-9]{3})$', re.IGNORECASE)
+
 def _clean_phone(v: str) -> str:
     if v is None: return v
     v = v.strip().replace(' ', '').replace('-', '')
@@ -49,8 +56,37 @@ def validate_license_plate_format(v: Any) -> str:
         raise ValueError("La placa contiene demasiados caracteres (máximo 4 antes y 4 después del guión).")
     if len(parts[0]) < 2 or len(parts[1]) < 2:
         raise ValueError("La placa contiene muy pocos caracteres (mínimo 2 antes y 2 después del guión).")
+    # En el Perú toda placa vehicular consta de exactamente 6 caracteres alfanuméricos
+    if len(parts[0]) + len(parts[1]) != 6:
+        raise ValueError("La placa peruana debe tener exactamente 6 caracteres alfanuméricos (ej: ABC-123 o 1234-5A).")
     if not PLATE_RE.match(v_clean):
         raise ValueError("Formato de placa inválido. Debe contener entre 2 y 4 caracteres alfanuméricos, un guión (-) y entre 2 y 4 caracteres alfanuméricos (ej: ABC-123 o 1234-5A).")
+    return v_clean
+
+def validate_license_plate_for_vehicle_type(v: Any, vehicle_type: Optional[str] = "auto") -> str:
+    """
+    Valida la placa vehicular según la normativa MTC de Perú por tipo de vehículo:
+    - Vehículos mayores (auto, suv, camioneta, camion, truck, taxi): formato estándar 3 caracteres y 3 dígitos (ej: ABC-123, A1B-234).
+    - Vehículos menores (moto, mototaxi, torito, trimovil): formato 1234-5A, AB-1234 o ABC-123.
+    """
+    v_clean = validate_license_plate_format(v)
+    vtype = (vehicle_type or "auto").strip().lower()
+    
+    major_types = {'auto', 'car', 'suv', 'camioneta', 'truck', 'camion', 'van', 'taxi'}
+    minor_types = {'moto', 'motorcycle', 'mototaxi', 'torito', 'trimovil', 'bike', 'bicicleta'}
+    
+    if vtype in major_types:
+        if not AUTO_PLATE_RE.match(v_clean):
+            raise ValueError(
+                f"Formato de placa inválido para {vtype.upper()}. Los vehículos mayores (autos, camionetas, SUVs y camiones) "
+                f"requieren exactamente 3 caracteres y 3 dígitos separados por guión (ej: ABC-123 o A1B-234)."
+            )
+    elif vtype in minor_types:
+        if not MOTO_PLATE_RE.match(v_clean):
+            raise ValueError(
+                f"Formato de placa inválido para {vtype.upper()}. Los vehículos menores (motos y mototaxis) "
+                f"requieren formato 1234-5A, AB-1234 o ABC-123 (normativa MTC)."
+            )
     return v_clean
 
 # ==========================================
@@ -202,6 +238,12 @@ class VehicleBase(BaseModel):
             return v_clean
         return v
 
+    @model_validator(mode='after')
+    def validate_plate_matches_vehicle_type(self):
+        if self.license_plate and self.vehicle_type and self.vehicle_type != 'otro':
+            self.license_plate = validate_license_plate_for_vehicle_type(self.license_plate, self.vehicle_type)
+        return self
+
 class VehicleCreate(VehicleBase):
     user_id: Optional[int] = 1
 
@@ -234,6 +276,14 @@ class VehicleUpdate(BaseModel):
             return v_clean
         return v
 
+    @model_validator(mode='after')
+    def validate_plate_matches_vehicle_type(self):
+        if self.license_plate:
+            vtype = self.vehicle_type or "auto"
+            if vtype != 'otro':
+                self.license_plate = validate_license_plate_for_vehicle_type(self.license_plate, vtype)
+        return self
+
 class VehicleResponse(VehicleBase):
     id: int
     user_id: int
@@ -250,6 +300,11 @@ class VehicleResponse(VehicleBase):
             return validate_license_plate_format(v)
         except ValueError:
             return v.strip().upper() if isinstance(v, str) else v
+
+    @model_validator(mode='after')
+    def validate_plate_matches_vehicle_type(self):
+        # En lectura de base de datos no lanzamos excepción si hay datos antiguos no migrados
+        return self
 
 # ==========================================
 # 3. SCHEMAS DE ESTACIONAMIENTOS

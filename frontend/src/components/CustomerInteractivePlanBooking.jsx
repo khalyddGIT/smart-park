@@ -706,7 +706,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     ? (selectedPlate || (vehicles[0]?.license_plate || '')) 
     : customPlateInput
   ).toUpperCase().trim().replace(/\s/g, '');
-  const PLATE_REGEX = /^[A-Z0-9]{2,4}[- ]?[A-Z0-9]{2,4}$/i;
+  const PLATE_REGEX = /^([A-Z0-9]{3}-[A-Z0-9]{3}|[A-Z0-9]{4}-[A-Z0-9]{2}|[A-Z0-9]{2}-[A-Z0-9]{4})$/i;
   const isPlateValid = PLATE_REGEX.test(effectivePlate);
 
   const isMinuteBilling = parking?.billing_unit === 'minute';
@@ -1435,10 +1435,10 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                       if (!clean.includes('-') && clean.length > 3) {
                         clean = clean.slice(0, 3) + '-' + clean.slice(3);
                       }
-                      setCustomPlateInput(clean.slice(0, 9));
+                      setCustomPlateInput(clean.slice(0, 7));
                     }}
                     placeholder="ABC-123 o 1234-5A"
-                    maxLength={9}
+                    maxLength={7}
                     className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-mono font-bold tracking-wider uppercase focus:outline-none"
                   />
                   {customPlateInput.length > 0 && !isPlateValid && (

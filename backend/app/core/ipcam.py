@@ -98,9 +98,14 @@ def fetch_camera_frame(url: str, max_bytes: int = 6 * 1024 * 1024, timeout_s: fl
 
     import requests
 
+    DEFAULT_HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "image/webp,image/apng,image/jpeg,image/*,*/*;q=0.8",
+    }
+
     def _try_http(target_url: str) -> Optional[bytes]:
         try:
-            resp = requests.get(target_url, stream=True, timeout=timeout_s, allow_redirects=True)
+            resp = requests.get(target_url, headers=DEFAULT_HEADERS, stream=True, timeout=timeout_s, allow_redirects=True)
             if resp.status_code in (401, 403):
                 raise ConnectionError(f"La cámara requiere autenticación (HTTP {resp.status_code}). Incluye usuario y contraseña en la URL (ej: http://admin:clave@ip:puerto/video).")
             if resp.status_code == 404:

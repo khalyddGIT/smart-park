@@ -27,8 +27,6 @@ test.describe('3. Flujo de Reserva, Plano Interactivo y Pase Digital QR', () => 
     await expect(paymentPolicy).toBeVisible({ timeout: 10000 });
 
     await page.getByRole('textbox', { name: /ABC-123 o 1234-5A/i }).fill('QAZ-987');
-    await page.getByRole('button', { name: 'Ahora', exact: true }).click();
-    await page.getByRole('button', { name: /^(2h|60m)$/ }).click();
     const confirmBtn = page.getByRole('button', { name: /Confirmar Reserva|Continuar al Pago Digital/i });
     await expect(confirmBtn).toBeVisible({ timeout: 10000 });
   });

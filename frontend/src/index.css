@@ -69,6 +69,14 @@
     --font-mono: 'JetBrains Mono', var(--font-roboto-mono), ui-monospace, monospace;
     --ease-fluid: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);
+    --page-gutter: clamp(1rem, 2.5vw, 2rem);
+    --content-max: 80rem;
+  }
+
+  html {
+    min-width: 320px;
+    min-height: 100%;
+    overflow-x: clip;
   }
 
   svg.lucide {
@@ -85,13 +93,28 @@
 
   body {
     margin: 0;
+    min-width: 320px;
+    min-height: 100dvh;
     background-color: #FBFBFA;
     color: #191919;
     font-family: var(--font-sans);
     letter-spacing: -0.012em;
-    overflow-x: hidden;
+    overflow-x: clip;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
+  }
+
+  #root {
+    width: 100%;
+    min-width: 0;
+    min-height: 100dvh;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
   }
 
   button, a, input, select, textarea {
@@ -106,6 +129,35 @@
   :focus-visible {
     outline: 2px solid #10b981;
     outline-offset: 2px;
+  }
+}
+
+/* Contenedor fluido compartido: mantiene una escala cómoda desde móvil a 4K. */
+.responsive-shell {
+  width: 100%;
+  max-width: var(--content-max) !important;
+  margin-inline: auto;
+}
+
+.safe-area-x {
+  padding-left: max(var(--page-gutter), env(safe-area-inset-left));
+  padding-right: max(var(--page-gutter), env(safe-area-inset-right));
+}
+
+@media (min-width: 1600px) {
+  :root { --content-max: 96rem; }
+}
+
+@media (min-width: 2200px) {
+  :root { --content-max: 104rem; }
+}
+
+@media (pointer: coarse) {
+  button,
+  a,
+  input:not([type="checkbox"]):not([type="radio"]),
+  select {
+    min-height: 44px;
   }
 }
 

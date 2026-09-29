@@ -87,7 +87,7 @@ El backend de Smart-Park incluye un inicializador inteligente en el arranque (`s
 
 4. **Iniciar el servidor Uvicorn**:
    ```bash
-   python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+   python -m uvicorn app.main_runtime:app --host 127.0.0.1 --port 8000 --reload
    ```
 
 5. **Verificación de operatividad**:
@@ -97,7 +97,7 @@ El backend de Smart-Park incluye un inicializador inteligente en el arranque (`s
      INFO: Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
      ```
    - **Documentación Interactiva Swagger**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-   - **Healthcheck**: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+   - **Readiness**: [http://127.0.0.1:8000/health/ready](http://127.0.0.1:8000/health/ready)
 
 ---
 

@@ -216,7 +216,7 @@ python -m venv venv
 source venv/bin/activate
 
 pip install -r requirements.txt
-python -m uvicorn app.main:app --port 8000 --reload
+python -m uvicorn app.main_runtime:app --port 8000 --reload
 *API disponible en: `http://127.0.0.1:8000/docs` (Swagger UI). Requiere Postgres local: `docker compose up -d postgres` (puerto host `5434`) y `DATABASE_URL` en `backend/.env` (plantilla: `backend/.env.example`). **PostgreSQL exclusivo**: todo el sistema, desarrollo y suite de tests operan de forma centralizada sobre PostgreSQL.*
 
 ### 3. Iniciar el Frontend (React + Vite):
@@ -256,7 +256,7 @@ railway up   # despliegue directo con la CLI
 
 ## 🌍 Entornos y Verificación de Servicios
 
-- **Healthcheck del Sistema:** `/health` (Monitorea el estado del servicio y conectividad con PostgreSQL)
+- **Liveness:** `/health/live` · **Readiness Railway + PostgreSQL:** `/health/ready`
 - **Documentación de API:** `/docs` (Swagger UI interactivo) y `/redoc`
 - **Seguridad & RBAC:** Autenticación por JSON Web Tokens (JWT) y autorización basada en roles (`user`, `local`, `platform`). Las credenciales y accesos se gestionan de forma segura a través de variables de entorno o mediante el panel administrativo de la plataforma.
 

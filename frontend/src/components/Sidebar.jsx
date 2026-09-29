@@ -200,7 +200,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           SIDEBAR DESKTOP DINÁMICO & COLAPSABLE (ALTO RENDIMIENTO Y UX LIMPIA)
           ========================================================================= */}
       <aside 
-        className={`hidden md:flex bg-white dark:bg-[#0B0F19] border-r border-slate-200/90 dark:border-slate-800/80 flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] shadow-2xs z-30 select-none shrink-0 transition-[width] duration-200 ease-out will-change-[width] ${
+        className={`hidden lg:flex bg-white dark:bg-[#0B0F19] border-r border-slate-200/90 dark:border-slate-800/80 flex-col justify-between h-[calc(100dvh-61px)] sticky top-[61px] shadow-2xs z-30 select-none shrink-0 transition-[width] duration-200 ease-out will-change-[width] ${
           isCollapsed ? 'w-16 min-w-[64px] max-w-[64px]' : 'w-56 min-w-[224px] max-w-[224px]'
         }`}
       >
@@ -287,7 +287,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           ========================================================================= */}
       <nav 
         aria-label="Navegación Móvil Principal"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0B0F19]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.5)] px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around select-none will-change-transform"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0B0F19]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.5)] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around select-none will-change-transform"
         style={{ touchAction: 'manipulation' }}
       >
         {(mobileNavButtons || []).map((item) => {
@@ -357,7 +357,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           ========================================================================= */}
       {mobileDrawerOpen && (
         <div 
-          className="md:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
           onClick={() => setMobileDrawerOpen(false)}
         >
           <div 

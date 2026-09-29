@@ -1,4 +1,5 @@
 import uuid
+import asyncio
 import pytest
 from datetime import datetime, timedelta
 from httpx import AsyncClient, ASGITransport
@@ -139,6 +140,66 @@ async def test_quick_reservation_auto_assignment_and_vehicle_matching():
         v_data = verify_res.json()
         assert v_data["slot_code"] == "MOT-01"
         assert v_data["license_plate"] == plate_moto
+
+
+@pytest.mark.asyncio
+async def test_concurrent_auto_assignment_never_double_books_one_slot():
+    admin_token, _, _ = await _register_and_get_token(role="local")
+    driver_a_token, _, _ = await _register_and_get_token(role="user")
+    driver_b_token, _, _ = await _register_and_get_token(role="user")
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://test") as setup_client:
+        parking_resp = await setup_client.post(
+            "/api/v1/parkings",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "name": f"Concurrencia {uuid.uuid4().hex[:8]}",
+                "address": "Jr. Prueba Concurrente 100",
+                "city": "Ayacucho",
+                "hourly_rate": 5,
+                "total_capacity": 1,
+                "tolerance_minutes": 15,
+            },
+        )
+        assert parking_resp.status_code == 201, parking_resp.text
+        parking_id = parking_resp.json()["id"]
+        sync_resp = await setup_client.post(
+            f"/api/v1/parkings/{parking_id}/floor-plan/sync",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "slots": [{
+                    "code": "AUT-ONLY", "floor_level": "Piso 1", "slot_type": "auto",
+                    "status": "free", "pos_x": 10, "pos_y": 10,
+                    "width": 50, "height": 80, "rotation": 0,
+                }],
+                "elements": [],
+            },
+        )
+        assert sync_resp.status_code == 200, sync_resp.text
+
+    now = datetime.utcnow()
+
+    async def reserve(token: str, plate: str):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            return await client.post(
+                "/api/v1/reservations",
+                headers={"Authorization": f"Bearer {token}"},
+                json={
+                    "parking_id": parking_id,
+                    "slot_id": None,
+                    "license_plate": plate,
+                    "vehicle_type": "auto",
+                    "start_time": (now + timedelta(minutes=5)).isoformat(),
+                    "end_time": (now + timedelta(hours=1)).isoformat(),
+                },
+            )
+
+    responses = await asyncio.gather(
+        reserve(driver_a_token, f"CA-{uuid.uuid4().hex[:4].upper()}"),
+        reserve(driver_b_token, f"CB-{uuid.uuid4().hex[:4].upper()}"),
+    )
+    assert sorted(response.status_code for response in responses) == [201, 409]
 
 @pytest.mark.asyncio
 async def test_reservation_rejected_when_parking_in_maintenance_or_closed():

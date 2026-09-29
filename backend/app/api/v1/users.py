@@ -8,6 +8,7 @@ from app.models.models import User
 from app.schemas.schemas import UserCreate, UserUpdate, UserRoleUpdate, UserPinUpdate, UserResponse
 from app.core.security import get_password_hash, hash_pin, require_role
 from app.core.audit_service import record_audit_event
+from app.core.system_accounts import required_role_for_email
 
 router = APIRouter(prefix="/users", tags=["Directorio Global de Usuarios & Roles"])
 
@@ -97,6 +98,12 @@ async def update_user(
     
     prev_active = user.is_active
     update_data = user_in.model_dump(exclude_unset=True)
+    # Los roles se modifican exclusivamente en /{id}/role, donde se aplican
+    # validaciones RBAC y protecciones para las identidades internas.
+    update_data.pop("role", None)
+    protected_role = required_role_for_email(user.email)
+    if protected_role and update_data.get("is_active") is False:
+        raise HTTPException(status_code=400, detail="La cuenta principal del sistema no puede desactivarse")
     if "password" in update_data:
         pwd = update_data.pop("password")
         if pwd and len(pwd) >= 8:
@@ -137,6 +144,17 @@ async def update_user_role(
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    allowed_roles = {"user", "local", "platform"}
+    if role_in.role not in allowed_roles:
+        raise HTTPException(status_code=400, detail="Rol inválido")
+
+    protected_role = required_role_for_email(user.email)
+    if protected_role and role_in.role != protected_role:
+        raise HTTPException(
+            status_code=400,
+            detail=f"La cuenta protegida debe conservar el rol {protected_role}",
+        )
     
     prev_role = user.role
     user.role = role_in.role
@@ -169,7 +187,7 @@ async def update_user_pin(
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
+
     if len(pin_in.pin) < 4 or not pin_in.pin.isdigit():
         raise HTTPException(status_code=400, detail="El PIN debe tener al menos 4 dígitos numéricos")
     
@@ -201,6 +219,9 @@ async def delete_user(
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    if required_role_for_email(user.email):
+        raise HTTPException(status_code=400, detail="La cuenta principal del sistema no puede eliminarse")
     
     deleted_info = {
         "usuario_id": user.id,

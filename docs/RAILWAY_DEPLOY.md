@@ -2,7 +2,7 @@
 
 Guía oficial para desplegar la plataforma **Smart-Park** en producción con [Railway](https://railway.app).
 
-> ✅ **Estado actual:** desplegado y verificado en `https://smart-park-web-production.up.railway.app`
+> **Objetivo de despliegue:** Railway con contenedor único, PostgreSQL gestionado y volumen persistente. Esta guía no confirma por sí sola que los cambios locales ya estén publicados.
 
 ---
 
@@ -65,7 +65,7 @@ El filesystem del contenedor es **efímero**: sin Volume, las fotos de vehículo
 3. En local/docker la persistencia equivalente es el volumen `backend_uploads` de `docker-compose.yml`.
 
 ### Paso 4: Despliegue Automático
-- Healthcheck: `GET /health` (timeout 120s, reinicio automático ante fallos).
+- Healthcheck: `GET /health/ready` (incluye conectividad PostgreSQL; timeout 120s).
 - Dominio: genera HTTPS automático (`*.up.railway.app`) o conecta un dominio propio en *Settings → Networking*.
 
 ---
@@ -75,16 +75,16 @@ El filesystem del contenedor es **efímero**: sin Volume, las fotos de vehículo
 | Recurso | URL |
 | :--- | :--- |
 | Aplicación SPA | `https://tu-app.up.railway.app/` |
-| Healthcheck | `https://tu-app.up.railway.app/health` (incluye `db` y `uploads_dir` efectivos) |
-| Swagger Docs | `https://tu-app.up.railway.app/docs` |
+| Healthcheck | `https://tu-app.up.railway.app/health/ready` (valida PostgreSQL sin exponer credenciales ni rutas) |
+| Swagger Docs | Deshabilitado cuando `ENVIRONMENT=production`; disponible en `/docs` sólo en desarrollo |
 | API ejemplo | `https://tu-app.up.railway.app/api/v1/parkings` |
 
-> Verifica que `/health` reporte el status `ok` y el string de conexión `postgresql://...` confirmando que el backend está enlazado correctamente al servicio PostgreSQL.
+> Verifica que `/health/ready` reporte `status: ready`; nunca debe exponer la cadena de conexión ni credenciales.
 
 ---
 
 ## 🛠️ Mantenimiento
 
 - **Backups:** activar backups diarios del plugin Postgres (*Settings → Backups*) y probar un restore.
-- **Migraciones:** actualmente el esquema se crea con `create_all` idempotente al arranque; planificar adopción de Alembic antes de modificar modelos existentes.
+- **Migraciones:** el contenedor ejecuta `alembic upgrade head` antes de iniciar Uvicorn. Revisa y prueba cada nueva revisión contra una copia de la base antes de desplegarla.
 - **Logs:** `railway logs --deployment` o desde el dashboard.

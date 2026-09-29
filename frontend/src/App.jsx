@@ -5,22 +5,12 @@ import { useEstablishments, isMyEstablishment, getEstablishmentHierarchy, normal
 import api from './services/api';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
-import { PersonalGaritaModule } from './components/PersonalGaritaModule';
-import { PaymentsModule } from './components/PaymentsModule';
-import { VehiclesModule } from './components/VehiclesModule';
-import { HistoryModule } from './components/HistoryModule';
-import { ReviewsModule } from './components/ReviewsModule';
-import { IncidentsModule } from './components/IncidentsModule';
 import { VerifyReservationPage } from './components/VerifyReservationPage';
-import { AyacuchoMap } from './components/AyacuchoMap';
-import { CustomerInteractivePlanBooking } from './components/CustomerInteractivePlanBooking';
 import { DigitalAccessPassModal } from './components/DigitalAccessPassModal';
-import { CulqiPaymentModal } from './components/CulqiPaymentModal';
 import { ReservationsModule } from './components/ReservationsModule';
 import { LoginAuthScreen } from './components/LoginAuthScreen';
 import { TermsAndConditionsModal } from './components/TermsAndConditionsModal';
 import { UserProfileModule } from './components/UserProfileModule';
-import { LandingPage } from './components/LandingPage';
 import { AutoFitFloorPlan } from './components/AutoFitFloorPlan';
 import { QuickReservationModal } from './components/QuickReservationModal';
 import { MoreReservationsModal } from './components/MoreReservationsModal';
@@ -39,6 +29,16 @@ const ResiliencySimModule = lazy(() => import('./components/ResiliencySimModule'
 const AuditLogsModule = lazy(() => import('./components/AuditLogsModule').then(m => ({ default: m.AuditLogsModule })));
 const StaffModule = lazy(() => import('./components/StaffModule').then(m => ({ default: m.StaffModule })));
 const AffiliatedParkingsModule = lazy(() => import('./components/AffiliatedParkingsModule').then(m => ({ default: m.AffiliatedParkingsModule })));
+const PersonalGaritaModule = lazy(() => import('./components/PersonalGaritaModule').then(m => ({ default: m.PersonalGaritaModule })));
+const PaymentsModule = lazy(() => import('./components/PaymentsModule').then(m => ({ default: m.PaymentsModule })));
+const VehiclesModule = lazy(() => import('./components/VehiclesModule').then(m => ({ default: m.VehiclesModule })));
+const HistoryModule = lazy(() => import('./components/HistoryModule').then(m => ({ default: m.HistoryModule })));
+const ReviewsModule = lazy(() => import('./components/ReviewsModule').then(m => ({ default: m.ReviewsModule })));
+const IncidentsModule = lazy(() => import('./components/IncidentsModule').then(m => ({ default: m.IncidentsModule })));
+const AyacuchoMap = lazy(() => import('./components/AyacuchoMap').then(m => ({ default: m.AyacuchoMap })));
+const CustomerInteractivePlanBooking = lazy(() => import('./components/CustomerInteractivePlanBooking').then(m => ({ default: m.CustomerInteractivePlanBooking })));
+const CulqiPaymentModal = lazy(() => import('./components/CulqiPaymentModal').then(m => ({ default: m.CulqiPaymentModal })));
+const LandingPage = lazy(() => import('./components/LandingPage').then(m => ({ default: m.LandingPage })));
 
 const FALLBACK_PARKING_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500' width='800' height='500'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230f172a'/%3E%3Cstop offset='100%25' stop-color='%231e293b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3Ccircle cx='400' cy='210' r='85' fill='%2310b981' fill-opacity='0.15'/%3E%3Cpath d='M345 250 L455 250 L430 175 L370 175 Z' fill='%2310b981' fill-opacity='0.6'/%3E%3Crect x='330' y='250' width='140' height='40' rx='10' fill='%2310b981'/%3E%3Ccircle cx='365' cy='290' r='14' fill='%230f172a'/%3E%3Ccircle cx='435' cy='290' r='14' fill='%230f172a'/%3E%3Ctext x='400' y='370' font-family='system-ui, sans-serif' font-size='22' font-weight='bold' fill='%23f8fafc' text-anchor='middle'%3ESmart Park Huamanga%3C/text%3E%3Ctext x='400' y='402' font-family='system-ui, sans-serif' font-size='14' fill='%2394a3b8' text-anchor='middle'%3EEstacionamiento Seguro y Conectado%3C/text%3E%3C/svg%3E";
 
@@ -623,15 +623,17 @@ const AppMain = () => {
       <div className="w-full bg-[#FBFBFA] dark:bg-[#070B14] text-[#191919] dark:text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white transition-colors">
         <Toaster position="top-right" toastOptions={{ duration: 3500, style: { borderRadius: '14px', background: '#0f172a', color: '#fff', fontSize: '13px' } }} />
         
-        <LandingPage
-          establishments={establishments}
-          onOpenAuth={(mode) => {
-            setAuthModalMode(mode || 'login');
-            setShowAuthModal(true);
-          }}
-          onSelectParking={handleSelectParking}
-          onOpenTerms={() => setShowTermsModal(true)}
-        />
+        <Suspense fallback={<LoadingModule />}>
+          <LandingPage
+            establishments={establishments}
+            onOpenAuth={(mode) => {
+              setAuthModalMode(mode || 'login');
+              setShowAuthModal(true);
+            }}
+            onSelectParking={handleSelectParking}
+            onOpenTerms={() => setShowTermsModal(true)}
+          />
+        </Suspense>
 
         {/* Modal de Autenticación Rápida Bajo Demanda */}
         {showAuthModal && (
@@ -679,7 +681,7 @@ const AppMain = () => {
         />
 
         {/* CONTENIDO PRINCIPAL */}
-        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto pb-28 md:pb-6 w-full max-w-full overflow-x-hidden min-w-0">
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-y-auto pb-28 lg:pb-6 w-full max-w-full overflow-x-clip min-w-0">
           <Suspense fallback={<LoadingModule />}>
           
           {/* VISTA ROL CONDUCTOR (BUSCAR Y RESERVAR PLAZAS) */}
@@ -1531,7 +1533,8 @@ const AppMain = () => {
       />
 
       {/* Modal de Pasarela de Pagos (PayPal, Culqi, Yape, Plin, PagoEfectivo) */}
-      <CulqiPaymentModal
+      <Suspense fallback={null}>
+        <CulqiPaymentModal
         isOpen={!!paymentTarget}
         onClose={() => {
           if (paymentTarget) {
@@ -1572,7 +1575,8 @@ const AppMain = () => {
             setPaymentTarget(null);
           }
         }}
-      />
+        />
+      </Suspense>
 
       {/* Modal de Términos y Condiciones */}
       <TermsAndConditionsModal

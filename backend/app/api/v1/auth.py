@@ -19,10 +19,12 @@ from app.schemas.schemas import UserCreate, UserLogin, UserResponse, Token, PinV
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user, verify_pin_hash, is_pin_hashed, hash_pin
 from app.core.cache import rate_limit_hit, blacklist_token
+from app.core.system_accounts import required_role_for_email
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
 AUTH_COOKIE_NAME = "access_token"
+CSRF_COOKIE_NAME = "csrf_token"
 AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 días
 
 def _set_auth_cookie(response: Response, token: str) -> None:
@@ -38,6 +40,18 @@ def _set_auth_cookie(response: Response, token: str) -> None:
         samesite="lax",
         secure=is_prod
     )
+    # Double-submit CSRF: este valor no es secreto y debe ser legible por el
+    # frontend para enviarlo en X-CSRF-Token. La sesión continúa siendo HttpOnly.
+    response.set_cookie(
+        key=CSRF_COOKIE_NAME,
+        value=secrets.token_urlsafe(32),
+        max_age=AUTH_COOKIE_MAX_AGE,
+        expires=AUTH_COOKIE_MAX_AGE,
+        path="/",
+        httponly=False,
+        samesite="lax",
+        secure=is_prod,
+    )
 
 def _clear_auth_cookie(response: Response) -> None:
     """Elimina la cookie HttpOnly de la sesión."""
@@ -48,6 +62,13 @@ def _clear_auth_cookie(response: Response) -> None:
         httponly=True,
         samesite="lax",
         secure=is_prod
+    )
+    response.delete_cookie(
+        key=CSRF_COOKIE_NAME,
+        path="/",
+        httponly=False,
+        samesite="lax",
+        secure=is_prod,
     )
 
 # Rate limit anti fuerza bruta en login y registro por IP
@@ -86,6 +107,9 @@ async def register_user(user_in: UserCreate, request: Request, response: Respons
             detail="Demasiadas solicitudes de registro desde esta dirección IP. Por favor espera un minuto."
         )
 
+    if required_role_for_email(user_in.email):
+        raise HTTPException(status_code=409, detail="Esta identidad está reservada por el sistema")
+
     result = await db.execute(select(User).where(User.email == user_in.email))
     existing_user = result.scalars().first()
     if existing_user:
@@ -97,7 +121,9 @@ async def register_user(user_in: UserCreate, request: Request, response: Respons
         email=user_in.email,
         phone=user_in.phone,
         hashed_password=get_password_hash(user_in.password),
-        role=user_in.role or "user",
+        # El registro público nunca concede privilegios en producción. Las
+        # suites internas pueden crear fixtures por rol bajo TESTING=1.
+        role=(user_in.role or "user") if is_testing else "user",
         security_pin=hash_pin("1234") # PIN por defecto para prueba (almacenado hasheado)
     )
     db.add(db_user)
@@ -194,6 +220,16 @@ async def login_user(user_in: UserLogin, request: Request, response: Response, d
             details={"motivo": "Contraseña incorrecta o usuario inexistente"},
         )
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+
+    # Defensa ante deriva de datos: una identidad interna autenticada recupera
+    # su rol canónico antes de emitir la sesión. Nunca se basa en datos enviados
+    # por el cliente y sólo ocurre después de verificar la contraseña.
+    required_role = required_role_for_email(user.email)
+    if required_role and user.role != required_role:
+        user.role = required_role
+        await db.commit()
+        await db.refresh(user)
+
     if not user.is_active:
         await record_audit_event(
             db=db,

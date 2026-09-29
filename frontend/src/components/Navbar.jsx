@@ -101,7 +101,11 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
       <header className="glass-panel sticky top-0 z-40 px-3 sm:px-4 md:px-6 py-2.5 flex items-center justify-between border-b border-slate-200/90 dark:border-slate-800/80 bg-white/95 dark:bg-[#0B0F19]/95 backdrop-blur-md select-none transition-colors">
         
         {/* Brand Logo */}
-        <BrandLogo dark={isDark} />
+        <BrandLogo
+          dark={isDark}
+          iconSize="w-7 h-7 sm:w-9 sm:h-9"
+          textClassName="hidden min-[430px]:flex text-xl sm:text-2xl"
+        />
 
         {/* Controles de Usuario / Visitante */}
         {!user ? (

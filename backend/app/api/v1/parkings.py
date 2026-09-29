@@ -22,6 +22,19 @@ import os
 PARKINGS_CACHE_KEY = "parkings:all"
 CAMERA_SCAN_RATE_LIMIT = 300 if os.getenv("TESTING") == "1" else 30
 CAMERA_SCAN_RATE_WINDOW = 60
+MAX_CAMERA_UPLOAD_BYTES = 8 * 1024 * 1024
+
+
+async def read_camera_upload(file: UploadFile, min_bytes: int = 100) -> bytes:
+    """Lee como máximo 8 MB y rechaza tipos no-imagen antes de decodificar."""
+    if not file.content_type or not file.content_type.lower().startswith("image/"):
+        raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
+    image_bytes = await file.read(MAX_CAMERA_UPLOAD_BYTES + 1)
+    if len(image_bytes) > MAX_CAMERA_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Imagen demasiado grande (máx 8MB)")
+    if len(image_bytes) < min_bytes:
+        raise HTTPException(status_code=400, detail="Imagen inválida o vacía")
+    return image_bytes
 
 
 async def invalidate_parkings_cache():
@@ -96,15 +109,26 @@ async def list_parkings(
     result = await db.execute(stmt)
     parkings = result.scalars().all()
 
+    parking_ids = [p.id for p in parkings]
+    counts_by_parking = {}
+    if parking_ids:
+        counts_res = await db.execute(
+            select(
+                Slot.parking_id,
+                func.count(Slot.id).label("total_count"),
+                func.count(Slot.id).filter(Slot.status == "free").label("free_count"),
+            )
+            .where(Slot.parking_id.in_(parking_ids))
+            .group_by(Slot.parking_id)
+        )
+        counts_by_parking = {
+            parking_id: (int(total_count), int(free_count))
+            for parking_id, total_count, free_count in counts_res.all()
+        }
+
     response = []
     for p in parkings:
-        slots_stmt = select(Slot).where(Slot.parking_id == p.id, Slot.status == "free")
-        free_slots_res = await db.execute(slots_stmt)
-        free_count = len(free_slots_res.scalars().all())
-        # Contadores totales para ocupación en vivo
-        all_slots_stmt = select(Slot).where(Slot.parking_id == p.id)
-        all_res = await db.execute(all_slots_stmt)
-        total_count = len(all_res.scalars().all())
+        total_count, free_count = counts_by_parking.get(p.id, (0, 0))
         occupied = max(0, total_count - free_count)
 
         p_dict = ParkingResponse.model_validate(p)
@@ -194,11 +218,7 @@ async def detect_camera_occupancy(parking_id: int, file: UploadFile = File(...),
     slots = slots_res.scalars().all()
     if not slots:
         raise HTTPException(status_code=400, detail="Este estacionamiento aún no tiene cajones definidos en el plano")
-    image_bytes = await file.read()
-    if len(image_bytes) < 100:
-        raise HTTPException(status_code=400, detail="Imagen vacía")
-    if len(image_bytes) > 8 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Imagen demasiado grande (máx 8MB)")
+    image_bytes = await read_camera_upload(file)
     try:
         from app.core.vision import detect_occupancy
         slot_dicts = [{"code": s.code, "x": s.pos_x, "y": s.pos_y, "w": s.width, "h": s.height, "rot": s.rotation} for s in slots]
@@ -255,9 +275,7 @@ async def process_custom_vision_boxes(
     except Exception:
         slots = []
 
-    image_bytes = await file.read()
-    if len(image_bytes) < 50:
-        raise HTTPException(status_code=400, detail="Imagen inválida o vacía")
+    image_bytes = await read_camera_upload(file, min_bytes=50)
 
     white_ratio = None
     if threshold is not None:
@@ -282,11 +300,7 @@ async def count_cars_simple(parking_id: int, file: UploadFile = File(...), db: A
     result = await db.execute(select(Parking).where(Parking.id == parking_id))
     if not result.scalars().first():
         raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
-    image_bytes = await file.read()
-    if len(image_bytes) < 100:
-        raise HTTPException(status_code=400, detail="Imagen vacía")
-    if len(image_bytes) > 8 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Imagen demasiado grande (máx 8MB)")
+    image_bytes = await read_camera_upload(file)
     # Detección simple: YOLO car + fallback contornos
     import cv2
     import numpy as np
@@ -441,11 +455,7 @@ async def scan_camera_monitor(parking_id: int, db: AsyncSession = Depends(get_db
 
     source = "upload"
     if file is not None:
-        image_bytes = await file.read()
-        if len(image_bytes) < 100:
-            raise HTTPException(status_code=400, detail="Imagen vacía")
-        if len(image_bytes) > 8 * 1024 * 1024:
-            raise HTTPException(status_code=413, detail="Imagen demasiado grande (máx 8MB)")
+        image_bytes = await read_camera_upload(file)
     else:
         if not parking.camera_url:
             raise HTTPException(status_code=400, detail="Sin fuente de imagen: envía un frame (webcam/foto) o configura camera_url de la sede")

@@ -9,8 +9,8 @@ export default defineConfig({
   timeout: 45000,
   use: {
     baseURL: 'http://localhost:5173',
-    trace: 'off',
-    screenshot: 'off',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
     video: 'off',
     viewport: { width: 1280, height: 720 },
     actionTimeout: 15000,

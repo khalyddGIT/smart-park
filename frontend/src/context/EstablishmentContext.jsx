@@ -43,7 +43,8 @@ export const unrecordDeletedEstablishmentId = (id) => {
   } catch {}
 };
 
-// Helper para persistir credenciales de usuarios/admins locales tanto en modo online como offline
+// Solo persiste metadatos no sensibles. Contraseñas, PIN y tokens nunca deben
+// quedar disponibles para JavaScript ni almacenarse en Web Storage.
 export const saveLocalUserCredential = (cred) => {
   try {
     if (!cred || !cred.email) return;
@@ -53,7 +54,6 @@ export const saveLocalUserCredential = (cred) => {
     const existing = existingRaw ? JSON.parse(existingRaw) : {};
 
     const prevEntry = existing[emailKey] || (prevEmailKey ? existing[prevEmailKey] : null) || (cred.parkingId ? Object.values(existing).find(c => String(c.parkingId) === String(cred.parkingId)) : null);
-    const finalPin = cred.security_pin || cred.pin || prevEntry?.pin || '';
     const phoneVal = cred.phone || cred.dni || prevEntry?.phone || '';
 
     const positionVal = cred.position || prevEntry?.position || 'Operador de Garita';
@@ -61,8 +61,6 @@ export const saveLocalUserCredential = (cred) => {
 
     existing[emailKey] = {
       email: emailKey,
-      password: finalPassword,
-      pin: finalPin,
       full_name: cred.full_name || cred.name || cred.fullName || prevEntry?.full_name || 'Administrador',
       phone: phoneVal,
       role: cred.role || prevEntry?.role || 'local',
@@ -87,7 +85,17 @@ export const saveLocalUserCredential = (cred) => {
 export const getLocalUserCredentials = () => {
   try {
     const raw = localStorage.getItem(LOCAL_USER_CREDENTIALS_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const parsed = raw ? JSON.parse(raw) : {};
+    Object.values(parsed).forEach((entry) => {
+      if (!entry || typeof entry !== 'object') return;
+      delete entry.password;
+      delete entry.temp_password;
+      delete entry.temporary_password;
+      delete entry.pin;
+      delete entry.security_pin;
+    });
+    localStorage.setItem(LOCAL_USER_CREDENTIALS_KEY, JSON.stringify(parsed));
+    return parsed;
   } catch (e) {
     return {};
   }
@@ -578,7 +586,7 @@ export const sanitizeEstablishment = (est, idx = 0) => {
 const EstablishmentContext = createContext();
 
 export const EstablishmentProvider = ({ children }) => {
-  const { user, role } = useAuth();
+  const { user, role, sessionValidated } = useAuth();
 
   const [establishments, setEstablishments] = useState(() => {
     const deletedIds = getDeletedEstablishmentIds();
@@ -647,7 +655,7 @@ export const EstablishmentProvider = ({ children }) => {
       const saved = localStorage.getItem(APPROVED_ADMINS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return parsed.map(({ password, temp_password, temporary_password, pin, ...admin }) => admin);
       }
     } catch (e) {}
     return [];
@@ -665,8 +673,10 @@ export const EstablishmentProvider = ({ children }) => {
       if (rawEst) {
         const parsed = JSON.parse(rawEst);
         if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter(e => !isDemoEstablishment(e));
-          if (cleaned.length !== parsed.length) {
+          const cleaned = parsed
+            .filter(e => !isDemoEstablishment(e))
+            .map(({ password, temp_password, temporary_password, security_pin, pin, ...est }) => est);
+          if (JSON.stringify(cleaned) !== JSON.stringify(parsed)) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
             setEstablishments(cleaned.map((e, idx) => sanitizeEstablishment(e, idx)));
           }
@@ -680,6 +690,12 @@ export const EstablishmentProvider = ({ children }) => {
         let credsChanged = false;
         Object.keys(parsedCreds).forEach(emailKey => {
           const c = parsedCreds[emailKey];
+          for (const secretKey of ['password', 'temp_password', 'temporary_password', 'pin', 'security_pin']) {
+            if (c && secretKey in c) {
+              delete c[secretKey];
+              credsChanged = true;
+            }
+          }
           const pid = String(c?.parkingId || '');
           if (c && (pid.startsWith('EST-') || ['1', '2', '3', '4', '16'].includes(pid))) {
             delete parsedCreds[emailKey];
@@ -699,8 +715,8 @@ export const EstablishmentProvider = ({ children }) => {
           const cleanedApproved = parsedApproved.filter(a => {
             const eid = String(a?.establishmentId || '');
             return !eid.startsWith('EST-') && !['1', '2', '3', '4', '16'].includes(eid);
-          });
-          if (cleanedApproved.length !== parsedApproved.length) {
+          }).map(({ password, temp_password, temporary_password, pin, ...admin }) => admin);
+          if (JSON.stringify(cleanedApproved) !== JSON.stringify(parsedApproved)) {
             localStorage.setItem(APPROVED_ADMINS_STORAGE_KEY, JSON.stringify(cleanedApproved));
             setApprovedAdmins(cleanedApproved);
           }
@@ -734,7 +750,10 @@ export const EstablishmentProvider = ({ children }) => {
   // Guardar en localStorage siempre que cambie
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(establishments));
+      const safeEstablishments = establishments.map(({
+        password, temp_password, temporary_password, security_pin, pin, ...est
+      }) => est);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(safeEstablishments));
     } catch (e) {}
   }, [establishments]);
 
@@ -746,7 +765,8 @@ export const EstablishmentProvider = ({ children }) => {
 
   useEffect(() => {
     try {
-      localStorage.setItem(APPROVED_ADMINS_STORAGE_KEY, JSON.stringify(approvedAdmins));
+      const safeAdmins = approvedAdmins.map(({ password, temp_password, temporary_password, pin, ...admin }) => admin);
+      localStorage.setItem(APPROVED_ADMINS_STORAGE_KEY, JSON.stringify(safeAdmins));
     } catch (e) {}
   }, [approvedAdmins]);
 
@@ -1104,7 +1124,7 @@ export const EstablishmentProvider = ({ children }) => {
         };
         ws.onclose = () => { 
           setWsConnected(false);
-          wsReconnectTimer = setTimeout(connectWs, 3000); 
+          if (sessionValidated && user?.id) wsReconnectTimer = setTimeout(connectWs, 3000);
         };
         ws.onerror = () => { 
           setWsConnected(false);
@@ -1116,7 +1136,10 @@ export const EstablishmentProvider = ({ children }) => {
         setWsConnected(false);
       }
     };
-    connectWs();
+    // El backend exige cookie de sesión para el canal en tiempo real. Evita
+    // reconexiones 403 continuas para visitantes anónimos.
+    if (sessionValidated && user?.id) connectWs();
+    else setWsConnected(false);
 
     return () => {
       clearInterval(parkingsInterval);
@@ -1127,7 +1150,7 @@ export const EstablishmentProvider = ({ children }) => {
       try { ws && ws.close(); } catch {}
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [sessionValidated, user?.id]);
 
   // Guardar reservaciones en localStorage per-user (solo caché de lectura posterior)
   const saveReservations = (newReservations) => {
@@ -1290,7 +1313,6 @@ export const EstablishmentProvider = ({ children }) => {
           name: effectiveName,
           email: effectiveEmail,
           phone: effectivePhone,
-          password: effectivePassword,
           establishmentId: String(res.data?.parking_id || ''),
           establishmentName: res.data?.parking_name || '',
           role: 'local'
@@ -1319,19 +1341,17 @@ export const EstablishmentProvider = ({ children }) => {
       console.warn('getParkingCredentials server not available, checking local store', e);
     }
 
-    // Recuperar contraseña guardada en almacenamiento local o en el establecimiento
+    // El servidor devuelve metadatos de cuenta, nunca la contraseña existente.
     const est = establishments.find(e => String(e.id) === String(parkingId));
     const targetEmail = (serverData?.admin_email || serverData?.email || est?.email || '').toLowerCase();
     const localCreds = getLocalUserCredentials();
     const matchedCred = localCreds[targetEmail] || Object.values(localCreds).find(c => String(c.parkingId) === String(parkingId));
     const approved = approvedAdmins.find(a => (targetEmail && (a.email || '').toLowerCase() === targetEmail) || String(a.establishmentId) === String(parkingId));
-    const savedPassword = (matchedCred?.password || approved?.password || est?.password || '').trim();
-
     if (serverData) {
       return {
         ...serverData,
-        password: savedPassword || serverData.temp_password || '',
-        temp_password: savedPassword || serverData.temp_password || ''
+        password: '',
+        temp_password: serverData.temp_password || ''
       };
     }
 
@@ -1343,8 +1363,8 @@ export const EstablishmentProvider = ({ children }) => {
         admin_name: matchedCred?.full_name || approved?.name || est?.owner || 'Administrador',
         admin_email: matchedCred?.email || approved?.email || est?.email || '',
         admin_phone: matchedCred?.phone || approved?.phone || est?.phone || '',
-        password: savedPassword,
-        temp_password: savedPassword,
+        password: '',
+        temp_password: '',
         has_account: true,
         has_admin: true,
         is_active: true,
@@ -1358,8 +1378,8 @@ export const EstablishmentProvider = ({ children }) => {
       admin_name: est.owner || '',
       admin_email: est.email || '',
       admin_phone: est.phone || '',
-      password: savedPassword,
-      temp_password: savedPassword,
+      password: '',
+      temp_password: '',
       has_account: !!est.email,
       has_admin: !!est.email,
       is_active: true,
@@ -1375,10 +1395,7 @@ export const EstablishmentProvider = ({ children }) => {
     const password = (credentialsData?.password || credentialsData?.adminPassword || '').trim();
     const previousEmail = (credentialsData?.previous_email || credentialsData?.previousEmail || '').trim().toLowerCase();
 
-    // Obtener contraseña previa si la nueva no fue especificada
-    const localCreds = getLocalUserCredentials();
-    const prevCred = localCreds[email] || (previousEmail ? localCreds[previousEmail] : null) || Object.values(localCreds).find(c => String(c.parkingId) === String(parkingId));
-    const effectivePassword = password || prevCred?.password || '';
+    const effectivePassword = password;
 
     // 1. Guardar y actualizar localmente de inmediato (Garantía de persistencia offline y resiliente)
     if (email) {
@@ -1396,14 +1413,13 @@ export const EstablishmentProvider = ({ children }) => {
         name: fullName,
         email,
         phone,
-        password: effectivePassword,
         establishmentId: String(parkingId),
         role: 'local'
       };
       setApprovedAdmins(prev => [newAdmin, ...prev.filter(a => a.email !== email && (!previousEmail || a.email !== previousEmail))]);
     }
 
-    // Actualizar sede localmente (email, owner, phone, password)
+    // Actualizar solo metadatos de sede; la contraseña existe únicamente en servidor.
     setEstablishments(prev => {
       const updated = prev.map(est => {
         if (String(est.id) === String(parkingId)) {
@@ -1411,8 +1427,7 @@ export const EstablishmentProvider = ({ children }) => {
             ...est,
             email: email || est.email,
             owner: fullName || est.owner,
-            phone: phone || est.phone,
-            password: effectivePassword || est.password
+            phone: phone || est.phone
           };
         }
         return est;
@@ -1454,8 +1469,8 @@ export const EstablishmentProvider = ({ children }) => {
       role: 'local',
       admin_email: email,
       admin_name: fullName,
-      password: effectivePassword,
-      temp_password: effectivePassword,
+      password: '',
+      temp_password: serverResult?.temp_password || '',
       message: 'Credenciales guardadas y sincronizadas con éxito'
     };
   };
@@ -2048,23 +2063,8 @@ export const EstablishmentProvider = ({ children }) => {
     let slotIdNum = Number(bookingData?.slotId);
     const isAutoAssign = !!(bookingData?.autoAssign || bookingData?.isQuickReservation || bookingData?.slotId === null);
 
-    // Auto-login de cortesía para usuarios invitados si no tienen sesión activa
     if (!authed) {
-      try {
-        const tokenRes = await api.post('/auth/login', { email: 'usuario@smartpark.com', password: 'password123' });
-        if (tokenRes.data?.access_token) {
-          setAccessToken(tokenRes.data.access_token);
-          authed = true;
-        }
-      } catch (e) {
-        try {
-          const regRes = await api.post('/auth/register', { full_name: 'Usuario Conductor', email: `guest_${Date.now()}@smartpark.com`, password: 'password123', role: 'user' });
-          if (regRes.data?.access_token) {
-            setAccessToken(regRes.data.access_token);
-            authed = true;
-          }
-        } catch {}
-      }
+      throw new Error('Debes iniciar sesión antes de crear una reserva.');
     }
 
     // Si el parking seleccionado es un ID string local, mapearlo al primer parking real del servidor

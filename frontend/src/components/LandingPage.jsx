@@ -262,15 +262,15 @@ export const LandingPage = ({
           1. HEADER FULL-WIDTH CRISTAL ULTRA-ELEGANTE (TOP-0 NATIVO)
           ========================================================================= */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-xl border-b border-white/10 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between">
+        <div className="responsive-shell safe-area-x h-18 sm:h-20 flex items-center justify-between gap-2">
           
           {/* Logotipo Oficial */}
           <div className="flex items-center gap-3">
-            <BrandLogo dark={true} />
+            <BrandLogo dark={true} iconSize="w-7 h-7 sm:w-9 sm:h-9" textClassName="text-lg sm:text-2xl" />
           </div>
 
           {/* Enlaces de Navegación de Escritorio */}
-          <nav className="hidden md:flex items-center gap-7 lg:gap-8 text-xs sm:text-sm font-semibold text-slate-200 tracking-wide">
+          <nav className="hidden lg:flex items-center gap-5 xl:gap-8 text-xs xl:text-sm font-semibold text-slate-200 tracking-wide">
             <button onClick={() => scrollTo('hero')} className="hover:text-emerald-400 transition cursor-pointer">
               Inicio
             </button>
@@ -289,13 +289,13 @@ export const LandingPage = ({
           </nav>
 
           {/* Acciones de la Cabecera */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Toggle de Tema */}
             <button
               type="button"
               onClick={toggleTheme}
               aria-label="Cambiar tema"
-              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 flex items-center justify-center hover:scale-105 transition cursor-pointer border border-white/10 backdrop-blur-md"
+              className="hidden sm:flex w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 items-center justify-center hover:scale-105 transition cursor-pointer border border-white/10 backdrop-blur-md"
             >
               {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-slate-200" />}
             </button>
@@ -304,7 +304,7 @@ export const LandingPage = ({
             <button
               type="button"
               onClick={() => onOpenAuth && onOpenAuth('login')}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold text-slate-200 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold text-slate-200 hover:text-white hover:bg-white/10 transition cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5 text-emerald-400" />
               Ingresar
@@ -313,16 +313,17 @@ export const LandingPage = ({
             {/* Botón CTA Afiliar Cochera */}
             <MagneticButton
               onClick={() => onOpenAuth && onOpenAuth('affiliation')}
-              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-xs sm:text-sm font-black shadow-lg shadow-emerald-500/25 hover:scale-105 transition cursor-pointer whitespace-nowrap"
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3 py-2.5 sm:px-5 rounded-full text-xs sm:text-sm font-black shadow-lg shadow-emerald-500/25 hover:scale-105 transition cursor-pointer whitespace-nowrap"
             >
-              Afiliar Cochera
+              <span className="sm:hidden">Afiliar</span>
+              <span className="hidden sm:inline">Afiliar Cochera</span>
             </MagneticButton>
 
             {/* Menú Móvil Hamburger */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-slate-200 hover:text-white bg-white/10 rounded-full"
+              className="lg:hidden w-10 h-10 flex items-center justify-center text-slate-200 hover:text-white bg-white/10 rounded-full shrink-0"
               aria-label="Abrir menú"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -337,7 +338,7 @@ export const LandingPage = ({
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="md:hidden bg-slate-950/95 backdrop-blur-2xl border-b border-white/10 px-6 py-5 shadow-2xl space-y-4"
+              className="lg:hidden bg-slate-950/95 backdrop-blur-2xl border-b border-white/10 safe-area-x py-5 shadow-2xl space-y-4 max-h-[calc(100dvh-4.5rem)] overflow-y-auto"
             >
               <div className="flex flex-col gap-3 text-sm font-semibold text-slate-200">
                 <button onClick={() => { setMobileMenuOpen(false); scrollTo('hero'); }} className="text-left py-1.5 border-b border-white/10">
@@ -357,6 +358,14 @@ export const LandingPage = ({
                 </button>
               </div>
               <div className="pt-2 flex flex-col gap-2 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="w-full py-2.5 rounded-full bg-white/10 text-white text-xs font-bold flex items-center justify-center gap-2"
+                >
+                  {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-slate-200" />}
+                  Cambiar tema
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -387,7 +396,7 @@ export const LandingPage = ({
       {/* =========================================================================
           2. HERO CINEMÁTICO: ULTRA LIMPIO, VENDEDOR Y DE ALTO IMPACTO
           ========================================================================= */}
-      <main id="hero" className="relative w-full min-h-[85vh] sm:min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
+      <main id="hero" className="relative w-full min-h-[100svh] lg:min-h-screen flex items-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
         
         {/* Video de Fondo Operacional full-bleed con nitidez absoluta */}
         <video
@@ -405,25 +414,25 @@ export const LandingPage = ({
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 via-transparent to-slate-950/20 pointer-events-none z-0" />
 
         {/* Contenido Editorial Limpio del Hero */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24 sm:pt-36 sm:pb-28">
-          <div className="max-w-2xl lg:max-w-3xl space-y-6 text-left">
+        <div className="relative z-10 responsive-shell safe-area-x pt-28 pb-24 sm:pt-36 sm:pb-28">
+          <div className="max-w-2xl lg:max-w-3xl 2xl:max-w-4xl space-y-5 sm:space-y-6 text-left">
             
             {/* Titular Principal Vendedor y Limpio */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
+            <h1 className="text-[clamp(2.5rem,8.5vw,4.5rem)] 2xl:text-[5.25rem] min-[2200px]:text-[6rem] font-black tracking-[-0.035em] leading-[1.03] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)] text-balance">
               Estaciona al instante, <br />
               <span className="text-emerald-400">sin vueltas ni tickets</span>
             </h1>
 
             {/* Explicación directa y comercial del sistema */}
-            <p className="text-lg sm:text-xl text-slate-100/95 max-w-xl leading-relaxed font-normal drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+            <p className="text-base sm:text-xl 2xl:text-2xl text-slate-100/95 max-w-[62ch] leading-relaxed font-normal drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
               Encuentra cocheras con espacios libres en vivo, reserva tu lugar en segundos y paga solo por los minutos que uses con Yape, Plin o tarjeta.
             </p>
 
             {/* Botones de Acción */}
-            <div className="pt-2 flex flex-wrap items-center justify-start gap-4">
+            <div className="pt-2 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-start gap-3 sm:gap-4 max-w-sm sm:max-w-none">
               <MagneticButton
                 onClick={() => scrollTo('mapa')}
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-3.5 sm:px-10 sm:py-4 rounded-full text-sm sm:text-base font-black shadow-xl shadow-emerald-500/25 hover:scale-105 transition cursor-pointer flex items-center gap-2.5"
+                className="w-full sm:w-auto justify-center bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-7 py-3.5 sm:px-10 sm:py-4 rounded-full text-sm sm:text-base font-black shadow-xl shadow-emerald-500/25 hover:scale-105 transition cursor-pointer flex items-center gap-2.5"
               >
                 <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
                 Buscar Cochera Libre
@@ -432,7 +441,7 @@ export const LandingPage = ({
               <button
                 type="button"
                 onClick={() => onOpenAuth && onOpenAuth('login')}
-                className="inline-flex items-center gap-2 text-sm sm:text-base font-bold text-white hover:text-emerald-300 border-2 border-white/80 hover:border-emerald-400 bg-black/30 hover:bg-black/40 backdrop-blur-md px-7 py-3 sm:px-8 sm:py-3.5 rounded-full transition-all cursor-pointer shadow-lg drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]"
+                className="w-full sm:w-auto justify-center inline-flex items-center gap-2 text-sm sm:text-base font-bold text-white hover:text-emerald-300 border-2 border-white/80 hover:border-emerald-400 bg-black/30 hover:bg-black/40 backdrop-blur-md px-7 py-3 sm:px-8 sm:py-3.5 rounded-full transition-all cursor-pointer shadow-lg drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]"
               >
                 Pagar / Consultar Estadía
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-emerald-400" />
@@ -469,7 +478,7 @@ export const LandingPage = ({
       {/* =========================================================================
           3. SECCIÓN 2: MAPA EN VIVO DE AYACUCHO (COLOCADO COMO SEGUNDO)
           ========================================================================= */}
-      <ScrollRevealSection id="mapa" className="pt-10 pb-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full text-left">
+      <ScrollRevealSection id="mapa" className="responsive-shell safe-area-x pt-10 2xl:pt-14 pb-6 w-full text-left">
         {/* Encabezado Editorial Integrado estilo Smart Parking */}
         <div className="text-center max-w-3xl mx-auto mb-8 space-y-2">
           <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
@@ -517,7 +526,7 @@ export const LandingPage = ({
       {/* =========================================================================
           4. SECCIÓN 3: DUAL BENTO CARDS (LIMPIO & MINIMALISTA)
           ========================================================================= */}
-      <ScrollRevealSection className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full text-left">
+      <ScrollRevealSection className="responsive-shell safe-area-x py-10 2xl:py-14 w-full text-left">
         <div className="mb-7 max-w-2xl">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
             Saca el Máximo Provecho a Cada Minuto
@@ -607,7 +616,7 @@ export const LandingPage = ({
       {/* =========================================================================
           5. SECCIÓN 4: VENTAJAS EXCLUSIVAS (ICONOGRAFÍA MINIMALISTA)
           ========================================================================= */}
-      <ScrollRevealSection id="beneficios" className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+      <ScrollRevealSection id="beneficios" className="responsive-shell safe-area-x py-10 2xl:py-14 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left items-start">
           
           {/* Columna Izquierda */}
@@ -680,7 +689,7 @@ export const LandingPage = ({
       {/* =========================================================================
           6. SECCIÓN 5: NUESTROS ALIADOS / TRUST BAR COMPACTO
           ========================================================================= */}
-      <section className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full text-center border-y border-slate-200/60 dark:border-slate-800/60 my-4">
+      <section className="responsive-shell safe-area-x py-6 w-full text-center border-y border-slate-200/60 dark:border-slate-800/60 my-4">
         <h3 className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-3">
           Ecosistema Conectado a los Principales Medios del Perú
         </h3>
@@ -699,7 +708,7 @@ export const LandingPage = ({
       {/* =========================================================================
           7. SECCIÓN 6: CONTRAST DARK ISLAND BANNER (LIMPIO & EXPANSIVO)
           ========================================================================= */}
-      <ScrollRevealSection className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+      <ScrollRevealSection className="responsive-shell safe-area-x py-8 2xl:py-12 w-full">
         <div className="relative rounded-[28px] sm:rounded-[40px] bg-gradient-to-br from-[#0B1324] via-[#070B14] to-[#04060A] text-white p-6 sm:p-10 lg:p-14 overflow-hidden border border-slate-800 dark:border-emerald-500/20 text-left shadow-2xl">
           <div className="absolute -right-16 -top-16 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -745,7 +754,7 @@ export const LandingPage = ({
       {/* =========================================================================
           8. SECCIÓN 7: DOBLE PERSPECTIVA: CONDUCTORES VS DUEÑOS DE COCHERA
           ========================================================================= */}
-      <ScrollRevealSection id="tecnologia" className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full text-left">
+      <ScrollRevealSection id="tecnologia" className="responsive-shell safe-area-x py-8 2xl:py-12 w-full text-left">
         <div className="text-center max-w-xl mx-auto mb-6 space-y-2.5">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
             Diseñado para Todo el Ecosistema
@@ -898,7 +907,7 @@ export const LandingPage = ({
       {/* =========================================================================
           10. FOOTER NEGRO REDONDEADO CENTRADO & ELEGANTE
           ========================================================================= */}
-      <footer className="mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <footer className="responsive-shell safe-area-x mt-16 w-full">
         <div className="relative rounded-t-[32px] sm:rounded-t-[44px] bg-slate-950 text-white p-8 sm:p-12 text-xs border-t border-x border-slate-800/80 overflow-hidden space-y-8">
           {/* Resplandor superior sutil */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-28 bg-emerald-500/10 blur-3xl pointer-events-none -z-0" />

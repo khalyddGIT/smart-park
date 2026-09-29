@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { setAccessToken, getAccessToken, register as apiRegister, login as apiLogin, googleAuth as apiGoogleAuth, loginWithPinApi, createVehicle } from '../services/api';
+import { setAccessToken, register as apiRegister, login as apiLogin, googleAuth as apiGoogleAuth, loginWithPinApi, createVehicle } from '../services/api';
 import api from '../services/api';
 
 const AuthContext = createContext();
@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
 
   const [role, setRole] = useState(user?.role || 'user');
   const [pinVerified, setPinVerified] = useState(false);
+  const [sessionValidated, setSessionValidated] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -89,6 +90,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
         };
         setUser(corrected);
         setRole(serverRole);
+        setSessionValidated(true);
       })
       .catch(err => {
         if (err?.response?.status === 401) {
@@ -96,6 +98,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
           setUser(null);
           setRole('user');
           setPinVerified(false);
+          setSessionValidated(false);
           localStorage.removeItem('smart_park_user_session');
           setAccessToken(null);
         }
@@ -133,7 +136,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
         if (data?.access_token && data?.user) {
           setAccessToken(data.access_token);
           const u = { id: data.user.id, name: data.user.full_name || profile.name, email: data.user.email, avatar: data.user.avatar_url || profile.picture || null, role: data.user.role || 'user', isGoogleAuth: true };
-          setUser(u); setRole(u.role); return u;
+          setUser(u); setRole(u.role); setSessionValidated(true); return u;
         }
       } catch (err) {
         console.warn('Google backend no disponible', err?.response?.data || err.message);
@@ -144,7 +147,8 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
     } catch (e) { console.error('Error al procesar Google Auth:', e); throw e; }
   };
 
-  // Login con Correo o Nombre de Usuario - autentica contra backend con sincronización local tolerante a fallos
+  // Login con Correo o Nombre de Usuario. La autenticación siempre es validada
+  // por FastAPI; un navegador sin conexión no puede crear una sesión privilegiada.
   const loginWithEmail = async (identifier, password, explicitRole = null) => {
     const cleanIdent = (identifier || '').trim().toLowerCase();
     if (!cleanIdent) {
@@ -154,16 +158,10 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
       throw new Error('Por favor ingresa tu contraseña');
     }
 
-    let serverData = null;
-    let serverError = null;
-
     try {
-      serverData = await apiLogin({ email: cleanIdent, password, full_name: cleanIdent.split('@')[0], phone: '' });
-    } catch (err) {
-      serverError = err;
-    }
+      const serverData = await apiLogin({ email: cleanIdent, password, full_name: cleanIdent.split('@')[0], phone: '' });
+      if (!serverData?.user) throw new Error('Respuesta de autenticación inválida');
 
-    if (serverData?.access_token && serverData?.user) {
       setAccessToken(serverData.access_token);
       window.dispatchEvent(new Event('focus'));
       const serverUser = serverData.user;
@@ -175,7 +173,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
         email: serverUser.email,
         phone: serverUser.phone,
         avatar: serverUser.avatar_url || null,
-        role: serverUser.role || explicitRole || 'local',
+        role: serverUser.role || explicitRole || 'user',
         position: pos,
         shift: serverUser.shift || null,
         is_staff: Boolean(serverUser.is_staff || isOperator),
@@ -189,110 +187,20 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
       };
       setUser(u);
       setRole(u.role);
-      if (u.role === 'local' || u.role === 'platform') {
-        setPinVerified(true);
-      }
-      try {
-        localStorage.setItem('smart_park_user_session', JSON.stringify(u));
-      } catch {}
+      setSessionValidated(true);
+      if (u.role === 'local' || u.role === 'platform') setPinVerified(true);
       return u;
-    }
-
-    // Fallback de resiliencia local / offline:
-    try {
-      // 1. Buscar en credenciales locales persistentes
-      const localCredsRaw = localStorage.getItem('smart_park_local_user_credentials_v1');
-      const localCreds = localCredsRaw ? JSON.parse(localCredsRaw) : {};
-      const matchedLocal = localCreds[cleanIdent] || Object.values(localCreds).find(c => (c.name || '').trim().toLowerCase() === cleanIdent);
-
-      // 2. Buscar en administradores aprobados
-      const approvedRaw = localStorage.getItem('smart_park_approved_admins_v1');
-      const approvedList = approvedRaw ? JSON.parse(approvedRaw) : [];
-      const matchedApproved = Array.isArray(approvedList) ? approvedList.find(a => (a.email || '').trim().toLowerCase() === cleanIdent || (a.name || '').trim().toLowerCase() === cleanIdent) : null;
-
-      // 3. Buscar en establecimientos registrados
-      const estsRaw = localStorage.getItem('smart_park_unified_establishments_v2');
-      const estsList = estsRaw ? JSON.parse(estsRaw) : [];
-      const matchedEst = Array.isArray(estsList) ? estsList.find(e => (e.email || '').trim().toLowerCase() === cleanIdent || (e.owner || '').trim().toLowerCase() === cleanIdent) : null;
-
-      // 4. Cuentas demo predeterminadas
-      const isDemoAdminLocal = cleanIdent === 'adminlocal@smartpark.com' || cleanIdent === 'admin local' || cleanIdent === 'adminlocal';
-      const isDemoSuperAdmin = cleanIdent === 'superadmin@smartpark.com' || cleanIdent === 'super admin' || cleanIdent === 'superadmin';
-
-      const candidate = matchedLocal || matchedApproved || (matchedEst ? {
-        email: cleanEmail,
-        password: matchedEst.password || '',
-        name: matchedEst.owner || cleanEmail.split('@')[0],
-        phone: matchedEst.phone || '',
-        role: 'local',
-        parkingId: matchedEst.id
-      } : null) || (isDemoAdminLocal ? {
-        email: cleanEmail,
-        password: 'password123',
-        name: 'Administrador Local Plaza Mayor',
-        role: 'local'
-      } : null) || (isDemoSuperAdmin ? {
-        email: cleanEmail,
-        password: 'password123',
-        name: 'Super Admin Plataforma',
-        role: 'platform'
-      } : null);
-
-      if (candidate) {
-        const candPassword = candidate.password || candidate.temporary_password || '';
-        // Validar contraseña si el candidato tiene una contraseña registrada
-        if (candPassword && candPassword !== password) {
-          throw new Error('Credenciales incorrectas');
-        }
-
-        const isOperator = computeIsStaffOperator(candidate);
-        const pos = candidate.position || (isOperator ? 'Operador de Garita' : null);
-        const localUser = {
-          id: candidate.id || Date.now(),
-          name: candidate.full_name || candidate.name || candidate.owner || cleanEmail.split('@')[0],
-          email: cleanEmail,
-          phone: candidate.phone || '',
-          avatar: null,
-          role: candidate.role || 'local',
-          position: pos,
-          shift: candidate.shift || null,
-          is_staff: Boolean(candidate.is_staff || isOperator),
-          isStaffOperator: isOperator,
-          parking_id: candidate.parking_id || candidate.parkingId || candidate.establishmentId || null,
-          parkingId: candidate.parkingId || candidate.parking_id || candidate.establishmentId || null,
-          establishmentId: candidate.establishmentId || candidate.parkingId || candidate.parking_id || null,
-          establishmentName: candidate.establishmentName || candidate.parkingName || candidate.companyName || '',
-          companyName: candidate.companyName || candidate.establishmentName || '',
-          isGoogleAuth: false
-        };
-
-        setUser(localUser);
-        setRole(localUser.role);
-        if (localUser.role === 'local' || localUser.role === 'platform') {
-          setPinVerified(true);
-        }
-        try {
-          localStorage.setItem('smart_park_user_session', JSON.stringify(localUser));
-        } catch {}
-        return localUser;
+    } catch (err) {
+      if (err?.response?.status === 401 || err?.response?.status === 400) {
+        const detail = err.response.data?.detail;
+        const msg = Array.isArray(detail) ? detail[0]?.msg : detail;
+        throw new Error(msg || 'Credenciales incorrectas');
       }
-    } catch (fallbackErr) {
-      if (fallbackErr.message === 'Credenciales incorrectas') {
-        throw fallbackErr;
+      if (err?.response?.status === 422) {
+        throw new Error('La contraseña debe tener al menos 8 caracteres.');
       }
-      console.warn('Error en validación fallback local:', fallbackErr);
+      throw new Error(err?.response?.data?.detail || 'No se pudo iniciar sesión. Verifica tu conexión e inténtalo nuevamente.');
     }
-
-    // Si falló el servidor y no hay registro local coincidente:
-    if (serverError?.response?.status === 401 || serverError?.response?.status === 400) {
-      const detail = serverError.response.data?.detail;
-      const msg = Array.isArray(detail) ? detail[0]?.msg : detail;
-      throw new Error(msg || 'Credenciales incorrectas');
-    }
-    if (serverError?.response?.status === 422) {
-      throw new Error('La contraseña debe tener al menos 8 caracteres.');
-    }
-    throw new Error(serverError?.response?.data?.detail || 'No se pudo iniciar sesión. Verifica tu correo y contraseña.');
   };
 
   // Registro de Conductor - persistente en Base de Datos
@@ -302,7 +210,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
         full_name: userData.name, 
         email: userData.email, 
         phone: userData.phone || null, 
-        password: userData.password || 'password123', 
+        password: userData.password,
         role: 'user' 
       });
       if (data?.access_token && data?.user) {
@@ -320,7 +228,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
           role: data.user.role || 'user', 
           isGoogleAuth: false 
         };
-        setUser(u); setRole('user');
+        setUser(u); setRole('user'); setSessionValidated(true);
 
         // Si el conductor registró una placa real válida, registrarla automáticamente en su garaje
         if (cleanPlate) {
@@ -341,29 +249,8 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
         const first = Array.isArray(d) ? d[0]?.msg : d;
         throw new Error(first ? String(first).replace('Value error, ', '') : 'Datos de registro inválidos.');
       }
-      console.warn('Register backend no disponible, fallback local', err.message);
+      throw new Error(err?.response?.data?.detail || 'No se pudo registrar la cuenta. Verifica tu conexión.');
     }
-    const newUser = { id: Date.now(), name: userData.name, email: userData.email, phone: userData.phone, plate: userData.plate, avatar: null, role: 'user', isGoogleAuth: false };
-    setUser(newUser); setRole('user'); return newUser;
-  };
-
-  // Registro de Administrador de Establecimiento / Cochera
-  const registerEstablishmentAdmin = (adminData) => {
-    const newAdmin = {
-      id: Date.now(),
-      name: adminData.ownerName || adminData.name,
-      email: adminData.email,
-      phone: adminData.phone,
-      establishmentName: adminData.establishmentName,
-      address: adminData.address,
-      capacity: adminData.capacity,
-      role: 'local',
-      isGoogleAuth: false
-    };
-    setUser(newAdmin);
-    setRole('local');
-    setPinVerified(true);
-    return newAdmin;
   };
 
   // Autenticación rápida por PIN Express (Garita / Operadores / Administradores)
@@ -400,6 +287,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
       setUser(u);
       setRole(u.role);
       setPinVerified(true);
+      setSessionValidated(true);
       try {
         localStorage.setItem('smart_park_user_session', JSON.stringify(u));
       } catch {}
@@ -415,6 +303,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
     setUser(null);
     setRole('user');
     setPinVerified(false);
+    setSessionValidated(false);
     localStorage.removeItem('smart_park_user_session');
     setAccessToken(null);
   };
@@ -427,13 +316,13 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
       setUser,
       pinVerified, 
       setPinVerified,
+      sessionValidated,
       loginWithGoogle,
       loginWithEmail,
       loginWithPin,
       registerUser,
-      registerEstablishmentAdmin,
       logout,
-      isAuthenticated: !!user
+      isAuthenticated: sessionValidated && !!user
     }}>
       {children}
     </AuthContext.Provider>

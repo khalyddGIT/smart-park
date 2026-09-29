@@ -34,6 +34,8 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/app ./app
+COPY backend/alembic.ini ./alembic.ini
+COPY backend/alembic ./alembic
 COPY --from=frontend-build /build/dist ./static
 
 ENV STATIC_DIR=/app/static
@@ -44,4 +46,4 @@ ENV BACKUPS_DIR=/data/backups
 RUN mkdir -p /data/uploads /data/backups
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main_runtime:app --host 0.0.0.0 --port ${PORT:-8000}"]

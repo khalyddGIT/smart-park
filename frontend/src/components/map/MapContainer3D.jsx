@@ -174,17 +174,6 @@ export const MapContainer3D = ({
 
           let hasRenderedFeatures = false;
 
-          map.on('render', () => {
-            if (!hasRenderedFeatures) {
-              try {
-                const feats = map.queryRenderedFeatures();
-                if (feats && feats.length > 0) {
-                  hasRenderedFeatures = true;
-                }
-              } catch (e) {}
-            }
-          });
-
           // Detectar si las teselas o workers de Mapbox son bloqueados por CSP, adblockers o red
           map.on('error', (e) => {
             const msg = (e?.error?.message || e?.message || '').toLowerCase();
@@ -211,6 +200,7 @@ export const MapContainer3D = ({
           setMapEngine('mapbox');
 
           map.once('load', () => {
+            hasRenderedFeatures = true;
             if (!isCancelled) setMapReady(true);
           });
 
@@ -221,13 +211,16 @@ export const MapContainer3D = ({
             if (!isCancelled) setMapReady(true);
           });
 
-          // Guardia de contingencia infalible: si tras 2.2s no hay rasgos de calles dibujados (canvas beige), activar Leaflet 2D
+          // Guardia de contingencia: consultar features antes de que Mapbox termine
+          // de cargar puede fallar internamente en algunas versiones. Se usan solo
+          // las APIs públicas de estado y se concede tiempo a conexiones lentas.
           setTimeout(() => {
             if (!isCancelled && mapEngineRef.current === 'mapbox') {
               try {
-                const rendered = typeof map.queryRenderedFeatures === 'function' ? map.queryRenderedFeatures() : [];
-                if (!rendered || rendered.length === 0) {
-                  console.warn('[MapContainer3D] Canvas vacío o bloqueado (0 features). Fallback automático a Leaflet 2D.');
+                const loaded = typeof map.loaded === 'function' && map.loaded();
+                const styleLoaded = typeof map.isStyleLoaded !== 'function' || map.isStyleLoaded();
+                if (!loaded || !styleLoaded) {
+                  console.warn('[MapContainer3D] Mapa no terminó de cargar. Fallback automático a Leaflet 2D.');
                   fallbackToLeaflet();
                   return;
                 }
@@ -238,7 +231,7 @@ export const MapContainer3D = ({
               }
             }
             if (!isCancelled) setMapReady(true);
-          }, 2200);
+          }, 8000);
 
           return;
         } catch (err) {
@@ -489,7 +482,11 @@ export const MapContainer3D = ({
       const isUnavailable = isMaint || isClosed;
 
       const elements = p.elements || [];
-      const freeSlots = elements.filter(e => e.type === 'slot' && e.status === 'free').length;
+      const hydratedSlots = elements.filter(e => e.type === 'slot');
+      const apiAvailability = Number(p.available_slots);
+      const freeSlots = hydratedSlots.length > 0
+        ? hydratedSlots.filter(e => e.status === 'free').length
+        : (Number.isFinite(apiAvailability) ? Math.max(0, apiAvailability) : 0);
       const rateFormatted = `S/ ${Number(p.rate || 4).toFixed(2)}`;
       const isSelected = String(selectedParkingId) === String(p.id);
 
@@ -691,7 +688,7 @@ export const MapContainer3D = ({
   return (
     <div className="w-full space-y-3">
       {/* Contenedor del Mapa (100% Despejado, sin modales bloqueando la vista en móvil) */}
-      <div className="relative isolate z-0 w-full h-[380px] sm:h-[460px] md:h-[540px] lg:h-[600px] bg-slate-100 dark:bg-slate-950 overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm">
+      <div className="relative isolate z-0 w-full h-[360px] sm:h-[460px] md:h-[540px] lg:h-[600px] 2xl:h-[680px] max-h-[72dvh] bg-slate-100 dark:bg-slate-950 overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm">
         
         {/* Lienzo Normal Mapbox / Leaflet */}
         <div ref={mapContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />

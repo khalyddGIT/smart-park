@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, Enum, Index
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, Enum, Index, UniqueConstraint, CheckConstraint
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 
@@ -156,6 +156,11 @@ class Slot(Base):
     __table_args__ = (
         Index("ix_slots_parking_status", "parking_id", "status"),
         Index("ix_slots_parking_code", "parking_id", "code"),
+        UniqueConstraint("parking_id", "code", name="uq_slots_parking_code"),
+        CheckConstraint(
+            "status IN ('free','occupied','reserved','disabled')",
+            name="ck_slots_status",
+        ),
     )
 
     id = Column(Integer, primary_key=True, index=True)
@@ -174,6 +179,7 @@ class Slot(Base):
 
 class FloorPlanElement(Base):
     __tablename__ = "elementos_plano"
+    __table_args__ = (Index("ix_floor_elements_parking", "parking_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
@@ -194,6 +200,7 @@ class Reservation(Base):
         Index("ix_reservations_user_status", "user_id", "status"),
         Index("ix_reservations_parking_status", "parking_id", "status"),
         Index("ix_reservations_parking_start_end", "parking_id", "start_time", "end_time"),
+        Index("ix_reservations_slot_status", "slot_id", "status"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
@@ -232,6 +239,7 @@ class Reservation(Base):
 
 class Staff(Base):
     __tablename__ = "personal"
+    __table_args__ = (Index("ix_staff_parking_status", "parking_id", "status"),)
 
     id = Column(Integer, primary_key=True, index=True)
     parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
@@ -246,6 +254,7 @@ class Staff(Base):
 
 class Review(Base):
     __tablename__ = "resenas"
+    __table_args__ = (Index("ix_reviews_parking_created", "parking_id", "created_at"),)
 
     id = Column(Integer, primary_key=True, index=True)
     parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)
@@ -259,6 +268,7 @@ class Review(Base):
 
 class Incident(Base):
     __tablename__ = "incidencias"
+    __table_args__ = (Index("ix_incidents_parking_status", "parking_id", "status"),)
 
     id = Column(Integer, primary_key=True, index=True)
     parking_id = Column(Integer, ForeignKey("estacionamientos.id"), nullable=False)

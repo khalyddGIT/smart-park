@@ -125,6 +125,17 @@ def vehicle_slot_family(kind: Optional[str]) -> str:
         return "mototaxi"
     return "auto"
 
+
+def compatible_slot_types(kind: Optional[str]) -> tuple[str, ...]:
+    """Valores legacy que pertenecen a la misma familia de plaza."""
+    family = vehicle_slot_family(kind)
+    return {
+        "camioneta": ("suv", "camioneta", "truck", "pickup"),
+        "moto": ("moto", "motorcycle", "scooter", "bike"),
+        "mototaxi": ("mototaxi", "torito", "trimovil"),
+        "auto": ("auto", "car", "sedan"),
+    }[family]
+
 def _format_reservation_response(r: Reservation) -> ReservationResponse:
     resp = ReservationResponse.model_validate(r)
     try:
@@ -589,25 +600,38 @@ async def create_reservation(
     # Si no tiene slot asignado (reserva rápida o fallback automático si el cajón preview fue tomado)
     if not slot:
         # Auto-asignación inteligente: seleccionar la mejor plaza libre compatible
-        target_family = vehicle_slot_family(vtype)
-        free_slots_res = await db.execute(
-            select(Slot).where(
+        slot_stmt = (
+            select(Slot)
+            .where(
                 Slot.parking_id == res_in.parking_id,
-                Slot.status == "free"
-            ).with_for_update()
+                Slot.status == "free",
+                func.lower(Slot.slot_type).in_(compatible_slot_types(vtype)),
+            )
+            .order_by(Slot.id)
+            .limit(1)
+            .with_for_update(skip_locked=True)
         )
-        free_slots = free_slots_res.scalars().all()
-        if not free_slots:
+        compatible_res = await db.execute(slot_stmt)
+        slot = compatible_res.scalars().first()
+
+        # Garita puede recibir vehículos legacy sin clasificación fiable. En ese
+        # flujo operativo se permite tomar otra plaza libre y se registra el tipo
+        # real de la plaza. Los conductores nunca usan este fallback.
+        if not slot and current_user.role in ("local", "platform"):
+            fallback_res = await db.execute(
+                select(Slot)
+                .where(Slot.parking_id == res_in.parking_id, Slot.status == "free")
+                .order_by(Slot.id)
+                .limit(1)
+                .with_for_update(skip_locked=True)
+            )
+            slot = fallback_res.scalars().first()
+
+        if not slot:
             raise HTTPException(
                 status_code=409,
-                detail="No hay plazas libres disponibles en este establecimiento en este momento."
+                detail=f"No hay plazas libres disponibles compatibles con el tipo de vehículo {vtype}.",
             )
-        
-        # Filtramos por familia compatible; si no hay específica, usamos cualquiera disponible
-        matching_slots = [s for s in free_slots if vehicle_slot_family(s.slot_type) == target_family]
-        candidate_slots = matching_slots if matching_slots else free_slots
-        candidate_slots.sort(key=lambda s: s.id)
-        slot = candidate_slots[0]
 
     # Verificar local y calcular costo
     parking_res = await db.execute(select(Parking).where(Parking.id == res_in.parking_id))
@@ -661,10 +685,10 @@ async def create_reservation(
     vtype = (getattr(res_in, "vehicle_type", None) or "auto").strip().lower()
     slot_kind = getattr(slot, "slot_type", None) or "auto"
 
-    # Si se asignó un cajón explícito y el tipo vino por defecto como 'auto' o el usuario es operador/local/platform:
-    # Auto-adaptar el tipo de vehículo al tipo de plaza asignada para evitar rechazos 400 y garantizar tarifa correcta
+    # La adaptación pertenece exclusivamente al flujo operativo de garita. Para
+    # conductores, "auto" es un tipo real y no significa "inferir desde el cajón".
     if slot and slot.slot_type:
-        if current_user.role in ("local", "platform") or vtype == "auto":
+        if current_user.role in ("local", "platform"):
             vtype = slot_kind
 
     if res_in.slot_id and res_in.slot_id > 0 and vehicle_slot_family(slot_kind) != vehicle_slot_family(vtype):

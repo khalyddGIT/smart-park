@@ -1,5 +1,7 @@
 import os
 import uuid
+import io
+from PIL import Image, UnidentifiedImageError
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -68,16 +70,36 @@ async def upload_vehicle_image(
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="El archivo seleccionado debe ser una imagen")
     
-    contents = await file.read()
-    if len(contents) > 10 * 1024 * 1024:
+    max_bytes = 10 * 1024 * 1024
+    contents = await file.read(max_bytes + 1)
+    if len(contents) > max_bytes:
         raise HTTPException(status_code=413, detail="La imagen no debe superar los 10MB")
-    
-    ext = file.filename.split(".")[-1].lower() if file.filename and "." in file.filename else "jpg"
-    if ext not in ["jpg", "jpeg", "png", "webp", "gif"]:
-        ext = "jpg"
+
+    # El MIME y la extensión son controlados por el cliente. Pillow valida la
+    # firma real y evita servir HTML/SVG renombrado como imagen.
+    try:
+        with Image.open(io.BytesIO(contents)) as image:
+            image.verify()
+        with Image.open(io.BytesIO(contents)) as image:
+            if image.width > 12000 or image.height > 12000:
+                raise HTTPException(status_code=413, detail="Dimensiones de imagen demasiado grandes")
+            image_format = (image.format or "").upper()
+    except HTTPException:
+        raise
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+        raise HTTPException(status_code=400, detail="El archivo no contiene una imagen válida")
+
+    format_extensions = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp", "GIF": "gif"}
+    ext = format_extensions.get(image_format)
+    if not ext:
+        raise HTTPException(status_code=400, detail="Formato de imagen no permitido")
     
     filename = f"veh_{uuid.uuid4().hex[:12]}.{ext}"
-    uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "uploads", "vehicles"))
+    uploads_root = os.getenv(
+        "UPLOADS_DIR",
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "uploads")),
+    )
+    uploads_dir = os.path.join(uploads_root, "vehicles")
     os.makedirs(uploads_dir, exist_ok=True)
     file_path = os.path.join(uploads_dir, filename)
     

@@ -19,28 +19,22 @@ const api = axios.create({
   baseURL: `${API_BASE}/api/v1`,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true, // Envía y recibe cookies HttpOnly automáticamente
+  xsrfCookieName: 'csrf_token',
+  xsrfHeaderName: 'X-CSRF-Token',
+  withXSRFToken: true,
 });
 
-// Adjuntar JWT si existe (compatibilidad dual)
-api.interceptors.request.use((config) => {
+// Compatibilidad temporal con consumidores que usan estas funciones como
+// indicador de sesión. El JWT ya no se persiste ni queda expuesto a JavaScript.
+export const setAccessToken = () => {
   try {
-    const token = localStorage.getItem('smart_park_access_token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-  } catch {}
-  return config;
-});
-
-export const setAccessToken = (token) => {
-  try {
-    if (token) localStorage.setItem('smart_park_access_token', token);
-    else localStorage.removeItem('smart_park_access_token');
+    localStorage.removeItem('smart_park_access_token');
   } catch {}
 };
 
 export const getAccessToken = () => {
   try {
-    return localStorage.getItem('smart_park_access_token') || 
-           (localStorage.getItem('smart_park_user_session') ? 'cookie_session' : null);
+    return localStorage.getItem('smart_park_user_session') ? 'cookie_session' : null;
   } catch { 
     return null; 
   }

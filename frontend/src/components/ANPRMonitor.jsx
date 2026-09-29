@@ -144,8 +144,6 @@ export const ANPRMonitor = () => {
   const [showZoneEditor, setShowZoneEditor] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('smart_park_access_token');
-    if (!token) return;
     api.get('/payments/my').then(r => {
       const ids = new Set((Array.isArray(r.data) ? r.data : []).filter(p => p.status === 'succeeded' && p.reservation_id).map(p => Number(p.reservation_id)));
       setPaidIds(ids);

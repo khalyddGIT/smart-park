@@ -51,24 +51,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // A) Llamadas a APIs del backend (/api/*): Network-first con fallback a caché para pases y reservas
+  // A) Las APIs autenticadas nunca se guardan en Cache Storage. Una respuesta de
+  // reservas/perfil puede pertenecer a otro usuario después de cerrar sesión.
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
-        .then((networkResponse) => {
-          // Si la respuesta es exitosa y es una consulta de reservas o perfil, guardar copia en caché
-          if (networkResponse && networkResponse.status === 200 && (url.pathname.includes('/reservations') || url.pathname.includes('/my-reservations'))) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return networkResponse;
-        })
         .catch(async () => {
-          // Fallback offline: intentar devolver la última versión en caché
-          const cached = await caches.match(request);
-          if (cached) return cached;
-          return new Response(JSON.stringify({ offline: true, message: 'Sin conexión a internet. Mostrando datos locales.' }), {
+          return new Response(JSON.stringify({ offline: true, message: 'Sin conexión a internet.' }), {
             status: 503,
+            statusText: 'Service Unavailable',
             headers: { 'Content-Type': 'application/json' }
           });
         })

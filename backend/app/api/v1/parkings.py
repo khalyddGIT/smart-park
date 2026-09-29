@@ -191,7 +191,17 @@ async def get_parking(parking_id: int, db: AsyncSession = Depends(get_db)):
 async def update_camera_config(parking_id: int, body: dict, db: AsyncSession = Depends(get_db), current_user=Depends(write_required)):
     parking = await verify_parking_write_access(parking_id, current_user, db)
     if "camera_url" in body:
-        parking.camera_url = body["camera_url"]
+        raw_url = body["camera_url"]
+        if raw_url:
+            clean_url = str(raw_url).strip()
+            if not any(clean_url.lower().startswith(p) for p in ("http://", "https://", "rtsp://")):
+                raise HTTPException(status_code=422, detail="La URL debe comenzar con http://, https:// o rtsp://")
+            from app.core.ipcam import _is_cloud_metadata_url
+            if _is_cloud_metadata_url(clean_url):
+                raise HTTPException(status_code=422, detail="URL no permitida: esquema no soportado o endpoint reservado.")
+            parking.camera_url = clean_url
+        else:
+            parking.camera_url = None
     if "camera_enabled" in body:
         parking.camera_enabled = bool(body["camera_enabled"])
     if "camera_calibration" in body:

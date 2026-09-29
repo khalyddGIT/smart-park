@@ -131,6 +131,8 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
   const [urlDraft, setUrlDraft] = useState(cameraUrl);
   const [enabledDraft, setEnabledDraft] = useState(cameraEnabled);
   const [savingConfig, setSavingConfig] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const [testingSnapshot, setTestingSnapshot] = useState(false);
 
   const webcamRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -389,24 +391,44 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [mode, selectedZoneIdx, camZones, pushHistory, persistZones]);
 
-  // snapshot para cámara IP
-  const refreshSnapshot = useCallback(async () => {
+  // snapshot para cámara IP con soporte para feedback manual y diagnóstico
+  const refreshSnapshot = useCallback(async (isManual = false) => {
     if (!numericId || sourceMode !== 'camera' || !cameraUrl) return;
+    if (isManual) setTestingSnapshot(true);
     try {
       const res = await api.get(`/parkings/${numericId}/camera/snapshot`, { responseType: 'blob' });
       if (snapshotObjectUrlRef.current) URL.revokeObjectURL(snapshotObjectUrlRef.current);
       const u = URL.createObjectURL(res.data);
       snapshotObjectUrlRef.current = u;
       setSnapshotUrl(u);
-    } catch {}
+      setCameraError(null);
+      if (isManual) toast.success('Snapshot de cámara IP recibido exitosamente');
+    } catch (err) {
+      let errMsg = 'No se pudo conectar a la cámara IP';
+      if (err?.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const parsed = JSON.parse(text);
+          if (parsed?.detail) errMsg = parsed.detail;
+        } catch {}
+      } else if (err?.response?.data?.detail) {
+        errMsg = err.response.data.detail;
+      } else if (err?.message) {
+        errMsg = err.message;
+      }
+      setCameraError(errMsg);
+      if (isManual) toast.error(errMsg);
+    } finally {
+      if (isManual) setTestingSnapshot(false);
+    }
   }, [numericId, sourceMode, cameraUrl]);
 
   useEffect(() => {
-    if (sourceMode !== 'camera') return;
-    refreshSnapshot();
-    const iv = setInterval(refreshSnapshot, 4000);
+    if (sourceMode !== 'camera' || !cameraUrl) return;
+    refreshSnapshot(false);
+    const iv = setInterval(() => refreshSnapshot(false), 5000);
     return () => clearInterval(iv);
-  }, [sourceMode, refreshSnapshot]);
+  }, [sourceMode, cameraUrl, refreshSnapshot]);
 
   useEffect(() => () => {
     if (snapshotObjectUrlRef.current) try { URL.revokeObjectURL(snapshotObjectUrlRef.current); } catch {}
@@ -426,17 +448,21 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
   const saveCameraConfig = async () => {
     if (!numericId) { toast.error('Selecciona una sede del servidor para guardar la URL'); return; }
     const trimmed = urlDraft.trim();
-    if (trimmed && !/^https?:\/\//i.test(trimmed)) { toast.error('La URL debe comenzar con http:// o https://'); return; }
+    if (trimmed && !/^(https?|rtsp):\/\//i.test(trimmed)) {
+      toast.error('La URL debe comenzar con http://, https:// o rtsp://');
+      return;
+    }
     setSavingConfig(true);
     try {
       await api.put(`/parkings/${numericId}/camera/config`, { camera_url: trimmed || null, camera_enabled: !!enabledDraft });
       setEstablishments((prev) => prev.map((est) => String(est.id) === String(currentEst.id) ? { ...est, camera_url: trimmed, camera_enabled: !!enabledDraft } : est));
       toast.success('URL de cámara guardada');
       setShowConfig(false);
-      if (trimmed) setTimeout(refreshSnapshot, 600);
+      setCameraError(null);
+      if (trimmed) setTimeout(() => refreshSnapshot(true), 600);
     } catch (err) {
       const d = err?.response?.data?.detail;
-      toast.error(typeof d === 'string' ? d : 'No se pudo guardar');
+      toast.error(typeof d === 'string' ? d : 'No se pudo guardar la configuración');
     } finally { setSavingConfig(false); }
   };
 
@@ -444,7 +470,6 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
   const runScan = useCallback(async ({ silent = false } = {}) => {
     if (camZones.length === 0) { if (!silent) toast.error('Dibuja al menos 1 zona de cámara (modo Editar)'); return; }
     if (sourceMode === 'camera' && !cameraUrl && !snapshotUrl) {
-      // intentar snapshot igual; si no hay URL configurada, pedir webcam/imagen
       if (!silent) toast.error('Configura la URL de la cámara IP o cambia a WebCam/Imagen');
       return;
     }
@@ -462,8 +487,22 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
       } else {
         // cámara IP: usar snapshot del servidor
         if (numericId && cameraUrl) {
-          const resSnap = await api.get(`/parkings/${numericId}/camera/snapshot`, { responseType: 'blob' });
-          blob = resSnap.data;
+          try {
+            const resSnap = await api.get(`/parkings/${numericId}/camera/snapshot`, { responseType: 'blob' });
+            blob = resSnap.data;
+          } catch (snapErr) {
+            let snapMsg = 'No se pudo obtener snapshot de la cámara IP';
+            if (snapErr?.response?.data instanceof Blob) {
+              try {
+                const text = await snapErr.response.data.text();
+                const parsed = JSON.parse(text);
+                if (parsed?.detail) snapMsg = parsed.detail;
+              } catch {}
+            } else if (snapErr?.response?.data?.detail) {
+              snapMsg = snapErr.response.data.detail;
+            }
+            throw new Error(snapMsg);
+          }
         } else if (snapshotUrl) {
           blob = await (await fetch(snapshotUrl)).blob();
         } else throw new Error('Sin frame de cámara IP');
@@ -486,12 +525,20 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
       setLastScan({ ts: new Date().toISOString(), ms, occupancy: occ, occCount, total: camZones.length, source: sourceMode, white_ratio: res.data?.white_ratio });
       if (!silent) toast.success(`Escaneo OK · ${occCount}/${camZones.length} ocupadas · thr ${threshold} · ${ms} ms`);
     } catch (err) {
-      const detail = err?.response?.data?.detail;
-      const msg = typeof detail === 'string' ? detail : (err?.message || 'Fallo el escaneo');
+      let msg = typeof err?.message === 'string' ? err.message : 'Falló el escaneo';
+      if (err?.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const parsed = JSON.parse(text);
+          if (parsed?.detail) msg = parsed.detail;
+        } catch {}
+      } else if (err?.response?.data?.detail) {
+        msg = err.response.data.detail;
+      }
       setLastError(msg);
       if (!silent) toast.error(msg);
     } finally { setScanning(false); }
-  }, [camZones, sourceMode, cameraUrl, snapshotUrl, testFile, numericId]);
+  }, [camZones, sourceMode, cameraUrl, snapshotUrl, testFile, numericId, threshold, debugMode]);
 
   const runScanRef = useRef(runScan);
   useEffect(() => { runScanRef.current = runScan; }, [runScan]);
@@ -554,19 +601,63 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
           </div>
         </div>
         {!readOnly && showConfig && (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 flex flex-col gap-2 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 shadow-lg">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 flex flex-col gap-3 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 shadow-xl">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black">URL MJPEG/JPEG de la sede · {currentEst?.name}</span>
-              <button type="button" onClick={() => setShowConfig(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400"><X className="w-4 h-4" /></button>
+              <div className="flex items-center gap-2">
+                <Radio className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs font-black">Configuración de Cámara IP · {currentEst?.name}</span>
+              </div>
+              <button type="button" onClick={() => setShowConfig(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 cursor-pointer"><X className="w-4 h-4" /></button>
             </div>
+
             <div className="grid md:grid-cols-[1fr_auto] gap-2">
-              <input value={urlDraft} onChange={(e) => setUrlDraft(e.target.value)} placeholder="http://192.168.1.50:8080/video" className="h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm outline-none focus:border-emerald-500 dark:text-white" />
-              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300"><input type="checkbox" checked={enabledDraft} onChange={(e) => setEnabledDraft(e.target.checked)} className="w-4 h-4 accent-emerald-500" /> Habilitada</label>
+              <input
+                value={urlDraft}
+                onChange={(e) => setUrlDraft(e.target.value)}
+                placeholder="http://192.168.1.50:8080/video (o rtsp://...)"
+                className="h-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm outline-none focus:border-emerald-500 dark:text-white"
+              />
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/60 px-3 py-2 rounded-xl cursor-pointer">
+                <input type="checkbox" checked={enabledDraft} onChange={(e) => setEnabledDraft(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
+                Habilitada para auto-escaneo
+              </label>
             </div>
-            <div className="flex gap-2 items-center flex-wrap">
-              <Button type="button" onClick={saveCameraConfig} disabled={savingConfig || !numericId} className="h-9 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs gap-1.5"><Save className="w-3.5 h-3.5" /> Guardar URL</Button>
-              <Button type="button" variant="outline" onClick={refreshSnapshot} disabled={!cameraUrl} className="h-9 rounded-xl text-xs border-slate-200 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"><Eye className="w-3.5 h-3.5" /> Probar snapshot</Button>
-              <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{cameraUrl ? `Actual: ${cameraUrl.slice(0, 60)}` : 'Sin URL'} {calibration ? '· calibrada' : ''}</span>
+
+            {/* Presets rápidos */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider mr-1">Ejemplos:</span>
+              <button type="button" onClick={() => setUrlDraft('http://192.168.1.50:8080/video')} className="px-2 py-1 rounded-lg text-[11px] font-mono font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer">
+                IP Webcam Android (/video)
+              </button>
+              <button type="button" onClick={() => setUrlDraft('http://192.168.1.50:4747/video')} className="px-2 py-1 rounded-lg text-[11px] font-mono font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer">
+                DroidCam (/video)
+              </button>
+              <button type="button" onClick={() => setUrlDraft('rtsp://admin:12345@192.168.1.50:554/stream')} className="px-2 py-1 rounded-lg text-[11px] font-mono font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer">
+                CCTV RTSP
+              </button>
+              <button type="button" onClick={() => setUrlDraft('https://tu-tunel.ngrok-free.app/video')} className="px-2 py-1 rounded-lg text-[11px] font-mono font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-emerald-600 dark:text-emerald-400 cursor-pointer">
+                Túnel ngrok HTTPS
+              </button>
+            </div>
+
+            <div className="flex gap-2 items-center flex-wrap pt-1">
+              <Button type="button" onClick={saveCameraConfig} disabled={savingConfig || !numericId} className="h-9 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs gap-1.5 hover:bg-emerald-400 cursor-pointer">
+                <Save className="w-3.5 h-3.5" /> Guardar URL
+              </Button>
+              <Button type="button" variant="outline" onClick={() => refreshSnapshot(true)} disabled={testingSnapshot || !urlDraft.trim()} className="h-9 rounded-xl text-xs border-slate-200 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer">
+                {testingSnapshot ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5" />}
+                {testingSnapshot ? 'Probando...' : 'Probar snapshot'}
+              </Button>
+              <span className="text-xs text-slate-500 dark:text-slate-400 truncate ml-auto">
+                {cameraUrl ? `Actual: ${cameraUrl.slice(0, 50)}...` : 'Sin URL configurada'}
+              </span>
+            </div>
+
+            {/* Aviso explicativo de red */}
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+              💡 <b>¿Cómo conectar tu cámara IP?</b><br />
+              • <b>App móvil (IP Webcam / DroidCam)</b>: Asegúrate de incluir <code>/video</code> al final de la URL.<br />
+              • <b>Servidor en la nube (Railway)</b>: Si Smart Park está en la nube y tu cámara está en tu Wi-Fi de garita (192.168.x.x), usa un túnel gratuito como <b>ngrok</b> (<code>ngrok http 8080</code>) para tener una URL pública HTTPS que el servidor pueda ver, o selecciona directamente la pestaña <b>WebCam</b>.
             </div>
           </div>
         )}
@@ -632,8 +723,49 @@ export const CameraMonitorModule = ({ readOnly = false }) => {
             <Webcam ref={webcamRef} audio={false} screenshotFormat="image/jpeg" screenshotQuality={0.92} videoConstraints={{ deviceId: selectedWebcamId ? { exact: selectedWebcamId } : undefined, width: 1280, height: 720 }} className="w-full h-full object-cover min-h-[380px] sm:min-h-[460px]" />
           ) : sourceMode === 'image' ? (
             testPreview ? <img src={testPreview} alt="Prueba" className="w-full h-full object-cover min-h-[380px] sm:min-h-[460px]" /> : <div className="text-center p-8"><ImageIcon className="w-10 h-10 text-slate-600 mx-auto mb-3" /><p className="text-sm font-bold text-slate-300">Sube una imagen</p><p className="text-xs text-slate-500">Activa Debug para ver el procesado OpenCV</p></div>
-          ) : snapshotUrl ? <img src={snapshotUrl} alt="Snapshot" className="w-full h-full object-cover min-h-[380px] sm:min-h-[460px]" /> : <div className="text-center p-8"><Camera className="w-10 h-10 text-slate-600 mx-auto mb-3" /><p className="text-sm font-bold text-slate-300">{cameraUrl ? 'Sin snapshot — pulsa Probar snapshot' : 'Cámara IP no configurada'}</p></div>
-          }
+          ) : snapshotUrl ? (
+            <img src={snapshotUrl} alt="Snapshot" className="w-full h-full object-cover min-h-[380px] sm:min-h-[460px]" />
+          ) : (
+            <div className="text-center p-8 max-w-lg">
+              <Camera className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+              <p className="text-sm font-bold text-slate-200">
+                {cameraUrl ? (cameraError ? 'No se pudo conectar a la cámara IP' : 'Esperando snapshot de la cámara...') : 'Cámara IP no configurada'}
+              </p>
+              {cameraError ? (
+                <div className="mt-3 p-3 rounded-xl bg-rose-950/70 border border-rose-800 text-left">
+                  <p className="text-xs text-rose-200 font-medium break-words leading-relaxed">{cameraError}</p>
+                  {cameraUrl && /192\.168\.|10\.|172\./.test(cameraUrl) && (
+                    <div className="text-[11px] text-amber-300 mt-2 border-t border-rose-800/80 pt-2 leading-relaxed">
+                      💡 <b>Diagnóstico de red local vs nube</b>:<br />
+                      Tu URL usa una IP privada local (<code>{cameraUrl.slice(0, 32)}...</code>). Si la aplicación está desplegada en la nube (Railway), el servidor remoto no puede acceder directamente a tu Wi-Fi local sin un túnel.<br />
+                      <b>Soluciones recomendadas:</b><br />
+                      1. Usa un túnel gratuito como <b>ngrok</b> en tu PC/teléfono (ej: <code>ngrok http 8080</code> genera una URL pública HTTPS que funciona en Railway).<br />
+                      2. O cambia a la pestaña <b>WebCam</b> para usar la cámara directamente desde este navegador.<br />
+                      3. Si estás corriendo el sistema en servidor local, verifica que el puerto esté abierto.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  {cameraUrl ? 'Pulsa "Probar snapshot" para verificar la conexión en tiempo real.' : 'Configura la URL de tu cámara (MJPEG, JPEG o RTSP) para ver la transmisión.'}
+                </p>
+              )}
+              <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
+                {cameraUrl && (
+                  <Button type="button" onClick={() => refreshSnapshot(true)} disabled={testingSnapshot} className="h-8 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs gap-1.5 cursor-pointer">
+                    {testingSnapshot ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5" />}
+                    {testingSnapshot ? 'Conectando...' : 'Probar snapshot'}
+                  </Button>
+                )}
+                <Button type="button" variant="outline" onClick={() => setShowConfig(true)} className="h-8 rounded-xl bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700 text-xs font-bold gap-1 cursor-pointer">
+                  <Settings2 className="w-3.5 h-3.5" /> Configurar URL
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setSourceMode('webcam')} className="h-8 rounded-xl text-sky-400 hover:text-sky-300 text-xs font-bold gap-1 cursor-pointer">
+                  <Video className="w-3.5 h-3.5" /> Usar WebCam local
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* overlay zonas en monitor */}
           {mode === 'monitor' && camZones.map((z) => {

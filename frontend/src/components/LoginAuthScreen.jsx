@@ -1026,9 +1026,9 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
         onClick={(e) => {
           if (e.target === e.currentTarget && onClose) onClose();
         }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center p-[max(0.75rem,env(safe-area-inset-top))] sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in overflow-y-auto overscroll-contain"
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-[max(0.75rem,env(safe-area-inset-top))] sm:p-4 bg-[var(--overlay-color)] backdrop-blur-xs animate-in fade-in overflow-y-auto overscroll-contain"
       >
-        <div className="relative z-[10000] w-full max-w-lg max-h-[calc(100dvh-1.5rem)] my-0 sm:my-6 bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-y-auto overscroll-contain">
+        <div role="dialog" aria-modal="true" aria-label="Acceso a Smart Park" className="relative z-[10000] w-full max-w-lg max-h-[calc(100dvh-1.5rem)] my-0 sm:my-6 bg-[var(--bg-elevated)] text-[var(--text-main)] rounded-2xl sm:rounded-3xl shadow-[var(--dialog-shadow)] border border-[var(--border-card)] overflow-y-auto overscroll-contain">
           {onClose && (
             <button
               type="button"

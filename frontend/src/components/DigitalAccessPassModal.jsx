@@ -625,7 +625,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               ) : (
                 <div 
                   ref={qrRef}
-                  className="p-2.5 bg-white rounded-xl border border-slate-200 dark:border-slate-700 inline-block shadow-xs"
+                  className="theme-preserve-white p-2.5 bg-white rounded-xl border border-slate-200 inline-block shadow-xs"
                 >
                   <QRCodeSVG
                     value={passData.qrPayload}

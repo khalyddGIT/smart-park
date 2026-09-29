@@ -2207,9 +2207,9 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
           MODAL: NUEVA RESERVA EN GARITA (VENTANILLA)
           ========================================================================= */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--overlay-color)] backdrop-blur-sm animate-in fade-in">
+          <div role="dialog" aria-modal="true" aria-label="Nueva reserva en garita" className="bg-[var(--bg-elevated)] text-[var(--text-main)] rounded-3xl p-6 max-w-lg w-full shadow-[var(--dialog-shadow)] border border-[var(--border-card)] space-y-5">
+            <div className="flex items-center justify-between border-b border-[var(--border-card)] pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl">
                   <CalendarCheck className="w-5 h-5" />
@@ -2381,8 +2381,8 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
         const isCancelled = selectedReceipt.status === 'CANCELLED';
         const isCompleted = selectedReceipt.status === 'COMPLETED';
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 gap-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--overlay-color)] backdrop-blur-sm animate-in fade-in">
+            <div role="dialog" aria-modal="true" aria-label="Comprobante de estacionamiento" className="bg-[var(--bg-elevated)] text-[var(--text-main)] rounded-3xl p-6 max-w-sm w-full shadow-[var(--dialog-shadow)] border border-[var(--border-card)] gap-4">
               
               {/* Header del Ticket */}
               <div className={`text-center border-b border-dashed pb-4 space-y-1 ${
@@ -2454,7 +2454,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               </div>
 
               {/* Código QR Escaneable o Marca de Anulación */}
-              <div className="mt-3 bg-white p-3 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center">
+              <div className="mt-3 bg-[var(--bg-subtle)] p-3 rounded-2xl border border-[var(--border-card)] text-center flex flex-col items-center justify-center">
                 {isCancelled ? (
                   <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl w-full text-center space-y-1">
                     <div className="w-10 h-10 mx-auto rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
@@ -2465,7 +2465,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                   </div>
                 ) : (
                   <>
-                    <div className="p-1.5 bg-white rounded-xl border border-slate-100 shadow-xs inline-block">
+                    <div className="theme-preserve-white p-1.5 bg-white rounded-xl border border-slate-200 shadow-xs inline-block">
                       <QRCodeSVG
                         value={`SMART-PARK AYACUCHO - TICKET
 Sede: ${selectedReceipt.parking}

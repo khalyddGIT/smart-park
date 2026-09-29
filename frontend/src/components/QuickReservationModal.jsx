@@ -197,9 +197,12 @@ export const QuickReservationModal = ({
   const hourlyRate = Number(currentParking.rate || currentParking.hourly_rate || 5.0).toFixed(2);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[var(--overlay-color)] backdrop-blur-md animate-fade-in">
       <div 
-        className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden flex flex-col max-h-[92vh]"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Reserva rápida"
+        className="relative w-full max-w-lg bg-[var(--bg-elevated)] text-[var(--text-main)] rounded-3xl shadow-[var(--dialog-shadow)] border border-[var(--border-card)] overflow-hidden flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Cabecera Táctica */}

@@ -736,7 +736,7 @@ export const LandingPage = ({
               <div className="w-[210px] bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-2xl text-center space-y-2.5 backdrop-blur-sm">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pase de Acceso</div>
                 <div className="text-lg font-black text-white">S/ 3.50</div>
-                <div className="w-28 h-28 bg-white p-2 rounded-2xl mx-auto flex items-center justify-center shadow-inner">
+                <div className="theme-preserve-white w-28 h-28 bg-white p-2 rounded-2xl mx-auto flex items-center justify-center shadow-inner">
                   <QRCodeSVG value="SMART-PARK-DEMO-PASS" size={96} />
                 </div>
                 <div className="text-[9px] text-emerald-400 font-bold bg-emerald-500/15 py-1 rounded-full border border-emerald-500/20">

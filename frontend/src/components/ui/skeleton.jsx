@@ -11,7 +11,7 @@ export const Skeleton = ({ className = '', ...props }) => {
 
 // Preset Skeletons
 export const SkeletonCard = () => (
-  <div className="p-5 rounded-3xl border border-slate-200/90 bg-white shadow-xs space-y-3.5">
+  <div className="p-5 rounded-3xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-xs space-y-3.5">
     <div className="flex items-center justify-between">
       <Skeleton className="w-24 h-4 rounded-lg" />
       <Skeleton className="w-8 h-8 rounded-xl" />
@@ -22,7 +22,7 @@ export const SkeletonCard = () => (
 );
 
 export const SkeletonParkingCard = () => (
-  <div className="rounded-3xl border border-slate-200/90 bg-white shadow-xs overflow-hidden flex flex-col justify-between">
+  <div className="rounded-3xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-xs overflow-hidden flex flex-col justify-between">
     <Skeleton className="h-44 w-full rounded-none" />
     <div className="p-5 space-y-3">
       <div className="space-y-1.5">
@@ -38,7 +38,7 @@ export const SkeletonParkingCard = () => (
 );
 
 export const SkeletonRow = () => (
-  <div className="p-4 rounded-2xl border border-slate-100 bg-white flex items-center justify-between gap-3">
+  <div className="p-4 rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] flex items-center justify-between gap-3">
     <div className="flex items-center space-x-3 w-3/5">
       <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
       <div className="space-y-1.5 w-full">

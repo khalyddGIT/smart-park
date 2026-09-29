@@ -361,7 +361,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenTerms }) => {
           onClick={() => setMobileDrawerOpen(false)}
         >
           <div 
-            className="bg-white dark:bg-[#111827] rounded-t-3xl p-5 max-h-[82vh] overflow-y-auto space-y-4 shadow-2xl dark:shadow-black/80 border-t border-slate-200/90 dark:border-slate-800 animate-in slide-in-from-bottom duration-200 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+            className="bg-[var(--bg-elevated)] text-[var(--text-main)] rounded-t-3xl p-5 max-h-[82vh] overflow-y-auto space-y-4 shadow-[var(--dialog-shadow)] border-t border-[var(--border-card)] animate-in slide-in-from-bottom duration-200 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Barra superior de arrastre */}

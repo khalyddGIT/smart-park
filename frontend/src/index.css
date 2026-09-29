@@ -165,41 +165,71 @@
 :root {
   --bg-app: #F8FAFC;
   --bg-card: #FFFFFF;
+  --bg-elevated: #FFFFFF;
   --bg-subtle: #F1F5F9;
+  --bg-input: #FFFFFF;
+  --bg-hover: #E2E8F0;
   --text-main: #0F172A;
   --text-muted: #64748B;
+  --text-subtle: #94A3B8;
   --border-card: #E2E8F0;
   --accent-color: #059669;
+  --overlay-color: rgba(2, 6, 23, 0.64);
+  --dialog-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
 }
 
 [data-theme="dark"], .dark {
   --bg-app: #0B0F19;
   --bg-card: #151D2F;
+  --bg-elevated: #182236;
   --bg-subtle: #1E293B;
+  --bg-input: #101827;
+  --bg-hover: #263449;
   --text-main: #F8FAFC;
   --text-muted: #94A3B8;
-  --border-card: #1E293B;
+  --text-subtle: #718096;
+  --border-card: #2A3850;
   --accent-color: #10B981;
+  --overlay-color: rgba(2, 6, 23, 0.78);
+  --dialog-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
 }
 
 [data-theme="midnight"] {
   --bg-app: #070D1E;
   --bg-card: #0D1B3E;
+  --bg-elevated: #10234D;
   --bg-subtle: #132759;
+  --bg-input: #091733;
+  --bg-hover: #19346C;
   --text-main: #F0F6FC;
   --text-muted: #8BA2C4;
+  --text-subtle: #6F88AF;
   --border-card: #1E3568;
   --accent-color: #38BDF8;
+  --overlay-color: rgba(1, 5, 18, 0.82);
+  --dialog-shadow: 0 28px 90px rgba(0, 3, 18, 0.7);
 }
 
 [data-theme="high-contrast"] {
   --bg-app: #000000;
   --bg-card: #0D0D0D;
+  --bg-elevated: #141414;
   --bg-subtle: #171717;
+  --bg-input: #080808;
+  --bg-hover: #242424;
   --text-main: #FFFFFF;
   --text-muted: #D4D4D4;
+  --text-subtle: #A3A3A3;
   --border-card: #404040;
   --accent-color: #22C55E;
+  --overlay-color: rgba(0, 0, 0, 0.9);
+  --dialog-shadow: 0 0 0 1px #525252, 0 28px 90px rgba(0, 0, 0, 0.82);
+}
+
+html[data-theme="dark"],
+html[data-theme="midnight"],
+html[data-theme="high-contrast"] {
+  color-scheme: dark;
 }
 
 /* Aplicación global de temas oscuros a componentes Tailwind */
@@ -229,13 +259,13 @@ html.dark body,
 }
 
 /* Fondos base */
-.dark .bg-white,
+.dark .bg-white:not(.theme-preserve-white),
 .dark [class*="bg-white/"]:not([class*="dark:bg-"]),
-[data-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-white:not(.theme-preserve-white),
 [data-theme="dark"] [class*="bg-white/"]:not([class*="dark:bg-"]),
-[data-theme="midnight"] .bg-white,
+[data-theme="midnight"] .bg-white:not(.theme-preserve-white),
 [data-theme="midnight"] [class*="bg-white/"]:not([class*="dark:bg-"]),
-[data-theme="high-contrast"] .bg-white,
+[data-theme="high-contrast"] .bg-white:not(.theme-preserve-white),
 [data-theme="high-contrast"] [class*="bg-white/"]:not([class*="dark:bg-"]) {
   background-color: var(--bg-card) !important;
   color: var(--text-main);
@@ -318,9 +348,10 @@ html.dark body,
 [data-theme="high-contrast"] input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="high-contrast"] select,
 [data-theme="high-contrast"] textarea {
-  background-color: var(--bg-card) !important;
+  background-color: var(--bg-input) !important;
   color: var(--text-main) !important;
   border-color: var(--border-card) !important;
+  caret-color: var(--accent-color);
 }
 
 .dark input::placeholder,
@@ -328,8 +359,23 @@ html.dark body,
 [data-theme="dark"] input::placeholder,
 [data-theme="dark"] textarea::placeholder,
 [data-theme="midnight"] input::placeholder,
-[data-theme="midnight"] textarea::placeholder {
-  color: #64748B !important;
+[data-theme="midnight"] textarea::placeholder,
+[data-theme="high-contrast"] input::placeholder,
+[data-theme="high-contrast"] textarea::placeholder {
+  color: var(--text-subtle) !important;
+}
+
+html[data-theme="dark"] ::selection,
+html[data-theme="midnight"] ::selection,
+html[data-theme="high-contrast"] ::selection {
+  background: color-mix(in srgb, var(--accent-color) 55%, transparent);
+  color: var(--text-main);
+}
+
+html[data-theme="dark"] *,
+html[data-theme="midnight"] *,
+html[data-theme="high-contrast"] * {
+  scrollbar-color: var(--border-card) var(--bg-app);
 }
 
 .dark select option,

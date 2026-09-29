@@ -108,14 +108,14 @@ export const CameraCalibrator = ({ onClose, slots = [], initialCal, grabFrame, o
 
 // === JSX ===
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 sticky top-0 bg-white z-10">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[var(--overlay-color)] backdrop-blur-sm p-4" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-label="Calibrador visual de zonas" className="bg-[var(--bg-elevated)] text-[var(--text-main)] border border-[var(--border-card)] rounded-3xl shadow-[var(--dialog-shadow)] max-w-4xl w-full max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-[var(--border-card)] flex items-center justify-between gap-3 sticky top-0 bg-[var(--bg-elevated)] z-10">
           <div>
-            <h3 className="text-base font-black text-slate-900 tracking-tight">Calibrador Visual de Zonas</h3>
-            <p className="text-[11px] text-slate-500 font-medium mt-0.5">Arrastra el recuadro verde hasta cubrir donde empieza y termina tu playon real; los cajones CAD se proyectan para verificar.</p>
+            <h3 className="text-base font-black text-[var(--text-main)] tracking-tight">Calibrador Visual de Zonas</h3>
+            <p className="text-[11px] text-[var(--text-muted)] font-medium mt-0.5">Arrastra el recuadro verde hasta cubrir donde empieza y termina tu playon real; los cajones CAD se proyectan para verificar.</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-2 rounded-xl bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] cursor-pointer"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="p-5 space-y-3">

@@ -2470,8 +2470,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
                   {/* Modal Overlay para Agregar / Editar Tarifario */}
                   {isRateModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150">
-                      <div className="w-full max-w-md bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 space-y-4">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--overlay-color)] backdrop-blur-xs animate-in fade-in duration-150">
+                      <div role="dialog" aria-modal="true" aria-label="Configuración de tarifa" className="w-full max-w-md bg-[var(--bg-elevated)] text-[var(--text-main)] rounded-2xl border border-[var(--border-card)] shadow-[var(--dialog-shadow)] p-5 space-y-4">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400">

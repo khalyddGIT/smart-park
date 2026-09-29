@@ -21,7 +21,7 @@ export const BrandIcon = ({
 
   if (withBadge) {
     return (
-      <div className={`relative flex items-center justify-center shrink-0 rounded-xl sm:rounded-2xl p-1 bg-white shadow-md shadow-emerald-950/25 ring-2 ring-emerald-400/60 ${badgeClassName}`}>
+      <div className={`theme-preserve-white relative flex items-center justify-center shrink-0 rounded-xl sm:rounded-2xl p-1 bg-white shadow-md shadow-emerald-950/25 ring-2 ring-emerald-400/60 ${badgeClassName}`}>
         <img
           ref={iconRef}
           src={logoImg}
@@ -115,7 +115,7 @@ export const BrandLogo = ({
       {/* Contenedor del Isotipo */}
       {withBadge ? (
         <div className="relative flex items-center justify-center shrink-0">
-          <div className="relative rounded-xl p-1 bg-white shadow-md ring-1 ring-slate-200/80 flex items-center justify-center">
+          <div className="theme-preserve-white relative rounded-xl p-1 bg-white shadow-md ring-1 ring-slate-200/80 flex items-center justify-center">
             <img
               ref={iconRef}
               src={logoImg}

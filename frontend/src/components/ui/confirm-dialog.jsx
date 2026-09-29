@@ -16,7 +16,7 @@ export const ConfirmDialog = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden bg-white dark:bg-[#111827] border-slate-200/90 dark:border-slate-800/90 shadow-2xl dark:shadow-black/60">
+      <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden bg-[var(--bg-elevated)] border-[var(--border-card)] shadow-[var(--dialog-shadow)]">
         <div className="p-6 space-y-4">
           <div className="flex items-start gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${variant === 'destructive' ? 'bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/80 text-rose-600 dark:text-rose-400' : 'bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/80 text-amber-600 dark:text-amber-400'}`}>
@@ -32,7 +32,7 @@ export const ConfirmDialog = ({
             </div>
           </div>
           <div className="flex items-center justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="h-9 rounded-xl text-xs font-bold border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="h-9 rounded-xl text-xs font-bold">
               {cancelText}
             </Button>
             <Button

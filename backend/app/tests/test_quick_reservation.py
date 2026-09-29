@@ -65,6 +65,18 @@ async def test_quick_reservation_auto_assignment_and_vehicle_matching():
         start_iso = (now + timedelta(minutes=5)).isoformat()
         end_iso = (now + timedelta(hours=2)).isoformat()
 
+        # La API no debe inventar una hora de estadía si el conductor no la eligió.
+        missing_duration = await ac.post("/api/v1/reservations", headers=d1_headers, json={
+            "parking_id": parking_id,
+            "slot_id": None,
+            "license_plate": plate_moto,
+            "vehicle_type": "moto",
+            "start_time": start_iso,
+            "is_open_stay": True
+        })
+        assert missing_duration.status_code == 422, missing_duration.text
+        assert "duración estimada" in missing_duration.json()["detail"]
+
         res1 = await ac.post("/api/v1/reservations", headers=d1_headers, json={
             "parking_id": parking_id,
             "slot_id": None,  # Auto-asignación express

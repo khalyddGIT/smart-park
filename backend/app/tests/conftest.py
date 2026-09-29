@@ -80,6 +80,8 @@ def _ensure_schema():
                 ("reservas", "is_open_stay", "BOOLEAN DEFAULT FALSE"),
                 ("reservas", "payment_method", "VARCHAR(50) DEFAULT 'efectivo'"),
                 ("reservas", "amount_paid", "FLOAT DEFAULT 0.0"),
+                ("reservas", "payment_status", "VARCHAR(20) NOT NULL DEFAULT 'not_required'"),
+                ("reservas", "payment_deadline", "TIMESTAMP"),
                 ("reservas", "reservation_type", "VARCHAR(30) DEFAULT 'immediate'"),
                 ("reservas", "subscription_months", "INTEGER DEFAULT 0"),
                 ("reservas", "is_subscription", "BOOLEAN DEFAULT FALSE"),

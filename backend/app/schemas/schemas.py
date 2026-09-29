@@ -539,9 +539,9 @@ class ReservationCreate(BaseModel):
     pay_now: Optional[bool] = False
     tolerance_minutes: Optional[int] = Field(default=15, ge=5, le=120, description="Tolerancia entre 5 y 120 minutos")
     vehicle_type: Optional[str] = "auto"
-    estimated_hours: Optional[float] = Field(default=1.0, ge=0.25, le=168.0)
+    estimated_hours: Optional[float] = Field(default=None, ge=0.25, le=168.0)
     billing_unit: Optional[str] = "hour"
-    estimated_minutes: Optional[int] = Field(default=60, ge=1, le=10080)
+    estimated_minutes: Optional[int] = Field(default=None, ge=1, le=10080)
     is_open_stay: Optional[bool] = False
     auto_assign: Optional[bool] = False
     reservation_type: Optional[str] = "standard"
@@ -619,6 +619,8 @@ class ReservationResponse(BaseModel):
     is_open_stay: Optional[bool] = False
     payment_method: Optional[str] = "efectivo"
     amount_paid: Optional[float] = 0.0
+    payment_status: Optional[str] = "not_required"
+    payment_deadline: Optional[datetime] = None
     is_overtime: Optional[bool] = False
     overtime_minutes: Optional[int] = 0
     reservation_type: Optional[str] = "standard"
@@ -630,7 +632,7 @@ class ReservationResponse(BaseModel):
     class Config:
         from_attributes = True
 
-    @field_serializer("start_time", "end_time", "actual_entry", "actual_exit", when_used="always")
+    @field_serializer("start_time", "end_time", "actual_entry", "actual_exit", "payment_deadline", when_used="always")
     def serialize_utc_datetime(self, dt: Optional[datetime]) -> Optional[str]:
         if dt is None:
             return None

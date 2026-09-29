@@ -30,6 +30,34 @@ PAYMENT_RATE_LIMIT = 200 if _is_testing else 10
 PAYMENT_RATE_WINDOW = 60
 
 
+async def _validate_reservation_payment(
+    db: AsyncSession,
+    reservation_id: Optional[int],
+    current_user: User,
+    amount_pen: float,
+) -> Optional[Reservation]:
+    """Impide pagar reservas ajenas, vencidas, duplicadas o con monto alterado."""
+    if not reservation_id:
+        return None
+    result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    if reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
+        raise HTTPException(status_code=403, detail="No autorizado para pagar esta reserva")
+    if reservation.status == "cancelled":
+        raise HTTPException(status_code=409, detail="La reserva fue cancelada y ya no admite pagos")
+    if getattr(reservation, "payment_status", None) == "paid" or bool(reservation.prepaid):
+        raise HTTPException(status_code=409, detail="Esta reserva ya fue pagada")
+    outstanding = max(0.0, round(float(reservation.total_cost or 0) - float(reservation.amount_paid or 0), 2))
+    if outstanding > 0 and abs(round(float(amount_pen), 2) - outstanding) > 0.02:
+        raise HTTPException(
+            status_code=422,
+            detail=f"El monto debe coincidir con el saldo pendiente de la reserva: S/ {outstanding:.2f}",
+        )
+    return reservation
+
+
 
 # --- Schemas ---
 
@@ -171,6 +199,8 @@ async def create_charge(
     if not body.token_id or not body.token_id.strip():
         raise HTTPException(status_code=400, detail="token_id es obligatorio")
 
+    await _validate_reservation_payment(db, body.reservation_id, current_user, body.amount_cents / 100.0)
+
     secret = settings.CULQI_SECRET_KEY.strip() if settings.CULQI_SECRET_KEY else ""
     if not secret:
         raise HTTPException(
@@ -233,7 +263,12 @@ async def create_charge(
 
     if resp.status_code in (200, 201):
         outcome = data.get("outcome", {}) if isinstance(data, dict) else {}
-        if outcome.get("type") == "venta_exitosa" or (data.get("outcome") is None and resp.status_code in (200, 201)):
+        confirmed_charge = bool(
+            isinstance(data, dict)
+            and data.get("id")
+            and (outcome.get("type") == "venta_exitosa" or data.get("object") == "charge")
+        )
+        if confirmed_charge:
             src_info = data.get("source", {}) if isinstance(data, dict) and isinstance(data.get("source"), dict) else {}
             detected_method = (
                 "yape" if (body.payment_method == "yape" or src_info.get("type") == "yape" or "yape" in str(data.get("description", "")).lower())
@@ -263,6 +298,8 @@ async def create_charge(
                             res_target.total_cost = res_target.amount_paid
                         res_target.payment_method = detected_method
                         res_target.prepaid = True
+                        res_target.payment_status = "paid"
+                        res_target.payment_deadline = None
                         try:
                             await realtime.broadcast("reservations:updated", {
                                 "reservation_id": res_target.id,
@@ -320,6 +357,7 @@ async def create_charge(
 async def create_paypal_order(
     body: PayPalCreateOrderRequest,
     request: Request,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Crea una orden de pago en PayPal REST API (v2) con conversión transparente PEN -> USD e idempotencia."""
@@ -343,6 +381,8 @@ async def create_paypal_order(
 
     if body.amount <= 0:
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0")
+
+    await _validate_reservation_payment(db, body.reservation_id, current_user, body.amount)
 
     token = get_paypal_access_token()
 
@@ -484,12 +524,14 @@ async def capture_paypal_order(
     amount_captured_usd = float(capture_info.get("amount", {}).get("value", 0.0) or 0.0)
 
     # Calcular monto en PEN y centavos para la base de datos
-    if body.amount_pen and body.amount_pen > 0:
-        amount_pen = round(body.amount_pen, 2)
-    elif amount_captured_usd > 0 and settings.PAYPAL_EXCHANGE_RATE_PEN_TO_USD > 0:
+    if amount_captured_usd > 0 and settings.PAYPAL_EXCHANGE_RATE_PEN_TO_USD > 0:
         amount_pen = round(amount_captured_usd / settings.PAYPAL_EXCHANGE_RATE_PEN_TO_USD, 2)
+    elif body.amount_pen and body.amount_pen > 0:
+        amount_pen = round(body.amount_pen, 2)
     else:
-        amount_pen = 10.00
+        raise HTTPException(status_code=502, detail="PayPal no devolvió un monto capturado verificable")
+
+    await _validate_reservation_payment(db, body.reservation_id, current_user, amount_pen)
 
     amount_cents = int(round(amount_pen * 100))
 
@@ -524,6 +566,8 @@ async def capture_paypal_order(
                     res_target.total_cost = res_target.amount_paid
                 res_target.payment_method = "paypal"
                 res_target.prepaid = True
+                res_target.payment_status = "paid"
+                res_target.payment_deadline = None
                 try:
                     await realtime.broadcast("reservations:updated", {
                         "reservation_id": res_target.id,

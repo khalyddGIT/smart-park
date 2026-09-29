@@ -42,6 +42,41 @@ async def _cancel_expired_once() -> int:
     updated_active = 0
     now = datetime.utcnow()
     async with AsyncSessionLocal() as db:
+        # 0. Liberar retenciones cuyo prepago nunca fue confirmado.
+        pending_result = await db.execute(
+            select(Reservation).where(
+                Reservation.status == "scheduled",
+                Reservation.payment_status == "pending",
+                Reservation.payment_deadline.is_not(None),
+                Reservation.payment_deadline <= now,
+            )
+        )
+        for r in pending_result.scalars().all():
+            r.status = "cancelled"
+            r.payment_status = "cancelled"
+            r.payment_deadline = None
+            slot = await db.get(Slot, r.slot_id)
+            if slot and slot.status == "reserved":
+                slot.status = "free"
+            cancelled += 1
+            try:
+                payload = {
+                    "reservation_id": r.id,
+                    "code": r.code,
+                    "user_id": r.user_id,
+                    "parking_id": r.parking_id,
+                    "slot_id": r.slot_id,
+                    "status": "free",
+                    "reservation_status": "cancelled",
+                    "payment_status": "cancelled",
+                    "reason": "pago_no_confirmado",
+                    "message": f"La retención {r.code} venció porque el pago no fue confirmado.",
+                }
+                await realtime.broadcast("reservations:cancelled", payload)
+                await realtime.broadcast("spaces:update", payload)
+            except Exception:
+                pass
+
         # 1. Traer programadas con su parking para tolerancia de llegada
         res = await db.execute(select(Reservation).where(Reservation.status == "scheduled"))
         scheduled = res.scalars().all()
@@ -219,7 +254,7 @@ async def _cancel_expired_once() -> int:
             except Exception:
                 pass
             if cancelled:
-                logger.info(f"[reservation-worker] {cancelled} reserva(s) cancelada(s) por tolerancia")
+                logger.info(f"[reservation-worker] {cancelled} reserva(s) vencida(s) liberada(s)")
             if updated_active:
                 logger.info(f"[reservation-worker] {updated_active} reserva(s) activa(s) recalculada(s) por exceso de estadía")
     return cancelled

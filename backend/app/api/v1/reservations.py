@@ -508,7 +508,15 @@ async def create_reservation(
     if is_sub:
         _end = _start + timedelta(days=sub_days)
     elif _end is None:
-        _end = _start + timedelta(hours=res_in.estimated_hours or 1)
+        if res_in.estimated_minutes is not None:
+            _end = _start + timedelta(minutes=res_in.estimated_minutes)
+        elif res_in.estimated_hours is not None:
+            _end = _start + timedelta(hours=res_in.estimated_hours)
+        else:
+            raise HTTPException(
+                status_code=422,
+                detail="Debes indicar explícitamente la duración estimada de la estadía."
+            )
     elif _end <= _start:
         raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior al inicio")
 
@@ -738,7 +746,9 @@ async def create_reservation(
 
     reservation_code = f"RSV-{uuid.uuid4().hex[:6].upper()}"
     tol_min = int(res_in.tolerance_minutes or (parking.tolerance_minutes if parking and parking.tolerance_minutes else 15))
-    is_prepaid = bool(getattr(res_in, 'pay_now', False) and getattr(res_in, 'payment_method', None))
+    requires_prepay = bool(getattr(parking, "require_reservation_prepay", False) or is_sub)
+    payment_status = "pending" if requires_prepay else "not_required"
+    payment_deadline = datetime.utcnow() + timedelta(minutes=10) if requires_prepay else None
 
     db_res = Reservation(
         code=reservation_code,
@@ -757,8 +767,12 @@ async def create_reservation(
         billing_unit=billing_unit,
         estimated_minutes=estimated_minutes,
         is_night_shift=is_night,
-        prepaid=is_prepaid,
+        prepaid=False,
         is_open_stay=bool(getattr(res_in, "is_open_stay", False)),
+        payment_method=None,
+        amount_paid=0.0,
+        payment_status=payment_status,
+        payment_deadline=payment_deadline,
         reservation_type=res_type,
         subscription_months=sub_months if is_sub else 1,
         is_subscription=is_sub,
@@ -795,32 +809,6 @@ async def create_reservation(
     except Exception:
         pass
     await db.refresh(db_res)
-
-    # Pago inmediato opcional si se especificó método
-    if getattr(res_in, 'pay_now', False) and getattr(res_in, 'payment_method', None):
-        try:
-            method = str(res_in.payment_method).strip().lower()[:30] or "efectivo"
-            if method in ("efectivo", "cash"): method = "cash"
-            elif method in ("yape",): method = "yape"
-            elif method in ("plin",): method = "plin"
-            elif method in ("tarjeta", "card", "culqi"): method = "card"
-            payment = Payment(
-                reservation_id=db_res.id,
-                user_id=current_user.id,
-                amount_cents=int(round(total_cost * 100)),
-                currency="PEN",
-                status="succeeded",
-                method=method,
-                culqi_charge_id=None,
-                description=f"Pago {method} reserva {reservation_code}",
-            )
-            db.add(payment)
-            await db.commit()
-        except Exception:
-            try:
-                await db.rollback()
-            except Exception:
-                pass
 
     resp = _format_reservation_response(db_res)
     resp.customer_name = current_user.full_name
@@ -860,6 +848,9 @@ async def cancel_reservation(reservation_id: int, db: AsyncSession = Depends(get
             )
 
     reservation.status = "cancelled"
+    if getattr(reservation, "payment_status", "not_required") == "pending":
+        reservation.payment_status = "cancelled"
+    reservation.payment_deadline = None
 
     # Liberar cajón asociado si sigue reservado u ocupado
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))
@@ -927,6 +918,12 @@ async def check_in_reservation(
     # Transición válida: solo una reserva programada puede pasar a activa
     if reservation.status != "scheduled":
         raise HTTPException(status_code=400, detail=f"Solo se puede hacer check-in de reservas programadas (estado actual: {reservation.status})")
+
+    if getattr(reservation, "payment_status", "not_required") == "pending":
+        raise HTTPException(
+            status_code=402,
+            detail="El pago anticipado de esta reserva aún no ha sido confirmado."
+        )
 
     now = datetime.utcnow()
     from datetime import timedelta

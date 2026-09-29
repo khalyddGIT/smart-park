@@ -242,7 +242,7 @@ async def test_require_reservation_prepay_policy():
         assert reject_resp.status_code == 400, reject_resp.text
         assert "pago anticipado" in reject_resp.json()["detail"].lower(), reject_resp.text
 
-        # Intento con pago inmediato (pay_now=True) -> Debe ser aceptada
+        # Solicitar pago abre una retención, pero no confirma el cobro por sí solo.
         success_resp = await ac.post("/api/v1/reservations", headers=driver_headers, json={
             "parking_id": parking_id,
             "slot_id": slot_id,
@@ -253,7 +253,18 @@ async def test_require_reservation_prepay_policy():
             "payment_method": "yape"
         })
         assert success_resp.status_code == 201, success_resp.text
-        assert success_resp.json()["prepaid"] is True
+        pending_data = success_resp.json()
+        assert pending_data["prepaid"] is False
+        assert pending_data["payment_status"] == "pending"
+        assert pending_data["amount_paid"] == 0
+
+        # Garita no debe aceptar el QR hasta que Culqi/PayPal confirme el pago.
+        checkin_pending = await ac.put(
+            f"/api/v1/reservations/{pending_data['id']}/check-in",
+            headers=admin_headers,
+        )
+        assert checkin_pending.status_code == 402, checkin_pending.text
+        assert "aún no ha sido confirmado" in checkin_pending.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_reservation_pricing_by_minute_billing_unit():

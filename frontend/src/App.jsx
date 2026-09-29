@@ -102,7 +102,7 @@ export const App = () => {
 
 const AppMain = () => {
   const { role, user } = useAuth();
-  const { establishments, occupySlot, createReservation, bookingError, reservations, refreshMyReservations, ensureFloorPlan } = useEstablishments();
+  const { establishments, occupySlot, createReservation, cancelReservation, bookingError, reservations, refreshMyReservations, ensureFloorPlan } = useEstablishments();
   const [activeTab, setActiveTab] = useState(() => {
     const parsed = parseRoleLocation(
       typeof window !== 'undefined' ? window.location.pathname : '/',
@@ -373,11 +373,13 @@ const AppMain = () => {
         startTime: bookingData.startTime,
         expiresAt: bookingData.expiresAt,
         toleranceMinutes: bookingData.toleranceMinutes || bookingData.arrivalWindow || bookingData.etaMinutes || targetParking.tolerance || targetParking.tolerance_minutes || 15,
+        etaMinutes: bookingData.etaMinutes,
         vehicleType: bookingData.vehicleType || 'auto',
         payNow: !!bookingData.payNow,
         billingUnit: bookingData.billingUnit || 'hour',
         estimatedMinutes: bookingData.estimatedMinutes,
         estimatedHours: bookingData.estimatedHours,
+        isOpenStay: !!bookingData.isOpenStay,
         bookingModel: bookingData.bookingModel || (bookingData.payNow ? 'prepaid_discount' : 'postpaid'),
         paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'tarjeta' : 'efectivo'),
         reservationType: bookingData.reservationType || 'immediate',
@@ -400,7 +402,8 @@ const AppMain = () => {
         toleranceMinutes: bookingData.toleranceMinutes ?? newRes.toleranceMinutes ?? targetParking.tolerance ?? 15,
         payNow: !!bookingData.payNow,
         vehicleType: bookingData.vehicleType || 'auto',
-        paymentMethod: bookingData.paymentMethod || (bookingData.payNow ? 'Prepago asegurado' : 'Pago en garita al salir')
+        paymentStatus: newRes.paymentStatus || (bookingData.payNow ? 'pending' : 'not_required'),
+        paymentMethod: bookingData.payNow ? 'Pago pendiente de confirmación' : 'Pago en garita al salir'
       };
 
       // Si había modal de reserva rápida o más opciones abierto, cerrarlo de inmediato
@@ -411,12 +414,12 @@ const AppMain = () => {
       if (bookingData.payNow) {
         setPaymentTarget({
           reservationId: newRes.id || newRes.code,
-          amount: Number(bookingData.totalCost) || Number((targetParking.rate * bookingData.hours).toFixed(2)),
+          amount: Number(newRes.cost || bookingData.totalCost) || Number((targetParking.rate * bookingData.hours).toFixed(2)),
           concept: `Reserva ${newRes.code || 'Smart Park'} — Cajón ${newRes.slotCode || bookingData.slotCode} en ${newRes.parkingName || targetParking.name}`,
           parkingName: newRes.parkingName || targetParking.name,
           slotCode: newRes.slotCode || bookingData.slotCode || 'A-01',
           customerEmail: user?.email || 'conductor@smartpark.com',
-          requirePrepay: !!targetParking.require_reservation_prepay,
+          requirePrepay: !!(targetParking.require_reservation_prepay || bookingData.isSubscription),
           enrichedData: enriched
         });
       } else {
@@ -1536,12 +1539,16 @@ const AppMain = () => {
       <Suspense fallback={null}>
         <CulqiPaymentModal
         isOpen={!!paymentTarget}
-        onClose={() => {
+        onClose={async () => {
           if (paymentTarget) {
             if (paymentTarget.requirePrepay) {
-              setBookingFeedback('Esta cochera requiere pago anticipado para validar la reserva. El pago no fue procesado.');
-              setTimeout(() => setBookingFeedback(null), 5000);
+              const pendingReservation = paymentTarget;
               setPaymentTarget(null);
+              const cancellation = await cancelReservation(pendingReservation.reservationId);
+              setBookingFeedback(cancellation?.ok
+                ? 'El pago no fue confirmado. La retención fue cancelada y la plaza quedó libre.'
+                : 'El pago no fue confirmado y no se emitió el pase. La retención vencerá automáticamente.');
+              setTimeout(() => setBookingFeedback(null), 5000);
               return;
             }
             const holdEnriched = {
@@ -1567,12 +1574,15 @@ const AppMain = () => {
               ...paymentTarget.enrichedData,
               status: 'confirmed',
               payNow: true,
+              prepaid: true,
+              paymentStatus: 'paid',
               paymentMethod: receipt?.method || receipt?.paymentMethod || 'Culqi / PayPal (Pagado)'
             };
             setActiveReservation(paidEnriched);
             setShowQRModal(true);
             setSelectedParkingId(null);
             setPaymentTarget(null);
+            if (refreshMyReservations) refreshMyReservations();
           }
         }}
         />

@@ -1994,7 +1994,9 @@ export const EstablishmentProvider = ({ children }) => {
       subscriptionType: r.subscription_type || null,
       isOvertime: !!r.is_overtime,
       overtimeMinutes: Number(r.overtime_minutes || 0),
-      amountPaid: Number(r.amount_paid ?? 0)
+      amountPaid: Number(r.amount_paid ?? 0),
+      paymentStatus: r.payment_status || (r.prepaid ? 'paid' : 'not_required'),
+      paymentDeadline: r.payment_deadline || null
     };
   };
 
@@ -2113,7 +2115,15 @@ export const EstablishmentProvider = ({ children }) => {
 
     const plate = (bookingData.plate || 'ABC-123').toUpperCase();
     const startISO = bookingData.startTime instanceof Date ? bookingData.startTime.toISOString() : (bookingData.startTime || new Date().toISOString());
-    const endISO = bookingData.expiresAt instanceof Date ? bookingData.expiresAt.toISOString() : (bookingData.expiresAt || new Date(Date.now() + (Number(bookingData.hours || 2)) * 60 * 60 * 1000).toISOString());
+    const explicitHours = Number(bookingData.hours ?? bookingData.estimatedHours);
+    const endISO = bookingData.expiresAt instanceof Date
+      ? bookingData.expiresAt.toISOString()
+      : bookingData.expiresAt || (Number.isFinite(explicitHours) && explicitHours > 0
+        ? new Date(new Date(startISO).getTime() + explicitHours * 60 * 60 * 1000).toISOString()
+        : null);
+    if (!endISO) {
+      throw new Error('Debes seleccionar explícitamente el tiempo estimado de estadía.');
+    }
 
     const tolMinutes = Number(bookingData.toleranceMinutes || bookingData.arrivalWindow || bookingData.etaMinutes || 15);
 
@@ -2144,10 +2154,10 @@ export const EstablishmentProvider = ({ children }) => {
         payment_method: bookingData.paymentMethod || bookingData.payment_method || null,
         pay_now: !!bookingData.payNow,
         vehicle_type: resolvedVehicleType,
-        estimated_hours: Number(bookingData.estimatedHours || bookingData.hours || 1),
+        estimated_hours: Number(bookingData.estimatedHours ?? bookingData.hours) || null,
         billing_unit: bookingData.billingUnit || bookingData.billing_unit || 'hour',
-        estimated_minutes: Number(bookingData.estimatedMinutes || bookingData.estimated_minutes || (bookingData.hours ? bookingData.hours * 60 : 60)),
-        is_open_stay: !!(bookingData.isOpenStay ?? bookingData.is_open_stay ?? true),
+        estimated_minutes: Number(bookingData.estimatedMinutes ?? bookingData.estimated_minutes ?? (bookingData.hours ? bookingData.hours * 60 : 0)) || null,
+        is_open_stay: !!(bookingData.isOpenStay ?? bookingData.is_open_stay ?? false),
         auto_assign: !!isAutoAssign,
         reservation_type: bookingData.reservationType || bookingData.reservation_type || 'standard',
         is_subscription: !!(bookingData.isSubscription || bookingData.is_subscription),

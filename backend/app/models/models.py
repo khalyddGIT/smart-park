@@ -201,6 +201,7 @@ class Reservation(Base):
         Index("ix_reservations_parking_status", "parking_id", "status"),
         Index("ix_reservations_parking_start_end", "parking_id", "start_time", "end_time"),
         Index("ix_reservations_slot_status", "slot_id", "status"),
+        Index("ix_reservations_payment_deadline", "payment_status", "payment_deadline"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
@@ -226,6 +227,8 @@ class Reservation(Base):
     is_open_stay = Column(Boolean, default=False, nullable=True)
     payment_method = Column(String(50), default="efectivo", nullable=True)
     amount_paid = Column(Float, default=0.0, nullable=True)
+    payment_status = Column(String(20), default="not_required", nullable=False)
+    payment_deadline = Column(DateTime, nullable=True)
     # Modalidad: 'standard' (por hora/minuto), 'advance' (fecha adelantada), 'subscription' (abonado mensual)
     reservation_type = Column(String(30), default="standard", nullable=True)
     subscription_months = Column(Integer, default=1, nullable=True)

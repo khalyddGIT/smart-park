@@ -21,11 +21,11 @@ async def _verify_staff_parking_access(parking_id: int, current_user: User, db: 
     curr_name = (current_user.full_name or "").strip().lower()
 
     # Cuentas maestras / default de administración
-    if curr_email in ("adminlocal@smartpark.com", "adminlocal@smartpark.pe", "admin@smartpark.com", "admin@smartpark.pe"):
+    if curr_email in ("adminlocal@smartpark.com", "adminlocal@smartpark.pe", "admin@smartpark.com", "admin@smartpark.pe", "camadmin@smartpark.pe"):
         return
 
-    # Si el email es de administración local o garita del sistema
-    if curr_email.startswith("admin.") or curr_email.startswith("admin_") or curr_email.startswith("adminlocal") or curr_email.startswith("camadmin"):
+    # Si es la sede demo 1 y es cuenta de demostración
+    if parking_id == 1 and (curr_email.startswith("adminlocal") or curr_email.startswith("camadmin")):
         return
 
     p_res = await db.execute(select(Parking).where(Parking.id == parking_id))
@@ -83,14 +83,12 @@ async def _verify_staff_parking_access(parking_id: int, current_user: User, db: 
             if sp and company_prefix in (sp.name or "").lower():
                 return
 
-    # Si es rol local y no tiene sedes asignadas previamente (nuevo admin local asignado a esta sede), auto-asociar como administrador
-    all_admin_staff = await db.execute(
-        select(Staff.id).where(
-            (func.lower(Staff.email) == curr_email) | (Staff.dni == current_user.phone),
-            func.lower(Staff.status).in_(["active", "activo", "habilitado"])
-        )
-    )
-    if not all_admin_staff.scalars().first() and current_user.role == "local":
+    # Si es rol local y no tiene sedes asignadas previamente (ni como dueño ni como staff):
+    user_owned = await db.execute(select(Parking.id).where(
+        (func.lower(Parking.email) == curr_email) | (func.lower(Parking.owner) == curr_name)
+    ))
+    has_any_parking = user_owned.scalars().first() is not None or len(user_staffs) > 0
+    if not has_any_parking and current_user.role == "local":
         new_admin_staff = Staff(
             parking_id=parking.id,
             full_name=current_user.full_name or "Administrador de Sede",
@@ -165,10 +163,7 @@ async def list_staff(
     is_master_admin = (
         current_user.role == "platform" or 
         curr_email in master_emails or 
-        curr_email.startswith("admin.") or 
-        curr_email.startswith("admin_") or 
-        curr_email.startswith("adminlocal") or 
-        curr_email.startswith("camadmin")
+        curr_email in ("camadmin@smartpark.pe",)
     )
 
     if not is_master_admin:

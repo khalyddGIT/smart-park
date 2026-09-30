@@ -310,13 +310,6 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
     return map;
   }, [reservations]);
 
-  // Reserva activa específica para el vehículo seleccionado en este momento
-  const activePlateReservation = useMemo(() => {
-    if (!effectivePlate) return null;
-    const cleanCurrent = effectivePlate.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-    return activePlatesMap.get(cleanCurrent) || null;
-  }, [activePlatesMap, effectivePlate]);
-
   const loadVehicles = useCallback(() => {
     setVehiclesLoading(true);
     let initialList = [];
@@ -722,6 +715,13 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   ).toUpperCase().trim().replace(/\s/g, '');
   const PLATE_REGEX = /^([A-Z0-9]{3}-[A-Z0-9]{3}|[A-Z0-9]{4}-[A-Z0-9]{2}|[A-Z0-9]{2}-[A-Z0-9]{4})$/i;
   const isPlateValid = PLATE_REGEX.test(effectivePlate);
+
+  // Reserva activa específica para el vehículo seleccionado en este momento
+  const activePlateReservation = useMemo(() => {
+    if (!effectivePlate) return null;
+    const cleanCurrent = effectivePlate.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    return activePlatesMap.get(cleanCurrent) || null;
+  }, [activePlatesMap, effectivePlate]);
 
   const isMinuteBilling = parking?.billing_unit === 'minute';
 

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { useTheme } from '../context/ThemeContext';
+import { BroadcastDetailModal } from './BroadcastDetailModal';
 
 const getIconForType = (type) => {
   switch (type) {
@@ -69,6 +70,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [filterUnreadOnly, setFilterUnreadOnly] = useState(false);
+  const [selectedBroadcast, setSelectedBroadcast] = useState(null);
   const notifRef = useRef(null);
 
   const isPersonal = !!(user?.position || user?.staffPosition || user?.isStaffOperator || user?.is_staff);
@@ -93,7 +95,9 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
 
   const handleNotificationClick = (notif) => {
     markAsRead(notif.id);
-    if (notif.targetTab && onNavigateTab) {
+    if (notif.broadcast) {
+      setSelectedBroadcast(notif.broadcast);
+    } else if (notif.targetTab && onNavigateTab) {
       onNavigateTab(notif.targetTab);
     }
     setShowNotifications(false);
@@ -293,6 +297,19 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                               <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed line-clamp-2">
                                 {n.message}
                               </p>
+
+                              {n.broadcast?.promo_code && (
+                                <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold font-mono bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300/60 dark:border-amber-700/60">
+                                    Cupón: {n.broadcast.promo_code}
+                                  </span>
+                                  {n.broadcast.discount_percent > 0 && (
+                                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                      -{n.broadcast.discount_percent}% OFF
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-1.5 shrink-0 self-center">
@@ -364,6 +381,14 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
         </div>
         )}
       </header>
+
+      {/* Modal de Detalle de Comunicado / Promoción */}
+      <BroadcastDetailModal 
+        broadcast={selectedBroadcast}
+        isOpen={!!selectedBroadcast}
+        onClose={() => setSelectedBroadcast(null)}
+        onNavigate={onNavigateTab}
+      />
     </>
   );
 };

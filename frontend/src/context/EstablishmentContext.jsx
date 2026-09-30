@@ -1067,6 +1067,10 @@ export const EstablishmentProvider = ({ children }) => {
                   window.dispatchEvent(new CustomEvent('smart_park_spaces_live', { detail: eventPayload }));
                 } else if (msg.event && (msg.event.startsWith('reservations:') || msg.event === 'reservations:updated')) {
                   window.dispatchEvent(new CustomEvent('smart_park_reservation_live', { detail: eventPayload }));
+                } else if (msg.event === 'broadcast:new') {
+                  window.dispatchEvent(new CustomEvent('smartpark_broadcast_received', { detail: msg.payload }));
+                } else if (msg.event === 'broadcast:deleted') {
+                  window.dispatchEvent(new CustomEvent('smartpark_broadcast_deleted', { detail: msg.payload }));
                 }
               } catch {}
             }

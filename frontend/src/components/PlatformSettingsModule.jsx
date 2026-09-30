@@ -9,6 +9,7 @@ import {
   Clock, 
   Send, 
   Bell, 
+  Info,
   CreditCard, 
   ShieldAlert, 
   Save, 
@@ -45,16 +46,83 @@ import {
   History,
   CalendarClock,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Tag,
+  Gift,
+  Wrench,
+  ExternalLink,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useEstablishments } from '../context/EstablishmentContext';
 import { useTheme } from '../context/ThemeContext';
 import { MapContainer3D } from './map/MapContainer3D';
+import { BroadcastDetailModal } from './BroadcastDetailModal';
 import api from '../services/api';
 
 const SETTINGS_STORAGE_KEY = 'smart_park_platform_settings_v2';
 const BROADCASTS_STORAGE_KEY = 'smart_park_broadcasts_v2';
+
+const BROADCAST_TEMPLATES = [
+  {
+    name: '🏷️ Promoción Semana Santa (20% OFF)',
+    category: 'promo',
+    target: 'CONDUCTORES',
+    title: '¡20% de Descuento en Cocheras del Centro!',
+    message: 'Reserva con antelación tu espacio en las cocheras de Plaza Mayor y Jr. 28 de Julio con 20% de descuento durante las festividades.',
+    image_url: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80',
+    promo_code: 'SEMANASANTA20',
+    discount_percent: 20,
+    action_label: 'Reservar Cochera con Descuento',
+    action_url: 'dashboard',
+    expires_at: '2026-04-10'
+  },
+  {
+    name: '🔧 Mantenimiento Preventivo ANPR',
+    category: 'maintenance',
+    target: 'COCHERAS',
+    title: 'Actualización Programada de Firmware en Cámaras Garita',
+    message: 'Estimados administradores: este domingo a las 02:00 AM se realizará una sincronización del motor de reconocimiento de placas (ANPR). El servicio se mantendrá operativo.',
+    image_url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80',
+    promo_code: '',
+    discount_percent: 0,
+    action_label: 'Ver Estado del Sistema',
+    action_url: 'settings',
+    expires_at: ''
+  },
+  {
+    name: '🚨 Alerta Vial Urgente',
+    category: 'urgent',
+    target: 'CONDUCTORES',
+    title: 'Desvío de Tráfico en Centro Histórico',
+    message: 'Cierre de vías en Jr. 28 de Julio por eventos cívicos. Recomendamos ingresar por Jr. Bellido y asegurar su reserva con antelación.',
+    image_url: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=1200&q=80',
+    promo_code: '',
+    discount_percent: 0,
+    action_label: 'Ver Mapa de Cocheras',
+    action_url: 'dashboard',
+    expires_at: ''
+  },
+  {
+    name: '📢 Aviso Informativo Red',
+    category: 'info',
+    target: 'ALL',
+    title: 'Nueva Versión Smart-Park v2.4 Disponible',
+    message: 'Hemos optimizado la velocidad del plano interactivo 2D y la verificación con QR instantáneo. ¡Gracias por ser parte de nuestra comunidad!',
+    image_url: '',
+    promo_code: '',
+    discount_percent: 0,
+    action_label: 'Explorar Novedades',
+    action_url: 'dashboard',
+    expires_at: ''
+  }
+];
+
+const IMAGE_PRESETS = [
+  { label: '🚗 Cochera Centro', url: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80' },
+  { label: '🎁 Descuento / Promo', url: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=1200&q=80' },
+  { label: '🔧 Mantenimiento TI', url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80' }
+];
 
 const INITIAL_SETTINGS = {
   defaultCommission: 12,
@@ -90,6 +158,12 @@ const INITIAL_BROADCASTS = [
     id: 'BRD-001',
     title: 'Descuento del 20% en Cocheras del Centro',
     target: 'CONDUCTORES',
+    category: 'promo',
+    promo_code: 'SEMANASANTA20',
+    discount_percent: 20,
+    action_label: 'Reservar con Descuento',
+    action_url: 'dashboard',
+    image_url: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80',
     channel: 'Push App & Notificación Instantánea',
     message: 'Aprovecha este fin de semana para aparcar en Plaza Mayor y Jr. 28 de Julio con 20% de descuento usando Smart Wallet.',
     sentAt: '2026-08-16 09:00',
@@ -99,12 +173,27 @@ const INITIAL_BROADCASTS = [
     id: 'BRD-002',
     title: 'Mantenimiento de Servidores LPR & ANPR',
     target: 'COCHERAS',
+    category: 'maintenance',
+    image_url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80',
     channel: 'Panel Garita & Correo',
     message: 'Estimados administradores: este domingo a las 02:00 AM se realizará actualización de firmware en las cámaras de garita.',
     sentAt: '2026-08-14 18:30',
     sentCount: 6
   }
 ];
+
+const INITIAL_NEW_BROADCAST = {
+  title: '',
+  target: 'ALL',
+  category: 'promo',
+  message: '',
+  image_url: '',
+  promo_code: '',
+  discount_percent: 20,
+  action_label: 'Reservar con Descuento',
+  action_url: 'dashboard',
+  expires_at: ''
+};
 
 export const PlatformSettingsModule = () => {
   const { addNotification } = useNotifications();
@@ -135,6 +224,7 @@ export const PlatformSettingsModule = () => {
   const { establishments } = useEstablishments();
   const [activeSection, setActiveSection] = useState('system'); // 'system' | 'appearance' | 'business' | 'payments' | 'security' | 'broadcasts' | 'map'
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [selectedPreviewBroadcast, setSelectedPreviewBroadcast] = useState(null);
   const [toast, setToast] = useState(null);
 
   // Estado honesto de pasarelas desde el backend
@@ -150,11 +240,11 @@ export const PlatformSettingsModule = () => {
   });
 
   // Formulario para nuevo comunicado
-  const [newBroadcast, setNewBroadcast] = useState({
-    title: '',
-    target: 'ALL',
-    message: ''
-  });
+  const [newBroadcast, setNewBroadcast] = useState(INITIAL_NEW_BROADCAST);
+
+  const resetBroadcastForm = () => {
+    setNewBroadcast(INITIAL_NEW_BROADCAST);
+  };
 
   useEffect(() => {
     try {
@@ -269,22 +359,46 @@ export const PlatformSettingsModule = () => {
     e.preventDefault();
     if (!newBroadcast.title.trim() || !newBroadcast.message.trim()) return;
 
+    const payload = {
+      title: newBroadcast.title.trim(),
+      message: newBroadcast.message.trim(),
+      target: newBroadcast.target,
+      category: newBroadcast.category || 'info',
+      image_url: newBroadcast.image_url?.trim() || null,
+      promo_code: newBroadcast.promo_code?.trim() || null,
+      discount_percent: Number(newBroadcast.discount_percent) || 0,
+      action_url: newBroadcast.action_url?.trim() || null,
+      action_label: newBroadcast.action_label?.trim() || null,
+      expires_at: newBroadcast.expires_at || null,
+    };
+
     try {
-      const res = await api.post('/platform/broadcasts', {
-        title: newBroadcast.title.trim(),
-        message: newBroadcast.message.trim(),
-        target: newBroadcast.target,
-      });
+      const res = await api.post('/platform/broadcasts', payload);
       const created = res.data;
       setBroadcasts(prev => [created, ...prev]);
+      const notifType = created.category === 'promo' ? 'success' : created.category === 'maintenance' ? 'warning' : created.category === 'urgent' ? 'alert' : 'info';
       if (newBroadcast.target === 'ALL' || newBroadcast.target === 'CONDUCTORES') {
-        addNotification({ role: 'user', title: created.title, message: created.message, type: 'info', targetTab: 'dashboard' });
+        addNotification({ 
+          role: 'user', 
+          title: created.title, 
+          message: created.message, 
+          type: notifType, 
+          targetTab: created.action_url || 'dashboard',
+          broadcast: created 
+        });
       }
       if (newBroadcast.target === 'ALL' || newBroadcast.target === 'COCHERAS') {
-        addNotification({ role: 'local', title: created.title, message: created.message, type: 'warning', targetTab: 'dashboard' });
+        addNotification({ 
+          role: 'local', 
+          title: created.title, 
+          message: created.message, 
+          type: notifType, 
+          targetTab: created.action_url || 'dashboard',
+          broadcast: created 
+        });
       }
       setShowBroadcastModal(false);
-      setNewBroadcast({ title: '', target: 'ALL', message: '' });
+      resetBroadcastForm();
       notify(`✓ Comunicado emitido a ${created.sentCount} destinatarios (persistido en servidor).`);
       return;
     } catch {}
@@ -293,22 +407,34 @@ export const PlatformSettingsModule = () => {
     const count = newBroadcast.target === 'ALL' ? 1426 : newBroadcast.target === 'CONDUCTORES' ? 1420 : 6;
     const created = {
       id: `BRD-00${broadcasts.length + 1}`,
-      title: newBroadcast.title.trim(),
-      target: newBroadcast.target,
-      channel: 'Push App & Notificación Instantánea',
-      message: newBroadcast.message.trim(),
+      ...payload,
       sentAt: new Date().toLocaleString(),
       sentCount: count
     };
     setBroadcasts([created, ...broadcasts]);
+    const notifType = created.category === 'promo' ? 'success' : created.category === 'maintenance' ? 'warning' : created.category === 'urgent' ? 'alert' : 'info';
     if (newBroadcast.target === 'ALL' || newBroadcast.target === 'CONDUCTORES') {
-      addNotification({ role: 'user', title: created.title, message: created.message, type: 'info', targetTab: 'dashboard' });
+      addNotification({ 
+        role: 'user', 
+        title: created.title, 
+        message: created.message, 
+        type: notifType, 
+        targetTab: created.action_url || 'dashboard',
+        broadcast: created 
+      });
     }
     if (newBroadcast.target === 'ALL' || newBroadcast.target === 'COCHERAS') {
-      addNotification({ role: 'local', title: created.title, message: created.message, type: 'warning', targetTab: 'dashboard' });
+      addNotification({ 
+        role: 'local', 
+        title: created.title, 
+        message: created.message, 
+        type: notifType, 
+        targetTab: created.action_url || 'dashboard',
+        broadcast: created 
+      });
     }
     setShowBroadcastModal(false);
-    setNewBroadcast({ title: '', target: 'ALL', message: '' });
+    resetBroadcastForm();
     notify(`✓ Comunicado emitido en tiempo real a ${count} destinatarios.`);
   };
 
@@ -1188,15 +1314,20 @@ export const PlatformSettingsModule = () => {
       {/* SECCIÓN 5: HISTORIAL DE COMUNICADOS MASIVOS */}
       {activeSection === 'broadcasts' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Bell className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span>Registro Histórico de Comunicados Emitidos</span>
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Bell className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <span>Registro Histórico de Comunicados & Promociones</span>
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Canal central de difusión con soporte para cupones de descuento, avisos de mantenimiento, imágenes y notificaciones push.
+              </p>
+            </div>
             <Button
               type="button"
               onClick={() => setShowBroadcastModal(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs gap-1.5 h-9 px-3 cursor-pointer"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs gap-1.5 h-9 px-3.5 cursor-pointer shrink-0"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Nuevo Comunicado</span>
@@ -1205,42 +1336,136 @@ export const PlatformSettingsModule = () => {
 
           <div className="space-y-3">
             {broadcasts.length === 0 ? (
-              <Card className="p-8 rounded-3xl border-slate-200 dark:border-slate-800 text-center bg-white dark:bg-[#111827]">
-                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">No hay comunicados registrados aún.</p>
+              <Card className="p-12 rounded-3xl border-slate-200 dark:border-slate-800 text-center bg-white dark:bg-[#111827] space-y-2">
+                <Bell className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No hay comunicados registrados aún</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  Crea tu primera promoción o comunicado técnico para toda la red.
+                </p>
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    onClick={() => setShowBroadcastModal(true)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs gap-1.5 h-8 px-3 cursor-pointer"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Crear Comunicado</span>
+                  </Button>
+                </div>
               </Card>
             ) : (
-              broadcasts.map((b) => (
-                <Card key={b.id} className="p-4 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition">
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                        {b.id}
-                      </span>
-                      <span className="text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/60">
-                        {b.target}
-                      </span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                        {b.sentAt}
-                      </span>
-                    </div>
-                    <h4 className="text-xs font-black text-slate-900 dark:text-white">{b.title}</h4>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{b.message}</p>
-                  </div>
+              broadcasts.map((b) => {
+                const isPromo = b.category === 'promo' || !!b.promo_code;
+                const isMaintenance = b.category === 'maintenance';
+                const isUrgent = b.category === 'urgent';
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
-                      {b.sentCount} recibidos
-                    </span>
-                    <button
-                      onClick={() => handleDeleteBroadcast(b.id)}
-                      title="Eliminar del historial"
-                      className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </Card>
-              ))
+                const categoryBadge = isPromo ? (
+                  <span className="text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800/60 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Promoción
+                  </span>
+                ) : isMaintenance ? (
+                  <span className="text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/60 flex items-center gap-1">
+                    <Wrench className="w-3 h-3" /> Mantenimiento
+                  </span>
+                ) : isUrgent ? (
+                  <span className="text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800/60 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Urgente
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 px-2 py-0.5 rounded-md border border-sky-200 dark:border-sky-800/60 flex items-center gap-1">
+                    <Info className="w-3 h-3" /> Informativo
+                  </span>
+                );
+
+                const targetLabel = b.target === 'CONDUCTORES' 
+                  ? '🚗 Conductores' 
+                  : b.target === 'COCHERAS' 
+                  ? '🏢 Cocheras' 
+                  : '👥 Toda la Red';
+
+                return (
+                  <Card key={b.id} className="p-4 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-slate-300 dark:hover:border-slate-700 transition">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      {b.image_url ? (
+                        <img 
+                          src={b.image_url} 
+                          alt={b.title} 
+                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shrink-0 border border-slate-200/80 dark:border-slate-800 shadow-xs"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : null}
+
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                            {b.id}
+                          </span>
+                          <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                            {targetLabel}
+                          </span>
+                          {categoryBadge}
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                            {b.sentAt}
+                          </span>
+                        </div>
+
+                        <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white leading-tight">
+                          {b.title}
+                        </h4>
+
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug line-clamp-2">
+                          {b.message}
+                        </p>
+
+                        {/* Ficha de cupón si aplica */}
+                        {b.promo_code && (
+                          <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300/60 dark:border-purple-700/60">
+                              <Tag className="w-3 h-3" />
+                              Cupón: {b.promo_code}
+                            </span>
+                            {b.discount_percent > 0 && (
+                              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">
+                                -{b.discount_percent}% OFF
+                              </span>
+                            )}
+                            {b.expires_at && (
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                Vence: {b.expires_at}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between md:justify-end gap-2.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800/80">
+                      <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                        {b.sentCount} recibidos
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPreviewBroadcast(b)}
+                        title="Ver vista previa de la tarjeta"
+                        className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Previsualizar</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteBroadcast(b.id)}
+                        title="Eliminar del historial"
+                        className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </Card>
+                );
+              })
             )}
           </div>
         </div>
@@ -1278,48 +1503,157 @@ export const PlatformSettingsModule = () => {
 
       {/* MODAL PARA EMITIR COMUNICADO MASIVO */}
       <Dialog open={showBroadcastModal} onOpenChange={setShowBroadcastModal}>
-        <DialogContent className="max-w-lg rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
+            <DialogTitle className="text-lg sm:text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
               <Send className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span>Nuevo Comunicado</span>
+              <span>Emisión de Comunicado & Promoción Masiva</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Notificación directa a conductores y administradores de la red.
+              Difunde promociones con cupones, avisos de mantenimiento técnico o alertas viales a toda la red con entrega inmediata en tiempo real.
             </DialogDescription>
           </DialogHeader>
 
+          {/* Plantillas Rápidas con 1 Clic */}
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+              Plantillas Rápidas Preconfiguradas:
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {BROADCAST_TEMPLATES.map((tmpl, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setNewBroadcast(prev => ({ ...prev, ...tmpl }))}
+                  className="text-left p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 transition cursor-pointer text-[11px] font-bold text-slate-700 dark:text-slate-300 leading-tight"
+                >
+                  {tmpl.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <form onSubmit={handleSendBroadcast} className="space-y-4 my-2">
+            {/* Categoría Selector */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Audiencia *</label>
-              <select
-                value={newBroadcast.target}
-                onChange={(e) => setNewBroadcast({ ...newBroadcast, target: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer"
-              >
-                <option value="ALL">Todos (Conductores + Cocheras)</option>
-                <option value="CONDUCTORES">Solo Conductores</option>
-                <option value="COCHERAS">Solo Cocheras Afiliadas</option>
-              </select>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Categoría del Comunicado *
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: 'promo', label: '🏷️ Promoción', desc: 'Cupones & descuentos' },
+                  { id: 'maintenance', label: '🔧 Mantenimiento', desc: 'ANPR & servidores' },
+                  { id: 'urgent', label: '🚨 Aviso Urgente', desc: 'Tráfico & accesos' },
+                  { id: 'info', label: '📢 Informativo', desc: 'Novedades de la red' }
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setNewBroadcast({ ...newBroadcast, category: cat.id })}
+                    className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                      newBroadcast.category === cat.id
+                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500'
+                        : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span className="block font-bold text-xs">{cat.label}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{cat.desc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Título *</label>
-              <Input
-                type="text"
-                placeholder="Ej. Mantenimiento programado o aviso importante"
-                value={newBroadcast.title}
-                onChange={(e) => setNewBroadcast({ ...newBroadcast, title: e.target.value })}
-                className="text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                required
-              />
+            {/* Audiencia y Título */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Audiencia Objetivo *
+                </label>
+                <select
+                  value={newBroadcast.target}
+                  onChange={(e) => setNewBroadcast({ ...newBroadcast, target: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer h-10"
+                >
+                  <option value="ALL">👥 Toda la Red (Conductores + Cocheras)</option>
+                  <option value="CONDUCTORES">🚗 Solo Conductores</option>
+                  <option value="COCHERAS">🏢 Solo Cocheras Afiliadas</option>
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Título del Comunicado *
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Ej. ¡20% de Descuento en Cocheras del Centro!"
+                  value={newBroadcast.title}
+                  onChange={(e) => setNewBroadcast({ ...newBroadcast, title: e.target.value })}
+                  className="text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                  required
+                />
+              </div>
             </div>
 
+            {/* Campos condicionales para Promoción */}
+            {newBroadcast.category === 'promo' && (
+              <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/60 space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-purple-700 dark:text-purple-300">
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>Configuración del Cupón Promocional</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Código del Cupón
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Ej. SEMANASANTA20"
+                      value={newBroadcast.promo_code}
+                      onChange={(e) => setNewBroadcast({ ...newBroadcast, promo_code: e.target.value.toUpperCase() })}
+                      className="text-xs font-mono font-bold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Porcentaje de Descuento (%)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      placeholder="20"
+                      value={newBroadcast.discount_percent}
+                      onChange={(e) => setNewBroadcast({ ...newBroadcast, discount_percent: Number(e.target.value) })}
+                      className="text-xs font-bold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Fecha Límite de Vigencia
+                    </label>
+                    <Input
+                      type="date"
+                      value={newBroadcast.expires_at}
+                      onChange={(e) => setNewBroadcast({ ...newBroadcast, expires_at: e.target.value })}
+                      className="text-xs font-bold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mensaje */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Mensaje *</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Mensaje o Descripción Detallada *
+              </label>
               <textarea
-                rows={4}
-                placeholder="Contenido de la notificación..."
+                rows={3}
+                placeholder="Escribe el contenido que verán los usuarios en la notificación y el modal..."
                 value={newBroadcast.message}
                 onChange={(e) => setNewBroadcast({ ...newBroadcast, message: e.target.value })}
                 className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
@@ -1327,16 +1661,117 @@ export const PlatformSettingsModule = () => {
               />
             </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs py-3 rounded-xl shadow-md gap-2 cursor-pointer"
-            >
-              <Send className="w-4 h-4" />
-              <span>Enviar Comunicado</span>
-            </Button>
+            {/* Banner de Imagen */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Banner de Imagen (URL Opcional)
+                </label>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {IMAGE_PRESETS.map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setNewBroadcast({ ...newBroadcast, image_url: p.url })}
+                      className="text-[10px] font-bold text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 cursor-pointer"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                  {newBroadcast.image_url && (
+                    <button
+                      type="button"
+                      onClick={() => setNewBroadcast({ ...newBroadcast, image_url: '' })}
+                      className="text-[10px] font-bold text-rose-500 hover:text-rose-600 px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/40 cursor-pointer"
+                    >
+                      Quitar
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <Input
+                type="url"
+                placeholder="https://images.unsplash.com/... o enlace directo a imagen"
+                value={newBroadcast.image_url}
+                onChange={(e) => setNewBroadcast({ ...newBroadcast, image_url: e.target.value })}
+                className="text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+              />
+
+              {newBroadcast.image_url && (
+                <div className="relative w-full h-24 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900">
+                  <img
+                    src={newBroadcast.image_url}
+                    alt="Previsualización"
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                  <div className="absolute bottom-1 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">
+                    Vista previa de banner
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Botón de Acción Opcional (CTA) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Texto del Botón de Acción (Opcional)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Ej. Reservar con Descuento"
+                  value={newBroadcast.action_label}
+                  onChange={(e) => setNewBroadcast({ ...newBroadcast, action_label: e.target.value })}
+                  className="text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Pestaña de Destino (Opcional)
+                </label>
+                <select
+                  value={newBroadcast.action_url}
+                  onChange={(e) => setNewBroadcast({ ...newBroadcast, action_url: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer h-10"
+                >
+                  <option value="dashboard">🗺️ Dashboard / Exploración de Cocheras</option>
+                  <option value="history">📅 Mis Reservas (Historial)</option>
+                  <option value="vehicles">🚗 Mi Garaje de Vehículos</option>
+                  <option value="settings">⚙️ Ajustes del Sistema</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowBroadcastModal(false)}
+                className="text-xs font-bold h-10 px-4 rounded-xl border-slate-200 dark:border-slate-800 cursor-pointer"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs h-10 px-6 rounded-xl shadow-md gap-2 cursor-pointer"
+              >
+                <Send className="w-4 h-4" />
+                <span>Emitir a la Red</span>
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Modal para Previsualizar Detalle Completo de Comunicado */}
+      <BroadcastDetailModal
+        broadcast={selectedPreviewBroadcast}
+        isOpen={!!selectedPreviewBroadcast}
+        onClose={() => setSelectedPreviewBroadcast(null)}
+      />
 
     </div>
   );

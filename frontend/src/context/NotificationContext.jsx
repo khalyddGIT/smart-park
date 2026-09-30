@@ -206,6 +206,60 @@ export const NotificationProvider = ({ children }) => {
       }
     }
 
+    // Comunicados Oficiales y Promociones de la Plataforma
+    try {
+      let broadcasts = [];
+      const bRes = await api.get(`/platform/active-broadcasts?target_role=${currentRole}`).catch(() => null);
+      if (bRes?.data && Array.isArray(bRes.data)) {
+        broadcasts = bRes.data;
+      } else {
+        const localRaw = localStorage.getItem('smart_park_broadcasts_v2');
+        if (localRaw) {
+          const parsed = JSON.parse(localRaw);
+          if (Array.isArray(parsed)) {
+            broadcasts = parsed.filter(b => {
+              const target = (b.target || 'ALL').toUpperCase();
+              if (target === 'ALL') return true;
+              if (currentRole === 'user' && (target === 'CONDUCTORES' || target === 'USER')) return true;
+              if (currentRole === 'local' && (target === 'COCHERAS' || target === 'LOCAL')) return true;
+              if (currentRole === 'platform') return true;
+              return false;
+            });
+          }
+        }
+      }
+
+      broadcasts.forEach((b) => {
+        const isPromo = b.category === 'promo' || !!b.promo_code;
+        const isUrgent = b.category === 'urgent';
+        const isMaint = b.category === 'maintenance';
+        
+        let type = 'info';
+        if (isPromo) type = 'success';
+        else if (isUrgent) type = 'alert';
+        else if (isMaint) type = 'warning';
+
+        let extraDetail = '';
+        if (b.promo_code) {
+          extraDetail = ` · Cupón: ${b.promo_code}${b.discount_percent ? ` (-${b.discount_percent}%)` : ''}`;
+        }
+
+        derived.push({
+          id: `broadcast-${b.id}`,
+          role: currentRole,
+          title: b.title,
+          message: `${b.message}${extraDetail}`,
+          time: formatDate(b.sentAt || b.created_at),
+          timestamp: b.sentAt ? Date.parse(b.sentAt) : Date.now(),
+          read: false,
+          type,
+          broadcast: b
+        });
+      });
+    } catch (e) {
+      // Ignorar fallos de red
+    }
+
     // Merge preservando flag read del caché localStorage (no fuente de verdad)
     const cache = getReadCache();
     const merged = derived.map((n) => ({ ...n, read: !!cache[n.id] }));
@@ -248,6 +302,39 @@ export const NotificationProvider = ({ children }) => {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
+
+  // Reacciona a comunicados y promociones masivas en tiempo real
+  useEffect(() => {
+    const handleBroadcastLive = (e) => {
+      const b = e.detail;
+      if (!b) return;
+      const target = (b.target || 'ALL').toUpperCase();
+      const match = target === 'ALL' || 
+        (role === 'user' && (target === 'CONDUCTORES' || target === 'USER')) ||
+        (role === 'local' && (target === 'COCHERAS' || target === 'LOCAL')) ||
+        role === 'platform';
+
+      if (match) {
+        const isPromo = b.category === 'promo' || !!b.promo_code;
+        toast(
+          isPromo ? `🎉 ¡Nueva Promoción! ${b.title}` : `📢 Comunicado: ${b.title}`,
+          { icon: isPromo ? '🎁' : '📢', duration: 6000 }
+        );
+        fetchDerived().then(res => setNotifications(res));
+      }
+    };
+
+    const handleBroadcastDeleted = () => {
+      fetchDerived().then(res => setNotifications(res));
+    };
+
+    window.addEventListener('smartpark_broadcast_received', handleBroadcastLive);
+    window.addEventListener('smartpark_broadcast_deleted', handleBroadcastDeleted);
+    return () => {
+      window.removeEventListener('smartpark_broadcast_received', handleBroadcastLive);
+      window.removeEventListener('smartpark_broadcast_deleted', handleBroadcastDeleted);
+    };
+  }, [role, fetchDerived]);
 
   // Reacciona a eventos en vivo de reservas (aviso de tiempo por vencer y cobro de overtime)
   useEffect(() => {

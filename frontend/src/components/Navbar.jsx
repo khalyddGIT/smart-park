@@ -31,16 +31,27 @@ const getIconForType = (type) => {
 };
 
 const getIconStyle = (type, read) => {
-  if (read) return 'text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800';
+  if (read) {
+    switch (type) {
+      case 'success':
+        return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/40 dark:border-emerald-800/40';
+      case 'warning':
+        return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/40 dark:border-amber-800/40';
+      case 'alert':
+        return 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200/40 dark:border-rose-800/40';
+      default:
+        return 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/30 border border-sky-200/40 dark:border-sky-800/40';
+    }
+  }
   switch (type) {
     case 'success':
-      return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40';
+      return 'text-emerald-600 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 border border-emerald-300/60 dark:border-emerald-700/60';
     case 'warning':
-      return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40';
+      return 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 border border-amber-300/60 dark:border-amber-700/60';
     case 'alert':
-      return 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40';
+      return 'text-rose-600 dark:text-rose-300 bg-rose-100 dark:bg-rose-900/60 border border-rose-300/60 dark:border-rose-700/60';
     default:
-      return 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40';
+      return 'text-sky-600 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/60 border border-sky-300/60 dark:border-sky-700/60';
   }
 };
 
@@ -171,12 +182,12 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                   onClick={() => setShowNotifications(false)}
                 />
 
-                <div className="fixed inset-x-3 top-[60px] max-w-sm mx-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px] sm:max-w-none bg-white dark:bg-slate-900 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 border border-slate-200/90 dark:border-slate-800 overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 max-h-[80vh] flex flex-col">
+                <div className="fixed inset-x-3 top-[60px] max-w-sm mx-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[390px] sm:max-w-none bg-white dark:bg-[#111827] rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/70 border border-slate-200 dark:border-slate-800 overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 max-h-[80vh] flex flex-col">
                   
                   {/* Encabezado Cohesivo */}
-                  <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                  <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-[#111827]">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white tracking-tight">Notificaciones</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 tracking-tight">Notificaciones</span>
                       {unreadCount > 0 && (
                         <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/60">
                           {unreadCount} nuevas
@@ -190,7 +201,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                           type="button"
                           onClick={markAllAsRead}
                           title="Marcar todas como leídas"
-                          className="text-[11px] font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white px-1.5 py-1 rounded transition cursor-pointer"
+                          className="text-[11px] font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 px-1.5 py-1 rounded transition cursor-pointer"
                         >
                           Marcar leídas
                         </button>
@@ -200,7 +211,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                           type="button"
                           onClick={clearRoleNotifications}
                           title="Limpiar todas"
-                          className="p-1 text-slate-400 hover:text-rose-500 rounded transition cursor-pointer"
+                          className="p-1 text-slate-400 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 rounded transition cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -208,23 +219,23 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                       <button
                         type="button"
                         onClick={() => setShowNotifications(false)}
-                        className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded transition cursor-pointer"
+                        className="p-1 text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100 rounded transition cursor-pointer"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Filtro Mínimo (Solo si hay notificaciones) */}
+                  {/* Filtro Mínimo (Tabs claras y con contraste óptimo en ambos temas) */}
                   {notifications.length > 0 && (
-                    <div className="px-4 py-1.5 bg-slate-50/60 dark:bg-slate-850/40 border-b border-slate-100 dark:border-slate-800/80 flex items-center gap-1 text-[11px]">
+                    <div className="px-3.5 py-2 bg-slate-100/80 dark:bg-[#0B0F19] border-b border-slate-200/80 dark:border-slate-800 flex items-center gap-1.5 text-xs">
                       <button
                         type="button"
                         onClick={() => setFilterUnreadOnly(false)}
-                        className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-xl font-semibold text-xs transition cursor-pointer ${
                           !filterUnreadOnly
-                            ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs font-semibold'
-                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                            ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-slate-700'
+                            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/50'
                         }`}
                       >
                         Todas ({notifications.length})
@@ -232,10 +243,10 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                       <button
                         type="button"
                         onClick={() => setFilterUnreadOnly(true)}
-                        className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-xl font-semibold text-xs transition cursor-pointer ${
                           filterUnreadOnly
-                            ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs font-semibold'
-                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                            ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-slate-700'
+                            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/50'
                         }`}
                       >
                         No leídas ({unreadCount})
@@ -243,8 +254,8 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                     </div>
                   )}
 
-                  {/* Lista de Notificaciones Limpia */}
-                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/70">
+                  {/* Lista de Notificaciones Limpia y Accesible */}
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/70 bg-white dark:bg-[#111827]">
                     {displayedNotifications.length === 0 ? (
                       <div className="p-8 text-center text-slate-400 dark:text-slate-500 space-y-1.5">
                         <Check className="w-6 h-6 mx-auto text-emerald-500 opacity-80" />
@@ -261,32 +272,32 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                             onClick={() => handleNotificationClick(n)}
                             className={`group px-4 py-3 transition flex items-start gap-3 cursor-pointer ${
                               !n.read 
-                                ? 'bg-emerald-50/20 dark:bg-emerald-950/15' 
-                                : 'hover:bg-slate-50/80 dark:hover:bg-slate-850/50'
+                                ? 'bg-emerald-50/30 dark:bg-emerald-950/20 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/35' 
+                                : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
                             }`}
                           >
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${getIconStyle(n.type, n.read)}`}>
-                              <Icon className="w-3.5 h-3.5" />
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${getIconStyle(n.type, n.read)}`}>
+                              <Icon className="w-4 h-4" />
                             </div>
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1">
-                                <h4 className={`text-xs truncate ${!n.read ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300'}`}>
+                                <h4 className={`text-xs truncate ${!n.read ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-800 dark:text-slate-200'}`}>
                                   {n.title}
                                 </h4>
-                                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 shrink-0">
+                                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-400 shrink-0">
                                   {n.time}
                                 </span>
                               </div>
 
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed line-clamp-2">
+                              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed line-clamp-2">
                                 {n.message}
                               </p>
                             </div>
 
                             <div className="flex items-center gap-1.5 shrink-0 self-center">
                               {!n.read && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                               )}
                               <button
                                 type="button"
@@ -295,7 +306,7 @@ export const Navbar = ({ onNavigateProfile, onNavigateTab, onOpenAuthModal }) =>
                                   removeNotification(n.id);
                                 }}
                                 title="Eliminar"
-                                className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 transition rounded-md"
+                                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 transition rounded-md"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>

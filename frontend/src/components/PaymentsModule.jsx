@@ -25,8 +25,22 @@ import {
   Shield,
   Zap,
   Building2,
-  Wifi
+  Wifi,
+  AlertCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+import {
+  formatCardNumber,
+  detectCardBrand,
+  validateCardNumber,
+  cleanCardHolder,
+  validateCardHolder,
+  formatExpiry,
+  validateExpiry,
+  cleanCVC,
+  validateCVC
+} from '../utils/cardValidation';
 
 const CARDS_STORAGE_KEY_BASE = 'smart_park_cards_v2';
 const getCardsKey = () => {
@@ -89,6 +103,8 @@ export const PaymentsModule = () => {
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [newCard, setNewCard] = useState({ number: '', name: '', expiry: '', cvc: '' });
+  const [formErrors, setFormErrors] = useState({});
+  const [showCvc, setShowCvc] = useState(false);
   const [activeTab, setActiveTab] = useState('cards'); // 'cards' | 'history'
   const [toast, setToast] = useState(null);
 
@@ -111,35 +127,60 @@ export const PaymentsModule = () => {
     }).catch(() => {});
   }, []);
 
-  const notify = (msg) => {
-    setToast(msg);
+  const notify = (msg, type = 'success') => {
+    setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const handleFillDemoCard = () => {
+    setNewCard({
+      number: formatCardNumber('4111111111111111'),
+      name: 'CARLOS MENDOZA',
+      expiry: '12/28',
+      cvc: '123'
+    });
+    setFormErrors({});
   };
 
   const handleAddCard = (e) => {
     e.preventDefault();
-    if (!newCard.number || !newCard.name || !newCard.expiry) return;
 
-    // Detectar tipo de tarjeta
-    const cleanNum = newCard.number.replace(/\s+/g, '');
-    let cardType = 'Visa';
-    if (cleanNum.startsWith('5')) cardType = 'Mastercard';
-    if (cleanNum.startsWith('3')) cardType = 'Amex';
+    const cardValidation = validateCardNumber(newCard.number);
+    const holderValidation = validateCardHolder(newCard.name);
+    const expiryValidation = validateExpiry(newCard.expiry);
+    const cvcValidation = validateCVC(newCard.cvc, cardValidation.brand);
 
-    const formattedLast4 = cleanNum.slice(-4) || '1234';
+    const errors = {};
+    if (!cardValidation.isValid) errors.number = cardValidation.error;
+    if (!holderValidation.isValid) errors.name = holderValidation.error;
+    if (!expiryValidation.isValid) errors.expiry = expiryValidation.error;
+    if (!cvcValidation.isValid) errors.cvc = cvcValidation.error;
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      const firstError = Object.values(errors)[0];
+      notify(firstError, 'error');
+      return;
+    }
+
+    const cleanNum = cardValidation.clean;
+    const cardType = cardValidation.brand;
+    const formattedLast4 = cleanNum.slice(-4);
+
     const cardObj = {
       id: Date.now(),
       type: cardType,
       number: `•••• •••• •••• ${formattedLast4}`,
-      holder: newCard.name.toUpperCase(),
+      holder: holderValidation.value,
       expiry: newCard.expiry,
       isDefault: cards.length === 0
     };
 
     setCards([...cards, cardObj]);
     setNewCard({ number: '', name: '', expiry: '', cvc: '' });
+    setFormErrors({});
     setShowAddModal(false);
-    notify(`✓ Tarjeta ${cardType} vinculada con éxito.`);
+    notify(`✓ Tarjeta ${cardType} terminada en ${formattedLast4} vinculada con éxito.`);
   };
 
   const handleSetDefaultCard = (id) => {
@@ -170,11 +211,15 @@ export const PaymentsModule = () => {
 
       {/* Toast Alert */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900/95 backdrop-blur-md border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 text-xs font-bold animate-in slide-in-from-bottom-5">
-          <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-            <Check className="w-3.5 h-3.5" />
+        <div className={`fixed bottom-6 right-6 z-50 backdrop-blur-md border text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 text-xs font-bold animate-in slide-in-from-bottom-5 ${
+          toast.type === 'error' ? 'bg-rose-950/95 border-rose-800' : 'bg-slate-900/95 border-slate-800'
+        }`}>
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+            toast.type === 'error' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'
+          }`}>
+            {toast.type === 'error' ? <AlertCircle className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
           </div>
-          <span>{toast}</span>
+          <span>{toast.msg || toast}</span>
         </div>
       )}
 
@@ -500,7 +545,12 @@ export const PaymentsModule = () => {
       )}
 
       {/* Modal Vincular Nueva Tarjeta */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+      <Dialog open={showAddModal} onOpenChange={(open) => {
+        setShowAddModal(open);
+        if (!open) {
+          setFormErrors({});
+        }
+      }}>
         <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-slate-900 shadow-2xl border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
@@ -512,62 +562,162 @@ export const PaymentsModule = () => {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Botón rápido de demo */}
+          <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 text-xs my-1">
+            <span className="font-mono text-[11px] text-slate-600 dark:text-slate-400">
+              Prueba: 4111... • 12/28 • 123
+            </span>
+            <button
+              type="button"
+              onClick={handleFillDemoCard}
+              className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold hover:bg-emerald-100 cursor-pointer transition"
+            >
+              Llenar datos
+            </button>
+          </div>
+
           <form onSubmit={handleAddCard} className="space-y-4 my-2">
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Número de Tarjeta *</label>
-              <Input
-                type="text"
-                placeholder="4557 •••• •••• 1234"
-                maxLength={19}
-                value={newCard.number}
-                onChange={(e) => setNewCard({ ...newCard, number: e.target.value })}
-                className="font-mono font-bold tracking-widest text-sm h-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                required
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Número de Tarjeta *
+                </label>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {newCard.number.replace(/\s/g, '').length}/16 dígitos
+                </span>
+              </div>
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="4557 1234 5678 9012"
+                  maxLength={19}
+                  value={newCard.number}
+                  onChange={(e) => {
+                    const formatted = formatCardNumber(e.target.value);
+                    setNewCard(prev => ({ ...prev, number: formatted }));
+                    if (formErrors.number) setFormErrors(prev => ({ ...prev, number: null }));
+                  }}
+                  className={`font-mono font-bold tracking-wider text-sm h-11 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white pr-24 ${
+                    formErrors.number ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                  }`}
+                  required
+                />
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                  <span className={`text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded-lg border ${
+                    detectCardBrand(newCard.number) === 'Visa'
+                      ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-800'
+                      : detectCardBrand(newCard.number) === 'Mastercard'
+                      ? 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800'
+                      : detectCardBrand(newCard.number) === 'Amex'
+                      ? 'bg-cyan-50 text-cyan-600 border-cyan-200 dark:bg-cyan-950/50 dark:text-cyan-400 dark:border-cyan-800'
+                      : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                  }`}>
+                    {detectCardBrand(newCard.number)}
+                  </span>
+                </div>
+              </div>
+              {formErrors.number && (
+                <p className="text-[11px] font-bold text-rose-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{formErrors.number}</span>
+                </p>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nombre del Titular (Como figura en la tarjeta) *</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Nombre del Titular (Como figura en la tarjeta) *
+              </label>
               <Input
                 type="text"
-                placeholder="NOMBRE Y APELLIDOS DEL TITULAR"
+                placeholder="CARLOS MENDOZA"
                 value={newCard.name}
-                onChange={(e) => setNewCard({ ...newCard, name: e.target.value.toUpperCase() })}
-                className="text-xs uppercase font-bold h-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                onChange={(e) => {
+                  const cleaned = cleanCardHolder(e.target.value);
+                  setNewCard(prev => ({ ...prev, name: cleaned }));
+                  if (formErrors.name) setFormErrors(prev => ({ ...prev, name: null }));
+                }}
+                className={`text-xs uppercase font-bold h-11 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white ${
+                  formErrors.name ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                }`}
                 required
               />
+              {formErrors.name && (
+                <p className="text-[11px] font-bold text-rose-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{formErrors.name}</span>
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Expiración (MM/AA) *</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Expiración (MM/AA) *
+                </label>
                 <Input
                   type="text"
                   placeholder="12/28"
                   maxLength={5}
                   value={newCard.expiry}
-                  onChange={(e) => setNewCard({ ...newCard, expiry: e.target.value })}
-                  className="font-mono text-center font-bold text-xs h-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                  onChange={(e) => {
+                    const formatted = formatExpiry(e.target.value);
+                    setNewCard(prev => ({ ...prev, expiry: formatted }));
+                    if (formErrors.expiry) setFormErrors(prev => ({ ...prev, expiry: null }));
+                  }}
+                  className={`font-mono text-center font-bold text-xs h-11 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white ${
+                    formErrors.expiry ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                  }`}
                   required
                 />
+                {formErrors.expiry && (
+                  <p className="text-[11px] font-bold text-rose-500 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{formErrors.expiry}</span>
+                  </p>
+                )}
               </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Código CVC / CVV *</label>
-                <Input
-                  type="password"
-                  placeholder="•••"
-                  maxLength={4}
-                  value={newCard.cvc}
-                  onChange={(e) => setNewCard({ ...newCard, cvc: e.target.value })}
-                  className="font-mono text-center font-bold text-xs h-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                  required
-                />
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Código CVC / CVV *
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showCvc ? 'text' : 'password'}
+                    placeholder="123"
+                    maxLength={4}
+                    value={newCard.cvc}
+                    onChange={(e) => {
+                      const cleaned = cleanCVC(e.target.value, detectCardBrand(newCard.number));
+                      setNewCard(prev => ({ ...prev, cvc: cleaned }));
+                      if (formErrors.cvc) setFormErrors(prev => ({ ...prev, cvc: null }));
+                    }}
+                    className={`font-mono text-center font-bold text-xs h-11 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white pr-9 ${
+                      formErrors.cvc ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                    }`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCvc(!showCvc)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    {showCvc ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {formErrors.cvc && (
+                  <p className="text-[11px] font-bold text-rose-500 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{formErrors.cvc}</span>
+                  </p>
+                )}
               </div>
             </div>
 
             <Button
               type="submit"
-              className="w-full font-extrabold h-11 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md cursor-pointer transition-colors"
+              className="w-full font-extrabold h-11 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md cursor-pointer transition-colors mt-2"
             >
               Guardar y Tokenizar Tarjeta
             </Button>

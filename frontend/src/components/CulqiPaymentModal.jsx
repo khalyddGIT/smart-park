@@ -25,6 +25,7 @@ import {
   QrCode,
   ArrowRight
 } from 'lucide-react';
+import { cleanCardHolder } from '../utils/cardValidation';
 
 // Credenciales públicas para frontend
 export const CULQI_PUBLIC_KEY = import.meta.env.VITE_CULQI_PUBLIC_KEY || 'pk_test_ZqUyhWj5y7nmIHax';
@@ -1021,7 +1022,7 @@ export const CulqiPaymentModal = ({
                       type="text"
                       placeholder="CARLOS MENDOZA"
                       value={cardHolder}
-                      onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
+                      onChange={(e) => setCardHolder(cleanCardHolder(e.target.value))}
                       className="text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white uppercase font-medium"
                       required
                     />

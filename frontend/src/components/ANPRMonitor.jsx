@@ -34,6 +34,14 @@ import {
   normalizarPlaca,
   formatearPlacaConGuion
 } from '../utils/plateOcr';
+import {
+  formatPlateInput,
+  isValidPeruvianPlate,
+  getPlateValidationState,
+  sanitizeDriverInput,
+  validateDriverInput,
+  validateGaritaEntryForm
+} from '../utils/garitaValidation';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments, isDemoEstablishment, isStaffOperatorUser } from '../context/EstablishmentContext';
 import { CarParkZoneEditor } from './CarParkZoneEditor';
@@ -124,6 +132,13 @@ export const ANPRMonitor = () => {
   const [entrySlot, setEntrySlot] = useState('');
   const [entryTime, setEntryTime] = useState(() => getCurrentTimeStr());
   const [entryHours, setEntryHours] = useState(2);
+
+  // Validaciones en tiempo real
+  const plateState = useMemo(() => getPlateValidationState(entryPlate), [entryPlate]);
+  const driverState = useMemo(() => validateDriverInput(entryName), [entryName]);
+  const isEntryFormValid = useMemo(() => {
+    return isValidPeruvianPlate(entryPlate) && Boolean(entrySlot) && (!entryName || driverState.isValid);
+  }, [entryPlate, entrySlot, entryName, driverState]);
 
   // Modal de edición de estadía en cochera
   const [editingVehicle, setEditingVehicle] = useState(null);
@@ -258,11 +273,21 @@ export const ANPRMonitor = () => {
   };
 
   const handleEntrySubmit = async () => {
-    const plate = formatearPlacaConGuion(entryPlate);
-    if (!plate || plate.trim().length < 3 || !entrySlot) {
-      setFormResult({ matched: false, message: 'Ingresa la placa y elige un cajón libre.' });
+    const validation = validateGaritaEntryForm({
+      plate: entryPlate,
+      slot: entrySlot,
+      driverName: entryName,
+      hours: entryHours,
+      time: entryTime
+    });
+
+    if (!validation.isValid) {
+      const errorMsg = Object.values(validation.errors)[0] || 'Corrige los datos del formulario de ingreso.';
+      setFormResult({ matched: false, message: errorMsg });
       return;
     }
+
+    const plate = formatPlateInput(entryPlate);
     setLoading(true);
     try {
       // 1. Calcular hora de entrada real según entryTime
@@ -292,10 +317,13 @@ export const ANPRMonitor = () => {
         setFormResult({ matched: true, message: `Ingreso registrado. Reserva ${matched.code} en cajón ${targetSlot}. El reloj inició a las ${timeStr}.` });
         addAuditLog({ type: 'GARITA', action: 'INGRESO_RESERVA', plate, slot: targetSlot, status: 'ACTIVO', detail: `Reserva ${matched.code} con ingreso a las ${timeStr}.` });
       } else {
+        const cleanDriver = entryName?.trim() || undefined;
         const res = await createReservation({
           parkingId: currentEst.id,
           slotCode: entrySlot,
           plate,
+          customerName: cleanDriver,
+          driverName: cleanDriver,
           hours: null,
           isOpenStay: true,
           is_open_stay: true,
@@ -312,7 +340,14 @@ export const ANPRMonitor = () => {
           }
           const timeStr = targetEntryDate.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
           setFormResult({ matched: true, message: `Ingreso registrado. Ticket ${res.code} en cajón ${entrySlot}. El reloj inició a las ${timeStr}.` });
-          addAuditLog({ type: 'GARITA', action: 'INGRESO_MANUAL', plate, slot: entrySlot, status: 'ACTIVO', detail: `Ticket ${res.code} creado con ingreso a las ${timeStr}.` });
+          addAuditLog({ 
+            type: 'GARITA', 
+            action: 'INGRESO_MANUAL', 
+            plate, 
+            slot: entrySlot, 
+            status: 'ACTIVO', 
+            detail: `Ticket ${res.code} creado con ingreso a las ${timeStr}${cleanDriver ? ` (Conductor: ${cleanDriver})` : ''}.` 
+          });
         } else {
           setFormResult({ matched: false, message: `No se pudo registrar el ingreso: ${res?.error || 'Cajón no disponible.'}` });
         }
@@ -399,12 +434,18 @@ export const ANPRMonitor = () => {
   };
 
   const handleExitSearch = () => {
-    const normalized = normalizarPlaca(exitPlate);
-    if (!normalized || normalized.length < 3) {
+    const formatted = formatPlateInput(exitPlate);
+    if (!formatted.trim()) {
       setExitDetail(null);
       setFormResult({ matched: false, message: 'Ingresa la placa para buscar la estadía activa.' });
       return;
     }
+    if (!isValidPeruvianPlate(formatted)) {
+      setExitDetail(null);
+      setFormResult({ matched: false, message: 'Formato de placa inválido (ej: ABC-123 o 1234-5A).' });
+      return;
+    }
+    const normalized = normalizarPlaca(formatted);
     const matchedRes = reservations.find(r => String(r.parkingId) === String(selectedEstId) && normalizarPlaca(r.plate) === normalized && (r.status === 'ACTIVE' || r.status === 'active'));
     const matchedWalkIn = walkInTickets.find(t => String(t.estId) === String(selectedEstId) && normalizarPlaca(t.plate) === normalized && t.status === 'ACTIVE');
     const item = matchedRes || matchedWalkIn;
@@ -604,32 +645,88 @@ export const ANPRMonitor = () => {
             </span>
           </div>
 
-          {/* Fila 1: Placa y Conductor */}
+          {/* Fila 1: Placa y Conductor con Validación Estricta */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">
-                Placa del vehículo <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  Placa del vehículo <span className="text-rose-500">*</span>
+                </label>
+                {plateState.isValid && (
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Placa válida
+                  </span>
+                )}
+              </div>
               <Input
                 type="text"
                 placeholder="ABC-123"
+                maxLength={7}
                 value={entryPlate}
-                onChange={e => setEntryPlate(e.target.value.toUpperCase())}
-                onKeyDown={e => { if (e.key === 'Enter') handleEntrySubmit(); }}
-                className="font-mono font-black text-center text-base tracking-widest uppercase h-11 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border-slate-200 dark:border-slate-700 dark:text-slate-100"
+                onChange={e => setEntryPlate(formatPlateInput(e.target.value))}
+                onKeyDown={e => { if (e.key === 'Enter' && isEntryFormValid) handleEntrySubmit(); }}
+                className={`font-mono font-black text-center text-base tracking-widest uppercase h-11 rounded-xl bg-slate-50 dark:bg-[#0B0F19] dark:text-slate-100 transition-colors ${
+                  plateState.isValid
+                    ? 'border-emerald-500 dark:border-emerald-500 focus-visible:ring-emerald-500/20'
+                    : entryPlate && !plateState.isPartial
+                    ? 'border-rose-500 dark:border-rose-500 focus-visible:ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700'
+                }`}
               />
+              <div className="min-h-5 mt-1">
+                {!entryPlate ? (
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                    Formato MTC: 3 letras y 3 números (ej: ABC-123 o 1234-5A)
+                  </p>
+                ) : plateState.isPartial ? (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                    {plateState.message}
+                  </p>
+                ) : !plateState.isValid ? (
+                  <p className="text-[11px] text-rose-500 dark:text-rose-400 font-medium flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                    {plateState.message}
+                  </p>
+                ) : null}
+              </div>
             </div>
+
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">
-                Conductor <span className="text-slate-400 font-normal">(opcional)</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  Conductor <span className="text-slate-400 font-normal">(opcional)</span>
+                </label>
+                {entryName && driverState.isValid && (
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Válido
+                  </span>
+                )}
+              </div>
               <Input
                 type="text"
-                placeholder="Nombre o teléfono"
+                placeholder="Nombre o teléfono (9 dígitos)"
+                maxLength={50}
                 value={entryName}
-                onChange={e => setEntryName(e.target.value)}
-                className="h-11 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border-slate-200 dark:border-slate-700 dark:text-slate-100"
+                onChange={e => setEntryName(sanitizeDriverInput(e.target.value))}
+                className={`h-11 rounded-xl bg-slate-50 dark:bg-[#0B0F19] dark:text-slate-100 transition-colors ${
+                  entryName && !driverState.isValid
+                    ? 'border-rose-500 dark:border-rose-500 focus-visible:ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700'
+                }`}
               />
+              <div className="min-h-5 mt-1">
+                {entryName && !driverState.isValid ? (
+                  <p className="text-[11px] text-rose-500 dark:text-rose-400 font-medium flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                    {driverState.error}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                    Opcional: nombre del chofer o celular de 9 dígitos para el ticket
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -723,8 +820,17 @@ export const ANPRMonitor = () => {
             <Button
               type="button"
               onClick={handleEntrySubmit}
-              disabled={loading || !entryPlate || !entrySlot}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-sm h-12 rounded-xl gap-2 transition-colors shadow-sm cursor-pointer"
+              disabled={loading || !isEntryFormValid}
+              title={
+                !isValidPeruvianPlate(entryPlate)
+                  ? 'Ingresa una placa válida (ej: ABC-123 o 1234-5A)'
+                  : !entrySlot
+                  ? 'Selecciona un cajón disponible'
+                  : entryName && !driverState.isValid
+                  ? 'Corrige el campo de conductor'
+                  : 'Registrar ingreso a la cochera'
+              }
+              className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-sm h-12 rounded-xl gap-2 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
             >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin"/> : <ArrowUpRight className="w-4 h-4"/>}
               Registrar ingreso
@@ -747,8 +853,9 @@ export const ANPRMonitor = () => {
               <Input
                 type="text"
                 placeholder="ABC-123"
+                maxLength={7}
                 value={exitPlate}
-                onChange={e => setExitPlate(e.target.value.toUpperCase())}
+                onChange={e => setExitPlate(formatPlateInput(e.target.value))}
                 onKeyDown={e => { if (e.key === 'Enter') handleExitSearch(); }}
                 className="font-mono font-black text-center uppercase h-11 rounded-xl dark:bg-[#0B0F19] dark:border-slate-700 dark:text-slate-100"
               />

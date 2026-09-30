@@ -296,12 +296,26 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const [rucNumber, setRucNumber] = useState('');
   const [businessName, setBusinessName] = useState('');
 
-  const activeUserReservation = useMemo(() => {
-    return (reservations || []).find(r => r && (
-      r.status === 'SCHEDULED' || r.status === 'ACTIVE' || 
-      r.status === 'scheduled' || r.status === 'active'
-    ));
+  // Mapa de placas que cuentan con reserva activa (SCHEDULED o ACTIVE)
+  const activePlatesMap = useMemo(() => {
+    const map = new Map();
+    (reservations || []).forEach(r => {
+      if (!r) return;
+      const st = String(r.status || '').toUpperCase();
+      if (st === 'SCHEDULED' || st === 'ACTIVE') {
+        const p = String(r.plate || r.license_plate || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+        if (p) map.set(p, r);
+      }
+    });
+    return map;
   }, [reservations]);
+
+  // Reserva activa específica para el vehículo seleccionado en este momento
+  const activePlateReservation = useMemo(() => {
+    if (!effectivePlate) return null;
+    const cleanCurrent = effectivePlate.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    return activePlatesMap.get(cleanCurrent) || null;
+  }, [activePlatesMap, effectivePlate]);
 
   const loadVehicles = useCallback(() => {
     setVehiclesLoading(true);
@@ -829,7 +843,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
   const canReserve = !isUnavailable && planStatus !== 'unregistered' && planStatus !== 'loading' && !!selectedSlot && selectedSlot.status === 'free' && slotMatchesVehicle(selectedSlot.slotType, vehicleCategory) && isPlateValid;
 
   const handleExecuteBooking = () => {
-    if (!canReserve) return;
+    if (!canReserve || !!activePlateReservation) return;
     const now = new Date();
     const chosenTolerance = officialTolerance;
     const start = now;
@@ -1396,11 +1410,15 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                     onChange={(e) => setSelectedPlate(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white cursor-pointer focus:outline-none focus:border-emerald-500"
                   >
-                    {vehicles.map((v) => (
-                      <option key={v.id} value={v.license_plate}>
-                        {v.license_plate} - {v.brand || 'Vehículo'} {v.model || ''} ({v.vehicle_type ? v.vehicle_type.toUpperCase() : 'AUTO'})
-                      </option>
-                    ))}
+                    {vehicles.map((v) => {
+                      const cleanP = String(v.license_plate || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                      const hasActiveForThis = activePlatesMap.has(cleanP);
+                      return (
+                        <option key={v.id} value={v.license_plate}>
+                          {v.license_plate} - {v.brand || 'Vehículo'} {v.model || ''} ({v.vehicle_type ? v.vehicle_type.toUpperCase() : 'AUTO'}) {hasActiveForThis ? '• [En Reserva]' : '• [Disponible]'}
+                        </option>
+                      );
+                    })}
                   </select>
                   <div className="flex items-center justify-between text-xs text-slate-400 pt-0.5">
                     <button
@@ -1555,11 +1573,16 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               </div>
             </div>
 
-            {/* Aviso si ya cuenta con reserva activa */}
-            {activeUserReservation && (
-              <div className="p-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-300 flex items-center justify-between">
-                <span className="font-semibold text-white">Reserva en curso:</span>
-                <span className="font-mono font-bold text-amber-300">{activeUserReservation.code || activeUserReservation.id} ({activeUserReservation.plate || activeUserReservation.license_plate})</span>
+            {/* Aviso si el vehículo seleccionado ya cuenta con reserva activa */}
+            {activePlateReservation && (
+              <div className="p-2.5 bg-slate-950 border border-amber-500/40 rounded-xl text-xs text-slate-300 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="font-semibold text-white">Reserva activa para {effectivePlate}:</span>
+                </div>
+                <span className="font-mono font-bold text-amber-300">
+                  {activePlateReservation.code || activePlateReservation.id}
+                </span>
               </div>
             )}
 
@@ -1586,7 +1609,7 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
               type="button"
               variant="default"
               onClick={handleExecuteBooking}
-              disabled={!canReserve || !!activeUserReservation}
+              disabled={!canReserve || !!activePlateReservation}
               className={`w-full py-3 text-xs font-bold gap-2 rounded-xl cursor-pointer transition-all ${
                 isMaintenance 
                   ? 'bg-amber-950 border border-amber-600/70 text-amber-300 hover:bg-amber-900 cursor-not-allowed opacity-80'
@@ -1605,8 +1628,8 @@ export const CustomerInteractivePlanBooking = ({ parking, planElements = [], onR
                   <XCircle className="w-4 h-4 text-rose-400" />
                   <span>Sede Cerrada</span>
                 </>
-              ) : activeUserReservation ? (
-                <span>Tienes una reserva activa en curso</span>
+              ) : activePlateReservation ? (
+                <span>{effectivePlate} ya tiene reserva activa (elige otro auto)</span>
               ) : !effectivePlate ? (
                 <span>Ingresa tu Placa para Continuar</span>
               ) : !isPlateValid ? (

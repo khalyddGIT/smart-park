@@ -7,7 +7,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import Reservation, Slot, Parking, Payment, User, Staff
+from app.models.models import Reservation, Slot, Parking, Payment, User, Staff, Vehicle
 from app.schemas.schemas import (
     ReservationCreate,
     ReservationUpdate,
@@ -526,20 +526,52 @@ async def create_reservation(
     # REGLAS DE NEGOCIO ANTI-SABOTAJE Y PROTECCIÓN DE INVENTARIO
     # =========================================================================
     if current_user.role not in ("local", "platform"):
-        # Regla S-01: Límite de 1 reserva activa estándar por usuario
+        # Regla S-01: Política Multi-Vehículo Real (1 reserva activa por vehículo del usuario)
         if res_type == "standard":
-            active_user_res = await db.execute(
+            # 1. Consultar vehículos registrados del usuario en su garaje
+            user_vehicles_res = await db.execute(
+                select(Vehicle).where(Vehicle.user_id == current_user.id)
+            )
+            user_vehicles = user_vehicles_res.scalars().all()
+            user_registered_plates = {
+                v.license_plate.strip().upper() for v in user_vehicles if v.license_plate
+            }
+
+            # 2. Consultar las reservas activas actuales del usuario
+            active_user_res_stmt = await db.execute(
                 select(Reservation).where(
                     Reservation.user_id == current_user.id,
                     Reservation.status.in_(["scheduled", "active"]),
                     Reservation.reservation_type == "standard"
                 )
             )
-            if active_user_res.scalars().first():
+            active_user_reservations = active_user_res_stmt.scalars().all()
+            active_plates_of_user = {
+                r.license_plate.strip().upper() for r in active_user_reservations if r.license_plate
+            }
+
+            # 3. Validar si la placa específica que intenta reservar ya tiene una reserva activa
+            if plate_clean in active_plates_of_user:
                 raise HTTPException(
                     status_code=400,
-                    detail="Ya cuentas con una reserva activa en curso. Completa o cancela tu reserva previa antes de solicitar otra."
+                    detail=f"El vehículo con placa {plate_clean} ya cuenta con una reserva activa en curso. Puedes reservar con otro de tus vehículos disponibles."
                 )
+
+            # 4. Capacidad multi-vehículo:
+            # Un usuario puede tener 1 reserva activa por cada vehículo registrado en su garaje (máx. 5 como cota de seguridad anti-sabotaje).
+            max_allowed = max(1, min(len(user_registered_plates), 5))
+
+            if len(active_user_reservations) >= max_allowed:
+                if len(user_registered_plates) <= 1:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Ya cuentas con una reserva activa en curso. Para reservar para múltiples autos simultáneamente, registra tus vehículos adicionales en tu Garaje Digital."
+                    )
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Has alcanzado el límite de {max_allowed} reservas activas simultáneas (una por cada vehículo registrado en tu garaje). Completa o cancela alguna antes de solicitar otra."
+                    )
         elif is_sub:
             active_sub_res = await db.execute(
                 select(Reservation).where(

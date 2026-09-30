@@ -181,20 +181,19 @@ export const AffiliatedParkingsModule = () => {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleOpenAdd = (parentGroup = null) => {
+  const handleOpenAdd = () => {
     const autoPass = generateSecurePassword('SP');
-    const companyName = parentGroup?.companyName || '';
     setFormData({ 
-      name: companyName ? `${companyName} - Sucursal ` : '', 
-      company_name: companyName,
+      name: '', 
+      company_name: '',
       address: '', 
-      city: parentGroup?.city || 'Ayacucho - Huamanga', 
+      city: 'Ayacucho - Huamanga', 
       level: 'Nivel 1 - Superficie',
       rate: 5.00, 
       commission: '12%', 
-      owner: parentGroup?.owner || 'Inversiones Ayacucho S.A.C.',
-      phone: parentGroup?.phone || '',
-      createAdminAccount: !companyName,
+      owner: '',
+      phone: '',
+      createAdminAccount: true,
       adminEmail: '',
       adminPassword: autoPass,
       showAdminPassword: false
@@ -277,11 +276,11 @@ export const AffiliatedParkingsModule = () => {
     try {
       const created = await addEstablishment(newObj, adminCredentials);
       setShowAddModal(false);
-      notify(`Establecimiento "${created?.name || newObj.name}" afiliado a la red.`);
+      notify(`Empresa "${created?.name || newObj.name}" afiliada exitosamente.`);
 
       if (adminCredentials) {
         setCredentialsResult({
-          title: '¡Sede Creada y Administrador Asignado!',
+          title: '¡Empresa Registrada y Administrador Asignado!',
           parkingName: created?.name || newObj.name,
           email: adminCredentials.email,
           password: adminCredentials.password,
@@ -775,9 +774,14 @@ export const AffiliatedParkingsModule = () => {
               </div>
             </div>
 
-            <Button onClick={() => handleOpenAdd(null)} className="w-full sm:w-auto gap-2 font-bold shadow-xs bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded-xl text-xs h-9 cursor-pointer">
+            <Button 
+              type="button"
+              onClick={handleOpenAdd} 
+              className="w-full sm:w-auto gap-2 font-bold shadow-xs bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded-xl text-xs h-9 cursor-pointer"
+              title="Registrar una nueva empresa comercial en Smart Park"
+            >
               <Plus className="w-4 h-4" />
-              <span>Nueva Empresa / Sede Manual</span>
+              <span>Nueva Empresa</span>
             </Button>
           </div>
 
@@ -829,7 +833,7 @@ export const AffiliatedParkingsModule = () => {
                                 </span>
                               )}
                               <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                Local Afiliado
+                                Empresa Afiliada
                               </span>
                               {group.ruc && (
                                 <span className="text-[11px] font-mono text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -888,10 +892,10 @@ export const AffiliatedParkingsModule = () => {
                             variant="outline"
                             size="sm"
                             className="border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
-                            title="Editar información y tarifas de la sede"
+                            title="Editar información y parámetros de la empresa"
                           >
                             <Edit3 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-                            <span>Editar Sede</span>
+                            <span>Editar Empresa</span>
                           </Button>
 
                           {/* Pausar / Reanudar */}
@@ -920,18 +924,6 @@ export const AffiliatedParkingsModule = () => {
                             )}
                           </Button>
 
-                          {/* + Nueva Sucursal */}
-                          <Button
-                            type="button"
-                            onClick={() => handleOpenAdd(group)}
-                            variant="outline"
-                            size="sm"
-                            className="border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/30 hover:bg-emerald-50/50 dark:hover:bg-emerald-500/10 text-xs font-bold rounded-xl h-9 px-3 gap-1.5 cursor-pointer transition"
-                            title={`Agregar una nueva sucursal a ${group.companyName}`}
-                          >
-                            <Plus className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-                            <span>Sucursal</span>
-                          </Button>
 
                           {/* Eliminar Sede */}
                           <Button
@@ -1127,16 +1119,6 @@ export const AffiliatedParkingsModule = () => {
                           )}
                         </Button>
 
-                        {/* + Nueva Sede */}
-                        <Button
-                          type="button"
-                          onClick={() => handleOpenAdd(group)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-2xs rounded-xl h-9 px-3.5 shrink-0 cursor-pointer"
-                          title={`Agregar una nueva sede a ${group.companyName}`}
-                        >
-                          <Plus className="w-3.5 h-3.5 shrink-0" />
-                          <span>Nueva Sede</span>
-                        </Button>
 
                         {/* Eliminar Empresa */}
                         <Button
@@ -1794,27 +1776,27 @@ export const AffiliatedParkingsModule = () => {
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
               <Building2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span>Afiliar Nueva Sede Manualmente</span>
+              <span>Registrar Nueva Empresa</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Registra un nuevo local comercial y asígnale su cuenta de administrador de local.
+              Registra una empresa comercial y genera las credenciales de acceso para su Administrador Local.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreate} className="space-y-4 mt-2">
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Empresa / Razón Social (Matriz)</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre Comercial de la Empresa *</label>
               <Input
                 placeholder="Ej. Inversiones Plaza S.A.C."
                 value={formData.company_name}
                 onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                 className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
-              <span className="text-[10px] text-slate-400 dark:text-slate-500">Si pertenece a una empresa registrada, se agrupará bajo ella automáticamente.</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">Nombre con el que los conductores identificarán a la empresa.</span>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Nombre de la Sede / Sucursal *</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Razón Social / Titular *</label>
               <Input
                 required
                 placeholder="Ej. Smart Park Jr. Cusco"
@@ -1825,7 +1807,7 @@ export const AffiliatedParkingsModule = () => {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Dirección Exacta *</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Dirección de la Sede Principal *</label>
               <Input
                 required
                 placeholder="Ej. Jr. Cusco 320"
@@ -1877,80 +1859,66 @@ export const AffiliatedParkingsModule = () => {
               </div>
             </div>
 
-            {/* Credenciales de Acceso para el Local */}
+            {/* Credenciales de Acceso para el Administrador Local */}
             <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-3">
-              {formData.company_name ? (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-950 dark:text-emerald-300">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold">Credenciales Unificadas del Local</p>
-                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                      Esta sucursal pertenecerá al local <strong>"{formData.company_name}"</strong>. El Administrador del Local gestionará esta sucursal con sus credenciales actuales. No requiere crear usuarios adicionales.
-                    </p>
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Credenciales de Acceso para el Administrador Local
+                </span>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl space-y-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Correo de Acceso (Usuario) *</label>
+                  <Input
+                    type="email"
+                    required
+                    placeholder="admin@empresa.com"
+                    value={formData.adminEmail}
+                    onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
+                    className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Contraseña de Acceso *</label>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, adminPassword: generateSecurePassword('SP') })}
+                      className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Regenerar</span>
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      type={formData.showAdminPassword ? "text" : "password"}
+                      required
+                      value={formData.adminPassword}
+                      onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
+                      className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white pr-9 font-mono font-bold"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, showAdminPassword: !formData.showAdminPassword })}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {formData.showAdminPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
                 </div>
-              ) : (
-                <>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.createAdminAccount}
-                      onChange={(e) => setFormData({ ...formData, createAdminAccount: e.target.checked })}
-                      className="rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>Crear cuenta de acceso para el Administrador del Local</span>
-                    </span>
-                  </label>
+              </div>
 
-                  {formData.createAdminAccount && (
-                    <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl space-y-3">
-                      <div>
-                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Correo de Acceso (Usuario) *</label>
-                        <Input
-                          type="email"
-                          required={formData.createAdminAccount}
-                          placeholder="admin@cochera.com"
-                          value={formData.adminEmail}
-                          onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
-                          className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Contraseña de Acceso *</label>
-                          <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, adminPassword: generateSecurePassword('SP') })}
-                            className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer"
-                          >
-                            <Sparkles className="w-3 h-3" />
-                            <span>Regenerar</span>
-                          </button>
-                        </div>
-                        <div className="relative">
-                          <Input
-                            type={formData.showAdminPassword ? "text" : "password"}
-                            required={formData.createAdminAccount}
-                            value={formData.adminPassword}
-                            onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
-                            className="text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white pr-9 font-mono font-bold"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, showAdminPassword: !formData.showAdminPassword })}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                          >
-                            {formData.showAdminPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
+              {/* Nota sobre sucursales en rol local */}
+              <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-950 dark:text-emerald-300">
+                <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
+                  <strong>Gestión de Sucursales:</strong> Esta empresa se creará con su sede inicial. La creación de sucursales adicionales, tarifas por tipo de vehículo y planos CAD serán administradas directamente por el <strong>Administrador Local</strong> desde su propio panel.
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -1958,7 +1926,7 @@ export const AffiliatedParkingsModule = () => {
                 Cancelar
               </Button>
               <Button type="submit" className="flex-1 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs rounded-xl cursor-pointer">
-                Guardar Sede
+                Registrar Empresa
               </Button>
             </div>
           </form>
@@ -1971,9 +1939,9 @@ export const AffiliatedParkingsModule = () => {
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="max-w-md bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 rounded-3xl p-6 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">Editar Sede</DialogTitle>
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">Editar Empresa</DialogTitle>
             <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Modifica los datos operativos de esta sede afiliada.
+              Modifica los datos generales de esta empresa afiliada.
             </DialogDescription>
           </DialogHeader>
 

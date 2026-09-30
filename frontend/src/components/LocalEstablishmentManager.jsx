@@ -1396,7 +1396,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
               className="w-full lg:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs gap-2 shadow-lg shadow-emerald-600/20 rounded-xl h-10 px-5 shrink-0 whitespace-nowrap cursor-pointer"
             >
               <Plus className="w-4 h-4 shrink-0" />
-              <span>Nueva Sede</span>
+              <span>{role === 'local' ? 'Nueva Sucursal' : 'Nueva Sede'}</span>
             </Button>
           </div>
 

@@ -57,6 +57,8 @@ export const MapContainer3D = ({
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
+  const markerElementsRef = useRef({});
+  const lastCenteredParkingIdRef = useRef(null);
   const routesManagerRef = useRef(null);
   const mapEngineRef = useRef('mapbox'); // 'mapbox' | 'leaflet'
   const [mapEngine, setMapEngine] = useState('mapbox'); // 'mapbox' | 'leaflet'
@@ -287,18 +289,109 @@ export const MapContainer3D = ({
 
   const handleRecenter = () => {
     if (!mapRef.current) return;
+    lastCenteredParkingIdRef.current = null;
     if (mapEngine === 'mapbox') {
       mapRef.current.flyTo({
         center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
         zoom: 15.8,
         pitch: 0,
         bearing: 0,
-        duration: 600
+        duration: 950,
+        curve: 1.35,
+        essential: true,
+        easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
       });
     } else if (mapEngine === 'leaflet') {
-      mapRef.current.flyTo([AYACUCHO_CENTER.lat, AYACUCHO_CENTER.lng], 16, { duration: 0.6 });
+      mapRef.current.flyTo([AYACUCHO_CENTER.lat, AYACUCHO_CENTER.lng], 16, { duration: 1.0, easeLinearity: 0.25 });
     }
   };
+
+  // Centrado ultra-fluido y compensado en el eje óptico para una experiencia cinematográfica
+  const smoothCenterOnParking = (coords, parkingId, shouldOpenPopup = true) => {
+    if (!mapRef.current || !coords || coords.length < 2) return;
+
+    const containerHeight = mapContainerRef.current?.clientHeight || 450;
+    
+    // Cálculo responsive del offset vertical para que el pin + popup card queden
+    // perfectamente centrados en el eje visual de la pantalla sin desbordar los botones de acción.
+    let offsetY = -75;
+    if (containerHeight <= 380) {
+      offsetY = -55;
+    } else if (containerHeight <= 480) {
+      offsetY = -72;
+    } else if (containerHeight <= 620) {
+      offsetY = -88;
+    } else {
+      offsetY = -100;
+    }
+
+    if (mapEngineRef.current === 'mapbox') {
+      const map = mapRef.current;
+      const currentPitch = typeof map.getPitch === 'function' ? map.getPitch() : 0;
+      const currentBearing = typeof map.getBearing === 'function' ? map.getBearing() : 0;
+
+      map.flyTo({
+        center: coords,
+        zoom: 16.5,
+        offset: [0, offsetY],
+        pitch: Math.min(currentPitch, 22),
+        bearing: currentBearing,
+        duration: 1150,
+        curve: 1.35,
+        speed: 0.88,
+        essential: true,
+        easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+      });
+
+      if (shouldOpenPopup && parkingId && markersRef.current[parkingId]) {
+        const marker = markersRef.current[parkingId];
+        const popup = marker.getPopup ? marker.getPopup() : null;
+        if (popup && !popup.isOpen()) {
+          marker.togglePopup();
+        }
+      }
+    } else if (mapEngineRef.current === 'leaflet') {
+      const map = mapRef.current;
+      const targetZoom = 16.5;
+
+      try {
+        const targetPoint = map.project([coords[1], coords[0]], targetZoom).add([0, offsetY]);
+        const targetLatLng = map.unproject(targetPoint, targetZoom);
+
+        map.flyTo(targetLatLng, targetZoom, {
+          animate: true,
+          duration: 1.15,
+          easeLinearity: 0.25
+        });
+      } catch (err) {
+        map.flyTo([coords[1], coords[0]], targetZoom, { duration: 1.0 });
+      }
+
+      if (shouldOpenPopup && parkingId && markersRef.current[parkingId]) {
+        const marker = markersRef.current[parkingId];
+        if (marker.openPopup && !marker.isPopupOpen()) {
+          marker.openPopup();
+        }
+      }
+    }
+  };
+
+  // Resetear memoria de cochera centrada cuando el usuario arrastra libremente el mapa
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const handleDragStart = () => {
+      lastCenteredParkingIdRef.current = null;
+    };
+    if (map.on) {
+      map.on('dragstart', handleDragStart);
+    }
+    return () => {
+      if (map.off) {
+        map.off('dragstart', handleDragStart);
+      }
+    };
+  }, [mapReady, mapEngine]);
 
   // Escuchar petición externa para trazar ruta (ej: botón Cómo Llegar de la ficha)
   useEffect(() => {
@@ -493,7 +586,7 @@ export const MapContainer3D = ({
       const el = document.createElement('div');
       el.className = `marker-3d-pin cursor-pointer transition-transform duration-200 hover:scale-105 ${isSelected ? 'scale-110 z-30' : 'z-10'}`;
       el.innerHTML = `
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-md border transition-all ${
+        <div class="marker-pill-card flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-md border transition-all ${
           isSelected
             ? 'bg-slate-900 text-white border-emerald-400 ring-4 ring-emerald-400/30 scale-105'
             : 'bg-white text-slate-900 border-slate-200 hover:border-slate-300 hover:shadow-lg'
@@ -507,7 +600,7 @@ export const MapContainer3D = ({
       // Card Popup con diseño editorial, elegante y sin choque visual
       const popupContent = document.createElement('div');
       popupContent.innerHTML = `
-        <div style="font-family: inherit; width: 275px; overflow: hidden;">
+        <div style="font-family: inherit; width: 275px; overflow: hidden; border-radius: 18px;">
           <!-- Cabecera Fotográfica con Badges Flotantes -->
           <div style="position: relative; width: 100%; height: 125px; overflow: hidden; background: #0f172a;">
             <img 
@@ -547,24 +640,24 @@ export const MapContainer3D = ({
             </div>
           </div>
 
-          <!-- Cuerpo de Datos y Navegación -->
-          <div style="padding: 12px 14px 14px 14px; background: #ffffff;">
-            <div style="font-size: 13.5px; font-weight: 900; color: #0f172a; line-height: 1.25; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">
+          <!-- Cuerpo de Datos y Navegación Adaptable -->
+          <div style="padding: 12px 14px 14px 14px;" class="bg-white dark:bg-slate-900 transition-colors">
+            <div style="font-size: 13.5px; font-weight: 900; line-height: 1.25; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" class="text-slate-900 dark:text-white" title="${p.name}">
               ${p.name}
             </div>
-            <div style="font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 4px; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <div style="font-size: 11px; display: flex; align-items: center; gap: 4px; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" class="text-slate-500 dark:text-slate-400">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
               <span style="overflow: hidden; text-overflow: ellipsis;">${p.address || 'Ayacucho - Huamanga'}</span>
             </div>
 
             <!-- Acciones -->
             <div style="display: flex; gap: 6px;">
-              <button id="btn-route-${p.id}" type="button" style="flex: 1; height: 35px; background: #f8fafc; color: #334155; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease;" title="Trazar ruta">
+              <button id="btn-route-${p.id}" type="button" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700" style="flex: 1; height: 35px; border-radius: 12px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease;" title="Trazar ruta">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
                 <span>Ruta</span>
               </button>
               ${isUnavailable ? `
-              <button id="btn-quick-${p.id}" type="button" disabled style="flex: 1.1; height: 35px; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 10.5px; font-weight: 700; cursor: not-allowed; display: flex; align-items: center; justify-content: center; gap: 3px;" title="${isMaint ? 'En mantenimiento' : 'Cerrado'}">
+              <button id="btn-quick-${p.id}" type="button" disabled class="bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700" style="flex: 1.1; height: 35px; border-radius: 12px; font-size: 10.5px; font-weight: 700; cursor: not-allowed; display: flex; align-items: center; justify-content: center; gap: 3px;" title="${isMaint ? 'En mantenimiento' : 'Cerrado'}">
                 <span>${isMaint ? 'Mantenimiento' : 'Cerrado'}</span>
               </button>
               ` : `
@@ -573,7 +666,7 @@ export const MapContainer3D = ({
                 <span>Rápida</span>
               </button>
               `}
-              <button id="btn-select-${p.id}" type="button" style="flex: 1; height: 35px; background: #0f172a; color: #ffffff; border: none; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease;" title="Ver Plano 2D">
+              <button id="btn-select-${p.id}" type="button" class="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900" style="flex: 1; height: 35px; border: none; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease;" title="Ver Plano 2D">
                 <span>Plano</span>
               </button>
             </div>
@@ -616,12 +709,12 @@ export const MapContainer3D = ({
 
         const popup = new mapboxgl.Popup({
           offset: {
-            'top': [0, 12],
-            'top-left': [0, 12],
-            'top-right': [0, 12],
-            'bottom': [0, -20],
-            'bottom-left': [0, -20],
-            'bottom-right': [0, -20],
+            'top': [0, 10],
+            'top-left': [0, 10],
+            'top-right': [0, 10],
+            'bottom': [0, -18],
+            'bottom-left': [0, -18],
+            'bottom-right': [0, -18],
             'left': [16, 0],
             'right': [-16, 0]
           },
@@ -631,16 +724,10 @@ export const MapContainer3D = ({
         }).setDOMContent(popupContent);
         marker.setPopup(popup);
 
-        el.addEventListener('click', () => {
-          if (mapRef.current) {
-            mapRef.current.flyTo({
-              center: coords,
-              zoom: 16.8,
-              pitch: 0,
-              bearing: 0,
-              duration: 600
-            });
-          }
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          lastCenteredParkingIdRef.current = String(p.id);
+          smoothCenterOnParking(coords, p.id, false);
         });
 
         marker.getPopup().on('open', () => {
@@ -648,6 +735,7 @@ export const MapContainer3D = ({
         });
 
         markersRef.current[p.id] = marker;
+        markerElementsRef.current[p.id] = el;
       } else if (mapEngineRef.current === 'leaflet') {
         const customIcon = L.divIcon({
           html: el.outerHTML,
@@ -660,9 +748,8 @@ export const MapContainer3D = ({
         marker.bindPopup(popupContent.innerHTML, { maxWidth: 290, className: 'leaflet-smartpark-popup' });
 
         marker.on('click', () => {
-          if (mapRef.current) {
-            mapRef.current.flyTo([coords[1], coords[0]], 17, { duration: 0.6 });
-          }
+          lastCenteredParkingIdRef.current = String(p.id);
+          smoothCenterOnParking(coords, p.id, false);
         });
 
         marker.on('popupopen', () => {
@@ -670,9 +757,54 @@ export const MapContainer3D = ({
         });
 
         markersRef.current[p.id] = marker;
+        markerElementsRef.current[p.id] = marker.getElement ? marker.getElement() : null;
       }
     });
-  }, [filteredParkings, selectedParkingId, onSelectParking, activeRoute, targetDest, mapEngine]);
+  }, [filteredParkings, onSelectParking, activeRoute, targetDest, mapEngine]);
+
+  // Actualizar estilos del marcador seleccionado de forma no destructiva y reactiva
+  useEffect(() => {
+    Object.entries(markerElementsRef.current).forEach(([id, el]) => {
+      if (!el) return;
+      const isSelected = String(selectedParkingId) === String(id);
+      const pill = el.querySelector('.marker-pill-card');
+      if (pill) {
+        if (isSelected) {
+          pill.classList.add('bg-slate-900', 'text-white', 'border-emerald-400', 'ring-4', 'ring-emerald-400/30', 'scale-105');
+          pill.classList.remove('bg-white', 'text-slate-900', 'border-slate-200');
+          el.classList.add('scale-110', 'z-30');
+          el.classList.remove('z-10');
+        } else {
+          pill.classList.remove('bg-slate-900', 'text-white', 'border-emerald-400', 'ring-4', 'ring-emerald-400/30', 'scale-105');
+          pill.classList.add('bg-white', 'text-slate-900', 'border-slate-200');
+          el.classList.remove('scale-110', 'z-30');
+          el.classList.add('z-10');
+        }
+      }
+    });
+  }, [selectedParkingId]);
+
+  // Centrado ultra-fluido y apertura de popup cuando se selecciona una cochera
+  useEffect(() => {
+    if (!selectedParkingId || !mapRef.current || !mapReady) return;
+    if (lastCenteredParkingIdRef.current === String(selectedParkingId)) return;
+
+    const parking = filteredParkings.find(p => String(p.id) === String(selectedParkingId));
+    if (!parking) return;
+
+    const lat = Number(parking.latitude);
+    const lng = Number(parking.longitude);
+    const isAyacuchoCoords = !isNaN(lat) && !isNaN(lng) && lat <= -13.0 && lat >= -13.35 && lng <= -74.0 && lng >= -74.4;
+    const coords = isAyacuchoCoords ? [lng, lat] : (DEFAULT_PARKING_COORDS[parking.id] || [-74.2257, -13.1606]);
+
+    lastCenteredParkingIdRef.current = String(selectedParkingId);
+
+    const timer = setTimeout(() => {
+      smoothCenterOnParking(coords, parking.id, true);
+    }, 60);
+
+    return () => clearTimeout(timer);
+  }, [selectedParkingId, filteredParkings, mapReady]);
 
   const targetCoords = activeRoute?.destCoords || targetDest?.coords;
   const targetParking = parkings.find(p => {

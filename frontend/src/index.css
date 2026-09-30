@@ -809,7 +809,7 @@ html[data-theme="high-contrast"] * {
   background: #94a3b8;
 }
 
-/* ── Estilos Premium para Popups y Marcadores de Mapbox en Smart Park ── */
+/* ── Estilos Premium para Popups y Marcadores de Mapbox y Leaflet en Smart Park ── */
 .mapboxgl-popup {
   z-index: 50 !important;
   max-width: 300px !important;
@@ -821,6 +821,8 @@ html[data-theme="high-contrast"] * {
   background: #ffffff !important;
   box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(15, 23, 42, 0.08) !important;
   overflow: hidden !important;
+  animation: smartpark-popup-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transform-origin: center top;
 }
 
 .dark .mapboxgl-popup-content {
@@ -859,4 +861,45 @@ html[data-theme="high-contrast"] * {
 .dark .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
   border-left-color: #151d2f !important;
 }
+
+/* Animación de entrada suave para popups */
+@keyframes smartpark-popup-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Estilos espejo para Leaflet Popups */
+.leaflet-smartpark-popup .leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(15, 23, 42, 0.08) !important;
+  overflow: hidden !important;
+  animation: smartpark-popup-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.dark .leaflet-smartpark-popup .leaflet-popup-content-wrapper {
+  background: #151d2f !important;
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+.leaflet-smartpark-popup .leaflet-popup-content {
+  margin: 0 !important;
+  line-height: inherit !important;
+}
+
+.leaflet-smartpark-popup .leaflet-popup-tip {
+  background: #ffffff !important;
+}
+
+.dark .leaflet-smartpark-popup .leaflet-popup-tip {
+  background: #151d2f !important;
+}
+
 

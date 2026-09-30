@@ -79,17 +79,14 @@ export const ThemeProvider = ({ children }) => {
       if (saved && AVAILABLE_THEMES.some(t => t.id === saved)) {
         return saved;
       }
-      // Detección automática por horario si autoDark está activo
+      // Detección automática por horario solo si autoDark está activo
       const isAuto = localStorage.getItem(AUTO_DARK_STORAGE_KEY) === 'true';
       if (isAuto) {
         const hour = new Date().getHours();
         return (hour >= 19 || hour < 6) ? 'dark' : 'light';
       }
-      // Detección de preferencia del SO
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-      }
     } catch {}
+    // Por defecto al abrir por primera vez: Tema Claro
     return 'light';
   });
 

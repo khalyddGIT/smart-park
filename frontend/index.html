@@ -33,18 +33,7 @@
         try {
           var saved = localStorage.getItem('smart_park_theme');
           var validThemes = ['light', 'dark', 'midnight', 'high-contrast'];
-          var theme = (saved && validThemes.indexOf(saved) !== -1) ? saved : null;
-          if (!theme) {
-            var isAuto = localStorage.getItem('smart_park_theme_auto_dark') === 'true';
-            if (isAuto) {
-              var h = new Date().getHours();
-              theme = (h >= 19 || h < 6) ? 'dark' : 'light';
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-              theme = 'dark';
-            } else {
-              theme = 'light';
-            }
-          }
+          var theme = (saved && validThemes.indexOf(saved) !== -1) ? saved : 'light';
           var root = document.documentElement;
           root.setAttribute('data-theme', theme);
           if (theme !== 'light') {

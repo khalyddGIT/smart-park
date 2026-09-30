@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { setAccessToken, register as apiRegister, login as apiLogin, googleAuth as apiGoogleAuth, loginWithPinApi, createVehicle } from '../services/api';
 import api from '../services/api';
+import { useTheme } from './ThemeContext';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const { setTheme } = useTheme();
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('smart_park_user_session');
@@ -136,7 +138,9 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
         if (data?.access_token && data?.user) {
           setAccessToken(data.access_token);
           const u = { id: data.user.id, name: data.user.full_name || profile.name, email: data.user.email, avatar: data.user.avatar_url || profile.picture || null, role: data.user.role || 'user', isGoogleAuth: true };
-          setUser(u); setRole(u.role); setSessionValidated(true); return u;
+          setUser(u); setRole(u.role); setSessionValidated(true);
+          try { setTheme('dark'); } catch (e) {}
+          return u;
         }
       } catch (err) {
         console.warn('Google backend no disponible', err?.response?.data || err.message);
@@ -189,6 +193,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
       setRole(u.role);
       setSessionValidated(true);
       if (u.role === 'local' || u.role === 'platform') setPinVerified(true);
+      try { setTheme('dark'); } catch (e) {}
       return u;
     } catch (err) {
       if (err?.response?.status === 401 || err?.response?.status === 400) {
@@ -229,6 +234,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
           isGoogleAuth: false 
         };
         setUser(u); setRole('user'); setSessionValidated(true);
+        try { setTheme('dark'); } catch (e) {}
 
         // Si el conductor registró una placa real válida, registrarla automáticamente en su garaje
         if (cleanPlate) {
@@ -288,6 +294,7 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
       setRole(u.role);
       setPinVerified(true);
       setSessionValidated(true);
+      try { setTheme('dark'); } catch (e) {}
       try {
         localStorage.setItem('smart_park_user_session', JSON.stringify(u));
       } catch {}

@@ -902,33 +902,28 @@ const AppMain = () => {
                         </div>
                       )}
                       {/* Ficha Completa del Establecimiento Seleccionado */}
-                      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in">
+                      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-in fade-in transition-colors">
                         {/* Barra superior de navegación y estados */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+                        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800">
                           <div className="flex items-center gap-2">
                             <button 
                               type="button"
                               onClick={() => setSelectedParkingId(null)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold transition border border-slate-200 shadow-2xs cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white text-xs font-bold transition border border-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer"
                             >
                               <ArrowLeft className="w-4 h-4" />
                               <span>Cambiar de Sede</span>
                             </button>
-                            {selectedParking.level && (
-                              <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-200 text-slate-700">
-                                {selectedParking.level}
-                              </span>
-                            )}
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                               Operativo
                             </span>
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
-                              <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Tolerancia de espera: <strong className="text-slate-900">{selectedParking.tolerance || selectedParking.tolerance_minutes || 15} min</strong></span>
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-lg shadow-2xs">
+                              <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                              <span>Tolerancia de espera: <strong className="text-slate-900 dark:text-white">{selectedParking.tolerance || selectedParking.tolerance_minutes || 15} min</strong></span>
                             </span>
                           </div>
                         </div>
@@ -936,7 +931,7 @@ const AppMain = () => {
                         {/* Cuerpo principal con fotografía, datos y contacto */}
                         <div className="p-4 sm:p-5 flex flex-col md:flex-row gap-4 sm:gap-6 items-start">
                           {/* Fotografía de la Sede */}
-                          <div className="w-full md:w-56 h-40 md:h-36 shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 relative group shadow-2xs">
+                          <div className="w-full md:w-56 h-40 md:h-36 shrink-0 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 relative group shadow-2xs">
                             <img 
                               src={selectedParking.image || FALLBACK_PARKING_IMAGE} 
                               alt={selectedParking.name} 
@@ -958,54 +953,54 @@ const AppMain = () => {
                           <div className="flex-1 min-w-0 space-y-2.5">
                             <div>
                               <div className="flex flex-wrap items-baseline gap-2">
-                                <h2 className="text-lg font-black text-slate-900 leading-tight">
+                                <h2 className="text-lg font-black text-slate-900 dark:text-white leading-tight">
                                   {selectedParking.name}
                                 </h2>
                                 {(selectedParking.owner || selectedParking.ruc) && (
-                                  <span className="text-xs text-slate-500 font-medium">
+                                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                                     • {selectedParking.owner || 'Empresa'} {selectedParking.ruc ? `(RUC: ${selectedParking.ruc})` : ''}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-slate-600 font-medium flex items-center gap-1.5 mt-1">
-                                <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5 mt-1">
+                                <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                 <span>{selectedParking.address || 'Ayacucho - Huamanga'}</span>
                                 {selectedParking.reference && (
-                                  <span className="text-slate-400 font-normal">({selectedParking.reference})</span>
+                                  <span className="text-slate-400 dark:text-slate-500 font-normal">({selectedParking.reference})</span>
                                 )}
                               </p>
                               {selectedParking.schedule && (
-                                <p className="text-xs text-slate-600 font-medium flex items-center gap-1.5 mt-1">
-                                  <Clock className="w-4 h-4 text-indigo-600 shrink-0" />
-                                  <span>Horario de atención: <strong className="text-slate-800">{selectedParking.schedule}</strong></span>
+                                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5 mt-1">
+                                  <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                  <span>Horario de atención: <strong className="text-slate-800 dark:text-slate-200">{selectedParking.schedule}</strong></span>
                                 </p>
                               )}
                             </div>
 
                             {selectedParking.description && (
-                              <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+                              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
                                 {selectedParking.description}
                               </p>
                             )}
 
                             {/* Tarifas configuradas por el administrador de local */}
                             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                              <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mr-1">Tarifas:</span>
-                              <span className="text-[11px] font-mono font-semibold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                              <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 mr-1">Tarifas:</span>
+                              <span className="text-[11px] font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                                 Auto: S/ {(selectedParking.rate_auto ?? selectedParking.rate ?? 5).toFixed(2)}/h
                               </span>
-                              <span className="text-[11px] font-mono font-semibold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                              <span className="text-[11px] font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                                 SUV/Camioneta: S/ {(selectedParking.rate_suv ?? 7).toFixed(2)}/h
                               </span>
-                              <span className="text-[11px] font-mono font-semibold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                              <span className="text-[11px] font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                                 Moto: S/ {(selectedParking.rate_moto ?? 2.5).toFixed(2)}/h
                               </span>
-                              <span className="text-[11px] font-mono font-semibold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                              <span className="text-[11px] font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                                 Mototaxi: S/ {(selectedParking.rate_mototaxi ?? 3.5).toFixed(2)}/h
                               </span>
                               {selectedParking.night_shift_enabled && (
-                                <span className="text-[11px] font-mono font-semibold bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-lg border border-indigo-200 flex items-center gap-1">
-                                  <Moon className="w-3.5 h-3.5 text-indigo-500" />
+                                <span className="text-[11px] font-mono font-semibold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-2.5 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800/80 flex items-center gap-1">
+                                  <Moon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                                   Noche ({selectedParking.night_shift_start || '20:00'}-{selectedParking.night_shift_end || '06:00'}): +S/ {Number(selectedParking.night_shift_surcharge || 0).toFixed(2)}
                                 </span>
                               )}
@@ -1028,9 +1023,9 @@ const AppMain = () => {
                             {selectedParking.phone && (
                               <a
                                 href={`tel:${selectedParking.phone.replace(/\D/g, '')}`}
-                                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 shadow-2xs transition cursor-pointer"
+                                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-2xs transition cursor-pointer"
                               >
-                                <Phone className="w-4 h-4 text-slate-500" />
+                                <Phone className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                                 <span>{selectedParking.phone}</span>
                               </a>
                             )}
@@ -1046,10 +1041,10 @@ const AppMain = () => {
                             <button
                               type="button"
                               onClick={() => handleTraceRouteToParking(selectedParking)}
-                              className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 shadow-2xs transition cursor-pointer"
+                              className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800/80 shadow-2xs transition cursor-pointer"
                               title="Trazar ruta GPS en el mapa interactivo"
                             >
-                              <Navigation className="w-4 h-4 text-blue-600" />
+                              <Navigation className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                               <span>Cómo Llegar</span>
                             </button>
                           </div>

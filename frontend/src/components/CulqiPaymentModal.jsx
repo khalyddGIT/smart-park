@@ -649,19 +649,19 @@ export const CulqiPaymentModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleResetAndClose}>
-      <DialogContent className="max-w-md w-[95vw] sm:w-full rounded-2xl sm:rounded-3xl p-5 sm:p-6 bg-white border border-slate-200/80 shadow-2xl overflow-y-auto max-h-[92vh]">
+      <DialogContent className="max-w-md w-[95vw] sm:w-full rounded-2xl sm:rounded-3xl p-5 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xl overflow-y-auto max-h-[92vh] text-slate-900 dark:text-slate-100">
         
         {/* Cabecera Adaptativa Ejecutiva */}
-        <DialogHeader className="border-b border-slate-100 pb-4">
+        <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <MapPin className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span className="truncate max-w-[200px] sm:max-w-xs">{parkingName}</span>
-                <span className="text-slate-300">•</span>
-                <span className="text-slate-700 font-mono font-bold">Espacio {slotCode}</span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="text-slate-800 dark:text-slate-200 font-mono font-bold">Espacio {slotCode}</span>
               </span>
-              <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">
+              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
                 {paymentSuccess ? 'Comprobante de Pago' : 'Completar Pago'}
               </DialogTitle>
             </div>
@@ -669,20 +669,20 @@ export const CulqiPaymentModal = ({
             <div className="text-right">
               {paymentSuccess ? (
                 <div className="flex flex-col items-end">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 font-bold text-xs shadow-2xs">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 font-bold text-xs shadow-2xs">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>PAGADO</span>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400 mt-0.5 block">
+                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5 block">
                     Culqi Oficial
                   </span>
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                  <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
                     S/ {amountPen.toFixed(2)}
                   </div>
-                  <span className="text-[11px] font-medium text-slate-400 font-mono block">
+                  <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 font-mono block">
                     ≈ ${amountUsd.toFixed(2)} USD
                   </span>
                 </>
@@ -705,124 +705,114 @@ export const CulqiPaymentModal = ({
             `}} />
 
             {/* Badge Hero de Confirmación */}
-            <div className="text-center space-y-2 pt-1">
-              <div className="relative inline-flex items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200 shadow-inner">
-                  <CheckCircle2 className="w-7 h-7 shrink-0 text-emerald-600" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-emerald-100 flex items-center justify-center shadow-xs">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                </div>
+            <div className="text-center space-y-1.5 pt-1">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto border border-emerald-200 dark:border-emerald-800/80 shadow-inner">
+                <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+              <div className="space-y-0.5">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   ¡Pago confirmado!
                 </h3>
-                <p className="text-xs text-slate-500 max-w-[320px] mx-auto leading-relaxed">
-                  Tu plaza en <strong className="text-slate-700">{parkingName}</strong> ha sido reservada con éxito.
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[320px] mx-auto leading-relaxed">
+                  Tu plaza en <strong className="text-slate-700 dark:text-slate-200">{parkingName}</strong> ha sido reservada con éxito.
                 </p>
               </div>
             </div>
 
-            {/* Recibo Ticket Digital de Alta Fidelidad */}
+            {/* Recibo Ticket Digital de Alta Fidelidad - Compatible Dark/Light */}
             <div 
               id="culqi-digital-voucher"
-              className="relative bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 rounded-2xl border border-slate-200/90 p-4 shadow-sm overflow-hidden font-sans"
+              className="relative bg-slate-50 dark:bg-slate-950/70 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs overflow-hidden font-sans"
             >
-              {/* Cabecera del Comprobante */}
-              <div className="flex items-center justify-between pb-3 border-b border-dashed border-slate-200 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-md bg-slate-900 text-white flex items-center justify-center text-[10px] font-black tracking-tighter shadow-2xs">
-                    SP
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-800 tracking-tight block text-[11px]">
-                      COMPROBANTE ELECTRÓNICO
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {paymentSuccess.invoiceNumber || 'B001-000001'}
-                    </span>
-                  </div>
+              {/* Cabecera del Comprobante Limpia (Sin badges innecesarios ni slop) */}
+              <div className="flex items-center justify-between pb-3 border-b border-dashed border-slate-200 dark:border-slate-800 text-xs">
+                <div>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 tracking-tight block text-[11px] uppercase">
+                    Comprobante Electrónico
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                    {paymentSuccess.invoiceNumber || 'B001-000001'}
+                  </span>
                 </div>
-                <span className="px-2 py-0.5 rounded-md bg-emerald-100/80 text-emerald-800 text-[10px] font-mono font-bold tracking-wider uppercase border border-emerald-200">
-                  CULQI PERÚ
+                <span className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Pagado
                 </span>
               </div>
 
               {/* Grid de Metadatos de la Operación */}
               <div className="py-3 space-y-2.5 text-xs">
-                <div className="flex justify-between items-center text-slate-600">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                     <span>Establecimiento:</span>
                   </span>
-                  <span className="font-semibold text-slate-900 text-right max-w-[200px] truncate">
+                  <span className="font-semibold text-slate-900 dark:text-white text-right max-w-[200px] truncate">
                     {parkingName}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center text-slate-600">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <Car className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Car className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                     <span>Espacio reservado:</span>
                   </span>
-                  <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px] shadow-2xs">
+                  <span className="font-mono font-bold text-slate-900 dark:text-emerald-400 text-xs">
                     Espacio {slotCode}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center text-slate-600">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <Smartphone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                     <span>Método de pago:</span>
                   </span>
-                  <span className="font-semibold text-slate-800">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
                     {paymentSuccess.method}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center text-slate-600">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                     <span>Fecha y hora:</span>
                   </span>
-                  <span className="font-mono text-[11px] text-slate-700">
+                  <span className="font-mono text-[11px] text-slate-700 dark:text-slate-300">
                     {paymentSuccess.date}
                   </span>
                 </div>
 
-                {/* ID Transacción Culqi con Botón de Copiado */}
-                <div className="flex justify-between items-center pt-0.5 text-slate-600">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <Hash className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                {/* ID Transacción con Botón de Copiado */}
+                <div className="flex justify-between items-center pt-0.5">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Hash className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                     <span>Transacción:</span>
                   </span>
                   <button
                     type="button"
                     onClick={handleCopyTransactionId}
-                    className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-slate-700 bg-white hover:bg-slate-50 px-2 py-1 rounded border border-slate-200 transition cursor-pointer shadow-2xs group"
+                    className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-850 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition cursor-pointer shadow-2xs group"
                     title="Clic para copiar ID de transacción"
                   >
                     <span className="truncate max-w-[130px]">
                       {paymentSuccess.chargeId || paymentSuccess.capture_id || paymentSuccess.order_id}
                     </span>
                     {copiedId ? (
-                      <span className="inline-flex items-center text-[10px] text-emerald-600 font-bold gap-0.5">
+                      <span className="inline-flex items-center text-[10px] text-emerald-600 dark:text-emerald-400 font-bold gap-0.5">
                         <Check className="w-3 h-3" /> Copiado
                       </span>
                     ) : (
-                      <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
+                      <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
                     )}
                   </button>
                 </div>
 
                 {paymentSuccess.authorizationCode && (
-                  <div className="flex justify-between items-center text-slate-600">
-                    <span className="text-slate-500 flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                       <span>Autorización:</span>
                     </span>
-                    <span className="font-mono text-[11px] font-medium text-slate-700">
+                    <span className="font-mono text-[11px] font-medium text-slate-700 dark:text-slate-300">
                       {paymentSuccess.authorizationCode}
                     </span>
                   </div>
@@ -830,28 +820,24 @@ export const CulqiPaymentModal = ({
               </div>
 
               {/* Total Destacado */}
-              <div className="pt-3 border-t border-dashed border-slate-200 flex items-center justify-between">
+              <div className="pt-3 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider block font-bold">
                     Total Liquidado
                   </span>
-                  <span className="text-[10px] text-slate-500">Incluye IGV (18%)</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">Incluye IGV (18%)</span>
                 </div>
                 <div className="text-right">
-                  <div className="text-xl font-black text-emerald-700 font-mono tracking-tight">
+                  <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
                     S/ {Number(paymentSuccess.amount).toFixed(2)}
                   </div>
-                  <span className="text-[9px] font-mono text-emerald-600 font-semibold inline-flex items-center gap-1 justify-end">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                    <span>Operación Exitosa</span>
-                  </span>
                 </div>
               </div>
             </div>
 
             {/* Aviso Informativo del Pase Digital */}
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center gap-2 text-xs text-slate-600">
-              <QrCode className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+              <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span className="text-[11px] font-medium">Presenta tu pase QR al ingresar a la garita.</span>
             </div>
 
@@ -861,15 +847,15 @@ export const CulqiPaymentModal = ({
                 type="button"
                 variant="outline"
                 onClick={() => window.print()}
-                className="py-3 px-4 text-xs font-semibold rounded-xl border-slate-200 hover:bg-slate-100/80 cursor-pointer gap-1.5 text-slate-700 transition shadow-2xs"
+                className="py-3 px-4 text-xs font-semibold rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer gap-1.5 transition shadow-2xs"
               >
-                <Printer className="w-3.5 h-3.5 text-slate-500" />
+                <Printer className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                 <span>Imprimir</span>
               </Button>
               <Button
                 type="button"
                 onClick={handleProceedToPass}
-                className="flex-1 py-3 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl cursor-pointer shadow-sm gap-2 transition active:scale-[0.99] group flex items-center justify-center"
+                className="flex-1 py-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl cursor-pointer shadow-sm gap-2 transition active:scale-[0.99] group flex items-center justify-center"
               >
                 <span>Ver Pase de Acceso</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -880,14 +866,14 @@ export const CulqiPaymentModal = ({
           <div className="space-y-4 pt-1">
             
             {/* Segmented Control - Métodos de Pago */}
-            <div className="grid grid-cols-3 p-1 bg-slate-100/90 rounded-xl gap-1">
+            <div className="grid grid-cols-3 p-1 bg-slate-100/90 dark:bg-slate-800 rounded-xl gap-1">
               <button
                 type="button"
                 onClick={() => { setActiveMethod('card'); setErrorMsg(''); }}
                 className={`py-2 px-2 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   activeMethod === 'card' 
-                    ? 'bg-white text-slate-900 shadow-xs' 
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
                 <CreditCard className="w-3.5 h-3.5" />
@@ -899,11 +885,11 @@ export const CulqiPaymentModal = ({
                 onClick={() => { setActiveMethod('yape'); setErrorMsg(''); }}
                 className={`py-2 px-2 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   activeMethod === 'yape' 
-                    ? 'bg-white text-purple-900 shadow-xs' 
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-300 shadow-xs' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
-                <Smartphone className="w-3.5 h-3.5 text-purple-600" />
+                <Smartphone className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                 <span>Yape</span>
               </button>
 
@@ -912,8 +898,8 @@ export const CulqiPaymentModal = ({
                 onClick={() => { setActiveMethod('paypal'); setErrorMsg(''); }}
                 className={`py-2 px-2 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   activeMethod === 'paypal' 
-                    ? 'bg-white text-[#003087] shadow-xs' 
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-white dark:bg-slate-900 text-[#003087] dark:text-sky-400 shadow-xs' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="7.056 3 37.351 45" className="w-3.5 h-3.5">
@@ -927,8 +913,8 @@ export const CulqiPaymentModal = ({
 
             {/* Mensaje de Error Limpio */}
             {errorMsg && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs flex items-start gap-2 animate-in fade-in">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200/80 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
                 <span className="leading-snug">{errorMsg}</span>
               </div>
             )}
@@ -937,8 +923,8 @@ export const CulqiPaymentModal = ({
             {activeMethod === 'card' && (
               <div className="space-y-4 pt-1">
                 {/* Banner de Ayuda Rápida Sandbox para Tarjeta */}
-                <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200 text-slate-800 text-[11px]">
-                  <span className="font-mono text-[11px] text-slate-600">Demo: 4111... • 12/28 • 123</span>
+                <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-[11px]">
+                  <span className="font-mono text-[11px] text-slate-600 dark:text-slate-400">Demo: 4111... • 12/28 • 123</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -948,7 +934,7 @@ export const CulqiPaymentModal = ({
                       setCardHolder('CARLOS MENDOZA');
                       setErrorMsg('');
                     }}
-                    className="px-2 py-0.5 rounded-md bg-white border border-slate-300 text-slate-700 text-[10px] font-bold hover:bg-slate-50 cursor-pointer"
+                    className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-[10px] font-bold hover:bg-slate-50 dark:hover:bg-slate-600 cursor-pointer"
                   >
                     Llenar datos
                   </button>
@@ -956,7 +942,7 @@ export const CulqiPaymentModal = ({
 
                 <form onSubmit={handleProcessCulqiCard} className="space-y-3">
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                       Número de Tarjeta
                     </label>
                     <div className="relative">
@@ -965,7 +951,7 @@ export const CulqiPaymentModal = ({
                         placeholder="4111 1111 1111 1111"
                         value={cardNumber}
                         onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                        className="font-mono text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white pr-14"
+                        className="font-mono text-xs h-10 bg-slate-50/60 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-850 pr-14"
                         required
                       />
                       <span className="absolute right-3 top-2.5 text-[10px] font-mono font-bold text-slate-400">
@@ -976,7 +962,7 @@ export const CulqiPaymentModal = ({
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                         Vencimiento
                       </label>
                       <Input
@@ -985,12 +971,12 @@ export const CulqiPaymentModal = ({
                         maxLength={5}
                         value={cardExpiry}
                         onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                        className="font-mono text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white text-center"
+                        className="font-mono text-xs h-10 bg-slate-50/60 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-850 text-center"
                         required
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                         CVV
                       </label>
                       <div className="relative">
@@ -1000,13 +986,13 @@ export const CulqiPaymentModal = ({
                           maxLength={4}
                           value={cardCvv}
                           onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
-                          className="font-mono text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white text-center pr-8"
+                          className="font-mono text-xs h-10 bg-slate-50/60 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-850 text-center pr-8"
                           required
                         />
                         <button
                           type="button"
                           onClick={() => setShowCVV(!showCVV)}
-                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                         >
                           {showCVV ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         </button>
@@ -1015,7 +1001,7 @@ export const CulqiPaymentModal = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                       Nombre en la Tarjeta
                     </label>
                     <Input
@@ -1023,7 +1009,7 @@ export const CulqiPaymentModal = ({
                       placeholder="CARLOS MENDOZA"
                       value={cardHolder}
                       onChange={(e) => setCardHolder(cleanCardHolder(e.target.value))}
-                      className="text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white uppercase font-medium"
+                      className="text-xs h-10 bg-slate-50/60 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-850 uppercase font-medium"
                       required
                     />
                   </div>
@@ -1031,7 +1017,7 @@ export const CulqiPaymentModal = ({
                   <Button
                     type="submit"
                     disabled={isProcessing}
-                    className="w-full py-3 h-11 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl cursor-pointer shadow-sm gap-2 mt-3 transition active:scale-[0.99]"
+                    className="w-full py-3 h-11 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl cursor-pointer shadow-sm gap-2 mt-3 transition active:scale-[0.99]"
                   >
                     {isProcessing ? (
                       <>
@@ -1040,7 +1026,7 @@ export const CulqiPaymentModal = ({
                       </>
                     ) : (
                       <>
-                        <Lock className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                        <Lock className="w-3.5 h-3.5 shrink-0 text-emerald-200" />
                         <span>Pagar S/ {amountPen.toFixed(2)}</span>
                       </>
                     )}
@@ -1048,11 +1034,11 @@ export const CulqiPaymentModal = ({
                 </form>
 
                 {/* Alternativa con checkout modal de Culqi */}
-                <div className="pt-2 border-t border-slate-100 text-center">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-center">
                   <button
                     type="button"
                     onClick={handleOpenCulqiCheckout}
-                    className="text-[11px] font-medium text-slate-500 hover:text-slate-800 inline-flex items-center gap-1 cursor-pointer transition"
+                    className="text-[11px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 inline-flex items-center gap-1 cursor-pointer transition"
                   >
                     <span>O usar ventana emergente oficial de Culqi</span>
                     <ExternalLink className="w-3 h-3" />
@@ -1065,10 +1051,10 @@ export const CulqiPaymentModal = ({
             {activeMethod === 'yape' && (
               <div className="space-y-4 pt-1">
                 {/* Banner de Ayuda Rápida Sandbox */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50 border border-purple-100 text-purple-900 text-xs">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800/60 text-purple-900 dark:text-purple-200 text-xs">
                   <div className="space-y-0.5">
                     <span className="font-semibold block text-[11px]">Prueba en Sandbox (Yape BCP)</span>
-                    <span className="font-mono text-[10px] text-purple-700">900 000 001 • OTP 123456</span>
+                    <span className="font-mono text-[10px] text-purple-700 dark:text-purple-300">900 000 001 • OTP 123456</span>
                   </div>
                   <button
                     type="button"
@@ -1077,7 +1063,7 @@ export const CulqiPaymentModal = ({
                       setYapeOtp('123456');
                       setErrorMsg('');
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-white border border-purple-200 text-purple-900 text-[11px] font-semibold hover:bg-purple-100/50 cursor-pointer shadow-2xs transition"
+                    className="px-2.5 py-1 rounded-lg bg-white dark:bg-purple-900 border border-purple-200 dark:border-purple-700 text-purple-900 dark:text-purple-200 text-[11px] font-semibold hover:bg-purple-100/50 dark:hover:bg-purple-800 cursor-pointer shadow-2xs transition"
                   >
                     Cargar
                   </button>
@@ -1085,7 +1071,7 @@ export const CulqiPaymentModal = ({
 
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                       Número de Celular Yape
                     </label>
                     <Input
@@ -1094,15 +1080,15 @@ export const CulqiPaymentModal = ({
                       placeholder="900 000 001"
                       value={formatPhone(yapePhone)}
                       onChange={(e) => setYapePhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
-                      className="font-mono text-xs h-10 bg-slate-50/60 border-slate-200 focus:bg-white"
+                      className="font-mono text-xs h-10 bg-slate-50/60 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-850"
                     />
-                    <span className="text-[10px] text-slate-400 block mt-1">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-1">
                       Exactamente 9 dígitos (ej. 900 000 001)
                     </span>
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                       Código de Aprobación
                     </label>
                     <Input
@@ -1111,9 +1097,9 @@ export const CulqiPaymentModal = ({
                       placeholder="123456"
                       value={yapeOtp}
                       onChange={(e) => setYapeOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="font-mono text-center text-sm font-bold tracking-widest h-11 bg-slate-50/60 border-slate-200 focus:bg-white"
+                      className="font-mono text-center text-sm font-bold tracking-widest h-11 bg-slate-50/60 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-850"
                     />
-                    <span className="text-[10px] text-slate-400 block mt-1">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-1">
                       Código de 6 dígitos generado en tu app Yape (Menú → Código de aprobación)
                     </span>
                   </div>
@@ -1143,7 +1129,7 @@ export const CulqiPaymentModal = ({
             {/* 3. TAB PAYPAL */}
             {activeMethod === 'paypal' && (
               <div className="space-y-4 pt-1">
-                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between text-xs text-blue-900">
+                <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800/60 flex items-center justify-between text-xs text-blue-900 dark:text-blue-200">
                   <span className="font-medium">Total a debitar en PayPal:</span>
                   <span className="font-mono font-bold text-sm">${amountUsd.toFixed(2)} USD</span>
                 </div>
@@ -1151,13 +1137,13 @@ export const CulqiPaymentModal = ({
                 <div className="space-y-3">
                   {paypalSdkLoading && (
                     <div className="p-6 text-center space-y-2">
-                      <Loader2 className="w-5 h-5 animate-spin text-blue-600 mx-auto" />
-                      <p className="text-xs text-slate-500">Cargando PayPal...</p>
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-600 dark:text-blue-400 mx-auto" />
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Cargando PayPal...</p>
                     </div>
                   )}
 
                   {paypalSdkError && (
-                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
+                    <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-800 dark:text-rose-200">
                       {paypalSdkError}
                     </div>
                   )}
@@ -1170,8 +1156,8 @@ export const CulqiPaymentModal = ({
                   />
 
                   {isProcessing && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-center gap-2 font-medium">
-                      <Loader2 className="w-4 h-4 shrink-0 animate-spin text-blue-700" />
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-900 dark:text-blue-200 flex items-center justify-center gap-2 font-medium">
+                      <Loader2 className="w-4 h-4 shrink-0 animate-spin text-blue-700 dark:text-blue-400" />
                       <span>{processingStep || 'Procesando con PayPal...'}</span>
                     </div>
                   )}

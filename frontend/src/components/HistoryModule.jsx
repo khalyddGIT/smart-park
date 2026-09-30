@@ -580,28 +580,28 @@ export const HistoryModule = () => {
 
             <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 font-mono text-xs space-y-2.5 my-2">
               <div className="flex justify-between">
-                <span className="text-slate-500">Cochera:</span>
+                <span className="text-slate-500 dark:text-slate-400">Cochera:</span>
                 <span className="font-bold text-slate-900 dark:text-white text-right max-w-[200px] truncate">{selectedReceipt.parking}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Fecha de Estancia:</span>
+                <span className="text-slate-500 dark:text-slate-400">Fecha de Estancia:</span>
                 <span className="font-bold text-slate-900 dark:text-white">{selectedReceipt.date}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Horario de Permanencia:</span>
+                <span className="text-slate-500 dark:text-slate-400">Horario de Permanencia:</span>
                 <span className="font-bold text-slate-900 dark:text-white">{selectedReceipt.time}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Placa Vehicular:</span>
+                <span className="text-slate-500 dark:text-slate-400">Placa Vehicular:</span>
                 <strong className="text-slate-900 dark:text-white bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">{selectedReceipt.plate}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Medio de Pago:</span>
+                <span className="text-slate-500 dark:text-slate-400">Medio de Pago:</span>
                 <span className="font-bold text-slate-900 dark:text-white">{selectedReceipt.paymentMethod || 'Tarjeta / QR'}</span>
               </div>
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between text-sm font-black text-slate-900 dark:text-white">
                 <span>TOTAL (INC. IGV 18%):</span>
-                <span className="text-emerald-700 dark:text-emerald-400">S/ {Number(selectedReceipt.cost).toFixed(2)}</span>
+                <span className="text-emerald-600 dark:text-emerald-400">S/ {Number(selectedReceipt.cost).toFixed(2)}</span>
               </div>
             </div>
 
@@ -609,15 +609,15 @@ export const HistoryModule = () => {
               <Button
                 variant="outline"
                 onClick={() => setSelectedReceipt(null)}
-                className="flex-1 rounded-xl text-xs font-bold"
+                className="flex-1 rounded-xl text-xs font-bold border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
               >
                 Cerrar
               </Button>
               <Button
                 onClick={() => window.print()}
-                className="flex-1 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white gap-1.5"
+                className="flex-1 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5"
               >
-                <Printer className="w-4 h-4 shrink-0 text-emerald-400" />
+                <Printer className="w-4 h-4 shrink-0 text-white" />
                 <span>Imprimir Boleta</span>
               </Button>
             </div>

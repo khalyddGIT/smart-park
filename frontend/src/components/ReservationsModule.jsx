@@ -2423,35 +2423,35 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               )}
 
               {/* Datos del Ticket */}
-              <div className="mt-3 space-y-2 text-xs font-mono bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+              <div className="mt-3 space-y-2 text-xs font-mono bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Plaza Asignada:</span>
-                  <strong className="text-slate-900 text-sm">{selectedReceipt.slot}</strong>
+                  <span className="text-slate-500 dark:text-slate-400">Plaza Asignada:</span>
+                  <strong className="text-slate-900 dark:text-white text-sm">{selectedReceipt.slot}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Placa Vehicular:</span>
-                  <strong className="text-slate-900">{selectedReceipt.plate}</strong>
+                  <span className="text-slate-500 dark:text-slate-400">Placa Vehicular:</span>
+                  <strong className="text-slate-900 dark:text-white">{selectedReceipt.plate}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Conductor:</span>
-                  <span className="text-slate-800 truncate max-w-[150px]">{selectedReceipt.customerName}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Conductor:</span>
+                  <span className="text-slate-800 dark:text-slate-200 truncate max-w-[150px]">{selectedReceipt.customerName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Fecha:</span>
-                  <span className="text-slate-800 font-bold">{formatDateShort(selectedReceipt.startTime)}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Fecha:</span>
+                  <span className="text-slate-800 dark:text-slate-200 font-bold">{formatDateShort(selectedReceipt.startTime)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Ingreso:</span>
-                  <span className="text-slate-800">{formatTime12h(selectedReceipt.startTime)}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Ingreso:</span>
+                  <span className="text-slate-800 dark:text-slate-200">{formatTime12h(selectedReceipt.startTime)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Salida real:</span>
-                  <span className="text-slate-800">{selectedReceipt.actualExit ? formatTime12h(selectedReceipt.actualExit) : 'Aún en curso'}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Salida real:</span>
+                  <span className="text-slate-800 dark:text-slate-200">{selectedReceipt.actualExit ? formatTime12h(selectedReceipt.actualExit) : 'Aún en curso'}</span>
                 </div>
-                <div className="h-px bg-slate-200 my-1" />
-                <div className="flex justify-between text-sm font-black text-slate-900">
+                <div className="h-px bg-slate-200 dark:bg-slate-700 my-1" />
+                <div className="flex justify-between text-sm font-black text-slate-900 dark:text-white">
                   <span>{isCancelled ? 'Total a Cobrar:' : 'Total Cobrado:'}</span>
-                  <span className={isCancelled ? 'text-rose-600 font-bold' : 'text-emerald-700'}>
+                  <span className={isCancelled ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-emerald-700 dark:text-emerald-400'}>
                     {isCancelled ? 'S/ 0.00 (Anulado)' : `S/ ${Number(selectedReceipt.cost).toFixed(2)}`}
                   </span>
                 </div>

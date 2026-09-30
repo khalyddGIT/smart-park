@@ -2233,7 +2233,8 @@ export const EstablishmentProvider = ({ children }) => {
     if (!targetId) return { ok: false, message: 'Reserva no encontrada.' };
 
     try {
-      const payload = hoursStay == null ? {} : { hours_stay: Number(hoursStay) };
+      const isOpen = hoursStay == null || hoursStay === 'open' || hoursStay === false;
+      const payload = isOpen ? { is_open_stay: true } : { hours_stay: Number(hoursStay), is_open_stay: false };
       const res = await api.put(`/reservations/${targetId}/check-in`, payload);
       if (res.data) {
         const updated = mapServerReservation(res.data);

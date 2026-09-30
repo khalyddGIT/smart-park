@@ -645,6 +645,7 @@ class ReservationStayUpdate(BaseModel):
 class ReservationCheckIn(BaseModel):
     hours_stay: Optional[float] = Field(default=None, gt=0, le=168)
     minutes_stay: Optional[int] = Field(default=None, gt=0, le=10080)
+    is_open_stay: Optional[bool] = None
 
 class ReservationOvertimePayment(BaseModel):
     amount: float = Field(gt=0, description="Monto a pagar por sobreestadía en PEN")

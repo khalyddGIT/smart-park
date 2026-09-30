@@ -466,6 +466,7 @@ async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
         "reservation_type": getattr(reservation, "reservation_type", "standard") or "standard",
         "subscription_months": getattr(reservation, "subscription_months", 1) or 1,
         "is_subscription": bool(getattr(reservation, "is_subscription", False)),
+        "is_open_stay": bool(getattr(reservation, "is_open_stay", False)),
     }
 
 @router.get("/{reservation_id}", response_model=ReservationResponse)
@@ -928,7 +929,9 @@ async def check_in_reservation(
     billing_unit = (getattr(reservation, "billing_unit", None) or (parking.billing_unit if parking else "hour") or "hour").strip().lower()
     requested_minutes = None
     if checkin_in:
-        if checkin_in.minutes_stay is not None:
+        if getattr(checkin_in, "is_open_stay", None) is True:
+            requested_minutes = None
+        elif checkin_in.minutes_stay is not None:
             requested_minutes = int(checkin_in.minutes_stay)
         elif checkin_in.hours_stay is not None:
             requested_minutes = max(1, int(round(float(checkin_in.hours_stay) * 60)))
@@ -993,7 +996,8 @@ async def check_in_reservation(
             "license_plate": reservation.license_plate,
             "actual_entry": reservation.actual_entry.isoformat() if reservation.actual_entry else None,
             "start_time": reservation.start_time.isoformat() if reservation.start_time else None,
-            "end_time": reservation.end_time.isoformat() if reservation.end_time else None
+            "end_time": reservation.end_time.isoformat() if reservation.end_time else None,
+            "is_open_stay": bool(reservation.is_open_stay)
         }
         await realtime.broadcast("reservations:updated", broadcast_payload)
         await realtime.broadcast("spaces:update", broadcast_payload)

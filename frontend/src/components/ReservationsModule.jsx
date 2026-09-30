@@ -48,7 +48,8 @@ import {
   Hash,
   AlertTriangle,
   Crown,
-  Navigation
+  Navigation,
+  Zap
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -76,6 +77,21 @@ export const calculateLiveEffectiveCost = (res, now = Date.now()) => {
     return Number((billedHours * hourlyRate + reservationFee).toFixed(2));
   }
   return baseCost;
+};
+
+export const getHourlyRateForVehicle = (est, vehicleType = 'auto') => {
+  if (!est) return 5.0;
+  const vtype = String(vehicleType || 'auto').toLowerCase();
+  if (vtype.includes('suv') || vtype.includes('camioneta') || vtype.includes('camion')) {
+    return Number(est.rate_suv ?? est.rate_auto ?? est.rate ?? est.hourly_rate ?? 7.0);
+  }
+  if (vtype.includes('mototaxi')) {
+    return Number(est.rate_mototaxi ?? est.rate_moto ?? est.rate ?? est.hourly_rate ?? 3.5);
+  }
+  if (vtype.includes('moto')) {
+    return Number(est.rate_moto ?? est.rate ?? est.hourly_rate ?? 3.0);
+  }
+  return Number(est.rate_auto ?? est.rate ?? est.hourly_rate ?? 5.0);
 };
 
 export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations }) => {
@@ -139,9 +155,11 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   const [plate, setPlate] = useState('');
   const [feedbackMessage, setFeedbackMessage] = useState('');
 
-  // Modal de Check-in para Garita: confirma el ingreso e inicia el reloj real.
+  // Modal de Check-in para Garita: confirma el ingreso e inicia el reloj real con duración o tiempo libre.
   const [checkInTarget, setCheckInTarget] = useState(null);
+  const [checkInStayMode, setCheckInStayMode] = useState('open'); // 'fixed' | 'open'
   const [checkInHours, setCheckInHours] = useState(2);
+  const [checkInVehicleType, setCheckInVehicleType] = useState('auto');
   const [isProcessingCheckIn, setIsProcessingCheckIn] = useState(false);
 
   // Modal de Pase QR
@@ -182,6 +200,24 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
            myEstablishments[0] ||
            establishments[0];
   }, [myEstablishments, establishments, currentParkingId]);
+
+  const effectiveHourlyRate = useMemo(() => {
+    return getHourlyRateForVehicle(activeLocalEst, checkInVehicleType);
+  }, [activeLocalEst, checkInVehicleType]);
+
+  const estimatedExitTime = useMemo(() => {
+    if (checkInStayMode === 'open') return null;
+    const nowMs = Date.now();
+    const durationMs = Math.max(0.5, Number(checkInHours) || 1) * 3600000;
+    return new Date(nowMs + durationMs);
+  }, [checkInStayMode, checkInHours]);
+
+  const estimatedStayCost = useMemo(() => {
+    if (checkInStayMode === 'open') return null;
+    const hours = Math.max(0.5, Number(checkInHours) || 1);
+    const fee = Number(activeLocalEst?.reservation_fee || 0);
+    return Number((hours * effectiveHourlyRate + fee).toFixed(2));
+  }, [checkInStayMode, checkInHours, effectiveHourlyRate, activeLocalEst]);
 
   // Hidratar plano CAD automáticamente cuando no se hayan cargado los elements y refrescar periódicamente
   useEffect(() => {
@@ -251,20 +287,21 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     return candidate || null;
   }, [reservations, cleanEntryQuery, activeLocalEst]);
 
-  // Acción rápida de Check-in (Ingreso)
-  const handleQuickCheckIn = async (resTarget) => {
+  // Acción de Check-in (Ingreso): abre el modal interactivo con selección de horas o tiempo libre
+  const handleQuickCheckIn = (resTarget) => {
     if (!resTarget) return;
-    setIsProcessingCheckIn(true);
-    const resp = await checkInReservation(resTarget.code);
-    setIsProcessingCheckIn(false);
-    if (resp?.ok) {
-      setFeedbackMessage(`✓ ¡Ingreso registrado! Vehículo ${resTarget.plate} en plaza ${resTarget.slot}.`);
-      setEntrySearchQuery('');
-      if (activeLocalEst?.id && ensureFloorPlan) ensureFloorPlan(activeLocalEst.id, true);
-    } else {
-      setFeedbackMessage(resp?.message || 'Error al registrar ingreso.');
-    }
-    setTimeout(() => setFeedbackMessage(''), 4000);
+    const isAlreadyOpen = Boolean(resTarget.isOpenStay || resTarget.is_open_stay || (!resTarget.hours && !resTarget.estimatedHours));
+    setCheckInTarget({
+      ...resTarget,
+      isWalkIn: false,
+      plate: (resTarget.plate || resTarget.license_plate || '').toUpperCase(),
+      slot: resTarget.slot || resTarget.slotCode || '',
+      customerName: resTarget.customerName || 'Conductor Registrado',
+      vehicleType: resTarget.vehicleType || resTarget.vehicle_type || 'auto'
+    });
+    setCheckInStayMode(isAlreadyOpen ? 'open' : 'fixed');
+    setCheckInHours(Math.max(1, Number(resTarget.hours || resTarget.estimatedHours || 2)));
+    setCheckInVehicleType(resTarget.vehicleType || resTarget.vehicle_type || 'auto');
   };
 
   // Acción rápida de Check-out (Salida)
@@ -279,8 +316,8 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     setTimeout(() => setFeedbackMessage(''), 4000);
   };
 
-  // Acción rápida de Ingreso Directo Presencial (Walk-in)
-  const handleQuickWalkIn = async (customPlate = '', targetSlot = '') => {
+  // Acción de Ingreso Directo Presencial (Walk-in): abre el modal interactivo para configurar horas o tiempo libre
+  const handleQuickWalkIn = (customPlate = '', targetSlot = '') => {
     const slotCode = targetSlot || inspectedSlotCode || freeLocalSlots[0]?.code;
     const plateToUse = (customPlate || entrySearchQuery).trim().toUpperCase();
     if (!plateToUse) {
@@ -293,31 +330,84 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
       setTimeout(() => setFeedbackMessage(''), 3000);
       return;
     }
-    const now = new Date();
-    const newRes = await createReservation({
-      parkingId: activeLocalEst.id,
-      parkingName: activeLocalEst.name,
-      slotCode: slotCode,
-      customerName: 'Conductor en Garita',
-      customerPhone: '+51 966 000 000',
+    setCheckInTarget({
+      isWalkIn: true,
       plate: plateToUse,
-      hours: null,
-      totalCost: Number(activeLocalEst?.reservation_fee || 0),
-      startTime: now.toISOString(),
-      expiresAt: null,
-      isOpenStay: true
+      slot: slotCode,
+      customerName: 'Conductor en Garita',
+      vehicleType: 'auto',
+      parking: activeLocalEst?.name || 'Cochera'
     });
-    if (!newRes || newRes.error || !newRes.code) {
-      setFeedbackMessage(`✕ No se pudo emitir el ingreso: ${newRes?.error || bookingError || 'Error de servidor'}`);
-      setTimeout(() => setFeedbackMessage(''), 4000);
-      return;
+    setCheckInStayMode('open');
+    setCheckInHours(2);
+    setCheckInVehicleType('auto');
+  };
+
+  // Confirmación del modal de ingreso (aplica tanto para reservas existentes como para ingresos directos)
+  const handleConfirmCheckIn = async () => {
+    if (!checkInTarget) return;
+    setIsProcessingCheckIn(true);
+    try {
+      const isWalkIn = Boolean(checkInTarget.isWalkIn);
+      const hoursParam = checkInStayMode === 'open' ? 'open' : Number(checkInHours);
+
+      if (isWalkIn) {
+        const now = new Date();
+        const expiresAt = checkInStayMode === 'open' ? null : new Date(now.getTime() + checkInHours * 3600000).toISOString();
+        const hourlyRate = getHourlyRateForVehicle(activeLocalEst, checkInVehicleType);
+        const estimatedCost = checkInStayMode === 'open' 
+          ? Number(activeLocalEst?.reservation_fee || 0) 
+          : Number((checkInHours * hourlyRate + Number(activeLocalEst?.reservation_fee || 0)).toFixed(2));
+
+        const newRes = await createReservation({
+          parkingId: activeLocalEst.id,
+          parkingName: activeLocalEst.name,
+          slotCode: checkInTarget.slot,
+          customerName: checkInTarget.customerName || 'Conductor en Garita',
+          customerPhone: '+51 966 000 000',
+          plate: checkInTarget.plate,
+          vehicleType: checkInVehicleType,
+          hours: checkInStayMode === 'open' ? null : checkInHours,
+          totalCost: estimatedCost,
+          startTime: now.toISOString(),
+          expiresAt: expiresAt,
+          isOpenStay: checkInStayMode === 'open'
+        });
+
+        if (!newRes || newRes.error || !newRes.code) {
+          setFeedbackMessage(`✕ No se pudo emitir el ingreso: ${newRes?.error || bookingError || 'Error de servidor'}`);
+          setIsProcessingCheckIn(false);
+          setTimeout(() => setFeedbackMessage(''), 4000);
+          return;
+        }
+
+        const checkInResp = await checkInReservation(newRes.code, hoursParam);
+        if (checkInResp?.ok) {
+          setFeedbackMessage(`✓ ¡Ingreso directo registrado! Vehículo ${checkInTarget.plate} en plaza ${checkInTarget.slot} (${checkInStayMode === 'open' ? 'Tiempo Libre' : `${checkInHours}h`}). Reloj iniciado.`);
+          setEntrySearchQuery('');
+          setInspectedSlotCode(null);
+          setCheckInTarget(null);
+          if (activeLocalEst?.id && ensureFloorPlan) ensureFloorPlan(activeLocalEst.id, true);
+        } else {
+          setFeedbackMessage(checkInResp?.message || 'Error al iniciar reloj.');
+        }
+      } else {
+        const resp = await checkInReservation(checkInTarget.code, hoursParam);
+        if (resp?.ok) {
+          setFeedbackMessage(`✓ ¡Ingreso registrado! Vehículo ${checkInTarget.plate} en plaza ${checkInTarget.slot} (${checkInStayMode === 'open' ? 'Tiempo Libre' : `${checkInHours}h`}). Reloj iniciado.`);
+          setEntrySearchQuery('');
+          setCheckInTarget(null);
+          if (activeLocalEst?.id && ensureFloorPlan) ensureFloorPlan(activeLocalEst.id, true);
+        } else {
+          setFeedbackMessage(resp?.message || 'Error al registrar ingreso.');
+        }
+      }
+    } catch (e) {
+      setFeedbackMessage('✕ Ocurrió un error inesperado al procesar el ingreso.');
+    } finally {
+      setIsProcessingCheckIn(false);
+      setTimeout(() => setFeedbackMessage(''), 4500);
     }
-    await checkInReservation(newRes.code);
-    setFeedbackMessage(`✓ ¡Ingreso directo registrado! Plaza ${slotCode} ocupada por ${plateToUse}.`);
-    setEntrySearchQuery('');
-    setInspectedSlotCode(null);
-    if (activeLocalEst?.id && ensureFloorPlan) ensureFloorPlan(activeLocalEst.id, true);
-    setTimeout(() => setFeedbackMessage(''), 4000);
   };
 
   // Filtrado de reservas
@@ -1922,10 +2012,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                       {/* Marcar Check-in / Ingreso (Personal de Garita) */}
                       {role !== 'user' && isScheduled && (
                         <Button
-                          onClick={() => {
-                            setCheckInTarget(res);
-                            setCheckInHours(Number(res.estimatedHours) || 2);
-                          }}
+                          onClick={() => handleQuickCheckIn(res)}
                           size="sm"
                           className="rounded-lg text-xs font-bold gap-1 bg-emerald-600 hover:bg-emerald-500 text-white h-8 px-2.5 cursor-pointer shadow-xs"
                           title="Registrar Ingreso (Check-in)"
@@ -2481,90 +2568,263 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
         }}
       />
 
-      {/* Diálogo de Registro de Ingreso en Garita */}
-      <Dialog open={!!checkInTarget} onOpenChange={(open) => !open && setCheckInTarget(null)}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl text-slate-900 dark:text-white">
+      {/* Diálogo Moderno de Registro de Ingreso en Garita */}
+      <Dialog open={!!checkInTarget} onOpenChange={(open) => !open && !isProcessingCheckIn && setCheckInTarget(null)}>
+        <DialogContent className="sm:max-w-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-2xl text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <LogIn className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Confirmar Ingreso</span>
+            <DialogTitle className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400">
+                <LogIn className="w-5 h-5" />
+              </span>
+              <span>Registrar Ingreso de Vehículo</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Registra la hora real de ingreso y la permanencia indicada por el conductor en garita.
+              Selecciona el tiempo estimado de permanencia o activa Tiempo Libre para iniciar el reloj.
             </DialogDescription>
           </DialogHeader>
 
           {checkInTarget && (
             <div className="space-y-4 my-2">
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Vehículo / Placa</span>
-                  <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">{checkInTarget.plate}</p>
+              {/* Tarjeta de Ficha de Vehículo y Plaza */}
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold tracking-wider">
+                      Placa del Vehículo
+                    </span>
+                    <span className="font-mono font-black text-slate-900 dark:text-white text-lg tracking-wider">
+                      {checkInTarget.plate}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold tracking-wider">
+                      Plaza Asignada
+                    </span>
+                    <span className="inline-flex items-center gap-1 font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                      Plaza {checkInTarget.slot}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Cajón Asignado</span>
-                  <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">{checkInTarget.slot}</p>
+
+                <div className="flex items-center justify-between pt-2.5 border-t border-slate-200/80 dark:border-slate-700/80 text-xs">
+                  <div className="truncate max-w-[170px]">
+                    <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Conductor</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">
+                      {checkInTarget.customerName || 'Conductor en Garita'}
+                    </span>
+                  </div>
+                  
+                  {/* Selector rápido de tipo de vehículo */}
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] text-right mb-0.5">Categoría</span>
+                    <div className="flex items-center gap-1">
+                      {[
+                        { id: 'auto', label: 'Auto' },
+                        { id: 'suv', label: 'SUV' },
+                        { id: 'moto', label: 'Moto' },
+                        { id: 'mototaxi', label: 'Mototaxi' },
+                      ].map(v => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => setCheckInVehicleType(v.id)}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
+                            checkInVehicleType === v.id
+                              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-xs'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          {v.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Tiempo de estadía registrado por garita</label>
-                <div className="grid grid-cols-4 gap-2 mb-2">
-                  {[1, 2, 3, 4].map(h => (
-                    <button
-                      key={h}
-                      type="button"
-                      onClick={() => setCheckInHours(h)}
-                      className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${checkInHours === h
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-                    >
-                      {h}h
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50 dark:bg-emerald-950/20 p-3 text-xs text-emerald-800 dark:text-emerald-200">
-                  <span>Personalizado:</span>
-                  <input
-                    type="number"
-                    min="0.5"
-                    max="168"
-                    step="0.5"
-                    value={checkInHours}
-                    onChange={(e) => setCheckInHours(Math.max(0.5, Number(e.target.value) || 0.5))}
-                    className="w-20 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-slate-900 px-2 py-1 font-mono font-bold outline-none"
-                  />
-                  <span>horas</span>
+              {/* Selector de Modo de Estadía: Tiempo Libre vs Horas Fijas */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                  Modalidad de Permanencia:
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setCheckInStayMode('open')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      checkInStayMode === 'open'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/20 shadow-xs'
+                        : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-xs flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                        <Zap className="w-4 h-4 fill-emerald-500 text-emerald-500" />
+                        <span>Tiempo Libre</span>
+                      </span>
+                      {checkInStayMode === 'open' && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
+                      Sin hora límite · Cobro al salir según tiempo real
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCheckInStayMode('fixed')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      checkInStayMode === 'fixed'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/20 shadow-xs'
+                        : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-xs flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                        <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                        <span>Tiempo Estimado</span>
+                      </span>
+                      {checkInStayMode === 'fixed' && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
+                      Horas fijas · Programa la hora de salida
+                    </p>
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              {/* Contenido condicional según el modo */}
+              {checkInStayMode === 'open' ? (
+                <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/20 space-y-2 text-xs animate-in fade-in">
+                  <div className="flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold text-emerald-900 dark:text-emerald-200">
+                        Estadía Libre Seleccionada
+                      </p>
+                      <p className="text-[11px] text-emerald-800/90 dark:text-emerald-300 leading-relaxed">
+                        El vehículo ingresa sin hora de salida forzada. El cronómetro corre en tiempo real y el importe exacto se liquidará al momento de registrar el check-out en garita.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-emerald-200/60 dark:border-emerald-900/40 flex items-center justify-between font-mono text-[11px] text-emerald-900 dark:text-emerald-300">
+                    <span>Tarifa por hora aplicable ({checkInVehicleType}):</span>
+                    <span className="font-bold">S/ {effectiveHourlyRate.toFixed(2)} / hora</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3 animate-in fade-in">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                      Selecciona las horas de permanencia:
+                    </label>
+                    <div className="grid grid-cols-6 gap-1.5 mb-2">
+                      {[1, 2, 3, 4, 5, 8].map(h => (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={() => setCheckInHours(h)}
+                          className={`py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                            checkInHours === h
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          {h}h
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-2.5 text-xs">
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">Personalizado:</span>
+                      <button
+                        type="button"
+                        onClick={() => setCheckInHours(prev => Math.max(0.5, Math.round((prev - 0.5) * 10) / 10))}
+                        className="w-7 h-7 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="0.5"
+                        max="72"
+                        step="0.5"
+                        value={checkInHours}
+                        onChange={(e) => setCheckInHours(Math.max(0.5, Number(e.target.value) || 0.5))}
+                        className="w-16 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 font-mono font-bold text-center outline-none text-slate-900 dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCheckInHours(prev => Math.min(72, Math.round((prev + 0.5) * 10) / 10))}
+                        className="w-7 h-7 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer"
+                      >
+                        +
+                      </button>
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">horas</span>
+                    </div>
+                  </div>
+
+                  {/* Resumen de Salida y Costo Estimado */}
+                  <div className="p-3 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1.5">
+                    <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                      <span>Salida estimada:</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">
+                        {estimatedExitTime ? formatTime12h(estimatedExitTime) : '—'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                      <span>Tarifa por hora ({checkInVehicleType}):</span>
+                      <span className="font-mono text-slate-700 dark:text-slate-300">
+                        S/ {effectiveHourlyRate.toFixed(2)}/h
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-1 border-t border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold">
+                      <span>Importe estimado:</span>
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400 text-sm">
+                        S/ {estimatedStayCost?.toFixed(2) || '0.00'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Botones de Acción */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setCheckInTarget(null)}
                   disabled={isProcessingCheckIn}
-                  className="text-xs rounded-xl dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="text-xs h-10 px-4 rounded-xl dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
                   disabled={isProcessingCheckIn}
-                  onClick={async () => {
-                    setIsProcessingCheckIn(true);
-                    const resp = await updateReservationStatus(checkInTarget.code, 'ACTIVE', checkInHours);
-                    setIsProcessingCheckIn(false);
-                    setCheckInTarget(null);
-                    if (resp?.ok) setFeedbackMessage(resp.message || `Ingreso registrado para ${checkInTarget.plate} por ${checkInHours}h.`);
-                    else setFeedbackMessage(resp?.message || 'Error al registrar ingreso.');
-                  }}
-                  className="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl gap-1.5 cursor-pointer"
+                  onClick={handleConfirmCheckIn}
+                  className="text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl gap-2 h-10 px-5 cursor-pointer shadow-sm"
                 >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Confirmar ingreso ({checkInHours}h)</span>
+                  {isProcessingCheckIn ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Registrando ingreso...</span>
+                    </>
+                  ) : checkInStayMode === 'open' ? (
+                    <>
+                      <Zap className="w-4 h-4 fill-white text-white" />
+                      <span>Confirmar Ingreso (Tiempo Libre)</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      <span>Confirmar Ingreso ({checkInHours}h · S/ {estimatedStayCost?.toFixed(2)})</span>
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

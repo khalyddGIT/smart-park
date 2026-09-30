@@ -16,6 +16,7 @@ from app.schemas.schemas import (
     ParkingBase,
     ReviewCreate,
     IncidentCreate,
+    ReservationCheckIn,
 )
 
 
@@ -674,3 +675,34 @@ def test_validate_license_plate_extra_characters():
     with pytest.raises(ValueError) as exc_info3:
         validate_license_plate_format("AB-12-34")
     assert "único guión" in str(exc_info3.value) or "inválido" in str(exc_info3.value).lower()
+
+
+def test_reservation_checkin_schema():
+    """ReservationCheckIn admite hours_stay, minutes_stay y is_open_stay (Tiempo Libre)."""
+    # 1. Tiempo libre (is_open_stay=True)
+    c1 = ReservationCheckIn(is_open_stay=True)
+    assert c1.is_open_stay is True
+    assert c1.hours_stay is None
+    assert c1.minutes_stay is None
+
+    # 2. Horas fijas
+    c2 = ReservationCheckIn(hours_stay=2.5)
+    assert c2.hours_stay == 2.5
+    assert c2.is_open_stay is None
+
+    # 3. Minutos fijos
+    c3 = ReservationCheckIn(minutes_stay=90)
+    assert c3.minutes_stay == 90
+
+    # 4. Por defecto vacío es válido
+    c4 = ReservationCheckIn()
+    assert c4.hours_stay is None
+    assert c4.is_open_stay is None
+
+    # 5. Horas inválidas (cero o negativo)
+    with pytest.raises(ValidationError):
+        ReservationCheckIn(hours_stay=0)
+
+    with pytest.raises(ValidationError):
+        ReservationCheckIn(hours_stay=-2)
+

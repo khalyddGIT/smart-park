@@ -14,7 +14,8 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 # 24 horas
+    # Duración de sesión: 7 días por defecto, sincronizado con la vigencia de la cookie HttpOnly
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24 * 7)))
 
     # Culqi - secreto solo en servidor, nunca en el frontend (sin default en repo)
     CULQI_SECRET_KEY: str = os.getenv("CULQI_SECRET_KEY", "")

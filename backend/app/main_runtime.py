@@ -72,6 +72,7 @@ class SecurityHardeningMiddleware(BaseHTTPMiddleware):
             "/api/v1/auth/login-pin",
             "/api/v1/auth/register",
             "/api/v1/auth/google",
+            "/api/v1/auth/refresh",
         }
         cookie_authenticated = bool(request.cookies.get("access_token"))
         browser_request = bool(request.headers.get("origin") or request.headers.get("referer"))

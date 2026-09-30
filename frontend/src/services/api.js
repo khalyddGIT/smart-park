@@ -25,6 +25,25 @@ const api = axios.create({
 });
 
 let memoryToken = null;
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+export const getCookie = (name) => {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+  return match ? decodeURIComponent(match[3]) : null;
+};
 
 export const setAccessToken = (token) => {
   try {
@@ -53,14 +72,73 @@ export const getAccessToken = () => {
   }
 };
 
-// Interceptor para garantizar que el token Bearer siempre acompañe a la solicitud si existe
+// Interceptor para garantizar que el token Bearer y el token CSRF siempre acompañen a la solicitud
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
   if (token && token !== 'cookie_session' && !config.headers['Authorization']) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
+
+  // Garantizar que toda mutación HTTP lleve el header X-CSRF-Token leído de la cookie
+  const method = (config.method || 'get').toUpperCase();
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrf = getCookie('csrf_token');
+    if (csrf && !config.headers['X-CSRF-Token']) {
+      config.headers['X-CSRF-Token'] = csrf;
+    }
+  }
+
   return config;
 }, (error) => Promise.reject(error));
+
+// Interceptor de respuesta: auto-recuperación transparente mediante /auth/refresh ante expiración 401
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (!originalRequest) return Promise.reject(error);
+
+    const isAuthRoute = originalRequest.url?.includes('/auth/login') ||
+      originalRequest.url?.includes('/auth/register') ||
+      originalRequest.url?.includes('/auth/refresh') ||
+      originalRequest.url?.includes('/auth/logout');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((newToken) => {
+            if (newToken) originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshRes = await api.post('/auth/refresh');
+        const newToken = refreshRes.data?.access_token;
+        if (newToken) {
+          setAccessToken(newToken);
+          processQueue(null, newToken);
+          originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+          return api(originalRequest);
+        }
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        setAccessToken(null);
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 // Inicializar cabecera con token persistido si existe
 try {
@@ -74,6 +152,7 @@ try {
 // Auth
 export const register = (data) => api.post('/auth/register', data).then(r => r.data);
 export const login = (data) => api.post('/auth/login', data).then(r => r.data);
+export const refreshSessionApi = () => api.post('/auth/refresh').then(r => r.data);
 export const logoutApi = () => api.post('/auth/logout').then(r => r.data);
 export const googleAuth = (data) => api.post('/auth/google', data).then(r => r.data);
 export const verifyPinApi = (pin) => api.post('/auth/verify-pin', { pin }).then(r => r.data);

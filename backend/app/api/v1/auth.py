@@ -27,9 +27,26 @@ AUTH_COOKIE_NAME = "access_token"
 CSRF_COOKIE_NAME = "csrf_token"
 AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 días
 
-def _set_auth_cookie(response: Response, token: str) -> None:
-    """Configura la cookie HttpOnly con SameSite=Lax y flag Secure si es entorno de producción."""
-    is_prod = (settings.ENVIRONMENT == "production")
+def _is_secure_request(request: Optional[Request] = None) -> bool:
+    """Determina si la petición actual debe requerir cookies con flag Secure."""
+    if settings.ENVIRONMENT == "production":
+        return True
+    if request is not None:
+        if request.url.scheme == "https":
+            return True
+        if request.headers.get("x-forwarded-proto", "").lower() == "https":
+            return True
+    return False
+
+def _set_auth_cookie(response: Response, token: str, request: Optional[Request] = None) -> None:
+    """
+    Configura la cookie HttpOnly para autenticación y la cookie CSRF para protección Double-Submit.
+    - access_token: HttpOnly=True (inmune a robo de token por inyección XSS).
+    - csrf_token: HttpOnly=False (legible por el cliente para adjuntar en X-CSRF-Token).
+    - SameSite=Lax: previene ataques de Cross-Site Request Forgery.
+    - Secure: activo en producción o cuando se sirve sobre HTTPS.
+    """
+    is_secure = _is_secure_request(request)
     response.set_cookie(
         key=AUTH_COOKIE_NAME,
         value=token,
@@ -38,7 +55,7 @@ def _set_auth_cookie(response: Response, token: str) -> None:
         path="/",
         httponly=True,
         samesite="lax",
-        secure=is_prod
+        secure=is_secure
     )
     # Double-submit CSRF: este valor no es secreto y debe ser legible por el
     # frontend para enviarlo en X-CSRF-Token. La sesión continúa siendo HttpOnly.
@@ -50,25 +67,25 @@ def _set_auth_cookie(response: Response, token: str) -> None:
         path="/",
         httponly=False,
         samesite="lax",
-        secure=is_prod,
+        secure=is_secure,
     )
 
-def _clear_auth_cookie(response: Response) -> None:
-    """Elimina la cookie HttpOnly de la sesión."""
-    is_prod = (settings.ENVIRONMENT == "production")
+def _clear_auth_cookie(response: Response, request: Optional[Request] = None) -> None:
+    """Elimina las cookies de sesión y CSRF en el navegador."""
+    is_secure = _is_secure_request(request)
     response.delete_cookie(
         key=AUTH_COOKIE_NAME,
         path="/",
         httponly=True,
         samesite="lax",
-        secure=is_prod
+        secure=is_secure
     )
     response.delete_cookie(
         key=CSRF_COOKIE_NAME,
         path="/",
         httponly=False,
         samesite="lax",
-        secure=is_prod,
+        secure=is_secure,
     )
 
 # Rate limit anti fuerza bruta en login y registro por IP
@@ -131,7 +148,7 @@ async def register_user(user_in: UserCreate, request: Request, response: Respons
     await db.refresh(db_user)
 
     access_token = create_access_token(subject=db_user.id)
-    _set_auth_cookie(response, access_token)
+    _set_auth_cookie(response, access_token, request)
     from app.core.audit_service import record_audit_event
     await record_audit_event(
         db=db,
@@ -274,7 +291,7 @@ async def login_user(user_in: UserLogin, request: Request, response: Response, d
         setattr(user, "is_staff_operator", False)
 
     access_token = create_access_token(subject=user.id)
-    _set_auth_cookie(response, access_token)
+    _set_auth_cookie(response, access_token, request)
     await record_audit_event(
         db=db,
         action="Inicio de Sesión Exitoso",
@@ -470,7 +487,7 @@ async def login_pin(
         setattr(user, "is_staff_operator", False)
 
     access_token = create_access_token(subject=user.id)
-    _set_auth_cookie(response, access_token)
+    _set_auth_cookie(response, access_token, request)
 
     await record_audit_event(
         db=db,
@@ -500,7 +517,7 @@ async def logout(
     if not token and hasattr(request, "cookies"):
         token = request.cookies.get(AUTH_COOKIE_NAME, "")
 
-    _clear_auth_cookie(response)
+    _clear_auth_cookie(response, request)
 
     if not token:
         return {"status": "success", "message": "Sesión cerrada"}
@@ -520,9 +537,79 @@ async def logout(
         }
     return {"status": "success", "message": "Sesión cerrada"}
 
+@router.post("/refresh", response_model=Token)
+async def refresh_session(
+    request: Request,
+    response: Response,
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer_auto),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Renueva la sesión activa y emite nuevas cookies HttpOnly (access_token) y CSRF (csrf_token).
+    Acepta el token actual desde la cookie HttpOnly o el encabezado Authorization.
+    """
+    token = credentials.credentials if credentials else ""
+    if not token and hasattr(request, "cookies"):
+        token = request.cookies.get(AUTH_COOKIE_NAME, "")
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No se encontró una sesión activa para renovar"
+        )
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token de sesión inválido")
+    except JWTError:
+        _clear_auth_cookie(response, request)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesión expirada")
+
+    jti = payload.get("jti")
+    if jti:
+        from app.core.cache import is_blacklisted
+        if await is_blacklisted(jti):
+            _clear_auth_cookie(response, request)
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesión revocada")
+
+    res = await db.execute(select(User).where(User.id == int(user_id)))
+    user = res.scalars().first()
+    if not user or not user.is_active:
+        _clear_auth_cookie(response, request)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario no encontrado o inactivo")
+
+    new_token = create_access_token(subject=user.id)
+    _set_auth_cookie(response, new_token, request)
+
+    return {
+        "access_token": new_token,
+        "token_type": "bearer",
+        "user": user
+    }
+
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    """Retorna el usuario autenticado según JWT enriquecido con datos de staff y sede."""
+async def get_me(
+    request: Request,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Retorna el usuario autenticado según JWT enriquecido con datos de staff y sede, renovando la cookie si está próxima a expirar."""
+    # Sesión deslizante transparente: si la sesión proviene de cookie HttpOnly y han transcurrido más de 3 días, renovar
+    raw_cookie = request.cookies.get(AUTH_COOKIE_NAME) if hasattr(request, "cookies") else None
+    if raw_cookie:
+        try:
+            pl = jwt.decode(raw_cookie, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            exp = pl.get("exp", 0)
+            now_ts = datetime.utcnow().timestamp()
+            if exp - now_ts < 60 * 60 * 24 * 4: # Le quedan menos de 4 días de los 7
+                refreshed_token = create_access_token(subject=current_user.id)
+                _set_auth_cookie(response, refreshed_token, request)
+        except Exception:
+            pass
+
     curr_email = (current_user.email or "").strip().lower()
     st_res = await db.execute(select(Staff).where(
         (func.lower(Staff.email) == curr_email) | (Staff.dni == current_user.phone),
@@ -599,7 +686,7 @@ async def google_auth(payload: GoogleLoginRequest, request: Request, response: R
         await db.refresh(user)
 
     access_token = create_access_token(subject=user.id)
-    _set_auth_cookie(response, access_token)
+    _set_auth_cookie(response, access_token, request)
 
     from app.core.audit_service import record_audit_event
     await record_audit_event(

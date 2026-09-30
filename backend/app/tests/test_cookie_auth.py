@@ -110,3 +110,44 @@ async def test_logout_clears_cookie():
         set_cookie = logout_resp.headers.get("set-cookie", "")
         # En la respuesta de logout la cookie debe borrarse (max-age=0 o fecha pasada)
         assert "max-age=0" in set_cookie.lower() or 'access_token=""' in set_cookie or "expires=" in set_cookie.lower()
+
+@pytest.mark.asyncio
+async def test_refresh_session_renews_cookie():
+    email = f"refresh_{uuid.uuid4().hex[:8]}@smartpark.com"
+    password = "SecurePassword123!"
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        reg = await ac.post("/api/v1/auth/register", json={
+            "full_name": "Refresh Tester",
+            "email": email,
+            "phone": "+51 900 777 888",
+            "password": password,
+            "role": "user"
+        })
+        assert reg.status_code == 201
+        token = reg.json()["access_token"]
+        assert "access_token" in reg.cookies
+
+    # Enviar /refresh únicamente con la cookie
+    async with AsyncClient(transport=transport, base_url="http://test", cookies={"access_token": token}) as ac:
+        ref_resp = await ac.post("/api/v1/auth/refresh")
+        assert ref_resp.status_code == 200
+        data = ref_resp.json()
+        assert "access_token" in data
+        assert "access_token" in ref_resp.cookies
+        new_token = data["access_token"]
+        assert new_token != token
+
+        # La nueva cookie funciona para /auth/me
+        me_resp = await ac.get("/api/v1/auth/me", cookies={"access_token": new_token})
+        assert me_resp.status_code == 200
+        assert me_resp.json()["email"] == email
+
+@pytest.mark.asyncio
+async def test_refresh_without_session_fails():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        ref_resp = await ac.post("/api/v1/auth/refresh")
+        assert ref_resp.status_code == 401
+

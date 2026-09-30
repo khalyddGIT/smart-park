@@ -317,8 +317,8 @@ export const NotificationProvider = ({ children }) => {
       if (match) {
         const isPromo = b.category === 'promo' || !!b.promo_code;
         toast(
-          isPromo ? `🎉 ¡Nueva Promoción! ${b.title}` : `📢 Comunicado: ${b.title}`,
-          { icon: isPromo ? '🎁' : '📢', duration: 6000 }
+          isPromo ? `Promoción: ${b.title}` : `Comunicado: ${b.title}`,
+          { duration: 6000 }
         );
         fetchDerived().then(res => setNotifications(res));
       }
@@ -385,7 +385,7 @@ export const NotificationProvider = ({ children }) => {
         const lastShown = lastToastTimeRef.current[toastKey] || 0;
         if (now - lastShown >= 10 * 60 * 1000) {
           lastToastTimeRef.current[toastKey] = now;
-          toast.error(`⚠️ Estadía Excedida (+${overtimeMin}m): Reserva ${code}. Monto actual: S/ ${formattedCost}`, {
+          toast.error(`Estadía excedida (+${overtimeMin}m): Reserva ${code}. Monto actual: S/ ${formattedCost}`, {
             id: toastKey,
             duration: 8000,
           });
@@ -404,9 +404,8 @@ export const NotificationProvider = ({ children }) => {
         const lastShown = lastToastTimeRef.current[toastKey] || 0;
         if (now - lastShown >= 10 * 60 * 1000) {
           lastToastTimeRef.current[toastKey] = now;
-          toast(`⏳ Tu estadía (${code}) finaliza en ${minutesLeft} min. Recuerda registrar tu salida a tiempo.`, {
+          toast(`Tu estadía (${code}) finaliza en ${minutesLeft} min. Recuerda registrar tu salida a tiempo.`, {
             id: toastKey,
-            icon: '⏳',
             duration: 8000,
           });
         }
@@ -424,9 +423,8 @@ export const NotificationProvider = ({ children }) => {
         const lastShown = lastToastTimeRef.current[toastKey] || 0;
         if (now - lastShown >= 10 * 60 * 1000) {
           lastToastTimeRef.current[toastKey] = now;
-          toast(`⚠️ Llegada urgente: Tienes ${minutesLeft} min para ingresar con tu reserva ${code} o será cancelada.`, {
+          toast(`Llegada urgente: Tienes ${minutesLeft} min para ingresar con tu reserva ${code} o será cancelada.`, {
             id: toastKey,
-            icon: '⚠️',
             duration: 8000,
           });
         }

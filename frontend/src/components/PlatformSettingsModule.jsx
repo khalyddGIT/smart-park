@@ -65,63 +65,63 @@ const BROADCASTS_STORAGE_KEY = 'smart_park_broadcasts_v2';
 
 const BROADCAST_TEMPLATES = [
   {
-    name: '🏷️ Promoción Semana Santa (20% OFF)',
+    name: 'Promoción de temporada (20% OFF)',
     category: 'promo',
     target: 'CONDUCTORES',
-    title: '¡20% de Descuento en Cocheras del Centro!',
+    title: 'Descuento del 20% en Cocheras del Centro',
     message: 'Reserva con antelación tu espacio en las cocheras de Plaza Mayor y Jr. 28 de Julio con 20% de descuento durante las festividades.',
     image_url: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80',
     promo_code: 'SEMANASANTA20',
     discount_percent: 20,
-    action_label: 'Reservar Cochera con Descuento',
+    action_label: 'Reservar con descuento',
     action_url: 'dashboard',
     expires_at: '2026-04-10'
   },
   {
-    name: '🔧 Mantenimiento Preventivo ANPR',
+    name: 'Mantenimiento preventivo ANPR',
     category: 'maintenance',
     target: 'COCHERAS',
-    title: 'Actualización Programada de Firmware en Cámaras Garita',
+    title: 'Actualización programada de firmware en cámaras de garita',
     message: 'Estimados administradores: este domingo a las 02:00 AM se realizará una sincronización del motor de reconocimiento de placas (ANPR). El servicio se mantendrá operativo.',
     image_url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80',
     promo_code: '',
     discount_percent: 0,
-    action_label: 'Ver Estado del Sistema',
+    action_label: 'Ver estado del sistema',
     action_url: 'settings',
     expires_at: ''
   },
   {
-    name: '🚨 Alerta Vial Urgente',
+    name: 'Aviso urgente de tráfico',
     category: 'urgent',
     target: 'CONDUCTORES',
-    title: 'Desvío de Tráfico en Centro Histórico',
+    title: 'Desvío de tráfico en Centro Histórico',
     message: 'Cierre de vías en Jr. 28 de Julio por eventos cívicos. Recomendamos ingresar por Jr. Bellido y asegurar su reserva con antelación.',
     image_url: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=1200&q=80',
     promo_code: '',
     discount_percent: 0,
-    action_label: 'Ver Mapa de Cocheras',
+    action_label: 'Ver mapa de cocheras',
     action_url: 'dashboard',
     expires_at: ''
   },
   {
-    name: '📢 Aviso Informativo Red',
+    name: 'Informativo general de la red',
     category: 'info',
     target: 'ALL',
-    title: 'Nueva Versión Smart-Park v2.4 Disponible',
-    message: 'Hemos optimizado la velocidad del plano interactivo 2D y la verificación con QR instantáneo. ¡Gracias por ser parte de nuestra comunidad!',
+    title: 'Nueva versión de Smart-Park disponible',
+    message: 'Hemos optimizado la velocidad del plano interactivo y la verificación de accesos con código QR.',
     image_url: '',
     promo_code: '',
     discount_percent: 0,
-    action_label: 'Explorar Novedades',
+    action_label: 'Explorar novedades',
     action_url: 'dashboard',
     expires_at: ''
   }
 ];
 
 const IMAGE_PRESETS = [
-  { label: '🚗 Cochera Centro', url: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80' },
-  { label: '🎁 Descuento / Promo', url: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=1200&q=80' },
-  { label: '🔧 Mantenimiento TI', url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80' }
+  { label: 'Cochera Centro', url: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Promoción', url: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Mantenimiento', url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80' }
 ];
 
 const INITIAL_SETTINGS = {
@@ -1359,32 +1359,15 @@ export const PlatformSettingsModule = () => {
                 const isMaintenance = b.category === 'maintenance';
                 const isUrgent = b.category === 'urgent';
 
-                const categoryBadge = isPromo ? (
-                  <span className="text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800/60 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> Promoción
-                  </span>
-                ) : isMaintenance ? (
-                  <span className="text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/60 flex items-center gap-1">
-                    <Wrench className="w-3 h-3" /> Mantenimiento
-                  </span>
-                ) : isUrgent ? (
-                  <span className="text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800/60 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> Urgente
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 px-2 py-0.5 rounded-md border border-sky-200 dark:border-sky-800/60 flex items-center gap-1">
-                    <Info className="w-3 h-3" /> Informativo
-                  </span>
-                );
-
+                const categoryLabel = isPromo ? 'Promoción' : isMaintenance ? 'Mantenimiento' : isUrgent ? 'Urgente' : 'Informativo';
                 const targetLabel = b.target === 'CONDUCTORES' 
-                  ? '🚗 Conductores' 
+                  ? 'Conductores' 
                   : b.target === 'COCHERAS' 
-                  ? '🏢 Cocheras' 
-                  : '👥 Toda la Red';
+                  ? 'Cocheras' 
+                  : 'Toda la red';
 
                 return (
-                  <Card key={b.id} className="p-4 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-slate-300 dark:hover:border-slate-700 transition">
+                  <Card key={b.id} className="p-4 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-slate-300 dark:hover:border-slate-700 transition">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       {b.image_url ? (
                         <img 
@@ -1396,20 +1379,24 @@ export const PlatformSettingsModule = () => {
                       ) : null}
 
                       <div className="space-y-1.5 flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                            {b.id}
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium flex-wrap">
+                          <span className="font-mono font-semibold text-slate-700 dark:text-slate-200">{b.id}</span>
+                          <span>·</span>
+                          <span className="text-slate-700 dark:text-slate-300">{targetLabel}</span>
+                          <span>·</span>
+                          <span className={
+                            isPromo ? 'text-purple-600 dark:text-purple-400 font-semibold' :
+                            isMaintenance ? 'text-amber-600 dark:text-amber-400 font-semibold' :
+                            isUrgent ? 'text-rose-600 dark:text-rose-400 font-semibold' :
+                            'text-sky-600 dark:text-sky-400 font-semibold'
+                          }>
+                            {categoryLabel}
                           </span>
-                          <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                            {targetLabel}
-                          </span>
-                          {categoryBadge}
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                            {b.sentAt}
-                          </span>
+                          <span>·</span>
+                          <span className="font-mono text-slate-400 dark:text-slate-500">{b.sentAt}</span>
                         </div>
 
-                        <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white leading-tight">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-tight">
                           {b.title}
                         </h4>
 
@@ -1419,19 +1406,18 @@ export const PlatformSettingsModule = () => {
 
                         {/* Ficha de cupón si aplica */}
                         {b.promo_code && (
-                          <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300/60 dark:border-purple-700/60">
-                              <Tag className="w-3 h-3" />
+                          <div className="flex items-center gap-2 pt-0.5 text-xs text-slate-600 dark:text-slate-300 flex-wrap">
+                            <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                               Cupón: {b.promo_code}
                             </span>
                             {b.discount_percent > 0 && (
-                              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">
-                                -{b.discount_percent}% OFF
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                (-{b.discount_percent}% OFF)
                               </span>
                             )}
                             {b.expires_at && (
-                              <span className="text-[10px] text-slate-400 font-mono">
-                                Vence: {b.expires_at}
+                              <span className="text-slate-400 text-[11px]">
+                                · Vence: {b.expires_at}
                               </span>
                             )}
                           </div>
@@ -1440,7 +1426,7 @@ export const PlatformSettingsModule = () => {
                     </div>
 
                     <div className="flex items-center justify-between md:justify-end gap-2.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800/80">
-                      <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
                         {b.sentCount} recibidos
                       </span>
 
@@ -1448,7 +1434,7 @@ export const PlatformSettingsModule = () => {
                         type="button"
                         onClick={() => setSelectedPreviewBroadcast(b)}
                         title="Ver vista previa de la tarjeta"
-                        className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition cursor-pointer"
+                        className="flex items-center gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Previsualizar</span>
@@ -1505,59 +1491,61 @@ export const PlatformSettingsModule = () => {
       <Dialog open={showBroadcastModal} onOpenChange={setShowBroadcastModal}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
-              <Send className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span>Emisión de Comunicado & Promoción Masiva</span>
+            <DialogTitle className="text-base sm:text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+              <Send className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Nuevo Comunicado</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Difunde promociones con cupones, avisos de mantenimiento técnico o alertas viales a toda la red con entrega inmediata en tiempo real.
+              Avisos del sistema, promociones y alertas para conductores y administradores de la red.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Plantillas Rápidas con 1 Clic */}
-          <div className="space-y-1.5 pt-1">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              Plantillas Rápidas Preconfiguradas:
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {/* Plantillas Rápidas en Selector Compacto */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+              Plantilla rápida
+            </label>
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                const tmpl = BROADCAST_TEMPLATES.find(t => t.name === e.target.value);
+                if (tmpl) setNewBroadcast(prev => ({ ...prev, ...tmpl }));
+              }}
+              className="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-700 dark:text-slate-300 cursor-pointer focus:outline-none"
+            >
+              <option value="" disabled>Seleccionar plantilla (opcional)...</option>
               {BROADCAST_TEMPLATES.map((tmpl, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setNewBroadcast(prev => ({ ...prev, ...tmpl }))}
-                  className="text-left p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 transition cursor-pointer text-[11px] font-bold text-slate-700 dark:text-slate-300 leading-tight"
-                >
+                <option key={idx} value={tmpl.name}>
                   {tmpl.name}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <form onSubmit={handleSendBroadcast} className="space-y-4 my-2">
-            {/* Categoría Selector */}
+            {/* Categoría Selector - Segmented Control */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                Categoría del Comunicado *
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Categoría *
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
                 {[
-                  { id: 'promo', label: '🏷️ Promoción', desc: 'Cupones & descuentos' },
-                  { id: 'maintenance', label: '🔧 Mantenimiento', desc: 'ANPR & servidores' },
-                  { id: 'urgent', label: '🚨 Aviso Urgente', desc: 'Tráfico & accesos' },
-                  { id: 'info', label: '📢 Informativo', desc: 'Novedades de la red' }
+                  { id: 'promo', label: 'Promoción' },
+                  { id: 'maintenance', label: 'Mantenimiento' },
+                  { id: 'urgent', label: 'Urgente' },
+                  { id: 'info', label: 'Informativo' }
                 ].map((cat) => (
                   <button
                     key={cat.id}
                     type="button"
                     onClick={() => setNewBroadcast({ ...newBroadcast, category: cat.id })}
-                    className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                    className={`py-1.5 text-center rounded-lg transition-all cursor-pointer font-medium ${
                       newBroadcast.category === cat.id
-                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500'
-                        : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-semibold'
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
-                    <span className="block font-bold text-xs">{cat.label}</span>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{cat.desc}</span>
+                    {cat.label}
                   </button>
                 ))}
               </div>
@@ -1566,30 +1554,30 @@ export const PlatformSettingsModule = () => {
             {/* Audiencia y Título */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Audiencia Objetivo *
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Audiencia *
                 </label>
                 <select
                   value={newBroadcast.target}
                   onChange={(e) => setNewBroadcast({ ...newBroadcast, target: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer h-10"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 cursor-pointer h-10"
                 >
-                  <option value="ALL">👥 Toda la Red (Conductores + Cocheras)</option>
-                  <option value="CONDUCTORES">🚗 Solo Conductores</option>
-                  <option value="COCHERAS">🏢 Solo Cocheras Afiliadas</option>
+                  <option value="ALL">Toda la red (conductores y cocheras)</option>
+                  <option value="CONDUCTORES">Solo conductores</option>
+                  <option value="COCHERAS">Solo cocheras afiliadas</option>
                 </select>
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Título del Comunicado *
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Título del comunicado *
                 </label>
                 <Input
                   type="text"
-                  placeholder="Ej. ¡20% de Descuento en Cocheras del Centro!"
+                  placeholder="Ej. 20% de descuento en cocheras del centro"
                   value={newBroadcast.title}
                   onChange={(e) => setNewBroadcast({ ...newBroadcast, title: e.target.value })}
-                  className="text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                  className="text-xs font-semibold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   required
                 />
               </div>
@@ -1597,28 +1585,28 @@ export const PlatformSettingsModule = () => {
 
             {/* Campos condicionales para Promoción */}
             {newBroadcast.category === 'promo' && (
-              <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/60 space-y-3">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-purple-700 dark:text-purple-300">
-                  <Tag className="w-3.5 h-3.5" />
-                  <span>Configuración del Cupón Promocional</span>
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <Tag className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Configuración del cupón promocional</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Código del Cupón
+                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Código del cupón
                     </label>
                     <Input
                       type="text"
                       placeholder="Ej. SEMANASANTA20"
                       value={newBroadcast.promo_code}
                       onChange={(e) => setNewBroadcast({ ...newBroadcast, promo_code: e.target.value.toUpperCase() })}
-                      className="text-xs font-mono font-bold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                      className="text-xs font-mono font-semibold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Porcentaje de Descuento (%)
+                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Descuento (%)
                     </label>
                     <Input
                       type="number"
@@ -1627,19 +1615,19 @@ export const PlatformSettingsModule = () => {
                       placeholder="20"
                       value={newBroadcast.discount_percent}
                       onChange={(e) => setNewBroadcast({ ...newBroadcast, discount_percent: Number(e.target.value) })}
-                      className="text-xs font-bold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                      className="text-xs font-semibold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Fecha Límite de Vigencia
+                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Fecha límite
                     </label>
                     <Input
                       type="date"
                       value={newBroadcast.expires_at}
                       onChange={(e) => setNewBroadcast({ ...newBroadcast, expires_at: e.target.value })}
-                      className="text-xs font-bold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                      className="text-xs font-semibold h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                     />
                   </div>
                 </div>
@@ -1648,15 +1636,15 @@ export const PlatformSettingsModule = () => {
 
             {/* Mensaje */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Mensaje o Descripción Detallada *
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Mensaje o descripción *
               </label>
               <textarea
                 rows={3}
-                placeholder="Escribe el contenido que verán los usuarios en la notificación y el modal..."
+                placeholder="Escribe el contenido del comunicado..."
                 value={newBroadcast.message}
                 onChange={(e) => setNewBroadcast({ ...newBroadcast, message: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs font-normal text-slate-800 dark:text-slate-200 focus:outline-none"
                 required
               />
             </div>
@@ -1664,8 +1652,8 @@ export const PlatformSettingsModule = () => {
             {/* Banner de Imagen */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Banner de Imagen (URL Opcional)
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Banner de imagen (URL opcional)
                 </label>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {IMAGE_PRESETS.map((p, idx) => (
@@ -1673,7 +1661,7 @@ export const PlatformSettingsModule = () => {
                       key={idx}
                       type="button"
                       onClick={() => setNewBroadcast({ ...newBroadcast, image_url: p.url })}
-                      className="text-[10px] font-bold text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 cursor-pointer"
+                      className="text-[10px] font-semibold text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 cursor-pointer"
                     >
                       {p.label}
                     </button>
@@ -1682,7 +1670,7 @@ export const PlatformSettingsModule = () => {
                     <button
                       type="button"
                       onClick={() => setNewBroadcast({ ...newBroadcast, image_url: '' })}
-                      className="text-[10px] font-bold text-rose-500 hover:text-rose-600 px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/40 cursor-pointer"
+                      className="text-[10px] font-semibold text-rose-500 hover:text-rose-600 px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/40 cursor-pointer"
                     >
                       Quitar
                     </button>
@@ -1692,14 +1680,14 @@ export const PlatformSettingsModule = () => {
 
               <Input
                 type="url"
-                placeholder="https://images.unsplash.com/... o enlace directo a imagen"
+                placeholder="https://... enlace directo a imagen"
                 value={newBroadcast.image_url}
                 onChange={(e) => setNewBroadcast({ ...newBroadcast, image_url: e.target.value })}
-                className="text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                className="text-xs font-normal h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
 
               {newBroadcast.image_url && (
-                <div className="relative w-full h-24 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900">
+                <div className="relative w-full h-24 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900">
                   <img
                     src={newBroadcast.image_url}
                     alt="Previsualización"
@@ -1716,31 +1704,31 @@ export const PlatformSettingsModule = () => {
             {/* Botón de Acción Opcional (CTA) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Texto del Botón de Acción (Opcional)
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Texto del botón de acción (opcional)
                 </label>
                 <Input
                   type="text"
-                  placeholder="Ej. Reservar con Descuento"
+                  placeholder="Ej. Ver cocheras"
                   value={newBroadcast.action_label}
                   onChange={(e) => setNewBroadcast({ ...newBroadcast, action_label: e.target.value })}
-                  className="text-xs font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                  className="text-xs font-normal h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Pestaña de Destino (Opcional)
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Destino (opcional)
                 </label>
                 <select
                   value={newBroadcast.action_url}
                   onChange={(e) => setNewBroadcast({ ...newBroadcast, action_url: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer h-10"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 cursor-pointer h-10"
                 >
-                  <option value="dashboard">🗺️ Dashboard / Exploración de Cocheras</option>
-                  <option value="history">📅 Mis Reservas (Historial)</option>
-                  <option value="vehicles">🚗 Mi Garaje de Vehículos</option>
-                  <option value="settings">⚙️ Ajustes del Sistema</option>
+                  <option value="dashboard">Exploración de cocheras (Dashboard)</option>
+                  <option value="history">Historial de reservas</option>
+                  <option value="vehicles">Garaje de vehículos</option>
+                  <option value="settings">Ajustes del sistema</option>
                 </select>
               </div>
             </div>
@@ -1750,16 +1738,16 @@ export const PlatformSettingsModule = () => {
                 type="button"
                 variant="outline"
                 onClick={() => setShowBroadcastModal(false)}
-                className="text-xs font-bold h-10 px-4 rounded-xl border-slate-200 dark:border-slate-800 cursor-pointer"
+                className="text-xs font-semibold h-10 px-4 rounded-xl border-slate-200 dark:border-slate-800 cursor-pointer"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs h-10 px-6 rounded-xl shadow-md gap-2 cursor-pointer"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-xs gap-2 cursor-pointer"
               >
                 <Send className="w-4 h-4" />
-                <span>Emitir a la Red</span>
+                <span>Emitir comunicado</span>
               </Button>
             </div>
           </form>

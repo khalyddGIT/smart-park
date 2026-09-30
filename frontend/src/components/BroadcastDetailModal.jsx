@@ -26,7 +26,7 @@ export const BroadcastDetailModal = ({ broadcast, isOpen, onClose, onNavigate })
     if (!broadcast.promo_code) return;
     navigator.clipboard.writeText(broadcast.promo_code);
     setCopied(true);
-    toast.success(`¡Código ${broadcast.promo_code} copiado al portapapeles!`);
+    toast.success(`Código ${broadcast.promo_code} copiado al portapapeles`);
     setTimeout(() => setCopied(false), 2500);
   };
 
@@ -42,20 +42,20 @@ export const BroadcastDetailModal = ({ broadcast, isOpen, onClose, onNavigate })
   const isUrgent = broadcast.category === 'urgent';
 
   const categoryLabel = isPromo 
-    ? 'Promoción Exclusiva' 
+    ? 'Promoción' 
     : isMaintenance 
-    ? 'Mantenimiento de Red' 
+    ? 'Mantenimiento' 
     : isUrgent 
-    ? 'Alerta Prioritaria' 
-    : 'Comunicado Oficial';
+    ? 'Aviso Urgente' 
+    : 'Informativo';
 
   const categoryBadgeClass = isPromo
-    ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+    ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700'
     : isMaintenance
-    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+    ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800/50'
     : isUrgent
-    ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800'
-    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+    ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800/50'
+    : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700';
 
   const CategoryIcon = isPromo ? Sparkles : isMaintenance ? Wrench : isUrgent ? AlertTriangle : Megaphone;
 
@@ -75,7 +75,7 @@ export const BroadcastDetailModal = ({ broadcast, isOpen, onClose, onNavigate })
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
             
             <div className="absolute top-3 left-3">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border backdrop-blur-md shadow-xs ${categoryBadgeClass}`}>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold border backdrop-blur-md shadow-xs ${categoryBadgeClass}`}>
                 <CategoryIcon className="w-3.5 h-3.5" />
                 {categoryLabel}
               </span>
@@ -89,15 +89,15 @@ export const BroadcastDetailModal = ({ broadcast, isOpen, onClose, onNavigate })
             </button>
 
             {broadcast.discount_percent && (
-              <div className="absolute bottom-3 right-3 bg-emerald-500 text-slate-950 font-black text-sm px-3 py-1 rounded-xl shadow-lg flex items-center gap-1">
-                <span>{broadcast.discount_percent}% DSCTO</span>
+              <div className="absolute bottom-3 right-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold text-xs px-2.5 py-1 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+                <span>-{broadcast.discount_percent}%</span>
               </div>
             )}
           </div>
         ) : (
           <DialogHeader className="p-6 pb-2 border-b border-slate-100 dark:border-slate-800/80">
             <div className="flex items-center justify-between">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border ${categoryBadgeClass}`}>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${categoryBadgeClass}`}>
                 <CategoryIcon className="w-3.5 h-3.5" />
                 {categoryLabel}
               </span>
@@ -108,7 +108,7 @@ export const BroadcastDetailModal = ({ broadcast, isOpen, onClose, onNavigate })
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <DialogTitle className="text-lg font-black mt-2 text-slate-900 dark:text-white">
+            <DialogTitle className="text-lg font-bold mt-2 text-slate-900 dark:text-white">
               {broadcast.title}
             </DialogTitle>
             <DialogDescription className="text-[11px] text-slate-400 font-mono flex items-center gap-2 mt-1">
@@ -121,7 +121,7 @@ export const BroadcastDetailModal = ({ broadcast, isOpen, onClose, onNavigate })
         <div className="p-6 space-y-4">
           {broadcast.image_url && (
             <div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
                 {broadcast.title}
               </h3>
               <p className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5 mt-1">
@@ -136,23 +136,23 @@ export const BroadcastDetailModal = ({ broadcast, isOpen, onClose, onNavigate })
 
           {/* Tarjeta de Cupón de Descuento Promocional */}
           {broadcast.promo_code && (
-            <div className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-emerald-500/10 border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="space-y-1 text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-1.5 text-purple-700 dark:text-purple-300 font-bold text-xs">
-                  <Tag className="w-3.5 h-3.5" />
-                  <span>Código de Promoción</span>
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                  <Tag className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Código promocional</span>
                   {broadcast.discount_percent && (
-                    <span className="bg-purple-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md">
+                    <span className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-[10px] font-bold px-1.5 py-0.5 rounded">
                       -{broadcast.discount_percent}%
                     </span>
                   )}
                 </div>
-                <div className="font-mono text-base font-black tracking-widest text-slate-900 dark:text-white">
+                <div className="font-mono text-base font-bold tracking-wider text-slate-900 dark:text-white">
                   {broadcast.promo_code}
                 </div>
                 {broadcast.expires_at && (
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    Vigencia hasta: {broadcast.expires_at}
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Válido hasta: {broadcast.expires_at}
                   </p>
                 )}
               </div>
@@ -160,10 +160,10 @@ export const BroadcastDetailModal = ({ broadcast, isOpen, onClose, onNavigate })
               <Button
                 type="button"
                 onClick={handleCopyCode}
-                className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs h-9 px-4 rounded-xl gap-1.5 cursor-pointer shadow-sm shrink-0"
+                className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-semibold text-xs h-9 px-4 rounded-xl gap-1.5 cursor-pointer shadow-xs shrink-0"
               >
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? '¡Copiado!' : 'Copiar Código'}</span>
+                <span>{copied ? 'Copiado' : 'Copiar código'}</span>
               </Button>
             </div>
           )}
@@ -174,7 +174,7 @@ export const BroadcastDetailModal = ({ broadcast, isOpen, onClose, onNavigate })
               <Button
                 type="button"
                 onClick={handleAction}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs h-11 rounded-xl gap-2 cursor-pointer shadow-md transition"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 rounded-xl gap-2 cursor-pointer shadow-sm transition"
               >
                 <span>{broadcast.action_label}</span>
                 <ArrowRight className="w-4 h-4" />

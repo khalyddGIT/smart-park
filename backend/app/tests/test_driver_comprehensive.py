@@ -208,6 +208,10 @@ async def test_driver_privacy_and_security_boundaries():
         })
         parking_id = p_resp.json()["id"]
 
+        # Brand new driver has 0 reviews under ?mine=true
+        my_initial_reviews = (await ac.get("/api/v1/reviews?mine=true", headers=driver_headers)).json()
+        assert my_initial_reviews == []
+
         # Driver posts review
         rev_res = await ac.post("/api/v1/reviews", headers=driver_headers, json={
             "parking_id": parking_id,
@@ -215,6 +219,11 @@ async def test_driver_privacy_and_security_boundaries():
             "comment": "Buena atención y seguridad"
         })
         rev_id = rev_res.json()["id"]
+
+        # Now ?mine=true contains the driver's own review
+        my_reviews_after = (await ac.get("/api/v1/reviews?mine=true", headers=driver_headers)).json()
+        assert len(my_reviews_after) == 1
+        assert my_reviews_after[0]["id"] == rev_id
 
         # Driver reports incident
         inc_res = await ac.post("/api/v1/incidents", headers=driver_headers, json={

@@ -19,6 +19,8 @@ async def list_reviews(
     parking_id: Optional[int] = None,
     min_rating: Optional[int] = None,
     is_hidden: Optional[bool] = None,
+    user_id: Optional[int] = None,
+    mine: Optional[bool] = None,
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user)
 ):
@@ -27,6 +29,10 @@ async def list_reviews(
         stmt = stmt.where(Review.parking_id == parking_id)
     if min_rating:
         stmt = stmt.where(Review.rating >= min_rating)
+    if user_id:
+        stmt = stmt.where(Review.user_id == user_id)
+    if mine and current_user:
+        stmt = stmt.where(Review.user_id == current_user.id)
     
     # Privacidad: Usuarios regulares o no autenticados NUNCA ven reseñas ocultadas/desactivadas
     if not current_user or current_user.role == "user":

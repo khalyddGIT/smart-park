@@ -53,6 +53,9 @@ export const ReviewsModule = () => {
   const [parkingsMap, setParkingsMap] = useState({});
   const [loading, setLoading] = useState(true);
 
+  // Pestaña activa para conductores ('mine' = Mis Reseñas, 'community' = Opiniones de la Red)
+  const [driverTab, setDriverTab] = useState('mine');
+
   // Filtros
   const [ratingFilter, setRatingFilter] = useState('all');
   const [visibilityFilter, setVisibilityFilter] = useState('all'); // 'all' | 'visible' | 'hidden'
@@ -114,12 +117,31 @@ export const ReviewsModule = () => {
     return new Set((myEstablishments || []).map(e => String(e.id)));
   }, [myEstablishments]);
 
+  // Reseñas redactadas por el propio usuario logueado
+  const myReviews = useMemo(() => {
+    return reviews.filter(r => {
+      if (user?.id && r.user_id === user.id) return true;
+      if (user?.full_name && r.user_name && r.user_name.trim().toLowerCase() === user.full_name.trim().toLowerCase()) return true;
+      return false;
+    });
+  }, [reviews, user]);
+
+  // Reseñas públicas visibles de la red
+  const communityReviews = useMemo(() => {
+    return reviews.filter(r => !r.is_hidden);
+  }, [reviews]);
+
+  // Reseñas según rol y pestaña activa
   const scopedReviews = useMemo(() => {
     if (role === 'local') {
       return reviews.filter(r => myParkingIds.has(String(r.parking_id)));
     }
-    return reviews;
-  }, [reviews, role, myParkingIds]);
+    if (role === 'platform') {
+      return reviews;
+    }
+    // Para conductor regular (role === 'user'):
+    return driverTab === 'mine' ? myReviews : communityReviews;
+  }, [reviews, role, myParkingIds, driverTab, myReviews, communityReviews]);
 
   // Manejar creación de reseña (Conductor)
   const handleCreateReview = async (e) => {
@@ -194,13 +216,17 @@ export const ReviewsModule = () => {
     }
   };
 
-  // Eliminar reseña (Solo SuperAdmin)
+  // Eliminar reseña (SuperAdmin o el propio autor)
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Deseas eliminar permanentemente esta reseña de la plataforma?')) return;
+    const isOwnReview = myReviews.some(r => r.id === id);
+    const confirmMsg = isOwnReview
+      ? '¿Deseas eliminar tu reseña? Esta acción no se puede deshacer.'
+      : '¿Deseas eliminar permanentemente esta reseña de la plataforma?';
+    if (!window.confirm(confirmMsg)) return;
     try {
       await api.delete(`/reviews/${id}`);
       setReviews(prev => prev.filter(r => r.id !== id));
-      notify('Reseña eliminada del sistema.');
+      notify('Reseña eliminada con éxito.');
     } catch (err) {
       notify('No se pudo eliminar la reseña.', 'error');
     }
@@ -237,7 +263,7 @@ export const ReviewsModule = () => {
     });
   }, [scopedReviews, ratingFilter, visibilityFilter, parkingFilter, searchQuery, isAdmin, parkingsMap]);
 
-  // Métricas KPI
+  // Métricas KPI para Administradores
   const totalCount = scopedReviews.length;
   const visibleCount = scopedReviews.filter(r => !r.is_hidden).length;
   const hiddenCount = scopedReviews.filter(r => r.is_hidden).length;
@@ -246,6 +272,20 @@ export const ReviewsModule = () => {
   const avgRating = totalCount > 0
     ? (scopedReviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / totalCount).toFixed(1)
     : '—';
+
+  // Métricas KPI para Conductor - Mis Reseñas
+  const myCount = myReviews.length;
+  const myAvgRating = myCount > 0
+    ? (myReviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / myCount).toFixed(1)
+    : '—';
+  const myRepliedCount = myReviews.filter(r => !!r.response).length;
+
+  // Métricas KPI para Conductor - Comunidad
+  const commCount = communityReviews.length;
+  const commAvgRating = commCount > 0
+    ? (communityReviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / commCount).toFixed(1)
+    : '—';
+  const commParkingsCount = new Set(communityReviews.map(r => r.parking_id)).size;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in">
@@ -271,12 +311,14 @@ export const ReviewsModule = () => {
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              {role === 'user' && 'Reseñas & Experiencias de Usuarios'}
+              {role === 'user' && (driverTab === 'mine' ? 'Mis Reseñas & Calificaciones' : 'Opiniones de la Comunidad')}
               {role === 'local' && 'Gestión y Moderación de Reseñas'}
               {role === 'platform' && 'Supervisión Global de Calidad & Reseñas'}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {role === 'user' && 'Consulta valoraciones de otros conductores y califica tus estancias en la red.'}
+              {role === 'user' && (driverTab === 'mine'
+                ? 'Historial personal de las valoraciones y comentarios que has redactado.'
+                : 'Consulta valoraciones de otros conductores sobre el servicio de las cocheras.')}
               {role === 'local' && 'Responde a clientes y modera la visibilidad de opiniones en tus sedes.'}
               {role === 'platform' && 'Monitoreo de reputación y moderación de contenido en todas las cocheras.'}
             </p>
@@ -289,7 +331,7 @@ export const ReviewsModule = () => {
             onClick={() => setShowAddModal(true)}
             variant="primary"
             size="md"
-            className="gap-2 font-bold cursor-pointer"
+            className="gap-2 font-bold cursor-pointer rounded-2xl bg-amber-500 hover:bg-amber-600 text-white"
           >
             <Plus className="w-5 h-5 shrink-0" />
             <span>Dejar Reseña</span>
@@ -297,76 +339,220 @@ export const ReviewsModule = () => {
         )}
       </div>
 
-      {/* Tarjetas KPI para métricas de reputación */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {/* KPI: Calificación Promedio */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Puntuación Media</span>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
-            </div>
-          </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-amber-600 dark:text-amber-400">{avgRating}</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">sobre 5.0 estrellas</span>
-          </div>
-        </div>
+      {/* Selector de Pestañas para Conductores (Mis Reseñas vs Comunidad) */}
+      {role === 'user' && (
+        <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs">
+          <button
+            onClick={() => setDriverTab('mine')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+              driverTab === 'mine'
+                ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow-xs font-black'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>Mis Reseñas</span>
+            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${
+              driverTab === 'mine'
+                ? 'bg-white/20 text-white'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+            }`}>
+              {myReviews.length}
+            </span>
+          </button>
 
-        {/* KPI: Total de Opiniones */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-24 h-24 bg-slate-400/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Reseñas</span>
-            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
-              <MessageSquare className="w-4 h-4 stroke-[2.2]" />
-            </div>
-          </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">{totalCount}</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Registradas</span>
-          </div>
+          <button
+            onClick={() => setDriverTab('community')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+              driverTab === 'community'
+                ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow-xs font-black'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Opiniones de la Comunidad</span>
+            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${
+              driverTab === 'community'
+                ? 'bg-white/20 text-white'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+            }`}>
+              {communityReviews.length}
+            </span>
+          </button>
         </div>
+      )}
 
-        {/* KPI: Tasa de Respuesta */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tasa de Respuesta</span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
-              <Reply className="w-4 h-4 stroke-[2.2]" />
+      {/* Tarjetas KPI según Rol y Pestaña */}
+      {role === 'user' && driverTab === 'mine' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          {/* KPI: Mis Reseñas */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Mis Reseñas</span>
+              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800/80 flex items-center justify-center shrink-0">
+                <MessageSquare className="w-4 h-4 stroke-[2.2]" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">{myCount}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Redactadas</span>
             </div>
           </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{responseRate}%</span>
-            <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80">
-              {repliedCount} atendidas
-            </span>
-          </div>
-        </div>
 
-        {/* KPI: Moderación / Ocultas */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {isAdmin ? 'Ocultas / Desactivadas' : 'Opiniones Públicas'}
-            </span>
-            <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/80 dark:border-purple-800/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0">
-              {isAdmin ? <EyeOff className="w-4 h-4 stroke-[2.2]" /> : <ShieldCheck className="w-4 h-4 stroke-[2.2]" />}
+          {/* KPI: Mi Calificación Media */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Puntuación Media Otorgada</span>
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/80 flex items-center justify-center shrink-0">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-amber-600 dark:text-amber-400">{myAvgRating}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">sobre 5.0</span>
             </div>
           </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-purple-600 dark:text-purple-400">
-              {isAdmin ? hiddenCount : visibleCount}
-            </span>
-            <span className="text-xs text-purple-700 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800/80">
-              {isAdmin ? `${visibleCount} públicas` : 'Verificadas'}
-            </span>
+
+          {/* KPI: Respuestas Recibidas */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Respuestas Recibidas</span>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-center shrink-0">
+                <Reply className="w-4 h-4 stroke-[2.2]" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{myRepliedCount}</span>
+              <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80">
+                De administradores
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      ) : role === 'user' && driverTab === 'community' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          {/* KPI: Puntuación Red */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Puntuación de la Red</span>
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/80 flex items-center justify-center shrink-0">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-amber-600 dark:text-amber-400">{commAvgRating}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">sobre 5.0 estrellas</span>
+            </div>
+          </div>
+
+          {/* KPI: Opiniones de la Comunidad */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Opiniones Públicas</span>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-center shrink-0">
+                <MessageSquare className="w-4 h-4 stroke-[2.2]" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">{commCount}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Conductores verificados</span>
+            </div>
+          </div>
+
+          {/* KPI: Cocheras Evaluadas */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Cocheras Evaluadas</span>
+              <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/80 dark:border-purple-800/80 flex items-center justify-center shrink-0">
+                <Building2 className="w-4 h-4 stroke-[2.2]" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-purple-600 dark:text-purple-400">{commParkingsCount}</span>
+              <span className="text-xs text-purple-700 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800/80">
+                Establecimientos
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Tarjetas KPI para Administradores (Local & Platform) */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* KPI: Calificación Promedio */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Puntuación Media</span>
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/80 flex items-center justify-center shrink-0">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-amber-600 dark:text-amber-400">{avgRating}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">sobre 5.0 estrellas</span>
+            </div>
+          </div>
+
+          {/* KPI: Total de Opiniones */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-slate-400/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Reseñas</span>
+              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0">
+                <MessageSquare className="w-4 h-4 stroke-[2.2]" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">{totalCount}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Registradas</span>
+            </div>
+          </div>
+
+          {/* KPI: Tasa de Respuesta */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tasa de Respuesta</span>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-center shrink-0">
+                <Reply className="w-4 h-4 stroke-[2.2]" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{responseRate}%</span>
+              <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80">
+                {repliedCount} atendidas
+              </span>
+            </div>
+          </div>
+
+          {/* KPI: Moderación / Ocultas */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 shadow-xs hover:shadow-md transition relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Ocultas / Desactivadas
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/80 dark:border-purple-800/80 flex items-center justify-center shrink-0">
+                <EyeOff className="w-4 h-4 stroke-[2.2]" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-purple-600 dark:text-purple-400">
+                {hiddenCount}
+              </span>
+              <span className="text-xs text-purple-700 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800/80">
+                {visibleCount} públicas
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Barra de Búsqueda y Filtros */}
       <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#111827] shadow-xs flex flex-col lg:flex-row items-center justify-between gap-4">
@@ -375,7 +561,11 @@ export const ReviewsModule = () => {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 shrink-0 text-slate-400" />
           <Input
             type="text"
-            placeholder="Buscar por usuario, comentario o sede..."
+            placeholder={
+              role === 'user' && driverTab === 'mine'
+                ? 'Buscar en mis opiniones redactadas...'
+                : 'Buscar por usuario, comentario o sede...'
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -390,8 +580,8 @@ export const ReviewsModule = () => {
           )}
         </div>
 
-        {/* Filtro por Cochera (Admins con múltiples sedes) */}
-        {isAdmin && Object.keys(parkingsMap).length > 1 && (
+        {/* Filtro por Cochera (Admins o Conductor explorando comunidad) */}
+        {(isAdmin || (role === 'user' && driverTab === 'community')) && Object.keys(parkingsMap).length > 1 && (
           <select
             value={parkingFilter}
             onChange={(e) => setParkingFilter(e.target.value)}
@@ -454,25 +644,73 @@ export const ReviewsModule = () => {
           <span className="text-sm font-bold">Cargando reseñas...</span>
         </div>
       ) : filteredReviews.length === 0 ? (
-        <div className="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-12 text-center shadow-xs space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
-            <MessageSquare className="w-7 h-7" />
+        <div className="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-10 sm:p-12 text-center shadow-xs space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 border border-amber-200/80 dark:border-amber-800/60 flex items-center justify-center mx-auto">
+            <MessageSquare className="w-8 h-8" />
           </div>
-          {searchQuery || ratingFilter !== 'all' || visibilityFilter !== 'all' ? (
-            <>
+          {searchQuery || ratingFilter !== 'all' || (isAdmin && visibilityFilter !== 'all') ? (
+            <div className="space-y-3">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Ninguna reseña coincide con los filtros aplicados</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Prueba limpiando la búsqueda o cambiando el filtro de estrellas o visibilidad.</p>
-            </>
-          ) : role === 'user' ? (
-            <>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Aún no hay reseñas registradas</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Sé el primero en compartir tu experiencia en nuestras cocheras afiliadas.</p>
-            </>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Prueba limpiando la búsqueda o cambiando el filtro de estrellas o sede.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setSearchQuery(''); setRatingFilter('all'); setParkingFilter('all'); }}
+                className="text-xs font-bold rounded-xl"
+              >
+                Limpiar Filtros
+              </Button>
+            </div>
+          ) : role === 'user' && driverTab === 'mine' ? (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Aún no has escrito ninguna reseña</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  Tu cuenta no tiene reseñas registradas. Cuando reserves o te estaciones en una cochera, comparte tu experiencia aquí para ayudar a otros conductores.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <Button
+                  onClick={() => setShowAddModal(true)}
+                  variant="primary"
+                  size="sm"
+                  className="gap-2 font-bold cursor-pointer rounded-xl bg-amber-500 hover:bg-amber-600 text-white"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <span>Dejar mi primera reseña</span>
+                </Button>
+                <Button
+                  onClick={() => setDriverTab('community')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 font-bold cursor-pointer rounded-xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+                >
+                  <MessageSquare className="w-4 h-4 shrink-0 text-slate-400" />
+                  <span>Ver opiniones de la comunidad</span>
+                </Button>
+              </div>
+            </div>
+          ) : role === 'user' && driverTab === 'community' ? (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">No hay opiniones públicas todavía</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Sé el primero en compartir tu experiencia en nuestras cocheras afiliadas.</p>
+              </div>
+              <Button
+                onClick={() => setShowAddModal(true)}
+                variant="primary"
+                size="sm"
+                className="gap-2 font-bold cursor-pointer rounded-xl bg-amber-500 hover:bg-amber-600 text-white"
+              >
+                <Plus className="w-4 h-4 shrink-0" />
+                <span>Dejar Reseña</span>
+              </Button>
+            </div>
           ) : (
-            <>
+            <div className="space-y-1">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white">No hay reseñas para mostrar</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Las valoraciones de los conductores que utilicen tus sedes aparecerán aquí.</p>
-            </>
+            </div>
           )}
         </div>
       ) : (
@@ -480,6 +718,7 @@ export const ReviewsModule = () => {
           {filteredReviews.map((r) => {
             const isHidden = !!r.is_hidden;
             const isToggling = togglingVisibilityId === r.id;
+            const isOwnReview = (user?.id && r.user_id === user.id) || (user?.full_name && r.user_name && r.user_name.trim().toLowerCase() === user.full_name.trim().toLowerCase());
 
             return (
               <Card
@@ -521,6 +760,14 @@ export const ReviewsModule = () => {
                                 <span>Pública</span>
                               </>
                             )}
+                          </span>
+                        )}
+
+                        {/* Badge para el Autor de la Reseña */}
+                        {isOwnReview && (
+                          <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-lg border bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 flex items-center gap-1.5">
+                            <User className="w-3.5 h-3.5" />
+                            <span>Tu Reseña</span>
                           </span>
                         )}
                       </div>
@@ -580,11 +827,11 @@ export const ReviewsModule = () => {
                       </button>
                     )}
 
-                    {/* BOTÓN ELIMINAR (SUPERADMIN) */}
-                    {role === 'platform' && (
+                    {/* BOTÓN ELIMINAR (SUPERADMIN O PROPIO AUTOR) */}
+                    {(role === 'platform' || isOwnReview) && (
                       <button
                         onClick={() => handleDelete(r.id)}
-                        title="Eliminar permanentemente"
+                        title={isOwnReview ? "Eliminar mi reseña" : "Eliminar permanentemente"}
                         className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl border border-rose-200 dark:border-rose-900 transition cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />

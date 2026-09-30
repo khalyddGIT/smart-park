@@ -18,7 +18,8 @@ import {
   LogOut,
   Timer,
   CreditCard,
-  Search
+  Search,
+  LayoutGrid
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -518,9 +519,10 @@ export const ANPRMonitor = () => {
               <Button
                 type="button"
                 onClick={() => setShowZoneEditor(true)}
-                className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs h-10 px-4 rounded-2xl gap-1.5 shadow transition-colors"
+                title="Configurar y organizar la distribución de plazas en el plano"
+                className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs h-10 px-4 rounded-2xl gap-2 shadow transition-colors"
               >
-                <Pencil className="w-4 h-4 text-emerald-400 dark:text-white" /> Calibrar Plazas CAD
+                <LayoutGrid className="w-4 h-4 text-emerald-400 dark:text-white" /> Distribuir Plazas
               </Button>
             )}
           </div>

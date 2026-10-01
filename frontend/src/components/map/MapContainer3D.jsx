@@ -343,11 +343,25 @@ export const MapContainer3D = ({
         easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
       });
 
-      if (shouldOpenPopup && parkingId && markersRef.current[parkingId]) {
-        const marker = markersRef.current[parkingId];
-        const popup = marker.getPopup ? marker.getPopup() : null;
-        if (popup && !popup.isOpen()) {
-          marker.togglePopup();
+      if (shouldOpenPopup && parkingId) {
+        // Cerrar cualquier otro popup abierto para evitar solapamientos
+        Object.entries(markersRef.current).forEach(([otherId, otherMarker]) => {
+          if (String(otherId) !== String(parkingId)) {
+            const otherPop = otherMarker.getPopup ? otherMarker.getPopup() : null;
+            if (otherPop && typeof otherPop.isOpen === 'function' && otherPop.isOpen()) {
+              otherPop.remove();
+            }
+          }
+        });
+
+        const targetMarker = markersRef.current[parkingId] || 
+                             markersRef.current[String(parkingId)] || 
+                             markersRef.current[Number(parkingId)];
+        if (targetMarker) {
+          const popup = targetMarker.getPopup ? targetMarker.getPopup() : null;
+          if (popup && typeof popup.isOpen === 'function' && !popup.isOpen()) {
+            targetMarker.togglePopup();
+          }
         }
       }
     } else if (mapEngineRef.current === 'leaflet') {
@@ -367,10 +381,20 @@ export const MapContainer3D = ({
         map.flyTo([coords[1], coords[0]], targetZoom, { duration: 1.0 });
       }
 
-      if (shouldOpenPopup && parkingId && markersRef.current[parkingId]) {
-        const marker = markersRef.current[parkingId];
-        if (marker.openPopup && !marker.isPopupOpen()) {
-          marker.openPopup();
+      if (shouldOpenPopup && parkingId) {
+        Object.entries(markersRef.current).forEach(([otherId, otherMarker]) => {
+          if (String(otherId) !== String(parkingId)) {
+            if (typeof otherMarker.closePopup === 'function' && typeof otherMarker.isPopupOpen === 'function' && otherMarker.isPopupOpen()) {
+              otherMarker.closePopup();
+            }
+          }
+        });
+
+        const targetMarker = markersRef.current[parkingId] || 
+                             markersRef.current[String(parkingId)] || 
+                             markersRef.current[Number(parkingId)];
+        if (targetMarker && typeof targetMarker.openPopup === 'function' && typeof targetMarker.isPopupOpen === 'function' && !targetMarker.isPopupOpen()) {
+          targetMarker.openPopup();
         }
       }
     }
@@ -598,8 +622,7 @@ export const MapContainer3D = ({
       `;
 
       // Card Popup con diseño editorial, elegante y sin choque visual
-      const popupContent = document.createElement('div');
-      popupContent.innerHTML = `
+      const popupHTML = `
         <div style="font-family: inherit; width: 275px; overflow: hidden; border-radius: 18px;">
           <!-- Cabecera Fotográfica con Badges Flotantes -->
           <div style="position: relative; width: 100%; height: 125px; overflow: hidden; background: #0f172a;">
@@ -677,25 +700,31 @@ export const MapContainer3D = ({
       const wirePopupEvents = (closeFn) => {
         const btnClose = document.getElementById(`btn-close-${p.id}`);
         if (btnClose) {
-          btnClose.onclick = () => { closeFn(); };
+          btnClose.onclick = (e) => {
+            if (e) e.stopPropagation();
+            closeFn();
+          };
         }
         const btnQuick = document.getElementById(`btn-quick-${p.id}`);
         if (btnQuick && !isUnavailable) {
-          btnQuick.onclick = () => {
+          btnQuick.onclick = (e) => {
+            if (e) e.stopPropagation();
             closeFn();
             if (onQuickReservation) onQuickReservation(p);
           };
         }
         const btnSelect = document.getElementById(`btn-select-${p.id}`);
         if (btnSelect) {
-          btnSelect.onclick = () => {
+          btnSelect.onclick = (e) => {
+            if (e) e.stopPropagation();
             closeFn();
             if (onSelectParking) onSelectParking(p);
           };
         }
         const btnRoute = document.getElementById(`btn-route-${p.id}`);
         if (btnRoute) {
-          btnRoute.onclick = () => {
+          btnRoute.onclick = (e) => {
+            if (e) e.stopPropagation();
             closeFn();
             handleCalculateRoute(coords, p.name);
           };
@@ -721,13 +750,33 @@ export const MapContainer3D = ({
           closeButton: false,
           closeOnClick: true,
           maxWidth: '290px'
-        }).setDOMContent(popupContent);
+        }).setHTML(popupHTML);
         marker.setPopup(popup);
 
         el.addEventListener('click', (e) => {
           e.stopPropagation();
-          lastCenteredParkingIdRef.current = String(p.id);
-          smoothCenterOnParking(coords, p.id, false);
+
+          // 1. Cerrar cualquier otro popup que estuviera abierto en el mapa
+          Object.entries(markersRef.current).forEach(([otherId, otherMarker]) => {
+            if (String(otherId) !== String(p.id)) {
+              const otherPop = otherMarker.getPopup ? otherMarker.getPopup() : null;
+              if (otherPop && typeof otherPop.isOpen === 'function' && otherPop.isOpen()) {
+                otherPop.remove();
+              }
+            }
+          });
+
+          // 2. Alternar este popup: si ya está abierto lo cerramos; si está cerrado lo abrimos y centramos suavemente
+          const currentPop = marker.getPopup ? marker.getPopup() : null;
+          const isAlreadyOpen = currentPop && typeof currentPop.isOpen === 'function' ? currentPop.isOpen() : false;
+
+          if (isAlreadyOpen) {
+            marker.togglePopup();
+          } else {
+            marker.togglePopup();
+            lastCenteredParkingIdRef.current = String(p.id);
+            smoothCenterOnParking(coords, p.id, false);
+          }
         });
 
         marker.getPopup().on('open', () => {
@@ -745,9 +794,22 @@ export const MapContainer3D = ({
         });
 
         const marker = L.marker([coords[1], coords[0]], { icon: customIcon }).addTo(map);
-        marker.bindPopup(popupContent.innerHTML, { maxWidth: 290, className: 'leaflet-smartpark-popup' });
+        marker.bindPopup(popupHTML, { maxWidth: 290, className: 'leaflet-smartpark-popup' });
 
-        marker.on('click', () => {
+        marker.on('click', (e) => {
+          if (e && e.originalEvent) {
+            e.originalEvent.stopPropagation();
+          }
+
+          // Cerrar otros popups abiertos
+          Object.entries(markersRef.current).forEach(([otherId, otherMarker]) => {
+            if (String(otherId) !== String(p.id)) {
+              if (typeof otherMarker.closePopup === 'function' && typeof otherMarker.isPopupOpen === 'function' && otherMarker.isPopupOpen()) {
+                otherMarker.closePopup();
+              }
+            }
+          });
+
           lastCenteredParkingIdRef.current = String(p.id);
           smoothCenterOnParking(coords, p.id, false);
         });

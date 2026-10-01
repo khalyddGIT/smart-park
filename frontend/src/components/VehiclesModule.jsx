@@ -899,6 +899,109 @@ export const VehiclesModule = () => {
         onChange={handleFileUpload} 
       />
 
+      {/* Vista Previa de la Placa Oficial Peruana MTC */}
+      {(() => {
+        const plateConfig = getPeruvianPlateConfig(formData.vehicle_type, Boolean(formData.is_taxi));
+        return (
+          <div className="flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 transition-all">
+            <div className="flex items-center justify-between w-full mb-2.5 px-1">
+              <span className="text-[10px] sm:text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                Placa de Rodaje Oficial (MTC)
+              </span>
+              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border shadow-2xs ${plateConfig.badgeColor}`}>
+                {plateConfig.name}
+              </span>
+            </div>
+            
+            {/* Placa Metálica Estilizada Oficial MTC */}
+            <div className={`relative w-64 sm:w-72 h-32 rounded-2xl border-[3.5px] border-slate-950 shadow-xl flex flex-col justify-between overflow-hidden select-none ${plateConfig.bodyBg} transition-colors duration-200 ring-1 ring-black/25 ring-inset`}>
+              
+              {/* Remaches de fijación metálicos en las 4 esquinas */}
+              <div className="absolute top-1.5 left-2 w-2 h-2 rounded-full bg-slate-300 border border-slate-600 shadow-inner flex items-center justify-center z-10">
+                <div className="w-1 h-[1px] bg-slate-700 rotate-45" />
+              </div>
+              <div className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-slate-300 border border-slate-600 shadow-inner flex items-center justify-center z-10">
+                <div className="w-1 h-[1px] bg-slate-700 -rotate-45" />
+              </div>
+              <div className="absolute bottom-1.5 left-2 w-2 h-2 rounded-full bg-slate-300 border border-slate-600 shadow-inner flex items-center justify-center z-10">
+                <div className="w-1 h-[1px] bg-slate-700 -rotate-45" />
+              </div>
+              <div className="absolute bottom-1.5 right-2 w-2 h-2 rounded-full bg-slate-300 border border-slate-600 shadow-inner flex items-center justify-center z-10">
+                <div className="w-1 h-[1px] bg-slate-700 rotate-45" />
+              </div>
+
+              {/* Franja Superior Oficial */}
+              <div className={`w-full h-8 ${plateConfig.headerBg} border-b-2 border-slate-950 flex items-center justify-between px-3 relative z-5 transition-colors duration-200`}>
+                {/* Bandera del Perú (Rojo / Blanco / Rojo oficial) */}
+                <div className="w-6 h-3.5 rounded-[2px] border border-slate-900/60 flex overflow-hidden shadow-xs shrink-0" title="República del Perú">
+                  <div className="w-1/3 bg-[#d91023] h-full" />
+                  <div className="w-1/3 bg-white h-full" />
+                  <div className="w-1/3 bg-[#d91023] h-full" />
+                </div>
+
+                {/* Texto PERU centrado */}
+                <span className="font-sans font-black tracking-[0.28em] text-xs sm:text-[13px] text-slate-950 uppercase leading-none pl-2 select-none">
+                  PERU
+                </span>
+
+                {/* Holograma de Seguridad MTC */}
+                <div className="w-7 h-3.5 rounded-[2px] bg-gradient-to-tr from-slate-200 via-white to-slate-300 border border-slate-500/80 flex items-center justify-center text-[6px] font-mono font-black text-slate-700 shadow-2xs tracking-tighter" title="Holograma MTC">
+                  <span>MTC</span>
+                </div>
+              </div>
+
+              {/* Número de Placa Central Troquelado */}
+              <div className="flex-1 flex items-center justify-center px-4">
+                <span className="font-mono text-3xl sm:text-4xl font-black tracking-widest text-slate-950 uppercase drop-shadow-[0_1px_1px_rgba(0,0,0,0.3)] select-all">
+                  {formData.license_plate || plateConfig.defaultPlate}
+                </span>
+              </div>
+
+              {/* Pie de la Placa con número de serie y sello reflectante */}
+              <div className="w-full flex items-center justify-between px-3 pb-1 text-[7px] font-mono font-bold text-slate-800">
+                <span className="tracking-wider opacity-80">1234567</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-amber-400 via-emerald-400 to-cyan-400 opacity-80 border border-black/20 shadow-xs" title="Sello de Fabricación MTC" />
+              </div>
+            </div>
+
+            {/* Modalidad de servicio para Autos: Particular vs Taxi */}
+            {formData.vehicle_type === 'auto' && (
+              <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800 w-full justify-center">
+                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Modalidad:</span>
+                <div className="inline-flex rounded-lg p-0.5 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, is_taxi: false })}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                      !formData.is_taxi
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Particular (Blanca)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, is_taxi: true })}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                      formData.is_taxi
+                        ? 'bg-[#ffcc00] text-slate-950 shadow-2xs font-extrabold'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Taxi (Franja Amarilla)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center font-medium">
+              {plateConfig.categorySubtitle} · Formato según normativa MTC Perú
+            </p>
+          </div>
+        );
+      })()}
+
       {/* Input de Placa */}
       <div>
         <div className="flex items-center justify-between mb-1">

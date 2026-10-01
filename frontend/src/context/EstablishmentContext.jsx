@@ -2012,9 +2012,15 @@ export const EstablishmentProvider = ({ children }) => {
       const userSession = (() => { try { return JSON.parse(localStorage.getItem('smart_park_user_session') || '{}'); } catch { return {}; } })();
       const isStaffOrAdmin = userSession?.role === 'local' || userSession?.role === 'platform';
 
-      const data = isStaffOrAdmin 
-        ? await api.get('/reservations').then(r => r.data)
-        : await listMyReservations();
+      let data;
+      if (isStaffOrAdmin) {
+        const isWorker = isStaffOperatorUser(userSession);
+        const workerPid = isWorker ? (userSession.parking_id || userSession.parkingId || userSession.establishmentId) : null;
+        const params = workerPid ? { parking_id: workerPid } : undefined;
+        data = await api.get('/reservations', { params }).then(r => r.data);
+      } else {
+        data = await listMyReservations();
+      }
 
       const rawList = Array.isArray(data) ? data : (data?.items || []);
       if (Array.isArray(rawList) && rawList.length >= 0) {

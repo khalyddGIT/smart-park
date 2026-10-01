@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useEstablishments, parseIsoToDate, isMyEstablishment, isDemoEstablishment, isStaffOperatorUser } from '../context/EstablishmentContext';
+import { useEstablishments, parseIsoToDate, isMyEstablishment, isDemoEstablishment, isStaffOperatorUser, normalizeParkingId } from '../context/EstablishmentContext';
 import api, { getAccessToken } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
@@ -140,7 +140,9 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   // Estados de búsqueda y filtrado
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED'
-  const [parkingFilter, setParkingFilter] = useState('ALL');
+  const [parkingFilter, setParkingFilter] = useState(() => {
+    return isStaffOperatorUser(user) ? String(user?.parking_id || user?.parkingId || user?.establishmentId || '') : 'ALL';
+  });
   const [dateFilter, setDateFilter] = useState('ALL'); // 'ALL' | 'TODAY' | 'WEEK'
   
   // Modal de Nueva Reserva Manual / Express
@@ -186,10 +188,27 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   const availableSlots = (activeEstablishment?.elements || []).filter(el => el.type === 'slot' && el.status === 'free');
 
   const [currentParkingId, setCurrentParkingId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const qParams = new URLSearchParams(window.location.search);
+        const pFromUrl = qParams.get('parking') || qParams.get('parkingId') || qParams.get('parking_id');
+        if (pFromUrl) return pFromUrl;
+      } catch {}
+    }
     return myEstablishments[0]?.id || displayEstablishments[0]?.id || establishments[0]?.id || '';
   });
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const qParams = new URLSearchParams(window.location.search);
+        const pFromUrl = qParams.get('parking') || qParams.get('parkingId') || qParams.get('parking_id');
+        if (pFromUrl && String(pFromUrl) !== String(currentParkingId)) {
+          setCurrentParkingId(pFromUrl);
+          return;
+        }
+      } catch {}
+    }
     if (!currentParkingId && myEstablishments[0]?.id) {
       setCurrentParkingId(myEstablishments[0].id);
     }
@@ -201,6 +220,40 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
            myEstablishments[0] ||
            establishments[0];
   }, [myEstablishments, establishments, currentParkingId]);
+
+  // Aislamiento estricto de reservas: los trabajadores de garita solo ven su sede asignada
+  const scopedReservations = useMemo(() => {
+    if (role === 'user') return reservations;
+
+    // Rol Superadmin: ve todas las sedes legítimas (o filtra si eligió una sede en el dropdown)
+    if (role === 'platform') {
+      if (parkingFilter && parkingFilter !== 'ALL') {
+        return reservations.filter(r => String(r.parkingId || r.parking_id) === String(parkingFilter));
+      }
+      return reservations;
+    }
+
+    // Rol Trabajador / Operador de Garita: REGLA DE ORO
+    // Única y exclusivamente la sede designada al trabajador. Nunca sedes ajenas.
+    if (isStaffOperatorUser(user)) {
+      const assignedId = String(activeLocalEst?.id || user?.parking_id || user?.parkingId || user?.establishmentId || myEstablishments[0]?.id || '').trim();
+      if (!assignedId) return [];
+      return reservations.filter(r => {
+        const rPid = String(r.parkingId || r.parking_id || '').trim();
+        return rPid === assignedId || normalizeParkingId(rPid) === normalizeParkingId(assignedId);
+      });
+    }
+
+    // Rol Administrador Local (dueño): sedes pertenecientes a su empresa
+    const allowedPids = new Set(myEstablishments.map(e => String(e.id)));
+    if (parkingFilter && parkingFilter !== 'ALL') {
+      return reservations.filter(r => String(r.parkingId || r.parking_id) === String(parkingFilter));
+    }
+    return reservations.filter(r => {
+      const rPid = String(r.parkingId || r.parking_id || '').trim();
+      return allowedPids.has(rPid) || allowedPids.has(normalizeParkingId(rPid));
+    });
+  }, [reservations, role, user, activeLocalEst, myEstablishments, parkingFilter]);
 
   const effectiveHourlyRate = useMemo(() => {
     return getHourlyRateForVehicle(activeLocalEst, checkInVehicleType);
@@ -269,24 +322,18 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     if (!cleanEntryQuery) return null;
     const cleanPlateQ = cleanEntryQuery.replace(/[^A-Z0-9]/g, '');
     
-    // Buscar en reservas
-    const candidate = reservations.find(r => {
+    // Buscar en reservas autorizadas de la sede
+    const candidate = scopedReservations.find(r => {
       const isThisParking = !activeLocalEst?.id || String(r.parkingId || r.parking_id) === String(activeLocalEst.id);
       const codeMatch = (r.code || '').toUpperCase() === cleanEntryQuery || (r.code || '').toUpperCase().includes(cleanEntryQuery);
       const tokenMatch = (r.token || r.access_token || '').toUpperCase().includes(cleanEntryQuery);
       const plateClean = (r.plate || r.license_plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
       const plateMatch = plateClean && cleanPlateQ && (plateClean === cleanPlateQ || plateClean.includes(cleanPlateQ));
       return isThisParking && (codeMatch || tokenMatch || plateMatch);
-    }) || reservations.find(r => {
-      const codeMatch = (r.code || '').toUpperCase() === cleanEntryQuery || (r.code || '').toUpperCase().includes(cleanEntryQuery);
-      const tokenMatch = (r.token || r.access_token || '').toUpperCase().includes(cleanEntryQuery);
-      const plateClean = (r.plate || r.license_plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      const plateMatch = plateClean && cleanPlateQ && (plateClean === cleanPlateQ || plateClean.includes(cleanPlateQ));
-      return codeMatch || tokenMatch || plateMatch;
     });
 
     return candidate || null;
-  }, [reservations, cleanEntryQuery, activeLocalEst]);
+  }, [scopedReservations, cleanEntryQuery, activeLocalEst]);
 
   // Acción de Check-in (Ingreso): abre el modal interactivo con selección de horas o tiempo libre
   const handleQuickCheckIn = (resTarget) => {
@@ -411,31 +458,32 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     }
   };
 
-  // Filtrado de reservas
-  const filteredReservations = reservations.filter(r => {
-    const matchesSearch = 
-      r.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (r.customerName && r.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (r.customerPhone && r.customerPhone.includes(searchTerm)) ||
-      (r.parking && r.parking.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (r.slot && r.slot.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Filtrado reactivo sobre las reservas autorizadas (scopedReservations)
+  const filteredReservations = useMemo(() => {
+    return scopedReservations.filter(r => {
+      const matchesSearch = 
+        (r.code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (r.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (r.customerName && r.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (r.customerPhone && r.customerPhone.includes(searchTerm)) ||
+        (r.parking && r.parking.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (r.slot && r.slot.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = statusFilter === 'ALL' 
-      ? true 
-      : statusFilter === 'ACTIVE_SCHEDULED'
-      ? (r.status === 'ACTIVE' || r.status === 'SCHEDULED')
-      : r.status === statusFilter;
-    const matchesParking = parkingFilter === 'ALL' || String(r.parkingId) === String(parkingFilter);
+      const matchesStatus = statusFilter === 'ALL' 
+        ? true 
+        : statusFilter === 'ACTIVE_SCHEDULED'
+        ? (r.status === 'ACTIVE' || r.status === 'SCHEDULED')
+        : r.status === statusFilter;
 
-    let matchesDate = true;
-    if (dateFilter === 'TODAY') {
-      const today = new Date().toDateString();
-      matchesDate = new Date(r.startTime).toDateString() === today || new Date(r.createdAt || r.startTime).toDateString() === today;
-    }
+      let matchesDate = true;
+      if (dateFilter === 'TODAY') {
+        const today = new Date().toDateString();
+        matchesDate = new Date(r.startTime).toDateString() === today || new Date(r.createdAt || r.startTime).toDateString() === today;
+      }
 
-    return matchesSearch && matchesStatus && matchesParking && matchesDate;
-  });
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [scopedReservations, searchTerm, statusFilter, dateFilter]);
 
   // Paginación estándar fluida (Pilar 3)
   const [currentPage, setCurrentPage] = useState(1);
@@ -451,24 +499,24 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     return filteredReservations.slice(start, start + pageSize);
   }, [filteredReservations, currentPage, pageSize]);
 
-  // Métricas y conteos en tiempo real
-  const totalReservations = reservations.length;
-  const activeCount = reservations.filter(r => r.status === 'ACTIVE').length;
-  const scheduledCount = reservations.filter(r => r.status === 'SCHEDULED').length;
-  const completedCount = reservations.filter(r => r.status === 'COMPLETED').length;
-  const cancelledCount = reservations.filter(r => r.status === 'CANCELLED').length;
+  // Métricas y conteos en tiempo real aislados estrictamente a la sede correspondiente
+  const totalReservations = scopedReservations.length;
+  const activeCount = scopedReservations.filter(r => r.status === 'ACTIVE').length;
+  const scheduledCount = scopedReservations.filter(r => r.status === 'SCHEDULED').length;
+  const completedCount = scopedReservations.filter(r => r.status === 'COMPLETED').length;
+  const cancelledCount = scopedReservations.filter(r => r.status === 'CANCELLED').length;
   
-  const totalRevenue = reservations
+  const totalRevenue = scopedReservations
     .filter(r => r.status !== 'CANCELLED')
     .reduce((acc, r) => acc + calculateLiveEffectiveCost(r, currentTime), 0);
 
-  const todayRevenue = reservations
+  const todayRevenue = scopedReservations
     .filter(r => r.status !== 'CANCELLED')
     .filter(r => new Date(r.startTime).toDateString() === new Date().toDateString())
     .reduce((acc, r) => acc + calculateLiveEffectiveCost(r, currentTime), 0);
 
   // Reserva activa para el conductor en curso
-  const activeUserReservation = reservations.find(r => r.status === 'ACTIVE' || r.status === 'SCHEDULED');
+  const activeUserReservation = scopedReservations.find(r => r.status === 'ACTIVE' || r.status === 'SCHEDULED');
 
   // Manejar creación de reserva manual — 100% servidor, sin optimismo
   const handleCreateSubmit = async (e) => {
@@ -1806,12 +1854,12 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                 No hay resultados con los filtros actuales. Intenta cambiar de pestaña o restablecer los términos de búsqueda.
               </p>
-              {(searchTerm || statusFilter !== 'ALL' || parkingFilter !== 'ALL' || dateFilter !== 'ALL') && (
+              {(searchTerm || statusFilter !== 'ALL' || (!isStaffOperatorUser(user) && parkingFilter !== 'ALL') || dateFilter !== 'ALL') && (
                 <button
                   onClick={() => {
                     setSearchTerm('');
                     setStatusFilter('ALL');
-                    setParkingFilter('ALL');
+                    setParkingFilter(isStaffOperatorUser(user) ? String(activeLocalEst?.id || '') : 'ALL');
                     setDateFilter('ALL');
                   }}
                   className="text-xs font-bold text-emerald-600 hover:text-emerald-500 underline cursor-pointer inline-flex items-center gap-1"

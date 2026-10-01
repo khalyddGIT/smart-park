@@ -225,3 +225,141 @@ def test_create_and_login_worker():
             assert revoked_login.status_code in (400, 401)
     
     asyncio.run(_run())
+
+def test_worker_reservations_isolation_only_sees_assigned_parking():
+    async def _run():
+        import uuid
+        from datetime import datetime, timedelta
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            # 1. Admin local crea dos cocheras independientes
+            admin_email = f"admin_iso_{uuid.uuid4().hex[:6]}@smartpark.com"
+            admin_pwd = "AdminIsoPass123!"
+            admin_reg = await ac.post("/api/v1/auth/register", json={
+                "full_name": "Admin Sede Central",
+                "email": admin_email,
+                "phone": "+51 988 333 444",
+                "password": admin_pwd,
+                "role": "local"
+            })
+            admin_token = admin_reg.json()["access_token"]
+            admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+            # Cochera A (donde trabajará el operador)
+            park_a = (await ac.post("/api/v1/parkings", headers=admin_headers, json={
+                "name": f"Cochera A {uuid.uuid4().hex[:4]}",
+                "address": "Jr. Arequipa 123",
+                "city": "Ayacucho",
+                "hourly_rate": 5.0,
+                "total_capacity": 5,
+                "tolerance_minutes": 15
+            })).json()
+            pid_a = park_a["id"]
+
+            slot_a = (await ac.post(f"/api/v1/parkings/{pid_a}/slots", headers=admin_headers, json={
+                "code": "A-01", "floor_level": "Piso 1", "slot_type": "auto", "pos_x": 10, "pos_y": 10, "width": 50, "height": 80
+            })).json()["id"]
+
+            # Cochera B (de otro dueño o con nombre similar)
+            park_b = (await ac.post("/api/v1/parkings", headers=admin_headers, json={
+                "name": f"Cochera B {uuid.uuid4().hex[:4]}",
+                "address": "Jr. Lima 456",
+                "city": "Ayacucho",
+                "hourly_rate": 6.0,
+                "total_capacity": 5,
+                "tolerance_minutes": 15,
+                "owner": "pepito trabajador"
+            })).json()
+            pid_b = park_b["id"]
+
+            slot_b = (await ac.post(f"/api/v1/parkings/{pid_b}/slots", headers=admin_headers, json={
+                "code": "B-01", "floor_level": "Piso 1", "slot_type": "auto", "pos_x": 10, "pos_y": 10, "width": 50, "height": 80
+            })).json()["id"]
+
+            # 2. Conductores crean reservas en Cochera A y Cochera B
+            driver_a_reg = await ac.post("/api/v1/auth/register", json={
+                "full_name": "Conductor Cochera A",
+                "email": f"driver_a_{uuid.uuid4().hex[:6]}@smartpark.com",
+                "phone": "+51 988 555 666",
+                "password": "DriverPass123!",
+                "role": "user"
+            })
+            driver_a_token = driver_a_reg.json()["access_token"]
+            driver_a_headers = {"Authorization": f"Bearer {driver_a_token}"}
+
+            driver_b_reg = await ac.post("/api/v1/auth/register", json={
+                "full_name": "Conductor Cochera B",
+                "email": f"driver_b_{uuid.uuid4().hex[:6]}@smartpark.com",
+                "phone": "+51 988 777 888",
+                "password": "DriverPass123!",
+                "role": "user"
+            })
+            driver_b_token = driver_b_reg.json()["access_token"]
+            driver_b_headers = {"Authorization": f"Bearer {driver_b_token}"}
+
+            now = datetime.utcnow()
+            plate_a = f"T{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().int % 900 + 100}"
+            plate_b = f"K{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().int % 900 + 100}"
+
+            res_a_resp = await ac.post("/api/v1/reservations", headers=driver_a_headers, json={
+                "parking_id": pid_a, "slot_id": slot_a, "license_plate": plate_a, "vehicle_type": "auto",
+                "start_time": (now + timedelta(hours=1)).isoformat(), "end_time": (now + timedelta(hours=2)).isoformat()
+            })
+            assert res_a_resp.status_code == 201, res_a_resp.text
+            res_a_id = res_a_resp.json()["id"]
+
+            res_b_resp = await ac.post("/api/v1/reservations", headers=driver_b_headers, json={
+                "parking_id": pid_b, "slot_id": slot_b, "license_plate": plate_b, "vehicle_type": "auto",
+                "start_time": (now + timedelta(hours=1)).isoformat(), "end_time": (now + timedelta(hours=2)).isoformat()
+            })
+            assert res_b_resp.status_code == 201, res_b_resp.text
+            res_b_id = res_b_resp.json()["id"]
+
+            # 3. Se registra un trabajador de garita en Cochera A con nombre "pepito trabajador"
+            worker_dni = f"88{uuid.uuid4().int % 1000000:06d}"
+            worker_email = f"pepito.{uuid.uuid4().hex[:6]}@smartpark.pe"
+            worker_pwd = "TrabajadorPass123!"
+            await ac.post("/api/v1/staff", headers=admin_headers, json={
+                "parking_id": pid_a,
+                "full_name": "pepito trabajador",
+                "dni": worker_dni,
+                "position": "Operador de Garita",
+                "shift": "Tarde",
+                "status": "Activo",
+                "email": worker_email,
+                "password": worker_pwd,
+                "security_pin": "9999",
+                "system_role": "local"
+            })
+
+            # 4. El trabajador inicia sesión
+            login_res = await ac.post("/api/v1/auth/login", json={
+                "email": worker_email,
+                "password": worker_pwd
+            })
+            assert login_res.status_code == 200
+            worker_token = login_res.json()["access_token"]
+            worker_headers = {"Authorization": f"Bearer {worker_token}"}
+
+            # 5. El trabajador consulta las reservas de garita
+            list_res = await ac.get("/api/v1/reservations", headers=worker_headers)
+            assert list_res.status_code == 200
+            worker_reservations = list_res.json()
+            worker_pids = [r["parking_id"] for r in worker_reservations]
+
+            # EL TRABAJADOR SOLO DEBE VER RESERVAS DE COCHERA A (pid_a)
+            assert pid_a in worker_pids
+            assert pid_b not in worker_pids, "Fuga de seguridad: El trabajador está viendo reservas de Cochera B"
+            assert all(pid == pid_a for pid in worker_pids), f"Se encontraron reservas ajenas: {worker_pids}"
+
+            # 6. Si intenta realizar check-in o check-out en la reserva de Cochera B -> 403 Forbidden
+            unauth_checkin = await ac.put(f"/api/v1/reservations/{res_b_id}/check-in", headers=worker_headers)
+            assert unauth_checkin.status_code == 403
+            assert "otra sede" in unauth_checkin.json()["detail"].lower()
+
+            # Pero en su propia Cochera A -> 200 OK
+            auth_checkin = await ac.put(f"/api/v1/reservations/{res_a_id}/check-in", headers=worker_headers)
+            assert auth_checkin.status_code == 200
+
+    asyncio.run(_run())
+

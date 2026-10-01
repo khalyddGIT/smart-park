@@ -223,9 +223,29 @@ async def _get_allowed_parking_ids(current_user: User, db: AsyncSession) -> Opti
 
     curr_email = (current_user.email or "").strip().lower()
     curr_name = (current_user.full_name or "").strip().lower()
-    allowed_ids = set()
 
-    # 1. Sedes donde es dueño directo por email o por nombre de propietario
+    # 1. Verificar si el usuario es un TRABAJADOR / OPERADOR DE GARITA registrado en Staff
+    if curr_email or current_user.phone:
+        staff_conds = []
+        if curr_email:
+            staff_conds.append(func.lower(Staff.email) == curr_email)
+        if current_user.phone and len(current_user.phone.strip()) >= 7:
+            staff_conds.append(Staff.dni == current_user.phone.strip())
+        
+        st_res = await db.execute(select(Staff).where(
+            or_(*staff_conds),
+            func.lower(Staff.status).in_(["active", "activo", "habilitado"])
+        ))
+        staff_rec = st_res.scalars().first()
+        if staff_rec and staff_rec.parking_id:
+            pos_lower = (staff_rec.position or "").lower()
+            is_op = bool(not pos_lower or "operador" in pos_lower or "garita" in pos_lower or "seguridad" in pos_lower or "supervisor" in pos_lower or "vigilante" in pos_lower or "administrador" not in pos_lower)
+            if is_op:
+                # Regla de Oro: El trabajador de garita ÚNICA Y EXCLUSIVAMENTE tiene acceso a su sede designada
+                return {staff_rec.parking_id}
+
+    # 2. Si no es trabajador de garita, resolver sedes de Administrador Local / Propietario
+    allowed_ids = set()
     conds = []
     if curr_email:
         conds.append(func.lower(Parking.email) == curr_email)
@@ -243,25 +263,6 @@ async def _get_allowed_parking_ids(current_user: User, db: AsyncSession) -> Opti
                 b_res = await db.execute(select(Parking.id).where(func.lower(Parking.name).like(f"{prefix}%")))
                 allowed_ids.update(b_res.scalars().all())
 
-    # 2. Staff activo por email, DNI/teléfono o nombre (con estados flexibles y case-insensitive)
-    staff_conds = []
-    if curr_email:
-        staff_conds.append(func.lower(Staff.email) == curr_email)
-    if current_user.phone:
-        staff_conds.append(Staff.dni == current_user.phone.strip())
-    if curr_name:
-        staff_conds.append(func.lower(Staff.full_name) == curr_name)
-
-    if staff_conds:
-        s_res = await db.execute(select(Staff.parking_id).where(
-            or_(*staff_conds),
-            func.lower(Staff.status).in_(["active", "activo", "habilitado"])
-        ))
-        for pid in s_res.scalars().all():
-            if pid:
-                allowed_ids.add(pid)
-
-    # 3. parking_id enlazado en la instancia de usuario si existe
     user_pid = getattr(current_user, "parking_id", None)
     if user_pid:
         try:

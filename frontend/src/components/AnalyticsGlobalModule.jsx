@@ -558,7 +558,7 @@ export const AnalyticsGlobalModule = () => {
             <option value="7d" className="dark:bg-slate-900">Últimos 7 Días</option>
             <option value="30d" className="dark:bg-slate-900">Últimos 30 Días</option>
             <option value="this_month" className="dark:bg-slate-900">Este Mes</option>
-            <option value="custom" className="dark:bg-slate-900">📅 Rango Personalizado</option>
+            <option value="custom" className="dark:bg-slate-900">Rango Personalizado</option>
             <option value="all" className="dark:bg-slate-900">Todo el Historial</option>
           </select>
 

@@ -706,3 +706,50 @@ def test_reservation_checkin_schema():
     with pytest.raises(ValidationError):
         ReservationCheckIn(hours_stay=-2)
 
+
+def test_parking_response_resilient_reads():
+    """ParkingResponse debe serializar sin fallar registros legacy de BD con teléfonos fijos o RUC sin formato estándar."""
+    from app.schemas.schemas import ParkingResponse
+
+    # Caso real de producción: teléfono fijo o sin dígito inicial 9
+    legacy_data = {
+        "id": 1,
+        "name": "Estacionamiento Colonial",
+        "address": "Jr. 28 de Julio 123",
+        "city": "Ayacucho",
+        "phone": "463985238",
+        "whatsapp": "+51 66 312345",
+        "ruc": "10456789012",
+        "hourly_rate": 6.0,
+        "total_capacity": 40
+    }
+    resp = ParkingResponse.model_validate(legacy_data)
+    assert resp.id == 1
+    assert resp.phone == "463985238"
+    assert resp.whatsapp == "+51 66 312345"
+    assert resp.ruc == "10456789012"
+
+
+def test_parking_create_strict_validation():
+    """ParkingCreate debe validar estrictamente el teléfono en nuevas creaciones."""
+    from app.schemas.schemas import ParkingCreate
+
+    # Rechaza teléfono celular que no empiece con 9
+    with pytest.raises(ValidationError):
+        ParkingCreate(
+            name="Nueva Cochera",
+            address="Jr. Callao 456",
+            city="Ayacucho",
+            phone="463985238"
+        )
+
+    # Acepta teléfono válido peruano que empiece con 9
+    valid_create = ParkingCreate(
+        name="Nueva Cochera",
+        address="Jr. Callao 456",
+        city="Ayacucho",
+        phone="987654321"
+    )
+    assert valid_create.phone == "987654321"
+
+

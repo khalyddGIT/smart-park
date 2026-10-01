@@ -391,6 +391,8 @@ class ParkingBase(BaseModel):
     subscription_enabled: Optional[bool] = True
     custom_rates: Optional[str] = None
 
+
+class ParkingCreate(ParkingBase):
     @field_validator('phone', 'whatsapp')
     @classmethod
     def validate_parking_phone(cls, v):
@@ -400,10 +402,6 @@ class ParkingBase(BaseModel):
     @classmethod
     def validate_parking_ruc(cls, v):
         return validate_ruc_format(v)
-
-
-class ParkingCreate(ParkingBase):
-    pass
 
 class ParkingUpdate(BaseModel):
     name: Optional[str] = None
@@ -471,6 +469,50 @@ class ParkingUpdate(BaseModel):
 class ParkingResponse(ParkingBase):
     id: int
     available_slots: Optional[int] = 0
+
+    @field_validator('phone', 'whatsapp', mode='before')
+    @classmethod
+    def validate_phone_read(cls, v):
+        if v is None:
+            return None
+        s = str(v).strip()
+        return s if s else None
+
+    @field_validator('ruc', mode='before')
+    @classmethod
+    def validate_ruc_read(cls, v):
+        if v is None:
+            return None
+        s = str(v).strip()
+        return s if s else None
+
+    @field_validator('hourly_rate', mode='before')
+    @classmethod
+    def validate_hourly_rate_read(cls, v):
+        try:
+            val = float(v)
+            return val if val > 0 else 8.50
+        except Exception:
+            return 8.50
+
+    @field_validator('total_capacity', mode='before')
+    @classmethod
+    def validate_capacity_read(cls, v):
+        try:
+            val = int(v)
+            return val if val > 0 else 30
+        except Exception:
+            return 30
+
+    @field_validator('tolerance_minutes', mode='before')
+    @classmethod
+    def validate_tolerance_read(cls, v):
+        try:
+            val = int(v)
+            return max(5, min(120, val))
+        except Exception:
+            return 15
+
     class Config:
         from_attributes = True
 

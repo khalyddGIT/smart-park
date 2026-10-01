@@ -131,9 +131,13 @@ async def list_parkings(
         total_count, free_count = counts_by_parking.get(p.id, (0, 0))
         occupied = max(0, total_count - free_count)
 
-        p_dict = ParkingResponse.model_validate(p)
-        p_dict.available_slots = free_count
-        response.append(p_dict)
+        try:
+            p_dict = ParkingResponse.model_validate(p)
+            p_dict.available_slots = free_count
+            response.append(p_dict)
+        except Exception as err:
+            import logging
+            logging.error(f"[list_parkings] Error validando parking {getattr(p, 'id', None)}: {err}")
 
         # Sincronizar contadores Redis en segundo plano (fail-open)
         try:

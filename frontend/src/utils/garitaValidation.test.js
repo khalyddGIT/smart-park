@@ -10,6 +10,11 @@ import {
   validateGaritaEntryForm,
   sanitizePhoneInput,
   validatePhoneInput,
+  sanitizeIntegerInput,
+  sanitizeDecimalInput,
+  validateCapacityInput,
+  validateRateInput,
+  validateRucInput,
   RE_AUTO_PLATE,
   RE_MOTO_PLATE,
   RE_PERU_PLATE
@@ -337,5 +342,64 @@ test('validatePhoneInput - rechaza números incompletos, que no inicien con 9 o 
   // Basura o letras
   const withLetters = validatePhoneInput('hhhh888hh');
   assert.equal(withLetters.isValid, false);
+});
+
+// ============================================================================
+// 7. Sanitización y Validación Numérica (Plazas, Tarifas y RUC)
+// ============================================================================
+test('sanitizeIntegerInput - filtra caracteres no numéricos y limita longitud', () => {
+  assert.equal(sanitizeIntegerInput('abc30xyz'), '30');
+  assert.equal(sanitizeIntegerInput('-50'), '50');
+  assert.equal(sanitizeIntegerInput('3.14'), '314');
+  assert.equal(sanitizeIntegerInput('99999999', 4), '9999');
+  assert.equal(sanitizeIntegerInput('', 4), '');
+});
+
+test('sanitizeDecimalInput - permite solo dígitos y un único punto con 2 decimales', () => {
+  assert.equal(sanitizeDecimalInput('5.00'), '5.00');
+  assert.equal(sanitizeDecimalInput('5.505'), '5.50');
+  assert.equal(sanitizeDecimalInput('5..5..5'), '5.55');
+  assert.equal(sanitizeDecimalInput('abc7.8xyz'), '7.8');
+  assert.equal(sanitizeDecimalInput('-12.5'), '12.5');
+});
+
+test('validateCapacityInput - valida rango estricto de plazas (1 a 5000)', () => {
+  assert.equal(validateCapacityInput('30').isValid, true);
+  assert.equal(validateCapacityInput('30').value, 30);
+  assert.equal(validateCapacityInput(50).isValid, true);
+  assert.equal(validateCapacityInput('0').isValid, false);
+  assert.equal(validateCapacityInput('-10').isValid, false);
+  assert.equal(validateCapacityInput('99999').isValid, false);
+  assert.equal(validateCapacityInput('').isValid, false);
+});
+
+test('validateRateInput - valida rango estricto de tarifa por hora (S/ 0.50 a S/ 100.00)', () => {
+  assert.equal(validateRateInput('5.00').isValid, true);
+  assert.equal(validateRateInput('5.00').value, 5.0);
+  assert.equal(validateRateInput('0.50').isValid, true);
+  assert.equal(validateRateInput('100.00').isValid, true);
+  assert.equal(validateRateInput('0.20').isValid, false);
+  assert.equal(validateRateInput('200').isValid, false);
+  assert.equal(validateRateInput('-5').isValid, false);
+  assert.equal(validateRateInput('').isValid, false);
+});
+
+test('validateRucInput - valida documento peruano de 8 dígitos (DNI) u 11 dígitos (RUC)', () => {
+  // Opcional si está vacío
+  assert.equal(validateRucInput('').isValid, true);
+  assert.equal(validateRucInput(null).isValid, true);
+
+  // DNI 8 dígitos
+  assert.equal(validateRucInput('70889900').isValid, true);
+  assert.equal(validateRucInput('70889900').value, '70889900');
+
+  // RUC 11 dígitos
+  assert.equal(validateRucInput('20601234567').isValid, true);
+  assert.equal(validateRucInput('20601234567').value, '20601234567');
+
+  // Longitud inválida (ej. 9 o 10 dígitos)
+  assert.equal(validateRucInput('1234567').isValid, false);
+  assert.equal(validateRucInput('123456789').isValid, false);
+  assert.equal(validateRucInput('1234567890').isValid, false);
 });
 

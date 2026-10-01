@@ -27,6 +27,14 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { BrandLogo } from './BrandLogo';
 import { TermsAndConditionsModal } from './TermsAndConditionsModal';
+import { 
+  sanitizePhoneInput, 
+  validatePhoneInput, 
+  sanitizeIntegerInput, 
+  sanitizeDecimalInput, 
+  validateCapacityInput, 
+  validateRateInput 
+} from '../utils/garitaValidation';
 
 export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMode = 'login' }) => {
   const { user, loginWithGoogle, loginWithEmail, loginWithPin, registerUser } = useAuth();
@@ -192,25 +200,14 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
     // Validación estricta de Celular Perú (exactamente 9 dígitos, empieza en 9)
     let validatedPhone = null;
     if (cleanPhone) {
-      let digits = cleanPhone.replace(/[\s\-]/g, '');
-      if (digits.startsWith('+51')) digits = digits.slice(3);
-      else if (digits.startsWith('51') && digits.length === 11 && digits.startsWith('519')) digits = digits.slice(2);
-
-      if (!/^\d+$/.test(digits)) {
-        setErrorMsg('El número de teléfono solo debe contener números');
+      const phoneValidation = validatePhoneInput(cleanPhone);
+      if (!phoneValidation.isValid) {
+        setErrorMsg(phoneValidation.error);
         return;
       }
-      if (digits.length > 9) {
-        setErrorMsg(`El teléfono no debe tener más de 9 dígitos (ingresaste ${digits.length} dígitos)`);
-        return;
-      }
-      if (digits.length < 9) {
-        setErrorMsg(`El teléfono debe tener exactamente 9 dígitos (ingresaste ${digits.length} dígitos)`);
-        return;
-      }
-      if (!digits.startsWith('9')) {
-        setErrorMsg('El número de celular debe empezar con 9 (ej. 987654321 o +51 987 654 321)');
-        return;
+      let digits = cleanPhone.replace(/\D/g, '');
+      if (digits.startsWith('51') && digits.length === 11) {
+        digits = digits.slice(2);
       }
       validatedPhone = digits;
     }
@@ -269,6 +266,27 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       return;
     }
 
+    if (reqPhone.trim()) {
+      const phoneValidation = validatePhoneInput(reqPhone);
+      if (!phoneValidation.isValid) {
+        setErrorMsg(phoneValidation.error);
+        return;
+      }
+    }
+
+    const capValidation = validateCapacityInput(reqCapacity, 1, 5000);
+    if (!capValidation.isValid) {
+      setErrorMsg(capValidation.error);
+      return;
+    }
+
+    const rateValidation = validateRateInput(reqRate, 0.5, 100.0);
+    if (!rateValidation.isValid) {
+      setErrorMsg(rateValidation.error);
+      return;
+    }
+
+    setErrorMsg('');
     createAffiliationRequest({
       parkingName: reqParkingName.trim(),
       ownerName: reqOwnerName.trim(),
@@ -276,8 +294,8 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       phone: reqPhone.trim(),
       address: reqAddress.trim() || 'Centro Histórico',
       city: reqCity.trim() || 'Ayacucho - Huamanga',
-      capacity: Number(reqCapacity) || 25,
-      rate: Number(reqRate) || 5.0,
+      capacity: capValidation.value,
+      rate: rateValidation.value,
       notes: reqNotes.trim()
     });
 
@@ -292,6 +310,8 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
       setReqPhone('');
       setReqAddress('');
       setReqNotes('');
+      setReqCapacity('30');
+      setReqRate('5.00');
     }, 3500);
   };
 
@@ -685,17 +705,10 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input
                         type="tel"
-                        maxLength={15}
+                        maxLength={16}
                         placeholder="987 654 321"
                         value={driverPhone}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9+\s-]/g, '');
-                          const rawDigits = val.replace(/\D/g, '');
-                          const effectiveDigits = rawDigits.startsWith('519') && rawDigits.length > 9 ? rawDigits.slice(2) : rawDigits;
-                          if (effectiveDigits.length <= 9) {
-                            setDriverPhone(val);
-                          }
-                        }}
+                        onChange={(e) => setDriverPhone(sanitizePhoneInput(e.target.value))}
                         className="pl-10 bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500"
                       />
                     </div>
@@ -861,9 +874,10 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-200">WhatsApp / Teléfono</label>
                       <Input
                         type="tel"
+                        maxLength={16}
                         placeholder="+51 966 123 456"
                         value={reqPhone}
-                        onChange={(e) => setReqPhone(e.target.value)}
+                        onChange={(e) => setReqPhone(sanitizePhoneInput(e.target.value))}
                         className="bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10"
                       />
                     </div>
@@ -884,10 +898,12 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Plazas Estimadas</label>
                       <Input
-                        type="number"
-                        min="1"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={4}
+                        placeholder="30"
                         value={reqCapacity}
-                        onChange={(e) => setReqCapacity(e.target.value)}
+                        onChange={(e) => setReqCapacity(sanitizeIntegerInput(e.target.value, 4))}
                         className="bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs h-10 font-mono"
                       />
                     </div>
@@ -895,11 +911,12 @@ export const LoginAuthScreen = ({ isModal = false, onClose = null, defaultAuthMo
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Tarifa Sugerida / h (S/)</label>
                       <Input
-                        type="number"
-                        step="0.5"
-                        min="1"
+                        type="text"
+                        inputMode="decimal"
+                        maxLength={6}
+                        placeholder="5.00"
                         value={reqRate}
-                        onChange={(e) => setReqRate(e.target.value)}
+                        onChange={(e) => setReqRate(sanitizeDecimalInput(e.target.value, 2, 6))}
                         className="bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 font-bold rounded-xl text-xs h-10 font-mono"
                       />
                     </div>

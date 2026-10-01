@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Shield, UserCheck, KeyRound, Plus, Edit3, Search, Check, Lock, Power, Info, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { saveLocalUserCredential } from '../context/EstablishmentContext';
+import { sanitizePhoneInput, validatePhoneInput } from '../utils/garitaValidation';
 import api from '../services/api';
 
 // Formatea la fecha ISO del backend a texto corto
@@ -136,6 +137,14 @@ export const UserRolesModule = () => {
     if (formData.password && formData.password.length < 8) {
       notify('La contraseña debe tener al menos 8 caracteres si deseas cambiarla.');
       return;
+    }
+
+    if (formData.phone && formData.phone.trim()) {
+      const phoneValidation = validatePhoneInput(formData.phone);
+      if (!phoneValidation.isValid) {
+        notify(phoneValidation.error);
+        return;
+      }
     }
 
     try {
@@ -515,8 +524,10 @@ export const UserRolesModule = () => {
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Teléfono Móvil</label>
               <Input
                 type="tel"
+                maxLength={16}
+                placeholder="987 654 321"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, phone: sanitizePhoneInput(e.target.value) })}
                 className="text-xs font-mono bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
               />
             </div>

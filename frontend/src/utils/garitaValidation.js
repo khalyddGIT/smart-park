@@ -396,3 +396,123 @@ export function validatePhoneInput(val) {
   }
   return { isValid: true, error: null };
 }
+
+/**
+ * Sanitiza campos de números enteros (por ejemplo plazas o capacidad):
+ * - Filtra cualquier caracter no numérico
+ * - Limita la longitud al máximo especificado (por defecto 4 dígitos)
+ * @param {any} val
+ * @param {number} maxLength
+ * @returns {string}
+ */
+export function sanitizeIntegerInput(val, maxLength = 4) {
+  if (val === null || val === undefined) return '';
+  return String(val).replace(/\D/g, '').slice(0, maxLength);
+}
+
+/**
+ * Sanitiza campos decimales monetarios (por ejemplo tarifas por hora o recargos):
+ * - Permite solo dígitos y un único punto decimal
+ * - Limita los decimales a 2 posiciones
+ * - Limita la longitud total
+ * @param {any} val
+ * @param {number} maxDecimals
+ * @param {number} maxLength
+ * @returns {string}
+ */
+export function sanitizeDecimalInput(val, maxDecimals = 2, maxLength = 6) {
+  if (val === null || val === undefined) return '';
+  let str = String(val).replace(/[^0-9.]/g, '');
+  const parts = str.split('.');
+  if (parts.length > 2) {
+    str = `${parts[0]}.${parts.slice(1).join('')}`;
+  }
+  const [integers, decimals] = str.split('.');
+  if (decimals !== undefined) {
+    str = `${integers}.${decimals.slice(0, maxDecimals)}`;
+  }
+  return str.slice(0, maxLength);
+}
+
+/**
+ * Valida capacidad o plazas estimadas de estacionamiento.
+ * @param {any} val
+ * @param {number} min
+ * @param {number} max
+ * @returns {{ isValid: boolean, error: string | null, value: number | null }}
+ */
+export function validateCapacityInput(val, min = 1, max = 5000) {
+  if (val === null || val === undefined || String(val).trim() === '') {
+    return { isValid: false, error: 'Ingresa la cantidad estimada de plazas.', value: null };
+  }
+  const str = String(val).trim();
+  if (!/^\d+$/.test(str)) {
+    return {
+      isValid: false,
+      error: 'Las plazas estimadas deben ser un número entero positivo sin signos ni decimales.',
+      value: null
+    };
+  }
+  const num = parseInt(str, 10);
+  if (isNaN(num) || num < min || num > max) {
+    return {
+      isValid: false,
+      error: `Las plazas estimadas deben ser un número entre ${min} y ${max.toLocaleString()}.`,
+      value: null
+    };
+  }
+  return { isValid: true, error: null, value: num };
+}
+
+/**
+ * Valida la tarifa sugerida por hora en Soles (S/).
+ * @param {any} val
+ * @param {number} min
+ * @param {number} max
+ * @returns {{ isValid: boolean, error: string | null, value: number | null }}
+ */
+export function validateRateInput(val, min = 0.5, max = 100.0) {
+  if (val === null || val === undefined || String(val).trim() === '') {
+    return { isValid: false, error: 'Ingresa una tarifa por hora válida.', value: null };
+  }
+  const str = String(val).trim();
+  if (!/^\d+(\.\d{1,2})?$/.test(str)) {
+    return {
+      isValid: false,
+      error: 'La tarifa debe ser un número positivo con máximo 2 decimales.',
+      value: null
+    };
+  }
+  const num = parseFloat(str);
+  if (isNaN(num) || num < min || num > max) {
+    return {
+      isValid: false,
+      error: `La tarifa por hora sugerida debe ser entre S/ ${min.toFixed(2)} y S/ ${max.toFixed(2)}.`,
+      value: null
+    };
+  }
+  return { isValid: true, error: null, value: Number(num.toFixed(2)) };
+}
+
+/**
+ * Valida documento peruano RUC (11 dígitos) o DNI (8 dígitos).
+ * @param {any} val
+ * @param {boolean} isOptional
+ * @returns {{ isValid: boolean, error: string | null, value: string | null }}
+ */
+export function validateRucInput(val, isOptional = true) {
+  if (val === null || val === undefined || String(val).trim() === '') {
+    if (isOptional) return { isValid: true, error: null, value: null };
+    return { isValid: false, error: 'El RUC o DNI es obligatorio.', value: null };
+  }
+  const clean = String(val).replace(/\D/g, '');
+  if (clean.length !== 8 && clean.length !== 11) {
+    return {
+      isValid: false,
+      error: `El documento debe tener 8 dígitos (DNI) u 11 dígitos (RUC). Ingresaste ${clean.length} dígitos.`,
+      value: null
+    };
+  }
+  return { isValid: true, error: null, value: clean };
+}
+

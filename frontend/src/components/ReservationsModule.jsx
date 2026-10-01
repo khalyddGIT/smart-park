@@ -5,6 +5,7 @@ import api, { getAccessToken } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
 import { AutoFitFloorPlan } from './AutoFitFloorPlan';
+import { sanitizePhoneInput, validatePhoneInput } from '../utils/garitaValidation';
 import { 
   CalendarCheck, 
   Search, 
@@ -479,6 +480,13 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     if (!selectedSlotCode) {
       alert('Por favor selecciona un cajón disponible.');
       return;
+    }
+    if (customerPhone.trim()) {
+      const phoneVal = validatePhoneInput(customerPhone);
+      if (!phoneVal.isValid) {
+        alert(phoneVal.error);
+        return;
+      }
     }
     if (String(activeEstablishment?.id || '').startsWith('EST-')) {
       setFeedbackMessage('✕ No se puede emitir ticket: esta sede aún es demo y no está registrada en el servidor. Crea la sede primero.');
@@ -2345,9 +2353,10 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                   <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono (Opcional)</label>
                   <Input
                     type="tel"
-                    placeholder="+51 966..."
+                    maxLength={16}
+                    placeholder="+51 966 123 456"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => setCustomerPhone(sanitizePhoneInput(e.target.value))}
                     className="text-xs font-mono h-10"
                   />
                 </div>

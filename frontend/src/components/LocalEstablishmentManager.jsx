@@ -4,6 +4,7 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import api from '../services/api';
+import { sanitizePhoneInput, validatePhoneInput, validateRucInput } from '../utils/garitaValidation';
 import { 
   Building2, 
   Plus, 
@@ -1046,6 +1047,22 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       return;
     }
 
+    if (formData.phone && formData.phone.trim()) {
+      const phoneVal = validatePhoneInput(formData.phone);
+      if (!phoneVal.isValid) {
+        alert(phoneVal.error);
+        return;
+      }
+    }
+
+    if (formData.ruc && formData.ruc.trim()) {
+      const rucVal = validateRucInput(formData.ruc, false);
+      if (!rucVal.isValid) {
+        alert(rucVal.error);
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       if (isEditingNew) {
@@ -2047,8 +2064,10 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                           <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">RUC o DNI del Titular</label>
                           <Input
                             placeholder="Ej. 20601234567"
+                            maxLength={11}
+                            inputMode="numeric"
                             value={formData.ruc}
-                            onChange={(e) => setFormData({ ...formData, ruc: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, ruc: e.target.value.replace(/\D/g, '').slice(0, 11) })}
                             className="text-xs font-mono h-9.5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                           />
                         </div>
@@ -3325,9 +3344,11 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
                         <div className="relative">
                           <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                           <Input
+                            type="tel"
+                            maxLength={16}
                             placeholder="+51 966 123 456"
                             value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, phone: sanitizePhoneInput(e.target.value) })}
                             className="pl-9 text-xs font-mono h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white"
                           />
                         </div>

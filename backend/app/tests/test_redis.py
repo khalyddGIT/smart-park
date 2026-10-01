@@ -73,13 +73,13 @@ def test_blacklist_revokes_token(fake_redis):
 
 
 def test_fail_open_without_redis(monkeypatch):
-    """Sin Redis (get_client -> None): rate limit permite y blacklist no revoca."""
+    """Sin Redis (get_client -> None): rate limit y blacklist operan de forma segura con fallback en memoria."""
     import asyncio
     monkeypatch.setattr(cache, "get_client", lambda: None)
     async def run():
         allowed, _ = await cache.rate_limit_hit("rl:x", limit=1, window=60)
         assert allowed is True
-        assert await cache.blacklist_token("jti-x", 60) is False
-        assert await cache.is_blacklisted("jti-x") is False
+        assert await cache.blacklist_token("jti-x", 60) is True
+        assert await cache.is_blacklisted("jti-x") is True
         assert await cache.cache_get_json("k") is None
     asyncio.run(run())

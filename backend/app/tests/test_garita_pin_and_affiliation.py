@@ -155,4 +155,23 @@ def test_garita_affiliation_submission_and_flow():
             res_inv = await ac.post('/api/v1/affiliation-requests', json=invalid_payload)
             assert res_inv.status_code == 422
 
+            # Teléfono inválido (letras, spam repetitivo o no 9 dígitos que inicien con 9)
+            inv_phone_payload = aff_payload.copy()
+            inv_phone_payload['phone'] = '8888888888888888888'
+            res_inv_phone = await ac.post('/api/v1/affiliation-requests', json=inv_phone_payload)
+            assert res_inv_phone.status_code == 422
+
+            # Plazas estimadas fuera de rango (< 1 o > 5000)
+            inv_cap_payload = aff_payload.copy()
+            inv_cap_payload['capacity'] = 0
+            res_inv_cap = await ac.post('/api/v1/affiliation-requests', json=inv_cap_payload)
+            assert res_inv_cap.status_code == 422
+
+            # Tarifa por hora fuera de rango (< S/ 0.50 o > S/ 100.00)
+            inv_rate_payload = aff_payload.copy()
+            inv_rate_payload['rate'] = 0.20
+            res_inv_rate = await ac.post('/api/v1/affiliation-requests', json=inv_rate_payload)
+            assert res_inv_rate.status_code == 422
+
     asyncio.run(_run())
+

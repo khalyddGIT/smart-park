@@ -11,6 +11,7 @@ import secrets
 from app.core.security import get_current_user, require_role, get_password_hash, hash_pin
 from app.db.session import get_db
 from app.models.models import AffiliationRequest, Parking, User, Staff
+from app.schemas.schemas import validate_phone_format, validate_parking_phone_format
 
 router = APIRouter(prefix="/affiliation-requests", tags=["Afiliaciones"])
 platform_required = require_role("platform")
@@ -53,8 +54,8 @@ class AffiliationCreate(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
-    capacity: Optional[int] = None
-    rate: Optional[float] = None
+    capacity: Optional[int] = Field(default=25, ge=1, le=5000)
+    rate: Optional[float] = Field(default=5.0, ge=0.5, le=100.0)
     notes: Optional[str] = None
 
     @field_validator('email')
@@ -64,6 +65,32 @@ class AffiliationCreate(BaseModel):
         if not clean or not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', clean):
             raise ValueError('Correo electrónico inválido (ej: contacto@ejemplo.com)')
         return clean
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        if not v or not str(v).strip():
+            return None
+        return validate_parking_phone_format(v)
+
+    @field_validator('capacity')
+    @classmethod
+    def validate_capacity(cls, v):
+        if v is None:
+            return 25
+        if not isinstance(v, int) or v < 1 or v > 5000:
+            raise ValueError('Las plazas estimadas deben estar entre 1 y 5,000 plazas.')
+        return v
+
+    @field_validator('rate')
+    @classmethod
+    def validate_rate(cls, v):
+        if v is None:
+            return 5.0
+        val = float(v)
+        if val < 0.5 or val > 100.0:
+            raise ValueError('La tarifa sugerida por hora debe ser entre S/ 0.50 y S/ 100.00.')
+        return round(val, 2)
 
     class Config:
         populate_by_name = True

@@ -43,6 +43,25 @@ def validate_phone_format(v: Any) -> Optional[str]:
         raise ValueError("El teléfono celular debe empezar con el dígito 9 (ej: 987654321 o +51 987654321).")
     return v_clean
 
+def validate_parking_phone_format(v: Any) -> Optional[str]:
+    if v is None or v == '':
+        return None
+    val_str = str(v).strip()
+    validate_phone_format(val_str)
+    return val_str
+
+def validate_ruc_format(v: Any) -> Optional[str]:
+    if v is None or v == '':
+        return None
+    if not isinstance(v, str):
+        v = str(v)
+    v_clean = v.strip().replace('-', '').replace(' ', '')
+    if not v_clean.isdigit():
+        raise ValueError("El RUC o DNI solo debe contener números.")
+    if len(v_clean) not in (8, 11):
+        raise ValueError(f"El documento debe tener 8 dígitos (DNI) u 11 dígitos (RUC). Ingresaste {len(v_clean)} dígitos.")
+    return v_clean
+
 def validate_license_plate_format(v: Any) -> str:
     if not v or not isinstance(v, str):
         raise ValueError("La placa es obligatoria.")
@@ -372,6 +391,16 @@ class ParkingBase(BaseModel):
     subscription_enabled: Optional[bool] = True
     custom_rates: Optional[str] = None
 
+    @field_validator('phone', 'whatsapp')
+    @classmethod
+    def validate_parking_phone(cls, v):
+        return validate_parking_phone_format(v)
+
+    @field_validator('ruc')
+    @classmethod
+    def validate_parking_ruc(cls, v):
+        return validate_ruc_format(v)
+
 
 class ParkingCreate(ParkingBase):
     pass
@@ -382,10 +411,10 @@ class ParkingUpdate(BaseModel):
     city: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    hourly_rate: Optional[float] = None
-    tolerance_minutes: Optional[int] = None
+    hourly_rate: Optional[float] = Field(default=None, gt=0, le=500)
+    tolerance_minutes: Optional[int] = Field(default=None, ge=5, le=120)
     status: Optional[str] = None
-    total_capacity: Optional[int] = None
+    total_capacity: Optional[int] = Field(default=None, gt=0, le=10000)
     image_url: Optional[str] = None
     owner: Optional[str] = None
     ruc: Optional[str] = None
@@ -428,6 +457,16 @@ class ParkingUpdate(BaseModel):
     allow_open_stay: Optional[bool] = None
     subscription_enabled: Optional[bool] = None
     custom_rates: Optional[str] = None
+
+    @field_validator('phone', 'whatsapp')
+    @classmethod
+    def validate_parking_phone_update(cls, v):
+        return validate_parking_phone_format(v)
+
+    @field_validator('ruc')
+    @classmethod
+    def validate_parking_ruc_update(cls, v):
+        return validate_ruc_format(v)
 
 class ParkingResponse(ParkingBase):
     id: int

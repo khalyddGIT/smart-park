@@ -1484,7 +1484,6 @@ const AppMain = () => {
               {activeTab === 'settings' && <PlatformSettingsModule />}
               {activeTab === 'affiliates' && <AffiliatedParkingsModule />}
               {activeTab === 'analytics' && <AnalyticsGlobalModule />}
-              {activeTab === 'incidents' && <IncidentsModule />}
               {activeTab === 'audit' && <AuditLogsModule />}
               {activeTab === 'users' && <UserRolesModule />}
               {activeTab === 'resiliency' && <ResiliencySimModule />}

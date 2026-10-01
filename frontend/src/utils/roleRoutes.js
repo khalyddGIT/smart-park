@@ -42,7 +42,6 @@ export const VALID_TABS_BY_ROLE = {
     'settings',
     'affiliates',
     'analytics',
-    'incidents',
     'audit',
     'users',
     'resiliency',

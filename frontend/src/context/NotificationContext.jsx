@@ -59,9 +59,9 @@ export const NotificationProvider = ({ children }) => {
     const derived = [];
     const currentRole = role;
 
-    // Incidentes: GET /incidents (requiere JWT). Si no hay token, lista vacía sin error 401
+    // Incidentes: GET /incidents (requiere JWT). Exclusivo de conductor y administrador local
     let incidents = [];
-    if (getAccessToken()) {
+    if (currentRole !== 'platform' && getAccessToken()) {
       try {
         const res = await api.get('/incidents');
         incidents = Array.isArray(res.data) ? res.data : [];

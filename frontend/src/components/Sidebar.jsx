@@ -90,7 +90,6 @@ const SECTIONS_BY_ROLE = {
         { id: 'affiliates', label: 'Sedes & Afiliación', shortLabel: 'Sedes', icon: Building2 },
         { id: 'settings', label: 'Ajustes Maestros', shortLabel: 'Ajustes', icon: Settings },
         { id: 'analytics', label: 'Analítica Global', shortLabel: 'Métricas', icon: BarChart3 },
-        { id: 'incidents', label: 'Incidencias', shortLabel: 'Incidencias', icon: AlertTriangle },
         { id: 'users', label: 'Usuarios & RBAC', shortLabel: 'Usuarios', icon: Shield },
         { id: 'audit', label: 'Auditoría', shortLabel: 'Auditoría', icon: ShieldCheck },
         { id: 'resiliency', label: 'Estado del Sistema', shortLabel: 'Servidores', icon: Server },

@@ -85,6 +85,7 @@ export const MapContainer3D = ({
       try { mapRef.current.remove(); } catch (e) {}
       mapRef.current = null;
     }
+    setMapReady(false);
     try {
       mapContainerRef.current.innerHTML = '';
       const map = L.map(mapContainerRef.current, {
@@ -106,7 +107,12 @@ export const MapContainer3D = ({
       mapRef.current = map;
       mapEngineRef.current = 'leaflet';
       setMapEngine('leaflet');
-      setMapReady(true);
+      setTimeout(() => {
+        if (mapRef.current) {
+          try { mapRef.current.invalidateSize(); } catch (e) {}
+        }
+        setMapReady(true);
+      }, 50);
     } catch (e) {
       console.error('[MapContainer3D] Error al iniciar Leaflet:', e);
       setMapError('Error al inicializar el mapa.');
@@ -119,6 +125,7 @@ export const MapContainer3D = ({
       try { mapRef.current.remove(); } catch (e) {}
       mapRef.current = null;
     }
+    setMapReady(false);
     if (!mapContainerRef.current) return;
     mapContainerRef.current.innerHTML = '';
     try {
@@ -141,6 +148,9 @@ export const MapContainer3D = ({
         } catch (err) {}
         setMapReady(true);
       });
+      if (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded()) {
+        setMapReady(true);
+      }
     } catch (e) {
       console.error('Error Mapbox:', e);
       fallbackToLeaflet();
@@ -213,6 +223,10 @@ export const MapContainer3D = ({
             if (!isCancelled) setMapReady(true);
           });
 
+          if (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded()) {
+            if (!isCancelled) setMapReady(true);
+          }
+
           // Guardia de contingencia: consultar features antes de que Mapbox termine
           // de cargar puede fallar internamente en algunas versiones. Se usan solo
           // las APIs públicas de estado y se concede tiempo a conexiones lentas.
@@ -256,6 +270,41 @@ export const MapContainer3D = ({
       }
     };
   }, []);
+
+  // Observar cambios de tamaño del contenedor para reajustar Mapbox / Leaflet automáticamente en PC y responsive
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    const container = mapContainerRef.current;
+
+    const triggerResize = () => {
+      if (mapRef.current) {
+        if (mapEngineRef.current === 'mapbox' && typeof mapRef.current.resize === 'function') {
+          mapRef.current.resize();
+        } else if (mapEngineRef.current === 'leaflet' && typeof mapRef.current.invalidateSize === 'function') {
+          mapRef.current.invalidateSize();
+        }
+      }
+    };
+
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        triggerResize();
+      });
+      resizeObserver.observe(container);
+    }
+
+    window.addEventListener('resize', triggerResize);
+
+    triggerResize();
+    const timer = setTimeout(triggerResize, 150);
+
+    return () => {
+      if (resizeObserver) resizeObserver.disconnect();
+      window.removeEventListener('resize', triggerResize);
+      clearTimeout(timer);
+    };
+  }, [mapReady]);
 
   // Cambiar Estilo de Mapa (Calles / Satélite)
   const handleChangeLayer = (layerKey) => {
@@ -425,8 +474,8 @@ export const MapContainer3D = ({
 
     const lat = Number(p.latitude);
     const lng = Number(p.longitude);
-    const isAyacuchoCoords = !isNaN(lat) && !isNaN(lng) && lat <= -13.0 && lat >= -13.35 && lng <= -74.0 && lng >= -74.4;
-    const coords = isAyacuchoCoords ? [lng, lat] : (DEFAULT_PARKING_COORDS[p.id] || [-74.2257, -13.1606]);
+    const hasValidCoords = !isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    const coords = hasValidCoords ? [lng, lat] : (DEFAULT_PARKING_COORDS[p.id] || [-74.2257, -13.1606]);
 
     const execRoute = () => {
       if (routesManagerRef.current && mapRef.current) {
@@ -537,7 +586,7 @@ export const MapContainer3D = ({
 
   // Actualizar marcadores interactivos en el mapa (Compatible con Mapbox 3D y Leaflet 2D)
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !mapReady) return;
     const map = mapRef.current;
 
     // Limpiar marcadores anteriores
@@ -549,9 +598,9 @@ export const MapContainer3D = ({
     filteredParkings.forEach((p) => {
       const lat = Number(p.latitude);
       const lng = Number(p.longitude);
-      const isAyacuchoCoords = !isNaN(lat) && !isNaN(lng) && lat <= -13.0 && lat >= -13.35 && lng <= -74.0 && lng >= -74.4;
+      const hasValidCoords = !isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
 
-      let coords = isAyacuchoCoords 
+      let coords = hasValidCoords 
         ? [lng, lat] 
         : (DEFAULT_PARKING_COORDS[p.id] || [-74.2257, -13.1606]);
 
@@ -822,7 +871,15 @@ export const MapContainer3D = ({
         markerElementsRef.current[p.id] = marker.getElement ? marker.getElement() : null;
       }
     });
-  }, [filteredParkings, onSelectParking, activeRoute, targetDest, mapEngine]);
+
+    return () => {
+      Object.values(markersRef.current).forEach(m => {
+        if (m && typeof m.remove === 'function') m.remove();
+      });
+      markersRef.current = {};
+      markerElementsRef.current = {};
+    };
+  }, [mapReady, filteredParkings, onSelectParking, activeRoute, targetDest, mapEngine]);
 
   // Actualizar estilos del marcador seleccionado de forma no destructiva y reactiva
   useEffect(() => {
@@ -856,8 +913,8 @@ export const MapContainer3D = ({
 
     const lat = Number(parking.latitude);
     const lng = Number(parking.longitude);
-    const isAyacuchoCoords = !isNaN(lat) && !isNaN(lng) && lat <= -13.0 && lat >= -13.35 && lng <= -74.0 && lng >= -74.4;
-    const coords = isAyacuchoCoords ? [lng, lat] : (DEFAULT_PARKING_COORDS[parking.id] || [-74.2257, -13.1606]);
+    const hasValidCoords = !isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    const coords = hasValidCoords ? [lng, lat] : (DEFAULT_PARKING_COORDS[parking.id] || [-74.2257, -13.1606]);
 
     lastCenteredParkingIdRef.current = String(selectedParkingId);
 

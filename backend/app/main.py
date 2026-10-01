@@ -60,14 +60,24 @@ class SecurityHardeningMiddleware(BaseHTTPMiddleware):
         client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "unknown")
         path = request.url.path
 
-        # Rate limit global defensivo por IP en API (Pilar 1)
+        # Rate limit global defensivo por IP en API (Opciones 1 y 3 combinadas)
         if path.startswith("/api/"):
             from app.core.cache import rate_limit_hit
             is_testing = (os.getenv("TESTING") == "1")
-            global_limit = 10000 if is_testing else 180
-            allowed, count = await rate_limit_hit(f"ratelimit:global:{client_ip}", limit=global_limit, window=60)
+            global_limit = 10000 if is_testing else int(os.getenv("GLOBAL_RATE_LIMIT", "1500"))
+
+            # Opción 3: Lecturas GET de navegación (mapa, cocheras) usan límite amplio (1500 req/min)
+            # Escrituras (POST/PUT/DELETE) mantienen control específico (300 req/min)
+            is_write = request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"}
+            active_limit = (global_limit if is_testing else min(global_limit, int(os.getenv("WRITE_RATE_LIMIT", "300")))) if is_write else global_limit
+            key_suffix = "write" if is_write else "read"
+
+            allowed, count = await rate_limit_hit(f"ratelimit:global:{key_suffix}:{client_ip}", limit=active_limit, window=60)
             if not allowed:
-                security_logger.warning(f"[SECURITY_ALERT] [RATE_LIMIT_EXCEEDED] IP={client_ip} Path={path} Count={count}")
+                security_logger.warning(
+                    f"[SECURITY_ALERT] [RATE_LIMIT_EXCEEDED] IP={client_ip} Method={request.method} "
+                    f"Path={path} Count={count} Limit={active_limit}"
+                )
                 return JSONResponse(
                     status_code=429,
                     content={"detail": "Demasiadas peticiones desde tu dirección IP. Espera un momento antes de continuar."},

@@ -117,6 +117,10 @@ async def rate_limit_hit(key: str, limit: int, window: int = 60):
             count = await client.incr(key)
             if count == 1:
                 await client.expire(key, window)
+            else:
+                ttl = await client.ttl(key)
+                if ttl == -1:
+                    await client.expire(key, window)
             return count <= limit, count
         except Exception as exc:
             logger.warning(f"[ratelimit] Redis {key} falló, usando fallback en memoria: {exc}")

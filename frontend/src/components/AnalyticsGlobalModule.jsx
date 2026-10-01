@@ -30,6 +30,7 @@ import {
   Wallet,
   Banknote,
   QrCode,
+  Calendar,
 } from 'lucide-react';
 import api, { getAccessToken } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -45,12 +46,21 @@ const RATING_COLORS = {
 
 const is401 = (err) => err?.response?.status === 401;
 
+// Obtiene fecha local formateada en YYYY-MM-DD para inputs nativos
+const getLocalDateString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Filtra reservas dentro del rango seleccionado
-const isWithinRange = (iso, range) => {
+const isWithinRange = (iso, range, customStart, customEnd) => {
   if (!iso) return false;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return false;
   const now = new Date();
+
   if (range === 'today') {
     return d.toDateString() === now.toDateString();
   }
@@ -60,12 +70,44 @@ const isWithinRange = (iso, range) => {
   if (range === '30d') {
     return now - d <= 30 * 24 * 60 * 60 * 1000 && d <= now;
   }
+  if (range === 'this_month') {
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d <= now;
+  }
+  if (range === 'all') {
+    return true;
+  }
+  if (range === 'custom') {
+    let sStr = customStart;
+    let eStr = customEnd;
+    if (sStr && eStr && sStr > eStr) {
+      [sStr, eStr] = [eStr, sStr];
+    }
+    if (sStr) {
+      const [y, m, day] = sStr.split('-').map(Number);
+      const start = new Date(y, m - 1, day, 0, 0, 0, 0);
+      if (d < start) return false;
+    }
+    if (eStr) {
+      const [y, m, day] = eStr.split('-').map(Number);
+      const end = new Date(y, m - 1, day, 23, 59, 59, 999);
+      if (d > end) return false;
+    }
+    return true;
+  }
   return true;
 };
 
 export const AnalyticsGlobalModule = () => {
   const { role } = useAuth();
   const [timeRange, setTimeRange] = useState('7d');
+
+  // Rango de fechas personalizado (por defecto últimos 7 días)
+  const [customStartDate, setCustomStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return getLocalDateString(d);
+  });
+  const [customEndDate, setCustomEndDate] = useState(() => getLocalDateString(new Date()));
 
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -206,23 +248,60 @@ export const AnalyticsGlobalModule = () => {
 
   // ---- Derivados honestos ----
 
-  const filteredReservations = useMemo(() => {
-    if (timeRange === '7d' || timeRange === '30d' || timeRange === 'today') {
-      return reservations.filter((r) => isWithinRange(r.start_time || r.created_at, timeRange));
-    }
-    return reservations;
-  }, [reservations, timeRange]);
+  // Helpers de etiqueta legible para el periodo seleccionado
+  const formatDisplayDate = (dStr) => {
+    if (!dStr) return '';
+    const [y, m, d] = dStr.split('-');
+    return `${d}/${m}/${y}`;
+  };
 
-  // Recaudación: para platform usa /finances/summary (global real), sino suma my-reservations
-  const revenueStats = useMemo(() => {
-    if (role === 'platform' && financesSummary?.totales) {
-      const t = financesSummary.totales;
-      return { total: Number(t.recaudacion_bruta_global || 0), count: Number(t.total_reservas_global || 0), cancelled: 0, netCommission: Number(t.comision_liquida_global || 0) };
+  const timeRangeLabel = useMemo(() => {
+    switch (timeRange) {
+      case 'today':
+        return 'hoy';
+      case '7d':
+        return 'los últimos 7 días';
+      case '30d':
+        return 'los últimos 30 días';
+      case 'this_month':
+        return 'este mes';
+      case 'all':
+        return 'todo el historial';
+      case 'custom':
+        return `rango del ${formatDisplayDate(customStartDate)} al ${formatDisplayDate(customEndDate)}`;
+      default:
+        return timeRange;
     }
+  }, [timeRange, customStartDate, customEndDate]);
+
+  const filteredReservations = useMemo(() => {
+    if (timeRange === 'all') return reservations;
+    return reservations.filter((r) =>
+      isWithinRange(r.start_time || r.created_at || r.actual_entry, timeRange, customStartDate, customEndDate)
+    );
+  }, [reservations, timeRange, customStartDate, customEndDate]);
+
+  // Recaudación en rango: calcula a partir de las reservas filtradas en el periodo elegido
+  const revenueStats = useMemo(() => {
     const valid = filteredReservations.filter((r) => r.status !== 'cancelled');
     const total = valid.reduce((acc, r) => acc + (Number(r.total_cost) || 0), 0);
-    return { total, count: valid.length, cancelled: filteredReservations.length - valid.length };
-  }, [filteredReservations, financesSummary, role]);
+    const count = valid.length;
+    const cancelled = filteredReservations.length - valid.length;
+
+    // Si hay reservas registradas o un rango seleccionado, respetar siempre las reservas del periodo
+    if (reservations.length > 0 || !financesSummary?.totales) {
+      return { total, count, cancelled, netCommission: total * 0.12 };
+    }
+
+    // Fallback a finanzas consolidadas solo si no se pudo descargar el listado de reservas
+    const t = financesSummary.totales;
+    return {
+      total: Number(t.recaudacion_bruta_global || 0),
+      count: Number(t.total_reservas_global || 0),
+      cancelled: 0,
+      netCommission: Number(t.comision_liquida_global || 0),
+    };
+  }, [filteredReservations, reservations, financesSummary]);
 
   // Desglose financiero por método de cobro (Efectivo vs Yape/Plin vs Tarjeta POS)
   const paymentMethodBreakdown = useMemo(() => {
@@ -293,30 +372,32 @@ export const AnalyticsGlobalModule = () => {
     });
   }, [parkings, floorOccupancy]);
 
-  // Recaudación por sede (barras): platform usa /finances/summary real, resto agrupa my-reservations
+  // Recaudación por sede (barras): prioriza reservas filtradas para que el gráfico responda al rango de fechas
   const recaudacionPorSede = useMemo(() => {
-    if (role === 'platform' && financesSummary?.por_sede?.length) {
-      return financesSummary.por_sede.map(s => ({
-        sede: s.parking_name || `Sede #${s.parking_id}`,
-        recaudacion: Number(s.recaudacion_bruta || 0),
-        estancias: Number(s.total_reservas || 0),
-        parking_id: s.parking_id,
-      }));
+    if (reservations.length > 0 || !financesSummary?.por_sede?.length) {
+      const map = new Map();
+      parkings.forEach((p) => map.set(p.id, { sede: p.name, recaudacion: 0, estancias: 0, parking_id: p.id }));
+      filteredReservations.forEach((r) => {
+        if (r.status === 'cancelled') return;
+        const entry = map.get(r.parking_id);
+        if (entry) {
+          entry.recaudacion += Number(r.total_cost) || 0;
+          entry.estancias += 1;
+        } else {
+          map.set(r.parking_id, { sede: `Cochera #${r.parking_id}`, recaudacion: Number(r.total_cost) || 0, estancias: 1, parking_id: r.parking_id });
+        }
+      });
+      return Array.from(map.values());
     }
-    const map = new Map();
-    parkings.forEach((p) => map.set(p.id, { sede: p.name, recaudacion: 0, estancias: 0, parking_id: p.id }));
-    filteredReservations.forEach((r) => {
-      if (r.status === 'cancelled') return;
-      const entry = map.get(r.parking_id);
-      if (entry) {
-        entry.recaudacion += Number(r.total_cost) || 0;
-        entry.estancias += 1;
-      } else {
-        map.set(r.parking_id, { sede: `Cochera #${r.parking_id}`, recaudacion: Number(r.total_cost) || 0, estancias: 1, parking_id: r.parking_id });
-      }
-    });
-    return Array.from(map.values());
-  }, [parkings, filteredReservations, financesSummary, role]);
+
+    // Fallback a finanzas consolidadas solo si no cargaron reservas operativas
+    return financesSummary.por_sede.map((s) => ({
+      sede: s.parking_name || `Sede #${s.parking_id}`,
+      recaudacion: Number(s.recaudacion_bruta || 0),
+      estancias: Number(s.total_reservas || 0),
+      parking_id: s.parking_id,
+    }));
+  }, [parkings, filteredReservations, reservations, financesSummary]);
 
   // Reseñas: promedio y distribución por estrellas
   const reviewStats = useMemo(() => {
@@ -382,8 +463,10 @@ export const AnalyticsGlobalModule = () => {
   const rotacion = totalCap ? (revenueStats.count / totalCap).toFixed(1) : '—';
 
   const exportReport = () => {
-    const lines = [];
-    lines.push(`# Reporte Smart Park — ${timeRange} — ${new Date().toLocaleString('es-PE')}`);
+    const reportRangeStr = timeRange === 'custom'
+      ? `del ${customStartDate} al ${customEndDate}`
+      : timeRangeLabel;
+    lines.push(`# Reporte Smart Park — Rango: ${reportRangeStr} — ${new Date().toLocaleString('es-PE')}`);
     lines.push(`# Nota recaudación: ${revenueScopeNote || '—'}`);
     lines.push('');
     lines.push('## Recaudacion por sede (derivado de reservas filtradas, excluye canceladas)');
@@ -413,7 +496,7 @@ export const AnalyticsGlobalModule = () => {
     lines.push('Estrellas,Cantidad,Porcentaje');
     reviewStats.distribution.forEach((d) => lines.push(`${d.star},${d.value},${d.percent}%`));
     lines.push('');
-    lines.push(`## Totales filtrados (${timeRange})`);
+    lines.push(`## Totales filtrados (${reportRangeStr})`);
     lines.push(`Recaudacion_total_PEN,${revenueStats.total.toFixed(2)}`);
     lines.push(`Estancias_no_canceladas,${revenueStats.count}`);
     lines.push(`Reservas_canceladas_en_rango,${revenueStats.cancelled}`);
@@ -428,7 +511,10 @@ export const AnalyticsGlobalModule = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reporte_analitica_smartpark_${timeRange}.csv`;
+    const downloadSuffix = timeRange === 'custom'
+      ? `${customStartDate}_al_${customEndDate}`
+      : timeRange;
+    a.download = `reporte_analitica_smartpark_${downloadSuffix}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -462,17 +548,49 @@ export const AnalyticsGlobalModule = () => {
             Métricas de aforo en tiempo real, demanda horaria y recaudación de la red.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl h-10 px-4 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl h-10 px-3.5 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300 transition-colors cursor-pointer"
           >
             <option value="today" className="dark:bg-slate-900">Hoy</option>
             <option value="7d" className="dark:bg-slate-900">Últimos 7 Días</option>
             <option value="30d" className="dark:bg-slate-900">Últimos 30 Días</option>
+            <option value="this_month" className="dark:bg-slate-900">Este Mes</option>
+            <option value="custom" className="dark:bg-slate-900">📅 Rango Personalizado</option>
+            <option value="all" className="dark:bg-slate-900">Todo el Historial</option>
           </select>
-          <Button onClick={exportReport} variant="secondary" size="sm" className="dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700">
+
+          {/* Selector de Rango Personalizado de Fechas */}
+          {timeRange === 'custom' && (
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 shadow-2xs">
+              <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Desde</span>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  max={customEndDate || undefined}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                />
+              </div>
+              <span className="text-slate-300 dark:text-slate-700 font-bold">—</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Hasta</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  min={customStartDate || undefined}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                />
+              </div>
+            </div>
+          )}
+
+          <Button onClick={exportReport} variant="secondary" size="sm" className="h-10 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700">
             <Download className="w-4 h-4 shrink-0" />
             Exportar CSV
           </Button>
@@ -543,7 +661,7 @@ export const AnalyticsGlobalModule = () => {
               Desglose Financiero por Medio de Cobro
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Distribución de ingresos según medio utilizado por los conductores en rango {timeRange}.
+              Distribución de ingresos según medio utilizado por los conductores en {timeRangeLabel}.
             </p>
           </div>
           <span className="text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-xl w-fit">
@@ -599,7 +717,7 @@ export const AnalyticsGlobalModule = () => {
             <div className="flex justify-between items-center gap-2">
               <div className="flex flex-col gap-1">
                 <h3 className="text-subheading text-slate-900 dark:text-white">Afluencia por franja horaria</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Distribución de reservas por hora en rango {timeRange}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Distribución de reservas por hora en {timeRangeLabel}</p>
               </div>
             </div>
 
@@ -703,7 +821,7 @@ export const AnalyticsGlobalModule = () => {
       <Card className="p-6 h-full flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h3 className="text-subheading text-slate-900 dark:text-white">Recaudación por sede</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Ingresos brutos generados por establecimiento en rango.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Ingresos brutos generados por establecimiento en {timeRangeLabel}.</p>
         </div>
 
         <div className="h-64 w-full">

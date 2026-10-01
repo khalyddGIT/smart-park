@@ -332,3 +332,67 @@ export function validateGaritaEntryForm({ plate, slot, driverName, hours, time }
     errors
   };
 }
+
+/**
+ * Sanitiza y formatea el teléfono en tiempo real para usuarios y conductores:
+ * - Filtra cualquier letra o símbolo no permitido al escribir o pegar.
+ * - Soporta formato celular nacional peruano (9 dígitos: 9XX XXX XXX).
+ * - Soporta formato internacional con prefijo (+51 9XX XXX XXX).
+ * - Permite borrar (backspace) libremente sin forzar prefijos bloqueantes.
+ * @param {string} val
+ * @returns {string}
+ */
+export function sanitizePhoneInput(val) {
+  if (!val) return '';
+  const str = String(val);
+  if (str === '+' || str === '+5' || str === '+51') return str;
+  const startsWithPlus = str.trim().startsWith('+');
+  const digits = str.replace(/\D/g, '');
+  if (!digits && startsWithPlus) return '+';
+  if (!digits) return '';
+
+  if (startsWithPlus || (digits.startsWith('51') && digits.length > 9)) {
+    let national = digits;
+    if (national.startsWith('51')) national = national.slice(2);
+    national = national.slice(0, 9);
+    if (national.length === 0) return '+51 ';
+    if (national.length <= 3) return `+51 ${national}`;
+    if (national.length <= 6) return `+51 ${national.slice(0, 3)} ${national.slice(3)}`;
+    return `+51 ${national.slice(0, 3)} ${national.slice(3, 6)} ${national.slice(6)}`;
+  }
+
+  const national = digits.slice(0, 9);
+  if (national.length <= 3) return national;
+  if (national.length <= 6) return `${national.slice(0, 3)} ${national.slice(3)}`;
+  return `${national.slice(0, 3)} ${national.slice(3, 6)} ${national.slice(6)}`;
+}
+
+/**
+ * Valida si el teléfono cumple con los estándares oficiales peruanos (9 dígitos, inicia con 9).
+ * Si el campo está vacío, es válido (campo opcional).
+ * @param {string} val
+ * @returns {{ isValid: boolean, error: string | null }}
+ */
+export function validatePhoneInput(val) {
+  if (!val || String(val).trim() === '') {
+    return { isValid: true, error: null };
+  }
+  const raw = String(val).trim();
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('51') && digits.length === 11) {
+    digits = digits.slice(2);
+  }
+  if (!/^\d+$/.test(digits)) {
+    return { isValid: false, error: 'El número de teléfono solo debe contener números.' };
+  }
+  if (digits.length < 9) {
+    return { isValid: false, error: `El teléfono debe tener exactamente 9 dígitos (ingresaste ${digits.length}).` };
+  }
+  if (digits.length > 9) {
+    return { isValid: false, error: `El teléfono no debe exceder 9 dígitos (ingresaste ${digits.length}).` };
+  }
+  if (!digits.startsWith('9')) {
+    return { isValid: false, error: 'El celular debe iniciar con 9 (ej: 987 654 321 o +51 987 654 321).' };
+  }
+  return { isValid: true, error: null };
+}

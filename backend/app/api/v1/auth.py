@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 load_dotenv()
 import secrets
 from datetime import datetime
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, field_validator
+from typing import Optional, Any
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -710,6 +710,14 @@ class ProfileUpdateRequest(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
+
+    @field_validator('phone', mode='before')
+    @classmethod
+    def validate_phone_number(cls, v: Any) -> Optional[str]:
+        if v is None or v == '':
+            return None
+        from app.schemas.schemas import validate_phone_format
+        return validate_phone_format(v)
 
 @router.put("/profile", response_model=UserResponse)
 async def update_profile(

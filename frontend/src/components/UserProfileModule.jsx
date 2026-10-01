@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
 import api, { listVehicles } from '../services/api';
+import { sanitizePhoneInput, validatePhoneInput } from '../utils/garitaValidation';
 
 export const UserProfileModule = ({ onBack }) => {
   const { user, setUser, role } = useAuth();
@@ -128,6 +129,23 @@ export const UserProfileModule = ({ onBack }) => {
 
   const handleSaveProfile = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+
+    // 1. Validación estricta de Teléfono / WhatsApp si fue ingresado
+    const phoneCheck = validatePhoneInput(formData.phone);
+    if (!phoneCheck.isValid) {
+      showToast(phoneCheck.error);
+      return;
+    }
+
+    // 2. Validación de DNI / CE si fue ingresado
+    if (formData.dni && formData.dni.trim() !== '') {
+      const dniDigits = formData.dni.replace(/\D/g, '');
+      if (dniDigits.length !== 8) {
+        showToast('El DNI debe tener exactamente 8 dígitos numéricos.');
+        return;
+      }
+    }
+
     const finalAvatar = avatarInput || user?.avatar || null;
     const updatedUser = {
       ...user,
@@ -140,11 +158,6 @@ export const UserProfileModule = ({ onBack }) => {
       avatar: finalAvatar
     };
 
-    setUser(updatedUser);
-    try {
-      localStorage.setItem('smart_park_user_session', JSON.stringify(updatedUser));
-    } catch (err) {}
-
     try {
       await api.put('/auth/profile', {
         full_name: formData.name.trim(),
@@ -152,8 +165,18 @@ export const UserProfileModule = ({ onBack }) => {
         avatar_url: finalAvatar
       });
     } catch (err) {
+      const backendErr = err?.response?.data?.detail;
+      if (backendErr) {
+        showToast(typeof backendErr === 'string' ? backendErr : 'Error al actualizar perfil en el servidor.');
+        return;
+      }
       console.warn('Backend sync profile warning:', err);
     }
+
+    setUser(updatedUser);
+    try {
+      localStorage.setItem('smart_park_user_session', JSON.stringify(updatedUser));
+    } catch (err) {}
 
     showToast('Perfil actualizado con éxito.');
   };
@@ -418,9 +441,10 @@ export const UserProfileModule = ({ onBack }) => {
                       <Phone className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
                       <input
                         type="tel"
+                        maxLength={16}
                         placeholder="Ej. +51 987 654 321"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, phone: sanitizePhoneInput(e.target.value) })}
                         className="w-full bg-transparent text-xs font-mono font-medium text-slate-900 dark:text-white outline-none"
                       />
                     </div>

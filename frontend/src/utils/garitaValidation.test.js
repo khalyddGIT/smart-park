@@ -8,6 +8,8 @@ import {
   sanitizeDriverInput,
   validateDriverInput,
   validateGaritaEntryForm,
+  sanitizePhoneInput,
+  validatePhoneInput,
   RE_AUTO_PLATE,
   RE_MOTO_PLATE,
   RE_PERU_PLATE
@@ -275,3 +277,65 @@ test('validateGaritaEntryForm - rechaza cuando conductor o tiempo tienen datos i
   assert.equal(badTime.isValid, false);
   assert.ok(badTime.errors.time);
 });
+
+// ============================================================================
+// 8. Sanitización y Validación de Teléfono / WhatsApp de Usuario
+// ============================================================================
+test('sanitizePhoneInput - elimina inmediatamente letras y caracteres extraños', () => {
+  // Caso screenshot del usuario: hhhhhhhhhhhhh8h888h8h88hh
+  assert.equal(sanitizePhoneInput('hhhhhhhhhhhhh8h888h8h88hh'), '888 888 8');
+  assert.equal(sanitizePhoneInput('abcXYZ'), '');
+  assert.equal(sanitizePhoneInput('tel: 987-654-321'), '987 654 321');
+  assert.equal(sanitizePhoneInput('!@#$%^&*()'), '');
+});
+
+test('sanitizePhoneInput - formatea números nacionales peruanos (3 bloques de 3)', () => {
+  assert.equal(sanitizePhoneInput('9'), '9');
+  assert.equal(sanitizePhoneInput('98'), '98');
+  assert.equal(sanitizePhoneInput('987'), '987');
+  assert.equal(sanitizePhoneInput('9876'), '987 6');
+  assert.equal(sanitizePhoneInput('987654'), '987 654');
+  assert.equal(sanitizePhoneInput('9876543'), '987 654 3');
+  assert.equal(sanitizePhoneInput('987654321'), '987 654 321');
+  // Trunca a 9 dígitos nacionales
+  assert.equal(sanitizePhoneInput('98765432199999'), '987 654 321');
+});
+
+test('sanitizePhoneInput - soporta y formatea prefijo internacional +51', () => {
+  assert.equal(sanitizePhoneInput('+51987654321'), '+51 987 654 321');
+  assert.equal(sanitizePhoneInput('+51 987 654 321'), '+51 987 654 321');
+  // Permite borrar sin trabar el cursor
+  assert.equal(sanitizePhoneInput('+51'), '+51');
+  assert.equal(sanitizePhoneInput('+5'), '+5');
+  assert.equal(sanitizePhoneInput('+'), '+');
+  assert.equal(sanitizePhoneInput(''), '');
+});
+
+test('validatePhoneInput - valida teléfonos peruanos correctos y campo opcional', () => {
+  // Campo vacío u omitido es válido
+  assert.equal(validatePhoneInput('').isValid, true);
+  assert.equal(validatePhoneInput(null).isValid, true);
+  assert.equal(validatePhoneInput(undefined).isValid, true);
+
+  // Teléfonos válidos de 9 dígitos que inician con 9
+  assert.equal(validatePhoneInput('987654321').isValid, true);
+  assert.equal(validatePhoneInput('987 654 321').isValid, true);
+  assert.equal(validatePhoneInput('+51 987 654 321').isValid, true);
+});
+
+test('validatePhoneInput - rechaza números incompletos, que no inicien con 9 o inválidos', () => {
+  // Menos de 9 dígitos
+  const incomplete = validatePhoneInput('987 654');
+  assert.equal(incomplete.isValid, false);
+  assert.match(incomplete.error, /exactamente 9 dígitos/);
+
+  // No inicia con 9
+  const notStartWithNine = validatePhoneInput('888 888 888');
+  assert.equal(notStartWithNine.isValid, false);
+  assert.match(notStartWithNine.error, /debe iniciar con 9/);
+
+  // Basura o letras
+  const withLetters = validatePhoneInput('hhhh888hh');
+  assert.equal(withLetters.isValid, false);
+});
+

@@ -117,6 +117,7 @@ Thumbs.db
 # --- Agente IA / Tooling local (no es parte del sistema) ---
 .agents/
 .agents/*
+.antigravitycli/
 skills-lock.json
 
 # --- Remotion Video Project & Renders ---

@@ -902,4 +902,33 @@ html[data-theme="high-contrast"] * {
   background: #151d2f !important;
 }
 
+/* ── Animación Marquee Infinito (React Bits) ── */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-33.333333%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 35s linear infinite;
+}
+
+/* ── Animación Border Beam (React Bits / Magic UI) ── */
+@keyframes border-beam {
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+.animate-border-beam {
+  animation: border-beam var(--duration, 14s) linear infinite;
+}
+
+
+
 

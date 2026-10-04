@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { 
   MAPBOX_TOKEN, 
   AYACUCHO_CENTER, 
@@ -28,7 +26,8 @@ import {
   CheckCircle2,
   ArrowUp,
   CornerUpRight,
-  CornerUpLeft
+  CornerUpLeft,
+  LocateFixed
 } from 'lucide-react';
 import { FALLBACK_PARKING_IMAGE } from './mapConfig';
 import { useAuth } from '../../context/AuthContext';
@@ -60,14 +59,13 @@ export const MapContainer3D = ({
   const markerElementsRef = useRef({});
   const lastCenteredParkingIdRef = useRef(null);
   const routesManagerRef = useRef(null);
-  const mapEngineRef = useRef('mapbox'); // 'mapbox' | 'leaflet'
-  const [mapEngine, setMapEngine] = useState('mapbox'); // 'mapbox' | 'leaflet'
 
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(null);
 
   // Modo de mapa normal (calles por defecto)
   const [mapLayer, setMapLayer] = useState('streets');
+  const [is3D, setIs3D] = useState(false);
   const [activeRoute, setActiveRoute] = useState(null);
   const [targetDest, setTargetDest] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -78,187 +76,56 @@ export const MapContainer3D = ({
   const [filterType, setFilterType] = useState('all');
   const [filterPrice, setFilterPrice] = useState('all');
 
-  // Fallback instantáneo a Leaflet 2D (OpenStreetMap / ArcGIS)
-  const fallbackToLeaflet = () => {
-    if (!mapContainerRef.current) return;
-    if (mapRef.current) {
-      try { mapRef.current.remove(); } catch (e) {}
-      mapRef.current = null;
-    }
-    setMapReady(false);
-    try {
-      mapContainerRef.current.innerHTML = '';
-      const map = L.map(mapContainerRef.current, {
-        center: [AYACUCHO_CENTER.lat, AYACUCHO_CENTER.lng],
-        zoom: 16,
-        zoomControl: false,
-        attributionControl: false
-      });
+  // Inicializar Motor Mapbox GL JS 100% Nativo (Exclusivamente Mapbox)
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+    let isCancelled = false;
 
-      const tileUrl = mapLayer === 'satellite'
-        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-
-      L.tileLayer(tileUrl, {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
-      }).addTo(map);
-
-      mapRef.current = map;
-      mapEngineRef.current = 'leaflet';
-      setMapEngine('leaflet');
-      setTimeout(() => {
-        if (mapRef.current) {
-          try { mapRef.current.invalidateSize(); } catch (e) {}
-        }
-        setMapReady(true);
-      }, 50);
-    } catch (e) {
-      console.error('[MapContainer3D] Error al iniciar Leaflet:', e);
-      setMapError('Error al inicializar el mapa.');
-    }
-  };
-
-  // Cambio manual a Mapbox 3D
-  const switchToMapbox = () => {
-    if (mapRef.current) {
-      try { mapRef.current.remove(); } catch (e) {}
-      mapRef.current = null;
-    }
-    setMapReady(false);
-    if (!mapContainerRef.current) return;
-    mapContainerRef.current.innerHTML = '';
     try {
       mapboxgl.accessToken = MAPBOX_TOKEN;
+      try {
+        if (typeof mapboxgl.setTelemetryEnabled === 'function') {
+          mapboxgl.setTelemetryEnabled(false);
+        }
+      } catch (e) {}
+
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: MAPBOX_STYLES[mapLayer] || MAPBOX_STYLES.streets,
         center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
         zoom: 15.8,
-        pitch: 0,
-        bearing: 0,
+        pitch: is3D ? 58 : 0,
+        bearing: is3D ? -18 : 0,
         antialias: true
       });
+
       mapRef.current = map;
-      mapEngineRef.current = 'mapbox';
-      setMapEngine('mapbox');
+
+      map.once('load', () => {
+        if (!isCancelled) setMapReady(true);
+      });
+
       map.on('style.load', () => {
         try {
           routesManagerRef.current = new MapRoutesManager(map);
         } catch (err) {}
-        setMapReady(true);
+        if (!isCancelled) setMapReady(true);
       });
+
       if (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded()) {
-        setMapReady(true);
+        if (!isCancelled) setMapReady(true);
       }
-    } catch (e) {
-      console.error('Error Mapbox:', e);
-      fallbackToLeaflet();
+
+      map.on('error', (e) => {
+        const msg = (e?.error?.message || e?.message || '').toLowerCase();
+        if (msg.includes('events.mapbox.com')) return;
+        console.warn('[Mapbox] Evento:', e);
+      });
+
+    } catch (err) {
+      console.error('[MapContainer3D] Error al inicializar Mapbox:', err);
+      if (!isCancelled) setMapError('Error al inicializar el mapa de Mapbox.');
     }
-  };
-
-  // Inicializar Motor de Mapa con detección activa de teselas
-  useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
-    let isCancelled = false;
-
-    const initMap = () => {
-      const isMapboxSupported = typeof mapboxgl.supported === 'function' ? mapboxgl.supported() : true;
-
-      if (isMapboxSupported) {
-        try {
-          mapboxgl.accessToken = MAPBOX_TOKEN;
-          try {
-            if (typeof mapboxgl.setTelemetryEnabled === 'function') {
-              mapboxgl.setTelemetryEnabled(false);
-            }
-          } catch (e) {}
-
-          const map = new mapboxgl.Map({
-            container: mapContainerRef.current,
-            style: MAPBOX_STYLES[mapLayer] || MAPBOX_STYLES.streets,
-            center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
-            zoom: 15.8,
-            pitch: 0,
-            bearing: 0,
-            antialias: true
-          });
-
-          let hasRenderedFeatures = false;
-
-          // Detectar si las teselas o workers de Mapbox son bloqueados por CSP, adblockers o red
-          map.on('error', (e) => {
-            const msg = (e?.error?.message || e?.message || '').toLowerCase();
-            if (msg.includes('events.mapbox.com')) return;
-            if (
-              !hasRenderedFeatures && (
-                e?.status === 0 || 
-                e?.error?.status === 401 || 
-                e?.error?.status === 403 || 
-                e?.sourceId === 'composite' || 
-                msg.includes('tile') || 
-                msg.includes('source') ||
-                msg.includes('worker') ||
-                msg.includes('security')
-              )
-            ) {
-              console.warn('[MapContainer3D] Fallo de teselas/worker en Mapbox. Activando Leaflet 2D con OpenStreetMap:', e);
-              if (!isCancelled) fallbackToLeaflet();
-            }
-          });
-
-          mapRef.current = map;
-          mapEngineRef.current = 'mapbox';
-          setMapEngine('mapbox');
-
-          map.once('load', () => {
-            hasRenderedFeatures = true;
-            if (!isCancelled) setMapReady(true);
-          });
-
-          map.on('style.load', () => {
-            try {
-              routesManagerRef.current = new MapRoutesManager(map);
-            } catch (err) {}
-            if (!isCancelled) setMapReady(true);
-          });
-
-          if (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded()) {
-            if (!isCancelled) setMapReady(true);
-          }
-
-          // Guardia de contingencia: consultar features antes de que Mapbox termine
-          // de cargar puede fallar internamente en algunas versiones. Se usan solo
-          // las APIs públicas de estado y se concede tiempo a conexiones lentas.
-          setTimeout(() => {
-            if (!isCancelled && mapEngineRef.current === 'mapbox') {
-              try {
-                const loaded = typeof map.loaded === 'function' && map.loaded();
-                const styleLoaded = typeof map.isStyleLoaded !== 'function' || map.isStyleLoaded();
-                if (!loaded || !styleLoaded) {
-                  console.warn('[MapContainer3D] Mapa no terminó de cargar. Fallback automático a Leaflet 2D.');
-                  fallbackToLeaflet();
-                  return;
-                }
-              } catch (err) {
-                console.warn('[MapContainer3D] Error al verificar features renderizados:', err);
-                fallbackToLeaflet();
-                return;
-              }
-            }
-            if (!isCancelled) setMapReady(true);
-          }, 8000);
-
-          return;
-        } catch (err) {
-          console.warn('[MapContainer3D] Excepción Mapbox GL, usando Leaflet 2D:', err);
-        }
-      }
-
-      fallbackToLeaflet();
-    };
-
-    initMap();
 
     return () => {
       isCancelled = true;
@@ -271,18 +138,14 @@ export const MapContainer3D = ({
     };
   }, []);
 
-  // Observar cambios de tamaño del contenedor para reajustar Mapbox / Leaflet automáticamente en PC y responsive
+  // Observar cambios de tamaño del contenedor para reajustar Mapbox automáticamente
   useEffect(() => {
     if (!mapContainerRef.current) return;
     const container = mapContainerRef.current;
 
     const triggerResize = () => {
-      if (mapRef.current) {
-        if (mapEngineRef.current === 'mapbox' && typeof mapRef.current.resize === 'function') {
-          mapRef.current.resize();
-        } else if (mapEngineRef.current === 'leaflet' && typeof mapRef.current.invalidateSize === 'function') {
-          mapRef.current.invalidateSize();
-        }
+      if (mapRef.current && typeof mapRef.current.resize === 'function') {
+        mapRef.current.resize();
       }
     };
 
@@ -306,52 +169,51 @@ export const MapContainer3D = ({
     };
   }, [mapReady]);
 
-  // Cambiar Estilo de Mapa (Calles / Satélite)
+  // Cambiar Estilo de Mapa (Calles / Satélite) en Mapbox
   const handleChangeLayer = (layerKey) => {
     setMapLayer(layerKey);
     if (!mapRef.current) return;
-    if (mapEngine === 'mapbox') {
-      const styleUrl = MAPBOX_STYLES[layerKey] || MAPBOX_STYLES.streets;
-      mapRef.current.setStyle(styleUrl);
-    } else if (mapEngine === 'leaflet') {
-      mapRef.current.eachLayer((layer) => {
-        if (layer._url) mapRef.current.removeLayer(layer);
-      });
-      const tileUrl = layerKey === 'satellite'
-        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-      L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(mapRef.current);
-    }
+    const styleUrl = MAPBOX_STYLES[layerKey] || MAPBOX_STYLES.streets;
+    mapRef.current.setStyle(styleUrl);
   };
 
   const handleZoomIn = () => {
     if (!mapRef.current) return;
-    if (mapEngine === 'mapbox') mapRef.current.zoomIn({ duration: 300 });
-    else if (mapEngine === 'leaflet') mapRef.current.zoomIn();
+    mapRef.current.zoomIn({ duration: 300 });
   };
 
   const handleZoomOut = () => {
     if (!mapRef.current) return;
-    if (mapEngine === 'mapbox') mapRef.current.zoomOut({ duration: 300 });
-    else if (mapEngine === 'leaflet') mapRef.current.zoomOut();
+    mapRef.current.zoomOut({ duration: 300 });
   };
 
   const handleRecenter = () => {
     if (!mapRef.current) return;
     lastCenteredParkingIdRef.current = null;
-    if (mapEngine === 'mapbox') {
-      mapRef.current.flyTo({
-        center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
-        zoom: 15.8,
-        pitch: 0,
-        bearing: 0,
-        duration: 950,
-        curve: 1.35,
-        essential: true,
-        easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+    mapRef.current.flyTo({
+      center: [AYACUCHO_CENTER.lng, AYACUCHO_CENTER.lat],
+      zoom: 15.8,
+      pitch: is3D ? 58 : 0,
+      bearing: is3D ? -18 : 0,
+      duration: 950,
+      curve: 1.35,
+      essential: true,
+      easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+    });
+  };
+
+  // Alternar Perspectiva 3D con inclinación y profundidad de cámara real en Mapbox
+  const handleToggle3D = () => {
+    if (!mapRef.current) return;
+    const next3D = !is3D;
+    setIs3D(next3D);
+    if (typeof mapRef.current.easeTo === 'function') {
+      mapRef.current.easeTo({
+        pitch: next3D ? 58 : 0,
+        bearing: next3D ? -18 : 0,
+        duration: 850,
+        essential: true
       });
-    } else if (mapEngine === 'leaflet') {
-      mapRef.current.flyTo([AYACUCHO_CENTER.lat, AYACUCHO_CENTER.lng], 16, { duration: 1.0, easeLinearity: 0.25 });
     }
   };
 
@@ -374,76 +236,41 @@ export const MapContainer3D = ({
       offsetY = -100;
     }
 
-    if (mapEngineRef.current === 'mapbox') {
-      const map = mapRef.current;
-      const currentPitch = typeof map.getPitch === 'function' ? map.getPitch() : 0;
-      const currentBearing = typeof map.getBearing === 'function' ? map.getBearing() : 0;
+    const map = mapRef.current;
+    const currentPitch = typeof map.getPitch === 'function' ? map.getPitch() : 0;
+    const currentBearing = typeof map.getBearing === 'function' ? map.getBearing() : 0;
 
-      map.flyTo({
-        center: coords,
-        zoom: 16.5,
-        offset: [0, offsetY],
-        pitch: Math.min(currentPitch, 22),
-        bearing: currentBearing,
-        duration: 1150,
-        curve: 1.35,
-        speed: 0.88,
-        essential: true,
-        easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
-      });
+    map.flyTo({
+      center: coords,
+      zoom: 16.5,
+      offset: [0, offsetY],
+      pitch: Math.min(currentPitch, 22),
+      bearing: currentBearing,
+      duration: 1150,
+      curve: 1.35,
+      speed: 0.88,
+      essential: true,
+      easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+    });
 
-      if (shouldOpenPopup && parkingId) {
-        // Cerrar cualquier otro popup abierto para evitar solapamientos
-        Object.entries(markersRef.current).forEach(([otherId, otherMarker]) => {
-          if (String(otherId) !== String(parkingId)) {
-            const otherPop = otherMarker.getPopup ? otherMarker.getPopup() : null;
-            if (otherPop && typeof otherPop.isOpen === 'function' && otherPop.isOpen()) {
-              otherPop.remove();
-            }
-          }
-        });
-
-        const targetMarker = markersRef.current[parkingId] || 
-                             markersRef.current[String(parkingId)] || 
-                             markersRef.current[Number(parkingId)];
-        if (targetMarker) {
-          const popup = targetMarker.getPopup ? targetMarker.getPopup() : null;
-          if (popup && typeof popup.isOpen === 'function' && !popup.isOpen()) {
-            targetMarker.togglePopup();
+    if (shouldOpenPopup && parkingId) {
+      // Cerrar cualquier otro popup abierto para evitar solapamientos
+      Object.entries(markersRef.current).forEach(([otherId, otherMarker]) => {
+        if (String(otherId) !== String(parkingId)) {
+          const otherPop = otherMarker.getPopup ? otherMarker.getPopup() : null;
+          if (otherPop && typeof otherPop.isOpen === 'function' && otherPop.isOpen()) {
+            otherPop.remove();
           }
         }
-      }
-    } else if (mapEngineRef.current === 'leaflet') {
-      const map = mapRef.current;
-      const targetZoom = 16.5;
+      });
 
-      try {
-        const targetPoint = map.project([coords[1], coords[0]], targetZoom).add([0, offsetY]);
-        const targetLatLng = map.unproject(targetPoint, targetZoom);
-
-        map.flyTo(targetLatLng, targetZoom, {
-          animate: true,
-          duration: 1.15,
-          easeLinearity: 0.25
-        });
-      } catch (err) {
-        map.flyTo([coords[1], coords[0]], targetZoom, { duration: 1.0 });
-      }
-
-      if (shouldOpenPopup && parkingId) {
-        Object.entries(markersRef.current).forEach(([otherId, otherMarker]) => {
-          if (String(otherId) !== String(parkingId)) {
-            if (typeof otherMarker.closePopup === 'function' && typeof otherMarker.isPopupOpen === 'function' && otherMarker.isPopupOpen()) {
-              otherMarker.closePopup();
-            }
-          }
-        });
-
-        const targetMarker = markersRef.current[parkingId] || 
-                             markersRef.current[String(parkingId)] || 
-                             markersRef.current[Number(parkingId)];
-        if (targetMarker && typeof targetMarker.openPopup === 'function' && typeof targetMarker.isPopupOpen === 'function' && !targetMarker.isPopupOpen()) {
-          targetMarker.openPopup();
+      const targetMarker = markersRef.current[parkingId] || 
+                           markersRef.current[String(parkingId)] || 
+                           markersRef.current[Number(parkingId)];
+      if (targetMarker) {
+        const popup = targetMarker.getPopup ? targetMarker.getPopup() : null;
+        if (popup && typeof popup.isOpen === 'function' && !popup.isOpen()) {
+          targetMarker.togglePopup();
         }
       }
     }
@@ -464,7 +291,7 @@ export const MapContainer3D = ({
         map.off('dragstart', handleDragStart);
       }
     };
-  }, [mapReady, mapEngine]);
+  }, [mapReady]);
 
   // Escuchar petición externa para trazar ruta (ej: botón Cómo Llegar de la ficha)
   useEffect(() => {
@@ -584,7 +411,7 @@ export const MapContainer3D = ({
     });
   }, [parkings, filterType, filterPrice]);
 
-  // Actualizar marcadores interactivos en el mapa (Compatible con Mapbox 3D y Leaflet 2D)
+  // Actualizar marcadores interactivos en el mapa (Nativo Mapbox GL JS)
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
     const map = mapRef.current;
@@ -619,24 +446,10 @@ export const MapContainer3D = ({
             if (onSelectParking) onSelectParking(p);
           });
 
-          if (mapEngineRef.current === 'mapbox') {
-            const dotMarker = new mapboxgl.Marker({ element: dotEl })
-              .setLngLat(coords)
-              .addTo(map);
-            markersRef.current[p.id] = dotMarker;
-          } else if (mapEngineRef.current === 'leaflet') {
-            const dotIcon = L.divIcon({
-              html: dotEl.outerHTML,
-              className: '',
-              iconSize: [10, 10],
-              iconAnchor: [5, 5]
-            });
-            const dotMarker = L.marker([coords[1], coords[0]], { icon: dotIcon }).addTo(map);
-            dotMarker.on('click', () => {
-              if (onSelectParking) onSelectParking(p);
-            });
-            markersRef.current[p.id] = dotMarker;
-          }
+          const dotMarker = new mapboxgl.Marker({ element: dotEl })
+            .setLngLat(coords)
+            .addTo(map);
+          markersRef.current[p.id] = dotMarker;
           return;
         }
         return;
@@ -780,96 +593,59 @@ export const MapContainer3D = ({
         }
       };
 
-      if (mapEngineRef.current === 'mapbox') {
-        const marker = new mapboxgl.Marker({ element: el })
-          .setLngLat(coords)
-          .addTo(map);
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat(coords)
+        .addTo(map);
 
-        const popup = new mapboxgl.Popup({
-          offset: {
-            'top': [0, 10],
-            'top-left': [0, 10],
-            'top-right': [0, 10],
-            'bottom': [0, -18],
-            'bottom-left': [0, -18],
-            'bottom-right': [0, -18],
-            'left': [16, 0],
-            'right': [-16, 0]
-          },
-          closeButton: false,
-          closeOnClick: true,
-          maxWidth: '290px'
-        }).setHTML(popupHTML);
-        marker.setPopup(popup);
+      const popup = new mapboxgl.Popup({
+        offset: {
+          'top': [0, 10],
+          'top-left': [0, 10],
+          'top-right': [0, 10],
+          'bottom': [0, -18],
+          'bottom-left': [0, -18],
+          'bottom-right': [0, -18],
+          'left': [16, 0],
+          'right': [-16, 0]
+        },
+        closeButton: false,
+        closeOnClick: true,
+        maxWidth: '290px'
+      }).setHTML(popupHTML);
+      marker.setPopup(popup);
 
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
 
-          // 1. Cerrar cualquier otro popup que estuviera abierto en el mapa
-          Object.entries(markersRef.current).forEach(([otherId, otherMarker]) => {
-            if (String(otherId) !== String(p.id)) {
-              const otherPop = otherMarker.getPopup ? otherMarker.getPopup() : null;
-              if (otherPop && typeof otherPop.isOpen === 'function' && otherPop.isOpen()) {
-                otherPop.remove();
-              }
+        // 1. Cerrar cualquier otro popup que estuviera abierto en el mapa
+        Object.entries(markersRef.current).forEach(([otherId, otherMarker]) => {
+          if (String(otherId) !== String(p.id)) {
+            const otherPop = otherMarker.getPopup ? otherMarker.getPopup() : null;
+            if (otherPop && typeof otherPop.isOpen === 'function' && otherPop.isOpen()) {
+              otherPop.remove();
             }
-          });
-
-          // 2. Alternar este popup: si ya está abierto lo cerramos; si está cerrado lo abrimos y centramos suavemente
-          const currentPop = marker.getPopup ? marker.getPopup() : null;
-          const isAlreadyOpen = currentPop && typeof currentPop.isOpen === 'function' ? currentPop.isOpen() : false;
-
-          if (isAlreadyOpen) {
-            marker.togglePopup();
-          } else {
-            marker.togglePopup();
-            lastCenteredParkingIdRef.current = String(p.id);
-            smoothCenterOnParking(coords, p.id, false);
           }
         });
 
-        marker.getPopup().on('open', () => {
-          wirePopupEvents(() => popup.remove());
-        });
+        // 2. Alternar este popup: si ya está abierto lo cerramos; si está cerrado lo abrimos y centramos suavemente
+        const currentPop = marker.getPopup ? marker.getPopup() : null;
+        const isAlreadyOpen = currentPop && typeof currentPop.isOpen === 'function' ? currentPop.isOpen() : false;
 
-        markersRef.current[p.id] = marker;
-        markerElementsRef.current[p.id] = el;
-      } else if (mapEngineRef.current === 'leaflet') {
-        const customIcon = L.divIcon({
-          html: el.outerHTML,
-          className: 'leaflet-smartpark-marker',
-          iconSize: [110, 32],
-          iconAnchor: [55, 16]
-        });
-
-        const marker = L.marker([coords[1], coords[0]], { icon: customIcon }).addTo(map);
-        marker.bindPopup(popupHTML, { maxWidth: 290, className: 'leaflet-smartpark-popup' });
-
-        marker.on('click', (e) => {
-          if (e && e.originalEvent) {
-            e.originalEvent.stopPropagation();
-          }
-
-          // Cerrar otros popups abiertos
-          Object.entries(markersRef.current).forEach(([otherId, otherMarker]) => {
-            if (String(otherId) !== String(p.id)) {
-              if (typeof otherMarker.closePopup === 'function' && typeof otherMarker.isPopupOpen === 'function' && otherMarker.isPopupOpen()) {
-                otherMarker.closePopup();
-              }
-            }
-          });
-
+        if (isAlreadyOpen) {
+          marker.togglePopup();
+        } else {
+          marker.togglePopup();
           lastCenteredParkingIdRef.current = String(p.id);
           smoothCenterOnParking(coords, p.id, false);
-        });
+        }
+      });
 
-        marker.on('popupopen', () => {
-          wirePopupEvents(() => marker.closePopup());
-        });
+      marker.getPopup().on('open', () => {
+        wirePopupEvents(() => popup.remove());
+      });
 
-        markersRef.current[p.id] = marker;
-        markerElementsRef.current[p.id] = marker.getElement ? marker.getElement() : null;
-      }
+      markersRef.current[p.id] = marker;
+      markerElementsRef.current[p.id] = el;
     });
 
     return () => {
@@ -879,7 +655,7 @@ export const MapContainer3D = ({
       markersRef.current = {};
       markerElementsRef.current = {};
     };
-  }, [mapReady, filteredParkings, onSelectParking, activeRoute, targetDest, mapEngine]);
+  }, [mapReady, filteredParkings, onSelectParking, activeRoute, targetDest]);
 
   // Actualizar estilos del marcador seleccionado de forma no destructiva y reactiva
   useEffect(() => {
@@ -941,7 +717,7 @@ export const MapContainer3D = ({
       {/* Contenedor del Mapa (100% Despejado, sin modales bloqueando la vista en móvil) */}
       <div className="relative isolate z-0 w-full h-[360px] sm:h-[460px] md:h-[540px] lg:h-[600px] 2xl:h-[680px] max-h-[72dvh] bg-slate-100 dark:bg-slate-950 overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm">
         
-        {/* Lienzo Normal Mapbox / Leaflet */}
+        {/* Lienzo Mapbox GL JS */}
         <div ref={mapContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
         {/* Overlay de Carga Elegante */}
@@ -972,79 +748,81 @@ export const MapContainer3D = ({
           </div>
         )}
 
-        {/* Controles de Mapa Flotantes Minimalistas (Cápsula Unificada) */}
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-auto flex items-center bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-lg shadow-slate-900/5 text-xs">
-          {/* Selector de Capas (Calles / Satélite / Motor) */}
-          <div className="flex items-center p-0.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-xl">
+        {/* Controles de Mapa Flotantes Premium (Cápsula de Cristal Apple/Linear) */}
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-auto flex items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-900/10 text-xs">
+          
+          {/* Selector Segmentado de Capas y Perspectiva */}
+          <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => handleChangeLayer('streets')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
                 mapLayer === 'streets'
-                  ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
               }`}
+              title="Capa estándar de calles y avenidas"
             >
-              <Map className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <Map className={`w-3.5 h-3.5 ${mapLayer === 'streets' ? 'text-emerald-400 dark:text-emerald-600' : 'text-slate-500'}`} />
               <span>Calles</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleChangeLayer('satellite')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
                 mapLayer === 'satellite'
-                  ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
               }`}
+              title="Vista satelital de alta resolución"
             >
-              <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <Layers className={`w-3.5 h-3.5 ${mapLayer === 'satellite' ? 'text-cyan-400 dark:text-cyan-600' : 'text-slate-500'}`} />
               <span>Satélite</span>
             </button>
 
+            {/* Conmutador de Perspectiva 3D Real */}
             <button
               type="button"
-              onClick={() => {
-                if (mapEngine === 'mapbox') {
-                  fallbackToLeaflet();
-                } else {
-                  switchToMapbox();
-                }
-              }}
-              className="px-2 sm:px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              title={mapEngine === 'mapbox' ? 'Cambiar a mapa 2D (OpenStreetMap)' : 'Cambiar a mapa 3D (Mapbox)'}
+              onClick={handleToggle3D}
+              className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
+                is3D
+                  ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25 ring-1 ring-emerald-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
+              }`}
+              title={is3D ? 'Volver a vista plana 2D' : 'Inclinar mapa a perspectiva isométrica 3D'}
             >
-              <Compass className="w-3.5 h-3.5 text-blue-500" />
-              <span>{mapEngine === 'mapbox' ? '3D' : '2D'}</span>
+              <Compass className={`w-3.5 h-3.5 transition-transform duration-300 ${is3D ? 'rotate-45 text-white' : 'text-slate-500'}`} />
+              <span>3D</span>
             </button>
           </div>
 
-          {/* Separador sutil */}
-          <div className="w-px h-4 bg-slate-200 dark:bg-slate-800 mx-1.5" />
+          {/* Separador vertical de alta fidelidad */}
+          <div className="w-px h-5 bg-slate-200/90 dark:bg-slate-800 mx-1 shrink-0" />
 
-          {/* Botones de Navegación Zoom y Recentrar */}
+          {/* Herramientas de Cámara: Recentrar y Zoom */}
           <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={handleRecenter}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
-              title="Centrar en Plaza Mayor"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+              title="Recentrar en Plaza Mayor de Ayacucho"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <LocateFixed className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={handleZoomIn}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
-              title="Acercar"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+              title="Acercar (+)"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={handleZoomOut}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition cursor-pointer"
-              title="Alejar"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+              title="Alejar (-)"
             >
               <Minus className="w-3.5 h-3.5" />
             </button>

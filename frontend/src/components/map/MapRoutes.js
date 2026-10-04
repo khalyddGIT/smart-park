@@ -73,8 +73,6 @@ export class MapRoutesManager {
         }
       });
 
-      const mapboxgl = window.mapboxgl;
-
       // Marcador 1: Puck de Ubicación Real del Usuario (Punto Azul con pulso suave de radar)
       if (mapboxgl) {
         const originEl = document.createElement('div');

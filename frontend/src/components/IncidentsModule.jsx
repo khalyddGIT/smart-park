@@ -24,6 +24,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { isStaffOperatorUser, normalizeParkingId } from '../context/EstablishmentContext';
+import { validateTextMinLength } from '../utils/formValidation';
 import api from '../services/api';
 
 const CATEGORY_LABELS = {
@@ -258,7 +259,15 @@ export const IncidentsModule = () => {
   // POST /incidents (requiere JWT): cualquier usuario autenticado puede reportar
   const handleCreateIncident = async (e) => {
     e.preventDefault();
-    if (!formData.parkingId || formData.description.trim().length < 5) return;
+    if (!formData.parkingId) {
+      showToast('Selecciona un estacionamiento para reportar la incidencia.');
+      return;
+    }
+    const descVal = validateTextMinLength(formData.description, 5, 'descripción del reporte');
+    if (!descVal.valid) {
+      showToast(descVal.message);
+      return;
+    }
     setSubmitting(true);
     try {
       await api.post('/incidents', {
@@ -290,7 +299,12 @@ export const IncidentsModule = () => {
 
   const handleResolveIncident = async (e) => {
     e.preventDefault();
-    if (!resolveTarget || !resolutionNote.trim()) return;
+    if (!resolveTarget) return;
+    const noteVal = validateTextMinLength(resolutionNote, 5, 'nota de resolución');
+    if (!noteVal.valid) {
+      showToast(noteVal.message);
+      return;
+    }
     setSubmitting(true);
     try {
       await api.put(`/incidents/${resolveTarget.id}/resolve`, { resolution_note: resolutionNote.trim() });

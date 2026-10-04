@@ -32,6 +32,7 @@ import {
   Lightbulb
 } from 'lucide-react';
 import api from '../services/api';
+import { validateStaffForm, validateEmail, validatePassword, validatePin, validateDni } from '../utils/formValidation';
 
 // Función auxiliar para generar contraseñas seguras aleatorias
 const generateSecurePassword = () => {
@@ -188,27 +189,15 @@ export const StaffModule = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-    if (!formData.full_name || !formData.dni) {
-      notify('Por favor completa el nombre y DNI del colaborador.');
+
+    const staffVal = validateStaffForm(formData);
+    if (!staffVal.isValid) {
+      const firstError = Object.values(staffVal.errors)[0];
+      notify(firstError);
       return;
     }
     if (validEstablishments.length === 0) {
       notify('No hay sedes registradas en el servidor. Crea una sede en Espacios & Plano antes de registrar personal.');
-      return;
-    }
-    if (!formData.parking_id || isNaN(Number(formData.parking_id))) {
-      notify('Selecciona una sede válida.');
-      return;
-    }
-
-    if (formData.password && formData.password.trim() && formData.password.trim().length < 8) {
-      notify('La contraseña de acceso debe tener al menos 8 caracteres.');
-      return;
-    }
-
-    const pin = (formData.security_pin || '').trim();
-    if (pin && !/^\d{4}$/.test(pin)) {
-      notify('El PIN de garita debe tener exactamente 4 dígitos numéricos.');
       return;
     }
 
@@ -269,19 +258,10 @@ export const StaffModule = () => {
     e.preventDefault();
     if (!selectedMember || isSubmitting) return;
 
-    if (!formData.full_name || !formData.dni) {
-      notify('Por favor completa el nombre y DNI del colaborador.');
-      return;
-    }
-
-    if (formData.password && formData.password.trim() && formData.password.trim().length < 8) {
-      notify('La contraseña de acceso debe tener al menos 8 caracteres.');
-      return;
-    }
-
-    const pin = (formData.security_pin || '').trim();
-    if (pin && !/^\d{4}$/.test(pin)) {
-      notify('El PIN de garita debe tener exactamente 4 dígitos numéricos.');
+    const staffVal = validateStaffForm(formData);
+    if (!staffVal.isValid) {
+      const firstError = Object.values(staffVal.errors)[0];
+      notify(firstError);
       return;
     }
 
@@ -304,6 +284,7 @@ export const StaffModule = () => {
       payload.password = formData.password.trim();
     }
 
+    const pin = (formData.security_pin || '').trim();
     if (pin) {
       payload.security_pin = pin;
     }
@@ -338,16 +319,27 @@ export const StaffModule = () => {
     if (!selectedMember || isSubmitting) return;
 
     const emailToUse = (credsData.email || '').trim().toLowerCase() || (selectedMember.dni ? `operador.${selectedMember.dni}@smartpark.pe` : '');
-
-    if (credsData.password && credsData.password.trim() && credsData.password.trim().length < 8) {
-      notify('La nueva contraseña debe tener al menos 8 caracteres.');
+    const emailVal = validateEmail(emailToUse, true);
+    if (!emailVal.isValid) {
+      notify(emailVal.error);
       return;
     }
 
+    if (credsData.password && credsData.password.trim()) {
+      const pwdVal = validatePassword(credsData.password.trim(), 8);
+      if (!pwdVal.isValid) {
+        notify(pwdVal.error);
+        return;
+      }
+    }
+
     const pin = (credsData.security_pin || '').trim();
-    if (pin && !/^\d{4}$/.test(pin)) {
-      notify('El PIN de garita debe tener exactamente 4 dígitos numéricos.');
-      return;
+    if (pin) {
+      const pinVal = validatePin(pin, 4, 4);
+      if (!pinVal.isValid) {
+        notify(pinVal.error);
+        return;
+      }
     }
 
     setIsSubmitting(true);

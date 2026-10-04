@@ -4,6 +4,7 @@ import { KeyRound, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { verifyPinApi } from '../services/api';
+import { validatePin } from '../utils/formValidation';
 
 export const KeypadModal = ({ isOpen, onClose, onSuccess }) => {
   const [pin, setPin] = useState('');
@@ -24,8 +25,9 @@ export const KeypadModal = ({ isOpen, onClose, onSuccess }) => {
 
   // Verificación REAL contra el servidor: POST /auth/verify-pin con el JWT del usuario
   const handleVerify = async () => {
-    if (pin.length < 4) {
-      setError('Ingresa un PIN de al menos 4 dígitos');
+    const pinVal = validatePin(pin);
+    if (!pinVal.valid) {
+      setError(pinVal.message);
       return;
     }
     setChecking(true);

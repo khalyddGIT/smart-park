@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import api from '../services/api';
 import { sanitizePhoneInput, validatePhoneInput, validateRucInput } from '../utils/garitaValidation';
+import { validateEmail } from '../utils/formValidation';
 import { 
   Building2, 
   Plus, 
@@ -1059,6 +1060,14 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       const rucVal = validateRucInput(formData.ruc, false);
       if (!rucVal.isValid) {
         alert(rucVal.error);
+        return;
+      }
+    }
+
+    if (formData.email && formData.email.trim()) {
+      const emailVal = validateEmail(formData.email);
+      if (!emailVal.valid) {
+        alert(emailVal.message);
         return;
       }
     }

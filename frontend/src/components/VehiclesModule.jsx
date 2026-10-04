@@ -40,6 +40,7 @@ import {
   getAccessToken 
 } from '../services/api';
 import { useEstablishments } from '../context/EstablishmentContext';
+import { validateVehicleForm, validateVehicleYear } from '../utils/formValidation';
 
 // Función para consultar la API y obtener foto real del modelo (vía backend proxy y fallback directo)
 export const fetchCarPhoto = async (brand, model, year = '2023', vehicleType = 'auto') => {
@@ -666,17 +667,13 @@ export const VehiclesModule = () => {
 
   const handleSaveCreate = async (e) => {
     e.preventDefault();
-    if (!formData.license_plate) return;
-    let plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
-    if (!plateClean.includes('-')) {
-      if (plateClean.length === 6) {
-        plateClean = plateClean.slice(0, 3) + '-' + plateClean.slice(3);
-      } else if (plateClean.length === 7) {
-        plateClean = plateClean.slice(0, 4) + '-' + plateClean.slice(4);
-      }
+    const vCheck = validateVehicleForm(formData);
+    if (!vCheck.valid) {
+      const firstError = Object.values(vCheck.errors)[0];
+      showToast(firstError || 'Datos del vehículo inválidos.');
+      return;
     }
-    const plateOk = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i.test(plateClean);
-    if (!plateOk) { showToast('La placa debe incluir un guión obligatorio (ej: ABC-123 o 1234-AB)'); return; }
+    const plateClean = vCheck.cleanPlate;
 
     setIsSaving(true);
     try {
@@ -757,16 +754,13 @@ export const VehiclesModule = () => {
   const handleSaveEdit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!selectedVehicle) return;
-    let plateClean = formData.license_plate.toUpperCase().trim().replace(/\s/g,'');
-    if (!plateClean.includes('-')) {
-      if (plateClean.length === 6) {
-        plateClean = plateClean.slice(0, 3) + '-' + plateClean.slice(3);
-      } else if (plateClean.length === 7) {
-        plateClean = plateClean.slice(0, 4) + '-' + plateClean.slice(4);
-      }
+    const vCheck = validateVehicleForm(formData);
+    if (!vCheck.valid) {
+      const firstError = Object.values(vCheck.errors)[0];
+      showToast(firstError || 'Datos del vehículo inválidos.');
+      return;
     }
-    const plateOk = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i.test(plateClean);
-    if (!plateOk) { showToast('La placa debe incluir un guión obligatorio (ej: ABC-123 o 1234-AB)'); return; }
+    const plateClean = vCheck.cleanPlate;
 
     setIsSaving(true);
     try {

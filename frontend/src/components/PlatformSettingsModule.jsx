@@ -58,6 +58,7 @@ import { useEstablishments } from '../context/EstablishmentContext';
 import { useTheme } from '../context/ThemeContext';
 import { MapContainer3D } from './map/MapContainer3D';
 import { BroadcastDetailModal } from './BroadcastDetailModal';
+import { validatePercentage } from '../utils/formValidation';
 import api from '../services/api';
 
 const SETTINGS_STORAGE_KEY = 'smart_park_platform_settings_v2';
@@ -357,7 +358,21 @@ export const PlatformSettingsModule = () => {
 
   const handleSendBroadcast = async (e) => {
     e.preventDefault();
-    if (!newBroadcast.title.trim() || !newBroadcast.message.trim()) return;
+    if (!newBroadcast.title.trim()) {
+      notify('El título del comunicado es requerido.');
+      return;
+    }
+    if (!newBroadcast.message.trim()) {
+      notify('El contenido del mensaje es requerido.');
+      return;
+    }
+    if (newBroadcast.discount_percent) {
+      const pctVal = validatePercentage(newBroadcast.discount_percent, 'Descuento');
+      if (!pctVal.valid) {
+        notify(pctVal.message);
+        return;
+      }
+    }
 
     const payload = {
       title: newBroadcast.title.trim(),

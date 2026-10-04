@@ -7,6 +7,7 @@ import { Shield, UserCheck, KeyRound, Plus, Edit3, Search, Check, Lock, Power, I
 import { useAuth } from '../context/AuthContext';
 import { saveLocalUserCredential } from '../context/EstablishmentContext';
 import { sanitizePhoneInput, validatePhoneInput } from '../utils/garitaValidation';
+import { validateEmail, validatePassword, validateName, validatePin } from '../utils/formValidation';
 import api from '../services/api';
 
 // Formatea la fecha ISO del backend a texto corto
@@ -102,9 +103,23 @@ export const UserRolesModule = () => {
   // POST /users — crea SIEMPRE role="user"; requiere password de 8+ caracteres
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.full_name || !formData.password) return;
-    if (formData.password.length < 8) {
-      notify('La contraseña debe tener al menos 8 caracteres.');
+    if (!formData.full_name || !formData.full_name.trim()) {
+      notify('El nombre completo es requerido.');
+      return;
+    }
+    const nameVal = validateName(formData.full_name);
+    if (!nameVal.valid) {
+      notify(nameVal.message);
+      return;
+    }
+    const emailVal = validateEmail(formData.email);
+    if (!emailVal.valid) {
+      notify(emailVal.message);
+      return;
+    }
+    const passVal = validatePassword(formData.password);
+    if (!passVal.valid) {
+      notify(passVal.message);
       return;
     }
 
@@ -134,15 +149,28 @@ export const UserRolesModule = () => {
     e.preventDefault();
     if (!selectedUser) return;
 
-    if (formData.password && formData.password.length < 8) {
-      notify('La contraseña debe tener al menos 8 caracteres si deseas cambiarla.');
+    if (!formData.full_name || !formData.full_name.trim()) {
+      notify('El nombre completo es requerido.');
       return;
+    }
+    const nameVal = validateName(formData.full_name);
+    if (!nameVal.valid) {
+      notify(nameVal.message);
+      return;
+    }
+
+    if (formData.password) {
+      const passVal = validatePassword(formData.password);
+      if (!passVal.valid) {
+        notify(passVal.message);
+        return;
+      }
     }
 
     if (formData.phone && formData.phone.trim()) {
       const phoneValidation = validatePhoneInput(formData.phone);
-      if (!phoneValidation.isValid) {
-        notify(phoneValidation.error);
+      if (!phoneValidation.valid && !phoneValidation.isValid) {
+        notify(phoneValidation.message || phoneValidation.error);
         return;
       }
     }
@@ -193,8 +221,9 @@ export const UserRolesModule = () => {
   const handleSavePin = async (e) => {
     e.preventDefault();
     if (!selectedUser) return;
-    if (!/^\d{4,6}$/.test(pinValue)) {
-      notify('El PIN debe contener entre 4 y 6 dígitos numéricos.');
+    const pinVal = validatePin(pinValue);
+    if (!pinVal.valid) {
+      notify(pinVal.message);
       return;
     }
 

@@ -42,6 +42,13 @@ import {
   Info
 } from 'lucide-react';
 import { useEstablishments, getEstablishmentHierarchy, getLocalUserCredentials } from '../context/EstablishmentContext';
+import { 
+  validateEmail, 
+  validatePassword, 
+  validatePhoneInput, 
+  validateRuc, 
+  validatePositiveNumber 
+} from '../utils/formValidation';
 
 export const AffiliatedParkingsModule = () => {
   const { 
@@ -225,7 +232,50 @@ export const AffiliatedParkingsModule = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!formData.name) return;
+    if (!formData.name || !formData.name.trim()) {
+      notify('El nombre del establecimiento es requerido');
+      return;
+    }
+
+    if (formData.phone) {
+      const phoneVal = validatePhoneInput(formData.phone);
+      if (!phoneVal.valid) {
+        notify(phoneVal.message);
+        return;
+      }
+    }
+
+    if (formData.rate !== undefined && formData.rate !== '') {
+      const rateVal = validatePositiveNumber(formData.rate, 'Tarifa base');
+      if (!rateVal.valid) {
+        notify(rateVal.message);
+        return;
+      }
+    }
+
+    let adminCredentials = null;
+    if (formData.createAdminAccount) {
+      if (!formData.adminEmail) {
+        notify('El correo de administrador es requerido');
+        return;
+      }
+      const emailVal = validateEmail(formData.adminEmail);
+      if (!emailVal.valid) {
+        notify(emailVal.message);
+        return;
+      }
+      const passVal = validatePassword(formData.adminPassword);
+      if (!passVal.valid) {
+        notify(passVal.message);
+        return;
+      }
+      adminCredentials = {
+        email: formData.adminEmail.trim(),
+        password: formData.adminPassword,
+        full_name: formData.owner || formData.name,
+        phone: formData.phone || ''
+      };
+    }
 
     const defaultNewElements = [
       { id: 1, type: 'wall', x: 40, y: 40, w: 1020, h: 12, rot: 0 },
@@ -263,16 +313,6 @@ export const AffiliatedParkingsModule = () => {
       elements: defaultNewElements
     };
 
-    let adminCredentials = null;
-    if (formData.createAdminAccount && formData.adminEmail && formData.adminPassword) {
-      adminCredentials = {
-        email: formData.adminEmail.trim(),
-        password: formData.adminPassword,
-        full_name: formData.owner || formData.name,
-        phone: formData.phone || ''
-      };
-    }
-
     try {
       const created = await addEstablishment(newObj, adminCredentials);
       setShowAddModal(false);
@@ -297,6 +337,24 @@ export const AffiliatedParkingsModule = () => {
   const handleEdit = (e) => {
     e.preventDefault();
     if (!selectedParking) return;
+    if (!formData.name || !formData.name.trim()) {
+      notify('El nombre del establecimiento es requerido');
+      return;
+    }
+    if (formData.phone) {
+      const phoneVal = validatePhoneInput(formData.phone);
+      if (!phoneVal.valid) {
+        notify(phoneVal.message);
+        return;
+      }
+    }
+    if (formData.rate !== undefined && formData.rate !== '') {
+      const rateVal = validatePositiveNumber(formData.rate, 'Tarifa');
+      if (!rateVal.valid) {
+        notify(rateVal.message);
+        return;
+      }
+    }
 
     const hierarchy = getEstablishmentHierarchy({ name: formData.name, company_name: formData.company_name });
     const effectiveCompany = (formData.company_name || hierarchy.companyName || formData.name).trim();
@@ -355,8 +413,29 @@ export const AffiliatedParkingsModule = () => {
     if (!selectedCompany) return;
     const newCompanyName = (companyFormData.company_name || '').trim();
     if (!newCompanyName) {
-      alert('El nombre de la empresa es obligatorio.');
+      notify('El nombre de la empresa es obligatorio.');
       return;
+    }
+    if (companyFormData.ruc) {
+      const rucVal = validateRuc(companyFormData.ruc);
+      if (!rucVal.valid) {
+        notify(rucVal.message);
+        return;
+      }
+    }
+    if (companyFormData.email) {
+      const emailVal = validateEmail(companyFormData.email);
+      if (!emailVal.valid) {
+        notify(emailVal.message);
+        return;
+      }
+    }
+    if (companyFormData.phone) {
+      const phoneVal = validatePhoneInput(companyFormData.phone);
+      if (!phoneVal.valid) {
+        notify(phoneVal.message);
+        return;
+      }
     }
 
     setSavingCompany(true);
@@ -447,14 +526,33 @@ export const AffiliatedParkingsModule = () => {
   const handleConfirmApprove = async (e) => {
     e.preventDefault();
     if (!approvingRequest) return;
+
+    const chosenPassword = approveForm.adminPassword;
+    const chosenEmail = approveForm.adminEmail.trim();
+    const chosenName = approveForm.adminName.trim();
+    const chosenPhone = approveForm.adminPhone.trim();
+
+    const emailVal = validateEmail(chosenEmail);
+    if (!emailVal.valid) {
+      notify(emailVal.message);
+      return;
+    }
+    const passVal = validatePassword(chosenPassword);
+    if (!passVal.valid) {
+      notify(passVal.message);
+      return;
+    }
+    if (chosenPhone) {
+      const phVal = validatePhoneInput(chosenPhone);
+      if (!phVal.valid) {
+        notify(phVal.message);
+        return;
+      }
+    }
+
     setApprovingLoading(true);
 
     try {
-      const chosenPassword = approveForm.adminPassword;
-      const chosenEmail = approveForm.adminEmail.trim();
-      const chosenName = approveForm.adminName.trim();
-      const chosenPhone = approveForm.adminPhone.trim();
-
       const res = await approveAffiliationRequest(approvingRequest.id, {
         admin_email: chosenEmail,
         admin_password: chosenPassword,
@@ -561,9 +659,31 @@ export const AffiliatedParkingsModule = () => {
   const handleSaveCredentials = async (e) => {
     e.preventDefault();
     if (!credentialsSede) return;
-    if (!credentialsForm.adminEmail) {
-      alert('El correo electrónico es requerido');
+    if (!credentialsForm.adminEmail || !credentialsForm.adminEmail.trim()) {
+      notify('El correo electrónico es requerido');
       return;
+    }
+
+    const emailVal = validateEmail(credentialsForm.adminEmail);
+    if (!emailVal.valid) {
+      notify(emailVal.message);
+      return;
+    }
+
+    if (credentialsForm.adminPassword) {
+      const passVal = validatePassword(credentialsForm.adminPassword);
+      if (!passVal.valid) {
+        notify(passVal.message);
+        return;
+      }
+    }
+
+    if (credentialsForm.adminPhone) {
+      const phVal = validatePhoneInput(credentialsForm.adminPhone);
+      if (!phVal.valid) {
+        notify(phVal.message);
+        return;
+      }
     }
 
     setSavingCredentials(true);

@@ -21,6 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
 import api, { listVehicles } from '../services/api';
 import { sanitizePhoneInput, validatePhoneInput } from '../utils/garitaValidation';
+import { validatePlateInput, validatePin } from '../utils/formValidation';
 
 export const UserProfileModule = ({ onBack }) => {
   const { user, setUser, role } = useAuth();
@@ -146,6 +147,17 @@ export const UserProfileModule = ({ onBack }) => {
       }
     }
 
+    // 3. Validación de Placa preferida si fue ingresada
+    let cleanPreferredPlate = formData.plate ? formData.plate.toUpperCase().trim() : '';
+    if (formData.plate && formData.plate.trim() !== '') {
+      const plateVal = validatePlateInput(formData.plate);
+      if (!plateVal.valid) {
+        showToast(plateVal.message);
+        return;
+      }
+      cleanPreferredPlate = plateVal.cleanPlate;
+    }
+
     const finalAvatar = avatarInput || user?.avatar || null;
     const updatedUser = {
       ...user,
@@ -154,7 +166,7 @@ export const UserProfileModule = ({ onBack }) => {
       phone: formData.phone.trim(),
       dni: formData.dni.trim(),
       address: formData.address.trim(),
-      plate: formData.plate.toUpperCase().trim(),
+      plate: cleanPreferredPlate,
       avatar: finalAvatar
     };
 
@@ -183,8 +195,9 @@ export const UserProfileModule = ({ onBack }) => {
 
   const handleSavePin = async (e) => {
     e.preventDefault();
-    if (newPin.length < 4 || newPin.length > 6) {
-      showToast('El PIN debe tener entre 4 y 6 dígitos.');
+    const pinVal = validatePin(newPin);
+    if (!pinVal.valid) {
+      showToast(pinVal.message);
       return;
     }
     try {

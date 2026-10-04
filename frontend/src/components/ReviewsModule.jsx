@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useEstablishments } from '../context/EstablishmentContext';
+import { validateTextMinLength } from '../utils/formValidation';
 import api from '../services/api';
 
 // Formatea la fecha ISO a formato legible
@@ -146,7 +147,15 @@ export const ReviewsModule = () => {
   // Manejar creación de reseña (Conductor)
   const handleCreateReview = async (e) => {
     e.preventDefault();
-    if (!newComment.trim() || !selectedParkingId) return;
+    if (!selectedParkingId) {
+      notify('Por favor, selecciona un estacionamiento.', 'error');
+      return;
+    }
+    const commentVal = validateTextMinLength(newComment, 4, 'comentario u opinión');
+    if (!commentVal.valid) {
+      notify(commentVal.message, 'error');
+      return;
+    }
     setSubmittingReview(true);
     try {
       await api.post('/reviews', {
@@ -178,7 +187,12 @@ export const ReviewsModule = () => {
   // Guardar respuesta oficial
   const handleSaveReply = async (e) => {
     e.preventDefault();
-    if (!selectedReview || !replyText.trim()) return;
+    if (!selectedReview) return;
+    const replyVal = validateTextMinLength(replyText, 3, 'respuesta oficial');
+    if (!replyVal.valid) {
+      notify(replyVal.message, 'error');
+      return;
+    }
     setSubmittingReply(true);
     try {
       await api.put(`/reviews/${selectedReview.id}/reply`, { response: replyText.trim() });

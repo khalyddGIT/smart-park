@@ -1989,10 +1989,10 @@ export const EstablishmentProvider = ({ children }) => {
   };
 
   // Liberar un cajón específico
-  const freeSlot = (establishmentId, slotCode) => {
+  const freeSlot = async (establishmentId, slotCode) => {
     setEstablishments(prev => {
       const updated = prev.map(est => {
-        if (est.id === establishmentId || est.name === establishmentId) {
+        if (String(est.id) === String(establishmentId) || est.name === establishmentId) {
           const updatedElements = (est.elements || []).map(el => {
             if (el.type === 'slot' && el.code === slotCode) {
               return {
@@ -2010,6 +2010,18 @@ export const EstablishmentProvider = ({ children }) => {
       });
       return updated;
     });
+
+    // Sincronizar en servidor si la plaza tiene ID numérico
+    try {
+      const est = establishments.find(e => String(e.id) === String(establishmentId) || e.name === establishmentId);
+      const targetSlot = (est?.elements || []).find(el => el.type === 'slot' && el.code === slotCode);
+      if (targetSlot?.id && !isNaN(Number(establishmentId))) {
+        await api.put(`/parkings/${establishmentId}/slots/${targetSlot.id}`, { status: 'free' });
+        await hydrateFloorPlan(String(establishmentId), true);
+      }
+    } catch (e) {
+      console.warn('Error al sincronizar liberación de plaza en backend:', e);
+    }
   };
 
   // ============================================================
@@ -2374,6 +2386,9 @@ export const EstablishmentProvider = ({ children }) => {
       if (checkoutData.payment_method) payload.payment_method = checkoutData.payment_method;
       if (checkoutData.amount_paid !== undefined && checkoutData.amount_paid !== null) {
         payload.amount_paid = Number(checkoutData.amount_paid);
+      }
+      if (checkoutData.force_unpaid) {
+        payload.force_unpaid = true;
       }
       const res = await api.put(`/reservations/${targetId}/check-out`, payload);
       if (res.data) {

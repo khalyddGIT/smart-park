@@ -644,11 +644,12 @@ async def create_reservation(
     if res_in.slot_id and res_in.slot_id > 0:
         slot_res = await db.execute(select(Slot).where(Slot.id == res_in.slot_id).with_for_update())
         cand = slot_res.scalars().first()
-        if cand and cand.status == "free" and cand.parking_id == res_in.parking_id:
+        allowed_slot_statuses = ("free", "reserved") if current_user.role in ("local", "platform") else ("free",)
+        if cand and cand.status in allowed_slot_statuses and cand.parking_id == res_in.parking_id:
             slot = cand
         elif not is_auto:
             # En reserva manual en plano 2D, si el cajón exacto no está libre se devuelve 409
-            if not cand or cand.status != "free":
+            if not cand or cand.status not in allowed_slot_statuses:
                 raise HTTPException(status_code=409, detail="El cajón seleccionado no se encuentra libre (conflicto concurrente)")
             if cand.parking_id != res_in.parking_id:
                 raise HTTPException(status_code=400, detail="El cajón no pertenece al estacionamiento indicado")
@@ -958,11 +959,11 @@ async def check_in_reservation(
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
     await _check_reservation_access(reservation, current_user, db, action_label="hacer check-in en esta reserva")
 
-    # Transición válida: solo una reserva programada puede pasar a activa
-    if reservation.status != "scheduled":
-        raise HTTPException(status_code=400, detail=f"Solo se puede hacer check-in de reservas programadas (estado actual: {reservation.status})")
+    # Transición válida: solo una reserva programada/reservada puede pasar a activa
+    if reservation.status not in ("scheduled", "reserved", "confirmed", "pending"):
+        raise HTTPException(status_code=400, detail=f"Solo se puede hacer check-in de reservas programadas o reservadas (estado actual: {reservation.status})")
 
-    if getattr(reservation, "payment_status", "not_required") == "pending":
+    if getattr(reservation, "payment_status", "not_required") == "pending" and current_user.role not in ("local", "platform"):
         raise HTTPException(
             status_code=402,
             detail="El pago anticipado de esta reserva aún no ha sido confirmado."
@@ -1211,12 +1212,13 @@ async def check_out_reservation(
         confirmed_val = round(float(checkout_in.amount_paid), 2)
         # Permite enviar el total acumulado, el saldo pendiente exacto, o un monto entregado suficiente (ej. billete en efectivo)
         if confirmed_val < (outstanding - 0.02) and abs(confirmed_val - calculated_cost) > 0.02:
-            raise HTTPException(
-                status_code=422,
-                detail=f"El monto recibido (S/ {confirmed_val:.2f}) es insuficiente para liquidar el saldo pendiente de S/ {outstanding:.2f}",
-            )
+            if not checkout_in.force_unpaid:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"El monto recibido (S/ {confirmed_val:.2f}) es insuficiente para liquidar el saldo pendiente de S/ {outstanding:.2f}",
+                )
         method = (checkout_in.payment_method or "efectivo").strip().lower()
-        collected_now = outstanding
+        collected_now = confirmed_val if checkout_in.force_unpaid else outstanding
         if collected_now > 0:
             db.add(Payment(
                 reservation_id=reservation.id,
@@ -1227,9 +1229,9 @@ async def check_out_reservation(
                 method=method,
                 description=f"Cobro en salida de la reserva {reservation.code} vía {method}",
             ))
-        reservation.amount_paid = calculated_cost
+        reservation.amount_paid = calculated_cost if not checkout_in.force_unpaid else confirmed_val
         reservation.payment_method = method
-        reservation.payment_status = "paid"
+        reservation.payment_status = "paid" if not checkout_in.force_unpaid else "pending"
         reservation.prepaid = already_paid > 0
     elif outstanding > 0.02:
         if not (checkout_in and checkout_in.force_unpaid):

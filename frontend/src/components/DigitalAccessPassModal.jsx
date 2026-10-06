@@ -26,7 +26,8 @@ import {
   Calendar,
   Zap,
   CreditCard,
-  Star
+  Star,
+  CheckCircle2
 } from 'lucide-react';
 
 import { parseIsoToDate } from '../context/EstablishmentContext';

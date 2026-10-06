@@ -140,6 +140,46 @@ export const GaritaCashCheckoutModal = ({
     }
   };
 
+  const handleExonerate = async () => {
+    if (!window.confirm(`¿Exonerar cobro y registrar la salida autorizada para el vehículo ${stayData.plate}?`)) return;
+    setErrorMsg('');
+    try {
+      const result = await onConfirmCheckout({
+        payment_method: 'cortesia',
+        amount_paid: 0,
+        force_unpaid: true,
+        reference_code: 'EXONERADO'
+      });
+
+      if (result?.ok) {
+        setReceiptData({
+          ticketCode: stayData.code || stayData.ticketNumber || `TKT-${stayData.id}`,
+          plate: stayData.plate,
+          slot: stayData.slot,
+          driverName: stayData.driverName || stayData.customerName || 'Cliente Garita',
+          entryTime: stayData.actual_entry || stayData.actualEntry || stayData.entryTime || stayData.startTime,
+          exitTime: new Date().toISOString(),
+          durationMins: metrics.mins,
+          durationHours: metrics.hours,
+          ratePerHour: metrics.rate,
+          totalCharged: 0,
+          alreadyPaid: 0,
+          collectedNow: 0,
+          cashTendered: 0,
+          changeDue: 0,
+          paymentMethod: 'cortesia (exonerado)',
+          reference: 'EXONERADO',
+          parkingName: parkingName || stayData.parkingName || 'Cochera Smart Park'
+        });
+        setCheckoutComplete(true);
+      } else {
+        setErrorMsg(result?.message || 'Error al procesar la salida exonerada.');
+      }
+    } catch (err) {
+      setErrorMsg('Ocurrió un error inesperado al procesar la salida.');
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -426,39 +466,52 @@ export const GaritaCashCheckoutModal = ({
             </div>
 
             {/* Footer de Acciones */}
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={loading}
-                onClick={onClose}
-                className="flex-1 rounded-2xl text-xs font-bold h-11 border-slate-200 dark:border-slate-700 cursor-pointer"
-              >
-                Cancelar
-              </Button>
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={onClose}
+                  className="flex-1 rounded-2xl text-xs font-bold h-11 border-slate-200 dark:border-slate-700 cursor-pointer"
+                >
+                  Cancelar
+                </Button>
 
-              <Button
-                type="button"
-                disabled={loading || isCashInsufficient}
-                onClick={handleSubmit}
-                className="flex-[2] rounded-2xl text-xs font-black h-11 bg-emerald-600 hover:bg-emerald-500 text-white gap-2 shadow-md cursor-pointer disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Procesando salida...</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>
-                      {metrics.outstanding > 0
-                        ? `Cobrar S/ ${metrics.outstanding.toFixed(2)} y Dar Salida`
-                        : 'Confirmar Salida y Liberar Cajón'}
-                    </span>
-                  </>
-                )}
-              </Button>
+                <Button
+                  type="button"
+                  disabled={loading || isCashInsufficient}
+                  onClick={handleSubmit}
+                  className="flex-[2] rounded-2xl text-xs font-black h-11 bg-emerald-600 hover:bg-emerald-500 text-white gap-2 shadow-md cursor-pointer disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Procesando salida...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>
+                        {metrics.outstanding > 0
+                          ? `Cobrar S/ ${metrics.outstanding.toFixed(2)} y Dar Salida`
+                          : 'Confirmar Salida y Liberar Cajón'}
+                      </span>
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {metrics.outstanding > 0 && (
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={handleExonerate}
+                  className="text-center text-[11px] text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors py-1 cursor-pointer font-medium underline underline-offset-2"
+                >
+                  Exonerar pago / Salida libre autorizada (Cortesía o Prueba)
+                </button>
+              )}
             </div>
           </div>
         ) : (

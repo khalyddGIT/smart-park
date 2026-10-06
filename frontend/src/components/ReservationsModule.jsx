@@ -108,6 +108,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     completeReservation,
     checkInReservation,
     checkOutReservation,
+    freeSlot,
     ensureFloorPlan,
     fetchParkings,
     refreshMyReservations
@@ -302,21 +303,49 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
 
   // Vehículos actualmente dentro en esta sede
   const activeVehiclesInEst = useMemo(() => {
-    return reservations.filter(r => {
+    return scopedReservations.filter(r => {
       const pid = String(r.parkingId || r.parking_id || '');
-      const matchesPid = !activeLocalEst?.id || pid === String(activeLocalEst.id);
-      return matchesPid && r.status === 'ACTIVE';
+      const matchesPid = !activeLocalEst?.id || pid === String(activeLocalEst.id) || normalizeParkingId(pid) === normalizeParkingId(String(activeLocalEst.id));
+      const s = String(r.status || '').toUpperCase();
+      return matchesPid && (s === 'ACTIVE' || s === 'EN_CURSO' || s === 'OCCUPIED' || s === 'IN_STAY');
     });
-  }, [reservations, activeLocalEst]);
+  }, [scopedReservations, activeLocalEst]);
 
   // Próximas reservas programadas en esta sede
   const scheduledInEst = useMemo(() => {
-    return reservations.filter(r => {
+    // 1. Reservas registradas en el backend para esta sede en estado programada/reservada/pendiente
+    const fromDb = scopedReservations.filter(r => {
       const pid = String(r.parkingId || r.parking_id || '');
-      const matchesPid = !activeLocalEst?.id || pid === String(activeLocalEst.id);
-      return matchesPid && r.status === 'SCHEDULED';
+      const matchesPid = !activeLocalEst?.id || pid === String(activeLocalEst.id) || normalizeParkingId(pid) === normalizeParkingId(String(activeLocalEst.id));
+      const s = String(r.status || '').toUpperCase();
+      return matchesPid && (s === 'SCHEDULED' || s === 'RESERVED' || s === 'PENDING' || s === 'CONFIRMED');
     });
-  }, [reservations, activeLocalEst]);
+
+    // 2. Plazas en el plano CAD marcadas como 'reserved' que no correspondan a una ficha ya listada
+    const matchedSlotCodes = new Set(fromDb.map(r => String(r.slot || r.slotCode || '').toUpperCase()).filter(Boolean));
+    const activeSlotCodes = new Set(activeVehiclesInEst.map(r => String(r.slot || r.slotCode || '').toUpperCase()).filter(Boolean));
+
+    const orphanReserved = reservedLocalSlots
+      .filter(s => {
+        const sc = String(s.code || s.id || '').toUpperCase();
+        return !matchedSlotCodes.has(sc) && !activeSlotCodes.has(sc);
+      })
+      .map(s => ({
+        id: `orphan-${s.code || s.id}`,
+        code: `RES-${s.code || s.id}`,
+        slot: s.code || s.id,
+        plate: 'PLAZA RESERVADA',
+        customerName: 'Reserva Plano CAD',
+        status: 'SCHEDULED',
+        vehicleType: s.vehicleType || s.slotType || 'auto',
+        startTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        hours: 2,
+        isOrphanSlot: true,
+        parkingId: activeLocalEst?.id
+      }));
+
+    return [...fromDb, ...orphanReserved];
+  }, [scopedReservations, activeLocalEst, reservedLocalSlots, activeVehiclesInEst]);
 
   // Coincidencia en vivo en el buscador de Entrada Express
   const cleanEntryQuery = entrySearchQuery.trim().toUpperCase();
@@ -340,6 +369,10 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   // Acción de Check-in (Ingreso): abre el modal interactivo con selección de horas o tiempo libre
   const handleQuickCheckIn = (resTarget) => {
     if (!resTarget) return;
+    if (resTarget.isOrphanSlot) {
+      handleQuickWalkIn(entrySearchQuery || '', resTarget.slot);
+      return;
+    }
     const isAlreadyOpen = Boolean(resTarget.isOpenStay || resTarget.is_open_stay || (!resTarget.hours && !resTarget.estimatedHours));
     setCheckInTarget({
       ...resTarget,
@@ -356,7 +389,10 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
 
   // Acción rápida de Check-out (Salida) con bloqueo y cobro si hay saldo pendiente
   const handleQuickCheckOut = async (code, plateVal = '') => {
-    const resTarget = reservationsRef.current.find(r => r.code === code || String(r.id) === String(code)) || reservations.find(r => r.code === code || String(r.id) === String(code));
+    const resTarget = (scopedReservations || []).find(r => r.code === code || String(r.id) === String(code) || (plateVal && (r.plate === plateVal || r.license_plate === plateVal)))
+      || (reservations || []).find(r => r.code === code || String(r.id) === String(code) || (plateVal && (r.plate === plateVal || r.license_plate === plateVal)))
+      || { code, plate: plateVal, slot: '', customerName: 'Cliente Garita' };
+
     const effectiveCost = calculateLiveEffectiveCost(resTarget);
     const paidSoFar = Number(resTarget?.amountPaid ?? (resTarget?.prepaid ? effectiveCost : 0));
     const outstanding = Math.max(0, Number((effectiveCost - paidSoFar).toFixed(2)));
@@ -364,10 +400,10 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     if (outstanding > 0.02) {
       setGaritaCashTarget({
         ...resTarget,
-        code,
+        code: resTarget.code || code,
         plate: plateVal || resTarget?.plate,
-        slot: resTarget?.slot,
-        driverName: resTarget?.customerName,
+        slot: resTarget?.slot || resTarget?.slotCode,
+        driverName: resTarget?.customerName || resTarget?.customer_name,
         totalCost: effectiveCost,
         amountPaid: paidSoFar,
         outstanding,
@@ -377,7 +413,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
       return;
     }
 
-    const resp = await checkOutReservation(code, { amount_paid: 0 });
+    const resp = await checkOutReservation(resTarget.code || code, { amount_paid: 0 });
     if (resp?.ok) {
       setFeedbackMessage(resp.message || `✓ Salida registrada para ${plateVal || code}. Cajón liberado.`);
       if (activeLocalEst?.id && ensureFloorPlan) ensureFloorPlan(activeLocalEst.id, true);
@@ -389,9 +425,10 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
 
   const handleGaritaCashConfirm = async (checkoutPayload) => {
     if (!garitaCashTarget) return { ok: false, message: 'No hay vehículo seleccionado.' };
-    const resp = await checkOutReservation(garitaCashTarget.code, {
+    const resp = await checkOutReservation(garitaCashTarget.code || garitaCashTarget.id, {
       payment_method: checkoutPayload.payment_method,
-      amount_paid: checkoutPayload.amount_paid
+      amount_paid: checkoutPayload.amount_paid,
+      force_unpaid: Boolean(checkoutPayload.force_unpaid)
     });
     if (resp?.ok) {
       setFeedbackMessage(`✓ Salida y cobro registrado para ${garitaCashTarget.plate}. Cajón ${garitaCashTarget.slot} liberado.`);
@@ -1421,20 +1458,41 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                             type="button"
                             size="sm"
                             onClick={() => handleQuickCheckIn(s)}
-                            className="h-7 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg gap-1 px-2.5"
+                            className="h-7 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg gap-1 px-2.5 cursor-pointer"
                           >
                             <LogIn className="w-3 h-3" />
                             <span>Ingreso</span>
                           </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleOpenPass(s)}
-                            className="h-7 text-xs rounded-lg px-2"
-                          >
-                            <QrCode className="w-3 h-3 text-slate-500" />
-                          </Button>
+                          {s.isOrphanSlot ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                if (activeLocalEst?.id && freeSlot) {
+                                  await freeSlot(activeLocalEst.id, s.slot);
+                                  setFeedbackMessage(`✓ Plaza ${s.slot} liberada.`);
+                                  setTimeout(() => setFeedbackMessage(''), 3000);
+                                }
+                              }}
+                              className="h-7 text-xs rounded-lg px-2 text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950 cursor-pointer"
+                              title="Liberar plaza reservada"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span className="ml-1 text-[11px] font-bold">Liberar</span>
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenPass(s)}
+                              className="h-7 text-xs rounded-lg px-2 cursor-pointer"
+                              title="Ver Pase QR"
+                            >
+                              <QrCode className="w-3 h-3 text-slate-500" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
@@ -1609,7 +1667,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                           </div>
                         )}
 
-                        {slotRes && (
+                        {slotRes ? (
                           <Button
                             type="button"
                             onClick={() => handleQuickCheckIn(slotRes)}
@@ -1618,6 +1676,37 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                             <LogIn className="w-4 h-4" />
                             <span>Registrar Ingreso / Abrir Barrera</span>
                           </Button>
+                        ) : (
+                          <div className="space-y-2 mt-2 pt-2 border-t border-amber-200 dark:border-amber-900/60">
+                            <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                              Esta plaza figura reservada en el plano CAD. Puedes registrar el ingreso o liberar la plaza:
+                            </p>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                onClick={() => handleQuickWalkIn(entrySearchQuery, inspectedSlotCode)}
+                                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 rounded-xl gap-1.5 cursor-pointer shadow-xs"
+                              >
+                                <LogIn className="w-3.5 h-3.5" />
+                                <span>Ingreso</span>
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={async () => {
+                                  if (activeLocalEst?.id && freeSlot) {
+                                    await freeSlot(activeLocalEst.id, inspectedSlotCode);
+                                    setFeedbackMessage(`✓ Plaza ${inspectedSlotCode} liberada.`);
+                                    setTimeout(() => setFeedbackMessage(''), 3000);
+                                  }
+                                }}
+                                className="flex-1 border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950 font-bold text-xs h-9 rounded-xl gap-1.5 cursor-pointer"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Liberar</span>
+                              </Button>
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}
@@ -2119,11 +2208,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
                       {/* Marcar Check-out / Salida (Personal de Garita) */}
                       {role !== 'user' && isActive && (
                         <Button
-                          onClick={async () => {
-                            const resp = await updateReservationStatus(res.code, 'COMPLETED');
-                            if (resp?.ok) setFeedbackMessage(resp.message || `Salida registrada para ${res.plate}. Cajón liberado.`);
-                            else setFeedbackMessage(resp?.message || 'Error al registrar salida.');
-                          }}
+                          onClick={() => handleQuickCheckOut(res.code, res.plate)}
                           size="sm"
                           variant="outline"
                           className="rounded-lg text-xs font-semibold gap-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 h-8 px-2.5 cursor-pointer"

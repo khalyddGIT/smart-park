@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -43,47 +43,47 @@ def _fmt(dt):
 async def _get_local_user_parking_ids(db: AsyncSession, current_user: User) -> list[int]:
     """Retorna los IDs de estacionamientos que administra o a los que pertenece el usuario local."""
     curr_email = (current_user.email or "").strip().lower()
+    curr_name = (current_user.full_name or "").strip().lower()
     parking_ids = set()
 
-    # 1. Sedes donde es propietario por correo registrado
-    p_res = await db.execute(select(Parking.id).where(func.lower(Parking.email) == curr_email))
-    for pid in p_res.scalars().all():
-        parking_ids.add(pid)
+    # 1. Sedes donde es propietario por correo registrado en el estacionamiento
+    if curr_email:
+        p_res = await db.execute(select(Parking.id).where(func.lower(Parking.email) == curr_email))
+        for pid in p_res.scalars().all():
+            parking_ids.add(pid)
 
     # 2. Asignaciones de personal operativo / garita en Staff
-    s_res = await db.execute(
-        select(Staff.parking_id).where(
-            func.lower(Staff.email) == curr_email,
-            Staff.status == "active"
-        )
-    )
-    for pid in s_res.scalars().all():
-        if pid:
-            parking_ids.add(pid)
-
-    # 3. Seed demo de compatibilidad para pruebas y desarrollo
-    if curr_email == "adminlocal@smartpark.com":
-        seed_res = await db.execute(
-            select(Parking.id).where(
-                (Parking.id.in_([1, 2])) |
-                (func.lower(Parking.email) == "contacto@plazamayorpark.pe")
+    if curr_email or current_user.phone:
+        staff_conds = []
+        if curr_email:
+            staff_conds.append(func.lower(Staff.email) == curr_email)
+        if current_user.phone and len(current_user.phone.strip()) >= 7:
+            staff_conds.append(Staff.dni == current_user.phone.strip())
+        if staff_conds:
+            s_res = await db.execute(
+                select(Staff.parking_id).where(
+                    or_(*staff_conds),
+                    func.lower(Staff.status).in_(["active", "activo", "habilitado"])
+                )
             )
-        )
-        for pid in seed_res.scalars().all():
+            for pid in s_res.scalars().all():
+                if pid:
+                    parking_ids.add(pid)
+
+    # 3. Propiedad por nombre registrado como propietario en la cochera (evitar comodines genéricos)
+    if curr_name and curr_name not in ("administrador local", "admin local", "test", "administrador"):
+        p_name_res = await db.execute(select(Parking.id).where(func.lower(Parking.owner) == curr_name))
+        for pid in p_name_res.scalars().all():
             parking_ids.add(pid)
 
-    # 4. Incluir sucursales de la misma empresa
-    if parking_ids:
-        owned_parkings = await db.execute(select(Parking.name).where(Parking.id.in_(list(parking_ids))))
-        for nm in owned_parkings.scalars().all():
-            if nm:
-                comp = nm.split(" - ")[0].strip() if " - " in nm else nm.strip()
-                if len(comp) >= 2:
-                    branch_res = await db.execute(
-                        select(Parking.id).where(func.lower(Parking.name).like(f"{comp.lower()}%"))
-                    )
-                    for b_id in branch_res.scalars().all():
-                        parking_ids.add(b_id)
+    # 4. Fallback seguro para cuenta de demostración adminlocal@smartpark.com
+    # Si la cuenta no tiene cochera asignada por email ni por staff, asociar ÚNICAMENTE
+    # una sola sede existente (la primera en orden ascendente), JAMÁS múltiples sedes diferentes.
+    if not parking_ids and curr_email in ("adminlocal@smartpark.com", "adminlocal@smartpark.pe"):
+        fallback_res = await db.execute(select(Parking.id).order_by(Parking.id.asc()).limit(1))
+        f_id = fallback_res.scalars().first()
+        if f_id:
+            parking_ids.add(f_id)
 
     return list(parking_ids)
 
@@ -150,11 +150,8 @@ async def audit_logs(
     # 1. Eventos Administrativos y de Seguridad Inmutables (AuditLog)
     aq = select(AuditLog)
     if is_local:
-        # Admin Local: Solo ve eventos de sus cocheras o acciones administrativas ejecutadas por él mismo
-        aq = aq.where(
-            (AuditLog.parking_id.in_(target_parking_ids)) |
-            ((AuditLog.user_id == current_user.id) & (AuditLog.parking_id.in_(target_parking_ids) | AuditLog.parking_id.is_(None)))
-        )
+        # Admin Local: Solo ve eventos de sus cocheras asignadas/autorizadas
+        aq = aq.where(AuditLog.parking_id.in_(target_parking_ids))
     elif is_user:
         # Conductor: solo sus propios eventos
         aq = aq.where(AuditLog.user_id == current_user.id)
@@ -169,11 +166,9 @@ async def audit_logs(
     aq = aq.order_by(AuditLog.id.desc()).limit(limit)
     ares = await db.execute(aq)
     for al in ares.scalars().all():
-        # Filtro de defensa en profundidad para local: jamás filtrar eventos de otra sede ni eventos globales de otros
+        # Filtro de defensa en profundidad para local: jamás filtrar eventos de otra sede ni eventos globales
         if is_local:
-            if al.parking_id is not None and al.parking_id not in target_parking_ids:
-                continue
-            if al.parking_id is None and al.user_id != current_user.id:
+            if al.parking_id is None or al.parking_id not in target_parking_ids:
                 continue
 
         pname = al.parking_name or park_map.get(al.parking_id, f"Sede #{al.parking_id}" if al.parking_id else "Global / Plataforma")

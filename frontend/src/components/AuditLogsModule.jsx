@@ -36,17 +36,25 @@ import api from '../services/api';
 
 export const AuditLogsModule = () => {
   const { role, user } = useAuth();
-  const { establishments } = useEstablishments();
+  const { establishments, myEstablishments: contextMyEstablishments } = useEstablishments();
 
   // Filtrado de cocheras según el rol: El Admin Local SOLO tiene acceso a sus propias sedes
   const myEstablishments = useMemo(() => {
     if (role !== 'local') return establishments || [];
-    return (establishments || []).filter(e => isMyEstablishment(e, user, role));
-  }, [establishments, user, role]);
+    if (Array.isArray(contextMyEstablishments) && contextMyEstablishments.length > 0) {
+      return contextMyEstablishments;
+    }
+    return (establishments || []).filter(e => isMyEstablishment(e, user, role, establishments));
+  }, [establishments, contextMyEstablishments, user, role]);
 
   const [globalFilter, setGlobalFilter] = useState('');
   const [severityFilter, setSeverityFilter] = useState('ALL');
-  const [parkingFilter, setParkingFilter] = useState('ALL');
+  const [parkingFilter, setParkingFilter] = useState(() => {
+    if (role === 'local' && myEstablishments && myEstablishments.length > 0) {
+      return String(myEstablishments[0].id);
+    }
+    return 'ALL';
+  });
   const [sortField, setSortField] = useState('timestamp');
   const [sortOrder, setSortOrder] = useState('desc');
   const [pageSize, setPageSize] = useState(10);
@@ -54,6 +62,18 @@ export const AuditLogsModule = () => {
   const [rawData, setRawData] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Asegurar que si el usuario es Admin Local, el filtro esté fijado en una de sus sedes
+  useEffect(() => {
+    if (role === 'local' && Array.isArray(myEstablishments) && myEstablishments.length > 0) {
+      const isValid = myEstablishments.some(e => String(e.id) === String(parkingFilter));
+      if (!isValid && parkingFilter !== 'ALL') {
+        setParkingFilter(String(myEstablishments[0].id));
+      } else if (parkingFilter === 'ALL' && myEstablishments.length === 1) {
+        setParkingFilter(String(myEstablishments[0].id));
+      }
+    }
+  }, [role, myEstablishments, parkingFilter]);
 
   // Estado para el modal de inspección detallada
   const [selectedLog, setSelectedLog] = useState(null);
@@ -68,13 +88,22 @@ export const AuditLogsModule = () => {
     }
     try {
       const params = { limit: 100 };
-      if (parkingFilter !== 'ALL') {
-        const num = Number(parkingFilter);
-        if (!isNaN(num)) {
-          params.parking_id = num;
-        } else {
-          const match = String(parkingFilter).match(/\d+/);
-          if (match) params.parking_id = Number(match[0]);
+      if (role === 'local') {
+        if (parkingFilter !== 'ALL') {
+          const num = Number(parkingFilter);
+          if (!isNaN(num)) params.parking_id = num;
+        } else if (Array.isArray(myEstablishments) && myEstablishments.length === 1) {
+          params.parking_id = Number(myEstablishments[0].id);
+        }
+      } else {
+        if (parkingFilter !== 'ALL') {
+          const num = Number(parkingFilter);
+          if (!isNaN(num)) {
+            params.parking_id = num;
+          } else {
+            const match = String(parkingFilter).match(/\d+/);
+            if (match) params.parking_id = Number(match[0]);
+          }
         }
       }
       if (severityFilter !== 'ALL') params.severity = severityFilter;
@@ -87,7 +116,7 @@ export const AuditLogsModule = () => {
       setInitialLoading(false);
       setIsRefreshing(false);
     }
-  }, [parkingFilter, severityFilter]);
+  }, [parkingFilter, severityFilter, role, myEstablishments]);
 
   useEffect(() => {
     fetchLogs(false);
@@ -112,9 +141,19 @@ export const AuditLogsModule = () => {
     return rawData.filter(d => d.severity === 'Info').length;
   }, [rawData]);
 
-  // Filtrado Global (texto)
+  // Filtrado Global (texto) con aislamiento estricto por sede para rol local
   const filteredData = useMemo(() => {
     return rawData.filter(d => {
+      // Defensa en profundidad para local: jamás mostrar eventos de otra sede
+      if (role === 'local' && Array.isArray(myEstablishments) && myEstablishments.length > 0) {
+        const allowedIds = new Set(myEstablishments.map(e => Number(e.id)));
+        if (d.parking_id && !allowedIds.has(Number(d.parking_id))) {
+          return false;
+        }
+        if (parkingFilter !== 'ALL' && d.parking_id && Number(d.parking_id) !== Number(parkingFilter)) {
+          return false;
+        }
+      }
       // Filtro local de severidad si no se filtró en API
       if (severityFilter !== 'ALL' && String(d.severity).toLowerCase() !== severityFilter.toLowerCase()) {
         return false;
@@ -131,7 +170,7 @@ export const AuditLogsModule = () => {
         String(d.parking_name || '').toLowerCase().includes(query)
       );
     });
-  }, [rawData, globalFilter, severityFilter]);
+  }, [rawData, globalFilter, severityFilter, role, myEstablishments, parkingFilter]);
 
   // Ordenamiento
   const sortedData = useMemo(() => {

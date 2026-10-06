@@ -265,3 +265,85 @@ async def test_local_admin_audit_logs_strict_isolation():
         bad_p2_resp = await ac.get(f"/api/v1/audit/logs?parking_id={p2_id}", headers=headers1)
         assert bad_p2_resp.status_code == 403, "Intentar acceder a la auditoría de otra cochera debe ser rechazado con 403"
 
+
+@pytest.mark.asyncio
+async def test_adminlocal_demo_account_strict_isolation_no_leak():
+    """Verifica que el usuario adminlocal@smartpark.com solo vea eventos de su propia cochera asignada,
+    y jamás eventos de otras cocheras existentes en el sistema."""
+    from app.models.models import Parking, Slot
+    transport = ASGITransport(app=app)
+
+    async with AsyncSessionLocal() as session:
+        # Buscar usuario adminlocal@smartpark.com
+        res = await session.execute(select(User).where(User.email == "adminlocal@smartpark.com"))
+        adminlocal = res.scalars().first()
+        assert adminlocal is not None, "El usuario adminlocal@smartpark.com debe existir"
+        adminlocal_id = adminlocal.id
+
+        # Crear o identificar una cochera propia de adminlocal y una cochera de OTRA empresa
+        p_mine = Parking(
+            name="Mi Cochera Propia Local",
+            address="Av. Independencia 500",
+            city="Ayacucho",
+            latitude=-13.1604,
+            longitude=-74.2259,
+            hourly_rate=5.0,
+            email="adminlocal@smartpark.com",
+            total_capacity=10,
+            status="active"
+        )
+        p_other = Parking(
+            name="Cochera De Otra Empresa Ajena",
+            address="Av. Mariscal Caceres 800",
+            city="Ayacucho",
+            latitude=-13.1610,
+            longitude=-74.2260,
+            hourly_rate=6.0,
+            email="otro_duenio@empresa.com",
+            total_capacity=15,
+            status="active"
+        )
+        session.add_all([p_mine, p_other])
+        await session.commit()
+        await session.refresh(p_mine)
+        await session.refresh(p_other)
+
+        # Registrar un evento de auditoría en la cochera ajena
+        await record_audit_event(
+            db=session,
+            action="Acceso Garita Ajena P-OTHER",
+            target="Terminal Garita Otra Empresa",
+            user_email="otro_duenio@empresa.com",
+            role="local",
+            parking_id=p_other.id,
+            parking_name=p_other.name
+        )
+
+        # Registrar un evento en la propia
+        await record_audit_event(
+            db=session,
+            action="Acceso Garita Propia P-MINE",
+            target="Terminal Garita Propia",
+            user_email="adminlocal@smartpark.com",
+            role="local",
+            parking_id=p_mine.id,
+            parking_name=p_mine.name
+        )
+
+    token = create_access_token(subject=adminlocal_id)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp = await ac.get("/api/v1/audit/logs", headers=headers)
+        assert resp.status_code == 200
+        logs = resp.json()
+
+        # Debe ver su evento propio
+        has_mine = any(l.get("parking_id") == p_mine.id or "P-MINE" in l.get("action", "") for l in logs)
+        assert has_mine, "Admin local debe ver los eventos de su cochera"
+
+        # JAMÁS debe ver el evento de la otra empresa ajena
+        has_other = any(l.get("parking_id") == p_other.id or "P-OTHER" in l.get("action", "") for l in logs)
+        assert not has_other, "Admin local NUNCA debe ver eventos de otra cochera ajena"
+
+

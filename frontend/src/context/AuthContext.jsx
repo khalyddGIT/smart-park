@@ -21,7 +21,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      const safeRole = ['user','local','platform'].includes(user.role) ? user.role : 'user';
+      const normalizedRole = user.role === 'superadmin' ? 'platform' : user.role;
+      const safeRole = ['user','local','platform'].includes(normalizedRole) ? normalizedRole : 'user';
       if (safeRole !== user.role) {
         setUser(prev => ({ ...prev, role: safeRole }));
         setRole(safeRole);
@@ -108,20 +109,21 @@ const computeIsStaffOperator = (serverUser, fallbackUser = null) => {
   }, []); // solo al montar para validar sesión con el servidor
 
   const switchRole = (newRole) => {
+    const effRole = newRole === 'superadmin' ? 'platform' : newRole;
     const allowed = ['user','local','platform'];
-    if (!allowed.includes(newRole)) return;
+    if (!allowed.includes(effRole)) return;
     // No permitir escalada local si el rol real del servidor no es platform
     // Se valida contra el usuario actual ya verificado; si se intenta spoof, el effect de arriba lo revertirá
-    setRole(newRole);
+    setRole(effRole);
     if (user) {
       // solo permitir bajar o mantener, no subir a platform sin ser platform
-      if (newRole === 'platform' && user.role !== 'platform') {
+      if (effRole === 'platform' && user.role !== 'platform' && user.role !== 'superadmin') {
         console.warn('Intento de escalada de rol bloqueado');
         return;
       }
-      setUser(prev => ({ ...prev, role: newRole }));
+      setUser(prev => ({ ...prev, role: effRole }));
     }
-    if (newRole === 'user') setPinVerified(false);
+    if (effRole === 'user') setPinVerified(false);
   };
 
   // Autenticación con Google Real (JWT ID Token) - persistente en Base de Datos

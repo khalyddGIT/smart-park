@@ -124,7 +124,11 @@ def require_role(*allowed_roles: str):
     Uso:  current_user: User = Depends(require_role("local", "platform"))
     """
     async def role_checker(current_user = Depends(get_current_user)):
-        if current_user.role not in allowed_roles:
+        roles_set = set(allowed_roles)
+        # "platform" y "superadmin" son sinónimos autorizados para administración global
+        if "platform" in roles_set:
+            roles_set.add("superadmin")
+        if current_user.role not in roles_set:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No tienes permisos para realizar esta acción"

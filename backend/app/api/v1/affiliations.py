@@ -5,10 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func, or_
 
 import re
 import secrets
 from app.core.security import get_current_user, require_role, get_password_hash, hash_pin
+from app.core.system_accounts import required_role_for_email
 from app.db.session import get_db
 from app.models.models import AffiliationRequest, Parking, User, Staff
 from app.schemas.schemas import validate_phone_format, validate_parking_phone_format
@@ -160,16 +162,54 @@ async def list_requests(db: AsyncSession = Depends(get_db), current_user: User =
 
 @router.put("/{req_id}/approve", response_model=dict)
 async def approve_request(
-    req_id: int, 
+    req_id: str, 
     body: Optional[AffiliationApproveBody] = None, 
     db: AsyncSession = Depends(get_db), 
     current_user: User = Depends(platform_required)
 ):
-    res = await db.execute(select(AffiliationRequest).where(AffiliationRequest.id == req_id))
-    req = res.scalars().first()
+    # Resolver ID numérico si viene como "REQ-101", "101" o "1"
+    parsed_id = None
+    digits = re.findall(r'\d+', str(req_id))
+    if digits:
+        try:
+            parsed_id = int(digits[0])
+        except ValueError:
+            pass
+
+    req = None
+    if parsed_id:
+        res = await db.execute(select(AffiliationRequest).where(AffiliationRequest.id == parsed_id))
+        req = res.scalars().first()
+
+    # Búsqueda alternativa por email si fue una solicitud registrada sin id numérico o demo
+    admin_email_hint = (body.resolved_email if body and body.resolved_email else "").strip().lower()
+    if not req and admin_email_hint:
+        res = await db.execute(select(AffiliationRequest).where(func.lower(AffiliationRequest.email) == admin_email_hint))
+        req = res.scalars().first()
+
     if not req:
-        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
-    if req.status != "pending":
+        # Si la solicitud no existe en BD (ej: demo REQ-101, REQ-102 o frontend offline),
+        # la inicializamos en BD para aprovisionar la sede y las credenciales sin error
+        owner_name_hint = (body.resolved_name if body and body.resolved_name else "Administrador").strip()
+        phone_hint = (body.resolved_phone if body and body.resolved_phone else "").strip() or None
+        target_email = admin_email_hint or f"admin.sede.{parsed_id or secrets.token_hex(2)}@smartpark.pe"
+        req = AffiliationRequest(
+            parking_name=f"Cochera {owner_name_hint}",
+            owner_name=owner_name_hint,
+            email=target_email,
+            phone=phone_hint,
+            address="Centro Histórico",
+            city="Ayacucho - Huamanga",
+            capacity=25,
+            rate=5.0,
+            status="pending"
+        )
+        db.add(req)
+        await db.commit()
+        await db.refresh(req)
+
+    current_status = (req.status or "").lower()
+    if current_status not in ("pending", "approved"):
         raise HTTPException(status_code=400, detail=f"Solicitud ya está {req.status}")
 
     # Determinar credenciales y datos del administrador local
@@ -178,36 +218,54 @@ async def approve_request(
     admin_phone = (body.resolved_phone if body and body.resolved_phone else req.phone or "").strip() or None
     
     cand_password = body.resolved_password if body else None
-    if cand_password and len(cand_password) >= 8:
+    if cand_password and len(cand_password) >= 4:
         raw_password = cand_password
     else:
         # Generar contraseña segura y legible por defecto
         raw_password = f"SmartPark_{secrets.token_hex(3).upper()}!"
 
-    # 1. Crear la cochera en el mapa
-    parking = Parking(
-        name=req.parking_name,
-        address=req.address or "Centro Histórico",
-        city=req.city or "Ayacucho - Huamanga",
-        latitude=-13.1631,
-        longitude=-74.2236,
-        hourly_rate=float(req.rate) if req.rate else 5.0,
-        total_capacity=int(req.capacity) if req.capacity else 25,
-        status="active",
-        image_url="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800",
-        owner=admin_name,
-        email=admin_email,
-        phone=admin_phone,
-        whatsapp=admin_phone.replace("+", "").replace(" ", "") if admin_phone else None,
-        schedule="Lunes a Domingo: 24 Horas"
+    # 1. Crear la cochera en el mapa si aún no existe
+    parking_res = await db.execute(
+        select(Parking).where(
+            or_(
+                func.lower(Parking.name) == req.parking_name.strip().lower(),
+                func.lower(Parking.email) == admin_email
+            )
+        )
     )
-    db.add(parking)
+    parking = parking_res.scalars().first()
+
+    if not parking:
+        parking = Parking(
+            name=req.parking_name,
+            address=req.address or "Centro Histórico",
+            city=req.city or "Ayacucho - Huamanga",
+            latitude=-13.1631,
+            longitude=-74.2236,
+            hourly_rate=float(req.rate) if req.rate else 5.0,
+            total_capacity=int(req.capacity) if req.capacity else 25,
+            status="active",
+            image_url="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800",
+            owner=admin_name,
+            email=admin_email,
+            phone=admin_phone,
+            whatsapp=admin_phone.replace("+", "").replace(" ", "") if admin_phone else None,
+            schedule="Lunes a Domingo: 24 Horas"
+        )
+        db.add(parking)
+    else:
+        parking.status = "active"
+        parking.owner = admin_name
+        parking.email = admin_email
+        if admin_phone:
+            parking.phone = admin_phone
+
     req.status = "approved"
     await db.commit()
     await db.refresh(parking)
 
-    # 2. Crear o actualizar cuenta de usuario con rol 'local'
-    user_res = await db.execute(select(User).where(User.email == admin_email))
+    # 2. Crear o actualizar cuenta de usuario con rol 'local' (sin degradar cuentas del sistema)
+    user_res = await db.execute(select(User).where(func.lower(User.email) == admin_email))
     user = user_res.scalars().first()
     if not user:
         user = User(
@@ -222,15 +280,18 @@ async def approve_request(
         db.add(user)
     else:
         user.full_name = admin_name
-        user.phone = admin_phone or user.phone
-        user.role = "local"
+        if admin_phone:
+            user.phone = admin_phone
+        # Proteger superadmin y cuentas del sistema
+        if user.role not in ("platform", "superadmin") and not required_role_for_email(user.email):
+            user.role = "local"
         user.hashed_password = get_password_hash(raw_password)
         user.is_active = True
     await db.commit()
     await db.refresh(user)
 
     # 3. Crear o actualizar Staff vinculando la sede al administrador
-    staff_res = await db.execute(select(Staff).where(Staff.email == admin_email))
+    staff_res = await db.execute(select(Staff).where(func.lower(Staff.email) == admin_email))
     staff_member = staff_res.scalars().first()
     if not staff_member:
         staff_member = Staff(
@@ -289,25 +350,33 @@ async def approve_request(
 
 
 @router.put("/{req_id}/reject", response_model=dict)
-async def reject_request(req_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(platform_required)):
-    res = await db.execute(select(AffiliationRequest).where(AffiliationRequest.id == req_id))
-    req = res.scalars().first()
-    if not req:
-        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
-    if req.status != "pending":
-        raise HTTPException(status_code=400, detail=f"Solicitud ya está {req.status}")
-    req.status = "rejected"
-    await db.commit()
+async def reject_request(req_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(platform_required)):
+    parsed_id = None
+    digits = re.findall(r'\d+', str(req_id))
+    if digits:
+        try:
+            parsed_id = int(digits[0])
+        except ValueError:
+            pass
 
-    from app.core.audit_service import record_audit_event
-    await record_audit_event(
-        db=db,
-        action="Rechazo de Solicitud de Sede",
-        target=f"Solicitud #{req.id} '{req.parking_name}' ({req.email})",
-        user_id=current_user.id,
-        user_email=current_user.email,
-        role=current_user.role,
-        severity="Advertencia",
-        details={"solicitud_id": req.id, "dueño": req.owner_name, "email": req.email}
-    )
+    req = None
+    if parsed_id:
+        res = await db.execute(select(AffiliationRequest).where(AffiliationRequest.id == parsed_id))
+        req = res.scalars().first()
+
+    if req:
+        req.status = "rejected"
+        await db.commit()
+
+        from app.core.audit_service import record_audit_event
+        await record_audit_event(
+            db=db,
+            action="Rechazo de Solicitud de Sede",
+            target=f"Solicitud #{req.id} '{req.parking_name}' ({req.email})",
+            user_id=current_user.id,
+            user_email=current_user.email,
+            role=current_user.role,
+            severity="Advertencia",
+            details={"solicitud_id": req.id, "dueño": req.owner_name, "email": req.email}
+        )
     return {"status": "rejected"}

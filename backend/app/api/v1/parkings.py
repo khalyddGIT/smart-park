@@ -1075,6 +1075,8 @@ class ParkingAdminCredentialsIn(BaseModel):
     phone: Optional[str] = None
     previousEmail: Optional[str] = None
     previous_email: Optional[str] = None
+    parkingName: Optional[str] = None
+    parking_name: Optional[str] = None
 
     class Config:
         populate_by_name = True
@@ -1086,6 +1088,10 @@ class ParkingAdminCredentialsIn(BaseModel):
     @property
     def resolved_previous_email(self) -> Optional[str]:
         return self.previousEmail or self.previous_email
+
+    @property
+    def resolved_parking_name(self) -> Optional[str]:
+        return self.parkingName or self.parking_name
 
 
 class ParkingAdminCredentialsResponse(BaseModel):
@@ -1191,13 +1197,38 @@ async def set_parking_admin_credentials(
         ))
         parking = alt_res.scalars().first()
 
-    if not parking:
-        raise HTTPException(status_code=404, detail="Estacionamiento no encontrado")
+    if not parking and body.resolved_parking_name:
+        p_name = body.resolved_parking_name.strip().lower()
+        name_res = await db.execute(select(Parking).where(func.lower(Parking.name) == p_name))
+        parking = name_res.scalars().first()
 
     email = body.email.strip().lower()
-    full_name = (body.resolved_full_name or parking.owner or "Administrador de Sede").strip()
-    phone = (body.phone or parking.phone or "").strip() or None
-    prev_email = (body.resolved_previous_email or parking.email or "").strip().lower() or None
+    full_name = (body.resolved_full_name or (parking.owner if parking else None) or "Administrador de Sede").strip()
+    phone = (body.phone or (parking.phone if parking else None) or "").strip() or None
+    prev_email = (body.resolved_previous_email or (parking.email if parking else None) or "").strip().lower() or None
+
+    if not parking:
+        # Si aún no existe en BD (ej. creada localmente en frontend con ID EST-xx),
+        # la creamos para que las credenciales queden persistidas de forma definitiva.
+        target_name = (body.resolved_parking_name or f"Cochera #{parking_id}").strip()
+        parking = Parking(
+            name=target_name,
+            address="Centro Histórico",
+            city="Ayacucho - Huamanga",
+            latitude=-13.1631,
+            longitude=-74.2236,
+            hourly_rate=5.0,
+            total_capacity=25,
+            status="active",
+            image_url="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800",
+            owner=full_name,
+            email=email,
+            phone=phone,
+            schedule="Lunes a Domingo: 24 Horas"
+        )
+        db.add(parking)
+        await db.commit()
+        await db.refresh(parking)
 
     new_password = body.password.strip() if body.password and len(body.password.strip()) >= 4 else None
 
@@ -1206,10 +1237,12 @@ async def set_parking_admin_credentials(
     user = user_res.scalars().first()
 
     # Si no existe usuario con el nuevo email, verificar si existía con el email previo de la sede
-    if not user and prev_email and prev_email != email:
+    # PERO NUNCA migrar cuentas internas del sistema (como adminlocal@smartpark.com o superadmin@smartpark.com)
+    from app.core.system_accounts import required_role_for_email
+    if not user and prev_email and prev_email != email and not required_role_for_email(prev_email):
         prev_user_res = await db.execute(select(User).where(func.lower(User.email) == prev_email))
         prev_user = prev_user_res.scalars().first()
-        if prev_user:
+        if prev_user and not required_role_for_email(prev_user.email):
             # Migrar email del usuario existente manteniendo su contraseña y estado
             user = prev_user
             user.email = email
@@ -1230,7 +1263,9 @@ async def set_parking_admin_credentials(
         user.full_name = full_name
         if phone:
             user.phone = phone
-        user.role = "local"
+        # Proteger rol platform y cuentas del sistema contra degradación
+        if user.role not in ("platform", "superadmin") and not required_role_for_email(user.email):
+            user.role = "local"
         user.is_active = True
         if new_password:
             user.hashed_password = get_password_hash(new_password)

@@ -57,6 +57,7 @@ export const AffiliatedParkingsModule = () => {
     updateEstablishment, 
     deleteEstablishment,
     affiliationRequests = [],
+    fetchAffiliationRequests,
     approveAffiliationRequest,
     rejectAffiliationRequest,
     getParkingCredentials,
@@ -65,6 +66,12 @@ export const AffiliatedParkingsModule = () => {
 
   // 'establishments' | 'requests'
   const [activeSubTab, setActiveSubTab] = useState('establishments');
+
+  React.useEffect(() => {
+    if (activeSubTab === 'requests' && typeof fetchAffiliationRequests === 'function') {
+      fetchAffiliationRequests();
+    }
+  }, [activeSubTab, fetchAffiliationRequests]);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -676,6 +683,9 @@ export const AffiliatedParkingsModule = () => {
         notify(passVal.message);
         return;
       }
+    } else if (!credentialsForm.hasExistingAdmin) {
+      notify('La contraseña es requerida para un nuevo administrador');
+      return;
     }
 
     if (credentialsForm.adminPhone) {
@@ -1342,6 +1352,15 @@ export const AffiliatedParkingsModule = () => {
                                     {isBranchActive ? 'Pausar' : 'Reanudar'}
                                   </Button>
                                   <Button 
+                                    onClick={() => handleOpenCredentialsModal(p)} 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="p-2 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-xl cursor-pointer"
+                                    title="Credenciales de acceso para esta sede"
+                                  >
+                                    <KeyRound className="w-4 h-4" />
+                                  </Button>
+                                  <Button 
                                     onClick={() => handleOpenEdit(p)} 
                                     variant="ghost" 
                                     size="sm" 
@@ -1730,7 +1749,7 @@ export const AffiliatedParkingsModule = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Contraseña de Acceso *
+                    Contraseña de Acceso {credentialsForm.hasExistingAdmin ? '(Opcional)' : '*'}
                   </label>
                   <button
                     type="button"
@@ -1745,10 +1764,10 @@ export const AffiliatedParkingsModule = () => {
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <Input
                     type={credentialsForm.showPassword ? "text" : "password"}
-                    required
+                    required={!credentialsForm.hasExistingAdmin}
                     value={credentialsForm.adminPassword}
                     onChange={(e) => setCredentialsForm({ ...credentialsForm, adminPassword: e.target.value })}
-                    placeholder="Contraseña de acceso"
+                    placeholder={credentialsForm.hasExistingAdmin ? "Dejar en blanco para conservar la actual" : "Contraseña de acceso"}
                     className="pl-9 pr-10 text-xs font-mono font-bold bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
                   />
                   <button
@@ -1762,7 +1781,7 @@ export const AffiliatedParkingsModule = () => {
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span>{credentialsForm.hasExistingAdmin ? 'Contraseña actual cargada y persistente.' : 'Se guardará y mantendrá permanentemente.'}</span>
+                  <span>{credentialsForm.hasExistingAdmin ? 'Deja en blanco para conservar la clave actual o ingresa una nueva.' : 'Se guardará y mantendrá permanentemente.'}</span>
                 </p>
               </div>
 

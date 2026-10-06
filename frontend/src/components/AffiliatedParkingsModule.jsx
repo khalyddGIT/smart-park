@@ -245,9 +245,9 @@ export const AffiliatedParkingsModule = () => {
     }
 
     if (formData.phone) {
-      const phoneVal = validatePhoneInput(formData.phone);
-      if (!phoneVal.valid) {
-        notify(phoneVal.message);
+      const phoneVal = validatePhoneInput(formData.phone, { allowLandline: true });
+      if (!phoneVal.valid && !phoneVal.isValid) {
+        notify(phoneVal.message || phoneVal.error || 'Número de teléfono inválido');
         return;
       }
     }
@@ -349,9 +349,9 @@ export const AffiliatedParkingsModule = () => {
       return;
     }
     if (formData.phone) {
-      const phoneVal = validatePhoneInput(formData.phone);
-      if (!phoneVal.valid) {
-        notify(phoneVal.message);
+      const phoneVal = validatePhoneInput(formData.phone, { allowLandline: true });
+      if (!phoneVal.valid && !phoneVal.isValid) {
+        notify(phoneVal.message || phoneVal.error || 'Número de teléfono inválido');
         return;
       }
     }
@@ -438,9 +438,9 @@ export const AffiliatedParkingsModule = () => {
       }
     }
     if (companyFormData.phone) {
-      const phoneVal = validatePhoneInput(companyFormData.phone);
-      if (!phoneVal.valid) {
-        notify(phoneVal.message);
+      const phoneVal = validatePhoneInput(companyFormData.phone, { allowLandline: true });
+      if (!phoneVal.valid && !phoneVal.isValid) {
+        notify(phoneVal.message || phoneVal.error || 'Número de teléfono inválido');
         return;
       }
     }
@@ -550,9 +550,9 @@ export const AffiliatedParkingsModule = () => {
       return;
     }
     if (chosenPhone) {
-      const phVal = validatePhoneInput(chosenPhone);
-      if (!phVal.valid) {
-        notify(phVal.message);
+      const phVal = validatePhoneInput(chosenPhone, { allowLandline: true });
+      if (!phVal.valid && !phVal.isValid) {
+        notify(phVal.message || phVal.error || 'Número de teléfono inválido');
         return;
       }
     }
@@ -689,9 +689,9 @@ export const AffiliatedParkingsModule = () => {
     }
 
     if (credentialsForm.adminPhone) {
-      const phVal = validatePhoneInput(credentialsForm.adminPhone);
-      if (!phVal.valid) {
-        notify(phVal.message);
+      const phVal = validatePhoneInput(credentialsForm.adminPhone, { allowLandline: true });
+      if (!phVal.valid && !phVal.isValid) {
+        notify(phVal.message || phVal.error || 'Número de teléfono inválido');
         return;
       }
     }

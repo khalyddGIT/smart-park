@@ -19,16 +19,23 @@
 import {
   isValidPeruvianPlate,
   formatPlateInput,
-  validatePhoneInput,
+  validatePhoneInput as rawValidatePhoneInput,
   validateCapacityInput,
   validateRateInput
 } from './garitaValidation.js';
+
+/**
+ * Validador de teléfono para formularios con soporte para celulares peruanos (9 dígitos)
+ * y líneas comerciales fijas (7-9 dígitos).
+ */
+export const validatePhoneInput = (val, options = { allowLandline: true }) => {
+  return rawValidatePhoneInput(val, options);
+};
 
 // Re-exportar validadores de garita para uso unificado
 export {
   isValidPeruvianPlate,
   formatPlateInput,
-  validatePhoneInput,
   validateCapacityInput,
   validateRateInput
 };

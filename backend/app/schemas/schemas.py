@@ -47,7 +47,15 @@ def validate_parking_phone_format(v: Any) -> Optional[str]:
     if v is None or v == '':
         return None
     val_str = str(v).strip()
-    validate_phone_format(val_str)
+    clean = val_str.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    if clean.startswith('+51'):
+        clean = clean[3:]
+    elif clean.startswith('51') and len(clean) >= 10:
+        clean = clean[2:]
+    if not clean.isdigit():
+        raise ValueError("El teléfono solo debe contener números.")
+    if len(clean) < 7 or len(clean) > 9:
+        raise ValueError(f"El teléfono debe tener entre 7 y 9 dígitos (ingresaste {len(clean)} dígitos).")
     return val_str
 
 def validate_ruc_format(v: Any) -> Optional[str]:

@@ -368,14 +368,17 @@ export function sanitizePhoneInput(val) {
 }
 
 /**
- * Valida si el teléfono cumple con los estándares oficiales peruanos (9 dígitos, inicia con 9).
+ * Valida si el teléfono cumple con los estándares oficiales peruanos (9 dígitos celular iniciando con 9,
+ * o 7-9 dígitos para líneas fijas comerciales si allowLandline es true).
  * Si el campo está vacío, es válido (campo opcional).
  * @param {string} val
- * @returns {{ isValid: boolean, error: string | null }}
+ * @param {boolean | { allowLandline?: boolean }} [options]
+ * @returns {{ isValid: boolean, valid: boolean, error: string | null, message: string }}
  */
-export function validatePhoneInput(val) {
+export function validatePhoneInput(val, options = {}) {
+  const allowLandline = typeof options === 'boolean' ? options : Boolean(options?.allowLandline);
   if (!val || String(val).trim() === '') {
-    return { isValid: true, error: null };
+    return { isValid: true, valid: true, error: null, message: '' };
   }
   const raw = String(val).trim();
   let digits = raw.replace(/\D/g, '');
@@ -383,18 +386,29 @@ export function validatePhoneInput(val) {
     digits = digits.slice(2);
   }
   if (!/^\d+$/.test(digits)) {
-    return { isValid: false, error: 'El número de teléfono solo debe contener números.' };
+    const err = 'El número de teléfono solo debe contener números.';
+    return { isValid: false, valid: false, error: err, message: err };
   }
-  if (digits.length < 9) {
-    return { isValid: false, error: `El teléfono debe tener exactamente 9 dígitos (ingresaste ${digits.length}).` };
+  if (allowLandline) {
+    if (digits.length < 7 || digits.length > 9) {
+      const err = `El teléfono debe tener entre 7 y 9 dígitos (ingresaste ${digits.length}).`;
+      return { isValid: false, valid: false, error: err, message: err };
+    }
+  } else {
+    if (digits.length < 9) {
+      const err = `El teléfono debe tener exactamente 9 dígitos (ingresaste ${digits.length}).`;
+      return { isValid: false, valid: false, error: err, message: err };
+    }
+    if (digits.length > 9) {
+      const err = `El teléfono no debe exceder 9 dígitos (ingresaste ${digits.length}).`;
+      return { isValid: false, valid: false, error: err, message: err };
+    }
+    if (!digits.startsWith('9')) {
+      const err = 'El celular debe iniciar con 9 (ej: 987 654 321 o +51 987 654 321).';
+      return { isValid: false, valid: false, error: err, message: err };
+    }
   }
-  if (digits.length > 9) {
-    return { isValid: false, error: `El teléfono no debe exceder 9 dígitos (ingresaste ${digits.length}).` };
-  }
-  if (!digits.startsWith('9')) {
-    return { isValid: false, error: 'El celular debe iniciar con 9 (ej: 987 654 321 o +51 987 654 321).' };
-  }
-  return { isValid: true, error: null };
+  return { isValid: true, valid: true, error: null, message: '' };
 }
 
 /**

@@ -57,6 +57,7 @@ import { Input } from './ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { DigitalAccessPassModal } from './DigitalAccessPassModal';
+import { GaritaCashCheckoutModal } from './GaritaCashCheckoutModal';
 
 // Estimación visual del costo acumulado a partir del ingreso real.
 export const calculateLiveEffectiveCost = (res, now = Date.now()) => {
@@ -157,6 +158,7 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
   const [customerPhone, setCustomerPhone] = useState('');
   const [plate, setPlate] = useState('');
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [garitaCashTarget, setGaritaCashTarget] = useState(null);
 
   // Modal de Check-in para Garita: confirma el ingreso e inicia el reloj real con duración o tiempo libre.
   const [checkInTarget, setCheckInTarget] = useState(null);
@@ -352,9 +354,30 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
     setCheckInVehicleType(resTarget.vehicleType || resTarget.vehicle_type || 'auto');
   };
 
-  // Acción rápida de Check-out (Salida)
+  // Acción rápida de Check-out (Salida) con bloqueo y cobro si hay saldo pendiente
   const handleQuickCheckOut = async (code, plateVal = '') => {
-    const resp = await checkOutReservation(code);
+    const resTarget = reservationsRef.current.find(r => r.code === code || String(r.id) === String(code)) || reservations.find(r => r.code === code || String(r.id) === String(code));
+    const effectiveCost = calculateLiveEffectiveCost(resTarget);
+    const paidSoFar = Number(resTarget?.amountPaid ?? (resTarget?.prepaid ? effectiveCost : 0));
+    const outstanding = Math.max(0, Number((effectiveCost - paidSoFar).toFixed(2)));
+
+    if (outstanding > 0.02) {
+      setGaritaCashTarget({
+        ...resTarget,
+        code,
+        plate: plateVal || resTarget?.plate,
+        slot: resTarget?.slot,
+        driverName: resTarget?.customerName,
+        totalCost: effectiveCost,
+        amountPaid: paidSoFar,
+        outstanding,
+        rate: resTarget?.ratePerHour || activeLocalEst?.hourly_rate || 5.0,
+        parkingName: activeLocalEst?.name || 'Cochera Smart Park'
+      });
+      return;
+    }
+
+    const resp = await checkOutReservation(code, { amount_paid: 0 });
     if (resp?.ok) {
       setFeedbackMessage(resp.message || `✓ Salida registrada para ${plateVal || code}. Cajón liberado.`);
       if (activeLocalEst?.id && ensureFloorPlan) ensureFloorPlan(activeLocalEst.id, true);
@@ -362,6 +385,21 @@ export const ReservationsModule = ({ onNavigateToBooking, onOpenMoreReservations
       setFeedbackMessage(resp?.message || 'Error al registrar salida.');
     }
     setTimeout(() => setFeedbackMessage(''), 4000);
+  };
+
+  const handleGaritaCashConfirm = async (checkoutPayload) => {
+    if (!garitaCashTarget) return { ok: false, message: 'No hay vehículo seleccionado.' };
+    const resp = await checkOutReservation(garitaCashTarget.code, {
+      payment_method: checkoutPayload.payment_method,
+      amount_paid: checkoutPayload.amount_paid
+    });
+    if (resp?.ok) {
+      setFeedbackMessage(`✓ Salida y cobro registrado para ${garitaCashTarget.plate}. Cajón ${garitaCashTarget.slot} liberado.`);
+      if (activeLocalEst?.id && ensureFloorPlan) ensureFloorPlan(activeLocalEst.id, true);
+      return { ok: true, data: resp.data };
+    } else {
+      return { ok: false, message: resp?.message || resp?.detail || 'Error al procesar salida en garita.' };
+    }
   };
 
   // Acción de Ingreso Directo Presencial (Walk-in): abre el modal interactivo para configurar horas o tiempo libre
@@ -2905,6 +2943,17 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
             setOvertimePayModal(null);
             if (refreshMyReservations) refreshMyReservations();
           }}
+        />
+      )}
+
+      {/* Modal de Cobro en Garita con Caja, Vuelto y Ticket */}
+      {garitaCashTarget && (
+        <GaritaCashCheckoutModal
+          isOpen={!!garitaCashTarget}
+          onClose={() => setGaritaCashTarget(null)}
+          stayData={garitaCashTarget}
+          onConfirmCheckout={handleGaritaCashConfirm}
+          parkingName={activeLocalEst?.name || 'Cochera Smart Park'}
         />
       )}
 

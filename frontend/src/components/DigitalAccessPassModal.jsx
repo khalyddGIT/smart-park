@@ -916,28 +916,41 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
               </div>
             </div>
 
-            {/* Aviso Dinámico de Estadía Excedida */}
-            {isOvertime && isActive && (
-              <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-300 text-[11px]">
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span>Estadía excedida — Cobro sin periodo de gracia</span>
+            {/* Aviso Dinámico de Cobro / Estadía Activa */}
+            {isActive && pendingOvertimeBalance > 0 && (
+              <div className={`mt-2.5 p-3 rounded-2xl border text-xs space-y-2 ${
+                isOvertime
+                  ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-300'
+                  : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-300'
+              }`}>
+                <div className="flex items-center gap-1.5 font-bold text-[11px]">
+                  {isOvertime ? <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" /> : <CreditCard className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                  <span>{isOvertime ? 'Estadía excedida — Sin periodo de gracia' : 'Liquidación de estadía pendiente'}</span>
                 </div>
-                <p className="text-[10px] text-amber-800 dark:text-amber-300 leading-snug">
-                  {pendingOvertimeBalance > 0 
-                    ? `Tienes un recargo acumulado por tiempo adicional de S/ ${pendingOvertimeBalance.toFixed(2)}. Puedes liquidarlo directamente en línea o abonarlo al operador en garita para aperturar la barrera.`
-                    : 'Sobreestadía al día. Si continúas estacionado se seguirá calculando el tiempo proporcional.'}
+                <p className="text-[10px] leading-snug opacity-90">
+                  {isOvertime
+                    ? `Tienes un recargo acumulado de S/ ${pendingOvertimeBalance.toFixed(2)}. Paga en línea desde tu celular para habilitar tu salida inmediata en la garita.`
+                    : `Tienes un saldo pendiente de S/ ${pendingOvertimeBalance.toFixed(2)} por tu permanencia. Paga en línea para que el operador de garita libere tu salida al instante.`}
                 </p>
-                {pendingOvertimeBalance > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowOvertimeModal(true)}
-                    className="w-full mt-1 py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 active:scale-[0.99] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                  >
-                    <CreditCard className="w-3.5 h-3.5 shrink-0" />
-                    <span>Pagar sobreestadía online (S/ {pendingOvertimeBalance.toFixed(2)})</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setShowOvertimeModal(true)}
+                  className={`w-full py-2.5 px-3 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer ${
+                    isOvertime
+                      ? 'bg-amber-600 hover:bg-amber-500 active:scale-[0.99]'
+                      : 'bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99]'
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4 shrink-0" />
+                  <span>Pagar estadía en línea (S/ ${pendingOvertimeBalance.toFixed(2)})</span>
+                </button>
+              </div>
+            )}
+
+            {isActive && pendingOvertimeBalance === 0 && (
+              <div className="mt-2.5 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-xs flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-[11px] font-semibold">Estadía 100% pagada. Presenta este pase en garita para abrir la barrera.</span>
               </div>
             )}
           </div>

@@ -17,12 +17,16 @@ import {
   Phone,
   LogIn,
   LogOut,
-  Timer
+  Timer,
+  CreditCard,
+  Banknote
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { BrandIcon } from './BrandLogo';
+import { CulqiPaymentModal } from './CulqiPaymentModal';
+import { GaritaCashCheckoutModal } from './GaritaCashCheckoutModal';
 
 // Helper para parsear datetimes ISO con zona horaria UTC explícita
 const parseUtcDate = (isoStr) => {
@@ -72,6 +76,8 @@ export const VerifyReservationPage = () => {
   const [now, setNow] = useState(Date.now());
   const [actionLoading, setActionLoading] = useState(false);
   const [actionFeedback, setActionFeedback] = useState(null);
+  const [showMobilePayModal, setShowMobilePayModal] = useState(false);
+  const [showGaritaCashModal, setShowGaritaCashModal] = useState(false);
 
   // Reloj en vivo cada 1 segundo para la cuenta regresiva en tiempo real
   useEffect(() => {
@@ -159,6 +165,26 @@ export const VerifyReservationPage = () => {
     };
   }, [data, now]);
 
+  // Cálculo de liquidación y pagos
+  const calculatedTotalCost = useMemo(() => {
+    if (!data) return 0;
+    if (data.status === 'completed' || data.status === 'cancelled') {
+      return Number(data.total_cost || 0);
+    }
+    const hourlyRate = Number(data.hourly_rate || 8.50);
+    const startRef = timeMetrics?.actualEntry || timeMetrics?.startTime;
+    if (timeMetrics?.isActive && startRef) {
+      const elapsedMinutes = Math.max(1, Math.floor((now - startRef.getTime()) / 60000));
+      const hours = Math.max(1, Math.ceil(elapsedMinutes / 60));
+      return Math.max(Number(data.total_cost || 0), Number((hours * hourlyRate).toFixed(2)));
+    }
+    return Number(data.total_cost || 0);
+  }, [data, timeMetrics, now]);
+
+  const isPaid = (data?.payment_status || '').toLowerCase() === 'paid';
+  const outstandingBalance = isPaid ? 0 : calculatedTotalCost;
+  const isPaymentPending = outstandingBalance > 0.02;
+
   // Acciones operativas para garita (Check-in / Check-out)
   const token = getAccessToken();
   const isStaffOrAdmin = useMemo(() => {
@@ -195,10 +221,14 @@ export const VerifyReservationPage = () => {
 
   const handleCheckOut = async () => {
     if (!data?.id) return;
+    if (isPaymentPending) {
+      setShowGaritaCashModal(true);
+      return;
+    }
     setActionLoading(true);
     setActionFeedback(null);
     try {
-      await api.put(`/reservations/${data.id}/check-out`);
+      await api.put(`/reservations/${data.id}/check-out`, { amount_paid: 0 });
       setData(prev => ({ 
         ...prev, 
         status: 'completed', 
@@ -207,6 +237,32 @@ export const VerifyReservationPage = () => {
       setActionFeedback({ type: 'success', text: '✓ Salida registrada. Estancia finalizada con éxito.' });
     } catch (err) {
       setActionFeedback({ type: 'error', text: err?.response?.data?.detail || 'Error al registrar salida en garita.' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleGaritaCheckoutConfirm = async (checkoutPayload) => {
+    if (!data?.id) return { ok: false, message: 'No hay reserva cargada.' };
+    setActionLoading(true);
+    try {
+      const resp = await api.put(`/reservations/${data.id}/check-out`, {
+        payment_method: checkoutPayload.payment_method,
+        amount_paid: checkoutPayload.amount_paid
+      });
+      setData(prev => ({
+        ...prev,
+        status: 'completed',
+        payment_status: 'paid',
+        total_cost: checkoutPayload.amount_paid || prev.total_cost,
+        actual_exit: new Date().toISOString()
+      }));
+      setActionFeedback({ type: 'success', text: `✓ Cobro registrado vía ${checkoutPayload.payment_method}. Salida autorizada.` });
+      return { ok: true, data: resp.data };
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Error al procesar el cobro de salida.';
+      setActionFeedback({ type: 'error', text: msg });
+      return { ok: false, message: msg };
     } finally {
       setActionLoading(false);
     }
@@ -424,7 +480,7 @@ export const VerifyReservationPage = () => {
           )}
 
           {isActive && (
-            <div className="p-3.5 bg-blue-950/40 border border-blue-500/40 rounded-2xl space-y-1 text-xs">
+            <div className="p-3.5 bg-blue-950/40 border border-blue-500/40 rounded-2xl space-y-2 text-xs">
               <div className="flex items-center justify-between font-mono">
                 <span className="text-blue-300 font-bold flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-blue-400" /> Vehículo en estancia
@@ -436,6 +492,24 @@ export const VerifyReservationPage = () => {
               <p className="text-[11px] text-slate-300">
                 Ingreso registrado: <strong className="text-white font-mono">{formatTimeOnly(actualEntry || startTime)}</strong> · Salida programada: <strong className="text-white font-mono">{formatTimeOnly(endTime)}</strong>
               </p>
+              {isPaymentPending ? (
+                <div className="pt-2 border-t border-blue-800/40 flex items-center justify-between gap-2">
+                  <span className="text-amber-300 font-bold flex items-center gap-1.5 text-[11px]">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" /> Saldo pendiente: S/ {outstandingBalance.toFixed(2)}
+                  </span>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowMobilePayModal(true)}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs py-1 px-3 rounded-xl shadow cursor-pointer flex items-center gap-1"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" /> Pagar Online
+                  </Button>
+                </div>
+              ) : (
+                <div className="pt-1.5 border-t border-blue-800/40 flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Estadía 100% Pagada · Salida Habilitada
+                </div>
+              )}
             </div>
           )}
 
@@ -554,9 +628,14 @@ export const VerifyReservationPage = () => {
               <span className="text-xs font-bold text-slate-400 block">Total de Estadía</span>
               <span className="text-[11px] text-slate-500">Tarifa Sede: S/ {Number(data.hourly_rate || 8.50).toFixed(2)}/h</span>
             </div>
-            <span className="text-xl font-black font-mono text-emerald-400">
-              S/ {Number(data.total_cost || 0).toFixed(2)}
-            </span>
+            <div className="text-right">
+              <span className="text-xl font-black font-mono text-emerald-400 block">
+                S/ {calculatedTotalCost.toFixed(2)}
+              </span>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${isPaid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {isPaid ? '✓ Pagado' : `Pendiente S/ ${outstandingBalance.toFixed(2)}`}
+              </span>
+            </div>
           </div>
 
           {/* Acciones de Garita (si el operador o admin cuenta con sesión activa) */}
@@ -579,14 +658,31 @@ export const VerifyReservationPage = () => {
                 )}
 
                 {isActive && (
-                  <Button
-                    onClick={handleCheckOut}
-                    disabled={actionLoading}
-                    className="col-span-2 py-3 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white gap-2 cursor-pointer shadow-lg shadow-blue-950/50"
-                  >
-                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
-                    Registrar Salida (Check-Out)
-                  </Button>
+                  isPaymentPending ? (
+                    <div className="col-span-2 space-y-2">
+                      <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-800/50 text-xs text-amber-200 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Salida bloqueada por saldo pendiente (S/ {outstandingBalance.toFixed(2)}). Cobra en garita para habilitar la barrera.</span>
+                      </div>
+                      <Button
+                        onClick={() => setShowGaritaCashModal(true)}
+                        disabled={actionLoading}
+                        className="w-full py-3 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white gap-2 cursor-pointer shadow-lg shadow-emerald-950/50"
+                      >
+                        <Banknote className="w-4 h-4" />
+                        Cobrar en Garita (Efectivo / Yape / POS) y Dar Salida
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={handleCheckOut}
+                      disabled={actionLoading}
+                      className="col-span-2 py-3 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white gap-2 cursor-pointer shadow-lg shadow-blue-950/50"
+                    >
+                      {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+                      Registrar Salida (Check-Out)
+                    </Button>
+                  )
                 )}
               </div>
 
@@ -611,6 +707,51 @@ export const VerifyReservationPage = () => {
           </div>
 
         </Card>
+
+        {/* Modal de Cobro en Garita (Efectivo / POS / Yape con Vuelto y Ticket) */}
+        {showGaritaCashModal && (
+          <GaritaCashCheckoutModal
+            isOpen={showGaritaCashModal}
+            onClose={() => setShowGaritaCashModal(false)}
+            stayData={{
+              ...data,
+              plate: data.license_plate,
+              slot: data.slot_code,
+              totalCost: calculatedTotalCost,
+              amountPaid: isPaid ? calculatedTotalCost : 0,
+              rate: Number(data.hourly_rate || 8.50),
+              startTime: data.start_time,
+              actual_entry: data.actual_entry
+            }}
+            onConfirmCheckout={handleGaritaCheckoutConfirm}
+            parkingName={data.parking_name}
+            loading={actionLoading}
+          />
+        )}
+
+        {/* Modal de Pago Móvil Online con Culqi (Para el conductor) */}
+        {showMobilePayModal && (
+          <CulqiPaymentModal
+            isOpen={showMobilePayModal}
+            onClose={() => setShowMobilePayModal(false)}
+            amount={outstandingBalance}
+            concept={`Liquidación Estadía ${data.code} - ${data.license_plate}`}
+            parkingName={data.parking_name}
+            slotCode={data.slot_code}
+            customerEmail={data.customer_phone ? `${data.customer_phone}@smartpark.pe` : 'conductor@smartpark.com'}
+            reservationId={data.id}
+            onPaymentSuccess={() => {
+              setShowMobilePayModal(false);
+              setData(prev => ({
+                ...prev,
+                payment_status: 'paid',
+                total_cost: Math.max(prev.total_cost || 0, calculatedTotalCost)
+              }));
+              setActionFeedback({ type: 'success', text: '✓ Pago online completado. Tu salida está autorizada en garita.' });
+              loadVerification(code);
+            }}
+          />
+        )}
 
       </div>
     </div>

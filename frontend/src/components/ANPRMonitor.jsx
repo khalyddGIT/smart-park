@@ -18,6 +18,7 @@ import {
   LogOut,
   Timer,
   CreditCard,
+  Banknote,
   Search,
   LayoutGrid
 } from 'lucide-react';
@@ -46,6 +47,7 @@ import { useAuth } from '../context/AuthContext';
 import { useEstablishments, isDemoEstablishment, isStaffOperatorUser } from '../context/EstablishmentContext';
 import { CarParkZoneEditor } from './CarParkZoneEditor';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
+import { GaritaCashCheckoutModal } from './GaritaCashCheckoutModal';
 
 const GARITA_LOGS_STORAGE_KEY = 'smart_park_garita_audit_logs_v2';
 const GARITA_ACTIVE_TICKETS_KEY = 'smart_park_garita_walkin_tickets_v2';
@@ -168,6 +170,7 @@ export const ANPRMonitor = () => {
 
   const [paidIds, setPaidIds] = useState(new Set());
   const [payTarget, setPayTarget] = useState(null);
+  const [garitaCheckoutTarget, setGaritaCheckoutTarget] = useState(null);
   const [showZoneEditor, setShowZoneEditor] = useState(false);
 
   useEffect(() => {
@@ -232,11 +235,15 @@ export const ANPRMonitor = () => {
       slot: r.slot, 
       driverName: r.customerName || 'Usuario Registrado', 
       phone: r.customerPhone || 'N/A', 
-      entryTime: r.actual_entry || r.startTime || r.createdAt || new Date().toISOString(), 
+      entryTime: r.actual_entry || r.actualEntry || r.startTime || r.createdAt || new Date().toISOString(), 
       rate: r.ratePerHour || currentEst?.rate || 5.0, 
       token: r.token,
       isOpenStay: !!(r.isOpenStay ?? r.is_open_stay),
-      hours: Number(r.hours || r.estimatedHours || r.estimated_hours || 0) || null
+      hours: Number(r.hours || r.estimatedHours || r.estimated_hours || 0) || null,
+      amountPaid: Number(r.amountPaid ?? r.amount_paid ?? 0),
+      paymentStatus: r.paymentStatus || r.payment_status || 'pending',
+      totalCost: Number(r.cost ?? r.totalCost ?? r.total_cost ?? 0),
+      prepaid: !!r.prepaid
     }));
     const activeWalkIns = walkInTickets.filter(t => String(t.estId) === String(selectedEstId) && t.status === 'ACTIVE').map(t => ({ 
       source: 'WALK_IN', 
@@ -250,7 +257,11 @@ export const ANPRMonitor = () => {
       rate: t.rate || currentEst?.rate || 5.0, 
       token: t.ticketNumber,
       isOpenStay: !!t.isOpenStay,
-      hours: Number(t.hours || 0) || null
+      hours: Number(t.hours || 0) || null,
+      amountPaid: Number(t.amountPaid || 0),
+      paymentStatus: t.paymentStatus || 'pending',
+      totalCost: Number(t.totalCost || 0),
+      prepaid: false
     }));
     return [...activeRes, ...activeWalkIns];
   }, [reservations, walkInTickets, selectedEstId, currentEst]);
@@ -433,6 +444,18 @@ export const ANPRMonitor = () => {
     }
   };
 
+  const getVehicleMetrics = (vehicle) => {
+    const entry = new Date(vehicle.entryTime).getTime();
+    const mins = Math.max(15, Math.round((now - entry) / 60000));
+    const hours = Math.ceil(mins / 60);
+    const rate = Number(vehicle.rate || 5.0);
+    const totalCost = Number((hours * rate).toFixed(2));
+    const isPaidInState = paidIds.has(Number(vehicle.id));
+    const alreadyPaid = isPaidInState ? totalCost : Number(vehicle.amountPaid ?? (vehicle.prepaid ? totalCost : 0));
+    const outstanding = Math.max(0, Number((totalCost - alreadyPaid).toFixed(2)));
+    return { mins, hours, rate, totalCost, alreadyPaid, outstanding };
+  };
+
   const handleExitSearch = () => {
     const formatted = formatPlateInput(exitPlate);
     if (!formatted.trim()) {
@@ -457,13 +480,27 @@ export const ANPRMonitor = () => {
     const entryDate = new Date(item.actual_entry || item.actualEntry || item.startTime || item.entryTime || Date.now() - 3600000);
     const minutesParked = Math.max(15, Math.round((Date.now() - entryDate.getTime()) / 60000));
     const hoursParked = Math.ceil(minutesParked / 60);
-    const totalCost = Number((hoursParked * (item.rate || item.ratePerHour || currentEst?.rate || 5.0)).toFixed(2));
-    setExitDetail({ item, minutesParked, hoursParked, totalCost });
+    const rate = Number(item.rate || item.ratePerHour || currentEst?.rate || 5.0);
+    const totalCost = Number((hoursParked * rate).toFixed(2));
+    const isPaidInState = paidIds.has(Number(item.id));
+    const alreadyPaid = isPaidInState ? totalCost : Number(item.amountPaid ?? item.amount_paid ?? (item.prepaid ? totalCost : 0));
+    const outstanding = Math.max(0, Number((totalCost - alreadyPaid).toFixed(2)));
+    setExitDetail({ item, minutesParked, hoursParked, rate, totalCost, alreadyPaid, outstanding });
     setFormResult(null);
   };
 
   const handleExitSubmit = async () => {
     if (!exitDetail?.item) return;
+    if (exitDetail.outstanding > 0.02) {
+      setGaritaCheckoutTarget({
+        ...exitDetail.item,
+        totalCost: exitDetail.totalCost,
+        amountPaid: exitDetail.alreadyPaid,
+        outstanding: exitDetail.outstanding,
+        rate: exitDetail.rate
+      });
+      return;
+    }
     setLoading(true);
     try {
       const item = exitDetail.item;
@@ -471,7 +508,11 @@ export const ANPRMonitor = () => {
         setWalkInTickets(prev => prev.map(t => t.id === item.id ? { ...t, status: 'COMPLETED', exitTime: new Date().toISOString() } : t));
         freeSlot(selectedEstId, item.slot);
       } else {
-        await checkOutReservation(item.code);
+        const resp = await checkOutReservation(item.code, { amount_paid: 0 });
+        if (!resp?.ok) {
+          setFormResult({ matched: false, message: resp?.message || 'Error al registrar salida.' });
+          return;
+        }
         freeSlot(selectedEstId, item.slot);
       }
       setFormResult({ matched: true, message: `Salida registrada. ${item.plate} liberó el cajón ${item.slot}. Total S/ ${exitDetail.totalCost.toFixed(2)}.` });
@@ -484,18 +525,78 @@ export const ANPRMonitor = () => {
   };
 
   const handleInsideExit = async (vehicle) => {
+    const vm = getVehicleMetrics(vehicle);
+    if (vm.outstanding > 0.02) {
+      setGaritaCheckoutTarget({
+        ...vehicle,
+        totalCost: vm.totalCost,
+        amountPaid: vm.alreadyPaid,
+        outstanding: vm.outstanding,
+        rate: vm.rate
+      });
+      return;
+    }
     setLoading(true);
     try {
       const matchedRes = reservations.find(x => String(x.id) === String(vehicle.id));
       if (matchedRes) {
-        await checkOutReservation(matchedRes.code);
+        const resp = await checkOutReservation(matchedRes.code, { amount_paid: 0 });
+        if (!resp?.ok) {
+          setFormResult({ matched: false, message: resp?.message || 'Error al registrar salida.' });
+          return;
+        }
         freeSlot(selectedEstId, vehicle.slot);
       } else {
         setWalkInTickets(prev => prev.map(t => t.id === vehicle.id ? { ...t, status: 'COMPLETED', exitTime: new Date().toISOString() } : t));
         freeSlot(selectedEstId, vehicle.slot);
       }
       setFormResult({ matched: true, message: `Salida registrada para ${vehicle.plate} (cajón ${vehicle.slot}).` });
-      addAuditLog({ type: 'GARITA', action: 'SALIDA_MANUAL', plate: vehicle.plate, slot: vehicle.slot, status: 'COMPLETADO', detail: 'Salida desde lista de vehículos en cochera.' });
+      addAuditLog({ type: 'GARITA', action: 'SALIDA_MANUAL', plate: vehicle.plate, slot: vehicle.slot, status: 'COMPLETADO', detail: 'Salida de vehículo previamente liquidado.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGaritaCheckoutConfirm = async (checkoutPayload) => {
+    if (!garitaCheckoutTarget) return { ok: false, message: 'No hay vehículo seleccionado.' };
+    const item = garitaCheckoutTarget;
+    setLoading(true);
+    try {
+      if (item.source === 'WALK_IN' || item.ticketNumber) {
+        setWalkInTickets(prev => prev.map(t => t.id === item.id ? { ...t, status: 'COMPLETED', exitTime: new Date().toISOString() } : t));
+        freeSlot(selectedEstId, item.slot);
+        setFormResult({ matched: true, message: `Salida y cobro registrado para ${item.plate}. Cajón ${item.slot} liberado.` });
+        addAuditLog({
+          type: 'GARITA',
+          action: 'SALIDA_COBRO_GARITA',
+          plate: item.plate,
+          slot: item.slot,
+          status: 'COMPLETADO',
+          detail: `Cobro en garita vía ${checkoutPayload.payment_method}: S/ ${Number(checkoutPayload.amount_paid).toFixed(2)}.`
+        });
+        return { ok: true };
+      } else {
+        const resp = await checkOutReservation(item.code, {
+          payment_method: checkoutPayload.payment_method,
+          amount_paid: checkoutPayload.amount_paid
+        });
+        if (resp?.ok) {
+          freeSlot(selectedEstId, item.slot);
+          setPaidIds(prev => new Set([...prev, Number(item.id)]));
+          setFormResult({ matched: true, message: `Salida y cobro registrado para ${item.plate}. Cajón ${item.slot} liberado.` });
+          addAuditLog({
+            type: 'GARITA',
+            action: 'SALIDA_COBRO_GARITA',
+            plate: item.plate,
+            slot: item.slot,
+            status: 'COMPLETADO',
+            detail: `Cobro en garita reserva ${item.code} vía ${checkoutPayload.payment_method}: S/ ${Number(checkoutPayload.amount_paid).toFixed(2)}.`
+          });
+          return { ok: true, data: resp.data };
+        } else {
+          return { ok: false, message: resp?.message || resp?.detail || 'Error al liquidar salida en garita.' };
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -871,13 +972,24 @@ export const ANPRMonitor = () => {
 
           {exitDetail ? (
             <div className="bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3 transition-colors">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-emerald-600 text-white font-mono font-black text-xs tracking-widest">{exitDetail.item.plate}</span>
-                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Cajón <span className="font-mono font-black text-slate-900 dark:text-slate-100">{exitDetail.item.slot}</span></span>
-                <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{exitDetail.item.driverName || exitDetail.item.customerName || '—'}</span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-emerald-600 text-white font-mono font-black text-xs tracking-widest">{exitDetail.item.plate}</span>
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Cajón <span className="font-mono font-black text-slate-900 dark:text-slate-100">{exitDetail.item.slot}</span></span>
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate max-w-[150px]">{exitDetail.item.driverName || exitDetail.item.customerName || '—'}</span>
+                </div>
+                {exitDetail.outstanding > 0.02 ? (
+                  <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" /> PAGO PENDIENTE: S/ {exitDetail.outstanding.toFixed(2)}
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> PAGADO (S/ {exitDetail.totalCost.toFixed(2)})
+                  </span>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-1"><Clock className="w-3 h-3"/> Tiempo</p>
                   <p className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5 font-mono">{Math.floor(exitDetail.minutesParked / 60)}h {String(exitDetail.minutesParked % 60).padStart(2, '0')}m</p>
@@ -886,28 +998,55 @@ export const ANPRMonitor = () => {
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-1"><Timer className="w-3 h-3"/> Tarifa</p>
                   <p className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5 font-mono">S/ {(exitDetail.item.rate || exitDetail.item.ratePerHour || currentEst?.rate || 5.0).toFixed(2)}/h</p>
                 </div>
-                <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl px-3 py-2.5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><DollarSign className="w-3 h-3"/> Total</p>
-                  <p className="text-sm font-black text-emerald-700 dark:text-emerald-300 mt-0.5 font-mono">S/ {exitDetail.totalCost.toFixed(2)}</p>
+                <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-1"><DollarSign className="w-3 h-3"/> Total</p>
+                  <p className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5 font-mono">S/ {exitDetail.totalCost.toFixed(2)}</p>
+                </div>
+                <div className={`border rounded-xl px-3 py-2.5 ${exitDetail.outstanding > 0.02 ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30' : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30'}`}>
+                  <p className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${exitDetail.outstanding > 0.02 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    <CreditCard className="w-3 h-3"/> {exitDetail.outstanding > 0.02 ? 'Saldo Pendiente' : 'Estado'}
+                  </p>
+                  <p className={`text-sm font-black mt-0.5 font-mono ${exitDetail.outstanding > 0.02 ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'}`}>
+                    {exitDetail.outstanding > 0.02 ? `S/ ${exitDetail.outstanding.toFixed(2)}` : 'Liquidado'}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  type="button"
-                  onClick={() => { const r = reservations.find(x => String(x.id) === String(exitDetail.item.id)); if (r) setPayTarget(r); }}
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm h-11 rounded-2xl gap-1.5 transition-colors"
-                >
-                  <DollarSign className="w-4 h-4"/> Cobrar
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleExitSubmit}
-                  disabled={loading}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm h-11 rounded-2xl gap-1.5 transition-colors"
-                >
-                  {loading ? <RefreshCw className="w-4 h-4 animate-spin"/> : <LogOut className="w-4 h-4"/>} Registrar salida y liberar cajón
-                </Button>
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                {exitDetail.outstanding > 0.02 ? (
+                  <>
+                    <Button
+                      type="button"
+                      onClick={() => setGaritaCheckoutTarget({
+                        ...exitDetail.item,
+                        totalCost: exitDetail.totalCost,
+                        amountPaid: exitDetail.alreadyPaid,
+                        outstanding: exitDetail.outstanding,
+                        rate: exitDetail.rate
+                      })}
+                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm h-11 rounded-2xl gap-2 transition-colors shadow-sm flex-1 cursor-pointer"
+                    >
+                      <Banknote className="w-4 h-4"/> Cobrar en Garita (S/ {exitDetail.outstanding.toFixed(2)}) y Dar Salida
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={true}
+                      title="No se puede abrir la barrera sin liquidar el pago pendiente."
+                      className="bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-xs h-11 rounded-2xl gap-1.5 cursor-not-allowed"
+                    >
+                      <LogOut className="w-4 h-4"/> Salida Bloqueada (Pago Pendiente)
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={handleExitSubmit}
+                    disabled={loading}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm h-11 rounded-2xl gap-1.5 transition-colors shadow-sm w-full cursor-pointer"
+                  >
+                    {loading ? <RefreshCw className="w-4 h-4 animate-spin"/> : <LogOut className="w-4 h-4"/>} Confirmar Salida y Liberar Cajón
+                  </Button>
+                )}
               </div>
             </div>
           ) : (
@@ -932,7 +1071,11 @@ export const ANPRMonitor = () => {
                   <tr><th className="px-3 py-2 text-left">Placa</th><th className="px-3 py-2 text-left">Cajón</th><th className="px-3 py-2 text-left">Conductor</th><th className="px-3 py-2 text-left">Entrada</th><th className="px-3 py-2 text-left">Tiempo</th><th className="px-3 py-2 text-left hidden sm:table-cell">Estado</th><th className="px-3 py-2 text-right">Acción</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {vehiclesInside.map(v => { const entry = new Date(v.entryTime); const isPaid = paidIds.has(Number(v.id)); return (
+                  {vehiclesInside.map(v => {
+                    const entry = new Date(v.entryTime);
+                    const vm = getVehicleMetrics(v);
+                    const isPaid = vm.outstanding <= 0.02;
+                    return (
                     <tr key={v.code + v.plate} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="px-3 py-2"><span className="inline-block px-2 py-0.5 rounded-md bg-slate-900 dark:bg-slate-800 text-white font-mono font-black tracking-widest text-[11px]">{v.plate}</span></td>
                       <td className="px-3 py-2 font-mono font-bold text-slate-700 dark:text-slate-300">{v.slot}</td>
@@ -952,7 +1095,7 @@ export const ANPRMonitor = () => {
                       <td className="px-3 py-2 hidden sm:table-cell">
                         {isPaid
                           ? <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 px-2 py-1 rounded-lg">PAGADO</span>
-                          : <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-2 py-1 rounded-lg">POR COBRAR</span>}
+                          : <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-2 py-1 rounded-lg">PENDIENTE S/ {vm.outstanding.toFixed(2)}</span>}
                       </td>
                       <td className="px-3 py-2 text-right">
                         <span className="inline-flex items-center gap-1.5">
@@ -960,12 +1103,34 @@ export const ANPRMonitor = () => {
                             type="button"
                             onClick={() => handleOpenEditModal(v)}
                             title="Editar hora o estadía"
-                            className="p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
-                          {!isPaid && <button onClick={() => { const r = reservations.find(x => String(x.id) === String(v.id)); if (r) setPayTarget(r); }} className="text-[10px] font-black bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1 rounded-lg transition-colors">Cobrar</button>}
-                          <button onClick={() => handleInsideExit(v)} disabled={loading} className="text-[10px] font-bold bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg transition-colors disabled:opacity-40">Salida</button>
+                          {!isPaid ? (
+                            <button
+                              type="button"
+                              onClick={() => setGaritaCheckoutTarget({
+                                ...v,
+                                totalCost: vm.totalCost,
+                                amountPaid: vm.alreadyPaid,
+                                outstanding: vm.outstanding,
+                                rate: vm.rate
+                              })}
+                              className="text-[10px] font-black bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-xs"
+                            >
+                              <Banknote className="w-3 h-3" /> Cobrar y Salir
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleInsideExit(v)}
+                              disabled={loading}
+                              className="text-[10px] font-bold bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg transition-colors disabled:opacity-40 cursor-pointer"
+                            >
+                              Liberar Salida
+                            </button>
+                          )}
                         </span>
                       </td>
                     </tr>
@@ -988,7 +1153,23 @@ export const ANPRMonitor = () => {
         />
       )}
 
-      {/* Modal Cobro Garita */}
+      {/* Modal Cobro Garita con Caja, Vuelto y Ticket Térmico */}
+      {garitaCheckoutTarget && (
+        <GaritaCashCheckoutModal
+          isOpen={!!garitaCheckoutTarget}
+          onClose={() => {
+            setGaritaCheckoutTarget(null);
+            if (exitDetail) setExitDetail(null);
+            if (exitPlate) setExitPlate('');
+          }}
+          stayData={garitaCheckoutTarget}
+          onConfirmCheckout={handleGaritaCheckoutConfirm}
+          loading={loading}
+          parkingName={currentEst?.name || 'Cochera Smart Park'}
+        />
+      )}
+
+      {/* Modal Cobro Online / Culqi */}
       {payTarget && (
         <CulqiPaymentModal
           isOpen={!!payTarget}

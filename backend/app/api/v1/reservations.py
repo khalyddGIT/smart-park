@@ -477,6 +477,8 @@ async def verify_reservation(code: str, db: AsyncSession = Depends(get_db)):
         "estimated_minutes": getattr(reservation, "estimated_minutes", None),
         "payment_method": getattr(reservation, "payment_method", "efectivo") or "efectivo",
         "amount_paid": float(getattr(reservation, "amount_paid", 0.0) or 0.0),
+        "payment_status": getattr(reservation, "payment_status", "pending") or "pending",
+        "prepaid": bool(getattr(reservation, "prepaid", False)),
         "reservation_type": getattr(reservation, "reservation_type", "standard") or "standard",
         "subscription_months": getattr(reservation, "subscription_months", 1) or 1,
         "is_subscription": bool(getattr(reservation, "is_subscription", False)),

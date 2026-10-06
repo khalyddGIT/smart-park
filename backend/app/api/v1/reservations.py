@@ -181,35 +181,38 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
     resp.subscription_type = getattr(r, "subscription_type", None)
 
     # Cálculo en vivo de exceso de estadía y monto acumulado incremental (sin tiempo de gracia)
-    # Los abonos mensuales pagan tarifa plana por mes, no exceso por hora
-    if not resp.is_subscription and r.status == "active" and r.end_time:
+    # Los abonos mensuales pagan tarifa plana por mes; las estadías activas acumulan tiempo real
+    if not resp.is_subscription and r.status == "active":
         now = datetime.utcnow()
-        end_naive = r.end_time.replace(tzinfo=None) if r.end_time.tzinfo else r.end_time
-        if now > end_naive:
-            resp.is_overtime = True
-            resp.overtime_minutes = max(1, int((now - end_naive).total_seconds() / 60.0))
-            entry_time = r.actual_entry or r.start_time
-            if entry_time:
-                entry_naive = entry_time.replace(tzinfo=None) if entry_time.tzinfo else entry_time
-                elapsed_sec = max(0.0, (now - entry_naive).total_seconds())
+        entry_time = r.actual_entry or r.start_time
+        if entry_time:
+            entry_naive = entry_time.replace(tzinfo=None) if entry_time.tzinfo else entry_time
+            elapsed_sec = max(0.0, (now - entry_naive).total_seconds())
+            parking = None
+            try:
+                parking = getattr(r, "parking", None)
+            except Exception:
                 parking = None
-                try:
-                    parking = getattr(r, "parking", None)
-                except Exception:
-                    parking = None
-                vtype = getattr(r, "vehicle_type", "auto")
-                billing_unit = getattr(r, "billing_unit", "hour") or "hour"
-                night_surcharge = float(parking.night_shift_surcharge or 0.0) if parking and getattr(r, "is_night_shift", False) else 0.0
-                if billing_unit == "minute":
-                    diff_min = max(1, math.ceil(elapsed_sec / 60.0))
-                    minute_rate = get_parking_minute_rate(parking, vtype) if parking else 0.10
-                    calculated_cost = round(diff_min * (minute_rate + (night_surcharge / 60.0 if night_surcharge else 0.0)), 2)
-                else:
-                    billed_hours = max(1, math.ceil(elapsed_sec / 3600.0))
-                    vehicle_rate = get_parking_vehicle_rate(parking, vtype) if parking else 5.0
-                    calculated_cost = round(billed_hours * (vehicle_rate + night_surcharge), 2)
-                if calculated_cost > resp.total_cost:
-                    resp.total_cost = calculated_cost
+            vtype = getattr(r, "vehicle_type", "auto")
+            billing_unit = (getattr(r, "billing_unit", None) or (parking.billing_unit if parking else "hour") or "hour").strip().lower()
+            night_surcharge = float(parking.night_shift_surcharge or 0.0) if parking and getattr(r, "is_night_shift", False) else 0.0
+            reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0) if parking else 0.0
+            if billing_unit == "minute":
+                diff_min = max(1, math.ceil(elapsed_sec / 60.0))
+                minute_rate = get_parking_minute_rate(parking, vtype) if parking else 0.10
+                calculated_cost = round(diff_min * (minute_rate + (night_surcharge / 60.0 if night_surcharge else 0.0)) + reservation_fee, 2)
+            else:
+                billed_hours = max(1, math.ceil(elapsed_sec / 3600.0))
+                vehicle_rate = get_parking_vehicle_rate(parking, vtype) if parking else 5.0
+                calculated_cost = round(billed_hours * (vehicle_rate + night_surcharge) + reservation_fee, 2)
+            if calculated_cost > resp.total_cost:
+                resp.total_cost = calculated_cost
+
+        if r.end_time:
+            end_naive = r.end_time.replace(tzinfo=None) if r.end_time.tzinfo else r.end_time
+            if now > end_naive:
+                resp.is_overtime = True
+                resp.overtime_minutes = max(1, int((now - end_naive).total_seconds() / 60.0))
 
     try:
         rev = getattr(r, "review", None)
@@ -981,7 +984,7 @@ async def check_in_reservation(
     if reservation.status not in ("scheduled", "reserved", "confirmed", "pending"):
         raise HTTPException(status_code=400, detail=f"Solo se puede hacer check-in de reservas programadas o reservadas (estado actual: {reservation.status})")
 
-    if getattr(reservation, "payment_status", "not_required") == "pending" and current_user.role not in ("local", "platform"):
+    if getattr(reservation, "payment_status", "not_required") == "pending":
         raise HTTPException(
             status_code=402,
             detail="El pago anticipado de esta reserva aún no ha sido confirmado."
@@ -1226,39 +1229,58 @@ async def check_out_reservation(
     already_paid = round(float(reservation.amount_paid or 0.0), 2)
     outstanding = max(0.0, round(calculated_cost - already_paid, 2))
 
-    if checkout_in and checkout_in.amount_paid is not None:
+    if checkout_in and checkout_in.amount_paid is not None and checkout_in.amount_paid > 0:
         confirmed_val = round(float(checkout_in.amount_paid), 2)
-        # Permite enviar el total acumulado, el saldo pendiente exacto, o un monto entregado suficiente (ej. billete en efectivo)
-        if confirmed_val < (outstanding - 0.02) and abs(confirmed_val - calculated_cost) > 0.02:
+        # Tolerancia operacional de garita al cobrar:
+        # Se acepta si cubre el saldo con margen de S/ 10.00 (desfases de reloj o minutos al salir),
+        # o si coincide aproximadamente con el costo acumulado, o con el saldo pendiente.
+        is_sufficient = (
+            confirmed_val >= (outstanding - 10.00)
+            or abs(confirmed_val - calculated_cost) <= 10.00
+            or abs(confirmed_val - outstanding) <= 10.00
+        )
+        if not is_sufficient:
             if not checkout_in.force_unpaid:
                 raise HTTPException(
                     status_code=422,
                     detail=f"El monto recibido (S/ {confirmed_val:.2f}) es insuficiente para liquidar el saldo pendiente de S/ {outstanding:.2f}",
                 )
         method = (checkout_in.payment_method or "efectivo").strip().lower()
-        collected_now = confirmed_val if checkout_in.force_unpaid else outstanding
-        if collected_now > 0:
+        actual_charge = confirmed_val if checkout_in.force_unpaid else (outstanding if confirmed_val >= (outstanding - 10.00) and outstanding > 0 else min(confirmed_val, outstanding))
+        if actual_charge > 0:
             db.add(Payment(
                 reservation_id=reservation.id,
                 user_id=reservation.user_id,
-                amount_cents=int(round(collected_now * 100)),
+                amount_cents=int(round(actual_charge * 100)),
                 currency="PEN",
                 status="succeeded",
                 method=method,
                 description=f"Cobro en salida de la reserva {reservation.code} vía {method}",
             ))
-        reservation.amount_paid = calculated_cost if not checkout_in.force_unpaid else confirmed_val
+        new_amount_paid = round(already_paid + actual_charge, 2)
+        reservation.amount_paid = new_amount_paid
         reservation.payment_method = method
-        reservation.payment_status = "paid" if not checkout_in.force_unpaid else "pending"
-        reservation.prepaid = already_paid > 0
+        if not checkout_in.force_unpaid and (new_amount_paid >= (calculated_cost - 10.00) or outstanding <= 10.00):
+            reservation.total_cost = new_amount_paid
+            reservation.payment_status = "paid"
+            reservation.prepaid = True
+        else:
+            reservation.payment_status = "pending" if checkout_in.force_unpaid else "paid"
+            reservation.prepaid = already_paid > 0
     elif outstanding > 0.02:
-        if not (checkout_in and checkout_in.force_unpaid):
-            raise HTTPException(
-                status_code=400,
-                detail=f"No se puede registrar la salida: estadía con saldo pendiente de S/ {outstanding:.2f} sin liquidar. El usuario debe pagar online o el operador registrar el cobro en garita.",
-            )
-        reservation.payment_status = "pending"
-        reservation.payment_method = None
+        # Si la reserva ya fue formalmente pagada online por el usuario antes de la salida,
+        # permitir la salida inmediata absorbiendo los minutos de traslado a la barrera:
+        if getattr(reservation, "payment_status", None) == "paid":
+            reservation.total_cost = already_paid
+            reservation.prepaid = True
+        else:
+            if not (checkout_in and checkout_in.force_unpaid):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"No se puede registrar la salida: estadía con saldo pendiente de S/ {outstanding:.2f} sin liquidar. El usuario debe pagar online o el operador registrar el cobro en garita.",
+                )
+            reservation.payment_status = "pending"
+            reservation.payment_method = None
     else:
         # outstanding <= 0.02 (100% liquidado con anterioridad)
         reservation.payment_status = "paid"

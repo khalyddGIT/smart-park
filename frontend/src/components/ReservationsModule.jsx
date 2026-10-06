@@ -73,10 +73,20 @@ export const calculateLiveEffectiveCost = (res, now = Date.now()) => {
   if (status === 'ACTIVE') {
     const entryMs = parseIsoToDate(res.actualEntry || res.actual_entry || res.startTime).getTime();
     if (!Number.isFinite(entryMs)) return baseCost;
-    const billedHours = Math.max(1, Math.ceil(Math.max(0, now - entryMs) / 3600000));
-    const hourlyRate = Number(res.ratePerHour) || Number(res.rate) || 5.0;
+    const diffMin = Math.max(1, Math.ceil(Math.max(0, now - entryMs) / 60000));
+    const billedHours = Math.max(1, Math.ceil(diffMin / 60));
+    const billingUnit = String(res.billing_unit || res.billingUnit || 'hour').toLowerCase();
     const reservationFee = Number(res.reservationFee || res.reservation_fee || 0);
-    return Number((billedHours * hourlyRate + reservationFee).toFixed(2));
+    let timeCost = 0;
+    if (billingUnit === 'minute') {
+      const minRate = Number(res.minute_rate || res.minuteRate || (Number(res.ratePerHour || res.rate || 5.0) / 60) || 0.10);
+      timeCost = Number((diffMin * minRate).toFixed(2));
+    } else {
+      const hourlyRate = Number(res.ratePerHour) || Number(res.rate) || 5.0;
+      timeCost = Number((billedHours * hourlyRate).toFixed(2));
+    }
+    const computed = Number((timeCost + reservationFee).toFixed(2));
+    return Math.max(baseCost, computed);
   }
   return baseCost;
 };

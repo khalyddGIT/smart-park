@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smartpark-pwa-v3';
+const CACHE_NAME = 'smartpark-pwa-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -51,12 +51,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // A) Las APIs autenticadas nunca se guardan en Cache Storage. Una respuesta de
-  // reservas/perfil puede pertenecer a otro usuario después de cerrar sesión.
+  // A) Las APIs autenticadas nunca se guardan en Cache Storage.
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
-        .catch(async () => {
+        .catch(() => {
           return new Response(JSON.stringify({ offline: true, message: 'Sin conexión a internet.' }), {
             status: 503,
             statusText: 'Service Unavailable',
@@ -67,28 +66,37 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // B) Peticiones de navegación (HTML): Network-first con fallback a /index.html en caché
+  // B) Peticiones de navegación (HTML): Network-first con fallback seguro a /index.html en caché
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html') || caches.match('/'))
+      fetch(request).catch(async () => {
+        try {
+          const cached = (await caches.match('/index.html')) || (await caches.match('/'));
+          if (cached) return cached;
+        } catch (e) {}
+        return new Response('<!DOCTYPE html><html><body><h1>Smart Park Offline</h1><p>Verifica tu conexión a internet.</p></body></html>', {
+          status: 200,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' }
+        });
+      })
     );
     return;
   }
 
-  // C) Recursos estáticos (JS, CSS, imágenes, fuentes): Stale-While-Revalidate
+  // C) Recursos estáticos (JS, CSS, imágenes, fuentes): Stale-While-Revalidate con fallback seguro
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return networkResponse;
-        })
-        .catch(() => cachedResponse);
-
-      return cachedResponse || fetchPromise;
+    caches.match(request).then(async (cachedResponse) => {
+      try {
+        const networkResponse = await fetch(request);
+        if (networkResponse && networkResponse.status === 200) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone)).catch(() => {});
+        }
+        return networkResponse;
+      } catch (err) {
+        if (cachedResponse) return cachedResponse;
+        return new Response('', { status: 404, statusText: 'Not Found' });
+      }
     })
   );
 });

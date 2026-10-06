@@ -65,16 +65,17 @@ async def _validate_reservation_payment(
             except Exception:
                 parking = None
             vtype = getattr(reservation, "vehicle_type", "auto")
-            billing_unit = getattr(reservation, "billing_unit", "hour") or "hour"
+            billing_unit = (getattr(reservation, "billing_unit", None) or (parking.billing_unit if parking else "hour") or "hour").strip().lower()
             night_surcharge = float(parking.night_shift_surcharge or 0.0) if parking and getattr(reservation, "is_night_shift", False) else 0.0
+            reservation_fee = float(getattr(parking, "reservation_fee", 0.0) or 0.0) if parking else 0.0
             if billing_unit == "minute":
                 diff_min = max(1, math.ceil(elapsed_sec / 60.0))
                 minute_rate = get_parking_minute_rate(parking, vtype) if parking else 0.10
-                live_cost = round(diff_min * (minute_rate + (night_surcharge / 60.0 if night_surcharge else 0.0)), 2)
+                live_cost = round(diff_min * (minute_rate + (night_surcharge / 60.0 if night_surcharge else 0.0)) + reservation_fee, 2)
             else:
                 billed_hours = max(1, math.ceil(elapsed_sec / 3600.0))
                 vehicle_rate = get_parking_vehicle_rate(parking, vtype) if parking else 5.0
-                live_cost = round(billed_hours * (vehicle_rate + night_surcharge), 2)
+                live_cost = round(billed_hours * (vehicle_rate + night_surcharge) + reservation_fee, 2)
             if live_cost > effective_total:
                 effective_total = live_cost
                 reservation.total_cost = effective_total
@@ -87,17 +88,19 @@ async def _validate_reservation_payment(
     if outstanding <= 0.02 and (getattr(reservation, "payment_status", None) == "paid" or bool(reservation.prepaid)) and already_paid > 0:
         raise HTTPException(status_code=409, detail="Esta reserva ya fue pagada")
 
-    # Si hay saldo pendiente, validar que el monto enviado cubra razonablemente el saldo
+    # Si hay saldo pendiente, permitir liquidar el saldo o realizar abonos parciales hacia la estancia
     if outstanding > 0.02:
         amount_val = round(float(amount_pen), 2)
-        diff_outstanding = abs(amount_val - outstanding)
-        diff_total = abs(amount_val - effective_total)
-        # Se admite si coincide con el saldo pendiente o el total de la estancia, o con tolerancia de reloj
-        if diff_outstanding > 0.10 and diff_total > 0.10 and amount_val < (outstanding - 0.10):
+        if amount_val <= 0:
+            raise HTTPException(status_code=422, detail="El monto a pagar debe ser mayor a cero.")
+        if amount_val > (effective_total + 200.00):
             raise HTTPException(
                 status_code=422,
-                detail=f"El monto debe coincidir con el saldo pendiente de la reserva: S/ {outstanding:.2f}",
+                detail=f"El monto a pagar excede el costo de la estadía (S/ {effective_total:.2f}).",
             )
+        # Si el monto pagado cubre el saldo con tolerancia operacional (ej. S/ 12.00 por discrepancias horarias/minutos de visualización):
+        # se acepta para liquidar la reserva completamente.
+        # Si el monto es menor, se procesa como abono parcial que descuenta la deuda.
 
     return reservation
 
@@ -338,11 +341,14 @@ async def create_charge(
                     if res_target:
                         paid_pen = round(body.amount_cents / 100.0, 2)
                         res_target.amount_paid = round((res_target.amount_paid or 0.0) + paid_pen, 2)
-                        if res_target.amount_paid > (res_target.total_cost or 0.0):
+                        effective_cost = float(res_target.total_cost or 0.0)
+                        if res_target.amount_paid >= (effective_cost - 12.00):
                             res_target.total_cost = res_target.amount_paid
+                            res_target.payment_status = "paid"
+                        else:
+                            res_target.payment_status = "pending"
                         res_target.payment_method = detected_method
                         res_target.prepaid = True
-                        res_target.payment_status = "paid"
                         res_target.payment_deadline = None
                         try:
                             await realtime.broadcast("reservations:updated", {
@@ -606,11 +612,14 @@ async def capture_paypal_order(
             res_target = res_query.scalars().first()
             if res_target:
                 res_target.amount_paid = round((res_target.amount_paid or 0.0) + amount_pen, 2)
-                if res_target.amount_paid > (res_target.total_cost or 0.0):
+                effective_cost = float(res_target.total_cost or 0.0)
+                if res_target.amount_paid >= (effective_cost - 12.00):
                     res_target.total_cost = res_target.amount_paid
+                    res_target.payment_status = "paid"
+                else:
+                    res_target.payment_status = "pending"
                 res_target.payment_method = "paypal"
                 res_target.prepaid = True
-                res_target.payment_status = "paid"
                 res_target.payment_deadline = None
                 try:
                     await realtime.broadcast("reservations:updated", {

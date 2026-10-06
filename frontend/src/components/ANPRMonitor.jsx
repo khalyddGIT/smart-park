@@ -445,13 +445,23 @@ export const ANPRMonitor = () => {
   };
 
   const getVehicleMetrics = (vehicle) => {
-    const entry = new Date(vehicle.entryTime).getTime();
-    const mins = Math.max(15, Math.round((now - entry) / 60000));
+    const entry = new Date(vehicle.entryTime || vehicle.actual_entry || vehicle.actualEntry || vehicle.startTime).getTime();
+    const mins = Math.max(1, Math.round((now - entry) / 60000));
     const hours = Math.ceil(mins / 60);
     const rate = Number(vehicle.rate || 5.0);
-    const totalCost = Number((hours * rate).toFixed(2));
+    const billingUnit = String(vehicle.billing_unit || vehicle.billingUnit || 'hour').toLowerCase();
+    const serverCost = Number(vehicle.totalCost ?? vehicle.total_cost ?? 0);
+    let totalCost = 0;
+    if (serverCost > 0) {
+      totalCost = serverCost;
+    } else if (billingUnit === 'minute') {
+      const minRate = Number(vehicle.minute_rate || vehicle.minuteRate || (rate / 60) || 0.10);
+      totalCost = Number((mins * minRate).toFixed(2));
+    } else {
+      totalCost = Number((hours * rate).toFixed(2));
+    }
     const isPaidInState = paidIds.has(Number(vehicle.id));
-    const alreadyPaid = isPaidInState ? totalCost : Number(vehicle.amountPaid ?? (vehicle.prepaid ? totalCost : 0));
+    const alreadyPaid = isPaidInState ? totalCost : Number(vehicle.amountPaid ?? vehicle.amount_paid ?? (vehicle.prepaid ? totalCost : 0));
     const outstanding = Math.max(0, Number((totalCost - alreadyPaid).toFixed(2)));
     return { mins, hours, rate, totalCost, alreadyPaid, outstanding };
   };
@@ -478,10 +488,20 @@ export const ANPRMonitor = () => {
       return;
     }
     const entryDate = new Date(item.actual_entry || item.actualEntry || item.startTime || item.entryTime || Date.now() - 3600000);
-    const minutesParked = Math.max(15, Math.round((Date.now() - entryDate.getTime()) / 60000));
+    const minutesParked = Math.max(1, Math.round((Date.now() - entryDate.getTime()) / 60000));
     const hoursParked = Math.ceil(minutesParked / 60);
     const rate = Number(item.rate || item.ratePerHour || currentEst?.rate || 5.0);
-    const totalCost = Number((hoursParked * rate).toFixed(2));
+    const billingUnit = String(item.billing_unit || item.billingUnit || currentEst?.billing_unit || 'hour').toLowerCase();
+    const serverCost = Number(item.totalCost ?? item.total_cost ?? 0);
+    let totalCost = 0;
+    if (serverCost > 0) {
+      totalCost = serverCost;
+    } else if (billingUnit === 'minute') {
+      const minRate = Number(item.minute_rate || item.minuteRate || (rate / 60) || 0.10);
+      totalCost = Number((minutesParked * minRate).toFixed(2));
+    } else {
+      totalCost = Number((hoursParked * rate).toFixed(2));
+    }
     const isPaidInState = paidIds.has(Number(item.id));
     const alreadyPaid = isPaidInState ? totalCost : Number(item.amountPaid ?? item.amount_paid ?? (item.prepaid ? totalCost : 0));
     const outstanding = Math.max(0, Number((totalCost - alreadyPaid).toFixed(2)));

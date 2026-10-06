@@ -557,8 +557,9 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
     return new Date().getTime() > passData.arrivalDeadline.getTime();
   }, [isScheduled, passData?.arrivalDeadline]);
 
-  const currentTotal = dynamicCost ?? passData?.cost ?? 0;
-  const paidSoFar = Number(passData?.amountPaid ?? (passData?.isPrepaid ? passData?.cost : 0) ?? 0);
+  const serverTotal = Number(reservation?.total_cost ?? reservation?.totalCost ?? 0);
+  const currentTotal = Math.max(dynamicCost ?? 0, passData?.cost ?? 0, serverTotal);
+  const paidSoFar = Number(passData?.amountPaid ?? (passData?.isPrepaid ? (passData?.cost ?? 0) : 0) ?? 0);
   const pendingOvertimeBalance = Math.max(0, Math.round((currentTotal - paidSoFar) * 100) / 100);
 
   if (!isOpen || !passData) return null;

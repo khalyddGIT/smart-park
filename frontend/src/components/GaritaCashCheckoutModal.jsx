@@ -52,10 +52,18 @@ export const GaritaCashCheckoutModal = ({
     const diffMins = Math.max(1, Math.round((now - entry) / 60000));
     const billedHours = Math.max(1, Math.ceil(diffMins / 60));
     const rate = Number(stayData.rate || stayData.ratePerHour || 5.0);
+    const billingUnit = String(stayData.billing_unit || stayData.billingUnit || 'hour').toLowerCase();
 
-    const calculatedCost = stayData.totalCost !== undefined && stayData.totalCost !== null
-      ? Number(stayData.totalCost)
-      : Number((billedHours * rate).toFixed(2));
+    const serverCost = Number(stayData.totalCost ?? stayData.total_cost ?? 0);
+    let calculatedCost = 0;
+    if (serverCost > 0) {
+      calculatedCost = serverCost;
+    } else if (billingUnit === 'minute') {
+      const minRate = Number(stayData.minute_rate || stayData.minuteRate || (rate / 60) || 0.10);
+      calculatedCost = Number((diffMins * minRate).toFixed(2));
+    } else {
+      calculatedCost = Number((billedHours * rate).toFixed(2));
+    }
 
     const alreadyPaid = Number(stayData.amountPaid || stayData.amount_paid || 0);
     const outstanding = Math.max(0, Number((calculatedCost - alreadyPaid).toFixed(2)));

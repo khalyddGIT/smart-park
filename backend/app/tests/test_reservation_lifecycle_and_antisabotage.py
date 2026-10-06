@@ -4,7 +4,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.future import select
 from app.main import app
 from app.db.session import AsyncSessionLocal
-from app.models.models import User, Parking, Slot, Reservation
+from app.models.models import User, Parking, Slot, Reservation, Payment
 from app.core.security import create_access_token
 
 @pytest.mark.asyncio
@@ -31,6 +31,9 @@ async def test_reservation_full_lifecycle_and_antisabotage():
         # Limpiar reservas previas del usuario de prueba para aislar el test
         res_prev = await session.execute(select(Reservation).where(Reservation.user_id == user.id))
         for r in res_prev.scalars().all():
+            pay_prev = await session.execute(select(Payment).where(Payment.reservation_id == r.id))
+            for p in pay_prev.scalars().all():
+                await session.delete(p)
             await session.delete(r)
         
         # Buscar plaza libre para auto

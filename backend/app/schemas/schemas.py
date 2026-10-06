@@ -807,6 +807,16 @@ class ReviewCreate(BaseModel):
     reservation_id: Optional[int] = None
     tags: Optional[Union[List[str], str]] = None
 
+    @field_validator("comment")
+    @classmethod
+    def validate_comment(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            v_clean = v.strip()
+            if v_clean and len(v_clean) < 3:
+                raise ValueError("El comentario debe tener al menos 3 caracteres")
+            return v_clean
+        return v
+
 class ReviewReply(BaseModel):
     response: str = Field(min_length=2, max_length=1000)
 

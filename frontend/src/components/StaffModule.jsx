@@ -66,10 +66,21 @@ export const StaffModule = () => {
   const [showQuickPassword, setShowQuickPassword] = useState(false);
 
   const { establishments } = useEstablishments();
-  const validEstablishments = (establishments || [])
-    .filter(e => isMyEstablishment(e, user, role, establishments))
-    .filter(e => !String(e.id).startsWith('EST-') && !isNaN(Number(e.id)));
-  const defaultParkingId = validEstablishments.length ? Number(validEstablishments[0].id) : null;
+  const resolveNumericParkingId = (est) => {
+    if (!est) return null;
+    const match = String(est.id || '').match(/\d+/);
+    return match ? Number(match[0]) : (typeof est.id === 'number' ? est.id : null);
+  };
+
+  const myEstablishments = (establishments || []).filter(e => isMyEstablishment(e, user, role, establishments));
+  const validEstablishments = myEstablishments
+    .map(e => ({
+      ...e,
+      numericId: resolveNumericParkingId(e) ?? (typeof e.id === 'number' ? e.id : null)
+    }))
+    .filter(e => e.numericId !== null && !isNaN(e.numericId));
+
+  const defaultParkingId = validEstablishments.length ? (validEstablishments[0].numericId || Number(validEstablishments[0].id)) : null;
 
   // Estados de formularios
   const [formData, setFormData] = useState({
@@ -97,8 +108,8 @@ export const StaffModule = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (validEstablishments.length && !validEstablishments.some(e => String(e.id) === String(formData.parking_id))) {
-      setFormData(prev => ({ ...prev, parking_id: Number(validEstablishments[0].id) }));
+    if (validEstablishments.length && !validEstablishments.some(e => String(e.numericId || e.id) === String(formData.parking_id))) {
+      setFormData(prev => ({ ...prev, parking_id: Number(validEstablishments[0].numericId || validEstablishments[0].id) }));
     }
   }, [establishments]);
 
@@ -120,7 +131,12 @@ export const StaffModule = () => {
   const loadStaff = async () => {
     try {
       const res = await api.get('/staff');
-      setStaff(Array.isArray(res.data) ? res.data : []);
+      let loaded = Array.isArray(res.data) ? res.data : [];
+      if (role === 'local' && validEstablishments.length > 0) {
+        const allowedIds = new Set(validEstablishments.map(e => Number(e.numericId || e.id)));
+        loaded = loaded.filter(s => allowedIds.has(Number(s.parking_id)));
+      }
+      setStaff(loaded);
     } catch (err) {
       describeError(err, 'cargar la nómina de personal');
     } finally {
@@ -131,7 +147,7 @@ export const StaffModule = () => {
   useEffect(() => {
     if (canManage) loadStaff();
     else setLoading(false);
-  }, [canManage]);
+  }, [canManage, validEstablishments.length]);
 
   const resetForm = () => {
     setFormData({
@@ -140,7 +156,7 @@ export const StaffModule = () => {
       position: 'Operador de Garita',
       shift: 'Mañana (07:00 - 15:00)',
       status: 'Activo',
-      parking_id: defaultParkingId || (validEstablishments[0]?.id ? Number(validEstablishments[0].id) : ''),
+      parking_id: defaultParkingId || (validEstablishments[0]?.numericId || validEstablishments[0]?.id || ''),
       email: '',
       password: '',
       security_pin: '',
@@ -190,7 +206,13 @@ export const StaffModule = () => {
     e.preventDefault();
     if (isSubmitting) return;
 
-    const staffVal = validateStaffForm(formData);
+    const targetParkingId = Number(formData.parking_id) || defaultParkingId || (validEstablishments[0]?.numericId);
+    const dataToValidate = {
+      ...formData,
+      parking_id: targetParkingId
+    };
+
+    const staffVal = validateStaffForm(dataToValidate);
     if (!staffVal.isValid) {
       const firstError = Object.values(staffVal.errors)[0];
       notify(firstError);
@@ -203,8 +225,10 @@ export const StaffModule = () => {
 
     setIsSubmitting(true);
 
+    const pin = (formData.security_pin || '').trim();
+
     const payload = {
-      parking_id: Number(formData.parking_id),
+      parking_id: targetParkingId,
       full_name: formData.full_name.trim(),
       dni: formData.dni.trim(),
       position: formData.position,
@@ -389,20 +413,11 @@ export const StaffModule = () => {
     }
   };
 
-  const exportCSV = () => {
-    const headers = 'ID,Nombre Completo,DNI,Cargo,Turno,Estado,Correo Acceso,Acceso Habilitado\n';
-    const rows = staff.map(s => `${s.id},"${s.full_name}","${s.dni}","${s.position}","${s.shift}","${s.status}","${s.email || ''}","${s.has_account ? 'SI' : 'NO'}"`).join('\n');
-    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `personal_smartpark_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    notify('Nómina de personal y accesos exportada en formato CSV.');
-  };
-
   const filtered = staff.filter(s => {
+    if (role === 'local' && validEstablishments.length > 0) {
+      const allowedIds = new Set(validEstablishments.map(e => Number(e.numericId || e.id)));
+      if (!allowedIds.has(Number(s.parking_id))) return false;
+    }
     const matchesSearch = 
       (s.full_name || '').toLowerCase().includes(search.toLowerCase()) || 
       (s.dni || '').includes(search) || 
@@ -413,7 +428,20 @@ export const StaffModule = () => {
     return matchesSearch && matchesShift && matchesStatus;
   });
 
-  const totalWithAccount = staff.filter(s => s.has_account).length;
+  const exportCSV = () => {
+    const headers = 'ID,Nombre Completo,DNI,Cargo,Turno,Estado,Correo Acceso,Acceso Habilitado\n';
+    const rows = filtered.map(s => `${s.id},"${s.full_name}","${s.dni}","${s.position}","${s.shift}","${s.status}","${s.email || ''}","${s.has_account ? 'SI' : 'NO'}"`).join('\n');
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `personal_smartpark_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    notify('Nómina de personal y accesos exportada en formato CSV.');
+  };
+
+  const totalWithAccount = filtered.filter(s => s.has_account).length;
 
   if (!canManage) {
     return (
@@ -482,7 +510,7 @@ export const StaffModule = () => {
         <Card className="p-4 bg-white dark:bg-[#151D2F] border-slate-200/80 dark:border-slate-800/80 rounded-2xl flex items-center justify-between shadow-xs">
           <div>
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">Total en Nómina</span>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{staff.length}</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{filtered.length}</p>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Operadores y personal</span>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center">
@@ -607,6 +635,18 @@ export const StaffModule = () => {
                       <span>{s.status || 'Activo'}</span>
                     </span>
                   </div>
+
+                  {/* Sede Asignada */}
+                  {(() => {
+                    const est = (establishments || []).find(e => Number(e.numericId || resolveNumericParkingId(e) || e.id) === Number(s.parking_id));
+                    const estName = est?.name || (s.parking_id ? `Sede #${s.parking_id}` : 'Sede Principal');
+                    return (
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs text-slate-700 dark:text-slate-300 font-bold border border-slate-200/60 dark:border-slate-700/60">
+                        <Building2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        <span className="truncate" title={estName}>{estName}</span>
+                      </div>
+                    );
+                  })()}
 
                   {/* Labor Data Info */}
                   <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/60 text-xs">
@@ -813,7 +853,7 @@ export const StaffModule = () => {
                     className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:bg-white dark:focus:bg-slate-900"
                   >
                     {validEstablishments.map(est => (
-                      <option key={est.id} value={est.id}>
+                      <option key={est.id} value={est.numericId ?? est.id}>
                         {est.name} — {est.address?.slice(0, 40) || 'Sede'}
                       </option>
                     ))}
@@ -1004,7 +1044,7 @@ export const StaffModule = () => {
                   className="h-10 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200"
                 >
                   {validEstablishments.map(est => (
-                    <option key={est.id} value={est.id}>
+                    <option key={est.id} value={est.numericId ?? est.id}>
                       {est.name} {est.branchName ? `(${est.branchName})` : ''}
                     </option>
                   ))}

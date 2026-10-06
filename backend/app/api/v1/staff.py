@@ -155,23 +155,22 @@ async def list_staff(
         stmt = stmt.where(Staff.parking_id == parking_id)
     if shift:
         stmt = stmt.where(Staff.shift.ilike(f"%{shift}%"))
-    # Multi-tenant: si el solicitante es personal o admin local (no platform)
-    master_emails = ("adminlocal@smartpark.com", "adminlocal@smartpark.pe", "admin@smartpark.com", "admin@smartpark.pe")
+    # Multi-tenant: solo platform/superadmin tiene visibilidad irrestricta de todas las sedes
     curr_email = (current_user.email or "").strip().lower()
     curr_name = (current_user.full_name or "").strip().lower()
+    is_platform_admin = current_user.role in ("platform", "superadmin")
 
-    is_master_admin = (
-        current_user.role == "platform" or 
-        curr_email in master_emails or 
-        curr_email in ("camadmin@smartpark.pe",)
-    )
-
-    if not is_master_admin:
+    if not is_platform_admin:
         p_res = await db.execute(select(Parking).where(
             (func.lower(Parking.email) == curr_email) | (func.lower(Parking.owner) == curr_name)
         ))
         owned_parkings = p_res.scalars().all()
         owned_ids = set(p.id for p in owned_parkings)
+
+        # Si es la cuenta default de adminlocal y aún no tiene sedes por correo/owner, asociar sede 1 o 5 si existe
+        if not owned_ids and curr_email in ("adminlocal@smartpark.com", "adminlocal@smartpark.pe", "admin@smartpark.com", "admin@smartpark.pe"):
+            p_default = await db.execute(select(Parking.id).where(Parking.id.in_([1, 5])))
+            owned_ids.update(p_default.scalars().all())
 
         for p in owned_parkings:
             p_name = p.name or ""
@@ -198,6 +197,8 @@ async def list_staff(
         else:
             if allowed_pids:
                 stmt = stmt.where(Staff.parking_id.in_(allowed_pids))
+            else:
+                stmt = stmt.where(Staff.parking_id == -1)
     
     result = await db.execute(stmt)
     staff_members = result.scalars().all()
@@ -228,6 +229,9 @@ async def create_staff(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(staff_required)
 ):
+    curr_email = (current_user.email or "").strip().lower()
+    curr_name = (current_user.full_name or "").strip().lower()
+
     # Idempotency-Key: evita doble creación por doble-click/reintento de red
     idem_key = request.headers.get("idempotency-key") or request.headers.get("Idempotency-Key")
     if idem_key:
@@ -262,8 +266,16 @@ async def create_staff(
     # Validar que la sede existe
     from app.models.models import Parking
     parking_check = await db.execute(select(Parking).where(Parking.id == staff_in.parking_id))
-    if not parking_check.scalars().first():
-        raise HTTPException(status_code=400, detail=f"Estacionamiento ID {staff_in.parking_id} no existe.")
+    parking_obj = parking_check.scalars().first()
+    if not parking_obj:
+        user_p = await db.execute(select(Parking).where(
+            (func.lower(Parking.email) == curr_email) | (func.lower(Parking.owner) == curr_name)
+        ))
+        fallback_p = user_p.scalars().first()
+        if fallback_p:
+            staff_in.parking_id = fallback_p.id
+        else:
+            raise HTTPException(status_code=400, detail=f"Estacionamiento ID {staff_in.parking_id} no existe.")
 
     await _verify_staff_parking_access(staff_in.parking_id, current_user, db)
 
@@ -312,6 +324,11 @@ async def create_staff(
         
         pwd = staff_in.password.strip() if staff_in.password and len(staff_in.password.strip()) >= 8 else (f"Garita{clean_dni[-4:]}!" if clean_dni and len(clean_dni)>=4 else "SmartPark2026!")
         
+        system_emails = {"superadmin@smartpark.com", "adminlocal@smartpark.com", "usuario@smartpark.com"}
+        if user_account and user_account.email.lower() in system_emails:
+            effective_email = f"operador.{clean_dni}@smartpark.pe" if clean_dni else f"operador.{secrets.token_hex(4)}@smartpark.pe"
+            user_account = None
+
         if not user_account:
             user_account = User(
                 full_name=db_staff.full_name,

@@ -5,6 +5,7 @@ El frontend solo utiliza la llave publica de Culqi y el Client ID de PayPal.
 """
 import base64
 import os
+import math
 import requests
 from datetime import datetime
 from typing import Optional, Dict, Any
@@ -18,9 +19,10 @@ from sqlalchemy.future import select
 from app.core.config import settings
 from app.core.security import get_current_user
 from app.db.session import get_db
-from app.models.models import User, Payment, Reservation
+from app.models.models import User, Payment, Reservation, Parking
 from app.core.cache import rate_limit_hit, get_idempotency_record, save_idempotency_record
 from app.core.realtime import realtime
+from app.api.v1.reservations import get_parking_vehicle_rate, get_parking_minute_rate
 
 router = APIRouter(prefix="/payments", tags=["Pagos Culqi & PayPal"])
 
@@ -47,14 +49,56 @@ async def _validate_reservation_payment(
         raise HTTPException(status_code=403, detail="No autorizado para pagar esta reserva")
     if reservation.status == "cancelled":
         raise HTTPException(status_code=409, detail="La reserva fue cancelada y ya no admite pagos")
-    if getattr(reservation, "payment_status", None) == "paid" or bool(reservation.prepaid):
+
+    # Si la estadía está activa y sin suscripción, calcular el costo acumulado en tiempo real
+    effective_total = float(reservation.total_cost or 0.0)
+    if reservation.status == "active" and not getattr(reservation, "is_subscription", False):
+        now = datetime.utcnow()
+        entry_time = reservation.actual_entry or reservation.start_time
+        if entry_time:
+            entry_naive = entry_time.replace(tzinfo=None) if entry_time.tzinfo else entry_time
+            elapsed_sec = max(0.0, (now - entry_naive).total_seconds())
+            parking = None
+            try:
+                res_p = await db.execute(select(Parking).where(Parking.id == reservation.parking_id))
+                parking = res_p.scalars().first()
+            except Exception:
+                parking = None
+            vtype = getattr(reservation, "vehicle_type", "auto")
+            billing_unit = getattr(reservation, "billing_unit", "hour") or "hour"
+            night_surcharge = float(parking.night_shift_surcharge or 0.0) if parking and getattr(reservation, "is_night_shift", False) else 0.0
+            if billing_unit == "minute":
+                diff_min = max(1, math.ceil(elapsed_sec / 60.0))
+                minute_rate = get_parking_minute_rate(parking, vtype) if parking else 0.10
+                live_cost = round(diff_min * (minute_rate + (night_surcharge / 60.0 if night_surcharge else 0.0)), 2)
+            else:
+                billed_hours = max(1, math.ceil(elapsed_sec / 3600.0))
+                vehicle_rate = get_parking_vehicle_rate(parking, vtype) if parking else 5.0
+                live_cost = round(billed_hours * (vehicle_rate + night_surcharge), 2)
+            if live_cost > effective_total:
+                effective_total = live_cost
+                reservation.total_cost = effective_total
+
+    already_paid = float(reservation.amount_paid or 0.0)
+    outstanding = max(0.0, round(effective_total - already_paid, 2))
+
+    # Solo si el saldo pendiente ya está completamente cubierto (<= 0.02) y la reserva ya está marcada como pagada con pagos previos:
+    # rechazar por duplicidad de pago
+    if outstanding <= 0.02 and (getattr(reservation, "payment_status", None) == "paid" or bool(reservation.prepaid)) and already_paid > 0:
         raise HTTPException(status_code=409, detail="Esta reserva ya fue pagada")
-    outstanding = max(0.0, round(float(reservation.total_cost or 0) - float(reservation.amount_paid or 0), 2))
-    if outstanding > 0 and abs(round(float(amount_pen), 2) - outstanding) > 0.02:
-        raise HTTPException(
-            status_code=422,
-            detail=f"El monto debe coincidir con el saldo pendiente de la reserva: S/ {outstanding:.2f}",
-        )
+
+    # Si hay saldo pendiente, validar que el monto enviado cubra razonablemente el saldo
+    if outstanding > 0.02:
+        amount_val = round(float(amount_pen), 2)
+        diff_outstanding = abs(amount_val - outstanding)
+        diff_total = abs(amount_val - effective_total)
+        # Se admite si coincide con el saldo pendiente o el total de la estancia, o con tolerancia de reloj
+        if diff_outstanding > 0.10 and diff_total > 0.10 and amount_val < (outstanding - 0.10):
+            raise HTTPException(
+                status_code=422,
+                detail=f"El monto debe coincidir con el saldo pendiente de la reserva: S/ {outstanding:.2f}",
+            )
+
     return reservation
 
 

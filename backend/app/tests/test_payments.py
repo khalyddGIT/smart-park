@@ -51,3 +51,50 @@ def test_culqi_charge_request_schema():
         ChargeRequest(amount_cents=0, token_id="tkn_test_123")
 
 
+@pytest.mark.asyncio
+async def test_validate_reservation_payment_allows_active_stay_with_balance():
+    from app.api.v1.payments import _validate_reservation_payment
+    from app.db.session import AsyncSessionLocal
+    from app.models.models import User, Reservation
+    from datetime import datetime, timedelta
+    from sqlalchemy.future import select
+
+    async with AsyncSessionLocal() as session:
+        user = (await session.execute(select(User).where(User.role == "user"))).scalars().first()
+        if not user:
+            user = (await session.execute(select(User))).scalars().first()
+
+        import uuid
+        uid = uuid.uuid4().hex[:6]
+        res = Reservation(
+            user_id=user.id,
+            parking_id=1,
+            slot_id=1,
+            license_plate="PAY-999",
+            status="active",
+            start_time=datetime.utcnow() - timedelta(hours=3),
+            end_time=datetime.utcnow() + timedelta(hours=1),
+            actual_entry=datetime.utcnow() - timedelta(hours=3),
+            total_cost=44.0,
+            amount_paid=0.0,
+            prepaid=True,
+            payment_status="paid",
+            qr_code=f"TEST-PAY-{uid}",
+            code=f"RSV-PAY-{uid}"
+        )
+        session.add(res)
+        await session.commit()
+        await session.refresh(res)
+        res_id = res.id
+
+        # Antes fallaba con 409 'Esta reserva ya fue pagada'.
+        # Ahora debe aprobar la validación porque outstanding = 44.00 > 0.
+        validated = await _validate_reservation_payment(session, res_id, user, 44.0)
+        assert validated is not None
+        assert validated.id == res_id
+
+        await session.delete(res)
+        await session.commit()
+
+
+

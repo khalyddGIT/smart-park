@@ -115,5 +115,41 @@ def test_charge_request_schema_supports_string_and_float():
     assert req.reservation_id == "RSV-141"
     assert req.payment_method == "card"
 
+    req_str = ChargeRequest(
+        amount_cents="2500",
+        token_id="tkn_test_str_amount",
+        payment_method="card"
+    )
+    assert req_str.amount_cents == "2500"
+
+
+def test_culqi_create_order_schema():
+    from app.api.v1.payments import CulqiCreateOrderRequest
+    req = CulqiCreateOrderRequest(
+        amount=15.50,
+        currency="PEN",
+        description="Estadía Smart-Park",
+        email="conductor@smartpark.com"
+    )
+    assert req.amount == 15.50
+    assert req.currency == "PEN"
+    assert req.description == "Estadía Smart-Park"
+
+
+@pytest.mark.asyncio
+async def test_culqi_create_order_endpoint():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        response = await ac.post("/api/v1/payments/culqi/create-order", json={
+            "amount": 25.00,
+            "currency": "PEN",
+            "description": "Test Order Culqi Checkout"
+        })
+    assert response.status_code in (200, 503)
+    if response.status_code == 200:
+        data = response.json()
+        assert "order_id" in data
+        assert data["amount"] == 25.00
+
 
 

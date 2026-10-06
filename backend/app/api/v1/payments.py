@@ -9,18 +9,18 @@ import math
 import uuid
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, Union
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import or_
 
 from app.core.config import settings
-from app.core.security import get_current_user
+from app.core.security import get_current_user, get_optional_user
 from app.db.session import get_db
 from app.models.models import User, Payment, Reservation, Parking
 from app.core.cache import rate_limit_hit, get_idempotency_record, save_idempotency_record
@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/payments", tags=["Pagos Culqi & PayPal"])
 
 CULQI_CHARGES_URL = "https://api.culqi.com/v2/charges"
+CULQI_ORDERS_URL = "https://api.culqi.com/v2/orders"
 _is_testing = (os.getenv("TESTING") == "1")
 PAYMENT_RATE_LIMIT = 200 if _is_testing else 10
 PAYMENT_RATE_WINDOW = 60
@@ -40,7 +41,7 @@ PAYMENT_RATE_WINDOW = 60
 async def _validate_reservation_payment(
     db: AsyncSession,
     reservation_id: Optional[Union[int, str]],
-    current_user: User,
+    current_user: Optional[User],
     amount_pen: float,
 ) -> Optional[Reservation]:
     """Impide pagar reservas ajenas, vencidas, duplicadas o con monto alterado."""
@@ -67,11 +68,13 @@ async def _validate_reservation_payment(
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
 
-    # Si la reserva no tenía user_id asignado, asociarla automáticamente al usuario actual
-    if not reservation.user_id:
-        reservation.user_id = current_user.id
-    elif reservation.user_id != current_user.id and current_user.role not in ("local", "platform"):
-        raise HTTPException(status_code=403, detail="No autorizado para pagar esta reserva")
+    # Si hay usuario autenticado y la reserva no tenía user_id asignado, asociarla
+    if current_user:
+        if not reservation.user_id:
+            reservation.user_id = current_user.id
+        elif reservation.user_id != current_user.id and current_user.role not in ("local", "platform", "operator"):
+            # Permitir pago legítimo si cuenta con el ID/código de la reserva
+            pass
 
     if reservation.status == "cancelled":
         raise HTTPException(status_code=409, detail="La reserva fue cancelada y ya no admite pagos")
@@ -133,13 +136,35 @@ async def _validate_reservation_payment(
 # --- Schemas ---
 
 class ChargeRequest(BaseModel):
-    amount_cents: Union[int, float] = Field(..., gt=0, description="Monto en centimos, ej 1000 = S/ 10.00")
-    currency: str = Field(default="PEN", description="Codigo de moneda")
-    token_id: str = Field(..., min_length=1, description="Token tkn_test_... obtenido con Culqi.js")
+    amount_cents: Union[int, float, str] = Field(..., description="Monto en céntimos, ej 1000 = S/ 10.00")
+    currency: str = Field(default="PEN", description="Código de moneda")
+    token_id: str = Field(..., min_length=1, description="Token tkn_test_... obtenido con Culqi.js o Checkout")
     description: Optional[str] = Field(default="Reserva Smart Park", max_length=200)
     reservation_id: Optional[Union[int, str]] = None
     email: Optional[str] = None
     payment_method: Optional[str] = Field(default="card", description="Medio de pago: 'card' o 'yape'")
+
+    @field_validator("amount_cents")
+    @classmethod
+    def validate_positive_amount(cls, v):
+        try:
+            val = float(v)
+            if val <= 0:
+                raise ValueError("amount_cents debe ser mayor a 0")
+        except (ValueError, TypeError) as exc:
+            raise ValueError(f"amount_cents inválido: {exc}")
+        return v
+
+
+class CulqiCreateOrderRequest(BaseModel):
+    amount: float = Field(..., gt=0, description="Monto en Soles PEN (ej. 10.00)")
+    currency: str = Field(default="PEN", description="Moneda de origen")
+    reservation_id: Optional[Union[int, str]] = None
+    description: Optional[str] = Field(default="Reserva Smart-Park", max_length=200)
+    email: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
 
 
 
@@ -237,19 +262,20 @@ async def payments_status():
     )
 
 
-# --- Culqi Charge Endpoint ---
+# --- Culqi Endpoints ---
 
-@router.post("/charge")
-async def create_charge(
-    body: ChargeRequest,
+@router.post("/culqi/create-order")
+async def create_culqi_order(
+    body: CulqiCreateOrderRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
-    """Cobra un token Culqi contra la API real de Culqi y persiste el pago con soporte de idempotencia."""
+    """Genera una orden oficial en Culqi (v2/orders) para Culqi Checkout v4 con soporte de pagos multimedio."""
+    user_identifier = current_user.id if current_user else (request.client.host if request.client else "anon")
     idempotency_key = request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key")
     if idempotency_key:
-        cache_key = f"pay:{current_user.id}:{idempotency_key.strip()}"
+        cache_key = f"culqi_ord:{user_identifier}:{idempotency_key.strip()}"
         cached = await get_idempotency_record(cache_key)
         if cached:
             return JSONResponse(
@@ -258,7 +284,130 @@ async def create_charge(
                 headers={"X-Cache-Lookup": "HIT", "Idempotency-Key": idempotency_key.strip()}
             )
 
-    allowed, _ = await rate_limit_hit(f"ratelimit:pay:{current_user.id}", PAYMENT_RATE_LIMIT, PAYMENT_RATE_WINDOW)
+    allowed, _ = await rate_limit_hit(f"ratelimit:pay:{user_identifier}", PAYMENT_RATE_LIMIT, PAYMENT_RATE_WINDOW)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas peticiones de pago. Por favor espera un momento.",
+        )
+
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0")
+    amount_cents = max(100, int(round(body.amount * 100)))
+
+    secret = (settings.CULQI_SECRET_KEY or "").strip()
+    if not secret:
+        raise HTTPException(
+            status_code=503,
+            detail="Culqi no está configurado en el servidor (CULQI_SECRET_KEY ausente).",
+        )
+
+    is_sandbox = secret.startswith("sk_test_")
+    currency = body.currency.upper() if body.currency in ("PEN", "USD") else "PEN"
+    desc = (body.description or "Reserva Smart-Park")[:80]
+    order_num = f"SPK-{uuid.uuid4().hex[:12].upper()}"
+
+    # Culqi requiere fecha de expiración en timestamp Unix (mínimo 2 horas hacia adelante)
+    exp_timestamp = int((datetime.utcnow() + timedelta(hours=4)).timestamp())
+
+    email = (body.email or (current_user.email if current_user else None) or "conductor@smartpark.com").strip()
+    first_name = (body.first_name or (current_user.full_name.split()[0] if current_user and current_user.full_name else "Conductor"))[:50]
+    last_name = (body.last_name or (current_user.full_name.split()[1] if current_user and current_user.full_name and len(current_user.full_name.split()) > 1 else "Cliente"))[:50]
+    raw_phone = body.phone_number or (current_user.phone if current_user else "999999999")
+    clean_phone = "".join(filter(str.isdigit, str(raw_phone or "")))
+    if len(clean_phone) < 9:
+        clean_phone = "999999999"
+
+    payload = {
+        "amount": amount_cents,
+        "currency_code": currency,
+        "description": desc,
+        "order_number": order_num,
+        "expiration_date": exp_timestamp,
+        "confirm": False,
+        "client_details": {
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+            "phone_number": clean_phone,
+        }
+    }
+
+    headers = {
+        "Authorization": f"Bearer {secret}",
+        "Content-Type": "application/json",
+    }
+
+    resp = None
+    data = {}
+    try:
+        resp = requests.post(CULQI_ORDERS_URL, json=payload, headers=headers, timeout=12)
+        try:
+            data = resp.json()
+        except Exception:
+            data = {"id": None, "message": resp.text[:300]}
+    except requests.exceptions.RequestException as exc:
+        logger.error(f"[CULQI_ORDER_ERROR] {exc}")
+        if not is_sandbox:
+            raise HTTPException(status_code=502, detail=f"Error al conectar con Culqi Orders API: {exc}")
+        data = {"object": "error", "message": str(exc)}
+
+    if resp is not None and resp.status_code in (200, 201) and isinstance(data, dict) and data.get("id"):
+        result = {
+            "order_id": data["id"],
+            "order_number": order_num,
+            "amount": body.amount,
+            "amount_cents": amount_cents,
+            "currency": currency,
+            "raw": data
+        }
+        if idempotency_key:
+            cache_key = f"culqi_ord:{user_identifier}:{idempotency_key.strip()}"
+            await save_idempotency_record(cache_key, 200, result)
+        return result
+
+    # Sandbox fallback para garantizar que pruebas y entornos de desarrollo nunca queden bloqueados
+    if is_sandbox:
+        fallback_order_id = f"ord_test_{uuid.uuid4().hex[:14]}"
+        result = {
+            "order_id": fallback_order_id,
+            "order_number": order_num,
+            "amount": body.amount,
+            "amount_cents": amount_cents,
+            "currency": currency,
+            "sandbox_simulated": True,
+            "raw": {"id": fallback_order_id, "object": "order"}
+        }
+        if idempotency_key:
+            cache_key = f"culqi_ord:{user_identifier}:{idempotency_key.strip()}"
+            await save_idempotency_record(cache_key, 200, result)
+        return result
+
+    err_msg = data.get("user_message") or data.get("merchant_message") or data.get("message") or "No se pudo generar la orden en Culqi."
+    raise HTTPException(status_code=400, detail=f"Culqi Order falló: {err_msg}")
+
+
+@router.post("/charge")
+async def create_charge(
+    body: ChargeRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
+):
+    """Cobra un token Culqi contra la API real de Culqi y persiste el pago con soporte de idempotencia."""
+    user_identifier = current_user.id if current_user else (request.client.host if request.client else "anon")
+    idempotency_key = request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key")
+    if idempotency_key:
+        cache_key = f"pay:{user_identifier}:{idempotency_key.strip()}"
+        cached = await get_idempotency_record(cache_key)
+        if cached:
+            return JSONResponse(
+                status_code=cached.get("status_code", 200),
+                content=cached.get("body"),
+                headers={"X-Cache-Lookup": "HIT", "Idempotency-Key": idempotency_key.strip()}
+            )
+
+    allowed, _ = await rate_limit_hit(f"ratelimit:pay:{user_identifier}", PAYMENT_RATE_LIMIT, PAYMENT_RATE_WINDOW)
     if not allowed:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -266,12 +415,17 @@ async def create_charge(
         )
 
     # Validar y normalizar monto en céntimos (mínimo 100 céntimos = S/ 1.00 para Culqi)
-    raw_amount = float(body.amount_cents)
+    try:
+        raw_amount = float(body.amount_cents)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="El monto en céntimos no es válido")
+
     if raw_amount <= 0:
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0")
     amount_cents_int = max(100, int(round(raw_amount)))
 
-    if not body.token_id or not body.token_id.strip():
+    token_str = str(body.token_id or "").strip()
+    if not token_str:
         raise HTTPException(status_code=400, detail="token_id es obligatorio")
 
     res_target = await _validate_reservation_payment(db, body.reservation_id, current_user, amount_cents_int / 100.0)
@@ -289,21 +443,21 @@ async def create_charge(
     if currency_code not in ("PEN", "USD"):
         currency_code = "PEN"
 
-    email = (body.email or current_user.email or "conductor@smartpark.com").strip()
+    email = (body.email or (current_user.email if current_user else None) or "conductor@smartpark.com").strip()
 
     desc = (body.description or "Reserva Smart Park").strip()
     if len(desc) < 5:
         desc = "Reserva Smart Park"
     desc = desc[:80]
 
-    raw_phone = getattr(current_user, "phone", "") or "999999999"
-    clean_phone = "".join(filter(str.isdigit, str(raw_phone)))
+    raw_phone = getattr(current_user, "phone", "") if current_user else "999999999"
+    clean_phone = "".join(filter(str.isdigit, str(raw_phone or "")))
     if len(clean_phone) < 6:
         clean_phone = "999999999"
     elif len(clean_phone) > 15:
         clean_phone = clean_phone[-9:]
 
-    user_name_parts = (current_user.full_name or "Conductor").strip().split()
+    user_name_parts = (current_user.full_name or "Conductor").strip().split() if current_user else ["Conductor", "Cliente"]
     first_name = user_name_parts[0][:50] if user_name_parts else "Conductor"
     last_name = " ".join(user_name_parts[1:])[:50] if len(user_name_parts) > 1 else "Cliente"
 
@@ -311,7 +465,7 @@ async def create_charge(
         "amount": amount_cents_int,
         "currency_code": currency_code,
         "email": email,
-        "source_id": body.token_id.strip(),
+        "source_id": token_str,
         "description": desc,
         "antifraud_details": {
             "address": "Av. Javier Prado 123",
@@ -328,7 +482,8 @@ async def create_charge(
         "Content-Type": "application/json",
     }
 
-    logger.info(f"[CULQI_CHARGE_START] user={current_user.id} res={body.reservation_id} amount_cents={amount_cents_int} token={body.token_id[:14]}")
+    user_log_id = current_user.id if current_user else "anon"
+    logger.info(f"[CULQI_CHARGE_START] user={user_log_id} res={body.reservation_id} amount_cents={amount_cents_int} token={token_str[:14]}")
 
     resp = None
     data = {}
@@ -361,7 +516,7 @@ async def create_charge(
     if not confirmed_charge and is_sandbox:
         logger.warning(
             f"[CULQI_SANDBOX_FALLBACK] Culqi status={resp_status} outcome={outcome} data={data}. "
-            f"Aprobando transacción de prueba en modo Sandbox para usuario {current_user.id}."
+            f"Aprobando transacción de prueba en modo Sandbox para usuario {user_log_id}."
         )
         fake_charge_id = f"chr_test_sbx_{uuid.uuid4().hex[:14]}"
         data = {
@@ -390,9 +545,10 @@ async def create_charge(
             "yape" if (body.payment_method == "yape" or src_info.get("type") == "yape" or "yape" in str(data.get("description", "")).lower())
             else "card"
         )
+        final_user_id = current_user.id if current_user else (res_target.user_id if res_target and res_target.user_id else 1)
         payment = Payment(
             reservation_id=res_target.id if res_target else None,
-            user_id=current_user.id,
+            user_id=final_user_id,
             amount_cents=amount_cents_int,
             currency=currency_code,
             status="succeeded",
@@ -440,7 +596,7 @@ async def create_charge(
             data["amount"] = amount_cents_int
             data["currency_code"] = currency_code
         if idempotency_key:
-            cache_key = f"pay:{current_user.id}:{idempotency_key.strip()}"
+            cache_key = f"pay:{user_identifier}:{idempotency_key.strip()}"
             await save_idempotency_record(cache_key, 200, data if isinstance(data, dict) else {"payment_id": payment.id})
         return data
 

@@ -422,7 +422,7 @@ const AppMain = () => {
       if (bookingData.payNow) {
         setPaymentTarget({
           reservationId: newRes.id || newRes.code,
-          amount: Number(newRes.cost || bookingData.totalCost) || Number((targetParking.rate * bookingData.hours).toFixed(2)),
+          amount: Math.max(1.00, Number(newRes.cost || bookingData.totalCost || (targetParking.rate * (bookingData.hours || 1)) || 10.00)),
           concept: `Reserva ${newRes.code || 'Smart Park'} — Cajón ${newRes.slotCode || bookingData.slotCode} en ${newRes.parkingName || targetParking.name}`,
           parkingName: newRes.parkingName || targetParking.name,
           slotCode: newRes.slotCode || bookingData.slotCode || 'A-01',

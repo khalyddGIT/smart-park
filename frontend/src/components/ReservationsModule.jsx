@@ -2746,7 +2746,7 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
         concept={`Reserva ${payTarget?.code || ''} — Plaza ${payTarget?.slot || ''} en ${payTarget?.parking || 'Smart Park'}`}
         parkingName={String(payTarget?.parking || 'Smart Park')}
         slotCode={String(payTarget?.slot || '')}
-        customerEmail="conductor@smartpark.com"
+        customerEmail={user?.email || payTarget?.email || "conductor@smartpark.com"}
         reservationId={payTarget?.id ? Number(payTarget.id) : null}
         onPaymentSuccess={() => {
           if (payTarget?.id) {
@@ -2755,6 +2755,7 @@ ESTADO: ${isCompleted ? 'COMPLETADO' : 'AUTORIZADO'}`}
           setFeedbackMessage(`✓ Pago de S/ ${Number(payTarget?.cost ?? 0).toFixed(2)} confirmado para la reserva ${payTarget?.code}.`);
           setTimeout(() => setFeedbackMessage(''), 5000);
           setPayTarget(null);
+          if (refreshMyReservations) refreshMyReservations();
         }}
       />
 

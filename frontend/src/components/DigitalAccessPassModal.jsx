@@ -1045,6 +1045,7 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                   ...reservation,
                   amount_paid: newPaid,
                   total_cost: Math.max(reservation.total_cost || 0, newPaid),
+                  payment_status: 'paid',
                   prepaid: true
                 });
               }

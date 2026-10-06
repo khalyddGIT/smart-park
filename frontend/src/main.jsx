@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { EstablishmentProvider } from './context/EstablishmentContext.jsx'
 import { NotificationProvider } from './context/NotificationContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import 'leaflet/dist/leaflet.css'
 import './index.css'
 
 // Leer Google Client ID desde variables de entorno de Vite o fallback

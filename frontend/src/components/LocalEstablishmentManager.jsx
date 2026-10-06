@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -202,12 +203,11 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
       doubleClickZoom: false // Evita conflictos entre doble clic y clic para ubicar marcador
     });
 
-    const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || atob('cGsuZXlKMUlqb2lhMmhoYkhsa1pDSXNJbUVpT2lKamJYUm5kMkk0Y21Zd01EbHNNbmh4TlhKcmJ6Qm9PREkzSW4wLjI5dUl0MGZJR2lnYmN6WlpPWmlGMFE=');
-    
-    // Capa Calles (OpenStreetMap 100% libre y confiable)
-    const streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap'
+    // Capa Calles HD de alta velocidad (CartoDB Voyager con CDN en Lima)
+    const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 20,
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
     });
 
     // Capa Satélite (ArcGIS World Imagery HD)
@@ -297,13 +297,23 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
       resizeObserver.observe(mapContainerRef.current);
     }
 
-    const t1 = setTimeout(() => map.invalidateSize(), 150);
-    const t2 = setTimeout(() => map.invalidateSize(), 450);
+    const t0 = setTimeout(() => map.invalidateSize(), 50);
+    const t1 = setTimeout(() => map.invalidateSize(), 200);
+    const t2 = setTimeout(() => map.invalidateSize(), 500);
+    const t3 = setTimeout(() => map.invalidateSize(), 1000);
+
+    const onWinResize = () => {
+      if (mapRef.current) mapRef.current.invalidateSize();
+    };
+    window.addEventListener('resize', onWinResize);
 
     // Limpieza únicamente cuando el componente realmente se desmonta
     return () => {
+      clearTimeout(t0);
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
+      window.removeEventListener('resize', onWinResize);
       resizeObserver.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
@@ -334,6 +344,7 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
 
     if (mapRef.current) {
       mapRef.current.panTo([lat, lng], { animate: true, duration: 0.6 });
+      setTimeout(() => mapRef.current?.invalidateSize(), 80);
     }
   }, [latitude, longitude]);
 
@@ -349,6 +360,7 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
       if (!mapRef.current.hasLayer(streetLayer)) streetLayer.addTo(mapRef.current);
     }
     setMapLayer(layerType);
+    setTimeout(() => mapRef.current?.invalidateSize(), 50);
   };
 
   // Recentrar vista en el marcador
@@ -356,12 +368,14 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
     if (!mapRef.current || !markerRef.current) return;
     const pos = markerRef.current.getLatLng();
     mapRef.current.setView([pos.lat, pos.lng], 17, { animate: true });
+    setTimeout(() => mapRef.current?.invalidateSize(), 50);
   };
 
   // Centrar en Plaza Mayor de Huamanga
   const handleCenterHuamanga = () => {
     if (!mapRef.current) return;
     mapRef.current.setView([-13.1604, -74.2259], 16, { animate: true });
+    setTimeout(() => mapRef.current?.invalidateSize(), 50);
   };
 
   // Buscar ubicación en Ayacucho
@@ -487,6 +501,7 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
       {/* Contenedor del Mapa Leaflet */}
       <div 
         ref={mapContainerRef} 
+        style={{ minHeight: '360px', height: '380px', width: '100%', position: 'relative' }}
         className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs z-0 relative"
       />
 
@@ -1932,7 +1947,11 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
             <button
               type="button"
-              onClick={() => setActiveTabSection('location')}
+              onClick={() => {
+                setActiveTabSection('location');
+                setTimeout(() => window.dispatchEvent(new Event('resize')), 60);
+                setTimeout(() => window.dispatchEvent(new Event('resize')), 250);
+              }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeTabSection === 'location'
                   ? 'bg-white dark:bg-[#151D2F] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-200/80 dark:ring-slate-700'

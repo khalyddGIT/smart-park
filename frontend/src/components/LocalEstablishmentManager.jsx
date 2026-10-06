@@ -203,17 +203,16 @@ const LocationPickerMap = ({ latitude, longitude, onChangeCoords, onSelectAddres
       doubleClickZoom: false // Evita conflictos entre doble clic y clic para ubicar marcador
     });
 
-    // Capa Calles HD de alta velocidad (CartoDB Voyager con CDN en Lima)
-    const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd',
-      maxZoom: 20,
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    // Capa Calles HD (ESRI World Street Map - Libre, ultra-rápido, sin marcas de agua ni API Key)
+    const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: '&copy; Esri &copy; OpenStreetMap contributors'
     });
 
     // Capa Satélite (ArcGIS World Imagery HD)
     const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
-      attribution: '&copy; Esri &copy; ArcGIS'
+      attribution: '&copy; Esri &copy; DigitalGlobe'
     });
 
     streetLayer.addTo(map);

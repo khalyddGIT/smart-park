@@ -93,8 +93,27 @@ async def test_validate_reservation_payment_allows_active_stay_with_balance():
         assert validated is not None
         assert validated.id == res_id
 
+        # Ahora también debe validar buscando por código de reserva (ej. 'RSV-PAY-...') o ID como string
+        validated_by_code = await _validate_reservation_payment(session, res.code, user, 44.0)
+        assert validated_by_code is not None
+        assert validated_by_code.id == res_id
+
         await session.delete(res)
         await session.commit()
+
+
+def test_charge_request_schema_supports_string_and_float():
+    from app.api.v1.payments import ChargeRequest
+    # Soporta id como string (ej. '141' o 'RSV-141') y float para amount_cents
+    req = ChargeRequest(
+        amount_cents=1000.0,
+        token_id="tkn_test_string_id",
+        reservation_id="RSV-141",
+        payment_method="card"
+    )
+    assert req.amount_cents == 1000.0
+    assert req.reservation_id == "RSV-141"
+    assert req.payment_method == "card"
 
 
 

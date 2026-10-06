@@ -209,7 +209,7 @@ async def approve_request(
         await db.refresh(req)
 
     current_status = (req.status or "").lower()
-    if current_status not in ("pending", "approved"):
+    if current_status != "pending":
         raise HTTPException(status_code=400, detail=f"Solicitud ya está {req.status}")
 
     # Determinar credenciales y datos del administrador local

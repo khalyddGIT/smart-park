@@ -223,18 +223,25 @@ async def startup_db():
                 ("resenas", "tags", "VARCHAR(255)"),
                 ("incidencias", "is_hidden", "BOOLEAN DEFAULT FALSE"),
             ]
-            for tbl, col, decl in pg_adds:
-                try:
+        for tbl, col, decl in pg_adds:
+            try:
+                async with engine.begin() as conn:
                     await conn.execute(_text(
                         f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col} {decl}"
                     ))
-                except Exception:
-                    pass
-                # Fix: security_pin VARCHAR(20) -> VARCHAR(255) para hash (Postgres truncaba)
-                try:
-                    await conn.execute(_text("ALTER TABLE personal ALTER COLUMN security_pin TYPE VARCHAR(255)"))
-                except Exception:
-                    pass
+            except Exception:
+                pass
+        # Fix: security_pin VARCHAR(20) -> VARCHAR(255) para hash (Postgres truncaba)
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(_text("ALTER TABLE personal ALTER COLUMN security_pin TYPE VARCHAR(255)"))
+        except Exception:
+            pass
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(_text("CREATE UNIQUE INDEX IF NOT EXISTS ix_resenas_reservation_id ON resenas(reservation_id)"))
+        except Exception:
+            pass
     except Exception as e:
         import logging
         # Fail-fast: la BD es crítica. Arrancar "degradado" sin Postgres era

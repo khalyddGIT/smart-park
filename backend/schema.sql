@@ -148,10 +148,14 @@ CREATE TABLE resenas (
     rating INTEGER NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
     comment TEXT NOT NULL,
     response TEXT,
+    is_hidden BOOLEAN DEFAULT FALSE,
+    reservation_id INTEGER UNIQUE REFERENCES reservas(id),
+    tags VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_resenas_parking_id ON resenas(parking_id);
+CREATE UNIQUE INDEX idx_resenas_reservation_id ON resenas(reservation_id);
 
 -- Tabla: incidencias
 DROP TABLE IF EXISTS incidencias CASCADE;
@@ -164,6 +168,7 @@ CREATE TABLE incidencias (
     description TEXT NOT NULL,
     photo_url TEXT,
     status VARCHAR(20) DEFAULT 'reported' CHECK (status IN ('reported', 'in_progress', 'resolved')),
+    is_hidden BOOLEAN DEFAULT FALSE,
     resolution_note TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     resolved_at TIMESTAMP WITH TIME ZONE

@@ -205,6 +205,96 @@ async def startup_db():
         # lo que dejaba la app vacía y parecía pérdida de datos.
         logging.error(f"[smart-park] startup_db: PostgreSQL no disponible, abortando arranque: {e}")
         raise RuntimeError(f"[smart-park] No se pudo conectar a PostgreSQL: {e}")
+
+    # Auto-migración defensiva y auto-sanación de columnas críticas en PostgreSQL
+    try:
+        from sqlalchemy import text as _text
+        pg_adds = [
+            ("estacionamientos", "description", "TEXT"),
+            ("estacionamientos", "phone", "VARCHAR(30)"),
+            ("estacionamientos", "email", "VARCHAR(150)"),
+            ("estacionamientos", "reference", "VARCHAR(255)"),
+            ("estacionamientos", "level", "VARCHAR(100)"),
+            ("estacionamientos", "camera_url", "TEXT"),
+            ("estacionamientos", "owner", "VARCHAR(150)"),
+            ("estacionamientos", "ruc", "VARCHAR(20)"),
+            ("estacionamientos", "whatsapp", "VARCHAR(30)"),
+            ("estacionamientos", "schedule", "VARCHAR(120)"),
+            ("estacionamientos", "socials", "TEXT"),
+            ("estacionamientos", "maps_url", "TEXT"),
+            ("estacionamientos", "camera_enabled", "BOOLEAN DEFAULT FALSE"),
+            ("estacionamientos", "camera_calibration", "TEXT"),
+            ("estacionamientos", "rate_auto", "FLOAT DEFAULT 5.0"),
+            ("estacionamientos", "rate_suv", "FLOAT DEFAULT 7.0"),
+            ("estacionamientos", "rate_mototaxi", "FLOAT DEFAULT 3.5"),
+            ("estacionamientos", "rate_moto", "FLOAT DEFAULT 2.5"),
+            ("estacionamientos", "billing_unit", "VARCHAR(20) DEFAULT 'hour'"),
+            ("estacionamientos", "rate_minute_auto", "FLOAT DEFAULT 0.08"),
+            ("estacionamientos", "rate_minute_suv", "FLOAT DEFAULT 0.12"),
+            ("estacionamientos", "rate_minute_mototaxi", "FLOAT DEFAULT 0.06"),
+            ("estacionamientos", "rate_minute_moto", "FLOAT DEFAULT 0.04"),
+            ("estacionamientos", "rate_monthly_auto", "FLOAT DEFAULT 180.0"),
+            ("estacionamientos", "rate_monthly_suv", "FLOAT DEFAULT 240.0"),
+            ("estacionamientos", "rate_monthly_mototaxi", "FLOAT DEFAULT 120.0"),
+            ("estacionamientos", "rate_monthly_moto", "FLOAT DEFAULT 90.0"),
+            ("estacionamientos", "rate_monthly", "FLOAT DEFAULT 180.0"),
+            ("estacionamientos", "night_shift_enabled", "BOOLEAN DEFAULT FALSE"),
+            ("estacionamientos", "night_shift_start", "VARCHAR(10) DEFAULT '20:00'"),
+            ("estacionamientos", "night_shift_end", "VARCHAR(10) DEFAULT '06:00'"),
+            ("estacionamientos", "night_shift_surcharge", "FLOAT DEFAULT 0.0"),
+            ("estacionamientos", "require_reservation_prepay", "BOOLEAN DEFAULT FALSE"),
+            ("estacionamientos", "reservation_fee", "FLOAT DEFAULT 0.0"),
+            ("estacionamientos", "min_stay_hours", "INTEGER DEFAULT 1"),
+            ("estacionamientos", "max_stay_hours", "INTEGER DEFAULT 24"),
+            ("estacionamientos", "min_stay_minutes", "INTEGER DEFAULT 15"),
+            ("estacionamientos", "max_stay_minutes", "INTEGER DEFAULT 1440"),
+            ("estacionamientos", "allow_open_stay", "BOOLEAN DEFAULT TRUE"),
+            ("estacionamientos", "subscription_enabled", "BOOLEAN DEFAULT TRUE"),
+            ("estacionamientos", "custom_rates", "TEXT"),
+            ("usuarios", "avatar_url", "TEXT"),
+            ("vehiculos", "image_url", "TEXT"),
+            ("vehiculos", "year", "VARCHAR(10) DEFAULT '2023'"),
+            ("vehiculos", "soat_expiry", "VARCHAR(20)"),
+            ("vehiculos", "notes", "TEXT"),
+            ("reservas", "tolerance_minutes", "INTEGER DEFAULT 15"),
+            ("reservas", "vehicle_type", "VARCHAR(20) DEFAULT 'auto'"),
+            ("reservas", "estimated_hours", "FLOAT DEFAULT 1.0"),
+            ("reservas", "estimated_minutes", "INTEGER DEFAULT 60"),
+            ("reservas", "billing_unit", "VARCHAR(20) DEFAULT 'hour'"),
+            ("reservas", "is_night_shift", "BOOLEAN DEFAULT FALSE"),
+            ("reservas", "prepaid", "BOOLEAN DEFAULT FALSE"),
+            ("reservas", "is_open_stay", "BOOLEAN DEFAULT FALSE"),
+            ("reservas", "payment_method", "VARCHAR(50) DEFAULT 'efectivo'"),
+            ("reservas", "amount_paid", "FLOAT DEFAULT 0.0"),
+            ("reservas", "reservation_type", "VARCHAR(30) DEFAULT 'standard'"),
+            ("reservas", "subscription_months", "INTEGER DEFAULT 1"),
+            ("reservas", "is_subscription", "BOOLEAN DEFAULT FALSE"),
+            ("reservas", "subscription_days", "INTEGER"),
+            ("reservas", "subscription_type", "VARCHAR(50)"),
+            ("resenas", "is_hidden", "BOOLEAN DEFAULT FALSE"),
+            ("resenas", "reservation_id", "INTEGER REFERENCES reservas(id)"),
+            ("resenas", "tags", "VARCHAR(255)"),
+            ("incidencias", "is_hidden", "BOOLEAN DEFAULT FALSE"),
+        ]
+        for tbl, col, decl in pg_adds:
+            try:
+                async with engine.begin() as conn:
+                    await conn.execute(_text(f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col} {decl}"))
+            except Exception:
+                pass
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(_text("CREATE UNIQUE INDEX IF NOT EXISTS ix_resenas_reservation_id ON resenas(reservation_id)"))
+        except Exception:
+            pass
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(_text("ALTER TABLE personal ALTER COLUMN security_pin TYPE VARCHAR(255)"))
+        except Exception:
+            pass
+    except Exception as e:
+        import logging
+        logging.warning(f"[smart-park] auto-migracion columnas runtime: {e}")
     # Worker de auto-escaneo de cámaras en segundo plano (server-side 24/7):
     # escanea sedes con camera_enabled+camera_url aunque nadie tenga la app abierta.
     try:

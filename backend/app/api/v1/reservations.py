@@ -311,12 +311,24 @@ async def list_reservations(
     current_user: User = Depends(get_current_user)
 ):
     # Local/platform ven todas de su sede (para garita y admin), conductor solo las suyas
-    options_load = (
+    options_base = (
         selectinload(Reservation.user),
         selectinload(Reservation.parking),
         selectinload(Reservation.slot),
+    )
+    options_load = (
+        *options_base,
         selectinload(Reservation.review)
     )
+
+    async def _safe_execute_reservations(query_builder):
+        try:
+            return await db.execute(query_builder(options_load))
+        except Exception as q_exc:
+            import logging
+            logging.warning(f"list_reservations query review fallback: {q_exc}")
+            await db.rollback()
+            return await db.execute(query_builder(options_base))
 
     if current_user.role in ("local", "platform"):
         base_filters = []
@@ -337,24 +349,27 @@ async def list_reservations(
         if status_filter:
             base_filters.append(Reservation.status == status_filter)
 
-        stmt = select(Reservation).options(*options_load)
         count_stmt = select(func.count(Reservation.id))
         if base_filters:
-            stmt = stmt.where(*base_filters)
             count_stmt = count_stmt.where(*base_filters)
 
-        stmt = stmt.order_by(Reservation.id.desc())
+        def _build_admin_query(opts):
+            q = select(Reservation).options(*opts)
+            if base_filters:
+                q = q.where(*base_filters)
+            return q.order_by(Reservation.id.desc())
 
         if page is None:
-            result = await db.execute(stmt)
+            result = await _safe_execute_reservations(_build_admin_query)
             return [_format_reservation_response(r) for r in result.scalars().all()]
 
         eff_page_size = page_size or 20
         total_res = await db.execute(count_stmt)
         total_count = total_res.scalar() or 0
 
-        paged_stmt = stmt.offset((page - 1) * eff_page_size).limit(eff_page_size)
-        result = await db.execute(paged_stmt)
+        result = await _safe_execute_reservations(
+            lambda opts: _build_admin_query(opts).offset((page - 1) * eff_page_size).limit(eff_page_size)
+        )
         items = [_format_reservation_response(r) for r in result.scalars().all()]
         total_pages = math.ceil(total_count / eff_page_size) if total_count > 0 else 1
 
@@ -373,19 +388,22 @@ async def list_reservations(
     if status_filter:
         base_filters.append(Reservation.status == status_filter)
 
-    stmt = select(Reservation).options(*options_load).where(*base_filters).order_by(Reservation.id.desc())
     count_stmt = select(func.count(Reservation.id)).where(*base_filters)
 
+    def _build_user_query(opts):
+        return select(Reservation).options(*opts).where(*base_filters).order_by(Reservation.id.desc())
+
     if page is None:
-        result = await db.execute(stmt)
+        result = await _safe_execute_reservations(_build_user_query)
         return [_format_reservation_response(r) for r in result.scalars().all()]
 
     eff_page_size = page_size or 20
     total_res = await db.execute(count_stmt)
     total_count = total_res.scalar() or 0
 
-    paged_stmt = stmt.offset((page - 1) * eff_page_size).limit(eff_page_size)
-    result = await db.execute(paged_stmt)
+    result = await _safe_execute_reservations(
+        lambda opts: _build_user_query(opts).offset((page - 1) * eff_page_size).limit(eff_page_size)
+    )
     items = [_format_reservation_response(r) for r in result.scalars().all()]
     total_pages = math.ceil(total_count / eff_page_size) if total_count > 0 else 1
 

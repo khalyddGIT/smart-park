@@ -47,6 +47,8 @@ def validate_parking_phone_format(v: Any) -> Optional[str]:
     if v is None or v == '':
         return None
     val_str = str(v).strip()
+    if not val_str:
+        return None
     validate_phone_format(val_str)
     return val_str
 
@@ -56,6 +58,8 @@ def validate_ruc_format(v: Any) -> Optional[str]:
     if not isinstance(v, str):
         v = str(v)
     v_clean = v.strip().replace('-', '').replace(' ', '')
+    if not v_clean:
+        return None
     if not v_clean.isdigit():
         raise ValueError("El RUC o DNI solo debe contener números.")
     if len(v_clean) not in (8, 11):

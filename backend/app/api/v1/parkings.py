@@ -1302,7 +1302,8 @@ async def set_parking_admin_credentials(
         )
         db.add(staff_member)
     else:
-        staff_member.parking_id = parking.id
+        if not staff_member.parking_id:
+            staff_member.parking_id = parking.id
         staff_member.full_name = full_name
         staff_member.email = email
         staff_member.position = "Administrador de Sede"

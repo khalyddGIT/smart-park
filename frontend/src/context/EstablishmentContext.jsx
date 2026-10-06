@@ -349,7 +349,26 @@ export const isMyEstablishment = (est, user, role, allEstablishments = null) => 
   }
 
   // 2. REGLA PARA ADMINISTRADOR LOCAL / DUEÑO DE EMPRESA:
-  // El dueño de la empresa gestiona todas las sucursales que pertenecen a su marca registrada.
+  // A. Coincidencia directa por correo del titular o administrador local
+  const userEmail = (user.email || '').trim().toLowerCase();
+  const estEmail = (est.email || '').trim().toLowerCase();
+  const estAdminEmail = (est.admin_email || est.adminEmail || '').trim().toLowerCase();
+  if (userEmail) {
+    if (estEmail && estEmail === userEmail) return true;
+    if (estAdminEmail && estAdminEmail === userEmail) return true;
+  }
+
+  // B. Coincidencia directa por ID asignado en perfil
+  const assignedId = user.parking_id || user.parkingId || user.establishmentId;
+  if (assignedId) {
+    const estIdStr = String(est.id || '').trim();
+    const assignedStr = String(assignedId).trim();
+    if (estIdStr === assignedStr || normalizeParkingId(estIdStr) === normalizeParkingId(assignedStr)) {
+      return true;
+    }
+  }
+
+  // C. Pertenencia por jerarquía comercial de la empresa autorizada
   const estHierarchy = getEstablishmentHierarchy(est);
   const estCompany = (estHierarchy.companyName || '').trim().toLowerCase();
   if (!estCompany) return false;
@@ -532,8 +551,8 @@ export const sanitizeEstablishment = (est, idx = 0) => {
     latitude: lat, 
     longitude: lng, 
     city: est.city && est.city.includes('Ayacucho') ? est.city : 'Ayacucho - Huamanga',
-    company_name: est.company_name || est.companyName || '',
-    companyName: est.companyName || est.company_name || '',
+    company_name: est.company_name || est.companyName || getEstablishmentHierarchy({ ...est, name }).companyName || '',
+    companyName: est.companyName || est.company_name || getEstablishmentHierarchy({ ...est, name }).companyName || '',
     admin_email: est.admin_email || est.adminEmail || '',
     adminEmail: est.adminEmail || est.admin_email || '',
     owner: est.owner || '',
@@ -1711,7 +1730,18 @@ export const EstablishmentProvider = ({ children }) => {
         }
       } catch (e) {
         console.error('addEstablishment backend error', e.response?.data || e);
-        throw new Error(e.response?.data?.detail || 'Error al guardar el establecimiento en el servidor.');
+        const detail = e.response?.data?.detail;
+        let errMsg = 'Error al guardar el establecimiento en el servidor.';
+        if (Array.isArray(detail)) {
+          errMsg = detail.map(d => `${d.loc ? d.loc.slice(-1)[0] : 'Campo'}: ${d.msg}`).join(', ');
+        } else if (typeof detail === 'string') {
+          errMsg = detail;
+        } else if (detail && typeof detail === 'object') {
+          errMsg = JSON.stringify(detail);
+        } else if (e.message) {
+          errMsg = e.message;
+        }
+        throw new Error(errMsg);
       }
     }
     throw new Error('No se pudo establecer conexión con el servidor para registrar el establecimiento.');

@@ -1231,14 +1231,8 @@ async def check_out_reservation(
 
     if checkout_in and checkout_in.amount_paid is not None and checkout_in.amount_paid > 0:
         confirmed_val = round(float(checkout_in.amount_paid), 2)
-        # Tolerancia operacional de garita al cobrar:
-        # Se acepta si cubre el saldo con margen de S/ 10.00 (desfases de reloj o minutos al salir),
-        # o si coincide aproximadamente con el costo acumulado, o con el saldo pendiente.
-        is_sufficient = (
-            confirmed_val >= (outstanding - 10.00)
-            or abs(confirmed_val - calculated_cost) <= 10.00
-            or abs(confirmed_val - outstanding) <= 10.00
-        )
+        # Validar que el monto cobrado cubra el saldo pendiente
+        is_sufficient = (confirmed_val >= round(outstanding - 0.05, 2))
         if not is_sufficient:
             if not checkout_in.force_unpaid:
                 raise HTTPException(
@@ -1246,7 +1240,7 @@ async def check_out_reservation(
                     detail=f"El monto recibido (S/ {confirmed_val:.2f}) es insuficiente para liquidar el saldo pendiente de S/ {outstanding:.2f}",
                 )
         method = (checkout_in.payment_method or "efectivo").strip().lower()
-        actual_charge = confirmed_val if checkout_in.force_unpaid else (outstanding if confirmed_val >= (outstanding - 10.00) and outstanding > 0 else min(confirmed_val, outstanding))
+        actual_charge = confirmed_val if checkout_in.force_unpaid else min(confirmed_val, outstanding)
         if actual_charge > 0:
             db.add(Payment(
                 reservation_id=reservation.id,

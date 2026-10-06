@@ -5,8 +5,8 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import api from '../services/api';
-import { sanitizePhoneInput, validatePhoneInput, validateRucInput } from '../utils/garitaValidation';
-import { validateEmail } from '../utils/formValidation';
+import { sanitizePhoneInput, validateRucInput } from '../utils/garitaValidation';
+import { validatePhoneInput, validateEmail } from '../utils/formValidation';
 import { 
   Building2, 
   Plus, 
@@ -734,23 +734,27 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     setIsEditingNew(true);
     setSelectedEstablishment(null);
 
-    const companyName = localGroup ? (localGroup.companyName || localGroup.name) : (user?.establishmentName || '');
-    const defaultOwner = localGroup?.owner || companyName || user?.name || 'Administración Local';
-    const nextBranchNum = localGroup?.branches ? localGroup.branches.length + 1 : 1;
-    const defaultName = localGroup 
+    const activeGroup = localGroup || (typeof establishmentGroups !== 'undefined' && establishmentGroups?.length > 0 ? establishmentGroups[0] : null);
+    const companyName = activeGroup 
+      ? (activeGroup.companyName || activeGroup.name) 
+      : (user?.establishmentName || user?.companyName || user?.name || 'Mi Estacionamiento');
+    const defaultOwner = activeGroup?.owner || companyName || user?.name || 'Administración Local';
+    const nextBranchNum = activeGroup?.branches ? activeGroup.branches.length + 1 : ((establishments?.length || 0) + 1);
+    const defaultName = activeGroup 
       ? `${companyName} - Sucursal ${nextBranchNum}` 
-      : (user?.establishmentName ? `${user.establishmentName} - Sede Central` : '');
-    const defaultPhone = localGroup?.phone || user?.phone || '+51 966 123 456';
-    const defaultEmail = user?.email || localGroup?.email || 'contacto@smartpark.pe';
-    const defaultRuc = localGroup?.ruc || ('20' + Math.floor(100000000 + Math.random() * 900000000));
-    const defaultAddress = localGroup?.address || 'Jr. 28 de Julio 320, Huamanga';
-    const defaultCity = localGroup?.city || 'Ayacucho - Huamanga';
+      : (user?.establishmentName ? `${user.establishmentName} - Sede Central` : `${companyName} - Sede Central`);
+    const defaultPhone = activeGroup?.phone || user?.phone || '+51 966 123 456';
+    const defaultEmail = user?.email || activeGroup?.email || 'contacto@smartpark.pe';
+    const defaultRuc = activeGroup?.ruc || ('20' + Math.floor(100000000 + Math.random() * 900000000));
+    const defaultAddress = activeGroup?.address || 'Jr. 28 de Julio 320, Huamanga';
+    const defaultCity = activeGroup?.city || 'Ayacucho - Huamanga';
 
     setFormData({
       name: defaultName,
       company_name: companyName,
       companyName: companyName,
       admin_email: user?.email || '',
+      adminEmail: user?.email || '',
       address: defaultAddress,
       reference: 'Ingreso vehicular principal',
       city: defaultCity,
@@ -1057,21 +1061,21 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
   // Guardar formulario
   const handleSaveForm = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!formData.name.trim()) {
-      alert('Por favor ingresa el nombre de la sede.');
+    if (!formData.name || !formData.name.trim()) {
+      alert('Por favor ingresa el nombre de la sede o sucursal.');
       return;
     }
 
     if (formData.phone && formData.phone.trim()) {
-      const phoneVal = validatePhoneInput(formData.phone);
+      const phoneVal = validatePhoneInput(formData.phone, { allowLandline: true });
       if (!phoneVal.isValid) {
-        alert(phoneVal.error);
+        alert(phoneVal.error || phoneVal.message);
         return;
       }
     }
 
     if (formData.ruc && formData.ruc.trim()) {
-      const rucVal = validateRucInput(formData.ruc, false);
+      const rucVal = validateRucInput(formData.ruc, true);
       if (!rucVal.isValid) {
         alert(rucVal.error);
         return;
@@ -1079,9 +1083,9 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
     }
 
     if (formData.email && formData.email.trim()) {
-      const emailVal = validateEmail(formData.email);
+      const emailVal = validateEmail(formData.email, false);
       if (!emailVal.valid) {
-        alert(emailVal.message);
+        alert(emailVal.message || emailVal.error);
         return;
       }
     }
@@ -1106,10 +1110,24 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
         ];
 
         const newEstHierarchy = getEstablishmentHierarchy({ name: formData.name });
-        const targetCompanyName = formData.company_name || formData.companyName || companyName || newEstHierarchy.companyName;
+        const targetCompanyName = (
+          formData.company_name || 
+          formData.companyName || 
+          (typeof establishmentGroups !== 'undefined' && establishmentGroups?.length > 0 ? (establishmentGroups[0].companyName || establishmentGroups[0].name) : null) || 
+          newEstHierarchy.companyName || 
+          user?.establishmentName || 
+          'Mi Estacionamiento'
+        ).trim();
+
+        let finalEstName = formData.name.trim();
+        // Si el usuario nombró la sede sin el prefijo de la empresa (ej: "Sucursal 2"), asegurar el prefijo para la jerarquía
+        if (targetCompanyName && !finalEstName.toLowerCase().startsWith(targetCompanyName.toLowerCase()) && !finalEstName.includes(' - ')) {
+          finalEstName = `${targetCompanyName} - ${finalEstName}`;
+        }
+
         const newEst = {
           id: `EST-${Math.floor(10 + Math.random() * 90)}`,
-          name: formData.name,
+          name: finalEstName,
           company_name: targetCompanyName,
           companyName: targetCompanyName,
           admin_email: formData.admin_email || user?.email || '',
@@ -1340,7 +1358,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
   // 1. Filtrar los establecimientos que le pertenecen exclusivamente al admin local autenticado
   const myFilteredEstablishments = useMemo(() => {
-    return establishments.filter(est => isMyEstablishment(est, user, role));
+    return establishments.filter(est => isMyEstablishment(est, user, role, establishments));
   }, [establishments, user, role]);
 
   // 2. Aplicar filtro de búsqueda sobre las sedes autorizadas

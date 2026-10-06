@@ -29,16 +29,8 @@ import {
 import { useEstablishments } from '../context/EstablishmentContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { playTone } from '../utils/soundEffects';
+import { ReviewRatingModal } from './ReviewRatingModal';
 import api from '../services/api';
-
-const QUICK_TAGS = [
-  'Techada',
-  'Entrada rápida',
-  'Buen trato',
-  'Céntrica',
-  'Fácil salida',
-  'Iluminada'
-];
 
 export const HistoryModule = () => {
   const { reservations, establishments } = useEstablishments();
@@ -59,10 +51,6 @@ export const HistoryModule = () => {
 
   // Modal de Calificación
   const [rateModal, setRateModal] = useState(null);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [selectedTags, setSelectedTags] = useState([]);
-  const [reviewComment, setReviewComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   const notify = (msg) => {
@@ -92,7 +80,10 @@ export const HistoryModule = () => {
           paymentMethod: r.paymentMethod || 'Pase Digital / Tarjeta',
           reservationType: r.reservationType || r.reservation_type || (r.isSubscription || r.is_subscription ? 'subscription' : 'immediate'),
           isSubscription: !!(r.isSubscription || r.is_subscription),
-          subscriptionMonths: r.subscriptionMonths || r.subscription_months || 1
+          subscriptionMonths: r.subscriptionMonths || r.subscription_months || 1,
+          dbId: r.id || r.dbId,
+          hasReview: Boolean(r.has_review || r.hasReview),
+          reviewRating: r.review_rating || r.reviewRating || null
         };
       });
 
@@ -132,80 +123,9 @@ export const HistoryModule = () => {
   const totalSpent = allHistory.reduce((acc, h) => acc + Number(h.cost), 0);
   const avgCost = totalStays > 0 ? totalSpent / totalStays : 0;
 
-  // Abrir Modal de Calificación
+  // Abrir Modal de Calificación Verificada
   const handleOpenRateModal = (stay) => {
-    setRateModal({
-      stay,
-      rating: 5
-    });
-    setHoverRating(5);
-    setSelectedTags([]);
-    setReviewComment('');
-  };
-
-  // Enviar Reseña al Backend
-  const handleSubmitReview = async () => {
-    if (!rateModal) return;
-    setIsSubmitting(true);
-    const { stay, rating } = rateModal;
-
-    const tagsText = selectedTags.length > 0 ? ` [${selectedTags.join(', ')}]` : '';
-    const fullComment = (reviewComment.trim() + tagsText).trim() || 'Excelente servicio y rapidez en el ingreso con placa.';
-
-    try {
-      await api.post('/reviews', {
-        parking_id: Number(stay.parkingId),
-        rating: Number(rating),
-        comment: fullComment
-      });
-
-      // Guardar localmente
-      const updated = {
-        ...ratedStays,
-        [stay.id]: {
-          rating,
-          comment: fullComment,
-          date: new Date().toLocaleDateString('es-PE')
-        }
-      };
-      setRatedStays(updated);
-      try {
-        localStorage.setItem('smart_park_rated_stays_v1', JSON.stringify(updated));
-      } catch {}
-
-      playTone('success');
-      notify(`¡Gracias por calificar ${stay.parking}! Tu reseña fue publicada con éxito.`);
-      setRateModal(null);
-    } catch (e) {
-      // Si ya existía o falla la API, guardar feedback local para la mejor UX
-      const updated = {
-        ...ratedStays,
-        [stay.id]: {
-          rating,
-          comment: fullComment,
-          date: new Date().toLocaleDateString('es-PE')
-        }
-      };
-      setRatedStays(updated);
-      try {
-        localStorage.setItem('smart_park_rated_stays_v1', JSON.stringify(updated));
-      } catch {}
-
-      playTone('success');
-      notify(`¡Gracias! Tu calificación de ${rating} estrellas fue registrada.`);
-      setRateModal(null);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Alternar tag rápido
-  const toggleTag = (tag) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter(t => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
+    setRateModal(stay);
   };
 
   // Exportar CSV
@@ -352,7 +272,7 @@ export const HistoryModule = () => {
           </Card>
         ) : (
           filteredHistory.map((h) => {
-            const hasReview = ratedStays[h.id];
+            const hasReview = ratedStays[h.id] || ratedStays[h.code] || (h.hasReview ? { rating: h.reviewRating || 5 } : null);
             return (
               <Card 
                 key={h.id} 
@@ -452,114 +372,31 @@ export const HistoryModule = () => {
       </div>
 
       {/* =========================================================================
-          MODAL DE CALIFICACIÓN DE SERVICIO (RATE STAY)
+          MODAL DE CALIFICACIÓN DE ESTANCIA VERIFICADA (REVIEW RATING MODAL)
           ========================================================================= */}
       {rateModal && (
-        <Dialog open={!!rateModal} onOpenChange={() => setRateModal(null)}>
-          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 shadow-2xl">
-            <DialogHeader>
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-2 border border-amber-200 dark:border-amber-800">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <DialogTitle className="text-xl font-black text-center">
-                Calificar tu Estancia
-              </DialogTitle>
-              <DialogDescription className="text-center text-xs font-medium text-slate-500 dark:text-slate-400">
-                {rateModal.stay.parking} • Cajón {rateModal.stay.slot}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 my-3">
-              {/* Selector de Estrellas Interactivo */}
-              <div className="flex flex-col items-center justify-center space-y-1 py-2">
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => {
-                    const isFilled = (hoverRating || rateModal.rating) >= star;
-                    return (
-                      <button
-                        key={star}
-                        type="button"
-                        onMouseEnter={() => setHoverRating(star)}
-                        onMouseLeave={() => setHoverRating(rateModal.rating)}
-                        onClick={() => setRateModal(prev => ({ ...prev, rating: star }))}
-                        className="p-1 hover:scale-125 transition-transform cursor-pointer"
-                      >
-                        <Star className={`w-8 h-8 ${isFilled ? 'text-amber-400 fill-amber-400 drop-shadow-sm' : 'text-slate-300 dark:text-slate-600'}`} />
-                      </button>
-                    );
-                  })}
-                </div>
-                <span className="text-xs font-bold text-amber-700 dark:text-amber-400 font-mono">
-                  {rateModal.rating === 5 && 'Excelente'}
-                  {rateModal.rating === 4 && 'Muy bueno'}
-                  {rateModal.rating === 3 && 'Regular'}
-                  {rateModal.rating === 2 && 'Mejorable'}
-                  {rateModal.rating === 1 && 'Malo'}
-                </span>
-              </div>
-
-              {/* Tags Rápidos */}
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                  ¿Qué destacarías?
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {QUICK_TAGS.map((tag) => {
-                    const isSelected = selectedTags.includes(tag);
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleTag(tag)}
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3 inline mr-1" />}
-                        {tag}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Comentario Abierto */}
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Tu opinión (opcional)
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Cuéntanos tu experiencia (opcional)..."
-                  value={reviewComment}
-                  onChange={e => setReviewComment(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setRateModal(null)}
-                disabled={isSubmitting}
-                className="flex-1 rounded-xl text-xs font-bold"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleSubmitReview}
-                disabled={isSubmitting}
-                className="flex-1 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-600 text-slate-950 gap-1.5 shadow-md cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>{isSubmitting ? 'Publicando...' : 'Publicar Reseña'}</span>
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ReviewRatingModal
+          isOpen={!!rateModal}
+          onClose={() => setRateModal(null)}
+          stay={rateModal}
+          onReviewSubmitted={(reviewData, stay) => {
+            const updated = {
+              ...ratedStays,
+              [stay.id]: {
+                rating: reviewData?.rating || 5,
+                comment: reviewData?.comment || '',
+                date: new Date().toLocaleDateString('es-PE'),
+              },
+              [stay.code]: {
+                rating: reviewData?.rating || 5,
+                comment: reviewData?.comment || '',
+                date: new Date().toLocaleDateString('es-PE'),
+              }
+            };
+            setRatedStays(updated);
+            notify(`¡Gracias por calificar ${stay.parking}! Tu reseña verificada fue publicada con éxito.`);
+          }}
+        />
       )}
 
       {/* Modal de Boleta Electrónica */}

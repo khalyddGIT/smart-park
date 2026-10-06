@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
-from app.models.models import Review, Parking, User, Staff
+from app.models.models import Review, Parking, User, Staff, Reservation
 from app.schemas.schemas import ReviewCreate, ReviewReply, ReviewResponse, ReviewVisibilityUpdate
 from app.core.security import get_current_user, get_optional_user, require_role
 from app.core.realtime import realtime
@@ -60,12 +60,62 @@ async def create_review(
     if review_in.rating < 1 or review_in.rating > 5:
         raise HTTPException(status_code=400, detail="La calificación debe estar entre 1 y 5 estrellas")
 
+    # Validación de Estancia Verificada si se proporciona reservation_id
+    if review_in.reservation_id:
+        r_res = await db.execute(select(Reservation).where(Reservation.id == review_in.reservation_id))
+        reservation = r_res.scalars().first()
+        if not reservation:
+            raise HTTPException(status_code=404, detail="La estancia asociada a esta reseña no fue encontrada")
+
+        if reservation.user_id != current_user.id and current_user.role != "platform":
+            raise HTTPException(status_code=403, detail="No puedes calificar una reserva que no te pertenece")
+
+        if reservation.status != "completed":
+            raise HTTPException(
+                status_code=400,
+                detail="Solo puedes calificar una estancia cuando haya finalizado y completado su proceso."
+            )
+
+        if reservation.parking_id != review_in.parking_id:
+            raise HTTPException(
+                status_code=400,
+                detail="La reserva no corresponde a la cochera seleccionada"
+            )
+
+        # Anti-spam / Duplicados: 1 reserva = máximo 1 reseña
+        existing_res = await db.execute(
+            select(Review).where(Review.reservation_id == review_in.reservation_id)
+        )
+        if existing_res.scalars().first():
+            raise HTTPException(
+                status_code=400,
+                detail="Esta estancia ya cuenta con una reseña registrada. Las valoraciones no pueden duplicarse."
+            )
+
+    # Formateo de etiquetas (tags)
+    tags_val = None
+    if review_in.tags:
+        if isinstance(review_in.tags, list):
+            tags_val = ", ".join([str(t).strip() for t in review_in.tags if str(t).strip()])
+        elif isinstance(review_in.tags, str):
+            tags_val = review_in.tags.strip()
+
+    # Comentario por defecto si está vacío
+    comment_text = (review_in.comment or "").strip()
+    if not comment_text:
+        if tags_val:
+            comment_text = f"Estancia verificada [{tags_val}]"
+        else:
+            comment_text = f"Calificación de estancia ({review_in.rating} estrellas)"
+
     db_review = Review(
         parking_id=review_in.parking_id,
         user_id=current_user.id,
         user_name=current_user.full_name,
         rating=review_in.rating,
-        comment=review_in.comment,
+        comment=comment_text,
+        reservation_id=review_in.reservation_id,
+        tags=tags_val,
         is_hidden=False
     )
     db.add(db_review)

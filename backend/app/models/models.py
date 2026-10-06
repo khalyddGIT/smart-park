@@ -241,6 +241,7 @@ class Reservation(Base):
     user = relationship("User", back_populates="reservations")
     parking = relationship("Parking")
     slot = relationship("Slot")
+    review = relationship("Review", back_populates="reservation", uselist=False)
 
 class Staff(Base):
     __tablename__ = "personal"
@@ -269,7 +270,11 @@ class Review(Base):
     comment = Column(Text, nullable=False)
     response = Column(Text, nullable=True) # Respuesta del administrador local
     is_hidden = Column(Boolean, default=False, nullable=True) # Ocultar/desactivar al público
+    reservation_id = Column(Integer, ForeignKey("reservas.id"), nullable=True, unique=True, index=True) # Estancia verificada
+    tags = Column(String(255), nullable=True) # Etiquetas rápidas separadas por coma
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    reservation = relationship("Reservation", back_populates="review")
 
 class Incident(Base):
     __tablename__ = "incidencias"

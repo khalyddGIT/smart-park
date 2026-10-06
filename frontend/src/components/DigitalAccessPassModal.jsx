@@ -25,13 +25,15 @@ import {
   Crown,
   Calendar,
   Zap,
-  CreditCard
+  CreditCard,
+  Star
 } from 'lucide-react';
 
 import { parseIsoToDate } from '../context/EstablishmentContext';
 import { BrandIcon } from './BrandLogo';
 import { useAuth } from '../context/AuthContext';
 import { CulqiPaymentModal } from './CulqiPaymentModal';
+import { ReviewRatingModal } from './ReviewRatingModal';
 
 export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReservationUpdated }) => {
   const { user } = useAuth();
@@ -47,6 +49,9 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [hasReviewedLocal, setHasReviewedLocal] = useState(false);
+  const [localReviewRating, setLocalReviewRating] = useState(null);
   const qrRef = useRef(null);
 
   useEffect(() => {
@@ -527,6 +532,25 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
   const isCompleted = localStatus === 'completed';
   const isCancelled = localStatus === 'cancelled';
 
+  const hasAlreadyReviewed = Boolean(
+    reservation?.has_review ||
+    reservation?.hasReview ||
+    hasReviewedLocal ||
+    (() => {
+      try {
+        const saved = localStorage.getItem('smart_park_rated_stays_v1');
+        if (!saved) return false;
+        const map = JSON.parse(saved);
+        const code = reservation?.code || (reservation?.id ? `RSV-${reservation.id}` : null);
+        return Boolean(map[reservation?.id] || (code && map[code]) || (code && map[`ST-${String(code).replace('RSV-', '')}`]));
+      } catch {
+        return false;
+      }
+    })()
+  );
+
+  const alreadyRating = localReviewRating || reservation?.review_rating || reservation?.reviewRating || 5;
+
   const isToleranceExpired = useMemo(() => {
     if (!isScheduled || !passData?.arrivalDeadline) return false;
     return new Date().getTime() > passData.arrivalDeadline.getTime();
@@ -593,6 +617,42 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
               )}
               <span className="font-medium text-[11px]">{liveBanner}</span>
+            </div>
+          )}
+
+          {/* Banner de Calificación de Estancia Verificada cuando la reserva está completada */}
+          {isCompleted && (
+            <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800/70">
+                  <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-amber-950 dark:text-amber-100">
+                    {hasAlreadyReviewed ? '¡Estancia calificada!' : '¿Cómo estuvo tu estancia?'}
+                  </h4>
+                  <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                    {hasAlreadyReviewed 
+                      ? `Has valorado esta estancia con ${alreadyRating}.0 estrellas.`
+                      : `Tu opinión verificada ayuda a mejorar ${passData.parkingName}.`}
+                  </p>
+                </div>
+              </div>
+              {hasAlreadyReviewed ? (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 text-xs font-black shrink-0">
+                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                  <span>{alreadyRating}.0 Calificado</span>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => setShowRatingModal(true)}
+                  className="w-full sm:w-auto h-9 px-4 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-600 text-white shadow-xs cursor-pointer shrink-0 gap-1.5"
+                >
+                  <Star className="w-3.5 h-3.5 fill-white text-white" />
+                  <span>Calificar Estancia</span>
+                </Button>
+              )}
             </div>
           )}
 
@@ -973,6 +1033,32 @@ export const DigitalAccessPassModal = ({ isOpen, onClose, reservation, onReserva
                   prepaid: true
                 });
               }
+            }}
+          />
+        )}
+
+        {/* Modal de Calificación Verificada */}
+        {showRatingModal && (
+          <ReviewRatingModal
+            isOpen={showRatingModal}
+            onClose={() => setShowRatingModal(false)}
+            stay={{
+              id: reservation?.id || passData.dbId,
+              dbId: reservation?.id || passData.dbId,
+              code: passData.id,
+              parkingId: reservation?.parking_id || reservation?.parkingId || passData.parkingId || 1,
+              parkingName: passData.parkingName,
+              plate: passData.plate,
+              cost: passData.cost
+            }}
+            onReviewSubmitted={(reviewData) => {
+              setHasReviewedLocal(true);
+              setLocalReviewRating(reviewData?.rating || 5);
+              onReservationUpdated?.({
+                ...reservation,
+                has_review: true,
+                review_rating: reviewData?.rating || 5
+              });
             }}
           />
         )}

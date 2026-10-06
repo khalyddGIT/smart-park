@@ -219,6 +219,8 @@ async def startup_db():
                 ("reservas", "subscription_days", "INTEGER"),
                 ("reservas", "subscription_type", "VARCHAR(50)"),
                 ("resenas", "is_hidden", "BOOLEAN DEFAULT FALSE"),
+                ("resenas", "reservation_id", "INTEGER"),
+                ("resenas", "tags", "VARCHAR(255)"),
                 ("incidencias", "is_hidden", "BOOLEAN DEFAULT FALSE"),
             ]
             for tbl, col, decl in pg_adds:

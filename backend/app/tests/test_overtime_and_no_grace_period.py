@@ -104,15 +104,21 @@ async def test_check_out_calculates_exact_hours_without_grace_period():
         forbidden_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=headers)
         assert forbidden_checkout.status_code == 403
 
-        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers)
+        # Sin pago previo debe bloquearse con 400
+        unpaid_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers)
+        assert unpaid_checkout.status_code == 400
+        assert "saldo pendiente" in unpaid_checkout.json()["detail"].lower()
+
+        # Con cobro registrado en garita
+        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers, json={"amount_paid": 12.0, "payment_method": "efectivo"})
         assert res_checkout.status_code == 200
         data_out = res_checkout.json()
         assert data_out["status"] == "completed"
         assert data_out["actual_exit"] is not None
         # Cobro final debe ser exactamente 2 horas (S/ 12.00), NO 1 hora como antes con gracia
         assert data_out["total_cost"] == 12.0
-        assert data_out["amount_paid"] == 0
-        assert data_out["payment_status"] == "pending"
+        assert data_out["amount_paid"] == 12.0
+        assert data_out["payment_status"] == "paid"
 
 @pytest.mark.asyncio
 async def test_worker_detects_stay_expiring_soon_and_overtime():
@@ -239,13 +245,19 @@ async def test_active_stay_cannot_be_cancelled_and_reconciles_checkout_amount():
         forbidden_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=headers)
         assert forbidden_checkout.status_code == 403
 
-        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers)
+        # Sin pago del sobretiempo debe bloquearse con 400
+        unpaid_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers)
+        assert unpaid_checkout.status_code == 400
+        assert "saldo pendiente" in unpaid_checkout.json()["detail"].lower()
+
+        # Cobro del sobretiempo en garita (S/ 12.00 total)
+        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers, json={"amount_paid": 12.0, "payment_method": "efectivo"})
         assert res_checkout.status_code == 200
         data_out = res_checkout.json()
         assert data_out["status"] == "completed"
         assert data_out["total_cost"] == 12.0
-        assert data_out["amount_paid"] == 6.0
-        assert data_out["payment_status"] == "pending"
+        assert data_out["amount_paid"] == 12.0
+        assert data_out["payment_status"] == "paid"
 
 @pytest.mark.asyncio
 async def test_cannot_cancel_scheduled_reservation_after_tolerance_expired():

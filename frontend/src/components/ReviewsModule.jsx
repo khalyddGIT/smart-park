@@ -64,17 +64,13 @@ export const ReviewsModule = () => {
   const [parkingFilter, setParkingFilter] = useState('all');
 
   // Modales
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [selectedReview, setSelectedReview] = useState(null);
 
   // Estados de formulario
-  const [newComment, setNewComment] = useState('');
-  const [newRating, setNewRating] = useState(5);
   const [selectedParkingId, setSelectedParkingId] = useState('');
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
-  const [submittingReview, setSubmittingReview] = useState(false);
   const [togglingVisibilityId, setTogglingVisibilityId] = useState(null);
 
   // Toast
@@ -143,39 +139,6 @@ export const ReviewsModule = () => {
     // Para conductor regular (role === 'user'):
     return driverTab === 'mine' ? myReviews : communityReviews;
   }, [reviews, role, myParkingIds, driverTab, myReviews, communityReviews]);
-
-  // Manejar creación de reseña (Conductor)
-  const handleCreateReview = async (e) => {
-    e.preventDefault();
-    if (!selectedParkingId) {
-      notify('Por favor, selecciona un estacionamiento.', 'error');
-      return;
-    }
-    const commentVal = validateTextMinLength(newComment, 4, 'comentario u opinión');
-    if (!commentVal.valid) {
-      notify(commentVal.message, 'error');
-      return;
-    }
-    setSubmittingReview(true);
-    try {
-      await api.post('/reviews', {
-        parking_id: Number(selectedParkingId),
-        rating: Number(newRating),
-        comment: newComment.trim(),
-      });
-      setShowAddModal(false);
-      setNewComment('');
-      setNewRating(5);
-      notify('¡Tu reseña ha sido publicada exitosamente!');
-      await loadReviews();
-    } catch (err) {
-      const status = err?.response?.status;
-      if (status === 401) notify('Debes iniciar sesión para dejar una reseña.', 'error');
-      else notify('No se pudo publicar la reseña. Intenta de nuevo.', 'error');
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
 
   // Abrir modal de respuesta (Admin)
   const handleOpenReply = (r) => {
@@ -339,17 +302,12 @@ export const ReviewsModule = () => {
           </div>
         </div>
 
-        {/* Acción primaria para conductores */}
+        {/* Badge de Sistema de Reseñas Verificadas para Conductores */}
         {role === 'user' && (
-          <Button
-            onClick={() => setShowAddModal(true)}
-            variant="primary"
-            size="md"
-            className="gap-2 font-bold cursor-pointer rounded-2xl bg-amber-500 hover:bg-amber-600 text-white"
-          >
-            <Plus className="w-5 h-5 shrink-0" />
-            <span>Dejar Reseña</span>
-          </Button>
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 text-xs font-bold shrink-0">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>Reseñas 100% Verificadas</span>
+          </div>
         )}
       </div>
 
@@ -678,21 +636,12 @@ export const ReviewsModule = () => {
           ) : role === 'user' && driverTab === 'mine' ? (
             <div className="space-y-4">
               <div className="space-y-1">
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Aún no has escrito ninguna reseña</h3>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Aún no has calificado ninguna estancia</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                  Tu cuenta no tiene reseñas registradas. Cuando reserves o te estaciones en una cochera, comparte tu experiencia aquí para ayudar a otros conductores.
+                  En Smart Park las reseñas son 100% auténticas y respaldadas por estancias reales. Cuando finalices una reserva en una cochera, podrás calificarla directamente desde tu Historial o Pase Digital.
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                <Button
-                  onClick={() => setShowAddModal(true)}
-                  variant="primary"
-                  size="sm"
-                  className="gap-2 font-bold cursor-pointer rounded-xl bg-amber-500 hover:bg-amber-600 text-white"
-                >
-                  <Plus className="w-4 h-4 shrink-0" />
-                  <span>Dejar mi primera reseña</span>
-                </Button>
                 <Button
                   onClick={() => setDriverTab('community')}
                   variant="outline"
@@ -700,7 +649,7 @@ export const ReviewsModule = () => {
                   className="gap-2 font-bold cursor-pointer rounded-xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
                 >
                   <MessageSquare className="w-4 h-4 shrink-0 text-slate-400" />
-                  <span>Ver opiniones de la comunidad</span>
+                  <span>Explorar opiniones de la comunidad</span>
                 </Button>
               </div>
             </div>
@@ -708,17 +657,10 @@ export const ReviewsModule = () => {
             <div className="space-y-4">
               <div className="space-y-1">
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">No hay opiniones públicas todavía</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Sé el primero en compartir tu experiencia en nuestras cocheras afiliadas.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  Las reseñas aparecerán aquí conforme los conductores completen sus estancias en las cocheras afiliadas.
+                </p>
               </div>
-              <Button
-                onClick={() => setShowAddModal(true)}
-                variant="primary"
-                size="sm"
-                className="gap-2 font-bold cursor-pointer rounded-xl bg-amber-500 hover:bg-amber-600 text-white"
-              >
-                <Plus className="w-4 h-4 shrink-0" />
-                <span>Dejar Reseña</span>
-              </Button>
             </div>
           ) : (
             <div className="space-y-1">
@@ -782,6 +724,14 @@ export const ReviewsModule = () => {
                           <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-lg border bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 flex items-center gap-1.5">
                             <User className="w-3.5 h-3.5" />
                             <span>Tu Reseña</span>
+                          </span>
+                        )}
+
+                        {/* Badge de Estancia Verificada */}
+                        {(r.is_verified || r.reservation_id) && (
+                          <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-lg border bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/80 flex items-center gap-1.5 shadow-2xs">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>✓ Estancia Verificada</span>
                           </span>
                         )}
                       </div>
@@ -859,6 +809,22 @@ export const ReviewsModule = () => {
                   <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed font-medium">
                     "{r.comment}"
                   </p>
+                  {r.tags && (
+                    <div className="flex flex-wrap gap-1.5 mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+                      {(typeof r.tags === 'string' ? r.tags.split(',') : r.tags).map((t, idx) => {
+                        const tagClean = String(t).trim();
+                        if (!tagClean) return null;
+                        return (
+                          <span
+                            key={idx}
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60"
+                          >
+                            ✓ {tagClean}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                   {isHidden && isAdmin && (
                     <div className="mt-2 text-[11px] text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -907,103 +873,6 @@ export const ReviewsModule = () => {
             );
           })}
         </div>
-      )}
-
-      {/* Modal Escribir Reseña (Conductor) */}
-      {role === 'user' && (
-        <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogContent className="max-w-md rounded-3xl p-6 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-black flex items-center gap-2">
-                <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
-                <span>Calificar Cochera</span>
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                Tu opinión sincera contribuye a elevar el estándar de servicio en la red.
-              </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={handleCreateReview} className="space-y-4 my-2">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Estacionamiento a Calificar *
-                </label>
-                <select
-                  value={selectedParkingId}
-                  onChange={(e) => setSelectedParkingId(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
-                  required
-                >
-                  {Object.entries(parkingsMap).length === 0 && (
-                    <option value="">Cargando cocheras disponibles...</option>
-                  )}
-                  {Object.entries(parkingsMap).map(([pid, pname]) => (
-                    <option key={pid} value={pid}>{pname}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Calificación *
-                </label>
-                <div className="flex items-center justify-center gap-2 py-2 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      type="button"
-                      key={star}
-                      onClick={() => setNewRating(star)}
-                      className="p-1 hover:scale-125 transition cursor-pointer"
-                    >
-                      <Star
-                        className={`w-7 h-7 ${
-                          star <= newRating
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-slate-300 dark:text-slate-700'
-                        }`}
-                      />
-                    </button>
-                  ))}
-                  <span className="ml-2 font-mono font-black text-sm text-slate-700 dark:text-slate-200">
-                    {newRating}.0
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Tu Experiencia y Comentarios *
-                </label>
-                <textarea
-                  rows={4}
-                  placeholder="Detalla qué tal fue el acceso, seguridad, rapidez en garita y limpieza..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={submittingReview}
-                className="w-full font-black py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl gap-2 cursor-pointer"
-              >
-                {submittingReview ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Publicando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Star className="w-4 h-4 fill-white text-white" />
-                    <span>Publicar Reseña</span>
-                  </>
-                )}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
       )}
 
       {/* Modal Responder Reseña (Admin Local & SuperAdmin) */}

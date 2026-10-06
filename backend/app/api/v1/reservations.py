@@ -211,6 +211,18 @@ def _format_reservation_response(r: Reservation) -> ReservationResponse:
                 if calculated_cost > resp.total_cost:
                     resp.total_cost = calculated_cost
 
+    try:
+        rev = getattr(r, "review", None)
+        if rev:
+            resp.has_review = True
+            resp.review_rating = getattr(rev, "rating", None)
+        else:
+            resp.has_review = False
+            resp.review_rating = None
+    except Exception:
+        resp.has_review = False
+        resp.review_rating = None
+
     return resp
 
 async def _get_allowed_parking_ids(current_user: User, db: AsyncSession) -> Optional[set]:
@@ -302,7 +314,8 @@ async def list_reservations(
     options_load = (
         selectinload(Reservation.user),
         selectinload(Reservation.parking),
-        selectinload(Reservation.slot)
+        selectinload(Reservation.slot),
+        selectinload(Reservation.review)
     )
 
     if current_user.role in ("local", "platform"):
@@ -1193,14 +1206,15 @@ async def check_out_reservation(
     outstanding = max(0.0, round(calculated_cost - already_paid, 2))
 
     if checkout_in and checkout_in.amount_paid is not None:
-        confirmed_total = round(float(checkout_in.amount_paid), 2)
-        if abs(confirmed_total - calculated_cost) > 0.02:
+        confirmed_val = round(float(checkout_in.amount_paid), 2)
+        # Permite enviar el total acumulado, el saldo pendiente exacto, o un monto entregado suficiente (ej. billete en efectivo)
+        if confirmed_val < (outstanding - 0.02) and abs(confirmed_val - calculated_cost) > 0.02:
             raise HTTPException(
                 status_code=422,
-                detail=f"El pago confirmado debe coincidir con el total calculado: S/ {calculated_cost:.2f}",
+                detail=f"El monto recibido (S/ {confirmed_val:.2f}) es insuficiente para liquidar el saldo pendiente de S/ {outstanding:.2f}",
             )
         method = (checkout_in.payment_method or "efectivo").strip().lower()
-        collected_now = max(0.0, round(confirmed_total - already_paid, 2))
+        collected_now = outstanding
         if collected_now > 0:
             db.add(Payment(
                 reservation_id=reservation.id,
@@ -1209,17 +1223,24 @@ async def check_out_reservation(
                 currency="PEN",
                 status="succeeded",
                 method=method,
-                description=f"Cobro en salida de la reserva {reservation.code}",
+                description=f"Cobro en salida de la reserva {reservation.code} vía {method}",
             ))
-        reservation.amount_paid = confirmed_total
+        reservation.amount_paid = calculated_cost
         reservation.payment_method = method
         reservation.payment_status = "paid"
         reservation.prepaid = already_paid > 0
-    elif outstanding > 0:
-        # La salida puede registrarse para liberar físicamente la plaza, pero no
-        # se inventa un pago que el trabajador todavía no confirmó.
+    elif outstanding > 0.02:
+        if not (checkout_in and checkout_in.force_unpaid):
+            raise HTTPException(
+                status_code=400,
+                detail=f"No se puede registrar la salida: estadía con saldo pendiente de S/ {outstanding:.2f} sin liquidar. El usuario debe pagar online o el operador registrar el cobro en garita.",
+            )
         reservation.payment_status = "pending"
         reservation.payment_method = None
+    else:
+        # outstanding <= 0.02 (100% liquidado con anterioridad)
+        reservation.payment_status = "paid"
+        reservation.prepaid = True
 
     # Liberar el cajón al terminar la estancia
     slot_res = await db.execute(select(Slot).where(Slot.id == reservation.slot_id))

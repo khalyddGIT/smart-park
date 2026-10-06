@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer, model_validator
-from typing import Optional, List, Any
+from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer, model_validator, computed_field
+from typing import Optional, List, Any, Union
 from datetime import datetime, timezone
 import re
 
@@ -771,6 +771,8 @@ class ReservationResponse(BaseModel):
     is_subscription: Optional[bool] = False
     subscription_days: Optional[int] = None
     subscription_type: Optional[str] = None
+    has_review: Optional[bool] = False
+    review_rating: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -786,6 +788,7 @@ class ReservationResponse(BaseModel):
 class ReservationCheckOut(BaseModel):
     payment_method: Optional[str] = "efectivo"
     amount_paid: Optional[float] = None
+    force_unpaid: Optional[bool] = False
 
 class PaginatedReservationResponse(BaseModel):
     items: List[ReservationResponse]
@@ -800,7 +803,9 @@ class PaginatedReservationResponse(BaseModel):
 class ReviewCreate(BaseModel):
     parking_id: int = Field(gt=0)
     rating: int = Field(default=5, ge=1, le=5)
-    comment: str = Field(min_length=3, max_length=1000)
+    comment: Optional[str] = Field(default="", max_length=1000)
+    reservation_id: Optional[int] = None
+    tags: Optional[Union[List[str], str]] = None
 
 class ReviewReply(BaseModel):
     response: str = Field(min_length=2, max_length=1000)
@@ -817,7 +822,15 @@ class ReviewResponse(BaseModel):
     comment: str
     response: Optional[str] = None
     is_hidden: Optional[bool] = False
+    reservation_id: Optional[int] = None
+    tags: Optional[str] = None
     created_at: datetime
+
+    @computed_field
+    @property
+    def is_verified(self) -> bool:
+        return self.reservation_id is not None
+
     class Config:
         from_attributes = True
 

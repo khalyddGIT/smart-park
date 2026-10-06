@@ -33,8 +33,8 @@ async def test_reservation_full_lifecycle_and_antisabotage():
         for r in res_prev.scalars().all():
             await session.delete(r)
         
-        # Buscar plaza libre
-        res_s = await session.execute(select(Slot).where(Slot.parking_id == 1, Slot.status == "free"))
+        # Buscar plaza libre para auto
+        res_s = await session.execute(select(Slot).where(Slot.parking_id == 1, Slot.status == "free", Slot.slot_type == "auto"))
         slot = res_s.scalars().first()
         if not slot:
             slot = Slot(parking_id=1, code="T-99", status="free", slot_type="auto", pos_x=0, pos_y=0, width=50, height=80)
@@ -43,6 +43,7 @@ async def test_reservation_full_lifecycle_and_antisabotage():
             await session.refresh(slot)
         else:
             slot.status = "free"
+            slot.slot_type = "auto"
             await session.commit()
             await session.refresh(slot)
 
@@ -120,13 +121,19 @@ async def test_reservation_full_lifecycle_and_antisabotage():
         assert data_in["actual_entry"] is not None
         assert data_in["estimated_hours"] == 2
 
-        # TEST 5: Check-out (solo garita; salida sin cobro queda pendiente)
-        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers)
-        assert res_checkout.status_code == 200
+        # TEST 5: Check-out (bloqueado si tiene saldo pendiente sin cobrar)
+        res_checkout_unpaid = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers)
+        assert res_checkout_unpaid.status_code == 400
+        assert "saldo pendiente" in res_checkout_unpaid.json()["detail"].lower()
+
+        # Check-out con cobro registrado en garita
+        cost_to_pay = float(data_in.get("total_cost") or 12.0)
+        res_checkout = await ac.put(f"/api/v1/reservations/{res_id}/check-out", headers=operator_headers, json={"amount_paid": cost_to_pay, "payment_method": "efectivo"})
+        assert res_checkout.status_code == 200, f"Error checkout: {res_checkout.json()}"
         data_out = res_checkout.json()
         assert data_out["status"] == "completed"
         assert data_out["actual_exit"] is not None
-        assert data_out["payment_status"] == "pending"
+        assert data_out["payment_status"] == "paid"
 
         # Verificar en base de datos que la plaza quedó LIBRE
         async with AsyncSessionLocal() as session:

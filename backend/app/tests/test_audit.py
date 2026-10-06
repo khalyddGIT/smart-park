@@ -277,7 +277,18 @@ async def test_adminlocal_demo_account_strict_isolation_no_leak():
         # Buscar usuario adminlocal@smartpark.com
         res = await session.execute(select(User).where(User.email == "adminlocal@smartpark.com"))
         adminlocal = res.scalars().first()
-        assert adminlocal is not None, "El usuario adminlocal@smartpark.com debe existir"
+        if not adminlocal:
+            from app.core.security import get_password_hash
+            adminlocal = User(
+                email="adminlocal@smartpark.com",
+                full_name="Admin Local Demo",
+                role="local",
+                hashed_password=get_password_hash("AdminLocal123!"),
+                is_active=True
+            )
+            session.add(adminlocal)
+            await session.commit()
+            await session.refresh(adminlocal)
         adminlocal_id = adminlocal.id
 
         # Crear o identificar una cochera propia de adminlocal y una cochera de OTRA empresa

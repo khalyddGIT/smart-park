@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   AreaChart,
   Area,
@@ -122,6 +122,15 @@ export const AnalyticsGlobalModule = () => {
   const [financesSummary, setFinancesSummary] = useState(null);
   const [floorOccupancy, setFloorOccupancy] = useState({}); // parking_id -> { total, free, occupied }
 
+  const hasLoadedOnce = useRef(false);
+  const myEstablishmentsRef = useRef(myEstablishments);
+  myEstablishmentsRef.current = myEstablishments;
+
+  // Clave estable basada en IDs para no disparar re-fetches cada vez que el contexto recrea la referencia del array
+  const establishmentIdsKey = useMemo(() => {
+    return (myEstablishments || []).map((e) => String(e.id)).sort().join(',');
+  }, [myEstablishments]);
+
   const notify = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 4000);
@@ -132,7 +141,10 @@ export const AnalyticsGlobalModule = () => {
     const token = getAccessToken();
 
     const fetchAll = async () => {
-      setLoading(true);
+      // Solo mostrar spinner a pantalla completa en la primera carga inicial
+      if (!hasLoadedOnce.current) {
+        setLoading(true);
+      }
       // Finanzas reales para platform (corrige limitación my-reservations)
       if (role === 'platform') {
         try {
@@ -191,9 +203,10 @@ export const AnalyticsGlobalModule = () => {
       // Parkings: Filtrado estricto multitenant para Admin Local (solo ve su empresa)
       if (results[0].status === 'fulfilled') {
         const rawParkings = Array.isArray(results[0].value.data) ? results[0].value.data : [];
+        const currentMyEsts = myEstablishmentsRef.current;
         const scoped = role === 'local'
-          ? (myEstablishments && myEstablishments.length > 0
-              ? myEstablishments
+          ? (currentMyEsts && currentMyEsts.length > 0
+              ? currentMyEsts
               : rawParkings.filter((p) => isMyEstablishment(p, user, role, rawParkings)))
           : rawParkings;
 
@@ -241,12 +254,15 @@ export const AnalyticsGlobalModule = () => {
         if (!cancelled && !revenueScopeNote) setRevenueScopeNote('No se pudieron cargar reservas.');
       }
 
-      setLoading(false);
+      if (!cancelled) {
+        setLoading(false);
+        hasLoadedOnce.current = true;
+      }
     };
 
     fetchAll();
     return () => { cancelled = true; };
-  }, [role, user?.id, user?.email, myEstablishments]);
+  }, [role, user?.id, user?.email, establishmentIdsKey]);
 
   // ---- Derivados honestos y aislados por empresa ----
 

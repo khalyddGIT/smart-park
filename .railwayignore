@@ -24,6 +24,4 @@ htmlcov/
 *.bin
 backend/models/
 yolov8*.pt
-*.webm
-*.mp4
 *.log

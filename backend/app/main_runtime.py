@@ -137,6 +137,7 @@ class SecurityHardeningMiddleware(BaseHTTPMiddleware):
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com data:; "
             "img-src 'self' data: blob: https:; "
+            "media-src 'self' blob: data: https:; "
             "connect-src 'self' https://api.culqi.com https://*.culqi.com https://*.paypal.com https://*.paypalobjects.com https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com https://tile.openstreetmap.org https://server.arcgisonline.com wss: ws: https:; "
             "frame-src 'self' https://checkout.culqi.com https://*.culqi.com https://*.paypal.com https://accounts.google.com; "
             "manifest-src 'self'; "
@@ -496,6 +497,9 @@ if STATIC_DIR and os.path.isdir(STATIC_DIR):
     assets_dir = os.path.join(STATIC_DIR, "assets")
     if os.path.isdir(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+    videos_dir = os.path.join(STATIC_DIR, "videos")
+    if os.path.isdir(videos_dir):
+        app.mount("/videos", StaticFiles(directory=videos_dir), name="videos")
 
     @app.get("/{full_path:path}", include_in_schema=False)
     async def spa_fallback(full_path: str):

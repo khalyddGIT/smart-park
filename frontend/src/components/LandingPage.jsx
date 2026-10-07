@@ -449,6 +449,12 @@ export const LandingPage = ({
           muted
           playsInline
           preload="auto"
+          ref={(el) => {
+            if (el) {
+              el.muted = true;
+              el.play().catch(() => {});
+            }
+          }}
           className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 scale-105 opacity-100 filter brightness-[0.92] dark:brightness-[0.80] contrast-[1.03] transition-all duration-500"
         />
 

@@ -34,6 +34,16 @@ async def list_reviews(
     if mine and current_user:
         stmt = stmt.where(Review.user_id == current_user.id)
     
+    if current_user and current_user.role == "local":
+        from app.api.v1.reservations import _get_allowed_parking_ids
+        allowed_pids = await _get_allowed_parking_ids(current_user, db)
+        if allowed_pids is not None:
+            if parking_id:
+                if parking_id not in allowed_pids:
+                    return []
+            else:
+                stmt = stmt.where(Review.parking_id.in_(allowed_pids) if allowed_pids else False)
+
     # Privacidad: Usuarios regulares o no autenticados NUNCA ven reseñas ocultadas/desactivadas
     if not current_user or current_user.role == "user":
         stmt = stmt.where(Review.is_hidden.is_(False))

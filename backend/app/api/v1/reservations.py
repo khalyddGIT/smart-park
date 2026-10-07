@@ -233,7 +233,7 @@ async def _get_allowed_parking_ids(current_user: User, db: AsyncSession) -> Opti
     Retorna el conjunto de IDs de sedes a las que tiene acceso el usuario local/operador.
     Retorna None si tiene acceso irrestricto (Superadmin / platform / adminlocal).
     """
-    if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":
+    if current_user.role == "platform":
         return None
 
     curr_email = (current_user.email or "").strip().lower()
@@ -290,7 +290,7 @@ async def _get_allowed_parking_ids(current_user: User, db: AsyncSession) -> Opti
 async def _check_reservation_access(reservation: Reservation, current_user: User, db: AsyncSession, action_label: str = "esta reserva"):
     if reservation.user_id == current_user.id:
         return
-    if current_user.role == "platform" or current_user.email == "adminlocal@smartpark.com":
+    if current_user.role == "platform":
         return
     if current_user.role == "local":
         allowed_pids = await _get_allowed_parking_ids(current_user, db)
@@ -335,7 +335,7 @@ async def list_reservations(
 
     if current_user.role in ("local", "platform"):
         base_filters = []
-        if current_user.role == "local" and current_user.email != "adminlocal@smartpark.com":
+        if current_user.role == "local":
             allowed_pids = await _get_allowed_parking_ids(current_user, db)
             if allowed_pids is not None:
                 if parking_id:

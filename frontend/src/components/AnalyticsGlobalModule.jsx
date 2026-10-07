@@ -31,9 +31,11 @@ import {
   Banknote,
   QrCode,
   Calendar,
+  Building2,
 } from 'lucide-react';
 import api, { getAccessToken } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useEstablishments, isMyEstablishment, getEstablishmentHierarchy } from '../context/EstablishmentContext';
 
 // Colores para distribución de reseñas (5→1 estrella)
 const RATING_COLORS = {
@@ -98,8 +100,10 @@ const isWithinRange = (iso, range, customStart, customEnd) => {
 };
 
 export const AnalyticsGlobalModule = () => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
+  const { myEstablishments } = useEstablishments();
   const [timeRange, setTimeRange] = useState('7d');
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState('all');
 
   // Rango de fechas personalizado (por defecto últimos 7 días)
   const [customStartDate, setCustomStartDate] = useState(() => {
@@ -150,7 +154,7 @@ export const AnalyticsGlobalModule = () => {
           if (role === 'platform' || role === 'local') {
             try {
               const r = await api.get('/reservations');
-              if (!cancelled) setRevenueScopeNote('Reservas operativas en red.');
+              if (!cancelled) setRevenueScopeNote('Reservas operativas.');
               return r;
             } catch (e) {
               if (is401(e)) {
@@ -184,18 +188,25 @@ export const AnalyticsGlobalModule = () => {
 
       if (cancelled) return;
 
-      // Parkings
+      // Parkings: Filtrado estricto multitenant para Admin Local (solo ve su empresa)
       if (results[0].status === 'fulfilled') {
-        const data = Array.isArray(results[0].value.data) ? results[0].value.data : [];
-        setParkings(data);
-        // Fetch floor-plan para cada parking de forma tolerante (enriquece ocupación por estado real de slots)
+        const rawParkings = Array.isArray(results[0].value.data) ? results[0].value.data : [];
+        const scoped = role === 'local'
+          ? (myEstablishments && myEstablishments.length > 0
+              ? myEstablishments
+              : rawParkings.filter((p) => isMyEstablishment(p, user, role, rawParkings)))
+          : rawParkings;
+
+        setParkings(scoped);
+
+        // Fetch floor-plan únicamente para las sedes de esta empresa
         try {
           const fpResults = await Promise.allSettled(
-            data.map((p) => api.get(`/parkings/${p.id}/floor-plan`))
+            scoped.map((p) => api.get(`/parkings/${p.id}/floor-plan`))
           );
           const occ = {};
           fpResults.forEach((r, idx) => {
-            const pid = data[idx]?.id;
+            const pid = scoped[idx]?.id;
             if (r.status === 'fulfilled' && r.value?.data?.slots) {
               const slots = r.value.data.slots;
               const total = slots.length;
@@ -213,7 +224,7 @@ export const AnalyticsGlobalModule = () => {
         notify('No se pudieron cargar cocheras.');
       }
 
-      // Reviews (público)
+      // Reviews (filtradas por sede de la empresa si es admin local)
       if (results[1].status === 'fulfilled') {
         const data = Array.isArray(results[1].value.data) ? results[1].value.data : [];
         setReviews(data);
@@ -221,7 +232,7 @@ export const AnalyticsGlobalModule = () => {
         notify('No se pudieron cargar reseñas.');
       }
 
-      // Reservations
+      // Reservations (filtradas por sede de la empresa si es admin local)
       if (results[2].status === 'fulfilled') {
         const data = Array.isArray(results[2].value.data) ? results[2].value.data : [];
         setReservations(data);
@@ -230,23 +241,66 @@ export const AnalyticsGlobalModule = () => {
         if (!cancelled && !revenueScopeNote) setRevenueScopeNote('No se pudieron cargar reservas.');
       }
 
-      // Toast solo para fallos no-401 reales
-      results.forEach((r) => {
-        if (r.status === 'rejected' && !is401(r.reason)) {
-          // ya notificado arriba por categoría
-        }
-      });
-
       setLoading(false);
     };
 
     fetchAll();
     return () => { cancelled = true; };
-    // Recarga si cambia role (cambia alcance de reservas)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role]);
+  }, [role, user?.id, user?.email, myEstablishments]);
 
-  // ---- Derivados honestos ----
+  // ---- Derivados honestos y aislados por empresa ----
+
+  // Sedes de la empresa para el selector de sucursales
+  const companyBranches = useMemo(() => {
+    if (role !== 'local') return parkings;
+    return parkings;
+  }, [role, parkings]);
+
+  // Información de la empresa identificada
+  const companyInfo = useMemo(() => {
+    if (role !== 'local') return null;
+    const first = companyBranches[0] || myEstablishments?.[0];
+    const hierarchy = first ? getEstablishmentHierarchy(first) : null;
+    const name = hierarchy?.companyName || user?.companyName || first?.name || 'Mi Empresa';
+    return {
+      name,
+      branchesCount: companyBranches.length,
+      isMulti: companyBranches.length > 1,
+    };
+  }, [role, companyBranches, myEstablishments, user]);
+
+  // Parkings filtrados según el selector de sucursal
+  const scopedParkings = useMemo(() => {
+    if (selectedBranchFilter === 'all') return parkings;
+    return parkings.filter((p) => String(p.id) === String(selectedBranchFilter));
+  }, [parkings, selectedBranchFilter]);
+
+  const scopedParkingIds = useMemo(() => {
+    return new Set(scopedParkings.map((p) => Number(p.id)));
+  }, [scopedParkings]);
+
+  // Reservas pertenecientes estrictamente a las sedes de la empresa (y a la sucursal seleccionada si aplica)
+  const companyReservations = useMemo(() => {
+    if (role !== 'local') {
+      if (selectedBranchFilter !== 'all') {
+        return reservations.filter((r) => String(r.parking_id) === String(selectedBranchFilter));
+      }
+      return reservations;
+    }
+    // Para Admin Local: sólo reservas de sus sedes autorizadas
+    return reservations.filter((r) => scopedParkingIds.has(Number(r.parking_id)));
+  }, [role, reservations, scopedParkingIds, selectedBranchFilter]);
+
+  // Reseñas filtradas por las sedes de la empresa (y sucursal si aplica)
+  const scopedReviews = useMemo(() => {
+    if (role !== 'local') {
+      if (selectedBranchFilter !== 'all') {
+        return reviews.filter((rev) => String(rev.parking_id) === String(selectedBranchFilter));
+      }
+      return reviews;
+    }
+    return reviews.filter((rev) => scopedParkingIds.has(Number(rev.parking_id)));
+  }, [role, reviews, scopedParkingIds, selectedBranchFilter]);
 
   // Helpers de etiqueta legible para el periodo seleccionado
   const formatDisplayDate = (dStr) => {
@@ -275,11 +329,11 @@ export const AnalyticsGlobalModule = () => {
   }, [timeRange, customStartDate, customEndDate]);
 
   const filteredReservations = useMemo(() => {
-    if (timeRange === 'all') return reservations;
-    return reservations.filter((r) =>
+    if (timeRange === 'all') return companyReservations;
+    return companyReservations.filter((r) =>
       isWithinRange(r.start_time || r.created_at || r.actual_entry, timeRange, customStartDate, customEndDate)
     );
-  }, [reservations, timeRange, customStartDate, customEndDate]);
+  }, [companyReservations, timeRange, customStartDate, customEndDate]);
 
   // Recaudación en rango: calcula a partir de las reservas filtradas en el periodo elegido
   const revenueStats = useMemo(() => {
@@ -289,7 +343,7 @@ export const AnalyticsGlobalModule = () => {
     const cancelled = filteredReservations.length - valid.length;
 
     // Si hay reservas registradas o un rango seleccionado, respetar siempre las reservas del periodo
-    if (reservations.length > 0 || !financesSummary?.totales) {
+    if (companyReservations.length > 0 || !financesSummary?.totales) {
       return { total, count, cancelled, netCommission: total * 0.12 };
     }
 
@@ -301,7 +355,7 @@ export const AnalyticsGlobalModule = () => {
       cancelled: 0,
       netCommission: Number(t.comision_liquida_global || 0),
     };
-  }, [filteredReservations, reservations, financesSummary]);
+  }, [filteredReservations, companyReservations, financesSummary]);
 
   // Desglose financiero por método de cobro (Efectivo vs Yape/Plin vs Tarjeta POS)
   const paymentMethodBreakdown = useMemo(() => {
@@ -343,7 +397,7 @@ export const AnalyticsGlobalModule = () => {
 
   // Ocupación por sede: prioriza floor-plan (conteo real de slots), fallback a available_slots/total_capacity
   const ocupacionPorSede = useMemo(() => {
-    return parkings.map((p) => {
+    return scopedParkings.map((p) => {
       const fp = floorOccupancy[p.id];
       let total, libres, ocupados, reservados;
       if (fp && typeof fp.total === 'number') {
@@ -370,43 +424,45 @@ export const AnalyticsGlobalModule = () => {
         libresPct: total ? Math.round((libres / total) * 100) : 0,
       };
     });
-  }, [parkings, floorOccupancy]);
+  }, [scopedParkings, floorOccupancy]);
 
   // Recaudación por sede (barras): prioriza reservas filtradas para que el gráfico responda al rango de fechas
   const recaudacionPorSede = useMemo(() => {
-    if (reservations.length > 0 || !financesSummary?.por_sede?.length) {
+    if (companyReservations.length > 0 || !financesSummary?.por_sede?.length) {
       const map = new Map();
-      parkings.forEach((p) => map.set(p.id, { sede: p.name, recaudacion: 0, estancias: 0, parking_id: p.id }));
+      scopedParkings.forEach((p) => map.set(p.id, { sede: p.name, recaudacion: 0, estancias: 0, parking_id: p.id }));
       filteredReservations.forEach((r) => {
         if (r.status === 'cancelled') return;
         const entry = map.get(r.parking_id);
         if (entry) {
           entry.recaudacion += Number(r.total_cost) || 0;
           entry.estancias += 1;
-        } else {
-          map.set(r.parking_id, { sede: `Cochera #${r.parking_id}`, recaudacion: Number(r.total_cost) || 0, estancias: 1, parking_id: r.parking_id });
+        } else if (scopedParkingIds.has(Number(r.parking_id))) {
+          map.set(r.parking_id, { sede: `Sede #${r.parking_id}`, recaudacion: Number(r.total_cost) || 0, estancias: 1, parking_id: r.parking_id });
         }
       });
       return Array.from(map.values());
     }
 
     // Fallback a finanzas consolidadas solo si no cargaron reservas operativas
-    return financesSummary.por_sede.map((s) => ({
-      sede: s.parking_name || `Sede #${s.parking_id}`,
-      recaudacion: Number(s.recaudacion_bruta || 0),
-      estancias: Number(s.total_reservas || 0),
-      parking_id: s.parking_id,
-    }));
-  }, [parkings, filteredReservations, reservations, financesSummary]);
+    return financesSummary.por_sede
+      .filter((s) => scopedParkingIds.has(Number(s.parking_id)))
+      .map((s) => ({
+        sede: s.parking_name || `Sede #${s.parking_id}`,
+        recaudacion: Number(s.recaudacion_bruta || 0),
+        estancias: Number(s.total_reservas || 0),
+        parking_id: s.parking_id,
+      }));
+  }, [scopedParkings, scopedParkingIds, filteredReservations, companyReservations, financesSummary]);
 
   // Reseñas: promedio y distribución por estrellas
   const reviewStats = useMemo(() => {
-    if (!reviews.length) return { avg: null, count: 0, distribution: [], percentages: [] };
-    const count = reviews.length;
-    const sum = reviews.reduce((a, r) => a + (Number(r.rating) || 0), 0);
+    if (!scopedReviews.length) return { avg: null, count: 0, distribution: [], percentages: [] };
+    const count = scopedReviews.length;
+    const sum = scopedReviews.reduce((a, r) => a + (Number(r.rating) || 0), 0);
     const avg = sum / count;
     const buckets = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    reviews.forEach((r) => {
+    scopedReviews.forEach((r) => {
       const k = Number(r.rating);
       if (k >= 1 && k <= 5) buckets[k] += 1;
     });
@@ -418,7 +474,7 @@ export const AnalyticsGlobalModule = () => {
       color: RATING_COLORS[star],
     }));
     return { avg, count, distribution };
-  }, [reviews]);
+  }, [scopedReviews]);
 
   // Afluencia por hora: histograma honesto de start_time de reservas filtradas (vehiculos = reservas iniciadas en esa franja)
   const hourlyData = useMemo(() => {
@@ -431,7 +487,7 @@ export const AnalyticsGlobalModule = () => {
       if (h < 11) return '10:00';
       if (h < 13) return '12:00';
       if (h < 15) return '14:00';
-      if (h < 17) return '16:00';
+      if (h < 16) return '16:00';
       if (h < 19) return '18:00';
       if (h < 21) return '20:00';
       return '22:00';
@@ -454,8 +510,8 @@ export const AnalyticsGlobalModule = () => {
   }, [filteredReservations]);
 
   const hasAnyRevenue = revenueStats.total > 0 || revenueStats.count > 0;
-  const hasAnyParking = parkings.length > 0;
-  const hasAnyReview = reviews.length > 0;
+  const hasAnyParking = scopedParkings.length > 0;
+  const hasAnyReview = scopedReviews.length > 0;
   const hasHourly = hourlyData.some((d) => d.vehiculos > 0);
   const maxOcupacion = ocupacionPorSede.length ? Math.max(...ocupacionPorSede.map((o) => o.ocupacionPct)) : 0;
   const picoSede = ocupacionPorSede.find((o) => o.ocupacionPct === maxOcupacion)?.sede || '—';
@@ -463,27 +519,52 @@ export const AnalyticsGlobalModule = () => {
   const rotacion = totalCap ? (revenueStats.count / totalCap).toFixed(1) : '—';
 
   const exportReport = () => {
+    const lines = [];
     const reportRangeStr = timeRange === 'custom'
       ? `del ${customStartDate} al ${customEndDate}`
       : timeRangeLabel;
-    lines.push(`# Reporte Smart Park — Rango: ${reportRangeStr} — ${new Date().toLocaleString('es-PE')}`);
-    lines.push(`# Nota recaudación: ${revenueScopeNote || '—'}`);
+    
+    if (role === 'local') {
+      lines.push(`# Cierre de Caja y Reporte Operativo — ${companyInfo?.name || 'Mi Empresa'}`);
+      if (selectedBranchFilter !== 'all') {
+        const branchName = scopedParkings[0]?.name || `Sede #${selectedBranchFilter}`;
+        lines.push(`# Sucursal: ${branchName}`);
+      } else {
+        lines.push(`# Sedes de la Empresa: ${scopedParkings.length} establecimiento(s)`);
+      }
+      lines.push(`# Administrador Local: ${user?.full_name || user?.name || user?.email || 'Admin Local'}`);
+    } else {
+      lines.push(`# Reporte Global Smart Park`);
+    }
+    lines.push(`# Periodo evaluado: ${reportRangeStr} — Generado: ${new Date().toLocaleString('es-PE')}`);
+    lines.push(`# Auditoría: Excluye canceladas — Recaudación neta de transacciones`);
     lines.push('');
-    lines.push('## Recaudacion por sede (derivado de reservas filtradas, excluye canceladas)');
+    lines.push('## Resumen General de Cierre');
+    lines.push(`Total_Recaudado_PEN,${revenueStats.total.toFixed(2)}`);
+    lines.push(`Estancias_Registradas,${revenueStats.count}`);
+    lines.push(`Reservas_Canceladas,${revenueStats.cancelled}`);
+    lines.push('');
+    lines.push('## Cuadre y Desglose por Medio de Pago (Cierre de Caja)');
+    lines.push('Medio_de_Pago,Total_PEN,Transacciones,Porcentaje');
+    paymentMethodBreakdown.forEach((m) => {
+      lines.push(`"${m.label}",${m.total.toFixed(2)},${m.count},${m.percent}%`);
+    });
+    lines.push('');
+    lines.push('## Recaudacion por sede');
     lines.push('Sede,ParkingId,Recaudacion_PEN,Estancias');
     recaudacionPorSede.forEach((r) => {
       const sedeSafe = r.sede.replace(/"/g, '""').replace(/,/g, ' ');
       lines.push(`"${sedeSafe}",${r.parking_id},${r.recaudacion.toFixed(2)},${r.estancias}`);
     });
     lines.push('');
-    lines.push('## Ocupacion por sede (floor-plan si disponible, fallback available_slots/total_capacity)');
+    lines.push('## Ocupacion por sede');
     lines.push('Sede,ParkingId,Total,Libres,Ocupados_Reservados,Ocupacion_Pct');
     ocupacionPorSede.forEach((o) => {
       const sedeSafe = o.sede.replace(/"/g, '""').replace(/,/g, ' ');
       lines.push(`"${sedeSafe}",${o.parking_id},${o.total},${o.libres},${o.ocupados},${o.ocupacionPct}%`);
     });
     lines.push('');
-    lines.push('## Afluencia por franja horaria (reservas no canceladas, por start_time)');
+    lines.push('## Afluencia por franja horaria');
     lines.push('Franja,Vehiculos_Reservas,Ocupacion_Relativa_Pct');
     if (hourlyData.length) {
       hourlyData.forEach((d) => lines.push(`${d.hora},${d.vehiculos},${d.ocupacion}%`));
@@ -491,21 +572,10 @@ export const AnalyticsGlobalModule = () => {
       lines.push('Sin datos,0,0%');
     }
     lines.push('');
-    lines.push('## Reseñas — distribución por estrellas (GET /reviews)');
+    lines.push('## Reseñas — distribución por estrellas');
     lines.push(`Promedio,${reviewStats.avg != null ? reviewStats.avg.toFixed(1) : '—'},Total,${reviewStats.count}`);
     lines.push('Estrellas,Cantidad,Porcentaje');
     reviewStats.distribution.forEach((d) => lines.push(`${d.star},${d.value},${d.percent}%`));
-    lines.push('');
-    lines.push(`## Totales filtrados (${reportRangeStr})`);
-    lines.push(`Recaudacion_total_PEN,${revenueStats.total.toFixed(2)}`);
-    lines.push(`Estancias_no_canceladas,${revenueStats.count}`);
-    lines.push(`Reservas_canceladas_en_rango,${revenueStats.cancelled}`);
-    lines.push('');
-    lines.push('## Desglose de recaudacion por metodo de cobro (Efectivo vs Yape/Plin vs Tarjeta)');
-    lines.push('Metodo,Total_PEN,Transacciones,Porcentaje');
-    paymentMethodBreakdown.forEach((m) => {
-      lines.push(`"${m.label}",${m.total.toFixed(2)},${m.count},${m.percent}%`);
-    });
 
     const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = window.URL.createObjectURL(blob);
@@ -514,7 +584,10 @@ export const AnalyticsGlobalModule = () => {
     const downloadSuffix = timeRange === 'custom'
       ? `${customStartDate}_al_${customEndDate}`
       : timeRange;
-    a.download = `reporte_analitica_smartpark_${downloadSuffix}.csv`;
+    const prefix = role === 'local'
+      ? `cierre_caja_${(companyInfo?.name || 'empresa').toLowerCase().replace(/[^a-z0-9]/g, '_')}`
+      : 'reporte_analitica_smartpark';
+    a.download = `${prefix}_${downloadSuffix}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -540,15 +613,50 @@ export const AnalyticsGlobalModule = () => {
       {/* Encabezado */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-heading text-2xl text-slate-900 dark:text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-            Analítica &amp; Tendencias de Ocupación
-          </h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-heading text-2xl text-slate-900 dark:text-white flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              {role === 'local' ? 'Reportes & Cierres de Caja' : 'Analítica & Tendencias de Ocupación'}
+            </h1>
+            {role === 'local' && companyInfo && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 rounded-full text-xs font-bold text-emerald-800 dark:text-emerald-300 shadow-2xs">
+                <Building2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>{companyInfo.name}</span>
+                {companyInfo.branchesCount > 1 && (
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-200/60 dark:bg-emerald-900/80 px-1.5 py-0.5 rounded-full ml-0.5">
+                    {companyInfo.branchesCount} sedes
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-2xl">
-            Métricas de aforo en tiempo real, demanda horaria y recaudación de la red.
+            {role === 'local'
+              ? `Métricas operativas de aforo, demanda horaria y arqueo de caja exclusivo para ${companyInfo?.name || 'tu empresa'}.`
+              : 'Métricas de aforo en tiempo real, demanda horaria y recaudación de la red.'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* Selector de Sucursal si la empresa tiene más de 1 sede */}
+          {role === 'local' && companyBranches.length > 1 && (
+            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 h-10 shadow-2xs">
+              <Building2 className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+              <select
+                value={selectedBranchFilter}
+                onChange={(e) => setSelectedBranchFilter(e.target.value)}
+                className="bg-transparent text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer pr-1"
+                title="Filtrar por sucursal"
+              >
+                <option value="all" className="dark:bg-slate-900">Todas las sedes ({companyBranches.length})</option>
+                {companyBranches.map((b) => (
+                  <option key={b.id} value={b.id} className="dark:bg-slate-900">
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
@@ -592,7 +700,7 @@ export const AnalyticsGlobalModule = () => {
 
           <Button onClick={exportReport} variant="secondary" size="sm" className="h-10 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700">
             <Download className="w-4 h-4 shrink-0" />
-            Exportar CSV
+            {role === 'local' ? 'Exportar Cierre CSV' : 'Exportar CSV'}
           </Button>
         </div>
       </div>

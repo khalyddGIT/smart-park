@@ -358,3 +358,128 @@ async def test_adminlocal_demo_account_strict_isolation_no_leak():
         assert not has_other, "Admin local NUNCA debe ver eventos de otra cochera ajena"
 
 
+@pytest.mark.asyncio
+async def test_local_admin_reports_and_reservations_strict_isolation_no_leak():
+    import uuid
+    from datetime import datetime
+    from app.models.models import Parking, Slot, Reservation, Review
+
+    transport = ASGITransport(app=app)
+    unique_suffix = uuid.uuid4().hex[:6]
+    admin_email = f"admin_local_{unique_suffix}@smartpark.com"
+    other_email = f"other_owner_{unique_suffix}@empresa.com"
+
+    async with AsyncSessionLocal() as session:
+        admin_local = User(
+            full_name=f"Admin Local {unique_suffix}",
+            email=admin_email,
+            hashed_password="hashedpassword123",
+            role="local",
+            phone="+51 999 111 222",
+            security_pin="hashedpin123",
+            is_active=True
+        )
+        session.add(admin_local)
+        await session.commit()
+        await session.refresh(admin_local)
+
+        p_mine = Parking(
+            name=f"Mi Cochera Propia {unique_suffix}",
+            address="Jr. Callao 100",
+            city="Ayacucho",
+            latitude=-13.1600,
+            longitude=-74.2250,
+            hourly_rate=5.0,
+            email=admin_email,
+            total_capacity=5,
+            status="active"
+        )
+        p_other = Parking(
+            name=f"Cochera Competencia {unique_suffix}",
+            address="Jr. Lima 200",
+            city="Ayacucho",
+            latitude=-13.1610,
+            longitude=-74.2260,
+            hourly_rate=6.0,
+            email=other_email,
+            total_capacity=5,
+            status="active"
+        )
+        session.add_all([p_mine, p_other])
+        await session.commit()
+        await session.refresh(p_mine)
+        await session.refresh(p_other)
+
+        slot_mine = Slot(parking_id=p_mine.id, code=f"M1-{unique_suffix}", status="occupied")
+        slot_other = Slot(parking_id=p_other.id, code=f"O1-{unique_suffix}", status="occupied")
+        session.add_all([slot_mine, slot_other])
+        await session.commit()
+        await session.refresh(slot_mine)
+        await session.refresh(slot_other)
+
+        # Crear reserva en la propia
+        res_mine = Reservation(
+            user_id=admin_local.id,
+            parking_id=p_mine.id,
+            slot_id=slot_mine.id,
+            code=f"RSV-MINE-{unique_suffix}",
+            license_plate="ABC-111",
+            qr_code=f"QR-MINE-{unique_suffix}",
+            start_time=datetime.now(),
+            total_cost=25.0,
+            status="completed",
+            payment_status="paid"
+        )
+        # Crear reserva en la ajena
+        res_other = Reservation(
+            user_id=admin_local.id,
+            parking_id=p_other.id,
+            slot_id=slot_other.id,
+            code=f"RSV-OTHER-{unique_suffix}",
+            license_plate="XYZ-999",
+            qr_code=f"QR-OTHER-{unique_suffix}",
+            start_time=datetime.now(),
+            total_cost=150.0,
+            status="completed",
+            payment_status="paid"
+        )
+        session.add_all([res_mine, res_other])
+
+        # Crear reseña en la propia y en la ajena
+        rev_mine = Review(
+            user_id=admin_local.id,
+            user_name=admin_local.full_name,
+            parking_id=p_mine.id,
+            rating=5,
+            comment=f"Excelente servicio propio {unique_suffix}"
+        )
+        rev_other = Review(
+            user_id=admin_local.id,
+            user_name="Otro Usuario",
+            parking_id=p_other.id,
+            rating=1,
+            comment=f"Malo ajeno {unique_suffix}"
+        )
+        session.add_all([rev_mine, rev_other])
+        await session.commit()
+
+    token = create_access_token(subject=admin_local.id)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # 1. Probar GET /reservations
+        r_resp = await ac.get("/api/v1/reservations", headers=headers)
+        assert r_resp.status_code == 200
+        reservations = r_resp.json()
+        assert any(r["parking_id"] == p_mine.id for r in reservations), "Debe contener reservas de su cochera"
+        assert not any(r["parking_id"] == p_other.id for r in reservations), "NUNCA debe filtrar reservas de otra cochera"
+
+        # 2. Probar GET /reviews
+        rev_resp = await ac.get("/api/v1/reviews", headers=headers)
+        assert rev_resp.status_code == 200
+        reviews = rev_resp.json()
+        assert any(rv["parking_id"] == p_mine.id for rv in reviews), "Debe contener reseñas de su cochera"
+        assert not any(rv["parking_id"] == p_other.id for rv in reviews), "NUNCA debe filtrar reseñas de otra cochera"
+
+
+

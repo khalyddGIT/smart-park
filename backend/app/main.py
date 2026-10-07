@@ -420,12 +420,69 @@ app.include_router(backups_router.router, prefix=settings.API_V1_STR)
 # Canal WebSocket en tiempo real (mismo origen, sin servicio extra)
 @app.websocket("/api/v1/ws")
 async def realtime_ws(ws: WebSocket):
-    await realtime.connect(ws)
+    origin = ws.headers.get("origin", "")
+    if origin and CORS_ORIGINS and origin not in CORS_ORIGINS:
+        await ws.close(code=1008, reason="Origen no permitido")
+        return
+
+    import json
+    from datetime import datetime, timezone
+
+    token = ws.cookies.get("access_token", "") or ws.query_params.get("token", "")
+    user_id = None
+    role = "user"
+    parking_id = None
+
+    if token:
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            user_id = int(payload.get("sub", ""))
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(select(User).where(User.id == user_id, User.is_active.is_(True)))
+                db_user = result.scalars().first()
+                if db_user:
+                    role = db_user.role or "user"
+                    parking_id = db_user.parking_id
+        except (JWTError, TypeError, ValueError):
+            pass
+
+    await realtime.connect(ws, user_id=user_id, parking_id=parking_id, role=role)
+
+    qp_parking_id = ws.query_params.get("parking_id")
+    if qp_parking_id:
+        try:
+            await realtime.subscribe(ws, f"parking:{int(qp_parking_id)}")
+        except ValueError:
+            pass
+
     try:
         while True:
-            # Mantener la conexión viva; el cliente puede enviar ping
-            await ws.receive_text()
-            await ws.send_text('{"event":"pong"}')
+            data_text = await ws.receive_text()
+            if not data_text:
+                continue
+
+            trimmed = data_text.strip()
+            if trimmed == "ping":
+                await ws.send_text(json.dumps({"event": "pong", "ts": datetime.now(timezone.utc).isoformat()}))
+                continue
+
+            try:
+                msg = json.loads(data_text)
+                action = msg.get("action", "")
+                if action == "ping":
+                    await ws.send_text(json.dumps({"event": "pong", "ts": datetime.now(timezone.utc).isoformat()}))
+                elif action == "subscribe":
+                    ch = msg.get("channel") or (f"parking:{msg.get('parking_id')}" if msg.get("parking_id") else None)
+                    if ch:
+                        await realtime.subscribe(ws, ch)
+                        await ws.send_text(json.dumps({"event": "subscribed", "channel": ch}))
+                elif action == "unsubscribe":
+                    ch = msg.get("channel") or (f"parking:{msg.get('parking_id')}" if msg.get("parking_id") else None)
+                    if ch:
+                        await realtime.unsubscribe(ws, ch)
+                        await ws.send_text(json.dumps({"event": "unsubscribed", "channel": ch}))
+            except json.JSONDecodeError:
+                pass
     except WebSocketDisconnect:
         await realtime.disconnect(ws)
     except Exception:

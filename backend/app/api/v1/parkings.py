@@ -738,8 +738,25 @@ async def create_parking(parking_in: ParkingCreate, db: AsyncSession = Depends(g
     await db.commit()
     await db.refresh(db_parking)
     await invalidate_parkings_cache()
-    await realtime.broadcast("parkings:updated", {"parking_id": db_parking.id})
-    return ParkingResponse.model_validate(db_parking)
+
+    if getattr(current_user, "role", None) == "local":
+        if not getattr(current_user, "parking_id", None):
+            current_user.parking_id = db_parking.id
+            await db.commit()
+
+    resp_obj = ParkingResponse.model_validate(db_parking)
+    parking_dict = resp_obj.model_dump(mode="json")
+    await realtime.broadcast(
+        "parkings:created",
+        {"parking": parking_dict, "parking_id": db_parking.id},
+        channel="global"
+    )
+    await realtime.broadcast(
+        "parkings:updated",
+        {"parking": parking_dict, "parking_id": db_parking.id},
+        channel="global"
+    )
+    return resp_obj
 
 @router.put("/{parking_id}", response_model=ParkingResponse)
 async def update_parking(parking_id: int, parking_in: ParkingUpdate, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
@@ -778,8 +795,14 @@ async def update_parking(parking_id: int, parking_in: ParkingUpdate, db: AsyncSe
     await db.commit()
     await db.refresh(parking)
     await invalidate_parkings_cache()
-    await realtime.broadcast("parkings:updated", {"parking_id": parking.id})
-    return ParkingResponse.model_validate(parking)
+    resp_obj = ParkingResponse.model_validate(parking)
+    parking_dict = resp_obj.model_dump(mode="json")
+    await realtime.broadcast(
+        "parkings:updated",
+        {"parking": parking_dict, "parking_id": parking.id},
+        channel="global"
+    )
+    return resp_obj
 
 @router.delete("/{parking_id}", status_code=status.HTTP_200_OK)
 async def delete_parking(parking_id: int, db: AsyncSession = Depends(get_db), current_user = Depends(write_required)):
@@ -814,7 +837,8 @@ async def delete_parking(parking_id: int, db: AsyncSession = Depends(get_db), cu
 
     await db.commit()
     await invalidate_parkings_cache()
-    await realtime.broadcast("parkings:updated", {"parking_id": parking_id, "action": "deleted"})
+    await realtime.broadcast("parkings:deleted", {"parking_id": parking_id}, channel="global")
+    await realtime.broadcast("parkings:updated", {"parking_id": parking_id, "action": "deleted"}, channel="global")
     return {"status": "success", "message": f"Estacionamiento {parking_id} eliminado exitosamente"}
 
 # =======================================================

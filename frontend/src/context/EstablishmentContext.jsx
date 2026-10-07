@@ -553,8 +553,8 @@ export const sanitizeEstablishment = (est, idx = 0) => {
     city: est.city && est.city.includes('Ayacucho') ? est.city : 'Ayacucho - Huamanga',
     company_name: est.company_name || est.companyName || getEstablishmentHierarchy({ ...est, name }).companyName || '',
     companyName: est.companyName || est.company_name || getEstablishmentHierarchy({ ...est, name }).companyName || '',
-    admin_email: est.admin_email || est.adminEmail || '',
-    adminEmail: est.adminEmail || est.admin_email || '',
+    admin_email: est.admin_email || est.adminEmail || est.email || '',
+    adminEmail: est.adminEmail || est.admin_email || est.email || '',
     owner: est.owner || '',
     ruc: est.ruc || '',
     phone: est.phone || '',
@@ -1009,7 +1009,8 @@ export const EstablishmentProvider = ({ children }) => {
             if (isDemoEstablishment(e)) return false;
             const normName = (e.name || '').trim().toLowerCase();
             if (serverNames.has(normName)) return false;
-            return e.isUnsavedDraft === true;
+            const isRecent = e._createdTimestamp && (Date.now() - e._createdTimestamp < 180000);
+            return e.isUnsavedDraft === true || isRecent;
           });
 
           const prevMap = new Map(prev.map(e => [String(e.id), e]));
@@ -1020,6 +1021,10 @@ export const EstablishmentProvider = ({ children }) => {
             const hasElements = Array.isArray(before?.elements) && before.elements.length > 0;
             return {
               ...m,
+              company_name: before?.company_name || m.company_name,
+              companyName: before?.companyName || m.companyName,
+              admin_email: before?.admin_email || m.admin_email || before?.email || m.email,
+              adminEmail: before?.adminEmail || m.adminEmail || before?.email || m.email,
               ...(before?.password ? { password: before.password } : {}),
               ...(hasElements ? { elements: before.elements, _needsFloorPlan: false } : {})
             };
@@ -1059,24 +1064,53 @@ export const EstablishmentProvider = ({ children }) => {
     // WebSocket en tiempo real: notificaciones push del servidor (misma URL que la API)
     let ws = null;
     let wsReconnectTimer = null;
+    let reconnectDelay = 500;
+
     const getWsUrl = () => {
       const envUrl = import.meta.env.VITE_WS_URL;
-      if (envUrl) return envUrl;
-      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return `${proto}//127.0.0.1:8000/api/v1/ws`;
-      if (window.location.hostname.includes('railway.app')) return `${proto}//${window.location.host}/api/v1/ws`;
-      return `wss://smart-park-web-production.up.railway.app/api/v1/ws`;
+      let baseUrl = '';
+      if (envUrl) {
+        baseUrl = envUrl;
+      } else {
+        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          baseUrl = `${proto}//127.0.0.1:8000/api/v1/ws`;
+        } else if (window.location.hostname.includes('railway.app')) {
+          baseUrl = `${proto}//${window.location.host}/api/v1/ws`;
+        } else {
+          baseUrl = `wss://smart-park-web-production.up.railway.app/api/v1/ws`;
+        }
+      }
+      const token = getAccessToken();
+      const params = new URLSearchParams();
+      if (token) params.set('token', token);
+      if (role) params.set('role', role);
+      const userParkingId = user?.parking_id || user?.parkingId || user?.establishmentId;
+      if (userParkingId) params.set('parking_id', String(userParkingId));
+      const qs = params.toString();
+      return qs ? `${baseUrl}?${qs}` : baseUrl;
     };
+
     const connectWs = () => {
       try {
         ws = new WebSocket(getWsUrl());
+
         ws.onopen = () => {
           setWsConnected(true);
+          reconnectDelay = 500;
+          try {
+            ws.send(JSON.stringify({ action: "subscribe", channel: "global" }));
+            if (role) ws.send(JSON.stringify({ action: "subscribe", channel: `role:${role}` }));
+            if (user?.id) ws.send(JSON.stringify({ action: "subscribe", channel: `user:${user.id}` }));
+            const userParkingId = user?.parking_id || user?.parkingId || user?.establishmentId;
+            if (userParkingId) ws.send(JSON.stringify({ action: "subscribe", channel: `parking:${userParkingId}` }));
+          } catch {}
         };
+
         ws.onmessage = (ev) => {
           try {
             const msg = JSON.parse(ev.data);
-            if (msg.event === 'pong') return;
+            if (msg.event === 'pong' || msg.event === 'subscribed' || msg.event === 'unsubscribed') return;
 
             // Disparar eventos CustomEvent tipados para sincronización instantánea de componentes reactivos
             if (msg.payload || msg.event) {
@@ -1090,15 +1124,59 @@ export const EstablishmentProvider = ({ children }) => {
                   window.dispatchEvent(new CustomEvent('smartpark_broadcast_received', { detail: msg.payload }));
                 } else if (msg.event === 'broadcast:deleted') {
                   window.dispatchEvent(new CustomEvent('smartpark_broadcast_deleted', { detail: msg.payload }));
+                } else if (msg.event === 'parkings:created') {
+                  window.dispatchEvent(new CustomEvent('smart_park_branch_live', { detail: msg.payload?.parking || msg.payload }));
                 }
               } catch {}
             }
 
-            if (msg.event === 'parkings:updated' || msg.event === 'refresh') {
-              fetchParkings();
-              const pid = msg.payload?.parking_id || msg.payload?.parkingId;
+            // Manejo Zero-HTTP de Parkings (Creación, Actualización, Eliminación en 0ms en memoria)
+            if (msg.event === 'parkings:created') {
+              const parkingData = msg.payload?.parking || msg.payload;
+              if (parkingData && parkingData.id) {
+                unrecordDeletedEstablishmentId(String(parkingData.id));
+                const newBranch = sanitizeEstablishment({
+                  ...parkingData,
+                  id: String(parkingData.id),
+                  _createdTimestamp: Date.now()
+                });
+                setEstablishments(prev => {
+                  const exists = prev.some(e => String(e.id) === String(newBranch.id));
+                  if (exists) {
+                    return prev.map(e => String(e.id) === String(newBranch.id) ? { ...e, ...newBranch } : e);
+                  }
+                  const next = [newBranch, ...prev];
+                  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+                  return next;
+                });
+              }
+            } else if (msg.event === 'parkings:updated') {
+              const parkingData = msg.payload?.parking;
+              const pid = msg.payload?.parking_id || msg.payload?.parkingId || parkingData?.id;
+              if (parkingData && pid) {
+                setEstablishments(prev => {
+                  const sanitized = sanitizeEstablishment(parkingData);
+                  const next = prev.map(e => String(e.id) === String(pid) ? { ...e, ...sanitized } : e);
+                  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+                  return next;
+                });
+              } else if (msg.event === 'refresh') {
+                fetchParkings();
+              }
               if (pid) try { hydrateFloorPlan(String(pid), true); } catch {}
+            } else if (msg.event === 'parkings:deleted') {
+              const pid = msg.payload?.parking_id || msg.payload?.parkingId;
+              if (pid) {
+                recordDeletedEstablishmentId(String(pid));
+                setEstablishments(prev => {
+                  const next = prev.filter(e => String(e.id) !== String(pid));
+                  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+                  return next;
+                });
+              }
             }
+
+            // Manejo Zero-HTTP de plazas de estacionamiento
             if (msg.event === 'spaces:update') {
               const pid = msg.payload?.parking_id;
               const slotCode = msg.payload?.slot_code;
@@ -1113,14 +1191,17 @@ export const EstablishmentProvider = ({ children }) => {
                       }
                       return el;
                     });
-                    return { ...est, elements: nextElements };
+                    const freeCount = nextElements.filter(e => e.type === 'slot' && e.status === 'free').length;
+                    return { ...est, elements: nextElements, available_slots: freeCount };
                   }
                   return est;
                 }));
                 try { hydrateFloorPlan(String(pid), true); } catch {}
               }
             }
-            if (msg.event === 'reservations:updated' || msg.event === 'reservations:cancelled' || msg.event === 'refresh') {
+
+            // Manejo Zero-HTTP de reservaciones
+            if (msg.event === 'reservations:updated' || msg.event === 'reservations:cancelled' || msg.event === 'reservations:created' || msg.event === 'refresh') {
               if (msg.payload?.reservation_id && msg.payload?.reservation_status) {
                 setReservations(prev => (prev || []).map(r => {
                   if (String(r.id) === String(msg.payload.reservation_id) || (msg.payload.code && r.code === msg.payload.code)) {
@@ -1135,32 +1216,57 @@ export const EstablishmentProvider = ({ children }) => {
                   return r;
                 }));
               }
-              if (getAccessToken()) refreshMyReservations();
-              // Cajón reservado/ocupado cambia plano, refrescar para que no siga disponible
-              fetchParkings();
-              // Si hay parking_id en payload, hidratar solo ese plano para feedback instantáneo
               const pid = msg.payload?.parking_id || msg.payload?.parkingId;
-              if (pid) try { hydrateFloorPlan(String(pid), true); } catch {}
+              const slotCode = msg.payload?.slot_code;
+              if (pid && slotCode) {
+                const isFree = ['completed', 'cancelled'].includes(msg.payload.reservation_status);
+                const newStatus = isFree ? 'free' : (msg.payload.reservation_status === 'active' ? 'occupied' : 'reserved');
+                setEstablishments(prev => prev.map(est => {
+                  if (String(est.id) === String(pid)) {
+                    const nextElements = (est.elements || []).map(el => {
+                      if (el.type === 'slot' && el.code === slotCode) {
+                        return { ...el, status: newStatus };
+                      }
+                      return el;
+                    });
+                    return { ...est, elements: nextElements };
+                  }
+                  return est;
+                }));
+              }
             }
-            if (msg.event === 'incidents:updated' || msg.event === 'reviews:updated') { /* NotificationContext hace su propio polling */ }
           } catch {}
         };
+
         ws.onclose = () => { 
           setWsConnected(false);
-          if (sessionValidated && user?.id) wsReconnectTimer = setTimeout(connectWs, 3000);
+          if (sessionValidated && user?.id) {
+            wsReconnectTimer = setTimeout(() => {
+              connectWs();
+              fetchParkings();
+              if (getAccessToken()) refreshMyReservations();
+            }, reconnectDelay);
+            reconnectDelay = Math.min(reconnectDelay * 1.5, 10000);
+          }
         };
+
         ws.onerror = () => { 
           setWsConnected(false);
           try { ws.close(); } catch {} 
         };
-        const ping = setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) try { ws.send('ping'); } catch {} }, 25000);
+
+        // Latido cada 10 segundos para respuesta ágil y detección inmediata de caídas
+        const ping = setInterval(() => { 
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            try { ws.send('ping'); } catch {} 
+          }
+        }, 10000);
         ws.addEventListener('close', () => clearInterval(ping));
       } catch {
         setWsConnected(false);
       }
     };
-    // El backend exige cookie de sesión para el canal en tiempo real. Evita
-    // reconexiones 403 continuas para visitantes anónimos.
+
     if (sessionValidated && user?.id) connectWs();
     else setWsConnected(false);
 
@@ -1721,11 +1827,20 @@ export const EstablishmentProvider = ({ children }) => {
             subscription_enabled: res.data.subscription_enabled !== undefined ? !!res.data.subscription_enabled : true,
             custom_rates: res.data.custom_rates || null,
             image: res.data.image_url, 
-            status: res.data.status === 'active' ? 'Operativo' : res.data.status 
+            _createdTimestamp: Date.now()
           });
           unrecordDeletedEstablishmentId(String(res.data.id));
-          setEstablishments(prev => [created, ...prev]);
-          await fetchParkings();
+          setEstablishments(prev => {
+            const exists = prev.some(e => String(e.id) === String(res.data.id));
+            const next = exists
+              ? prev.map(e => String(e.id) === String(res.data.id) ? created : e)
+              : [created, ...prev];
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+            return next;
+          });
+          try {
+            window.dispatchEvent(new CustomEvent('smart_park_branch_live', { detail: created }));
+          } catch {}
           return created;
         }
       } catch (e) {

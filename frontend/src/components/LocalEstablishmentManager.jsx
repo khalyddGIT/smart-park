@@ -1244,6 +1244,7 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
         showToast(`✓ Datos de "${formData.name}" guardados y sincronizados correctamente.`);
       }
 
+      setIsEditingNew(false);
       setActiveViewMode('list');
     } catch (err) {
       console.error('Error al guardar sede:', err);
@@ -1268,6 +1269,18 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
       setCurrentPlanElements(fresh.elements);
     }
   }, [establishments, selectedEstablishment, activeViewMode]);
+
+  // Sincronización reactiva instantánea ante eventos de sucursales en vivo por WebSocket
+  useEffect(() => {
+    const handleBranchLive = (ev) => {
+      const branch = ev.detail;
+      if (branch && branch.name) {
+        showToast(`⚡ Sede "${branch.name}" sincronizada en tiempo real.`);
+      }
+    };
+    window.addEventListener('smart_park_branch_live', handleBranchLive);
+    return () => window.removeEventListener('smart_park_branch_live', handleBranchLive);
+  }, []);
 
   // Abrir plano
   const handleOpenPlan = async (est, mode) => {
@@ -1380,8 +1393,8 @@ export const LocalEstablishmentManager = ({ masterElements, onMasterSavePlan }) 
 
     filteredEstablishments.forEach((est) => {
       const hierarchy = getEstablishmentHierarchy(est);
-      const companyName = hierarchy.companyName;
-      const branchName = hierarchy.branchName;
+      const companyName = (est.companyName || est.company_name || hierarchy.companyName || 'Mi Estacionamiento').trim();
+      const branchName = hierarchy.branchName || est.name;
       const groupKey = companyName.toLowerCase().trim();
 
       if (!groups.has(groupKey)) {

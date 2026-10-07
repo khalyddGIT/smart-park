@@ -1096,6 +1096,7 @@ export const EstablishmentProvider = ({ children }) => {
         ws = new WebSocket(getWsUrl());
 
         ws.onopen = () => {
+          ws.__wasOpen = true;
           setWsConnected(true);
           reconnectDelay = 500;
           try {
@@ -1240,13 +1241,17 @@ export const EstablishmentProvider = ({ children }) => {
 
         ws.onclose = () => { 
           setWsConnected(false);
+          const wasOpen = ws.__wasOpen === true;
           if (sessionValidated && user?.id) {
             wsReconnectTimer = setTimeout(() => {
               connectWs();
-              fetchParkings();
-              if (getAccessToken()) refreshMyReservations();
+              // Solo resincronizar si se perdió una conexión establecida (evita recargas en bucle)
+              if (wasOpen) {
+                fetchParkings();
+                if (getAccessToken()) refreshMyReservations();
+              }
             }, reconnectDelay);
-            reconnectDelay = Math.min(reconnectDelay * 1.5, 10000);
+            reconnectDelay = wasOpen ? 1000 : Math.min(reconnectDelay * 2, 30000);
           }
         };
 

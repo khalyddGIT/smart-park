@@ -370,9 +370,11 @@ async def realtime_ws(ws: WebSocket):
                 db_user = result.scalars().first()
                 if db_user:
                     role = db_user.role or "user"
-                    parking_id = db_user.parking_id
+                    parking_id = getattr(db_user, "parking_id", None)
         except (JWTError, TypeError, ValueError):
             pass
+        except Exception as exc:  # nunca tumbar el handshake por un error de BD
+            security_logger.warning(f"[WS] Error resolviendo usuario del token: {exc}")
 
     await realtime.connect(ws, user_id=user_id, parking_id=parking_id, role=role)
 

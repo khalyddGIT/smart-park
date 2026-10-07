@@ -427,6 +427,9 @@ async def realtime_ws(ws: WebSocket):
 
     import json
     from datetime import datetime, timezone
+    from jose import jwt, JWTError
+    from sqlalchemy.future import select
+    from app.db.session import AsyncSessionLocal
 
     token = ws.cookies.get("access_token", "") or ws.query_params.get("token", "")
     user_id = None
@@ -442,9 +445,11 @@ async def realtime_ws(ws: WebSocket):
                 db_user = result.scalars().first()
                 if db_user:
                     role = db_user.role or "user"
-                    parking_id = db_user.parking_id
+                    parking_id = getattr(db_user, "parking_id", None)
         except (JWTError, TypeError, ValueError):
             pass
+        except Exception as exc:
+            security_logger.warning(f"[WS] Error resolviendo usuario del token: {exc}")
 
     await realtime.connect(ws, user_id=user_id, parking_id=parking_id, role=role)
 
